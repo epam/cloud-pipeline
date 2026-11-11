@@ -98,7 +98,7 @@ function install_pip_package {
             echo "[ERROR] ${_DIST_NAME} download failed. Exiting"
             exit_init "$_DOWNLOAD_RESULT"
         fi
-    $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS ${_DIST_NAME}.tar.gz -q -I
+    $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS ${_DIST_NAME}.tar.gz -q -I
     _INSTALL_RESULT=$?
     rm -f ${_DIST_NAME}.tar.gz
     if [ "$_INSTALL_RESULT" -ne 0 ];
@@ -324,7 +324,7 @@ function check_package_installed {
 
 function check_python_module_installed {
       local _MODULE_TO_CHECK=$1
-      $CP_PYTHON2_PATH -m $_MODULE_TO_CHECK >/dev/null 2>&1
+      $CP_PYTHON_PATH -m $_MODULE_TO_CHECK >/dev/null 2>&1
       return $?
 }
 
@@ -411,7 +411,8 @@ function upgrade_installed_packages {
 }
 
 function configure_package_manager_pip {
-    if [ -z "$CP_REPO_PYPI_BASE_URL_DEFAULT" ]; then
+    # The Python 3 mirror (pypi3): pip runs with the platform's Python 3.12 only
+    if [ -z "$CP_REPO_PYPI3_BASE_URL_DEFAULT" ]; then
         # Converts regional s3 endpoints
         # https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/
         # to regional website s3 endpoints
@@ -420,18 +421,18 @@ function configure_package_manager_pip {
             | sed -r 's|^https?://(.*)\.s3\.(.*)\.amazonaws\.com(.*)|http://\1.s3-website.\2.amazonaws.com\3|g')"
         if [ "$_WEBSITE_DISTRIBUTION_URL" != "$GLOBAL_DISTRIBUTION_URL" ]; then
             # If the conversion was successful
-            CP_REPO_PYPI_BASE_URL_DEFAULT="${_WEBSITE_DISTRIBUTION_URL}tools/python/pypi/simple"
+            CP_REPO_PYPI3_BASE_URL_DEFAULT="${_WEBSITE_DISTRIBUTION_URL}tools/python/pypi3/simple"
         else
-            CP_REPO_PYPI_BASE_URL_DEFAULT="http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi/simple"
+            CP_REPO_PYPI3_BASE_URL_DEFAULT="http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi3/simple"
         fi
     fi
-    if [ -z "$CP_REPO_PYPI_TRUSTED_HOST_DEFAULT" ]; then
-        CP_REPO_PYPI_TRUSTED_HOST_DEFAULT="$(echo "$CP_REPO_PYPI_BASE_URL_DEFAULT" | sed -r 's|^.*://([^/]*)/?.*$|\1|g')"
+    if [ -z "$CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT" ]; then
+        CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT="$(echo "$CP_REPO_PYPI3_BASE_URL_DEFAULT" | sed -r 's|^.*://([^/]*)/?.*$|\1|g')"
     fi
-    export CP_REPO_PYPI_BASE_URL_DEFAULT
-    export CP_REPO_PYPI_TRUSTED_HOST_DEFAULT
-    export CP_PIP_EXTRA_ARGS="${CP_PIP_EXTRA_ARGS} --index-url $CP_REPO_PYPI_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI_TRUSTED_HOST_DEFAULT"
-    echo "Using pypi repository $CP_REPO_PYPI_BASE_URL_DEFAULT ($CP_REPO_PYPI_TRUSTED_HOST_DEFAULT)..."
+    export CP_REPO_PYPI3_BASE_URL_DEFAULT
+    export CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT
+    export CP_PIP_EXTRA_ARGS="${CP_PIP_EXTRA_ARGS} --index-url $CP_REPO_PYPI3_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT"
+    echo "Using pypi repository $CP_REPO_PYPI3_BASE_URL_DEFAULT ($CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT)..."
 }
 
 function run_pre_common_commands {
@@ -757,11 +758,6 @@ function get_install_command_by_current_distr {
             check_installed "yum" && _ltdl_lib_name="libtool-ltdl"
             _TOOLS_TO_INSTALL="$(sed "s/\( \|^\)ltdl\( \|$\)/ ${_ltdl_lib_name} /g" <<< "$_TOOLS_TO_INSTALL")"
       fi
-      if [[ "$_TOOLS_TO_INSTALL" == *"python"* ]] && \
-         { [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ]; } && \
-         { [[ "$CP_VER" == "8"* ]] || [[ "$CP_VER" == "9"* ]]; }; then
-            _TOOLS_TO_INSTALL="$(sed -e "s/python/python2/g" <<< "$_TOOLS_TO_INSTALL")"
-      fi
       # Rocky Linux and RHEL name it procps-ng
       if [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
             _TOOLS_TO_INSTALL="$(sed "s/\( \|^\)procps\( \|$\)/ procps-ng /g" <<< "$_TOOLS_TO_INSTALL")"
@@ -885,29 +881,48 @@ function initialise_wrappers {
     export PATH="$_WRAPPERS_PATH_BKP"
 }
 
-# This function installs any prerequisite, which is not available in the public repos or it is not desired to use those
-function install_private_packages {
+# Installs the platform's Python 3.12 distribution into <install path>/python3.12, and links <install path>/bin/python3
+# and pip3 to it
+function install_python3_packages {
       local _install_path="$1"
-      local _tmp_install_dir="/tmp/"
-      # Separate python distro setup
-      # ====
-      #    Delete an existing installation, if it's a paused run
-      #    We can probably keep it, but it will fail if we need to update a resumed run
-      rm -rf "${_install_path}/conda"
-      CP_CONDA_DISTRO_URL="${CP_CONDA_DISTRO_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz"}"
+      CP_PYTHON3_DISTRO_URL="${CP_PYTHON3_DISTRO_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/python/3/python3.12.tar.gz"}"
 
-      # Download the distro from a public bucket
-      echo "Getting python distro from $CP_CONDA_DISTRO_URL"
-      wget -q "${CP_CONDA_DISTRO_URL}" -O "${_tmp_install_dir}/conda.tgz" &> /dev/null
-      if [ $? -ne 0 ]; then
-            echo "[ERROR] Can't download the python distro"
+      # The distro is unpacked next to its place and swapped in only when it is complete: a failed download or unpack
+      # keeps the python3.12, python3 and pip3 the image already has (e.g. a committed run, or a python:3.x image).
+      # A folder left by an init that was killed during the download is removed first, so a commit doesn't keep it
+      rm -rf "${_install_path}"/.cp-python3.*
+      local _tmp_install_dir
+      _tmp_install_dir="$(mktemp -d "${_install_path}/.cp-python3.XXXXXX")" || {
+            echo "[WARN] Unable to create a temporary folder in ${_install_path} for the python3 distro"
+            return 1
+      }
+      echo "Getting python3 distro from $CP_PYTHON3_DISTRO_URL"
+      if ! wget -q "${CP_PYTHON3_DISTRO_URL}" -O "${_tmp_install_dir}/python3.tgz" &>/dev/null \
+            || ! tar -zxf "${_tmp_install_dir}/python3.tgz" -C "${_tmp_install_dir}" \
+            || [ ! -x "${_tmp_install_dir}/python3.12/bin/python3.12" ]; then
+            rm -rf "${_tmp_install_dir}"
+            echo "[WARN] Unable to install the python3 distro from $CP_PYTHON3_DISTRO_URL, keeping the python3 of the image"
             return 1
       fi
+      # Not moved aside: on a committed image the old folder is in a lower layer, so a move would copy all of it.
+      # The new folder is in the container's own layer, next to its place, so moving it in is a plain rename
+      rm -rf "${_install_path}/python3.12"
+      if ! mv "${_tmp_install_dir}/python3.12" "${_install_path}/python3.12"; then
+            rm -rf "${_tmp_install_dir}"
+            echo "[WARN] Unable to move the python3 distro into ${_install_path}/python3.12, the python3 and pip3 links are not changed"
+            return 1
+      fi
+      # The distro has its OpenSSL built in, and /usr/local/openssl may be the image's own: only a distro that brings
+      # an openssl folder (the previous python3.12.0 build) replaces it
+      if [ -d "${_tmp_install_dir}/openssl" ]; then
+            rm -rf "${_install_path}/openssl"
+            mv "${_tmp_install_dir}/openssl" "${_install_path}/openssl"
+      fi
+      rm -rf "${_tmp_install_dir}"
 
-      # Unpack and remove tarball
-      tar -zxf "${_tmp_install_dir}/conda.tgz" -C "${_install_path}"
-      rm -f "${_tmp_install_dir}/conda.tgz"
-      echo "Python distro is installed into ${_install_path}/conda"
+      ln -sf "${_install_path}/python3.12/bin/python3.12" "${_install_path}/bin/python3"
+      ln -sf "${_install_path}/python3.12/bin/pip3.12"    "${_install_path}/bin/pip3"
+      echo "Python3 distro is installed into ${_install_path}/python3.12"
 }
 
 function list_storage_mounts() {
@@ -1208,34 +1223,31 @@ if [ -z "$CP_USR_BIN" ]; then
 fi
 create_sys_dir $CP_USR_BIN
 if [ "$CP_CAP_INSTALL_PRIVATE_DEPS" == "true" ]; then
-      install_private_packages $CP_USR_BIN
+      echo "[WARN] CP_CAP_INSTALL_PRIVATE_DEPS no longer has an effect: every run installs the platform's Python 3.12"
 fi
 
-# Check if python2 is installed:
-# If it was installed into a private location - use it
-# Otherwise - find the "global" version, if not found - try to install
-# If none found - fail, as we'll not be able to run Pipe CLI commands
-export CP_PYTHON2_PATH="/usr/cpbin/conda/bin/python2"
-if [ ! -f "$CP_PYTHON2_PATH" ]; then
-      echo "[WARN] Private python not found, trying to get the global one"
-      export CP_PYTHON2_PATH=$(command -v python2)
-      if [ -z "$CP_PYTHON2_PATH" ]
-      then
-            echo "[WARN] Global python not found as well, trying to install from a public repo"
-            _DEPS_INSTALL_COMMAND=
-            get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "python python-docutils"
-            eval "$_DEPS_INSTALL_COMMAND"
-            export CP_PYTHON2_PATH=$(command -v python2)
-            if [ -z "$CP_PYTHON2_PATH" ]
-            then
-                  echo "[ERROR] python2 environment not found, exiting."
-                  exit_init 1
-            fi
-      fi
-fi
-echo "Local python interpreter found: $CP_PYTHON2_PATH"
+# The platform's Python 3.12 (CP_PYTHON_PATH) runs pipe-common and the platform scripts of the run. It is installed
+# into /usr/local/python3.12 at every run start. If that fails, the python3.12 that the image already has is used: the
+# one in /usr/local/python3.12 (e.g. a committed run), or else the one in PATH. If the image has neither, the run fails
+install_python3_packages "/usr/local"
 
-check_python_module_installed "pip --version" || { curl -s "${GLOBAL_DISTRIBUTION_URL}tools/pip/2.7/get-pip.py" | $CP_PYTHON2_PATH - $CP_PIP_EXTRA_ARGS; };
+export CP_PYTHON_PATH="/usr/local/python3.12/bin/python3.12"
+if [ ! -x "$CP_PYTHON_PATH" ]; then
+      echo "[WARN] $CP_PYTHON_PATH not found, trying to get python3.12 from PATH"
+      export CP_PYTHON_PATH="$(command -v python3.12)"
+fi
+if [ -z "$CP_PYTHON_PATH" ]; then
+      echo "[ERROR] Python 3.12 environment not found, exiting."
+      exit_init 1
+fi
+# There is no Python 2 any more. The old name stays for the user scripts that call it: it is the same Python 3.12
+export CP_PYTHON2_PATH="$CP_PYTHON_PATH"
+# Goes first, so python3, pip3 and the commands of the packages installed with them are the platform's ones for the
+# command of the run and for its SSH sessions, whatever PATH the image sets
+export PATH="/usr/local/python3.12/bin:$PATH"
+echo "Python interpreter (CP_PYTHON_PATH): $CP_PYTHON_PATH"
+
+check_python_module_installed "pip --version" || $CP_PYTHON_PATH -m ensurepip --upgrade
 
 ######################################################
 log "Configure the dependencies if needed"
@@ -1606,8 +1618,8 @@ if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
             exit_init 1
       else
             cd $COMMON_REPO_DIR
-            # Fixed setuptools version to be compatible with the pipe-common package
-            $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
+            # Fixed setuptools version to be compatible with the pipe-common package: 81.0.0 is the last one with pkg_resources
+            $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==81.0.0
             download_file ${DISTRIBUTION_URL}pipe-common.tar.gz
             _DOWNLOAD_RESULT=$?
             if [ "$_DOWNLOAD_RESULT" -ne 0 ];
@@ -1617,7 +1629,7 @@ if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
             fi
             _INSTALL_RESULT=0
             tar xf pipe-common.tar.gz
-            $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS . -q -I
+            $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS . -q -I
             _INSTALL_RESULT=$?
             if [ "$_INSTALL_RESULT" -ne 0 ];
             then
@@ -1945,7 +1957,7 @@ log "Setup cluster users sharing"
 echo "-"
 
 if check_cp_cap CP_CAP_SHARE_USERS; then
-    "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/configure_shared_users.py"
+    "$CP_PYTHON_PATH" "$COMMON_REPO_DIR/scripts/configure_shared_users.py"
 else
     echo "Cluster users sharing is not requested"
 fi
@@ -1964,7 +1976,7 @@ log "Setup users synchronization"
 echo "-"
 
 if check_cp_cap CP_CAP_SYNC_USERS; then
-    nohup "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/sync_users.py" &
+    nohup "$CP_PYTHON_PATH" "$COMMON_REPO_DIR/scripts/sync_users.py" &
 else
     echo "Users synchronization is not requested"
 fi
@@ -2042,7 +2054,7 @@ command -v gitfs >/dev/null 2>&1 && { GITFS_INSTALL=1;  };
 
 if [ $GITFS_INSTALL -ne 0 ] && [ ! -z "$GIT_REPO" ];
 then
-    $CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/check_pipeline_permission.py --pipeline_id ${PIPELINE_ID} --permission 'WRITE'
+    $CP_PYTHON_PATH $COMMON_REPO_DIR/scripts/check_pipeline_permission.py --pipeline_id ${PIPELINE_ID} --permission 'WRITE'
     _IS_ALLOWED=$?
     if [ $_IS_ALLOWED -ne 0 ];
     then
@@ -2455,7 +2467,7 @@ else
     inotify_watchers=${CP_CAP_NFS_MNT_OBSERVER_RUN_WATCHERS:-65535}
     sysctl -w fs.inotify.max_user_watches=$inotify_watchers
     sysctl -w fs.inotify.max_queued_events=$((inotify_watchers*2))
-    nohup $CP_PYTHON2_PATH -u $COMMON_REPO_DIR/scripts/watch_mount_shares.py 1>/dev/null 2> $LOG_DIR/.nohup.nfswatcher.log &
+    nohup $CP_PYTHON_PATH -u $COMMON_REPO_DIR/scripts/watch_mount_shares.py 1>/dev/null 2> $LOG_DIR/.nohup.nfswatcher.log &
 fi
 
 ######################################################
@@ -2470,7 +2482,7 @@ echo "-"
 if [ "$CP_API_TOKEN_REFRESHER_DISABLED" == "true" ]; then
     echo "API_TOKEN refresh is not requested"
 else
-    nohup $CP_PYTHON2_PATH -u $COMMON_REPO_DIR/scripts/token_expiration_refresher.py &> $LOG_DIR/.nohup.token.refresher.log &
+    nohup $CP_PYTHON_PATH -u $COMMON_REPO_DIR/scripts/token_expiration_refresher.py &> $LOG_DIR/.nohup.token.refresher.log &
 fi
 
 ######################################################
@@ -2526,7 +2538,7 @@ then
 fi
 
 echo "Prepare profile credentials"
-$CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/profiles_credentials_writer.py --script-path=$COMMON_REPO_DIR/scripts/credentials_process.py --python-path=$CP_PYTHON2_PATH --config-file=$HOME/.aws/config --log-dir=$LOG_DIR 1>/dev/null 2>$LOG_DIR/profile.credentials.writer.log
+$CP_PYTHON_PATH $COMMON_REPO_DIR/scripts/profiles_credentials_writer.py --script-path=$COMMON_REPO_DIR/scripts/credentials_process.py --python-path=$CP_PYTHON_PATH --config-file=$HOME/.aws/config --log-dir=$LOG_DIR 1>/dev/null 2>$LOG_DIR/profile.credentials.writer.log
 _PROFILE_CREDENTIALS_WRITER_RESULT=$?
 if [ "$_PROFILE_CREDENTIALS_WRITER_RESULT" -ne 0 ];
 then
