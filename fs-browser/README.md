@@ -4,7 +4,7 @@ FS Browser is the `python/flask` service that allows to expose compute node's fi
 
 ## Requirements
 
-- Python 3.6
+- Python 3.12 or later
 - pipe cli
 
 ## Launching
@@ -12,33 +12,40 @@ FS Browser is the `python/flask` service that allows to expose compute node's fi
 To run app with python 3 use the following command:
 ```
 pip install -r requirements.txt
-python <path to project>/app.py \
+PYTHONPATH=<path to project> python3 <path to project>/fsbrowser/fsbrowser-cli.py \
     --working_directory=/root/ \
     --vs_working_directory=/git-workdir/ \
     --host=0.0.0.0 \
     --port=8080 \
-    --log_dir=/root/logs \ 
+    --log_dir=/root/logs \
     --transfer_storage <stoarge path>
 ```
 
-To build executable use the following commands:
+To build executable use the following commands. The build runs in the Docker image
+`lifescience/cloud-pipeline:pipe-cli-centos7-py312` (Python 3.12 and PyInstaller 6.5.0 on CentOS 7), so the executable
+runs on Linux with `glibc` 2.17 or later. `_BUILD_DOCKER_IMAGE` sets another image.
 
 ```
 export FSBROWSER_SOURCES_DIR=/path/to/fsbrowser/src/dir
 export FSBROWSER_DIST_PATH=/path/to/dist
 export FSBROWSER_RUNTIME_TMP_DIR=/tmp
-export PYINSTALLER_PATH=/pyinstaller
 bash /path/to/fsbrowser/src/dir/build.sh
 ```
 and then run:
 ```
-/path/to/dist/app/app \
+/path/to/dist/fsbrowser-cli/fsbrowser-cli \
     --working_directory=/root/ \
     --vs_working_directory=/git-workdir/ \
     --host=0.0.0.0 \
     --port=8080 \
-    --log_dir=/root/logs \ 
+    --log_dir=/root/logs \
     --transfer_storage <stoarge path>
+```
+
+To run the tests use the following commands:
+```
+pip install -r requirements.txt setuptools
+python3 -m unittest discover -s tests
 ```
 
 ## Command line options

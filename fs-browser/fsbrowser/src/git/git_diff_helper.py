@@ -1,4 +1,4 @@
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -140,13 +140,13 @@ class GitDiffHelper:
 
     @staticmethod
     def _get_delta_path(diff_file):
-        if not diff_file or diff_file.id.hex == pygit2.GIT_OID_HEX_ZERO:
+        if not diff_file or str(diff_file.id) == pygit2.GIT_OID_HEX_ZERO:
             return None
         return diff_file.path
 
     @staticmethod
     def _get_delta_size(diff_file):
-        if not diff_file or diff_file.id.hex == pygit2.GIT_OID_HEX_ZERO:
+        if not diff_file or str(diff_file.id) == pygit2.GIT_OID_HEX_ZERO:
             return None
         return diff_file.size
 
