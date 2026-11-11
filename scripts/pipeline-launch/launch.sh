@@ -762,11 +762,9 @@ function get_install_command_by_current_distr {
          { [[ "$CP_VER" == "8"* ]] || [[ "$CP_VER" == "9"* ]]; }; then
             _TOOLS_TO_INSTALL="$(sed -e "s/python/python2/g" <<< "$_TOOLS_TO_INSTALL")"
       fi
-      if [[ "$_TOOLS_TO_INSTALL" == *"coreutils"* ]] && [ "$CP_OS" == "rocky" ]; then
-            _TOOLS_TO_INSTALL="$(sed -e "s/coreutils/coreutils-single/g" <<< "$_TOOLS_TO_INSTALL")"
-      fi
-      if [[ "$_TOOLS_TO_INSTALL" == *"procps"* ]] && [ "$CP_OS" == "rocky" ]; then
-            _TOOLS_TO_INSTALL="$(sed -e "s/procps/procps-ng/g" <<< "$_TOOLS_TO_INSTALL")"
+      # Rocky Linux and RHEL name it procps-ng
+      if [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
+            _TOOLS_TO_INSTALL="$(sed "s/\( \|^\)procps\( \|$\)/ procps-ng /g" <<< "$_TOOLS_TO_INSTALL")"
       fi
 
       local _TOOL_TO_CHECK=
@@ -774,6 +772,14 @@ function get_install_command_by_current_distr {
       for _TOOL_TO_CHECK in $_TOOLS_TO_INSTALL; do
             check_package_installed "$_TOOL_TO_CHECK"
             if [ $? -ne 0 ]; then
+                  # Rocky Linux and RHEL images may have coreutils-single instead of coreutils: it has the same
+                  # commands, and yum fails to install coreutils next to it. Checked with rpm itself, as
+                  # CP_IGNORE_INSTALLED_PACKAGES does not make coreutils installable next to it
+                  if [ "$_TOOL_TO_CHECK" == "coreutils" ] && \
+                     { [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; } && \
+                     check_installed "rpm" && rpm -q coreutils-single &> /dev/null; then
+                        continue
+                  fi
                   _TOOLS_TO_INSTALL_VERIFIED="$_TOOLS_TO_INSTALL_VERIFIED $_TOOL_TO_CHECK"
             fi
       done
