@@ -72,6 +72,7 @@
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
     - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
+    - [The node logger and the search services do not use the docker registry login or prefix](#the-node-logger-and-the-search-services-do-not-use-the-docker-registry-login-or-prefix)
 
 ***
 
@@ -912,3 +913,8 @@ See details in [8.1. Create and edit storage](../../manual/08_Manage_Data_Storag
 
 Previously, on connect to a run as the run owner, the Cloud Pipeline Remote extension for VS Code and Cursor always opened `/home/<user name>`, even if the run owner's home folder (the `OWNER_HOME` environment variable of the run) was another one.
 Now, the extension opens the folder from `OWNER_HOME` for the run owner, and `/home/<user name>` only if `OWNER_HOME` is not set or cannot be read. The folder opened for `root` (`/root`) and for other users (`/home/<user name>`) is not changed.
+
+### The node logger and the search services do not use the docker registry login or prefix
+
+Previously, the pods of the node logger (`cp-node-logger`) and of the search ELK cluster from the optional `cp-search-elk-set.yaml` manifest had no image pull secret. So, if the platform images came from a docker registry that needs a login (`CP_DOCKER_DIST_USER` and `CP_DOCKER_DIST_PASS` are set), these pods could not pull their images. Also, the separate search service for the NFS files, from the optional `cp-search-srv-nfs-only-dpl.yaml` manifest, always pulled `lifescience/cloud-pipeline:search-<version>`, even if `CP_COMMON_DISTR_DOCKER_PREFIX` pointed to another repository.
+Now, the node logger and the search ELK cluster pods use the `cp-distr-docker-registry-secret` secret, as the other services do, and the separate search service takes its image from `CP_COMMON_DISTR_DOCKER_PREFIX`, as the main search service does. The installer creates this secret only if a registry login is set. If the secret does not exist, the images are pulled without a login.
