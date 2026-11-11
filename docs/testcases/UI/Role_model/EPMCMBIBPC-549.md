@@ -12,7 +12,7 @@ Test verifies the folder and its pipelines' UI for a user granted read-only perm
 | 1 | Login as admin |  |
 | 2 | Open the **Library** page |  |
 | 3 | Click on the folder from the prerequisites |  |
-| 4 | Click the edit icon in the upper-right corner |  |
+| 4 | Click the gear icon in the upper-right corner |  |
 | 5 | In the list that appears, click **Edit folder** |  |
 | 6 | In the pop-up that appears, click the **Permissions** tab |  |
 | 7 | Click the **Add user** icon |  |

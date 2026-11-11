@@ -10,4 +10,4 @@ Test verifies that launching a pipeline whose Docker image the user has no permi
 | :---: | --- | --- |
 | 1 | Create a pipeline (e.g. SHELL, WDL, DEFAULT) |  |
 | 2 | Click the **Run** button |  |
-| 3 | Click the **Launch** button | The message "Access denied" appears |
+| 3 | Click the **Launch** button | The message "Access is denied" appears |

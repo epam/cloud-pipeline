@@ -6,5 +6,5 @@ Test verifies removing several files and folders whose names contain spaces.
 | :---: | --- | --- |
 | 1 | Open the NFS mount from the [EPMCMBIBPC-2603](EPMCMBIBPC-2603.md) case |  |
 | 2 | Set the checkboxes opposite the file and folder created at steps 2-7 of the [EPMCMBIBPC-2604](EPMCMBIBPC-2604.md) case |  |
-| 3 | Click **Remove all selected** button |  |
+| 3 | Click the **{N} items selected** dropdown button and click **Remove** in the appeared menu |  |
 | 4 | Click **OK** button in the appeared pop-up window | Files and folders successfully deleted |

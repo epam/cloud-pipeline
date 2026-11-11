@@ -13,7 +13,7 @@ Test verifies changing a folder's owner via the Permissions tab.
 | 4 | Click **Folder** |  |
 | 5 | Enter a folder name and click **Create** |  |
 | 6 | Click the created folder |  |
-| 7 | Click the gear icon |  |
+| 7 | Click the gear icon and select **Edit folder** from the menu |  |
 | 8 | Click the **Permissions** tab |  |
 | 9 | Click on the user name | The **Owner** field becomes available for editing |
 | 10 | Enter a new user name up to the "@" sign (e.g. `AUTO_EPM-CMBI_PIPELINEAWS`) | A drop-down list with the full user name appears |
