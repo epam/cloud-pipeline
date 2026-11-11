@@ -77,6 +77,11 @@ docker run -i --rm \
            --env PYINSTALLER_PATH=$PYINSTALLER_PATH \
            $_BUILD_DOCKER_IMAGE \
            bash $_BUILD_SCRIPT_NAME
+_BUILD_EXIT_CODE=$?
 
 rm -f $_BUILD_SCRIPT_NAME
 
+if [ "$_BUILD_EXIT_CODE" != 0 ]; then
+    echo "[ERROR] The pipe-fuse build in $_BUILD_DOCKER_IMAGE failed"
+    exit "$_BUILD_EXIT_CODE"
+fi
