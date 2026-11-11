@@ -101,7 +101,13 @@ configure_slurm() {
                  /var/log/slurm_jobacct.log \
                  /var/log/slurm_jobcomp.log
 
-    dd if=/dev/urandom bs=1 count=1024 > ${SLURM_COMMON_CONFIG_DIR}/munge.key
+    # The key stays in the shared folder for the workers that join later: only root may read it, as anyone with it
+    # can forge MUNGE credentials. It is written into a file that mktemp creates with mode 600: the default ACL of
+    # the shared folder gives the file of a redirect read access for all users, whatever the umask
+    _MUNGE_KEY_TMP="$(mktemp "${SLURM_COMMON_CONFIG_DIR}/.munge.key.XXXXXX")"
+    dd if=/dev/urandom bs=1 count=1024 > "$_MUNGE_KEY_TMP"
+    chmod 600 "$_MUNGE_KEY_TMP"
+    mv -f "$_MUNGE_KEY_TMP" ${SLURM_COMMON_CONFIG_DIR}/munge.key
     cp ${SLURM_COMMON_CONFIG_DIR}/munge.key /etc/munge/
     chown munge: /etc/munge/munge.key
     chmod 400 /etc/munge/munge.key
@@ -365,7 +371,7 @@ for slurm_profile_script in "$CP_CAP_SCRIPTS_DIR"/slurm_profile_*_queue.sh; do
         if [ "$CP_CAP_SLURM_QUEUE_STATIC" == "true" ]; then
             export CP_CAP_SGE_QUEUE_DEFAULT="true"
         else
-            slurm_setup_queue
+            slurm_setup_queue "$SLURM_COMMON_CONFIG_DIR/slurm.conf"
         fi
         export CP_CAP_SGE_QUEUE_NAME=$CP_CAP_SLURM_QUEUE_NAME
         export CP_CAP_AUTOSCALE_TASK="SLURMAutoscaling"
