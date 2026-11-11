@@ -47,7 +47,7 @@ tool_properties_to_override = ['locked', 'cpu', 'ram', 'instanceType',
 
 
 def execute_shell_cmd(cmd, return_output=False):
-    process = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    process = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True)
     output = process.communicate()
     if return_output:
         return process.returncode, output
