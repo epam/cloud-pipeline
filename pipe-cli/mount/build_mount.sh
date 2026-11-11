@@ -27,29 +27,38 @@ fi
 cat >$_BUILD_SCRIPT_NAME <<EOL
 
 ###
-# Setup common dependencies
+# Setup common dependencies: pipe-fuse imports the pipe CLI modules (src) as well
 ###
+pip install -r ${_PIPE_CLI_SOURCES_DIR}/requirements.txt -c ${_PIPE_CLI_SOURCES_DIR}/constraints.txt || exit 1
 pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt -c ${_PIPE_CLI_SOURCES_DIR}/constraints.txt || exit 1
+pip install 'setuptools==68.2.2' || exit 1
 bash ${_PIPE_CLI_SOURCES_DIR}/pyinstaller/build_bootloader.sh || exit 1
 
 ###
-# Build pipe
+# Build pipe-fuse, as build_linux.sh does, but as a one-file binary
 ###
+cp ${PIPE_MOUNT_SOURCES_DIR}/libfuse/libfuse.so.2.9.2 ${PIPE_MOUNT_SOURCES_DIR}/libfuse/libfuse.so.frozen
 cd $PIPE_MOUNT_SOURCES_DIR && \
 pyinstaller \
-                                --hidden-import=itertools \
-                                --hidden-import=collections \
-                                --hidden-import=base64 \
-                                --hidden-import=math \
-                                --hidden-import=reprlib \
-                                --hidden-import=functools \
-                                --hidden-import=re \
-                                --hidden-import=subprocess \
+                                --paths "${PIPE_MOUNT_SOURCES_DIR}" \
+                                --paths "${_PIPE_CLI_SOURCES_DIR}" \
+                                --collect-submodules pipefuse \
+                                --collect-submodules src \
+                                --collect-submodules google.auth \
+                                --collect-submodules google.oauth2 \
+                                --collect-submodules google.cloud \
+                                --collect-submodules google.resumable_media \
+                                --collect-data botocore \
+                                --hidden-import=fuse \
+                                --hidden-import=cachetools \
+                                --hidden-import=intervals \
+                                --hidden-import=pygtrie \
                                 --additional-hooks-dir="${PIPE_MOUNT_SOURCES_DIR}/hooks" \
                                 -y \
                                 --clean \
                                 --runtime-tmpdir '$_PIPE_CLI_RUNTIME_TMP_DIR' \
                                 --distpath $PIPE_CLI_LINUX_DIST_DIR/dist \
+                                --add-data "${PIPE_MOUNT_SOURCES_DIR}/libfuse/libfuse.so.frozen:libfuse" \
                                 ${PIPE_MOUNT_SOURCES_DIR}/pipe-fuse.py \
                                 --onefile
 EOL

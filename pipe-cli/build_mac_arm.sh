@@ -17,12 +17,12 @@
 ###
 # Setup Pyinstaller
 ###
-arch -arm64 python -m pip install "pyinstaller==6.5.0"
+arch -arm64 python -m pip install "pyinstaller==6.5.0" -c ${PIPE_CLI_SOURCES_DIR}/constraints.txt
 
 ###
 # Setup common dependencies
 ###
-arch -arm64 python -m pip install macholib==1.16.2
+arch -arm64 python -m pip install macholib==1.16.2 -c ${PIPE_CLI_SOURCES_DIR}/constraints.txt
 
 
 export LDFLAGS="-L$(brew --prefix openssl@1.1)/lib"
@@ -102,6 +102,7 @@ function build_pipe {
                                     --collect-submodules azure.storage \
                                     --collect-data botocore \
                                     --collect-data azure \
+                                    --collect-data tldextract \
                                     --hidden-import=pygtrie \
                                     --hidden-import=pypac \
                                     --hidden-import=treelib \
