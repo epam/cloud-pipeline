@@ -12,17 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Covers the two parts of cp-dav's NFS mount watcher wiring that kept watch_mount_shares.py from ever
-# running (the NFS observer tests of develop's deploy/docker/cp-dav/tests/test_python_resolution.py,
-# without its CP_PYTHON_PATH / Python 3 parts):
-#   - the NFS observer block in "init" only lifted scripts/watch_mount_shares.py out of
-#     pipe-common.tar.gz, and never installed the "pipeline" package or its "watchdog"/"psutil" deps -
-#     the script could not even import.
-#   - nfs-watcher.sh never sourced env.sh (unlike sync-nfs.sh), so under cron's near-empty
-#     environment $SYNC_HOME/$SYNC_LOG_DIR were unset at runtime.
-# Plain unittest, so it runs under Python 2 and 3 with no extra packages - run with
-# `python -m unittest test_nfs_observer` (or under pytest) from inside deploy/docker/cp-dav/tests.
-# Needs bash and GNU tar, as in the image.
+# Covers cp-dav's NFS mount watcher wiring:
+#   - the NFS observer block in "init" installs the "pipeline" package (pipe-common) with its "watchdog"/"psutil"
+#     deps for CP_PYTHON_PATH, the Python 3.12 of the image, from the platform's Python 3 package mirror
+#   - nfs-watcher.sh sources env.sh, so under cron's near-empty environment it has $SYNC_HOME, $SYNC_LOG_DIR and
+#     $CP_PYTHON_PATH, and starts the watcher with that Python unless it already runs
+# Plain unittest with no extra packages - run with `python3 -m unittest discover -s tests` (or under pytest) from
+# inside deploy/docker/cp-dav. Needs bash and GNU tar, as in the image.
 
 import io
 import os
@@ -52,9 +48,9 @@ BASH = _which('bash') or '/bin/bash'
 NFS_OBSERVER_START_MARKER = '# Unpack and configure NFS observer script'
 NFS_OBSERVER_END_MARKER = '# Persist environment for a cron job'
 
-DEFAULT_PIP_INDEX_ARGS = ('--index-url http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com'
-                          '/tools/python/pypi/simple'
-                          ' --trusted-host cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com')
+DEFAULT_PIP_INDEX_ARGS = ('--index-url http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com'
+                          '/tools/python/pypi3/simple'
+                          ' --trusted-host cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com')
 
 
 def _extract_block(start_marker, end_marker):
@@ -98,7 +94,7 @@ def _read(path):
 
 
 class NfsObserverPipeCommonInstallTest(unittest.TestCase):
-    """Covers the "init" NFS observer block installing pipe-common, as launch.sh does in a run."""
+    """Covers the "init" NFS observer block installing pipe-common for CP_PYTHON_PATH, as launch.sh does in a run."""
 
     def setUp(self):
         self.work_dir = tempfile.mkdtemp()
@@ -120,8 +116,10 @@ class NfsObserverPipeCommonInstallTest(unittest.TestCase):
         if gnu_tar:
             _write_stub(bin_dir, 'tar', 'exec "%s" "$@"\n' % gnu_tar)
 
-        # "init" calls the image's "python" by name: record its arguments instead of installing.
-        _write_stub(bin_dir, 'python', 'echo "$@" >> "%s"\n%s' % (record_file, python_stub_body or ''))
+        # "init" calls the Python that it resolved before, CP_PYTHON_PATH: record its arguments instead of
+        # installing. A "python" on PATH must not be called.
+        python = _write_stub(self.work_dir, 'python3.12', 'echo "$@" >> "%s"\n%s' % (record_file, python_stub_body or ''))
+        _write_stub(bin_dir, 'python', 'echo "python $@" >> "%s"\n' % record_file)
         _write_stub(bin_dir, 'sysctl', 'exit 0\n')
 
         _make_pipe_common_tarball(os.path.join(self.work_dir, 'pipe-common.tar.gz'))
@@ -136,6 +134,7 @@ class NfsObserverPipeCommonInstallTest(unittest.TestCase):
         env = {
             'PATH': bin_dir + os.pathsep + '/usr/bin' + os.pathsep + '/bin',
             'SYNC_HOME': sync_home,
+            'CP_PYTHON_PATH': python,
         }
         env.update(extra_env or {})
         proc = subprocess.Popen([BASH, '-c', script], cwd=self.work_dir, env=env,
@@ -144,12 +143,12 @@ class NfsObserverPipeCommonInstallTest(unittest.TestCase):
         self.sync_home = sync_home
         return proc.returncode, out.decode(), err.decode(), _read(record_file).splitlines()
 
-    def test_installs_setuptools_44_then_pipe_common(self):
+    def test_installs_setuptools_81_then_pipe_common(self):
         rc, out, err, invocations = self._run_block()
         self.assertEqual(0, rc, 'block exited non-zero: out=%r err=%r' % (out, err))
         self.assertEqual(2, len(invocations), 'expected two pip installs: %r' % invocations)
         self.assertTrue(invocations[0].startswith('-m pip install'), invocations)
-        self.assertIn('-I -q setuptools==44.1.1', invocations[0])
+        self.assertIn('-I -q setuptools==81.0.0', invocations[0])
         self.assertTrue(invocations[1].startswith('-m pip install'), invocations)
         self.assertIn('-I -q pipe-common.tar.gz', invocations[1])
         self.assertTrue(os.path.exists(os.path.join(self.sync_home, 'watch_mount_shares.py')),
@@ -164,13 +163,31 @@ class NfsObserverPipeCommonInstallTest(unittest.TestCase):
 
     def test_respects_overridden_pypi_mirror(self):
         _, out, err, invocations = self._run_block(extra_env={
-            'CP_REPO_PYPI_BASE_URL_DEFAULT': 'https://private-mirror.internal/simple',
-            'CP_REPO_PYPI_TRUSTED_HOST_DEFAULT': 'private-mirror.internal',
+            'CP_REPO_PYPI3_BASE_URL_DEFAULT': 'https://private-mirror.internal/simple',
+            'CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT': 'mirror-alias.internal',
         })
         self.assertEqual(2, len(invocations), 'out=%r err=%r' % (out, err))
         for invocation in invocations:
             self.assertIn('--index-url https://private-mirror.internal/simple'
+                          ' --trusted-host mirror-alias.internal', invocation)
+
+    def test_trusts_the_host_of_an_overridden_pypi_mirror(self):
+        _, out, err, invocations = self._run_block(extra_env={
+            'CP_REPO_PYPI3_BASE_URL_DEFAULT': 'http://private-mirror.internal:8080/pypi3/simple',
+        })
+        self.assertEqual(2, len(invocations), 'out=%r err=%r' % (out, err))
+        for invocation in invocations:
+            self.assertIn('--index-url http://private-mirror.internal:8080/pypi3/simple'
                           ' --trusted-host private-mirror.internal', invocation)
+
+    def test_ignores_the_python_2_pypi_mirror(self):
+        _, out, err, invocations = self._run_block(extra_env={
+            'CP_REPO_PYPI_BASE_URL_DEFAULT': 'https://private-mirror.internal/pypi/simple',
+            'CP_REPO_PYPI_TRUSTED_HOST_DEFAULT': 'private-mirror.internal',
+        })
+        self.assertEqual(2, len(invocations), 'out=%r err=%r' % (out, err))
+        for invocation in invocations:
+            self.assertIn(DEFAULT_PIP_INDEX_ARGS, invocation)
 
     def test_no_observer_cron_job_when_setuptools_install_fails(self):
         _, _, _, invocations = self._run_block(python_stub_body='exit 1\n')
@@ -189,7 +206,7 @@ class NfsObserverPipeCommonInstallTest(unittest.TestCase):
 class NfsWatcherEnvSourcingTest(unittest.TestCase):
     """Covers nfs-watcher.sh sourcing env.sh, so it has $SYNC_HOME/$SYNC_LOG_DIR under cron."""
 
-    def _run_watcher(self, work_dir):
+    def _run_watcher(self, work_dir, pgrep_stub_body='exit 1\n'):
         bin_dir = os.path.join(work_dir, 'bin')
         os.makedirs(bin_dir)
         # Real, existing directories - the script redirects the started watcher's stderr under
@@ -199,15 +216,16 @@ class NfsWatcherEnvSourcingTest(unittest.TestCase):
         os.makedirs(sync_log_dir)
         record_file = os.path.join(work_dir, 'invocations.txt')
 
-        # nfs-watcher.sh runs the watcher via "nohup python -u <script> &" - give it a stub
-        # interpreter so we can observe exactly what it was invoked with.
-        _write_stub(bin_dir, 'python', 'echo "$@" >> "%s"\n' % record_file)
-        # "no active observer process found": the process listing is empty
-        _write_stub(bin_dir, 'ps', 'exit 0\n')
+        # nfs-watcher.sh runs the watcher via "nohup $CP_PYTHON_PATH -u <script> &" - give it a stub
+        # interpreter so we can observe exactly what it was invoked with. A "python" on PATH must not be called.
+        python = _write_stub(work_dir, 'python3.12', 'echo "$@" >> "%s"\n' % record_file)
+        _write_stub(bin_dir, 'python', 'echo "python $@" >> "%s"\n' % record_file)
+        # pgrep finds no running watcher, or the one given
+        _write_stub(bin_dir, 'pgrep', 'echo "pgrep $@" >> "%s"\n%s' % (record_file, pgrep_stub_body))
 
         env_file = os.path.join(work_dir, 'env.sh')
         with open(env_file, 'w') as f:
-            f.write('SYNC_HOME=%s\nSYNC_LOG_DIR=%s\n' % (sync_home, sync_log_dir))
+            f.write('SYNC_HOME=%s\nSYNC_LOG_DIR=%s\nCP_PYTHON_PATH=%s\n' % (sync_home, sync_log_dir, python))
 
         with open(NFS_WATCHER_SCRIPT) as f:
             script = f.read().replace('/opt/sync/env.sh', env_file)
@@ -221,16 +239,27 @@ class NfsWatcherEnvSourcingTest(unittest.TestCase):
                          % (out.decode(), err.decode()))
 
         deadline = time.time() + 2
-        while not os.path.exists(record_file) and time.time() < deadline:
+        while '-u ' not in _read(record_file) and time.time() < deadline:
             time.sleep(0.05)
         return _read(record_file), sync_home
 
-    def test_uses_sync_home_from_sourced_env(self):
+    def test_starts_the_watcher_with_cp_python_path_from_sourced_env(self):
         work_dir = tempfile.mkdtemp()
         try:
             invocations, sync_home = self._run_watcher(work_dir)
-            self.assertIn('-u %s/watch_mount_shares.py' % sync_home, invocations,
-                          'watcher was not started against $SYNC_HOME/watch_mount_shares.py: %r' % invocations)
+            self.assertEqual(['pgrep -f %s/watch_mount_shares.py' % sync_home,
+                              '-u %s/watch_mount_shares.py' % sync_home], invocations.splitlines(),
+                             'watcher was not started against $SYNC_HOME/watch_mount_shares.py with CP_PYTHON_PATH')
+        finally:
+            shutil.rmtree(work_dir)
+
+    def test_keeps_a_running_watcher(self):
+        work_dir = tempfile.mkdtemp()
+        try:
+            invocations, sync_home = self._run_watcher(work_dir, pgrep_stub_body='exit 0\n')
+            time.sleep(0.3)
+            self.assertEqual(['pgrep -f %s/watch_mount_shares.py' % sync_home], _read(
+                os.path.join(work_dir, 'invocations.txt')).splitlines(), 'a second watcher was started')
         finally:
             shutil.rmtree(work_dir)
 

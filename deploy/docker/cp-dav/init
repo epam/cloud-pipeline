@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,6 +22,19 @@ export CP_DAV_MOUNT_POINT="${CP_DAV_MOUNT_POINT:-/dav-mount}"
 export APACHE_LOG_DIR="${APACHE_LOG_DIR:-/var/log/dav/httpd}"
 export SYNC_LOG_DIR="${SYNC_LOG_DIR:-/var/log/dav/sync}"
 export APACHE_DAV_LOCK_DB="${APACHE_DAV_LOCK_DB:-$APACHE_HOME/dav/DavLock}"
+
+# --- Python interpreter selection ---
+# The sync scripts and the NFS mount watcher run with the Python 3.12 the Dockerfile installs into CP_PYTHON3_HOME.
+# Not "command -v python3.12": the distro can bring a bare /usr/bin/python3.12 (no pip, none of the image's packages)
+# as a transitive dependency, which would shadow that install. CP_PYTHON3_HOME is overridable for tests.
+CP_PYTHON3_HOME="${CP_PYTHON3_HOME:-/usr/local/python3.12}"
+export CP_PYTHON_PATH="${CP_PYTHON_PATH:-$CP_PYTHON3_HOME/bin/python3.12}"
+if [ ! -x "$CP_PYTHON_PATH" ]; then
+    echo "Python 3.12 is not found at $CP_PYTHON_PATH, exiting."
+    exit 1
+fi
+export PATH="$CP_PYTHON3_HOME/bin:$PATH"
+echo "Python interpreter (CP_PYTHON_PATH): $CP_PYTHON_PATH"
 
 function download_file {
     local _FILE_URL=$1
@@ -71,15 +84,17 @@ if [ -z "$CP_CAP_NFS_MNT_OBSERVER_DISABLED" ]; then
         inotify_watchers=${CP_CAP_NFS_MNT_OBSERVER_DAV_WATCHERS:-131071}
         # watch_mount_shares.py imports the "pipeline" package itself, plus "watchdog" and "psutil" -
         # none of which are on this image otherwise. So pipe-common is installed from the downloaded
-        # tarball (setup.py sits at its root), the way launch.sh installs it in a run: setuptools 44.1.1
-        # first, from the platform's PyPI mirror, which CP_REPO_PYPI_BASE_URL_DEFAULT can override.
-        CP_REPO_PYPI_BASE_URL_DEFAULT="${CP_REPO_PYPI_BASE_URL_DEFAULT:-http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple}"
-        CP_REPO_PYPI_TRUSTED_HOST_DEFAULT="${CP_REPO_PYPI_TRUSTED_HOST_DEFAULT:-cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com}"
-        CP_PIP_PACKAGE_INDEX_ARGS="--index-url $CP_REPO_PYPI_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI_TRUSTED_HOST_DEFAULT"
+        # tarball (setup.py sits at its root) for CP_PYTHON_PATH: setuptools 81.0.0 first, the version that
+        # pipe-common's setup.py pins, from the platform's Python 3 package mirror (tools/python/pypi3), which
+        # CP_REPO_PYPI3_BASE_URL_DEFAULT can override. Its host is trusted, unless
+        # CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT names another one.
+        CP_REPO_PYPI3_BASE_URL_DEFAULT="${CP_REPO_PYPI3_BASE_URL_DEFAULT:-http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi3/simple}"
+        CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT="${CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT:-$(echo "$CP_REPO_PYPI3_BASE_URL_DEFAULT" | sed -r 's|^.*://([^/:]*).*$|\1|')}"
+        CP_PIP_PACKAGE_INDEX_ARGS="--index-url $CP_REPO_PYPI3_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT"
         tar -xf pipe-common.tar.gz scripts/watch_mount_shares.py --strip-components=1 &&\
         mv watch_mount_shares.py $SYNC_HOME/ && \
-        python -m pip install $CP_PIP_PACKAGE_INDEX_ARGS -I -q setuptools==44.1.1 && \
-        python -m pip install $CP_PIP_PACKAGE_INDEX_ARGS -I -q pipe-common.tar.gz && \
+        "$CP_PYTHON_PATH" -m pip install $CP_PIP_PACKAGE_INDEX_ARGS -I -q setuptools==81.0.0 && \
+        "$CP_PYTHON_PATH" -m pip install $CP_PIP_PACKAGE_INDEX_ARGS -I -q pipe-common.tar.gz && \
         rm -rf pipe-common.tar.gz && \
         sysctl -w fs.inotify.max_user_watches=$inotify_watchers && \
         sysctl -w fs.inotify.max_queued_events=$((inotify_watchers*2)) && \
