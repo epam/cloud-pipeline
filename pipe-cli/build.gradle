@@ -37,8 +37,13 @@ task buildLinux(type: Exec, dependsOn: ':pipe-cli:test') {
     environment "PYINSTALLER_PATH": "/pyinstaller"
 
     commandLine "bash", "$project.rootDir/pipe-cli/build_linux.sh"
+    // The exit code is checked in doLast, after cleanCLIVersion(): a failed build shall restore src/version.py too
+    ignoreExitValue = true
     doLast {
         cleanCLIVersion()
+        if (execResult.exitValue != 0) {
+            throw new GradleException("build_linux.sh failed with exit code ${execResult.exitValue}")
+        }
         delete("$project.rootDir/api/src/main/resources/static/pipe")
         copy {
             from("$project.rootDir/pipe-cli/dist/dist-file/pipe")
