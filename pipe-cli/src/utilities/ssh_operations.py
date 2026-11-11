@@ -408,10 +408,10 @@ def parse_run_identifier(run_identifier):
     if isinstance(run_identifier, int):
         return run_identifier
     import re
-    match = re.search('^(\d+)$', run_identifier)
+    match = re.search(r'^(\d+)$', run_identifier)
     if match:
         return int(match.group(1))
-    match = re.search('^pipeline-(\d+)$', run_identifier)
+    match = re.search(r'^pipeline-(\d+)$', run_identifier)
     if match:
         return int(match.group(1))
     return None

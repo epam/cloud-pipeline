@@ -312,6 +312,20 @@ def cli():
     pass
 
 
+_NTLM_PROXY_REMOVED = 'NTLM proxy authentication is no longer supported: the --proxy-ntlm, --proxy-ntlm-user, ' \
+                      '--proxy-ntlm-domain and --proxy-ntlm-pass options are removed. ' \
+                      'Set --proxy to a proxy that does not require NTLM authentication.'
+_CODEC_REMOVED = 'The --codec option is removed: pipe runs on Python 3, which always uses Unicode text.'
+
+
+def _reject_removed_option(message):
+    def _callback(ctx, param, value):
+        if value:
+            raise click.UsageError(message, ctx=ctx)
+        return value
+    return _callback
+
+
 @cli.command()
 @click.option('-l', '--login',
               is_flag=True,
@@ -331,9 +345,16 @@ def cli():
               prompt='Proxy address',
               help='URL of a proxy for all calls',
               default='')
-@click.option('-c', '--codec',
-              help='Encoding that shall be used',
-              default=None)
+@click.option('-nt', '--proxy-ntlm', is_flag=True, hidden=True, is_eager=True, expose_value=False,
+              callback=_reject_removed_option(_NTLM_PROXY_REMOVED))
+@click.option('-nu', '--proxy-ntlm-user', hidden=True, is_eager=True, expose_value=False,
+              callback=_reject_removed_option(_NTLM_PROXY_REMOVED))
+@click.option('-nd', '--proxy-ntlm-domain', hidden=True, is_eager=True, expose_value=False,
+              callback=_reject_removed_option(_NTLM_PROXY_REMOVED))
+@click.option('-np', '--proxy-ntlm-pass', hidden=True, is_eager=True, expose_value=False,
+              callback=_reject_removed_option(_NTLM_PROXY_REMOVED))
+@click.option('-c', '--codec', hidden=True, is_eager=True, expose_value=False,
+              callback=_reject_removed_option(_CODEC_REMOVED))
 @click.option('-cs', '--config-store',
               help='CLI configuration mode(home-dir/install-dir)',
               default='home-dir')
@@ -347,7 +368,7 @@ def cli():
               help='Path to a CA certificate bundle file used to verify S3 SSL connections '
                    '(e.g. required when a ZScaler proxy intercepts TLS traffic)',
               default=None)
-def configure(login, auth_token, api, timezone, proxy, codec, config_store, no_launch_browser, ca_bundle):
+def configure(login, auth_token, api, timezone, proxy, config_store, no_launch_browser, ca_bundle):
     """Configures CLI parameters
     """
     if auth_token and login:
@@ -360,7 +381,7 @@ def configure(login, auth_token, api, timezone, proxy, codec, config_store, no_l
         proxies = Config.build_proxies(proxy, api)
         auth_token = TokenlessAccessManager(api, proxies).fetch_token(no_launch_browser)
 
-    Config.store(auth_token, api, timezone, proxy, codec, config_store, ca_bundle)
+    Config.store(auth_token, api, timezone, proxy, config_store, ca_bundle)
 
 
 def echo_title(title, line=True):

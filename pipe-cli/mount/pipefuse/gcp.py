@@ -194,10 +194,7 @@ class _RetryableBucket(Bucket):
 class _RefreshingClient(Client):
 
     def __init__(self, refresh):
-        try:
-            max_refresh_attempts = sys.maxint
-        except:
-            max_refresh_attempts = sys.maxsize
+        max_refresh_attempts = sys.maxsize
         credentials = _RefreshingCredentials(refresh)
         session = AuthorizedSession(credentials, max_refresh_attempts=max_refresh_attempts)
         # google-cloud-storage 2.16 and later read the universe domain of the client credentials

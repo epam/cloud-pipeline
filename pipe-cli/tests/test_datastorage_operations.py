@@ -67,3 +67,28 @@ def test_file_list_skips_blank_lines(tmpdir):
         ('File', os.path.join(SOURCE_PATH, u'a.txt'), u'a.txt', 5),
         ('File', os.path.join(SOURCE_PATH, u'b.txt'), u'b.txt', 3),
     ]
+
+
+def test_mvtodir_moves_a_storage_to_the_root_folder():
+    from unittest.mock import patch
+    from src.utilities import datastorage_operations
+
+    with patch.object(datastorage_operations.Folder, 'load') as load, \
+            patch.object(datastorage_operations.DataStorage, 'mvtodir') as mvtodir:
+        DataStorageOperations.mvtodir('storage', '/')
+
+    load.assert_not_called()
+    mvtodir.assert_called_once_with('storage', None)
+
+
+def test_mvtodir_moves_a_storage_to_a_folder_by_path():
+    from types import SimpleNamespace
+    from unittest.mock import patch
+    from src.utilities import datastorage_operations
+
+    with patch.object(datastorage_operations.Folder, 'load', return_value=SimpleNamespace(id=7)) as load, \
+            patch.object(datastorage_operations.DataStorage, 'mvtodir') as mvtodir:
+        DataStorageOperations.mvtodir('storage', 'parent/child')
+
+    load.assert_called_once_with('parent/child')
+    mvtodir.assert_called_once_with('storage', 7)

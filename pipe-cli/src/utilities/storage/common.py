@@ -37,7 +37,7 @@ class StorageOperations:
     MAX_KEY_LENGTH = 128
     MAX_VALUE_LENGTH = 256
     TAG_SHORTEN_SUFFIX = '...'
-    TAGS_VALIDATION_PATTERN = re.compile('[^a-zA-Z0-9\s_.\-@:+/\\\]+')
+    TAGS_VALIDATION_PATTERN = re.compile(r'[^a-zA-Z0-9\s_.\-@:+/\\]+')
     CP_SOURCE_TAG = 'CP_SOURCE'
     CP_OWNER_TAG = 'CP_OWNER'
     STORAGE_PATH = '%s://%s/%s'

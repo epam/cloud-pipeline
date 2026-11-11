@@ -55,6 +55,7 @@ class Config(object):
     """Provides a wrapper for a pipe command configuration"""
 
     __USER_TOKEN__ = None
+    __NTLM_PROXY_WARNED__ = False
 
     def __init__(self, raise_config_not_found_exception=True):
         self.initialized = False
@@ -80,10 +81,10 @@ class Config(object):
                     self.tz = data['tz']
                 if 'proxy' in data:
                     self.proxy = data['proxy']
+                if data.get('proxy_ntlm'):
+                    Config._warn_ntlm_proxy()
                 if self.api and self.access_key:
                     self.initialized = True
-                if 'codec' in data:
-                    self.change_encoding(data['codec'])
                 if 'ca_bundle' in data:
                     self.ca_bundle = data['ca_bundle']
         elif raise_config_not_found_exception:
@@ -141,18 +142,14 @@ class Config(object):
 
 
     @classmethod
-    def store(cls, access_key, api, timezone, proxy, codec, config_store, ca_bundle=None):
+    def store(cls, access_key, api, timezone, proxy, config_store, ca_bundle=None):
         check_token(access_key, timezone)
         ca_bundle = cls._download_ca_bundle(ca_bundle)
-        if codec:
-            click.echo('Encoding can not be configured with current environment.', err=True)
-            sys.exit(1)
         cls.validate_pac_proxy(proxy)
         config = {'api': api,
                   'access_key': access_key,
                   'tz': timezone,
                   'proxy': proxy,
-                  'codec': codec,
                   'ca_bundle': ca_bundle
                   }
         config_store_mode = config_store.lower()
@@ -188,8 +185,13 @@ class Config(object):
             json.dump(config, config_file_stream)
 
     @classmethod
-    def change_encoding(cls, codec):
-        pass
+    def _warn_ntlm_proxy(cls):
+        # A configuration of an earlier pipe version can enable the NTLM proxy authentication: warn once a run
+        if Config.__NTLM_PROXY_WARNED__:
+            return
+        Config.__NTLM_PROXY_WARNED__ = True
+        click.echo('Warning: the configuration enables NTLM proxy authentication, which is no longer supported. '
+                   'The proxy is used without it. Run "pipe configure" to update the configuration.', err=True)
 
     @classmethod
     def get_encoding(cls):

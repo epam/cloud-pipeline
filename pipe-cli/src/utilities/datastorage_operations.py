@@ -15,7 +15,6 @@ import itertools
 import time
 import click
 import datetime
-import io
 import logging
 import multiprocessing
 import os
@@ -512,7 +511,7 @@ class DataStorageOperations(object):
     @classmethod
     def mvtodir(cls, name, directory):
         folder_id = None
-        if directory is not "/":
+        if directory != "/":
             if os.path.split(directory)[0]:  # case with path
                 folder = Folder.load(directory)
             else:
@@ -811,9 +810,9 @@ class DataStorageOperations(object):
 
     @classmethod
     def __get_file_to_copy(cls, file_path, source_path):
-        # io.open decodes the UTF-8 list on Python 2 as well: the paths are text, as in a local folder listing.
+        # The paths are text, as in a local folder listing.
         # utf-8-sig drops the BOM that some Windows editors write at the start of a UTF-8 file.
-        with io.open(file_path, 'r', encoding='utf-8-sig') as source:
+        with open(file_path, 'r', encoding='utf-8-sig') as source:
             for line in source:
                 line = line.strip()
                 if not line:
