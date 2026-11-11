@@ -85,7 +85,7 @@ def pack_script_contents(script_contents, embedded_scripts=None):
         compressed.addfile(*_tarfile('init.sh', script_contents))
         for name, contents in embedded_scripts.items():
             compressed.addfile(*_tarfile(name, contents))
-    b64_contents = base64.b64encode(compressed_stream.getvalue())
+    b64_contents = base64.b64encode(compressed_stream.getvalue()).decode('utf-8')
 
     packed_template = """#!/bin/bash
 o=$(mktemp -d)
