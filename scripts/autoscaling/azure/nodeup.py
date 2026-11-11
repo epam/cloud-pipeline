@@ -1080,7 +1080,7 @@ def main():
 
     wait_time_sec = get_preference(NODE_WAIT_TIME_SEC)
     if wait_time_sec and wait_time_sec.isdigit():
-        num_rep = int(wait_time_sec) / time_rep
+        num_rep = int(wait_time_sec) // time_rep
 
     cloud_region = get_cloud_region(region_id)
     pipe_log('Started initialization of new calculation node in cloud region {}:\n'

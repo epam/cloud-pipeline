@@ -221,6 +221,39 @@ class AwsNodeupReplaceDockerImagesTest(unittest.TestCase):
         self.assertEqual(script, 'test-user registry/image:1,registry/image:2')
 
 
+class NodeupRetryCountTest(unittest.TestCase):
+    # Regression test: the retry count from the cluster.nodeup.wait.sec preference was
+    # int(wait_time_sec) / time_rep, an int on Python 2 and a float on Python 3 (e.g. "200.0" in the
+    # "Exceeded retry count" messages). Floor division keeps the Python 2 value.
+    def test_generic_nodeup_passes_a_whole_retry_count_to_the_cloud_provider(self):
+        nodeup = load_module('nodeup_retry_count_test', 'nodeup.py')
+        cloud_provider = mock.MagicMock()
+        cloud_provider.verify_run_id.return_value = (None, None)
+        cloud_provider.run_instance.return_value = ('i-1', '10.0.0.1')
+        cloud_provider.get_instance_names.return_value = ('node-1', 'node-1.internal')
+        argv = ['nodeup.py', '--ins_key', 'key', '--run_id', '1', '--ins_type', 'm5.large', '--ins_img', 'ami-1',
+                '--kube_ip', '10.0.0.2', '--kubeadm_token', 'token', '--time_rep', '3']
+        with mock.patch.object(sys, 'argv', argv), \
+                mock.patch.object(nodeup.utils, 'pipe_log_init'), \
+                mock.patch.object(nodeup.utils, 'pipe_log'), \
+                mock.patch.object(nodeup.utils, 'get_autoscale_preference', return_value='600'), \
+                mock.patch.object(nodeup.autoscaling, 'create_cloud_provider', return_value=cloud_provider), \
+                mock.patch.object(nodeup.kubeprovider, 'KubeProvider'):
+            nodeup.main()
+
+        num_rep = cloud_provider.check_instance.call_args[0][2]
+        self.assertEqual(200, num_rep)
+        self.assertIsInstance(num_rep, int)
+
+    def test_aws_and_azure_nodeup_compute_a_whole_retry_count(self):
+        for relative_path in ['aws/nodeup.py', 'azure/nodeup.py']:
+            with open(os.path.join(AUTOSCALING_DIR, relative_path)) as f:
+                source = f.read()
+            # assertTrue, not assertIn: a failure prints the file name, not the whole script
+            self.assertTrue('num_rep = int(wait_time_sec) // time_rep' in source, relative_path)
+            self.assertFalse('num_rep = int(wait_time_sec) / time_rep' in source, relative_path)
+
+
 class DictViewIndexingRegressionTest(unittest.TestCase):
     # Regression test for the exact bug class fresh-eyes review caught in the first pass of this
     # diff: dict.items()/.values()/.keys() subscripted with [i], or handed somewhere a list is

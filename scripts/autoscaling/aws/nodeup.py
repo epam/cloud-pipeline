@@ -1520,7 +1520,7 @@ def main():
 
     wait_time_sec = get_preference(NODE_WAIT_TIME_SEC)
     if wait_time_sec and wait_time_sec.isdigit():
-        num_rep = int(wait_time_sec) / time_rep
+        num_rep = int(wait_time_sec) // time_rep
 
     aws_region = get_aws_region(region_id)
     boto3.setup_default_session(region_name=aws_region)
