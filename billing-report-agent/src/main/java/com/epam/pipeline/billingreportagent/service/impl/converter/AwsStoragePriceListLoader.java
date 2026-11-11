@@ -87,7 +87,13 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
             put("Glacier Deep Archive", "DEEP_ARCHIVE");
         }};
     public static final String USAGETYPE = "usagetype";
-    public static final String TIMED_STORAGE_BYTE_HRS_USAGETYPE = ".*TimedStorage.*ByteHrs";
+    // The timed storage of a billed storage class, with an optional region prefix (none for S3 in us-east-1):
+    // TimedStorage-ByteHrs, TimedStorage-GIR-ByteHrs, TimedStorage-GlacierByteHrs, TimedStorage-GDA-ByteHrs.
+    // Any other usage type of the same storage class, e.g. S3 Annotation-TimedStorage-ByteHrs or
+    // EFS ArchiveTimedStorage-ByteHrs, would add a second price to the region and storage class,
+    // and the cost calculation adds up every price of a storage class.
+    public static final String TIMED_STORAGE_BYTE_HRS_USAGETYPE =
+            "([A-Z0-9]+-)?TimedStorage-(GIR-|GDA-|Glacier)?ByteHrs";
     public static final String THROUGHPUT_CAPACITY = "throughputCapacity";
     public static final String FILE_SYSTEM_TYPE = "fileSystemType";
     public static final String STORAGE_TYPE = "storageType";
@@ -164,10 +170,21 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
             });
     }
 
+    /**
+     * A product without a volume type (EFS, FSx) is STANDARD. A product with a volume type
+     * that has no storage class mapping is skipped: it must not add its price to STANDARD.
+     */
     private static String matchStorageClass(final AwsPricingCard price) {
-        return Optional.ofNullable(price.getProduct().getAttributes().get(VOLUME_TYPE_KEY)).map(
-                PRICE_LIST_STORAGE_CLASS_MAPPING::get
-        ).orElse(STANDARD_CLASS);
+        final String volumeType = price.getProduct().getAttributes().get(VOLUME_TYPE_KEY);
+        if (volumeType == null) {
+            return STANDARD_CLASS;
+        }
+        final String storageClass = PRICE_LIST_STORAGE_CLASS_MAPPING.get(volumeType);
+        if (storageClass == null) {
+            log.warn("Price product {} with the unknown volume type [{}] will be skipped.",
+                    price.getProduct().getSku(), volumeType);
+        }
+        return storageClass;
     }
 
     private StoragePricing convertAwsPricing(final String storageClass,
