@@ -18,11 +18,9 @@ yum remove yum-cron -y
 
 # Install common
 yum install -y  nc \
-                python \
                 curl \
                 wget \
-                btrfs-progs && \
-curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
+                btrfs-progs
 
 # Install jq
 wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
