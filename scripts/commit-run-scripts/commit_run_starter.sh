@@ -78,7 +78,7 @@ chmod +x $SCRIPTS_DIR/*
 
 . $SCRIPTS_DIR/common_commit_initialization.sh
 
-install_python
+install_python || exit 1
 install_pip
 
 mkdir $COMMON_REPO_DIR

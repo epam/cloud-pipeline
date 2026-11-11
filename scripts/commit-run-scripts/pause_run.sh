@@ -185,7 +185,8 @@ chmod +x $SCRIPTS_DIR/*
 
 . $SCRIPTS_DIR/common_commit_initialization.sh
 
-install_python
+# Nothing is done yet: 126 makes the API keep the run running, instead of failing it and terminating its node
+install_python || exit 126
 install_pip
 
 mkdir $COMMON_REPO_DIR

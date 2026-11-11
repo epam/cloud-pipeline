@@ -99,7 +99,8 @@ configure_pip() {
 }
 
 # This runs on the node host, not in the container of the run. pipe-common needs Python 3.12: the platform's Python 3.12
-# in /usr/local/python3.12, as a run has it in its container. A host that has none gets it installed there
+# in /usr/local/python3.12, as a run has it in its container. A host that has none gets it installed there.
+# Returns 1 if there is none and it cannot be installed: the caller decides what that means for the run
 install_python() {
     export CP_PYTHON_PATH="/usr/local/python3.12/bin/python3.12"
     if [ ! -x "$CP_PYTHON_PATH" ]; then
@@ -126,8 +127,8 @@ install_python() {
         [ -n "$_python3_tmp_dir" ] && rm -rf "$_python3_tmp_dir"
     fi
     if [ ! -x "$CP_PYTHON_PATH" ]; then
-        echo "[ERROR] Python 3.12 is not found and cannot be installed. Exiting"
-        exit 1
+        echo "[ERROR] Python 3.12 is not found on the node host and cannot be installed: $CP_PYTHON_PATH"
+        return 1
     fi
 }
 

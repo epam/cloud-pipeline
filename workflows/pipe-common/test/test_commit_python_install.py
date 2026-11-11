@@ -141,22 +141,24 @@ class CommitPythonInstallTest(unittest.TestCase):
         self._install()
         self.assertTrue(os.access(os.path.join(self.usr_local, 'python3.12', 'bin', 'python3.12'), os.X_OK))
 
-    def test_a_failed_download_stops_the_commit_and_leaves_nothing(self):
+    def test_a_failed_download_returns_an_error_and_leaves_nothing(self):
+        # It returns, not exits: the commit and the pause scripts decide what it means for the run
         _write(os.path.join(self.stub_bin, 'wget'), '#!/bin/sh\nexit 8\n')
         _write(os.path.join(self.stub_bin, 'curl'), '#!/bin/sh\nexit 22\n')
         proc = self._run_install()
-        self.assertEqual(1, proc.returncode)
-        self.assertIn('[ERROR] Python 3.12 is not found and cannot be installed. Exiting', proc.stdout)
+        self.assertIn('RC=1', proc.stdout)
+        self.assertIn('[ERROR] Python 3.12 is not found on the node host and cannot be installed: %s'
+                      % os.path.join(self.usr_local, 'python3.12', 'bin', 'python3.12'), proc.stdout)
         self.assertEqual([], os.listdir(self.usr_local))
 
-    def test_a_tarball_without_the_python_stops_the_commit_and_keeps_the_openssl_of_the_host(self):
+    def test_a_tarball_without_the_python_returns_an_error_and_keeps_the_openssl_of_the_host(self):
         self._host_has_openssl()
         dist = os.path.join(self.tmp, 'dist')
         _write(os.path.join(dist, 'openssl', 'from-distro'))
         with tarfile.open(self.tarball, 'w:gz') as tar:
             tar.add(os.path.join(dist, 'openssl'), arcname='openssl')
         proc = self._run_install()
-        self.assertEqual(1, proc.returncode)
+        self.assertIn('RC=1', proc.stdout)
         self.assertEqual(['openssl'], os.listdir(self.usr_local))
         self.assertEqual(['from-host'], os.listdir(os.path.join(self.usr_local, 'openssl')))
 
@@ -171,8 +173,8 @@ class CommitPythonUsageTest(unittest.TestCase):
     def test_commit_and_pause_install_the_python_before_pip_and_pipe_common(self):
         for name in ('commit_run_starter.sh', 'pause_run.sh'):
             text = _script(name)
-            self.assertIn('\ninstall_python\ninstall_pip\n', text, name)
-            self.assertLess(text.index('\ninstall_python\n'), text.index('\ninstall_pipeline_code\n'), name)
+            self.assertLess(text.index('\ninstall_python '), text.index('\ninstall_pip\n'), name)
+            self.assertLess(text.index('\ninstall_pip\n'), text.index('\ninstall_pipeline_code\n'), name)
             self.assertNotIn('CP_PYTHON2_PATH', text, name)
 
     def test_pip_and_pipe_common_run_with_the_python_of_the_host(self):
@@ -197,7 +199,8 @@ class CommitPipMirrorTest(unittest.TestCase):
 
     def test_the_mirror_of_a_regional_bucket_is_its_website_endpoint(self):
         args = self._configure({'GLOBAL_DISTRIBUTION_URL': 'https://cp-dist.s3.eu-central-1.amazonaws.com/'})
-        self.assertEqual(['--index-url', 'http://cp-dist.s3-website.eu-central-1.amazonaws.com/tools/python/pypi3/simple',
+        self.assertEqual(['--index-url',
+                          'http://cp-dist.s3-website.eu-central-1.amazonaws.com/tools/python/pypi3/simple',
                           '--trusted-host', 'cp-dist.s3-website.eu-central-1.amazonaws.com'], args)
 
     def test_the_public_mirror_is_the_default(self):
@@ -210,6 +213,75 @@ class CommitPipMirrorTest(unittest.TestCase):
         args = self._configure({'GLOBAL_DISTRIBUTION_URL': '',
                                 'CP_REPO_PYPI_BASE_URL_DEFAULT': 'http://py2.example.com/tools/python/pypi/simple'})
         self.assertNotIn('py2.example.com', ' '.join(args))
+
+
+
+# Replaces common_commit_initialization.sh: records the calls, and stops after install_pip
+COMMON_COMMIT_INITIALIZATION_STUB = """
+install_python() { echo "install_python" >> "$CALLS"; [ "$STUB_PYTHON" = "yes" ]; }
+install_pip() { echo "install_pip" >> "$CALLS"; exit 0; }
+"""
+# download_file runs wget, then curl -s -k -O <url>: the stub copies the file of a file:// URL to the current folder
+CURL_STUB = """#!/bin/sh
+for arg in "$@"; do url="$arg"; done
+cp "${url#file://}" . 2>/dev/null
+"""
+
+
+class CommitAndPauseWithoutPythonTest(unittest.TestCase):
+    # Runs commit_run_starter.sh and pause_run.sh up to install_pip, with common_commit_initialization.sh replaced by a
+    # stub where install_python fails or succeeds. For a pause, the API takes the exit code 126 as "nothing is done":
+    # the run goes on. Any other code fails the run and terminates its node
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.dist = os.path.join(self.tmp, 'dist')
+        _write(os.path.join(self.dist, 'common_commit_initialization.sh'), COMMON_COMMIT_INITIALIZATION_STUB)
+        for name in ('commit_run.sh', 'cleanup_container.sh'):
+            _write(os.path.join(self.dist, name), '#!/bin/sh\n')
+        self.stub_bin = os.path.join(self.tmp, 'stub-bin')
+        _write(os.path.join(self.stub_bin, 'wget'), '#!/bin/sh\nexit 1\n')
+        _write(os.path.join(self.stub_bin, 'curl'), CURL_STUB)
+        self.work = os.path.join(self.tmp, 'work')
+        os.makedirs(self.work)
+        self.calls = os.path.join(self.tmp, 'calls')
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp)
+
+    def _run(self, name, args, python):
+        env = {'PATH': self.stub_bin + os.pathsep + os.environ.get('PATH', ''), 'CALLS': self.calls,
+               'STUB_PYTHON': python}
+        proc = subprocess.run([BASH, os.path.join(os.path.dirname(COMMON_COMMIT_INITIALIZATION_SH), name)] + args,
+                              env=env, cwd=self.work, capture_output=True, text=True)
+        with open(self.calls) as f:
+            return proc.returncode, f.read().splitlines()
+
+    def _pause(self, python):
+        # API API_TOKEN PAUSE_DISTRIBUTION_URL DISTRIBUTION_URL RUN_ID CONTAINER_ID TIMEOUT NEW_IMAGE_NAME
+        # DEFAULT_TASK_NAME PRE_COMMIT_COMMAND POST_COMMIT_COMMAND GLOBAL_DISTRIBUTION_URL LAYERS_COUNT_TO_SQUASH
+        return self._run('pause_run.sh', ['https://cp.example.com/restapi/', 'token', 'file://%s/' % self.dist,
+                                          'https://cp.example.com/', '1', 'container', '600', 'image:paused', 'Task',
+                                          '', '', 'https://dist.example.com/', '0'], python)
+
+    def _commit(self, python):
+        args = ['https://cp.example.com/restapi/', 'token', 'file://%s/' % self.dist, 'https://cp.example.com/', '1',
+                'container', 'true', 'NONE', 'false', '600', 'registry:5000', '1', '1', 'library/image:v1', '', '',
+                'false', '', '', 'https://dist.example.com/']
+        return self._run('commit_run_starter.sh', args, python)
+
+    def test_pause_without_the_python_ends_with_126_so_the_run_goes_on(self):
+        self.assertEqual((126, ['install_python']), self._pause(python='no'))
+
+    def test_pause_with_the_python_goes_on_to_pip(self):
+        self.assertEqual((0, ['install_python', 'install_pip']), self._pause(python='yes'))
+
+    def test_commit_without_the_python_fails_the_commit(self):
+        # The API sets the commit status of the run to FAILURE: the run goes on
+        self.assertEqual((1, ['install_python']), self._commit(python='no'))
+
+    def test_commit_with_the_python_goes_on_to_pip(self):
+        self.assertEqual((0, ['install_python', 'install_pip']), self._commit(python='yes'))
 
 
 if __name__ == '__main__':
