@@ -1217,8 +1217,8 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
                                                                   "If --tags option specified all existent tags will "
                                                                   "be overwritten")
 @click.option('-l', '--file-list', required=False, help="Path to the file with file paths that should be moved. This file "
-                                                        "should be tab delimited and consist of two columns: "
-                                                        "relative path to a file and size")
+                                                        "should be a tab delimited UTF-8 text file and consist of two "
+                                                        "columns: relative path to a file and size")
 @click.option('-sl', '--symlinks', required=False, default='follow',
               type=click.Choice(['follow', 'filter', 'skip']),
               help='Describe symlinks processing strategy for local sources. '
@@ -1309,8 +1309,8 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
                                                                   "If --tags option specified all existent tags will "
                                                                   "be overwritten.")
 @click.option('-l', '--file-list', required=False, help="Path to the file with file paths that should be copied. This file "
-                                                        "should be tab delimited and consist of two columns: "
-                                                        "relative path to a file and size")
+                                                        "should be a tab delimited UTF-8 text file and consist of two "
+                                                        "columns: relative path to a file and size")
 @click.option('-sl', '--symlinks', required=False, default='follow',
               type=click.Choice(['follow', 'filter', 'skip']),
               help='Describe symlinks processing strategy for local sources. '

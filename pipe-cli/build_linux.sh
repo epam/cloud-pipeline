@@ -65,8 +65,14 @@ docker run -i --rm \
            --env PIPE_CLI_RUNTIME_TMP_DIR="'"$PIPE_CLI_RUNTIME_TMP_DIR"'" \
            "$_BUILD_PIPE_OMICS_DOCKER_IMAGE" \
            bash "$_BUILD_PIPE_OMICS_SCRIPT_NAME"
+_BUILD_PIPE_OMICS_EXIT_CODE=$?
 
 rm -f "$_BUILD_PIPE_OMICS_SCRIPT_NAME"
+
+if [ "$_BUILD_PIPE_OMICS_EXIT_CODE" != 0 ]; then
+    echo "[ERROR] The pipe-omics build in $_BUILD_PIPE_OMICS_DOCKER_IMAGE failed"
+    exit "$_BUILD_PIPE_OMICS_EXIT_CODE"
+fi
 
 _BUILD_SCRIPT_NAME=/tmp/build_pytinstaller_linux_$(date +%s).sh
 _BUILD_DOCKER_IMAGE="${_BUILD_DOCKER_IMAGE:-python:2.7-stretch}"
@@ -231,5 +237,11 @@ docker run -i --rm \
            --env PIPE_COMMIT_HASH=$PIPE_COMMIT_HASH \
            $_BUILD_DOCKER_IMAGE \
            bash $_BUILD_SCRIPT_NAME
+_BUILD_EXIT_CODE=$?
 
 rm -f $_BUILD_SCRIPT_NAME
+
+if [ "$_BUILD_EXIT_CODE" != 0 ]; then
+    echo "[ERROR] The pipe build in $_BUILD_DOCKER_IMAGE failed"
+    exit "$_BUILD_EXIT_CODE"
+fi

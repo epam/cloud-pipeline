@@ -155,6 +155,8 @@ for _dest_bkp_storage_name in ${CP_BKP_STORAGE_ARRAY[@]}; do
     if [ $? -ne 0 ]; then
         failure keep_running "[ERROR] An error occured while transferring backups from $CP_BKP_SERVICE_WD to $TARGET_STORAGE_LOCATION_DATE"
         _has_copy_errors=true
+        # Do not clean after a failed copy: its partial date folder would push out a good backup
+        continue
     fi
 
     # Remove the outdated backup (keep last CP_BKP_FILES_COUNT)
