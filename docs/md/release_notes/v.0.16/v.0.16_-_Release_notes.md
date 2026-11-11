@@ -38,6 +38,7 @@
 - [GitLab 19 support](#gitlab-19-support)
 - [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
 - [pipe-common requires Python 3.12](#pipe-common-requires-python-312)
+- [Rocky Linux 9.8 for the platform services](#rocky-linux-98-for-the-platform-services)
 
 ***
 
@@ -729,6 +730,37 @@ The Python 3 package mirror of the platform (`tools/python/pypi3/simple` in the 
 The SGE autoscaler now rounds the memory request of a job up to whole GiB, as the Slurm autoscaler does. Previously, it rounded the request down, e.g. `-l ram=500M` counted as 0 GiB and `-l ram=1500M` as 1 GiB.
 
 Please note: a user script that imports the `pipeline` package, or a package that it brings, must run on Python 3.12, and work with these versions. E.g., the APIs of `luigi` 3, `PyJWT` 2 and `click` 8 differ from the versions that were installed before.
+
+## Rocky Linux 9.8 for the platform services
+
+The images of these platform services moved to Rocky Linux 9.8.
+
+From CentOS 7, which has reached its end of life:
+
+- the search service (`cp-search`), the notifier (`cp-notifier`) and the billing service (`cp-billing-srv`)
+- the monitoring service (`cp-monitoring-srv`) and the VM monitor (`cp-vm-monitor`)
+- the data sharing service (`cp-share-srv`) and the docker components scanner (`cp-docker-comp`)
+- the node logger (`cp-node-logger`) and the leader elector (`cp-leader-elector`)
+- the test SAML identity provider (`cp-idp`)
+
+From Ubuntu 18.04: the Git reader (`cp-gitlab-reader`) and the storage lifecycle service (`cp-storage-lifecycle-service`).
+
+Python in these images:
+
+- Rocky Linux 9 has no Python 2 package. The images that installed Python 2 no longer do, because nothing in them used it.
+- The storage lifecycle service runs on the platform's Python 3.12 distribution, the version that the platform's `pipeline` package requires. It ran on Python 3.6. It now uses `boto3` and `botocore` 1.34.69, which work with the `urllib3` 2.8.0 of the `pipeline` package.
+- The Git reader keeps Python 3.6, now installed with `micromamba` from conda-forge, because its dependency versions are for Python 3.6.
+- The leader elector runs on Python 3.9 of Rocky Linux 9. It ran on Python 3.6 of CentOS 7.
+
+Other changes:
+
+- The Lustre client in the search image is now the el8 build of version 2.10.8, as in the Rocky Linux tool images. It replaces the el7 build of version 2.12.5.
+- The Java services in these images follow the `DEFAULT` crypto policy of Rocky Linux 9. In TLS connections and certificate chains, they now reject:
+    - SHA-1 signatures in any certificate (on CentOS 7, only in the server certificates that chain to the CA certificates of the JDK), and DSA signatures with any hash
+    - RSA, DSA and DH keys shorter than 2048 bits (on CentOS 7, 1024 bits), and EC keys shorter than 256 bits (on CentOS 7, 224 bits)
+
+    So a server that a service connects to, for example an SMTP server, must have a certificate chain that meets these limits. The policy covers only TLS and certificate chains, so it does not apply to the 1024-bit JWT signing keys that the installer creates.
+- The test identity provider runs on Node.js 24, and it accepts SHA-1 signatures, because the API signs its SAML requests with RSA-SHA1.
 
 ***
 
