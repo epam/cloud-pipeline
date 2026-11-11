@@ -72,6 +72,7 @@
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
     - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
+    - [The NFS mount observer of the WebDAV service does not start](#the-nfs-mount-observer-of-the-webdav-service-does-not-start)
 
 ***
 
@@ -912,3 +913,8 @@ See details in [8.1. Create and edit storage](../../manual/08_Manage_Data_Storag
 
 Previously, on connect to a run as the run owner, the Cloud Pipeline Remote extension for VS Code and Cursor always opened `/home/<user name>`, even if the run owner's home folder (the `OWNER_HOME` environment variable of the run) was another one.
 Now, the extension opens the folder from `OWNER_HOME` for the run owner, and `/home/<user name>` only if `OWNER_HOME` is not set or cannot be read. The folder opened for `root` (`/root`) and for other users (`/home/<user name>`) is not changed.
+
+### The NFS mount observer of the WebDAV service does not start
+
+Previously, the NFS mount observer of the WebDAV service (`cp-dav`) never started, for two reasons. Its cron job did not get the environment of the service, so it looked for the observer script in a wrong folder. And the image did not have the `pipeline`, `psutil` and `watchdog` Python packages, which the observer imports. So the file changes made via WebDAV in the mounts that the observer watches - the `nfs4` and `lustre` mounts by default (`CP_CAP_NFS_OBSERVER_TARGET_FS_TYPES`) - were not recorded, and were not copied to the storage set by `CP_CAP_NFS_MNT_OBSERVER_TARGET_BUCKET`.
+Now, the cron job reads the environment of the service, and the service installs the `pipe-common` package with its dependencies at start, as a run does. By default, the packages come from the public mirror `http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple`. To use another mirror, set `CP_REPO_PYPI_BASE_URL_DEFAULT` and `CP_REPO_PYPI_TRUSTED_HOST_DEFAULT` in the `cp-config-global` config map. The cron job starts the observer within a minute after these installs, unless `CP_CAP_NFS_MNT_OBSERVER_DISABLED` is set, and only if the download of `pipe-common.tar.gz` and both `pip` installs succeed.
