@@ -64,8 +64,10 @@ RUN cd /tmp && \
 
 # pip, not "setup.py install": since setuptools 80.1, "setup.py install" no longer runs easy_install, so it would
 # install the sls package without its dependencies
+# "pip check" fails the build on a dependency conflict between the sls and pipe-common versions
 RUN cd $CP_SLS_HOME/sls && \
-    python3 -m pip install .
+    python3 -m pip install . && \
+    python3 -m pip check
 
 ADD liveness.sh /liveness.sh
 RUN chmod +x /liveness.sh
