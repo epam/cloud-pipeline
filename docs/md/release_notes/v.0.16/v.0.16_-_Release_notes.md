@@ -72,6 +72,7 @@
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
     - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
+    - [Vulnerable dependencies of the FS Browser client](#vulnerable-dependencies-of-the-fs-browser-client)
 
 ***
 
@@ -912,3 +913,8 @@ See details in [8.1. Create and edit storage](../../manual/08_Manage_Data_Storag
 
 Previously, on connect to a run as the run owner, the Cloud Pipeline Remote extension for VS Code and Cursor always opened `/home/<user name>`, even if the run owner's home folder (the `OWNER_HOME` environment variable of the run) was another one.
 Now, the extension opens the folder from `OWNER_HOME` for the run owner, and `/home/<user name>` only if `OWNER_HOME` is not set or cannot be read. The folder opened for `root` (`/root`) and for other users (`/home/<user name>`) is not changed.
+
+### Vulnerable dependencies of the FS Browser client
+
+Previously, `npm audit` reported 283 known vulnerabilities in the dependencies of the FS Browser web client: 10 critical, 127 high, 123 moderate and 23 low. Many of them were in its development server (`webpack-dev-server` 3.2.1 and its dependencies, such as `node-forge`, `http-proxy-middleware`, `webpack-dev-middleware` and `sockjs`), which is not used to build the client, and in `react-dev-utils` 9 and `semver` 6.0.0.
+Now, the development server (the `npm start` script) is removed from the client, `react-dev-utils` is updated to 11.0.4 and `@babel/core` to 7.29.7, and the unused `semver` 6.0.0 pin is removed. At the time of this change, `npm audit` reports 205: 11 critical, 86 high, 103 moderate and 5 low. They come from the build and test tools: webpack 4 with its loaders and plugins, PostCSS, `react-dev-utils`, Babel, Jest, ESLint and `raml2html`. Two advisories among them are new: they are in `immer` 8.0.1, which `react-dev-utils` 11.0.4 brings. The client is built with `npm run build`, as before. The built client has the same content: only the hash in the name of its main script file changes.
