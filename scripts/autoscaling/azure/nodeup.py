@@ -333,8 +333,7 @@ def get_subnet_info():
     allowed_networks = get_networks_config(zone)
     if allowed_networks and len(allowed_networks) > 0:
         az_num = randint(0, len(allowed_networks) - 1)
-        az_name = allowed_networks.items()[az_num][0]
-        subnet_id = allowed_networks.items()[az_num][1]
+        az_name, subnet_id = list(allowed_networks.items())[az_num]
         resource_group, network = get_res_grp_and_res_name_from_string(az_name, 'virtualNetworks')
         subnet = get_subnet_name_from_id(subnet_id)
         pipe_log('- Networks list found, subnet {} in VNET {} will be used'.format(subnet_id, az_name))
@@ -605,7 +604,7 @@ def resource_tags():
     config_regions, config_tags = load_cloud_config()
     if config_tags is None:
         return tags
-    for key, value in config_tags.iteritems():
+    for key, value in config_tags.items():
         tags.update({key: value})
     return tags
 
@@ -764,7 +763,7 @@ def get_certs_string():
             return ""
         else:
             entries = []
-            for url, cert in result.iteritems():
+            for url, cert in result.items():
                 entries.append(command_pattern.format(url=url, cert=cert))
             return " && ".join(entries)
     return ""
@@ -852,7 +851,7 @@ def detach_disks_and_nic(vm_name):
         nic.ip_configurations[0].public_ip_address = None
         network_client.network_interfaces.create_or_update(resource_group_name, vm_name + '-nic', nic).wait()
     except Exception as e:
-        print e
+        print(e)
 
 
 def replace_common_params(cloud_region, init_script, config_section):
