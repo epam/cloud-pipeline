@@ -72,6 +72,7 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [Nextflow run view: some tasks stay `RUNNING` after the run finishes](#nextflow-run-view-some-tasks-stay-running-after-the-run-finishes)
     - [Users export: the names of the date columns depend on the API time zone](#users-export-the-names-of-the-date-columns-depend-on-the-api-time-zone)
     - [A committed image of a user with a large UID writes hundreds of GB to the disk](#a-committed-image-of-a-user-with-a-large-uid-writes-hundreds-of-gb-to-the-disk)
     - [Detached configuration: the old name stays in the Library after a rename](#detached-configuration-the-old-name-stays-in-the-library-after-a-rename)
@@ -2011,6 +2012,13 @@ For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#se
 ***
 
 ## Notable Bug fixes
+
+### Nextflow run view: some tasks stay `RUNNING` after the run finishes
+
+[#4785](https://github.com/epam/cloud-pipeline/issues/4785)
+
+Previously, the last task statuses of a Nextflow run were lost when the runtime data sync did not run - e.g. with `evalType` set to `WORKDIR` in the `NF_TASK` entry of the `launch.run.sync.runtime.data` preference. So some tasks stayed `RUNNING` in the **Nextflow** view of a finished run.
+Now, the last statuses are always sent when Nextflow finishes.
 
 ### Users export: the names of the date columns depend on the API time zone
 
