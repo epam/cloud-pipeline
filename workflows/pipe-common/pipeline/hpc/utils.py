@@ -38,14 +38,14 @@ class ScaleCommonUtils:
 
     def extract_family_from_instance_type(self, cloud_provider, instance_type):
         if cloud_provider == CloudProvider.aws():
-            search = re.search('^(\w+)\..*', instance_type)
+            search = re.search(r'^(\w+)\..*', instance_type)
             return search.group(1) if search else None
         elif cloud_provider == CloudProvider.gcp():
-            search = re.search('^(?!custom)(\w+-(?!custom)\w+)-?.*', instance_type)
+            search = re.search(r'^(?!custom)(\w+-(?!custom)\w+)-?.*', instance_type)
             return search.group(1) if search else None
         elif cloud_provider == CloudProvider.azure():
             # will return Bms for Standard_B1ms or Dsv3 for Standard_D2s_v3 instance types
-            search = re.search('^([a-zA-Z]+)\d+(.*)', instance_type.split('_', 1)[1].replace('_', ''))
+            search = re.search(r'^([a-zA-Z]+)\d+(.*)', instance_type.split('_', 1)[1].replace('_', ''))
             return search.group(1) + search.group(2) if search else None
         else:
             return None

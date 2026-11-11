@@ -334,7 +334,7 @@ def poll_instance(sock, timeout, ip, port):
     try:
         result = sock.connect_ex((ip, port))
     except Exception as e:
-        print e
+        print(e)
     sock.settimeout(None)
     return result
 

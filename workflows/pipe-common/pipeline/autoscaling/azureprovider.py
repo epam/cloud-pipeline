@@ -515,7 +515,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
             nic.ip_configurations[0].public_ip_address = None
             self.network_client.network_interfaces.create_or_update(self.resource_group_name, vm_name + '-nic', nic).wait()
         except Exception as e:
-            print e
+            print(e)
 
     def get_any_network_from_location(self, location):
         resource_group, network, subnet = None, None, None

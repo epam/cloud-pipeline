@@ -243,7 +243,7 @@ class CloudBucketDumpingEventHandler(FileSystemEventHandler):
 
     def _init_events_logger(self):
         self._events_local_file = os.path.join(self._activity_logging_local_dir, 'nfs_events')
-        single_event_file_size_limit_mb = EVENT_FILES_LIMIT_MB / (EVENT_FILES_BACKUP_COUNT + 1)
+        single_event_file_size_limit_mb = EVENT_FILES_LIMIT_MB // (EVENT_FILES_BACKUP_COUNT + 1)
         events_logging_handler = RotatingFileHandler(self._events_local_file, mode='a',
                                                      backupCount=EVENT_FILES_BACKUP_COUNT,
                                                      maxBytes=single_event_file_size_limit_mb * 1024 * 1024)
@@ -341,7 +341,7 @@ class NFSMountWatcher:
 
     @staticmethod
     def _calculate_max_allowed_watchers():
-        return psutil.virtual_memory().total / WATCHER_MEM_CONSUMPTION_BYTES / 100 * WATCHERS_USAGE_MEMORY_RATE
+        return psutil.virtual_memory().total // WATCHER_MEM_CONSUMPTION_BYTES // 100 * WATCHERS_USAGE_MEMORY_RATE
 
     @staticmethod
     def _get_watchers_limit():

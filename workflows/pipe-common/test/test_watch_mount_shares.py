@@ -219,5 +219,21 @@ class RemoveUnmountedWatchersTest(unittest.TestCase):
         self.assertEqual(['/mnt/b'], [emitter.watch.path for emitter in watcher._event_observer.emitters])
 
 
+class MaxAllowedWatchersTest(unittest.TestCase):
+
+    def test_is_a_whole_number_of_watchers(self):
+        # The share of the memory that the watchers may take, 1 KiB each, as Python 2 computed it
+        memory = types.SimpleNamespace(total=16 * 1024 ** 3 + 1000)
+        script_virtual_memory = wms.psutil.virtual_memory
+        wms.psutil.virtual_memory = lambda: memory
+        try:
+            max_allowed_watchers = wms.NFSMountWatcher._calculate_max_allowed_watchers()
+        finally:
+            wms.psutil.virtual_memory = script_virtual_memory
+
+        self.assertEqual((16 * 1024 ** 2) // 100 * wms.WATCHERS_USAGE_MEMORY_RATE, max_allowed_watchers)
+        self.assertIsInstance(max_allowed_watchers, int)
+
+
 if __name__ == '__main__':
     unittest.main()

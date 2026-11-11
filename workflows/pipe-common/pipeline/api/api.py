@@ -366,8 +366,8 @@ class PipelineAPI:
                 run_id = os.environ.get('RUN_ID')
                 prefix = prefix + '[run_id #{}] '.format(run_id)
 
-            now = datetime.datetime.utcnow()
-            message_timestamp = now.strftime('%Y-%m-%d %H:%M:%S.') + '%03d' % (now.microsecond / 1000)
+            now = datetime.datetime.now(_UTC)
+            message_timestamp = now.strftime('%Y-%m-%d %H:%M:%S.') + '%03d' % (now.microsecond // 1000)
             event_data = {
                 'eventId': int(time.time() * 1e9),
                 'hostname': hostname,
@@ -603,7 +603,7 @@ class PipelineAPI:
                 "filterExpressionType": "LOGICAL", "operand": "="}
 
     def log_event(self, log_entry, log_file_name=None, omit_console=False):
-        log_entry.date = datetime.datetime.utcfromtimestamp(time.time()).strftime(DATE_FORMAT)
+        log_entry.date = datetime.datetime.fromtimestamp(time.time(), _UTC).strftime(DATE_FORMAT)
         log_entry.date = log_entry.date[0:len(log_entry.date) - 3]
         if log_file_name is None:
             log_file_name = "{}.log".format(log_entry.taskName)
@@ -666,7 +666,7 @@ class PipelineAPI:
             raise RuntimeError("Failed to load tool group. \n {}".format(e))
 
     def update_status(self, run_id, status_entry):
-        status_entry.endDate = datetime.datetime.utcfromtimestamp(time.time()).strftime(DATE_FORMAT)
+        status_entry.endDate = datetime.datetime.fromtimestamp(time.time(), _UTC).strftime(DATE_FORMAT)
         status_entry.endDate = status_entry.endDate[0:len(status_entry.endDate) - 3]
         try:
             requests.post(str(self.api_url) + self.STATUS_URL.format(run_id), data=status_entry.to_json(),
