@@ -276,7 +276,7 @@ test('renders a dash, not "0 bytes", when archiveSizeBytes is null', () => {
 });
 
 // The Archive column appends ".zip" the same way the backend's own
-// DataStorageDownloadArchiveManager.offeredArchiveName does, so the name
+// DownloadArchiveTaskProcessor.offeredArchiveName does, so the name
 // shown here always matches the file the user actually receives.
 describe('the Archive column\'s .zip suffix', () => {
   test('appends .zip to a bare name', () => {

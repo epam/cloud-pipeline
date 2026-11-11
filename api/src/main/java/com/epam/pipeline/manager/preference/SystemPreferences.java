@@ -32,7 +32,9 @@ import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationM
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationPolicy;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
+import com.epam.pipeline.entity.datastorage.ArchiveTasksConfig;
 import com.epam.pipeline.entity.datastorage.DownloadArchiveConfig;
+import com.epam.pipeline.entity.datastorage.UnpackArchiveConfig;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.datastorage.nfs.NFSMountPolicy;
 import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
@@ -209,21 +211,31 @@ public class SystemPreferences {
         "storage.max.download.size", 10000, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference DATA_STORAGE_TEMP_CREDENTIALS_DURATION = new IntPreference(
         "storage.temp.credentials.duration", 3600, DATA_STORAGE_GROUP, isGreaterThan(0));
-    public static final ObjectPreference<DownloadArchiveConfig> DATA_STORAGE_DOWNLOAD_ARCHIVE_CONFIG =
+    public static final ObjectPreference<ArchiveTasksConfig> DATA_STORAGE_ARCHIVE_CONFIG =
         new ObjectPreference<>(
-            "storage.download.archive.config",
-            DownloadArchiveConfig.builder()
-                .destinationPrefix("archives/")
-                .maxSizeBytes(107374182400L)
-                .maxFilesCount(100000)
-                .ttlDays(7)
-                .maxUserTasks(3)
-                .workerMaxRunningMinutes(240)
+            "storage.archive.config",
+            ArchiveTasksConfig.builder()
+                .maxUserTasks(ArchiveTasksConfig.DEFAULT_MAX_USER_TASKS)
                 .stuckTasksThresholdMinutes(360)
+                .tasks(ArchiveTasksConfig.Tasks.builder()
+                    .download(DownloadArchiveConfig.builder()
+                        .destinationPrefix("archives/")
+                        .maxSizeBytes(107374182400L)
+                        .maxFilesCount(100000)
+                        .ttlDays(7)
+                        .workerMaxRunningMinutes(240)
+                        .build())
+                    .unpack(UnpackArchiveConfig.builder()
+                        .maxArchiveSizeBytes(53687091200L)
+                        .maxSizeBytes(214748364800L)
+                        .maxFilesCount(100000)
+                        .workerMaxRunningMinutes(240)
+                        .build())
+                    .build())
                 .build(),
-            new TypeReference<DownloadArchiveConfig>() {},
+            new TypeReference<ArchiveTasksConfig>() {},
             DATA_STORAGE_GROUP,
-            isNullOrValidJson(new TypeReference<DownloadArchiveConfig>() {}));
+            isNullOrValidJson(new TypeReference<ArchiveTasksConfig>() {}));
     public static final IntPreference PROFILE_TEMP_CREDENTIALS_DURATION = new IntPreference(
             "profile.temp.credentials.duration", 3600, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference STORAGE_MOUNTS_PER_GB_RATIO = new IntPreference(

@@ -79,8 +79,8 @@ export function archiveSelectionAvailable (item, options = {}) {
 }
 
 /**
- * The `paths` of `POST /datastorage/{id}/download/archive` for the selected
- * files and folders. A folder's path ends with `/`.
+ * The `paths` of `POST /async-task/create` for a DOWNLOAD_ARCHIVE payload,
+ * for the selected files and folders. A folder's path ends with `/`.
  *
  * @param {SelectedStorageItem[]} selectedItems
  * @returns {string[]}

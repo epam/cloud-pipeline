@@ -23,16 +23,20 @@ import com.epam.pipeline.controller.vo.async.AsyncTaskFilterVO;
 import com.epam.pipeline.controller.vo.async.AsyncTaskStatusVO;
 import com.epam.pipeline.dto.async.AsyncTask;
 import com.epam.pipeline.dto.async.AsyncTaskConsumeResult;
+import com.epam.pipeline.dto.async.AsyncTaskParams;
 import com.epam.pipeline.dto.async.AsyncTaskType;
+import com.epam.pipeline.entity.datastorage.ArchiveTasksConfig;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.manager.async.AsyncTaskManager;
-import com.epam.pipeline.manager.datastorage.DataStorageDownloadArchiveManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.security.acl.AclExpressions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Optional;
@@ -42,7 +46,7 @@ import java.util.Optional;
 public class AsyncTaskApiService {
 
     private final AsyncTaskManager asyncTaskManager;
-    private final DataStorageDownloadArchiveManager downloadArchiveManager;
+    private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
     private final CheckPermissionHelper permissionHelper;
     private final MessageHelper messageHelper;
@@ -54,18 +58,25 @@ public class AsyncTaskApiService {
 
     @PreAuthorize(AclExpressions.ADMIN_OR_GENERAL_USER)
     public AsyncTask load(final String id) {
-        return reachableByCaller(id);
+        return loadTaskIfHasAccess(id);
+    }
+
+    @PreAuthorize(AclExpressions.ADMIN_OR_GENERAL_USER)
+    public AsyncTask createAsyncTask(final AsyncTaskParams params) {
+        final String owner = authManager.getAuthorizedUser();
+        assertUserQuota(owner);
+        return asyncTaskManager.create(owner, params);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_OR_GENERAL_USER)
     public AsyncTask cancel(final String id) {
-        reachableByCaller(id);
+        loadTaskIfHasAccess(id);
         return asyncTaskManager.cancel(id);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_OR_GENERAL_USER)
     public AsyncTaskConsumeResult consume(final String id) {
-        return AsyncTaskConsumeResult.of(downloadArchiveManager.consume(reachableByCaller(id)));
+        return asyncTaskManager.consume(loadTaskIfHasAccess(id));
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
@@ -89,7 +100,7 @@ public class AsyncTaskApiService {
         return restricted;
     }
 
-    private AsyncTask reachableByCaller(final String id) {
+    private AsyncTask loadTaskIfHasAccess(final String id) {
         final AsyncTask task = asyncTaskManager.load(id);
         if (mayReachForeignTask() || permissionHelper.isOwner(task.getOwner())) {
             return task;
@@ -100,5 +111,13 @@ public class AsyncTaskApiService {
 
     private boolean mayReachForeignTask() {
         return authManager.isAdmin() || permissionHelper.hasAnyRole(DefaultRoles.ROLE_STORAGE_ADMIN);
+    }
+
+    private void assertUserQuota(final String owner) {
+        final int limit = ArchiveTasksConfig.maxUserTasksOrDefault(
+                preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_ARCHIVE_CONFIG));
+        final long active = asyncTaskManager.countActive(owner);
+        Assert.isTrue(active < limit, messageHelper.getMessage(
+                MessageConstants.ERROR_ASYNC_TASK_USER_QUOTA_EXCEEDED, limit));
     }
 }

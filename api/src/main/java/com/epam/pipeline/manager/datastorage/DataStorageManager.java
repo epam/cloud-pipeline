@@ -1636,9 +1636,15 @@ public class DataStorageManager implements SecuredEntityManager {
         }
     }
 
-    private void checkWritePermissionsOnFile(final AbstractDataStorage storage, final String path) {
+    public void checkWritePermissionsOnFile(final AbstractDataStorage storage, final String path) {
         if (needToLoadPathPermissions(storage)) {
             storagePathPermissionsService.canWriteToFile(storage.getId(), path);
+        }
+    }
+
+    public void checkWritePermissionsOnFolder(final AbstractDataStorage storage, final String path) {
+        if (needToLoadPathPermissions(storage)) {
+            storagePathPermissionsService.canWriteToFolder(storage.getId(), path);
         }
     }
 

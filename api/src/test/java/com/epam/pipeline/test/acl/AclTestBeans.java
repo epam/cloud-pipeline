@@ -65,7 +65,6 @@ import com.epam.pipeline.manager.credits.PlatformUsageCreditsRuleService;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceCRUDService;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
 import com.epam.pipeline.manager.async.AsyncTaskManager;
-import com.epam.pipeline.manager.datastorage.DataStorageDownloadArchiveManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStoragePathLoader;
 import com.epam.pipeline.manager.datastorage.DataStorageRuleManager;
@@ -531,9 +530,6 @@ public class AclTestBeans {
 
     @MockBean
     protected DataStorageManager mockDataStorageManager;
-
-    @MockBean
-    protected DataStorageDownloadArchiveManager downloadArchiveManager;
 
     @MockBean
     protected AsyncTaskManager asyncTaskManager;

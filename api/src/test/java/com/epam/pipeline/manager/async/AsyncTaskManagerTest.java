@@ -21,10 +21,15 @@ import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.vo.async.AsyncTaskFilterVO;
 import com.epam.pipeline.controller.vo.async.AsyncTaskSortField;
 import com.epam.pipeline.dto.async.AsyncTask;
+import com.epam.pipeline.dto.async.AsyncTaskConsumable;
+import com.epam.pipeline.dto.async.AsyncTaskConsumeResult;
+import com.epam.pipeline.dto.async.AsyncTaskParams;
 import com.epam.pipeline.dto.async.AsyncTaskStatus;
+import com.epam.pipeline.dto.async.DownloadArchiveConsumable;
 import com.epam.pipeline.dto.async.DownloadArchiveParams;
 import com.epam.pipeline.dto.async.DownloadArchiveResult;
 import com.epam.pipeline.dto.async.AsyncTaskType;
+import com.epam.pipeline.dto.async.UnpackArchiveParams;
 import com.epam.pipeline.entity.async.AsyncTaskEntity;
 import com.epam.pipeline.mapper.async.AsyncTaskMapper;
 import com.epam.pipeline.repository.async.AsyncTaskRepository;
@@ -44,6 +49,7 @@ import org.springframework.data.jpa.domain.Specification;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -60,29 +66,122 @@ public class AsyncTaskManagerTest {
     private static final long STORAGE_ID = 1L;
     private static final long ARCHIVE_SIZE_BYTES = 42L;
     private static final int TOTAL_MATCHES = 50;
+    private static final String PREPARED_ARCHIVE_NAME = "prepared.zip";
+    private static final String PREPARED_DESTINATION = "extracted/data/";
+    private static final String URL = "https://bucket.s3.amazonaws.com/archives/selection.zip";
 
     private final AsyncTaskRepository repository = Mockito.mock(AsyncTaskRepository.class);
     private final AsyncTaskMapper mapper = Mappers.getMapper(AsyncTaskMapper.class);
     private final MessageHelper messageHelper = Mockito.mock(MessageHelper.class);
 
+    /**
+     * Stand in for the real processors: each derives a value of its own from the payload, and only the
+     * download one has something to hand over - which is what makes the dispatch assertions below
+     * meaningful. They validate nothing.
+     */
+    private final StubProcessor downloadProcessor = new StubProcessor(AsyncTaskType.DOWNLOAD_ARCHIVE,
+            params -> ((DownloadArchiveParams) params).toBuilder()
+                    .archiveName(PREPARED_ARCHIVE_NAME)
+                    .build(),
+            DownloadArchiveConsumable.builder().url(URL).build());
+    private final StubProcessor unpackProcessor = new StubProcessor(AsyncTaskType.UNPACK_ARCHIVE,
+            params -> ((UnpackArchiveParams) params).toBuilder()
+                    .destinationPath(PREPARED_DESTINATION)
+                    .build(),
+            null);
+
     private AsyncTaskManager manager;
 
     @BeforeEach
     public void setUp() {
-        manager = new AsyncTaskManager(repository, mapper, messageHelper, new ObjectMapper());
+        manager = new AsyncTaskManager(repository, mapper, messageHelper, new ObjectMapper(),
+                List.of(downloadProcessor, unpackProcessor));
     }
 
     @Test
     public void shouldCreateTaskPendingAndOwnedByRequester() {
-        Mockito.when(repository.save(Mockito.any())).thenAnswer(invocation -> invocation.getArgument(0));
+        passSaveThrough();
 
-        final AsyncTask created = manager.create(TYPE, OWNER, params());
+        final AsyncTask created = manager.create(OWNER, params());
 
         assertEquals(AsyncTaskStatus.PENDING, created.getStatus());
         assertEquals(OWNER, created.getOwner());
         assertEquals(TYPE, created.getType());
         assertNotNull(created.getCreated());
         assertNotNull(created.getStatusChanged());
+    }
+
+    @Test
+    public void shouldQueueWhatTheProcessorReturnedRatherThanWhatArrived() {
+        // Why creating a task goes through a processor at all. A type may derive a value from the
+        // request - an archive name made safe, a destination folder that becomes a key prefix - and
+        // the derived form is both what the executor must receive and what the permission checks were
+        // made against. Queueing the payload as it arrived would persist the other one.
+        passSaveThrough();
+
+        manager.create(OWNER, params());
+
+        assertEquals(PREPARED_ARCHIVE_NAME,
+                ((DownloadArchiveParams) queuedEntity().getParams()).getArchiveName());
+    }
+
+    @Test
+    public void shouldPrepareWithTheProcessorOfTheRequestedType() {
+        // The dispatch on the way in. Both processors here derive a value, so a request that reached
+        // the wrong one would come out carrying the other one's.
+        passSaveThrough();
+
+        manager.create(OWNER, unpackParams());
+
+        final AsyncTaskEntity queued = queuedEntity();
+        assertEquals(AsyncTaskType.UNPACK_ARCHIVE, queued.getType());
+        assertEquals(PREPARED_DESTINATION,
+                ((UnpackArchiveParams) queued.getParams()).getDestinationPath());
+    }
+
+    @Test
+    public void shouldRefuseAnAbsentPayload() {
+        // `params.getType()` would otherwise raise, so an empty request body answered with a 500
+        // rather than with a message.
+        assertThrows(() -> manager.create(OWNER, null));
+
+        Mockito.verify(repository, Mockito.never()).save(Mockito.any());
+    }
+
+    @Test
+    public void shouldRefuseATypeWithNoRegisteredProcessor() {
+        // Nothing would judge the payload or the caller's permissions, and the queued task would wait
+        // for an executor that never comes.
+        assertThrows(() -> withoutProcessors().create(OWNER, params()));
+
+        Mockito.verify(repository, Mockito.never()).save(Mockito.any());
+    }
+
+    @Test
+    public void shouldHandOverWhatTheProcessorOfTheTasksTypeProduced() {
+        final AsyncTaskConsumeResult consumed = manager.consume(finished(AsyncTaskType.DOWNLOAD_ARCHIVE));
+
+        assertEquals(AsyncTaskType.DOWNLOAD_ARCHIVE, consumed.getType());
+        assertEquals(URL, ((DownloadArchiveConsumable) consumed.getResult()).getUrl());
+    }
+
+    @Test
+    public void shouldRefuseToConsumeATaskOfATypeThatProducesNothing() {
+        // The dispatch on the way out, and the reason it exists. An unpack task writes its content
+        // straight into the storage the caller named, so there is nothing to hand over - and before
+        // the dispatch every task went to the download archive processor, which would have looked for
+        // an archive that was never made.
+        assertThrows(UnsupportedOperationException.class,
+            () -> manager.consume(finished(AsyncTaskType.UNPACK_ARCHIVE)));
+    }
+
+    @Test
+    public void shouldRefuseToConsumeATaskWithNoRegisteredProcessor() {
+        // A different answer from the test above, and deliberately so: the type is not supported at
+        // all here, rather than supported with nothing to hand over. The exception names which of the
+        // two it is - the refusal above comes from the processor, this one from the dispatch.
+        assertThrows(IllegalArgumentException.class,
+            () -> withoutProcessors().consume(finished(AsyncTaskType.DOWNLOAD_ARCHIVE)));
     }
 
     @Test
@@ -370,6 +469,38 @@ public class AsyncTaskManagerTest {
                 .build();
     }
 
+    private UnpackArchiveParams unpackParams() {
+        return UnpackArchiveParams.builder()
+                .sourceStorageId(STORAGE_ID)
+                .sourcePath("incoming/data.zip")
+                .destinationStorageId(STORAGE_ID)
+                .destinationPath("extracted/data")
+                .build();
+    }
+
+    private AsyncTaskManager withoutProcessors() {
+        return new AsyncTaskManager(repository, mapper, messageHelper, new ObjectMapper(), List.of());
+    }
+
+    private void passSaveThrough() {
+        Mockito.when(repository.save(Mockito.any())).thenAnswer(invocation -> invocation.getArgument(0));
+    }
+
+    private AsyncTaskEntity queuedEntity() {
+        final ArgumentCaptor<AsyncTaskEntity> captor = ArgumentCaptor.forClass(AsyncTaskEntity.class);
+        Mockito.verify(repository).save(captor.capture());
+        return captor.getValue();
+    }
+
+    private AsyncTask finished(final AsyncTaskType type) {
+        return AsyncTask.builder()
+                .id(ID)
+                .type(type)
+                .owner(OWNER)
+                .status(AsyncTaskStatus.SUCCESS)
+                .build();
+    }
+
     private DownloadArchiveResult result() {
         return DownloadArchiveResult.builder().archiveSizeBytes(ARCHIVE_SIZE_BYTES).build();
     }
@@ -397,5 +528,43 @@ public class AsyncTaskManagerTest {
         Mockito.verify(repository).findAll(Mockito.<Specification<AsyncTaskEntity>>any(),
                 captor.capture());
         return captor.getValue();
+    }
+
+    /**
+     * A processor of one type that derives a value in {@code prepare} and, where it was given a
+     * consumable, hands that over in {@code consume}. Given none it refuses, as a type with nothing to
+     * hand over does.
+     */
+    private static final class StubProcessor implements AsyncTaskProcessor {
+
+        private final AsyncTaskType type;
+        private final UnaryOperator<AsyncTaskParams> preparation;
+        private final AsyncTaskConsumable consumable;
+
+        private StubProcessor(final AsyncTaskType type,
+                              final UnaryOperator<AsyncTaskParams> preparation,
+                              final AsyncTaskConsumable consumable) {
+            this.type = type;
+            this.preparation = preparation;
+            this.consumable = consumable;
+        }
+
+        @Override
+        public AsyncTaskType getType() {
+            return type;
+        }
+
+        @Override
+        public AsyncTaskParams prepare(final AsyncTaskParams params) {
+            return preparation.apply(params);
+        }
+
+        @Override
+        public AsyncTaskConsumable consume(final AsyncTask task) {
+            if (consumable == null) {
+                throw new UnsupportedOperationException();
+            }
+            return consumable;
+        }
     }
 }
