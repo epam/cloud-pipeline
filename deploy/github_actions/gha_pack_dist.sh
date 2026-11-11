@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,13 +17,23 @@
 CLOUD_PIPELINE_BUILD_RETRY_TIMES=${CLOUD_PIPELINE_BUILD_RETRY_TIMES:-5}
 CLOUD_PIPELINE_BUILD_NUMBER=$(($CLOUD_PIPELINE_BUILD_NUMBER_SEED+$GITHUB_RUN_NUMBER))
 
-# Setup python2
+# Setup python3: the build runs "python setup.py sdist" for the Python packages and "mkdocs build" for the docs
+# in a virtual environment of the Python 3.12 distribution, which the runs install too
+CP_PYTHON3_DIST_URL="${CP_PYTHON3_DIST_URL:-https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/python/3/python3.12.tar.gz}"
 cd /opt
-wget -q "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz"
-tar -zxf Miniconda2-4.7.12.1-Linux-x86_64.tar.gz
-source /opt/conda/etc/profile.d/conda.sh
-conda activate
+if ! { wget -q "$CP_PYTHON3_DIST_URL" -O python3.12.tar.gz && \
+       tar -zxf python3.12.tar.gz && \
+       /opt/python3.12/bin/python3.12 -m venv /opt/py3-build; }; then
+    echo "Failed to setup Python 3.12 from $CP_PYTHON3_DIST_URL"
+    exit 1
+fi
+source /opt/py3-build/bin/activate
 cd -
+# The node-gyp of npm 6 (Node 14), which builds the native npm modules, fails on Python 3.11 and later.
+# So npm gets the runner's own python3 (3.10 on ubuntu-22.04), not the Python 3.12 on PATH
+if [ -x /usr/bin/python3 ]; then
+    export npm_config_python=/usr/bin/python3
+fi
 #
 
 # Setup node
@@ -53,8 +63,8 @@ function get_pipe_binaries() {
   mv $_OSX_CLI_PATH/dist/dist-folder/pipe-osx*.tar.gz ${API_STATIC_PATH}/
 }
 
-pip install PyYAML==3.12
-pip install mkdocs==1.0.4
+# A Python 3.12 virtual environment has no setuptools, which "setup.py sdist" needs
+pip install setuptools==81.0.0 mkdocs==1.6.1 || exit 1
 
 _BUILD_EXIT_CODE=1
 try_count=0
