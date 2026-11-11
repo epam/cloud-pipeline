@@ -83,6 +83,7 @@
     - [The distribution build passes when the Linux build of the `pipe` CLI fails](#the-distribution-build-passes-when-the-linux-build-of-the-pipe-cli-fails)
     - [Slurm clusters and Rocky Linux runs: the MUNGE key is readable by all users, and other defects](#slurm-clusters-and-rocky-linux-runs-the-munge-key-is-readable-by-all-users-and-other-defects)
     - [A run stays at its start for good when `apt-get update` stalls](#a-run-stays-at-its-start-for-good-when-apt-get-update-stalls)
+    - [The node logger and the search services do not use the docker registry login or prefix](#the-node-logger-and-the-search-services-do-not-use-the-docker-registry-login-or-prefix)
 
 ***
 
@@ -1022,3 +1023,7 @@ Now, these calls of the launch script have a time limit:
 - an install or an upgrade of packages is stopped after `CP_PKG_MANAGER_INSTALL_TIMEOUT_SEC` seconds (3600 by default)
 
 A call that is stopped logs a `[WARN]` line in the run log and fails, and the run handles it as any other failure of that call: e.g. the Cloud Pipeline repo setup tries again, and then removes the repo. `0` means no limit, and so does a value that is not a whole number of seconds, with a `[WARN]` line. Set the variables as run parameters, or for all runs in the `launch.env.properties` preference. An image with no usable `timeout` command (e.g. an old busybox) runs the calls with no limit, as before. The setup scripts of the capabilities (e.g. SGE, Slurm, Docker in Docker, NICE DCV) still call the package managers with no limit.
+### The node logger and the search services do not use the docker registry login or prefix
+
+Previously, the pods of the node logger (`cp-node-logger`) and of the search ELK cluster from the optional `cp-search-elk-set.yaml` manifest had no image pull secret. So, if the platform images came from a docker registry that needs a login (`CP_DOCKER_DIST_USER` and `CP_DOCKER_DIST_PASS` are set), these pods could not pull their images. Also, the separate search service for the NFS files, from the optional `cp-search-srv-nfs-only-dpl.yaml` manifest, always pulled `lifescience/cloud-pipeline:search-<version>`, even if `CP_COMMON_DISTR_DOCKER_PREFIX` pointed to another repository.
+Now, the node logger and the search ELK cluster pods use the `cp-distr-docker-registry-secret` secret, as the other services do, and the separate search service takes its image from `CP_COMMON_DISTR_DOCKER_PREFIX`, as the main search service does. The installer creates this secret only if a registry login is set. If the secret does not exist, the images are pulled without a login.
