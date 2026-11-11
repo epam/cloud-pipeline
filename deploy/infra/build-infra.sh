@@ -585,13 +585,13 @@ fi
 if ! check_installed "curl"; then
     $package_manager install -y wget
 fi
-if ! check_installed "python"; then
-    echo "Installing python"
-    $package_manager install -y python
+if ! check_installed "python3"; then
+    echo "Installing python3"
+    $package_manager install -y python3
 fi
-if ! check_installed "pip"; then
+if ! python3 -m pip --version &> /dev/null; then
     echo "Installing pip"
-    curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
+    $package_manager install -y python3-pip
 fi
 if ! check_installed "jq"; then
     echo "Installing jq"
@@ -602,7 +602,7 @@ fi
 if [ "$CP_CLOUD_PROVIDER" == "$CP_AWS" ]; then
     if ! check_installed "aws"; then
         echo "Installing aws cli"
-        pip install --upgrade pip awscli
+        python3 -m pip install --upgrade pip awscli
     fi
     export AWS_DEFAULT_REGION=${regions_arr[0]}
     if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ] || ! aws sts get-caller-identity &> /dev/null; then
