@@ -84,6 +84,7 @@
     - [Slurm clusters and Rocky Linux runs: the MUNGE key is readable by all users, and other defects](#slurm-clusters-and-rocky-linux-runs-the-munge-key-is-readable-by-all-users-and-other-defects)
     - [A run stays at its start for good when `apt-get update` stalls](#a-run-stays-at-its-start-for-good-when-apt-get-update-stalls)
     - [The node logger and the search services do not use the docker registry login or prefix](#the-node-logger-and-the-search-services-do-not-use-the-docker-registry-login-or-prefix)
+    - [A failed backup copy removes a good backup](#a-failed-backup-copy-removes-a-good-backup)
 
 ***
 
@@ -1027,3 +1028,13 @@ A call that is stopped logs a `[WARN]` line in the run log and fails, and the ru
 
 Previously, the pods of the node logger (`cp-node-logger`) and of the search ELK cluster from the optional `cp-search-elk-set.yaml` manifest had no image pull secret. So, if the platform images came from a docker registry that needs a login (`CP_DOCKER_DIST_USER` and `CP_DOCKER_DIST_PASS` are set), these pods could not pull their images. Also, the separate search service for the NFS files, from the optional `cp-search-srv-nfs-only-dpl.yaml` manifest, always pulled `lifescience/cloud-pipeline:search-<version>`, even if `CP_COMMON_DISTR_DOCKER_PREFIX` pointed to another repository.
 Now, the node logger and the search ELK cluster pods use the `cp-distr-docker-registry-secret` secret, as the other services do, and the separate search service takes its image from `CP_COMMON_DISTR_DOCKER_PREFIX`, as the main search service does. The installer creates this secret only if a registry login is set. If the secret does not exist, the images are pulled without a login.
+### A failed backup copy removes a good backup
+
+Previously, when a backup worker (`cp-bkp-worker-*`) failed to copy the backups to a storage, it still cleaned the outdated backups in that storage. A failed copy may leave a partial date folder, and the cleaning counted it among the backups to keep (`CP_BKP_FILES_COUNT`, 10 by default). So each failed copy could remove a good backup.
+Now, if the copy to a storage fails, the worker does not clean that storage, and goes on with the next storage of `CP_BKP_STORAGE_LIST`. The administrators are notified of the failure, as before.
+
+Please note:
+
+- the good backups are kept only while the copies keep failing, and a storage whose copies keep failing is not cleaned at all
+- the partial date folder of a failed copy is not removed. The cleaning after the next successful copy counts it, and removes one good backup for each such folder. So delete the date folders of the failed copies from the storage before the next successful copy
+- the cleaning removes the backups that `pipe storage ls` lists first. On AWS, these are the oldest ones, but the listing is not ordered on GCP ([#4233](https://github.com/epam/cloud-pipeline/issues/4233))
