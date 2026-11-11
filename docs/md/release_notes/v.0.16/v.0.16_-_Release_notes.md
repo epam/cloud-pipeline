@@ -72,6 +72,10 @@
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
     - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
+    - [Users export: the names of the date columns depend on the API time zone](#users-export-the-names-of-the-date-columns-depend-on-the-api-time-zone)
+    - [Launch form: the "Add system parameter" dialog drops the selected parameters](#launch-form-the-add-system-parameter-dialog-drops-the-selected-parameters)
+    - [Detached configuration: the old name stays in the Library after a rename](#detached-configuration-the-old-name-stays-in-the-library-after-a-rename)
+    - [Vulnerable dependencies of the SSH web terminal](#vulnerable-dependencies-of-the-ssh-web-terminal)
     - [The NFS mount observer of the WebDAV service does not start](#the-nfs-mount-observer-of-the-webdav-service-does-not-start)
 
 ***
@@ -914,6 +918,47 @@ See details in [8.1. Create and edit storage](../../manual/08_Manage_Data_Storag
 Previously, on connect to a run as the run owner, the Cloud Pipeline Remote extension for VS Code and Cursor always opened `/home/<user name>`, even if the run owner's home folder (the `OWNER_HOME` environment variable of the run) was another one.
 Now, the extension opens the folder from `OWNER_HOME` for the run owner, and `/home/<user name>` only if `OWNER_HOME` is not set or cannot be read. The folder opened for `root` (`/root`) and for other users (`/home/<user name>`) is not changed.
 
+### Users export: the names of the date columns depend on the API time zone
+
+[#4739](https://github.com/epam/cloud-pipeline/issues/4739)
+
+Previously, the users export named its date columns after the default time zone of the API server, while the dates are written in UTC. So with another zone set for the API, the names did not match the data, e.g. `registrationDate Europe/Berlin`. And on an API image whose system names the zone `Etc/UTC`, as Rocky Linux 9 does, a script that looks for `registrationDate UTC` did not find the column.
+Now, the columns are always named `registrationDate UTC` and `firstLoginDate UTC`.
+See details in [12. Manage Settings](../../manual/12_Manage_Settings/12._Manage_Settings.md#export-users).
+### AWS: a Route53 DNS record of an endpoint is reported as failed although Route53 has created it
+
+[#4741](https://github.com/epam/cloud-pipeline/issues/4741)
+
+Previously, the API read the status of a new Route53 DNS record once more after Route53 had already reported it as `INSYNC`. Route53 could still answer `PENDING` to that second read, and the API then reported the record as failed.
+So an endpoint with the **Sub-Domain** option came up only on the next EDGE sync, and the `CreateDNSRecord` task of the run logged "Failed to create DNS record". The error message also stated a timeout that had not happened.
+Now, the API uses the `INSYNC` status Route53 reported. If the record is still not `INSYNC` after `CP_API_DNS_ROUTE53_MAX_ATTEMPTS` retries, made `CP_API_DNS_ROUTE53_DELAY_SECONDS` apart, the request fails, and the message gives the attempts, the delay and the time waited.
+### Launch form: the "Add system parameter" dialog drops the selected parameters
+
+[#4740](https://github.com/epam/cloud-pipeline/issues/4740)
+
+Previously, the **Add system parameter** dialog cleared the selected parameters and the search string each time the form behind it was redrawn, e.g. while the launch form was still loading.
+So after **OK**, only the parameters selected after the last redraw were added, with no message, and a run could be launched without the others.
+Now, the dialog keeps the selection and the search string while it is open, and clears them only when it is opened again. The same applies to this dialog in the tool settings.
+### AWS: billing reports show the `S3 Standard` storage costs twice as high
+
+[#4742](https://github.com/epam/cloud-pipeline/issues/4742)
+
+Previously, the billing service added up all the prices it took from the AWS price list for a region and a storage class.
+In June 2026, AWS added an "Annotations" product to the `S3` price list in almost every region, and the billing service took it as one more `Standard` price. Since then, the billing reports showed the `S3 Standard` storage costs about twice as high as the AWS prices.
+The `EFS` storage costs also included the price of the `EFS Archive` storage class: $0.308 instead of $0.30 per GB-month in `us-east-1`.
+Now, the billing service takes only the storage prices it bills, and skips the price list products with an unknown volume type. The storage costs that were already calculated are not changed.
+
+Also, a price list that can't be loaded no longer stops the billing service. The service keeps the prices it loaded before, logs the error with its cause, and tries again at the next storage billing. The run billing and the other storage billings go on. If no prices were loaded yet, that storage billing is skipped for the day, and it is not written later. And if the billing service stops, its container stops too, so Kubernetes restarts it. Before, the container kept running without the service.
+### Detached configuration: the old name stays in the Library after a rename
+
+[#4756](https://github.com/epam/cloud-pipeline/issues/4756)
+
+Previously, after a detached configuration was renamed in the **Edit configuration info** pop-up, the folder that holds the configuration and the library tree kept showing the old name until a page reload. A rename by the configuration page title had the same problem for a configuration inside a folder.
+Now, the folder and the library tree show the new name right after the rename.
+### Vulnerable dependencies of the SSH web terminal
+
+Previously, `npm audit` reported 27 known vulnerabilities in the dependencies of the SSH web terminal (`wetty`, a part of the `cp-edge` service): 3 critical, 16 high, 6 moderate and 2 low. The critical ones were in `minimist` (used by `optimist`) and in `proxy-addr` (used by `express`).
+Now, the dependencies are updated: `express` 5.3.0, `engine.io` 6.6.11, `ws` 8.21.3 and `socket.io-parser` 4.2.7 for `socket.io` 4.8.1, `vite` 7.3.7, and `minimist` 0.2.4 for `optimist`. `node-pty` is pinned to 1.0.0. The `eslint` tooling (the `lint` script and its packages) is removed from `wetty`: it was not used to build or run the terminal. At the time of this change, `npm audit` reports no vulnerabilities. The terminal works as before.
 ### The NFS mount observer of the WebDAV service does not start
 
 Previously, the NFS mount observer of the WebDAV service (`cp-dav`) never started, for two reasons. Its cron job did not get the environment of the service, so it looked for the observer script in a wrong folder. And the image did not have the `pipeline`, `psutil` and `watchdog` Python packages, which the observer imports. So the file changes made via WebDAV in the mounts that the observer watches - the `nfs4` and `lustre` mounts by default (`CP_CAP_NFS_OBSERVER_TARGET_FS_TYPES`) - were not recorded, and were not copied to the storage set by `CP_CAP_NFS_MNT_OBSERVER_TARGET_BUCKET`.
