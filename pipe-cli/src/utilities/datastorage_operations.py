@@ -15,6 +15,7 @@ import itertools
 import time
 import click
 import datetime
+import io
 import logging
 import multiprocessing
 import os
@@ -811,12 +812,16 @@ class DataStorageOperations(object):
 
     @classmethod
     def __get_file_to_copy(cls, file_path, source_path):
-        with open(file_path, 'rb') as source:
+        # io.open decodes the UTF-8 list on Python 2 as well: the paths are text, as in a local folder listing.
+        # utf-8-sig drops the BOM that some Windows editors write at the start of a UTF-8 file.
+        with io.open(file_path, 'r', encoding='utf-8-sig') as source:
             for line in source:
                 line = line.strip()
+                if not line:
+                    continue
                 splitted = line.split('\t')
                 path = splitted[0]
-                size = long(float(splitted[1]))
+                size = int(float(splitted[1]))
                 yield ('File', os.path.join(source_path, path), path, size)
 
     @classmethod

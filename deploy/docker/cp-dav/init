@@ -69,8 +69,17 @@ if [ -z "$CP_CAP_NFS_MNT_OBSERVER_DISABLED" ]; then
   if [ $? -eq 0 ]; then
         echo "'pipe-common' package was downloaded successfully."
         inotify_watchers=${CP_CAP_NFS_MNT_OBSERVER_DAV_WATCHERS:-131071}
+        # watch_mount_shares.py imports the "pipeline" package itself, plus "watchdog" and "psutil" -
+        # none of which are on this image otherwise. So pipe-common is installed from the downloaded
+        # tarball (setup.py sits at its root), the way launch.sh installs it in a run: setuptools 44.1.1
+        # first, from the platform's PyPI mirror, which CP_REPO_PYPI_BASE_URL_DEFAULT can override.
+        CP_REPO_PYPI_BASE_URL_DEFAULT="${CP_REPO_PYPI_BASE_URL_DEFAULT:-http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple}"
+        CP_REPO_PYPI_TRUSTED_HOST_DEFAULT="${CP_REPO_PYPI_TRUSTED_HOST_DEFAULT:-cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com}"
+        CP_PIP_PACKAGE_INDEX_ARGS="--index-url $CP_REPO_PYPI_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI_TRUSTED_HOST_DEFAULT"
         tar -xf pipe-common.tar.gz scripts/watch_mount_shares.py --strip-components=1 &&\
         mv watch_mount_shares.py $SYNC_HOME/ && \
+        python -m pip install $CP_PIP_PACKAGE_INDEX_ARGS -I -q setuptools==44.1.1 && \
+        python -m pip install $CP_PIP_PACKAGE_INDEX_ARGS -I -q pipe-common.tar.gz && \
         rm -rf pipe-common.tar.gz && \
         sysctl -w fs.inotify.max_user_watches=$inotify_watchers && \
         sysctl -w fs.inotify.max_queued_events=$((inotify_watchers*2)) && \
