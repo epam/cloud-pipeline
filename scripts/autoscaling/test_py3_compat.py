@@ -310,6 +310,91 @@ class AzureNodeupOsProfileTest(unittest.TestCase):
         self.assertEqual(profile['computer_name'], 'az-node')
 
 
+class _RequestStopped(Exception):
+    pass
+
+
+class UnverifiedKubeClientTest(unittest.TestCase):
+    # pykube-ng, the pykube of Python 3, sets the CA of the cluster config for each request, so the
+    # `api.session.verify = False` of these scripts, which skipped the check of the Kubernetes API certificate with
+    # pykube 0.15, has no effect there. The scripts build their client with get_unverified_kube_client() of
+    # pipe-common, as its KubeProvider does. The request is stopped in the transport, before it connects.
+    AWS_SCRIPTS = ['aws/nodedown.py', 'aws/node_reassign.py', 'aws/terminate_node.py']
+    AZURE_SCRIPTS = ['azure/nodedown.py', 'azure/node_reassign.py', 'azure/terminate_node.py']
+    CLUSTER_SCRIPTS = ['aws/nodeup.py', 'azure/nodeup.py'] + AWS_SCRIPTS + AZURE_SCRIPTS
+
+    def setUp(self):
+        import pykube
+        import tempfile
+        self.tmp_dir = tempfile.mkdtemp()
+        cluster_ca = os.path.join(self.tmp_dir, 'cluster-ca.crt')
+        with open(cluster_ca, 'w') as f:
+            f.write('certificate')
+        self.config = pykube.KubeConfig({
+            'apiVersion': 'v1',
+            'kind': 'Config',
+            'clusters': [{'name': 'kube', 'cluster': {'server': 'https://kube.example.com:6443',
+                                                      'certificate-authority': cluster_ca}}],
+            'users': [{'name': 'user', 'user': {'token': 'test-token'}}],
+            'contexts': [{'name': 'context', 'context': {'cluster': 'kube', 'user': 'user'}}],
+            'current-context': 'context'
+        })
+        environment = mock.patch.dict(os.environ)
+        environment.start()
+        self.addCleanup(environment.stop)
+        for name in ['REQUESTS_CA_BUNDLE', 'CURL_CA_BUNDLE', 'PYKUBE_SSL_CERTIFICATE_AUTHORITY',
+                     'CP_PYKUBE_SKIP_REQUESTS_CA_BUNDLE']:
+            os.environ.pop(name, None)
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.tmp_dir)
+
+    def _sent_verify(self, client):
+        import requests
+        sent = {}
+
+        def add_headers(request, **kwargs):
+            sent['verify'] = kwargs.get('verify')
+            raise _RequestStopped()
+
+        with mock.patch.object(requests.adapters.HTTPAdapter, 'add_headers', side_effect=add_headers):
+            with self.assertRaises(_RequestStopped):
+                client.get(url='nodes')
+        return sent['verify']
+
+    def _get_kube_api(self, module):
+        import pykube
+        with mock.patch.object(pykube.KubeConfig, 'from_service_account', return_value=self.config):
+            return module.get_kube_api()
+
+    def test_aws_scripts_do_not_verify_the_kubernetes_api_certificate(self):
+        for relative_path in self.AWS_SCRIPTS:
+            module = load_module('unverified_' + relative_path.replace('/', '_')[:-3], relative_path)
+            self.assertIs(False, self._sent_verify(self._get_kube_api(module)), relative_path)
+
+    def test_azure_scripts_do_not_verify_the_kubernetes_api_certificate(self):
+        for relative_path in self.AZURE_SCRIPTS:
+            module = load_azure_module('unverified_' + relative_path.replace('/', '_')[:-3], relative_path)
+            self.assertIs(False, self._sent_verify(self._get_kube_api(module)), relative_path)
+
+    def test_a_plain_pykube_client_verifies_with_the_ca_of_the_cluster(self):
+        # The reason for the above: with pykube-ng, session.verify = False alone does not skip the check
+        import pykube
+        client = pykube.HTTPClient(self.config)
+        client.session.verify = False
+        self.assertNotEqual(False, self._sent_verify(client))
+
+    def test_no_cluster_script_builds_a_plain_pykube_client(self):
+        # aws/nodeup.py and azure/nodeup.py build the client inside main(), which needs a cloud to run
+        for relative_path in self.CLUSTER_SCRIPTS:
+            with open(os.path.join(AUTOSCALING_DIR, relative_path)) as f:
+                source = f.read()
+            self.assertFalse('pykube.HTTPClient(' in source, relative_path)
+            self.assertTrue('get_unverified_kube_client(pykube.KubeConfig.from_service_account())' in source,
+                            relative_path)
+
+
 class AzureClusterScriptsImportTest(unittest.TestCase):
     # Regression test, same class as ImportUnderCurrentInterpreterTest above but for the
     # azure/*.py scripts, which that test deliberately excludes (see its comment) - catches a

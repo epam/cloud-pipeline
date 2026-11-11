@@ -21,6 +21,7 @@ import sys
 import re
 
 import pykube
+from pipeline.common.kubernetes import get_unverified_kube_client
 import logging
 import fnmatch
 import uuid
@@ -1098,10 +1099,9 @@ def main():
                                     str(time_rep)))
 
     try:
-        api = pykube.HTTPClient(pykube.KubeConfig.from_service_account())
+        api = get_unverified_kube_client(pykube.KubeConfig.from_service_account())
     except Exception as e:
-        api = pykube.HTTPClient(pykube.KubeConfig.from_file("~/.kube/config"))
-    api.session.verify = False
+        api = get_unverified_kube_client(pykube.KubeConfig.from_file("~/.kube/config"))
 
     resource_name = VM_NAME_PREFIX + uuid.uuid4().hex[0:UUID_LENGHT]
 

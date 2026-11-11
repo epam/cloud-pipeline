@@ -17,6 +17,7 @@ import os
 import re
 
 import pykube
+from pipeline.common.kubernetes import get_unverified_kube_client
 import argparse
 from azure.common.client_factory import get_client_from_auth_file, get_client_from_cli_profile
 from azure.mgmt.resource import ResourceManagementClient
@@ -106,10 +107,9 @@ def get_node(kube_api, nodename):
 
 def get_kube_api():
     try:
-        api = pykube.HTTPClient(pykube.KubeConfig.from_service_account())
+        api = get_unverified_kube_client(pykube.KubeConfig.from_service_account())
     except Exception as e:
-        api = pykube.HTTPClient(pykube.KubeConfig.from_file(KUBE_CONFIG_PATH))
-    api.session.verify = False
+        api = get_unverified_kube_client(pykube.KubeConfig.from_file(KUBE_CONFIG_PATH))
     return api
 
 

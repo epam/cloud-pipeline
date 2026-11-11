@@ -21,6 +21,7 @@ from time import sleep
 import boto3
 from botocore.config import Config
 import pykube
+from pipeline.common.kubernetes import get_unverified_kube_client
 import logging
 import os
 import pytz
@@ -1564,10 +1565,9 @@ def main():
 
         # Setup kubernetes client
         try:
-            api = pykube.HTTPClient(pykube.KubeConfig.from_service_account())
+            api = get_unverified_kube_client(pykube.KubeConfig.from_service_account())
         except Exception:
-            api = pykube.HTTPClient(pykube.KubeConfig.from_file(KUBE_CONFIG_PATH))
-        api.session.verify = False
+            api = get_unverified_kube_client(pykube.KubeConfig.from_file(KUBE_CONFIG_PATH))
 
         api_url = os.environ["API"]
         api_token = os.environ["API_TOKEN"]
