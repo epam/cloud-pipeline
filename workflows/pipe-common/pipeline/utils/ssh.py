@@ -14,11 +14,16 @@
 
 import os
 import subprocess
+import sys
 from abc import ABCMeta, abstractmethod
 
 import paramiko
 
 from pipeline.utils.plat import is_windows
+
+# Python 3 decodes the output of a command: "replace" keeps a byte that is not valid there from failing the command.
+# Python 2 returns the bytes as they are, and its Popen has no "errors".
+_DECODING_ARGUMENTS = {'errors': 'replace'} if sys.version_info[0] >= 3 else {}
 
 
 class ExecutorError(RuntimeError):
@@ -98,7 +103,7 @@ class LocalExecutor(CloudPipelineExecutor):
     def _execute(self, command, user=None):
         stdout, stderr = self._get_stdout_and_stderr()
         p = subprocess.Popen(command, shell=True, stdout=stdout, stderr=stderr,
-                             preexec_fn=self._execute_as_fn(user), universal_newlines=True)
+                             preexec_fn=self._execute_as_fn(user), universal_newlines=True, **_DECODING_ARGUMENTS)
         out, err = p.communicate()
         return p.returncode, out, err
 
