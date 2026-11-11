@@ -19,4 +19,4 @@ Test verifies creating, editing and deleting a tool group.
 | 13 | Click **CANCEL** button |  |
 | 14 | Repeat step 3 |  |
 | 15 | Select **Group** → **Delete** in the appeared list |  |
-| 16 | Click **OK** button in the appeared pop-up |  |
+| 16 | Click **Delete** button in the appeared pop-up |  |

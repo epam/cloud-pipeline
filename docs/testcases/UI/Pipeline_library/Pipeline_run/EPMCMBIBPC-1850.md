@@ -25,4 +25,4 @@ Test verifies that a pipeline run cannot write a file into a bucket folder for w
 | 16 | Launch the pipeline |  |
 | 17 | Go to the running pipeline's page |  |
 | 18 | Click **Parameters** |  |
-| 19 | After the pipeline finishes, navigate to the path specified at step 17 | The file is not displayed in the bucket |
+| 19 | After the pipeline finishes, navigate to the path specified at step 14 | The file is not displayed in the bucket |

@@ -53,6 +53,7 @@ public class S3TemporaryCredentialsGenerator extends AbstractAWSTemporaryCredent
     private static final String S3_CONDITION_PREFIX = "s3:prefix";
     private static final String ARN_AWS_S3_PREFIX = "arn:aws:s3:::";
     private static final String ALL_PATHS = "/*";
+    private static final String ACCESS_POINT_OBJECTS = "/object/";
 
     public S3TemporaryCredentialsGenerator(final CloudRegionManager cloudRegionManager,
                                            final PreferenceManager preferenceManager,
@@ -75,6 +76,9 @@ public class S3TemporaryCredentialsGenerator extends AbstractAWSTemporaryCredent
         }
         final ArrayNode resource = statement.putArray(RESOURCE);
         resource.add(buildS3Arn(action, true));
+        if (StringUtils.isNotBlank(action.getAccessPointArn())) {
+            resource.add(action.getAccessPointArn());
+        }
 
         if (StringUtils.isNotBlank(action.getItemPath())) {
             // listing shall be restricted by specified path
@@ -113,12 +117,26 @@ public class S3TemporaryCredentialsGenerator extends AbstractAWSTemporaryCredent
         }
         final ArrayNode resource = statement.putArray(RESOURCE);
         resource.add(buildS3Arn(action, false));
+        if (StringUtils.isNotBlank(action.getAccessPointArn())) {
+            resource.add(buildAccessPointObjectArn(action));
+        }
         statements.add(statement);
     }
 
     private String buildS3Arn(final DataStorageAction action, final boolean list) {
         return ARN_AWS_S3_PREFIX + (
                 list ? ProviderUtils.withoutTrailingDelimiter(action.getBucketName()) : buildPathForS3Arn(action));
+    }
+
+    /**
+     * AWS checks a request made through an access point alias against the access point ARN,
+     * where object keys follow the "/object/" segment instead of the bucket name.
+     */
+    private String buildAccessPointObjectArn(final DataStorageAction action) {
+        final String bucketPrefix = ProviderUtils.withoutTrailingDelimiter(action.getBucketName())
+                + ProviderUtils.DELIMITER;
+        return action.getAccessPointArn() + ACCESS_POINT_OBJECTS
+                + StringUtils.removeStart(buildPathForS3Arn(action), bucketPrefix);
     }
 
     private String buildPathForS3Arn(final DataStorageAction action) {

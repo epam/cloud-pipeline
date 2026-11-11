@@ -39,6 +39,13 @@ public class S3bucketDataStorage extends AbstractAWSDataStorage {
      */
     private List<String> allowedCidrs;
 
+    /**
+     * ARN of the S3 access point, if the storage path is an access point alias.
+     * AWS checks a request made through an alias against this ARN rather than against the alias,
+     * so temporary credentials have to grant access to it as well.
+     */
+    private String accessPointArn;
+
     public S3bucketDataStorage(final Long id, final String name, final String path) {
         this(id, name, ProviderUtils.normalizeBucketName(path), DEFAULT_POLICY, "");
     }

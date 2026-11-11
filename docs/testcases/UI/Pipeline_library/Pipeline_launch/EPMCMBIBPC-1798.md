@@ -6,6 +6,6 @@ Test verifies that the **Type** combo-box on the launch form groups the availabl
 | :---: | --- | --- |
 | 1 | Login as a user who has permissions to launch the pipeline |  |
 | 2 | Click the pipeline |  |
-| 3 | Click the **Launch** button |  |
+| 3 | Click the **RUN** button |  |
 | 4 | Click **Exec environment** |  |
 | 5 | Click the **Type** combo-box | A dropdown list opens. The instance types are grouped in it - possible groups are:<br><ul><li>`General purpose`</li><li>`Compute optimized`</li><li>`Memory optimized`</li><li>`Storage optimized`</li><li>`Accelerated computing`</li><li>etc.</li></ul>Each group contains an own list of instance types. |

@@ -16,4 +16,4 @@ Test verifies that no estimated price is shown on the launch page for a tool wit
 
 | Steps | Actions | Expected results |
 | :---: | --- | --- |
-| 1 | Look at the left upper corner of the page | <li> the `Launch CMD` sign is present <li> no estimated price is present <li> no information icon is present |
+| 1 | Look at the left upper corner of the page | <li> the `Launch <tool_name>:<tool_version_name>` sign is present <li> no estimated price is present <li> no information icon is present |

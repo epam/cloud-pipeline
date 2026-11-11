@@ -12,7 +12,7 @@ Test verifies that unregistering and re-creating an NFS mount at the same path k
 | 6 | Click **Delete** button |  |
 | 7 | Click **Unregister** button in the appeared pop-up window | The storage is not displayed on the library-tree on the left panel of the page |
 | 8 | Click **+ Create v** button |  |
-| 9 | Hover over **Storages** -> click **Create NFS mount** |  |
+| 9 | Hover over **Storages** -> click **Create new FS mount** |  |
 | 10 | Paste the value saved at step 5 into the **Storage path** field |  |
 | 11 | Click **Create** button |  |
 | 12 | Select the created storage | The file and folder that were created at step 3 are displayed in the storage |

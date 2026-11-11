@@ -5,7 +5,7 @@ Test verifies that entering a system-parameter name for a regular launch paramet
 | Steps | Actions | Expected results |
 | :---: | --- | --- |
 | 1 | After performing the [EPMCMBIBPC-1679](EPMCMBIBPC-1679.md) case |  |
-| 2 | Click **Run** button |  |
+| 2 | Click **RUN** button |  |
 | 3 | Click the dropdown button near the **Add parameter** button |  |
 | 4 | Select **String parameter** |  |
 | 5 | Enter `param1` into the **Name** field |  |

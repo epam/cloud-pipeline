@@ -8,7 +8,7 @@ Test verifies that an auto-scaled cluster starts a worker node once demand appea
 | 2 | Create a pipeline (from the SHELL template) |  |
 | 3 | Open the created pipeline |  |
 | 4 | Click **RUN** button |  |
-| 5 | On the appeared page click **Exec environment** |  |
+| 5 | On the appeared page click **Exec environment** and **Advanced** |  |
 | 6 | Input valid values into the **Node type**, **Disk (Gb)** fields |  |
 | 7 | Set the **Cmd template** to: `qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 1d && sleep infinity` |  |
 | 8 | Click **Configure cluster** |  |

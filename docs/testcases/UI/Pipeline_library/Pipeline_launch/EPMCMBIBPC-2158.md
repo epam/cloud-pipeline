@@ -23,9 +23,9 @@ Test verifies that Input, Output and Common path parameters of a pipeline correc
 | 17 | On the pipeline page select **CODE** tab |  |
 | 18 | Replace the code of the main file with the following code and save it:<br>`#!/usr/bin/env bash`<br>`pipe_log SUCCESS "Running shell pipeline" "Task1"`<br>`cp -r ${INPUT_DIR}/* ${ANALYSIS_DIR}`<br>`cp -r ${COMMON_DIR}/* ${ANALYSIS_DIR}` |  |
 | 19 | Select **CONFIGURATION** tab |  |
-| 20 | Hover over the **v** element to the right of the **Add parameters** button: select **Output path parameter** item, specify the parameter name in the left field of the appeared row, and specify the full path to the `out` folder created at step 4 in the right field |  |
-| 21 | Hover over the **v** element to the right of the **Add parameters** button: select **Input path parameter** item, specify the parameter name in the left field, and specify the full path to the `in.txt` file created at step 13 in the right field |  |
-| 22 | Hover over the **v** element to the right of the **Add parameters** button: select **Common path parameter** item, specify the parameter name in the left field, and specify the full path to the `common` folder created at step 5 and to the `common3.txt` file created at step 11 in the right field |  |
+| 20 | Hover over the **v** element to the right of the **Add parameter** button: select **Output path parameter** item, specify the parameter name in the left field of the appeared row, and specify the full path to the `out` folder created at step 4 in the right field |  |
+| 21 | Hover over the **v** element to the right of the **Add parameter** button: select **Input path parameter** item, specify the parameter name in the left field, and specify the full path to the `in.txt` file created at step 13 in the right field |  |
+| 22 | Hover over the **v** element to the right of the **Add parameter** button: select **Common path parameter** item, specify the parameter name in the left field, and specify the full path to the `common` folder created at step 5 and to the `common3.txt` file created at step 11 in the right field |  |
 | 23 | Click **Save** button |  |
 | 24 | Click **RUN** button |  |
 | 25 | Click **Launch** button |  |

@@ -425,6 +425,28 @@ public class SystemPreferences {
             GIT_GROUP, isNullOrValidJson(new TypeReference<GitlabIssueLabelsFilter>() {}), true);
     public static final LongPreference GIT_DEFAULT_TOKEN_DURATION_DAYS = new LongPreference(
             "git.default.token.duration.days", 1L, GIT_GROUP, isGreaterThan(0L));
+    /**
+     * Enables the scheduled rotation of the git.token, when it is close to its expiry.
+     */
+    public static final BooleanPreference GIT_TOKEN_ROTATION_ENABLED = new BooleanPreference(
+            "git.token.rotation.enabled", true, GIT_GROUP, pass);
+    /**
+     * A cron expression, that defines when to check the git.token expiry.
+     */
+    public static final StringPreference GIT_TOKEN_ROTATION_SCHEDULE = new StringPreference(
+            "git.token.rotation.schedule", "0 0 3 ? * *", GIT_GROUP, PreferenceValidators.isValidCron);
+    /**
+     * The git.token is rotated, when it expires in this number of days or fewer.
+     */
+    public static final IntPreference GIT_TOKEN_ROTATION_THRESHOLD_DAYS = new IntPreference(
+            "git.token.rotation.threshold.days", 30, GIT_GROUP, isGreaterThan(0));
+    /**
+     * The lifetime of a rotated git.token in days. Gitlab rejects a lifetime over 365 days, and the default
+     * leaves a day for a time zone difference between Gitlab and the API.
+     */
+    public static final IntPreference GIT_TOKEN_ROTATION_LIFETIME_DAYS = new IntPreference(
+            "git.token.rotation.lifetime.days", 364, GIT_GROUP,
+            isGreaterThan(0).and(isLessThan(366)));
 
     // DOCKER_SECURITY_GROUP
     /**
@@ -838,6 +860,14 @@ public class SystemPreferences {
 
     public static final BooleanPreference LAUNCH_DOCKER_PREFLIGHT_CHECKS = new BooleanPreference(
             "launch.docker.preflight.checks", true, LAUNCH_GROUP, pass, true);
+
+    /**
+     * Pins the pod of a launched run to the digest, which the run's docker image tag points to at the launch,
+     * so the run cannot pick up another image if the tag is moved later. Applies to the runs launched
+     * after it is enabled only, the runs created before keep using the tag.
+     */
+    public static final BooleanPreference LAUNCH_DOCKER_IMAGE_PIN_DIGEST = new BooleanPreference(
+            "launch.docker.image.pin.digest", false, LAUNCH_GROUP, pass);
 
     /**
      * Specifies a comma-separated list of environment variables that should be inherited by DIND containers
@@ -1730,7 +1760,7 @@ public class SystemPreferences {
                     new TypeReference<List<CloudAccessManagementConfig>>() {}, CLOUD,
                     isNullOrValidJson(new TypeReference<List<CloudAccessManagementConfig>>() {}));
 
-    private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
+    private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d+)\\.(\\d+)");
 
     // System Jobs
     public static final StringPreference SYSTEM_JOBS_SCRIPTS_LOCATION = new StringPreference(

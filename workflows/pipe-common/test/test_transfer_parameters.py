@@ -24,7 +24,10 @@ import pytest
 # The pipeline package has transitive dependencies (luigi, etc.) that are not
 # available in the test environment.  We inject lightweight stubs into
 # sys.modules so that ``transfer_parameters`` can be imported without pulling
-# in the real package tree.
+# in the real package tree. The stubs are removed again right after the import:
+# pytest imports every test module before it runs any, so a stub left in
+# sys.modules would shadow the real ``pipeline.*`` in the modules collected after
+# this one. The script keeps the stub objects it has imported.
 
 _PIPELINE_STUBS = {}
 
@@ -120,16 +123,24 @@ _make_module('pipeline.common', {
     'replace_all_system_variables_in_path': _replace_all_system_variables_in_path,
 })
 
+_ORIGINAL_MODULES = dict((name, sys.modules.get(name)) for name in _PIPELINE_STUBS)
 sys.modules.update(_PIPELINE_STUBS)
 
 scripts_dir = os.path.join(os.path.dirname(__file__), '..', 'scripts')
 if scripts_dir not in sys.path:
     sys.path.insert(0, scripts_dir)
 
-from transfer_parameters import (
-    InputDataTask, LocalizedPath, RemoteLocation, RunParameter,
-    ParameterType, PathType, LOCALIZATION_TASK_NAME
-)
+try:
+    from transfer_parameters import (
+        Cluster, InputDataTask, LocalizedPath, RemoteLocation, RunParameter,
+        ParameterType, PathType, LOCALIZATION_TASK_NAME
+    )
+finally:
+    for _name, _module in _ORIGINAL_MODULES.items():
+        if _module is None:
+            sys.modules.pop(_name, None)
+        else:
+            sys.modules[_name] = _module
 
 INPUT_DIR = '/input'
 COMMON_DIR = '/common'
@@ -854,3 +865,69 @@ class TestRunReportIntegration(object):
         })
         export_line = [l for l in content.strip().split('\n') if l.startswith('export SEMI=')][0]
         assert export_line == 'export SEMI="/input/data.csv;/home/user/extra.bed"'
+
+
+# ========================================================================
+# Cluster.build_cluster: parallel transfer on the nodes of a cluster
+# ========================================================================
+
+class _ChildRunsApi(object):
+
+    def __init__(self, child_runs):
+        self.child_runs = child_runs
+
+    def load_child_pipelines(self, run_id):
+        return self.child_runs
+
+
+class TestBuildCluster(object):
+
+    def _build(self, monkeypatch, child_runs):
+        hostfile = tempfile.NamedTemporaryFile()
+        monkeypatch.setenv('CP_PARALLEL_TRANSFER', 'true')
+        monkeypatch.setenv('CP_TRANSFER_THREADS', '4')
+        monkeypatch.setenv('node_count', '2')
+        monkeypatch.setenv('CP_CAP_SGE', 'true')
+        monkeypatch.setenv('CP_CAP_AUTOSCALE', 'true')
+        monkeypatch.setenv('DEFAULT_HOSTFILE', hostfile.name)
+        monkeypatch.setenv('RUN_ID', '12345')
+        try:
+            return Cluster.build_cluster(_ChildRunsApi(child_runs), TASK_NAME)
+        finally:
+            hostfile.close()
+
+    def test_uses_the_running_workers(self, monkeypatch):
+        cluster = self._build(monkeypatch, [
+            {'status': 'RUNNING', 'podId': 'worker-1'},
+            {'status': 'RUNNING', 'podId': 'worker-2', 'pipelineRunParameters': []},
+            {'status': 'STOPPED', 'podId': 'worker-3'},
+            {'status': 'RUNNING', 'podId': 'worker-4',
+             'pipelineRunParameters': [{'name': 'cluster_role_type', 'value': 'additional'}]},
+        ])
+
+        assert [node.hostname for node in cluster.nodes] == ['localhost', 'worker-1', 'worker-2']
+        assert cluster.slots_per_node == 4
+
+    def test_uses_only_the_master_without_running_workers(self, monkeypatch):
+        cluster = self._build(monkeypatch, [{'status': 'STOPPED', 'podId': 'worker-1'}])
+
+        assert [node.hostname for node in cluster.nodes] == ['localhost']
+
+
+class TestGetSlotsPerNode(object):
+
+    def test_slots_per_node_are_the_cpus_divided_by_the_ratio(self, monkeypatch):
+        monkeypatch.delenv('CP_TRANSFER_THREADS', raising=False)
+        monkeypatch.setenv('CP_TRANSFER_PROC_RATIO', '3')
+        with mock.patch('transfer_parameters.multiprocessing.cpu_count', return_value=8):
+            slots_per_node = Cluster.get_slots_per_node()
+
+        # A whole number: the slots of a node go to range() and to the size of the transfer pool
+        assert slots_per_node == 2
+        assert isinstance(slots_per_node, int)
+
+    def test_a_node_has_a_slot_at_least(self, monkeypatch):
+        monkeypatch.delenv('CP_TRANSFER_THREADS', raising=False)
+        monkeypatch.setenv('CP_TRANSFER_PROC_RATIO', '16')
+        with mock.patch('transfer_parameters.multiprocessing.cpu_count', return_value=8):
+            assert Cluster.get_slots_per_node() == 1

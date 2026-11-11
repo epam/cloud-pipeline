@@ -18,12 +18,12 @@ Test verifies that a blocked user cannot log in, and that their runs remain inta
 | 8 | Click the **User management** tab, click the **Users** subtab |  |
 | 9 | Find the non-admin user from the prerequisites and click the edit button next to the username |  |
 | 10 | Click **BLOCK** in the lower-left corner; in the pop-up that appears, click **OK** to confirm the blocking |  |
-| 11 | Click **OK** to close the user-editing pop-up |  |
+| 11 | Click **CANCEL** to close the user-editing pop-up |  |
 | 12 | Log out |  |
 | 13 | Try to log in to the platform as the non-admin user from the prerequisites | The page with the authorization error appears |
 | 14 | Repeat steps 6-9 |  |
 | 15 | Click **UNBLOCK** in the lower-left corner; in the pop-up that appears, click **OK** to confirm the unblocking |  |
-| 16 | Click **OK** to close the user-editing pop-up |  |
+| 16 | Click **CANCEL** to close the user-editing pop-up |  |
 | 17 | Log out |  |
 | 18 | Repeat step 1 | The main Dashboard appears |
 | 19 | Open the **Runs** page | <li>The run is displayed on the **ACTIVE RUNS** tab <li>The run ID is the same as saved at step 4 <li>The run owner is the user from the prerequisites |

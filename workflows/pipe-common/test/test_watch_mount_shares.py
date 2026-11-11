@@ -23,10 +23,19 @@
 # interpreters without extra packages - run with `python -m unittest test_watch_mount_shares` (or
 # under pytest) from inside workflows/pipe-common/test.
 
+import locale
 import os
 import sys
 import types
 import unittest
+
+# The real watchdog, where it is installed: the observer test below checks the script against its API.
+try:
+    from watchdog.events import FileSystemEventHandler as _WatchdogEventHandler
+    from watchdog.observers.api import BaseObserver as _WatchdogObserver, EventEmitter as _WatchdogEmitter, \
+        ObservedWatch as _WatchdogObservedWatch
+except ImportError:
+    _WatchdogObservedWatch = None
 
 SCRIPTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'scripts')
 sys.path.insert(0, SCRIPTS_DIR)
@@ -45,9 +54,9 @@ def _stub_module(name, **attrs):
 # installed. Stub them out so importing the module under test doesn't drag in the full pipe-common
 # package tree (and its own, unrelated dependency chain) just to check subprocess output types.
 #
-# Saved so tearDownModule() below can restore sys.modules afterwards - left in place, a stub would
-# otherwise shadow a real "import pipeline"/"psutil"/"watchdog.*" in any test collected after this
-# one in the same process (pytest and unittest discovery both import every module into one process).
+# The stubs are removed again right after the import: pytest imports every test module before it runs
+# any, so a stub left in sys.modules would shadow a real "import pipeline"/"psutil"/"watchdog.*" in the
+# modules collected after this one. The script keeps the stub objects it has imported.
 _STUBBED_MODULE_NAMES = ['psutil', 'watchdog', 'watchdog.events', 'watchdog.observers',
                         'watchdog.observers.inotify', 'watchdog.observers.api', 'pipeline']
 _ORIGINAL_MODULES = dict((name, sys.modules.get(name)) for name in _STUBBED_MODULE_NAMES)
@@ -60,15 +69,14 @@ _stub_module('watchdog.observers.inotify', InotifyObserver=object)
 _stub_module('watchdog.observers.api', ObservedWatch=object)
 _stub_module('pipeline', PipelineAPI=object)
 
-import watch_mount_shares as wms  # noqa: E402  (must follow the sys.modules stubbing above)
-
-
-def tearDownModule():
-    for name, original in _ORIGINAL_MODULES.items():
-        if original is None:
-            sys.modules.pop(name, None)
+try:
+    import watch_mount_shares as wms  # noqa: E402  (must follow the sys.modules stubbing above)
+finally:
+    for _name, _original in _ORIGINAL_MODULES.items():
+        if _original is None:
+            sys.modules.pop(_name, None)
         else:
-            sys.modules[name] = original
+            sys.modules[_name] = _original
 
 
 class ExecuteCommandReturnsTextTest(unittest.TestCase):
@@ -114,6 +122,101 @@ class CurrentUtcTimeMillisTest(unittest.TestCase):
         millis = wms.current_utc_time_millis()
         self.assertGreater(millis, 1000000000000)
         self.assertLess(millis, 7000000000000)
+
+
+class ExecuteCommandOutputThatIsNotUtf8Test(unittest.TestCase):
+    # Python 3 decodes the output with the encoding of the locale and replaces a byte that is not valid there: with
+    # UTF-8, the encoding of the test containers, it is U+FFFD. Python 2 keeps the bytes.
+
+    _EXPECTED = b'caf\xe9\n'.decode(locale.getpreferredencoding(False), 'replace') \
+        if sys.version_info[0] >= 3 else 'caf\xe9\n'
+
+    def test_output_does_not_fail_the_command(self):
+        exit_code, stdout, _ = wms.execute_cmd_command_and_get_stdout_stderr(r"printf 'caf\351\n'", silent=True)
+        self.assertEqual(0, exit_code)
+        self.assertEqual(self._EXPECTED, stdout)
+
+    def test_output_does_not_fail_the_command_with_an_executable(self):
+        exit_code, _, stderr = wms.execute_cmd_command_and_get_stdout_stderr(r"printf 'caf\351\n' 1>&2", silent=True,
+                                                                             executable='/bin/bash')
+        self.assertEqual(0, exit_code)
+        self.assertEqual(self._EXPECTED, stderr)
+
+
+def _without_init(cls):
+    # An instance with no observer behind it. NFSMountWatcher is a classic class on Python 2: object.__new__ fails there
+    class _Instance(cls):
+        def __init__(self):
+            pass
+    return _Instance()
+
+
+class _FileEvent(object):
+
+    def __init__(self, event_type, src_path='/mnt/nfs/file.txt'):
+        self.is_directory = False
+        self.event_type = event_type
+        self.src_path = src_path
+
+
+class DispatchRecordsOnlyFileChangesTest(unittest.TestCase):
+    # watchdog 6 reports the file accesses too, and "closed_no_write" starts with "c", the code of a created file
+
+    def setUp(self):
+        self.handler = _without_init(wms.CloudBucketDumpingEventHandler)
+        self.handler._active_events = wms.OrderedDict()
+
+    def _recorded_events(self):
+        return [(path, event.event_type) for path, event in self.handler._active_events.items()]
+
+    def test_a_read_of_a_file_records_nothing(self):
+        for event_type in ['opened', 'closed_no_write', 'closed']:
+            self.handler.dispatch(_FileEvent(event_type))
+        self.assertEqual([], self._recorded_events())
+
+    def test_a_modification_is_recorded(self):
+        for event_type in ['opened', 'modified', 'closed']:
+            self.handler.dispatch(_FileEvent(event_type))
+        self.assertEqual([('/mnt/nfs/file.txt', wms.MODIFY_EVENT)], self._recorded_events())
+
+    def test_a_creation_and_a_deletion_are_recorded(self):
+        self.handler.dispatch(_FileEvent('created', '/mnt/nfs/new.txt'))
+        self.handler.dispatch(_FileEvent('deleted', '/mnt/nfs/old.txt'))
+        self.assertEqual([('/mnt/nfs/new.txt', wms.CREATE_EVENT), ('/mnt/nfs/old.txt', wms.DELETE_EVENT)],
+                         self._recorded_events())
+
+
+class RemoveUnmountedWatchersTest(unittest.TestCase):
+
+    def _watcher(self, target_path_mapping):
+        watcher = _without_init(wms.NFSMountWatcher)
+        watcher._target_path_mapping = target_path_mapping
+        return watcher
+
+    def test_removes_several_mounts_in_one_pass(self):
+        watcher = self._watcher({'/mnt/a': 'src-a', '/mnt/b': 'src-b', '/mnt/c': 'src-c'})
+        watcher.try_to_remove_path_from_observer = lambda mnt_dest: True
+
+        watcher._remove_unmounted_watchers({'/mnt/b': 'src-b'})
+
+        self.assertEqual({'/mnt/b': 'src-b'}, watcher._target_path_mapping)
+
+    @unittest.skipIf(_WatchdogObservedWatch is None, 'watchdog is not installed')
+    def test_unschedules_the_watch_of_a_removed_mount(self):
+        # The observer finds a watch by its path and recursive flag, and watchdog 6 takes the flag by keyword only
+        watcher = self._watcher({'/mnt/a': 'src-a', '/mnt/b': 'src-b'})
+        watcher._event_observer = _WatchdogObserver(_WatchdogEmitter)
+        for mnt_dest in ['/mnt/a', '/mnt/b']:
+            watcher._event_observer.schedule(_WatchdogEventHandler(), mnt_dest, recursive=True)
+        script_observed_watch = wms.ObservedWatch
+        wms.ObservedWatch = _WatchdogObservedWatch
+        try:
+            watcher._remove_unmounted_watchers({'/mnt/b': 'src-b'})
+        finally:
+            wms.ObservedWatch = script_observed_watch
+
+        self.assertEqual({'/mnt/b': 'src-b'}, watcher._target_path_mapping)
+        self.assertEqual(['/mnt/b'], [emitter.watch.path for emitter in watcher._event_observer.emitters])
 
 
 if __name__ == '__main__':

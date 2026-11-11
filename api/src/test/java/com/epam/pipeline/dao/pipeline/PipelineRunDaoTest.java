@@ -133,6 +133,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     private static final ZoneId ZONE_ID = ZoneId.systemDefault();
     private static final String DOCKER_IMAGE = "dockerImage";
     private static final String ACTUAL_DOCKER_IMAGE = "actualDockerImage";
+    private static final String ACTUAL_DOCKER_IMAGE_DIGEST = "sha256:actualDockerImageDigest";
     private static final String TEST_PIPELINE_NAME = "Test";
     private static final String TEST_NEW_PIPELINE_NAME = "AnotherName";
     private static final String NODE_NAME = "node-12323";
@@ -432,6 +433,42 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
         assertEquals(loadedRun.getDockerImage(), DOCKER_IMAGE);
         assertEquals(loadedRun.getActualDockerImage(), ACTUAL_DOCKER_IMAGE);
+    }
+
+    @Test
+    @Transactional
+    public void pipelineRunShouldHaveActualDockerImageDigest() {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId());
+        run.setActualDockerImage(ACTUAL_DOCKER_IMAGE);
+        run.setActualDockerImageDigest(ACTUAL_DOCKER_IMAGE_DIGEST);
+        pipelineRunDao.createPipelineRun(run);
+
+        assertEquals(ACTUAL_DOCKER_IMAGE_DIGEST,
+                pipelineRunDao.loadPipelineRun(run.getId()).getActualDockerImageDigest());
+    }
+
+    @Test
+    @Transactional
+    public void pipelineRunShouldHaveNoActualDockerImageDigestIfNotPinned() {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId());
+        run.setActualDockerImage(ACTUAL_DOCKER_IMAGE);
+        pipelineRunDao.createPipelineRun(run);
+
+        assertNull(pipelineRunDao.loadPipelineRun(run.getId()).getActualDockerImageDigest());
+    }
+
+    @Test
+    @Transactional
+    public void updateRunShouldNotChangeActualDockerImageDigest() {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId());
+        run.setActualDockerImageDigest(ACTUAL_DOCKER_IMAGE_DIGEST);
+        pipelineRunDao.createPipelineRun(run);
+
+        run.setActualDockerImageDigest(null);
+        pipelineRunDao.updateRun(run);
+
+        assertEquals(ACTUAL_DOCKER_IMAGE_DIGEST,
+                pipelineRunDao.loadPipelineRun(run.getId()).getActualDockerImageDigest());
     }
 
     @Test

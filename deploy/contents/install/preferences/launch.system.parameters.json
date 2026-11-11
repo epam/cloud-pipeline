@@ -707,5 +707,11 @@
         "description": "Comma delimited list of environment variables that should be excluded from run container",
         "defaultValue": "",
         "passToWorkers": true
+    },
+    {
+        "name": "CP_VSCODE_WORKSPACE_DIR",
+        "type": "string",
+        "description": "Absolute path to the folder the VS Code extension opens on connect, instead of the home folder. Used only if the user who connects can open the folder.",
+        "passToWorkers": false
     }
 ]

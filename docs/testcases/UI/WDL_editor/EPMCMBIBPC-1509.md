@@ -1,6 +1,6 @@
-# [MANUAL] Check of the content of the edit scatter pop-up name field
+# [MANUAL] Check of the content of the scatter Properties panel
 
-Test verifies that the Edit scatter pop-up's Name field is pre-filled with the scatter's name.
+Test verifies that the Properties panel for a scatter object has no editable Name field.
 
 **Prerequisites**:
 - At least one version of a WDL pipeline is present
@@ -9,10 +9,8 @@ Test verifies that the Edit scatter pop-up's Name field is pre-filled with the s
 | :---: | --- | --- |
 | 1 | Open the last version of the WDL pipeline |  |
 | 2 | Switch to **GRAPH** tab |  |
-| 3 | Click **+ ADD SCATTER** button |  |
-| 4 | Set a valid name and value |  |
-| 5 | Click **ADD** button |  |
-| 6 | Save and commit |  |
-| 7 | Refresh page |  |
-| 8 | Select the just-created scatter |  |
-| 9 | Click **EDIT** button | <li> the `Edit scatter <scatter name>` pop-up appears <li> `<scatter name>` is present in the **Name** field |
+| 3 | Click **PROPERTIES** button |  |
+| 4 | Click **Actions** button -> **Add scatter** |  |
+| 5 | Save and commit |  |
+| 6 | Refresh page |  |
+| 7 | Select the just-created scatter | The **Properties** panel for the selected scatter appears, containing: **Actions** button, a **Scatter item** collapsed header, a **Remove** button; no **Name** field is displayed |

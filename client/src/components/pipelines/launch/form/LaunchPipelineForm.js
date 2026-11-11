@@ -52,6 +52,7 @@ import PipelineRunEstimatedPrice from '../../../../models/pipelines/PipelineRunE
 import FolderProject from '../../../../models/folders/FolderProject';
 import MetadataEntityFields from '../../../../models/folderMetadata/MetadataEntityFields';
 import ToolDefaultCommand from '../../../../models/tools/ToolDefaultCommand';
+import {getTaglessImageVersion} from '../../../../utils/tool-default-version';
 import configurationsRequest from '../../../../models/configuration/Configurations';
 
 import roleModel from '../../../../utils/roleModel';
@@ -169,6 +170,11 @@ import {
   getDefaultNodeUpRetryCount,
   isNodeUpRetryCountParameter
 } from './utilities/node-up-retry-count';
+import {
+  createOptionalParametersFilterSettings,
+  forgetOptionalParametersFilterTarget,
+  getOptionalParametersFilterDefault
+} from './utilities/optional-parameters-filter';
 import {
   buildLaunchParametersFromReservationParameters,
   findReservationParameterConfig,
@@ -449,6 +455,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   parametersNavigationRef;
   parametersNavigationIsSticky = false;
   checkRAF;
+  optionalParametersFilterTarget;
+  getOptionalParametersFilterSettings = createOptionalParametersFilterSettings();
 
   @observable modified = false;
   @observable inputPaths = [];
@@ -901,21 +909,44 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return tools;
   }
 
+  get optionalParametersFilterDockerImage () {
+    return this.dockerImage || this.getDefaultValue('docker_image');
+  }
+
+  get optionalParametersFilterSettings () {
+    const {dockerRegistries, uiNavigation} = this.props;
+    return this.getOptionalParametersFilterSettings({
+      pipeline: this.state.pipeline,
+      dockerImage: this.optionalParametersFilterDockerImage,
+      dockerRegistries,
+      launchForm: uiNavigation.launchForm,
+      resolve: uiNavigation.utils.showOptionalParametersFilter
+    });
+  }
+
   get showOptionalParametersFilter () {
-    const {uiNavigation} = this.props;
     const parameters = this.getParameters();
     const hasOptional = parameters
       .some(({config}) => config.visible && !config.system && !config.required);
     if (!hasOptional || this.props.editConfigurationMode) {
       return false;
     }
-    const {pipeline} = this.state;
-    const {tools, pipelines} = uiNavigation.utils.showOptionalParametersFilter();
-    if (pipeline) {
-      return pipelines;
-    }
-    return tools;
+    return this.optionalParametersFilterSettings.enabled;
   }
+
+  applyOptionalParametersFilterDefault = () => {
+    const {target, value} = getOptionalParametersFilterDefault({
+      pipeline: this.state.pipeline,
+      dockerImage: this.optionalParametersFilterDockerImage,
+      defaultValue: this.optionalParametersFilterSettings.defaultValue,
+      checked: this.state.showOptionalParameters,
+      target: this.optionalParametersFilterTarget
+    });
+    this.optionalParametersFilterTarget = target;
+    if (value !== undefined && value !== this.state.showOptionalParameters) {
+      this.setState({showOptionalParameters: value});
+    }
+  };
 
   get showOptionalParameters () {
     const {showOptionalParameters} = this.state;
@@ -3207,7 +3238,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             this.toolAllowSensitive = im.allowSensitive;
             this.toolPlatform = im.platform;
             this.toolSettingsPending = true;
-            this._toolSettings = new LoadToolVersionSettings(im.id, version);
+            const toolVersion = version || getTaglessImageVersion(im);
+            this._toolSettings = new LoadToolVersionSettings(im.id, toolVersion);
             await this._toolSettings.fetchIfNeededOrWait();
 
             if (this._toolSettings && this._toolSettings.loaded && this._toolSettings.value &&
@@ -3237,7 +3269,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               this.rescheduleRunInitialValue = undefined;
             }
 
-            const defaultCmdRequest = new ToolDefaultCommand(im.id, version);
+            const defaultCmdRequest = new ToolDefaultCommand(im.id, toolVersion);
             await defaultCmdRequest.fetch();
             if (defaultCmdRequest.loaded) {
               this.toolDefaultCmd = defaultCmdRequest.value;
@@ -4291,6 +4323,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       this.codeEditor.reset();
       this.cmdTemplateValue = undefined;
     }
+    this.optionalParametersFilterTarget = forgetOptionalParametersFilterTarget(
+      this.optionalParametersFilterTarget
+    );
     this.resetState(keepPipeline);
   };
 
@@ -6275,6 +6310,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       !this.state.estimatedPrice.pending) {
       this.evaluateEstimatedPrice({});
     }
+    this.applyOptionalParametersFilterDefault();
   }
 
   componentWillReceiveProps (nextProps) {
