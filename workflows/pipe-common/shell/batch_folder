@@ -27,7 +27,7 @@ if [ -z "$COMMON_REPO_DIR" ]
 fi
 
 # Execute command
-$CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/folder_batch.py --cmd "$CMD"
+$CP_PYTHON_PATH $COMMON_REPO_DIR/scripts/folder_batch.py --cmd "$CMD"
 result=$?
 
 exit $result
