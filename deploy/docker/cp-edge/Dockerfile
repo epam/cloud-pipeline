@@ -1,4 +1,4 @@
-# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,12 +27,7 @@ COPY ./maintenance/ui .
 
 RUN npm run build
 
-FROM rockylinux:8
-
-RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+FROM rockylinux/rockylinux:9.8
 
 ENV PATH $PATH:/usr/local/openresty/bin:/usr/local/openresty/nginx/sbin:/etc/ssh-proxy/node-v20.17.0-linux-x64/bin/
 
@@ -40,18 +35,18 @@ ENV PATH $PATH:/usr/local/openresty/bin:/usr/local/openresty/nginx/sbin:/etc/ssh
 ENV JWT_PUB_KEY /etc/nginx/jwt-public-key.pem
 
 # Install common
-RUN yum install -y python2 \
-                   python3 \
-                   unzip \
+# nmap-ncat provides "nc" on Rocky Linux 9, gettext the "envsubst" that init calls,
+# openssh-clients the "ssh" that wetty runs through sshpass, libxcrypt-compat the libcrypt.so.1
+# that the "crypt" module of the Python 3.12 below links
+RUN dnf install -y unzip \
                    git \
-                   curl \
                    wget \
                    epel-release \
                    zlib-devel \
                    cronie \
                    sshpass \
                    perl \
-                   nc \
+                   nmap-ncat \
                    gcc \
                    make \
                    bzip2 \
@@ -59,17 +54,30 @@ RUN yum install -y python2 \
                    xz \
                    xz-devel \
                    ncurses-devel \
-                   procps \
-                   patch && \
-    yum group install -y "Development Tools" && \
-    yum clean all && \
-    ln -sf /usr/bin/python2 /usr/bin/python && \
-    curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
-    pip install rsa==4.0 \
-                pykube==0.15.0
+                   procps-ng \
+                   patch \
+                   gettext \
+                   openssh-clients \
+                   libxcrypt-compat && \
+    dnf group install -y "Development Tools" && \
+    dnf clean all
+
+# Python 3.12 runs sync-routes.py and maintenance.py: the platform's Python 3.12 distribution (python3.12.tar.gz of the
+# public Cloud Pipeline bucket, self-contained CPython 3.12). /usr/bin/python3 stays the system one, for dnf.
+# requests and urllib3 are the versions of pipe-common, pykube-ng provides the "pykube" module of pykube 0.15
+ARG CP_PYTHON3_DIST_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/python/3/python3.12.tar.gz"
+RUN wget -q $CP_PYTHON3_DIST_URL -O python3.tgz && \
+    tar -xzf python3.tgz -C /usr/local/ && \
+    rm -f python3.tgz && \
+    ln -sf /usr/local/python3.12/bin/python3.12 /usr/local/bin/python3 && \
+    ln -sf /usr/local/python3.12/bin/pip3.12 /usr/local/bin/pip3 && \
+    pip3 install --no-cache-dir rsa==4.9.1 \
+                                pykube-ng==23.6.0 \
+                                requests==2.34.2 \
+                                urllib3==2.8.0
 
 # Openresty + http_connect module
-RUN yum install -y  pcre-devel \
+RUN dnf install -y  pcre-devel \
                     openssl-devel \
                     perl-Digest-MD5
 
@@ -168,5 +176,5 @@ RUN chmod go-w /etc/filebeat/*
 
 # Install SQUID
 
-RUN yum install -y squid
+RUN dnf install -y squid
 COPY squid.conf.tmpl /etc/squid/squid.conf.tmpl

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -161,6 +161,19 @@ done
 # Start wetty.js for SSH proxy
 nohup node /etc/ssh-proxy/wetty/app.cjs -p 32000 >> /var/log/wetty.log 2>&1 &
 WETTY_PID="$!"
+
+# --- Python interpreter selection ---
+# sync-routes.py and maintenance.py run with the Python 3.12 the Dockerfile installs into CP_PYTHON3_HOME, together with
+# their packages. Not "command -v python3.12": the distro can bring a bare /usr/bin/python3.12 (no pip, none of the
+# image's packages) as a transitive dependency, which would shadow that install. CP_PYTHON3_HOME is overridable for tests.
+CP_PYTHON3_HOME="${CP_PYTHON3_HOME:-/usr/local/python3.12}"
+export CP_PYTHON_PATH="${CP_PYTHON_PATH:-$CP_PYTHON3_HOME/bin/python3.12}"
+if [ ! -x "$CP_PYTHON_PATH" ]; then
+    echo "Python 3.12 is not found at $CP_PYTHON_PATH, exiting."
+    exit 1
+fi
+export PATH="$CP_PYTHON3_HOME/bin:$PATH"
+echo "Python interpreter (CP_PYTHON_PATH): $CP_PYTHON_PATH"
 
 # Persist environment for a cron job
 env > /etc/sync-routes/env.sh
