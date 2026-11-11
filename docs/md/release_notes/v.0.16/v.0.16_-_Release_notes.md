@@ -78,6 +78,7 @@
     - [Vulnerable dependencies of the SSH web terminal](#vulnerable-dependencies-of-the-ssh-web-terminal)
     - [The NFS mount observer of the WebDAV service does not start](#the-nfs-mount-observer-of-the-webdav-service-does-not-start)
     - [`sge create` and `sge configure` fail in tools without `diff`](#sge-create-and-sge-configure-fail-in-tools-without-diff)
+    - [Vulnerable dependencies of the FS Browser client](#vulnerable-dependencies-of-the-fs-browser-client)
 
 ***
 
@@ -971,3 +972,7 @@ Now, the cron job reads the environment of the service, and the service installs
 Previously, `sge create` and `sge configure` ran the `diff` command of the tool image to find the changes made to a grid engine profile. Many images have no `diff`: Rocky Linux 8 and 9, Red Hat UBI 8 and 9 and Amazon Linux 2023 among them. There, once the editor was closed, the commands failed with `Grid engine profiles management has failed.`, and the profile changes were lost.
 Now, the commands find the changes in Python, and print them in the same format as before: `<` before an old line, and `>` before a new one.
 See details in [Appendix C. Working with autoscaled cluster runs](../../manual/Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs.md#managing-queues-with-the-sge-command).
+### Vulnerable dependencies of the FS Browser client
+
+Previously, `npm audit` reported 283 known vulnerabilities in the dependencies of the FS Browser web client: 10 critical, 127 high, 123 moderate and 23 low. Many of them were in its development server (`webpack-dev-server` 3.2.1 and its dependencies, such as `node-forge`, `http-proxy-middleware`, `webpack-dev-middleware` and `sockjs`), which is not used to build the client, and in `react-dev-utils` 9 and `semver` 6.0.0.
+Now, the development server (the `npm start` script) is removed from the client, `react-dev-utils` is updated to 11.0.4 and `@babel/core` to 7.29.7, and the unused `semver` 6.0.0 pin is removed. At the time of this change, `npm audit` reports 205: 11 critical, 86 high, 103 moderate and 5 low. They come from the build and test tools: webpack 4 with its loaders and plugins, PostCSS, `react-dev-utils`, Babel, Jest, ESLint and `raml2html`. Two advisories among them are new: they are in `immer` 8.0.1, which `react-dev-utils` 11.0.4 brings. The client is built with `npm run build`, as before. The built client has the same content: only the hash in the name of its main script file changes.
