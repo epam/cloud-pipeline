@@ -15,7 +15,7 @@
 # limitations under the License.
 
 _BUILD_SCRIPT_NAME=/tmp/build_mnt_pytinstaller_linux_$(date +%s).sh
-_BUILD_DOCKER_IMAGE="lifescience/cloud-pipeline:pipe-cli-rocky8-py312"
+_BUILD_DOCKER_IMAGE="lifescience/cloud-pipeline:pipe-cli-centos7-py312"
 
 cat >$_BUILD_SCRIPT_NAME <<EOL
 

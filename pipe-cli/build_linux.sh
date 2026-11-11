@@ -18,8 +18,11 @@ cd $PIPE_CLI_SOURCES_DIR
 PIPE_COMMIT_HASH=$(git log --pretty=tformat:"%H" -n1 .)
 cd -
 
+# The bundles are built on CentOS 7 (see docker/pipe-cli-builder-centos7): PyInstaller bundles every library but
+# glibc, so they run on glibc 2.17 or later. The bundles built on Rocky Linux 8 (docker/pipe-cli-builder,
+# lifescience/cloud-pipeline:pipe-cli-rocky8-py312) need glibc 2.28.
 _BUILD_PIPE_OMICS_SCRIPT_NAME=/tmp/build_pipe_omics_pytinstaller_linux_$(date +%s).sh
-_BUILD_PIPE_OMICS_DOCKER_IMAGE="${_BUILD_PIPE_OMICS_DOCKER_IMAGE:-lifescience/cloud-pipeline:pipe-cli-rocky8-py312}"
+_BUILD_PIPE_OMICS_DOCKER_IMAGE="${_BUILD_PIPE_OMICS_DOCKER_IMAGE:-lifescience/cloud-pipeline:pipe-cli-centos7-py312}"
 
 # This dir will be mounted to the docker container to build pipe-omics and then to the container
 # where pipe-cli will be built, to copy pipe-omics inside a pipe-cli
@@ -75,7 +78,7 @@ if [ "$_BUILD_PIPE_OMICS_EXIT_CODE" != 0 ]; then
 fi
 
 _BUILD_SCRIPT_NAME=/tmp/build_pytinstaller_linux_$(date +%s).sh
-_BUILD_DOCKER_IMAGE="${_BUILD_DOCKER_IMAGE:-lifescience/cloud-pipeline:pipe-cli-rocky8-py312}"
+_BUILD_DOCKER_IMAGE="${_BUILD_DOCKER_IMAGE:-lifescience/cloud-pipeline:pipe-cli-centos7-py312}"
 
 cat >$_BUILD_SCRIPT_NAME <<EOL
 
@@ -212,4 +215,11 @@ rm -f $_BUILD_SCRIPT_NAME
 if [ "$_BUILD_EXIT_CODE" != 0 ]; then
     echo "[ERROR] The pipe build in $_BUILD_DOCKER_IMAGE failed"
     exit "$_BUILD_EXIT_CODE"
+fi
+
+# Check the bundles on the oldest distribution they shall run on. An empty _BUILD_CHECK_DOCKER_IMAGE skips the check,
+# e.g. for the bundles built on Rocky Linux 8, which do not run on CentOS 7.
+_BUILD_CHECK_DOCKER_IMAGE="${_BUILD_CHECK_DOCKER_IMAGE-centos:7}"
+if [ "$_BUILD_CHECK_DOCKER_IMAGE" ]; then
+    bash "$PIPE_CLI_SOURCES_DIR/check_linux_bundle.sh" "$PIPE_CLI_LINUX_DIST_DIR/dist" "$_BUILD_CHECK_DOCKER_IMAGE"
 fi
