@@ -20,7 +20,9 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.cluster.capacityreservation.CapacityReservationDao;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
 import com.epam.pipeline.entity.notification.NotificationType;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.test.creator.cluster.capacityreservation.CapacityReservationCreatorUtils;
@@ -38,7 +40,6 @@ import org.mockito.quality.Strictness;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -50,6 +51,8 @@ public class CapacityReservationStatusServiceTest {
 
     private static final String REASON = "AWS did not give a definitive answer, will retry";
     private static final Long RESERVATION_ID = 7L;
+    private static final String RUN_OWNER = "run-owner";
+    private static final String OTHER_RUN_OWNER = "other-run-owner";
 
     @Mock
     private CapacityReservationDao reservationDao;
@@ -57,12 +60,18 @@ public class CapacityReservationStatusServiceTest {
     @Mock
     private NotificationManager notificationManager;
 
+    @Mock
+    private PipelineRunCRUDService runCRUDService;
+
+    @Mock
+    private MessageHelper messageHelper;
+
     private CapacityReservationStatusService statusService;
 
     @BeforeEach
     public void setUp() {
         statusService = new CapacityReservationStatusService(reservationDao, notificationManager,
-                mock(PipelineRunCRUDService.class), mock(MessageHelper.class));
+                runCRUDService, messageHelper);
     }
 
     @Test
@@ -143,6 +152,33 @@ public class CapacityReservationStatusServiceTest {
     }
 
     @Test
+    public void shouldCopyTheRunOwnersOfTheNodePoolWhenFinalizing() {
+        final CapacityReservation reservation = active();
+        givenTheRowIsWritten();
+        when(runCRUDService.loadRunsByPoolId(reservation.getNodePoolId()))
+                .thenReturn(Arrays.asList(runOwnedBy(RUN_OWNER), runOwnedBy(OTHER_RUN_OWNER), runOwnedBy(RUN_OWNER)));
+
+        statusService.transition(reservation, CapacityReservationStatus.FINALIZING, null);
+
+        verify(notificationManager).notifyCapacityReservation(reservation,
+                NotificationType.CAPACITY_RESERVATION_FINALIZING, Arrays.asList(RUN_OWNER, OTHER_RUN_OWNER));
+    }
+
+    @Test
+    public void shouldCopyTheRunOwnersOfACapacityBlockWhenFinalizing() {
+        final CapacityReservation reservation = active();
+        reservation.setReservationType(CapacityReservationType.CAPACITY_BLOCK);
+        givenTheRowIsWritten();
+        when(runCRUDService.loadRunsByPoolId(reservation.getNodePoolId()))
+                .thenReturn(Collections.singletonList(runOwnedBy(RUN_OWNER)));
+
+        statusService.transition(reservation, CapacityReservationStatus.FINALIZING, null);
+
+        verify(notificationManager).notifyCapacityReservation(reservation,
+                NotificationType.CAPACITY_RESERVATION_FINALIZING, Collections.singletonList(RUN_OWNER));
+    }
+
+    @Test
     public void shouldRejectATransitionTheStateMachineDoesNotAllow() {
         final CapacityReservation reservation = approved();
 
@@ -161,5 +197,17 @@ public class CapacityReservationStatusServiceTest {
         reservation.setId(RESERVATION_ID);
         reservation.setStatus(CapacityReservationStatus.APPROVED);
         return reservation;
+    }
+
+    private static CapacityReservation active() {
+        final CapacityReservation reservation = approved();
+        reservation.setStatus(CapacityReservationStatus.ACTIVE);
+        return reservation;
+    }
+
+    private static PipelineRun runOwnedBy(final String owner) {
+        final PipelineRun run = new PipelineRun();
+        run.setOwner(owner);
+        return run;
     }
 }
