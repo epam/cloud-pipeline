@@ -96,6 +96,14 @@ class SyncShPythonTest(unittest.TestCase):
                           ' cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com -q urllib3 requests'],
                          invocations)
 
+    def test_trusts_the_host_of_an_overridden_mirror(self):
+        rc, out, invocations, _ = self._prepare_environment(
+            'case "$1" in -c) exit 1 ;; esac\nexit 0\n',
+            extra_env={'CP_REPO_PYPI3_BASE_URL_DEFAULT': 'http://mirror.internal:8080/pypi3/simple'})
+        self.assertEqual(0, rc, out)
+        self.assertEqual('-m pip install --index-url http://mirror.internal:8080/pypi3/simple'
+                         ' --trusted-host mirror.internal -q urllib3 requests', invocations[-1])
+
     def test_fails_when_the_dependencies_cannot_be_installed(self):
         rc, out, _, _ = self._prepare_environment('exit 1\n')
         self.assertNotEqual(0, rc, out)

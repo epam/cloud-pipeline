@@ -102,7 +102,8 @@ function prepare_environment {
     if [ $? -ne 0 ]; then
         print_info "Not all dependencies are met, trying to add them"
         local CP_REPO_PYPI3_BASE_URL_DEFAULT="${CP_REPO_PYPI3_BASE_URL_DEFAULT:-http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi3/simple}"
-        local CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT="${CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT:-cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com}"
+        # The host of the mirror is trusted, unless CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT names another one
+        local CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT="${CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT:-$(echo "$CP_REPO_PYPI3_BASE_URL_DEFAULT" | sed -r 's|^.*://([^/:]*).*$|\1|')}"
         local CP_PIP_PACKAGE_INDEX="--index-url $CP_REPO_PYPI3_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT"
         "$CP_PYTHON_PATH" -m pip install $CP_PIP_PACKAGE_INDEX -q urllib3 requests &> /dev/null
         if [ $? -ne 0 ]; then
