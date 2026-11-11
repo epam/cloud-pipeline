@@ -23,6 +23,8 @@ import hashlib
 import io
 import json
 import re
+import threading
+import time
 from datetime import datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -57,7 +59,10 @@ class _FakeGcs(object):
         self.download_ranges = []
         self.upload_types = []
         self.corrupted = False
+        self.composed = []
+        self.deleted = []
         self._uploads = {}
+        self._lock = threading.Lock()
 
     def register(self, adapter):
         adapter.register_uri('GET', re.compile(_API + r'/download/storage/v1/b/[^/]+/o/.*'), content=self._download)
@@ -67,6 +72,47 @@ class _FakeGcs(object):
                              content=self._initiate_resumable_upload)
         adapter.register_uri('PUT', re.compile(_API + r'/upload/storage/v1/b/[^/]+/o\?.*upload_id='),
                              content=self._resumable_upload_chunk)
+        adapter.register_uri('POST', re.compile(_API + r'/storage/v1/b/[^/]+/o/[^/?]+/compose'), content=self._compose)
+        adapter.register_uri('POST', re.compile(_API + r'/storage/v1/b/[^/]+/o/[^/?]+/copyTo/b/[^/]+/o/[^/?]+'),
+                             content=self._copy)
+        adapter.register_uri('DELETE', re.compile(_API + r'/storage/v1/b/[^/]+/o/[^/?]+'), content=self._delete)
+        adapter.register_uri('GET', re.compile(_API + r'/storage/v1/b/[^/]+/o/[^/?]+'), content=self._get)
+
+    @staticmethod
+    def _names(request):
+        # /storage/v1/b/<bucket>/o/<name>[/copyTo/b/<bucket>/o/<name>]: the names are quoted with their slashes
+        parts = urlparse(request.url).path.split('/')
+        return [unquote(parts[index + 1]) for index, part in enumerate(parts) if part == 'o']
+
+    def _compose(self, request, context):
+        name = self._names(request)[0]
+        body = request.body
+        body = json.loads(body.decode('utf-8') if isinstance(body, bytes) else body)
+        data = b''.join(self.objects[source['name']] for source in body['sourceObjects'])
+        self.composed.append((name, [source['name'] for source in body['sourceObjects']]))
+        context.status_code = 200
+        return self._resource(name, data, body.get('destination', {}))
+
+    def _copy(self, request, context):
+        source, destination = self._names(request)
+        context.status_code = 200
+        return self._resource(destination, self.objects[source], {'metadata': self.metadata.get(source)})
+
+    def _delete(self, request, context):
+        name = self._names(request)[0]
+        self.objects.pop(name)
+        self.deleted.append(name)
+        context.status_code = 204
+        return b''
+
+    def _get(self, request, context):
+        name = self._names(request)[0]
+        if name not in self.objects:
+            context.status_code = 404
+            return json.dumps({'error': {'code': 404, 'message': 'Not Found'}}).encode('utf-8')
+        context.status_code = 200
+        data = self.objects[name]
+        return json.dumps({'bucket': BUCKET, 'name': name, 'size': str(len(data))}).encode('utf-8')
 
     def _download(self, request, context):
         name = unquote(urlparse(request.url).path.split('/o/', 1)[1])
@@ -115,8 +161,9 @@ class _FakeGcs(object):
         metadata = json.loads(request.body.decode('utf-8')) if request.body else {}
         metadata.setdefault('contentType', request.headers.get('X-Upload-Content-Type'))
         name = metadata.get('name') or parse_qs(urlparse(request.url).query)['name'][0]
-        upload_id = str(len(self._uploads) + 1)
-        self._uploads[upload_id] = (name, metadata, bytearray())
+        with self._lock:
+            upload_id = str(len(self._uploads) + 1)
+            self._uploads[upload_id] = (name, metadata, bytearray())
         context.status_code = 200
         context.headers['Location'] = '%s/upload/storage/v1/b/%s/o?uploadType=resumable&upload_id=%s' \
                                       % (_API, BUCKET, upload_id)
@@ -217,7 +264,7 @@ class TestGsDownloadManager(object):
         destination = self._download(client, tmp_path, 'file', len(content), progress=progress)
 
         assert destination.read_bytes() == content
-        assert server.download_ranges == ['bytes=0-399', 'bytes=400-799', 'bytes=800-999']
+        assert sorted(server.download_ranges) == ['bytes=0-399', 'bytes=400-799', 'bytes=800-999']
         assert progress.total == len(content)
 
     def test_downloads_an_empty_file(self, fake_gcs, tmp_path):
@@ -254,6 +301,25 @@ class TestGsUploadManager(object):
         assert server.upload_types == ['multipart']
         assert server.metadata['folder/file.json']['key'] == 'value'
         assert server.content_types['folder/file.json'] == 'application/json'
+        assert progress.total == len(content)
+
+
+    def test_uploads_a_large_file_by_composed_parts(self, fake_gcs, tmp_path, monkeypatch):
+        client, server = fake_gcs
+        content = _content(1000)
+        monkeypatch.setenv(gs.CP_CLI_GCP_MULTIPART_THRESHOLD, '100')
+        monkeypatch.setenv(gs.CP_CLI_GCP_MULTIPART_CHUNKSIZE, '300')
+        monkeypatch.setenv(gs.CP_CLI_GCP_MAX_CONCURRENCY, '3')
+        progress = _Progress()
+
+        self._upload(client, tmp_path, content, 'big.json', tags=('key=value',), progress=progress)
+
+        assert server.objects['big.json'] == content
+        assert server.metadata['big.json']['key'] == 'value'
+        assert len(server.composed) == 1
+        _, parts = server.composed[0]
+        assert [part.rsplit('/', 1)[1] for part in parts] == ['1', '2', '3', '4']
+        assert [name for name in server.objects if name != 'big.json'] == []
         assert progress.total == len(content)
 
 
@@ -362,3 +428,147 @@ def test_download_chunk_size_is_set_for_the_installed_library():
     finally:
         for module, original in zip(modules, originals):
             module._SINGLE_GET_CHUNK_SIZE = original
+
+
+class _RecordingUploadClient(object):
+
+    def __init__(self, fail_on_part=None, delay=0.0):
+        self.parts = {}
+        self.completed_parts = None
+        self.aborted = False
+        self.max_concurrent_parts = 0
+        self._concurrent_parts = 0
+        self._fail_on_part = fail_on_part
+        self._delay = delay
+        self._lock = threading.Lock()
+
+    def create_multipart_upload(self, Bucket, Key):
+        pass
+
+    def upload_part(self, Bucket, Key, UploadId, PartNumber, Body):
+        with self._lock:
+            self._concurrent_parts += 1
+            self.max_concurrent_parts = max(self.max_concurrent_parts, self._concurrent_parts)
+        try:
+            time.sleep(self._delay)
+            if PartNumber == self._fail_on_part:
+                raise RuntimeError('upload failure')
+            # google-cloud-storage reads a part in chunks, and seeks back to resend one
+            first = Body.read(2)
+            Body.seek(0)
+            self.parts[PartNumber] = (Body.size, Body.read())
+            assert self.parts[PartNumber][1][:2] == first
+            assert Body.read() == b''
+        finally:
+            with self._lock:
+                self._concurrent_parts -= 1
+
+    def complete_multipart_upload(self, Bucket, Key, UploadId, MultipartUpload):
+        self.completed_parts = [part['PartNumber'] for part in MultipartUpload['Parts']]
+
+    def abort_multipart_upload(self, Bucket, Key):
+        self.aborted = True
+
+
+class TestMultipartTransfers(object):
+
+    def test_upload_sends_the_parts_in_several_threads(self, tmp_path):
+        source = tmp_path / 'source'
+        source.write_bytes(b'abcdefghij')
+        upload_client = _RecordingUploadClient(delay=0.2)
+
+        gs._multipart_upload(upload_client, str(source), 'bucket', 'key',
+                             gs.GcsTransferConfig(multipart_chunksize=4, max_concurrency=3))
+
+        assert upload_client.parts == {1: (4, b'abcd'), 2: (4, b'efgh'), 3: (2, b'ij')}
+        assert upload_client.completed_parts == [1, 2, 3]
+        assert upload_client.max_concurrent_parts == 3
+        assert not upload_client.aborted
+
+    def test_upload_sends_one_part_at_a_time_with_one_thread(self, tmp_path):
+        source = tmp_path / 'source'
+        source.write_bytes(b'abcdefghij')
+        upload_client = _RecordingUploadClient(delay=0.05)
+
+        gs._multipart_upload(upload_client, str(source), 'bucket', 'key',
+                             gs.GcsTransferConfig(multipart_chunksize=4, max_concurrency=1))
+
+        assert upload_client.max_concurrent_parts == 1
+        assert upload_client.completed_parts == [1, 2, 3]
+
+    def test_upload_aborts_on_failure(self, tmp_path):
+        source = tmp_path / 'source'
+        source.write_bytes(b'abcdefghij')
+        upload_client = _RecordingUploadClient(fail_on_part=2)
+
+        with pytest.raises(RuntimeError, match='upload failure'):
+            gs._multipart_upload(upload_client, str(source), 'bucket', 'key',
+                                 gs.GcsTransferConfig(multipart_chunksize=4, max_concurrency=2))
+
+        assert upload_client.aborted
+        assert upload_client.completed_parts is None
+
+    def test_download_writes_each_range_to_its_place_in_several_threads(self, tmp_path):
+        content = _content(1000)
+        destination = tmp_path / 'destination'
+        progress = _Progress()
+        lock = threading.Lock()
+        concurrent = {'now': 0, 'max': 0}
+
+        class _RangeClient(object):
+            def download_range(self, file_obj, start, end, callback=None):
+                with lock:
+                    concurrent['now'] += 1
+                    concurrent['max'] = max(concurrent['max'], concurrent['now'])
+                # the later ranges finish first
+                time.sleep(0.05 * (1000 - start) / 300)
+                file_obj.write(content[start:end + 1])
+                callback(end - start + 1)
+                with lock:
+                    concurrent['now'] -= 1
+
+        gs._multipart_download(_RangeClient(), str(destination), len(content),
+                               gs.GcsTransferConfig(multipart_chunksize=300, max_concurrency=4), callback=progress)
+
+        assert destination.read_bytes() == content
+        assert progress.total == len(content)
+        assert concurrent['max'] == 4
+
+    def test_default_concurrency_is_the_one_of_s3transfer(self):
+        assert gs.GcsTransferConfig().max_concurrency == 10
+
+    def test_file_range_reader_reads_and_seeks_within_the_range(self, tmp_path):
+        source = tmp_path / 'source'
+        source.write_bytes(b'0123456789')
+
+        with gs._FileRangeReader(str(source), 3, 4) as reader:
+            assert reader.read(3) == b'345'
+            assert reader.tell() == 3
+            assert reader.read() == b'6'
+            assert reader.read() == b''
+            assert reader.seek(1) == 1
+            assert reader.read(10) == b'456'
+            assert reader.seek(-2, io.SEEK_END) == 2
+            assert reader.read() == b'56'
+
+
+def test_download_resumes_after_the_retry_deadline_of_the_library():
+    from google.api_core.exceptions import RetryError
+    content = _content(100)
+    blob = _FailingBlob(content, failures=0, chunk=30)
+    calls = []
+
+    def download_to_file(file_obj, start=None, end=None, **kwargs):
+        calls.append(start)
+        if len(calls) == 1:
+            file_obj.write(content[:30])
+            raise RetryError('Timeout of 120.0s exceeded', requests.exceptions.ConnectionError('reset'))
+        file_obj.write(content[start:])
+
+    blob.download_to_file = download_to_file
+    destination = io.BytesIO()
+
+    gs._download_blob(blob, destination, len(content))
+
+    assert destination.getvalue() == content
+    assert calls == [None, 30]

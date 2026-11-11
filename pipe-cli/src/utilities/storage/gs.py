@@ -16,6 +16,7 @@ import copy
 import os
 import socket
 from abc import abstractmethod, ABCMeta
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
 from requests import RequestException
@@ -42,6 +43,7 @@ from dataclasses import dataclass
 from io import BytesIO
 
 import click
+from google.api_core.exceptions import RetryError
 from google.auth.transport.requests import AuthorizedSession
 from google.cloud.storage import Client
 from google.oauth2.credentials import Credentials
@@ -68,7 +70,8 @@ class GcsTransferConfig:
     multipart_threshold: int = 8 * 1024 * 1024
     multipart_chunksize: int = 8 * 1024 * 1024
     max_io_queue: int = 100
-    max_concurrency: int = 1
+    # The number of the parts that are transferred at the same time, as the s3transfer default
+    max_concurrency: int = 10
 
 
 def _get_encryption_headers(key):
@@ -84,35 +87,104 @@ def _get_encryption_headers(key):
     }
 
 
-def _multipart_upload(upload_client, filename, bucket, key, config):
-    """Replaces s3transfer.MultipartUploader — sequential chunk upload."""
-    upload_client.create_multipart_upload(Bucket=bucket, Key=key)
-    part_number = 1
+class _FileRangeReader(object):
+
+    def __init__(self, filename, start, size):
+        """
+        A file object that reads a byte range of a file, from start, of the given size.
+
+        It supports seek() and tell() within the range, which google-cloud-storage needs to resend a chunk.
+        """
+        self._file = open(filename, 'rb')
+        self._start = start
+        self.size = size
+        self._file.seek(start)
+
+    def read(self, amount=-1):
+        remaining = self.size - self.tell()
+        if amount is None or amount < 0 or amount > remaining:
+            amount = remaining
+        return self._file.read(amount)
+
+    def tell(self):
+        return self._file.tell() - self._start
+
+    def seek(self, offset, whence=os.SEEK_SET):
+        if whence == os.SEEK_CUR:
+            offset += self.tell()
+        elif whence == os.SEEK_END:
+            offset += self.size
+        self._file.seek(self._start + max(0, min(offset, self.size)))
+        return self.tell()
+
+    def close(self):
+        self._file.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
+
+
+def _run_in_threads(function, items, max_concurrency):
+    """
+    Calls the function for each item in max_concurrency threads, and raises the first error.
+
+    The items that have not started yet are cancelled after an error.
+    """
+    executor = ThreadPoolExecutor(max_workers=max(max_concurrency, 1))
     try:
-        with open(filename, 'rb') as f:
-            while True:
-                chunk = f.read(config.multipart_chunksize)
-                if not chunk:
-                    break
-                upload_client.upload_part(Bucket=bucket, Key=key, UploadId=key,
-                                          PartNumber=part_number, Body=BytesIO(chunk))
-                part_number += 1
-        parts = [{'PartNumber': i, 'ETag': ''} for i in range(1, part_number)]
+        for future in [executor.submit(function, item) for item in items]:
+            future.result()
+    finally:
+        executor.shutdown(wait=True, cancel_futures=True)
+
+
+def _multipart_upload(upload_client, filename, bucket, key, config):
+    """
+    Replaces s3transfer.MultipartUploader: uploads the parts of a file in config.max_concurrency threads.
+
+    Each part is read from the file as it is uploaded.
+    """
+    upload_client.create_multipart_upload(Bucket=bucket, Key=key)
+    size = os.path.getsize(filename)
+    part_size = config.multipart_chunksize
+    parts = [(part_number, offset) for part_number, offset in enumerate(range(0, size, part_size), start=1)]
+
+    def _upload_part(part):
+        part_number, offset = part
+        with _FileRangeReader(filename, offset, min(part_size, size - offset)) as body:
+            upload_client.upload_part(Bucket=bucket, Key=key, UploadId=key, PartNumber=part_number, Body=body)
+
+    try:
+        _run_in_threads(_upload_part, parts, config.max_concurrency)
         upload_client.complete_multipart_upload(Bucket=bucket, Key=key, UploadId=key,
-                                                MultipartUpload={'Parts': parts})
+                                                MultipartUpload={'Parts': [{'PartNumber': part_number, 'ETag': ''}
+                                                                           for part_number, _ in parts]})
     except Exception:
         upload_client.abort_multipart_upload(Bucket=bucket, Key=key)
         raise
 
 
 def _multipart_download(download_client, filename, object_size, config, callback=None):
-    """Replaces s3transfer.MultipartDownloader — sequential range download."""
-    with open(filename, 'wb') as f:
-        offset = 0
-        while offset < object_size:
-            end = min(offset + config.multipart_chunksize - 1, object_size - 1)
-            download_client.download_range(f, start=offset, end=end, callback=callback)
-            offset = end + 1
+    """
+    Replaces s3transfer.MultipartDownloader: downloads the ranges of a blob in config.max_concurrency threads.
+
+    Each range is written to its own place of the file.
+    """
+    part_size = config.multipart_chunksize
+    ranges = [(start, min(start + part_size, object_size) - 1) for start in range(0, object_size, part_size)]
+    with open(filename, 'wb'):
+        pass
+
+    def _download_range(byte_range):
+        start, end = byte_range
+        with open(filename, 'r+b') as file_obj:
+            file_obj.seek(start)
+            download_client.download_range(file_obj, start=start, end=end, callback=callback)
+
+    _run_in_threads(_download_range, ranges, config.max_concurrency)
 
 
 KB = 1024
@@ -171,7 +243,7 @@ class GsCompositeUploadClient(S3TransferUploadClient):
     def upload_part(self, Bucket, Key, UploadId, PartNumber, Body, *args, **kwargs):
         part_path = self._part_path(PartNumber)
         part_blob = self._bucket_object.blob(part_path)
-        part_blob.upload_from_file(Body)
+        part_blob.upload_from_file(Body, size=getattr(Body, 'size', None))
         if self._progress_callback:
             self._progress_callback(part_blob.size)
         self._parts[PartNumber] = part_blob
@@ -224,10 +296,13 @@ class GsCompositeUploadClient(S3TransferUploadClient):
 class GsRangeDownloadClient(S3TransferDownloadClient):
 
     def __init__(self, blob):
-        self._blob = blob
+        self._bucket = blob.bucket
+        self._name = blob.name
 
     def download_range(self, file_obj, start, end, callback=None):
-        _download_blob(self._blob, file_obj, size=end - start + 1, progress_callback=callback, start=start, end=end)
+        # The ranges are downloaded in several threads: each one gets its own blob
+        _download_blob(self._bucket.blob(self._name), file_obj, size=end - start + 1, progress_callback=callback,
+                       start=start, end=end)
 
 
 class _OutputStreamMixin(object):
@@ -318,10 +393,11 @@ def _download_blob(blob, file_obj, size, progress_callback=None, start=None, end
     """
     Downloads a blob, or its byte range from start to end inclusive, to a file object.
 
-    The download resumes from the last written byte, if it fails with a network error. It fails after
-    CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS such failures. The progress callback is called every PROGRESS_CHUNK_SIZE.
+    The download resumes from the last written byte, if it fails with a network error, or google-cloud-storage
+    gives up its own retries of such an error. It fails after CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS such failures.
+    The progress callback is called every PROGRESS_CHUNK_SIZE.
 
-    Only the public API of google-cloud-storage is used: it retries the failed requests by itself as well.
+    Only the public API of google-cloud-storage is used.
 
     :param blob: Downloading blob.
     :param file_obj: Destination file object.
@@ -349,7 +425,7 @@ def _download_blob(blob, file_obj, size, progress_callback=None, start=None, end
             if stream.bytes_transferred == bytes_transferred:
                 raise RuntimeError('Download of %s has stopped at %s bytes of %s.'
                                    % (blob.name, offset + bytes_transferred, offset + size))
-        except RequestException as e:
+        except (RequestException, RetryError) as e:
             remaining_attempts -= 1
             if not remaining_attempts:
                 raise RuntimeError('Resumable download has failed after %s sequential resumes. '
