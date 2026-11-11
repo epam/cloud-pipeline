@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import difflib
 import functools
 import logging
 import os
@@ -402,10 +403,26 @@ done
             file.write(updated_content)
 
     def _compare_file(self, before_path, after_path):
-        try:
-            return subprocess.check_output(['diff', before_path, after_path], stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError as e:
-            return e.output
+        # Compares in Python, since many tool images have no diff command, e.g. Rocky Linux 8 and 9.
+        # The changes keep the normal format of diff, with "<" before each old line and ">" before each new one.
+        before_lines = _read_diff_lines(before_path)
+        after_lines = _read_diff_lines(after_path)
+        changes = []
+        matcher = difflib.SequenceMatcher(a=before_lines, b=after_lines, autojunk=False)
+        for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+            if tag == 'equal':
+                continue
+            if tag == 'delete':
+                changes.append('{}d{}'.format(_diff_range(i1, i2), j1))
+            elif tag == 'insert':
+                changes.append('{}a{}'.format(i1, _diff_range(j1, j2)))
+            else:
+                changes.append('{}c{}'.format(_diff_range(i1, i2), _diff_range(j1, j2)))
+            changes.extend(_diff_rows('< ', before_lines[i1:i2]))
+            if tag == 'replace':
+                changes.append('---')
+            changes.extend(_diff_rows('> ', after_lines[j1:j2]))
+        return '\n'.join(changes)
 
     def _persist_profile(self, modified_profile, profile):
         self._logger.debug('Persisting grid engine {} profile changes...'.format(profile.name))
@@ -466,6 +483,32 @@ nohup "$CP_PYTHON2_PATH" "{autoscaling_script_path}" >"$LOG_DIR/.nohup.autoscale
         """.format(autoscaling_profile_path=profile.path_queue,
                    autoscaling_script_path=autoscaling_script_path))
         self._logger.info('Grid engine {} autoscaling has been launched.'.format(profile.name))
+
+
+def _read_diff_lines(path):
+    # The lines as diff sees them: split by "\n" alone, each with its "\n", the last one maybe without it.
+    # Bytes that are not UTF-8 are escaped, as \xe9, rather than failing on Python 3.
+    with open(path, 'rb') as f:
+        content = f.read()
+    if not isinstance(content, str):
+        content = content.decode('utf-8', 'backslashreplace')
+    lines = [line + '\n' for line in content.split('\n')]
+    lines[-1] = lines[-1][:-1]
+    return lines if lines[-1] else lines[:-1]
+
+
+def _diff_rows(prefix, lines):
+    for line in lines:
+        if line.endswith('\n'):
+            yield prefix + line[:-1]
+        else:
+            yield prefix + line
+            yield '\\ No newline at end of file'
+
+
+def _diff_range(start, end):
+    # The 1-based line range of diff's normal format: "5" for one line, "5,7" for several.
+    return str(end) if end - start == 1 else '{},{}'.format(start + 1, end)
 
 
 def _get_manager():
