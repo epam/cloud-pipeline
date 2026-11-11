@@ -189,9 +189,11 @@ public class CapacityReservationStateProcessor {
      * Submits the request, or adopts what an earlier attempt already bought.
      *
      * <p>For {@link CapacityReservationType#CAPACITY_BLOCK} the purchase call is made at most once. The provider
-     * has no idempotency token for it, so an unclear outcome is never retried by calling it again. Later ticks
-     * only run {@link #isAwaitingPurchaseConfirmation}, until its grace period is over. Then the request fails,
-     * instead of taking the risk of a second purchase.
+     * has no idempotency token for it, so an unclear outcome is never retried by calling it again. A later tick
+     * only looks the purchase up with {@link CapacityReservationCloudFacade#findSubmitted}, and
+     * {@link #isAwaitingPurchaseConfirmation} says whether it is still worth waiting. Once
+     * {@link #PURCHASE_CONFIRMATION_GRACE_PERIOD} is over, the request fails instead of taking the risk of a
+     * second purchase.
      */
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private void submit(final CapacityReservation reservation) {

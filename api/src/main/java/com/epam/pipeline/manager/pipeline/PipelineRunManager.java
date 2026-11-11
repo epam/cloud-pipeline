@@ -560,9 +560,9 @@ public class PipelineRunManager {
 
     /**
      * Rejects a run that names a pool with {@link #CP_CAP_POOL_ID} right away, for the things that are known
-     * without a live free node. Two cases: the pool does not exist, or the run explicitly asked for an instance
-     * type or a region that the pool's nodes do not provide. Every node of a pool is created the same way, from
-     * the static config of the pool, so no live node is needed to check this.
+     * without a live free node: the pool id is not a number, the pool does not exist, or the run explicitly asked
+     * for an instance type or a region that the pool's nodes do not provide. Every node of a pool is created the
+     * same way, from the static config of the pool, so no live node is needed to check this.
      *
      * <p>These are plain field comparisons. The default-filling of {@code AutoscalerService}
      * ({@code configurationToInstance}) is not reused on purpose: a run that did not ask for a type or a region

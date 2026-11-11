@@ -39,9 +39,9 @@ import java.util.Optional;
  * the provider will even consider, {@link #createFutureDated} asks for the capacity, or
  * {@link #purchaseCapacityBlock} buys one exact offering instead of searching a window, {@link #describe}
  * follows what became of the request, {@link #launchSpecification} says how a node consumes the reservation, and
- * {@link #cancel} gives the capacity back. {@link #findByClientToken} answers what an attempt bought when its
- * reply was lost. {@link #cancel} refuses a capacity block, because no provider takes a bought block back. A
- * caller must not call it for a capacity block at all, instead of relying on that refusal.
+ * {@link #cancel} gives the capacity back - but never a capacity block, which it refuses, because no provider
+ * takes a bought block back. A caller must not call {@link #cancel} for a capacity block at all, rather than
+ * rely on that refusal. {@link #findByClientToken} answers what an attempt bought when its reply was lost.
  *
  * <p>The calls that can lead to capacity being paid for - {@link #candidateZones}, {@link #createFutureDated},
  * {@link #purchaseCapacityBlock} and {@link #findByClientToken} - raise

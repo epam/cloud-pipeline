@@ -96,6 +96,11 @@ import java.util.stream.Collectors;
  *   <li><b>Submits</b> a request as a future-dated reservation - {@code InstanceMatchCriteria=targeted},
  *       {@code DeliveryPreference=incremental}, committed for the duration the request names - under a client token
  *       that makes the call idempotent, and tags it with that token and its own id.</li>
+ *   <li><b>Buys</b> a capacity block: the exact offering the reservation names, tagged the same way. AWS takes no
+ *       idempotency token for this call, so {@link #findByClientToken} and that tag are the only way to tell what
+ *       an attempt with a lost reply bought.</li>
+ *   <li><b>Searches</b> the capacity block catalogue: the offerings a region sells now, and the instance types it
+ *       sells as capacity blocks at all. Neither call commits to anything.</li>
  *   <li><b>Offers zones</b>: those of the region's configured networks that actually offer the instance type - or
  *       every zone that offers it, where the region configures no networks - so a request is only ever made where
  *       AWS could deliver it.</li>
@@ -105,15 +110,17 @@ import java.util.stream.Collectors;
  *       short grace period before it is believed.</li>
  *   <li><b>Cancels</b>: plainly once nothing is committed any more, and through a cancellation quote while the
  *       reservation is scheduled or still inside its commitment. A reservation AWS no longer knows, or an id it
- *       cannot parse, is nothing to cancel.</li>
+ *       cannot parse, is nothing to cancel. A capacity block is refused, see {@link #cancel}.</li>
  * </ul>
  *
- * <p>The three calls that can lead to capacity being paid for - the zone lookup, the submission itself and the
- * lookup by client token - raise {@link CapacityReservationSubmissionUncertainException} instead of reporting a
- * refusal whenever an error leaves the outcome genuinely unknown: throttling, a server-side failure, a reply that
- * never arrived. The caller then retries the same client token rather than paying for a second reservation. A
- * definitive refusal is passed on as it is, including insufficient capacity, which AWS reports with a server-side
- * status but which refuses this configuration rather than failing the call.
+ * <p>The four calls that can lead to capacity being paid for - the zone lookup, the future-dated submission, the
+ * capacity block purchase and the lookup by client token - raise
+ * {@link CapacityReservationSubmissionUncertainException} instead of reporting a refusal whenever an error leaves
+ * the outcome genuinely unknown: throttling, a server-side failure, a reply that never arrived. The caller then
+ * retries the same client token rather than paying for a second reservation. A capacity block purchase is the
+ * exception: it has no idempotency token, so the caller must first check with {@link #findByClientToken}, see
+ * {@link #purchaseCapacityBlock}. A definitive refusal is passed on as it is, including insufficient capacity,
+ * which AWS reports with a server-side status but which refuses this configuration rather than failing the call.
  */
 @Service
 @Slf4j
@@ -461,9 +468,9 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
     }
 
     /**
-     * AWS sells capacity blocks in 1-day steps up to {@value #ONE_DAY_STEP_MAX_DAYS} days, and in 7-day steps up
-     * to {@value #SEVEN_DAY_STEP_MAX_DAYS} days. This is checked here, before the request is built, so the user
-     * gets a clear message instead of a bare AWS refusal.
+     * AWS sells a capacity block only in 1-day steps up to {@value #ONE_DAY_STEP_MAX_DAYS} days, and after that
+     * only in 7-day steps up to {@value #SEVEN_DAY_STEP_MAX_DAYS} days. Any other duration is refused. This is
+     * checked here, before the request is built, so the user gets a clear message instead of a bare AWS refusal.
      */
     static void validateCapacityBlockDuration(final Integer hours) {
         Assert.isTrue(hours != null && hours % HOURS_PER_DAY == 0 && isValidCapacityBlockDurationDays(

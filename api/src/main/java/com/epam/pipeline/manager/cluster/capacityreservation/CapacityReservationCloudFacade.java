@@ -53,8 +53,8 @@ import java.util.Optional;
  * </ul>
  *
  * <p>A capacity block purchase carries the same token, but only as a tag on what it buys. The AWS purchase call
- * takes no idempotency token. So {@link #findSubmitted} is the only protection against a lost reply and paying
- * for the block twice. A failure alone is never a reason to call {@code create} for a capacity block again. It is
+ * takes no idempotency token. So {@link #findSubmitted} is the only protection against paying for the block
+ * twice after a lost reply. A failure alone is never a reason to call {@code create} for a block again. It is
  * safe to call it again only when {@link #findSubmitted} returns empty, and only after the caller has waited long
  * enough to trust that answer.
  *

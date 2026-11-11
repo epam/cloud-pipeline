@@ -29,9 +29,9 @@ import java.time.LocalDateTime;
  * why the request is separate from {@link com.epam.pipeline.controller.vo.cluster.pool.CapacityReservationRequest},
  * which asks for the capacity of one specific pool instead of searching a catalogue.
  *
- * <p>{@code resourceType} may be unset or set to {@link CapacityBlockResourceType#INSTANCE}. Unset means the same
- * thing. That is the only accepted value today. The field also allows
- * {@link CapacityBlockResourceType#ULTRASERVER}, so the request does not have to change once it is supported.
+ * <p>{@code resourceType} is either unset, which reads as {@link CapacityBlockResourceType#INSTANCE}, or set to
+ * that value. It is the only value accepted today, and {@link CapacityBlockResourceType#ULTRASERVER} is
+ * rejected. The field has that type only so the request does not have to change once it is supported.
  */
 @Data
 @Builder(toBuilder = true)

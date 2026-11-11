@@ -187,8 +187,9 @@ public class ReassignHandler {
     }
 
     /**
-     * Returns the required pool if this free node belongs to it. Only such a node tells something about this
-     * run. A node of any other pool is simply not this run's business.
+     * Returns the required pool if this free node belongs to it. Only such a node may fail the run: it is the one
+     * node the run must fit. A node of another pool that does not fit says nothing about this run, because the
+     * run was never going to use it.
      */
     private Optional<NodePool> requiredPoolOf(final RunningInstance instance, final Optional<Long> requiredPoolId) {
         return Optional.ofNullable(instance.getPool())
