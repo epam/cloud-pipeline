@@ -13,14 +13,16 @@
 # limitations under the License.
 
 from boto3.s3.transfer import TransferConfig
-from botocore.endpoint import BotocoreHTTPSession, MAX_POOL_CONNECTIONS
+try:
+    from botocore.httpsession import URLLib3Session as BotocoreHTTPSession, MAX_POOL_CONNECTIONS
+except ImportError:
+    from botocore.endpoint import BotocoreHTTPSession, MAX_POOL_CONNECTIONS
 from treelib import Tree
 
 from src.model.datastorage_usage_model import StorageUsage
 from src.utilities.audit import DataAccessEvent, DataAccessType
 from src.utilities.datastorage_lifecycle_manager import DataStorageLifecycleManager
 from src.utilities.encoding_utilities import to_string
-from src.utilities.storage.s3_proxy_utils import AwsProxyConnectWithHeadersHTTPSAdapter
 from src.utilities.storage.storage_usage import StorageUsageAccumulator
 
 import collections
@@ -47,9 +49,8 @@ import requests
 
 from src.utilities.storage_path_permissions_manager import get_permissions_manager
 
-requests.urllib3.disable_warnings()
-import botocore.vendored.requests.packages.urllib3 as boto_urllib3
-boto_urllib3.disable_warnings()
+import urllib3
+urllib3.disable_warnings()
 
 class StorageItemManager(object):
 
@@ -64,8 +65,7 @@ class StorageItemManager(object):
                                    region_name=self.region_name,
                                    endpoint_url=endpoint,
                                    verify=False if endpoint else _ca_bundle)
-        self.s3.meta.client._endpoint.http_session = BotocoreHTTPSession(
-            max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
+        self.s3.meta.client._endpoint.http_session = BotocoreHTTPSession(max_pool_connections=MAX_POOL_CONNECTIONS)
         if bucket:
             self.bucket = self.s3.Bucket(bucket)
         debug_log_proxies(_boto_config)
@@ -88,8 +88,7 @@ class StorageItemManager(object):
                                      region_name=self.region_name,
                                      endpoint_url=self.endpoint,
                                      verify=False if self.endpoint else _ca_bundle)
-        client._endpoint.http_session.adapters['https://'] = BotocoreHTTPSession(
-            max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
+        client._endpoint.http_session = BotocoreHTTPSession(max_pool_connections=MAX_POOL_CONNECTIONS)
         debug_log_proxies(_boto_config)
         return client
 
@@ -337,8 +336,7 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
                                           region_name=source_region,
                                           endpoint_url=source_endpoint,
                                           verify=False if source_endpoint else _ca_bundle)
-        source_s3.meta.client._endpoint.http_session = BotocoreHTTPSession(
-            max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
+        source_s3.meta.client._endpoint.http_session = BotocoreHTTPSession(max_pool_connections=MAX_POOL_CONNECTIONS)
         debug_log_proxies(_boto_config)
         return source_s3.meta.client
 
@@ -922,8 +920,7 @@ class S3BucketOperations(object):
         _ca_bundle = Config.instance(raise_config_not_found_exception=False).ca_bundle
         client = session.client('s3', config=_boto_config, region_name=region_name,
                                 endpoint_url=endpoint, verify=False if endpoint else _ca_bundle)
-        client._endpoint.http_session.adapters['https://'] = BotocoreHTTPSession(
-            max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
+        client._endpoint.http_session = BotocoreHTTPSession(max_pool_connections=MAX_POOL_CONNECTIONS)
         debug_log_proxies(_boto_config)
         return client
 

@@ -15,7 +15,7 @@
 import datetime as dt
 import pytz
 import requests_mock
-from mock import patch
+from unittest.mock import patch
 from pipe import *
 from tests.test_utils.assertions_utils import *
 from tests.test_utils.mocked_requests import *

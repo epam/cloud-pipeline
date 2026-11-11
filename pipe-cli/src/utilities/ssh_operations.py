@@ -1344,8 +1344,9 @@ def perform_command(executable, log_file=None, collect_output=True, fail_on_erro
     import subprocess
     with open(log_file or os.devnull, 'a') as output:
         if collect_output:
-            command_proc = subprocess.Popen(executable, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=os.getcwd(),
-                                            env=os.environ.copy())
+            command_proc = subprocess.Popen(executable, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                            text=True, encoding='utf-8', errors='replace',
+                                            cwd=os.getcwd(), env=os.environ.copy())
         else:
             command_proc = subprocess.Popen(executable, stdout=output, stderr=subprocess.STDOUT, cwd=os.getcwd(),
                                             env=os.environ.copy())

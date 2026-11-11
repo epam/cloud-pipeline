@@ -17,7 +17,7 @@
 ###
 # Setup Pyinstaller
 ###
-python -m pip install pyinstaller==5.13.2
+python -m pip install "pyinstaller==6.5.0"
 
 ###
 # Setup common dependencies
@@ -40,17 +40,19 @@ cd $PIPE_MOUNT_SOURCES_DIR && \
 pyinstaller \
                                 --paths "$PIPE_CLI_SOURCES_DIR" \
                                 --paths "$PIPE_MOUNT_SOURCES_DIR" \
-                                --hidden-import=UserList \
-                                --hidden-import=UserString \
-                                --hidden-import=commands \
-                                --hidden-import=ConfigParser \
-                                --hidden-import=UserDict \
+                                --collect-submodules pipefuse \
+                                --collect-submodules google.auth \
+                                --collect-submodules google.oauth2 \
+                                --collect-submodules google.cloud \
+                                --collect-submodules google.resumable_media \
+                                --collect-data botocore \
+                                --hidden-import=fuse \
+                                --hidden-import=cachetools \
+                                --hidden-import=intervals \
+                                --hidden-import=pygtrie \
                                 --hidden-import=itertools \
                                 --hidden-import=collections \
-                                --hidden-import=future.backports.misc \
-                                --hidden-import=commands \
                                 --hidden-import=base64 \
-                                --hidden-import=__builtin__ \
                                 --hidden-import=math \
                                 --hidden-import=reprlib \
                                 --hidden-import=functools \
@@ -89,23 +91,34 @@ function build_pipe {
 
     pyinstaller \
                                     --paths "$PIPE_CLI_SOURCES_DIR" \
-                                    --hidden-import=UserList \
-                                    --hidden-import=UserString \
-                                    --hidden-import=commands \
-                                    --hidden-import=ConfigParser \
-                                    --hidden-import=UserDict \
+                                    --collect-submodules src \
+                                    --collect-submodules google.auth \
+                                    --collect-submodules google.oauth2 \
+                                    --collect-submodules google.cloud \
+                                    --collect-submodules google.resumable_media \
+                                    --collect-submodules azure.core \
+                                    --collect-submodules azure.storage \
+                                    --collect-data botocore \
+                                    --collect-data azure \
+                                    --hidden-import=pygtrie \
+                                    --hidden-import=pypac \
+                                    --hidden-import=treelib \
+                                    --hidden-import=psutil \
+                                    --hidden-import=scp \
+                                    --hidden-import=tzlocal \
+                                    --hidden-import=prettytable \
+                                    --hidden-import=jwt \
+                                    --hidden-import=paramiko \
                                     --hidden-import=itertools \
                                     --hidden-import=collections \
-                                    --hidden-import=future.backports.misc \
-                                    --hidden-import=commands \
                                     --hidden-import=base64 \
-                                    --hidden-import=__builtin__ \
                                     --hidden-import=math \
                                     --hidden-import=reprlib \
                                     --hidden-import=functools \
                                     --hidden-import=re \
                                     --hidden-import=subprocess \
                                     --hidden-import=_sysconfigdata \
+                                    --additional-hooks-dir="${PIPE_CLI_SOURCES_DIR}/hooks" \
                                     --additional-hooks-dir="${PIPE_MOUNT_SOURCES_DIR}/hooks" \
                                     --additional-hooks-dir="${PIPE_MOUNT_SOURCES_DIR}/hooks-py39" \
                                     -y \

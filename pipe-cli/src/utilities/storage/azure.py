@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
-
 import copy
 import io
 import os
@@ -27,13 +25,14 @@ from src.utilities.audit import DataAccessEvent, DataAccessType
 from src.utilities.encoding_utilities import to_string
 from src.utilities.storage.storage_usage import StorageUsageAccumulator
 
-try:
-    from urllib.request import urlopen  # Python 3
-except ImportError:
-    from urllib2 import urlopen  # Python 2
+from urllib.request import urlopen
 
-from azure.storage.blob import BlockBlobService, ContainerPermissions, Blob
-from azure.storage.common._auth import _StorageSASAuthentication
+from azure.core.credentials import AzureSasCredential, AzureNamedKeyCredential
+from azure.core.pipeline.transport import RequestsTransport
+from azure.storage.blob import (
+    BlobServiceClient, BlobPrefix,
+    generate_account_sas, AccountSasPermissions, ResourceTypes,
+)
 
 from src.api.data_storage import DataStorage
 from src.model.data_storage_item_model import DataStorageItemModel, DataStorageItemLabelModel
@@ -85,11 +84,21 @@ class AzureListingManager(AzureManager, AbstractListingManager):
     def list_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
                    show_all=False, show_archive=False):
         prefix = StorageOperations.get_prefix(relative_path)
-        blobs_generator = self.service.list_blobs(self.bucket.path,
-                                                  prefix=prefix if relative_path else None,
-                                                  num_results=page_size if not show_all else None,
-                                                  delimiter=StorageOperations.PATH_SEPARATOR if not recursive else None)
-        absolute_items = [self._to_storage_item(blob) for blob in blobs_generator]
+        container_client = self.service.container_client(self.bucket.path)
+        if recursive:
+            blobs_iter = container_client.list_blobs(
+                name_starts_with=prefix if relative_path else None
+            )
+        else:
+            blobs_iter = container_client.walk_blobs(
+                name_starts_with=prefix if relative_path else None,
+                delimiter=StorageOperations.PATH_SEPARATOR
+            )
+        absolute_items = []
+        for blob in blobs_iter:
+            absolute_items.append(self._to_storage_item(blob))
+            if not show_all and page_size and len(absolute_items) >= page_size:
+                break
         return absolute_items if recursive else [self._to_local_item(item, prefix) for item in absolute_items]
 
     def list_paging_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
@@ -98,24 +107,24 @@ class AzureListingManager(AzureManager, AbstractListingManager):
 
     def get_summary(self, relative_path=None):
         prefix = StorageOperations.get_prefix(relative_path)
-        blobs_generator = self.service.list_blobs(self.bucket.path,
-                                                  prefix=prefix if relative_path else None)
+        container_client = self.service.container_client(self.bucket.path)
+        blobs_iter = container_client.list_blobs(
+            name_starts_with=prefix if relative_path else None
+        )
         storage_usage = StorageUsage()
-        for blob in blobs_generator:
-            if type(blob) == Blob:
-                storage_usage.add_item(AbstractListingManager.STANDARD_TIER, blob.properties.content_length)
+        for blob in blobs_iter:
+            storage_usage.add_item(AbstractListingManager.STANDARD_TIER, blob.size)
         return [self.delimiter.join([self.bucket.path, relative_path]), storage_usage]
 
     def get_summary_with_depth(self, max_depth, relative_path=None):
         prefix = StorageOperations.get_prefix(relative_path)
-        blobs_generator = self.service.list_blobs(self.bucket.path,
-                                                  prefix=prefix if relative_path else None)
+        container_client = self.service.container_client(self.bucket.path)
+        blobs_iter = container_client.list_blobs(
+            name_starts_with=prefix if relative_path else None
+        )
         accumulator = StorageUsageAccumulator(self.bucket.path, relative_path, self.delimiter, max_depth)
-        for blob in blobs_generator:
-            if type(blob) == Blob:
-                size = blob.properties.content_length
-                name = blob.name
-                accumulator.add_path(name, AbstractListingManager.STANDARD_TIER, size)
+        for blob in blobs_iter:
+            accumulator.add_path(blob.name, AbstractListingManager.STANDARD_TIER, blob.size)
         return accumulator.get_tree()
 
     def get_listing_with_depth(self, max_depth, relative_path=None):
@@ -125,13 +134,14 @@ class AzureListingManager(AzureManager, AbstractListingManager):
         item = DataStorageItemModel()
         item.name = blob.name
         item.path = item.name
-        if type(blob) == Blob:
-            item.type = 'File'
-            item.changed = self._to_local_timezone(blob.properties.last_modified)
-            item.size = blob.properties.content_length
-            item.labels = [DataStorageItemLabelModel('StorageClass', blob.properties.blob_tier.upper())]
-        else:
+        if isinstance(blob, BlobPrefix):
             item.type = 'Folder'
+        else:
+            item.type = 'File'
+            item.changed = self._to_local_timezone(blob.last_modified)
+            item.size = blob.size
+            tier = str(blob.blob_tier).upper() if blob.blob_tier else ''
+            item.labels = [DataStorageItemLabelModel('StorageClass', tier)]
         return item
 
     def _to_local_timezone(self, utc_datetime):
@@ -144,7 +154,8 @@ class AzureListingManager(AzureManager, AbstractListingManager):
         return relative_item
 
     def get_file_tags(self, relative_path):
-        return dict(self.service.get_blob_metadata(self.bucket.path, relative_path))
+        blob_client = self.service.blob_client(self.bucket.path, relative_path)
+        return dict(blob_client.get_blob_properties().metadata or {})
 
 
 class AzureDeleteManager(AzureManager, AbstractDeleteManager):
@@ -190,7 +201,7 @@ class AzureDeleteManager(AzureManager, AbstractDeleteManager):
         if PatternMatcher.match_any(file_name, exclude, default=False):
             return
         self.events.put(DataAccessEvent(blob_name, DataAccessType.DELETE, storage=self.bucket))
-        self.service.delete_blob(self.bucket.path, blob_name)
+        self.service.blob_client(self.bucket.path, blob_name).delete_blob()
 
 
 class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
@@ -203,7 +214,7 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
     _SYNC_COPY_SIZE_LIMIT = (256 - 1) * 1024 * 1024  # 255 Mb
     _POLLS_TIMEOUT = 10  # 10 seconds
     _POLLS_LIMIT = 60 * 60 * 3  # 3 hours
-    _POLLS_ATTEMPTS = _POLLS_LIMIT / _POLLS_TIMEOUT
+    _POLLS_ATTEMPTS = _POLLS_LIMIT // _POLLS_TIMEOUT
 
     def get_destination_key(self, destination_wrapper, relative_path):
         return StorageOperations.normalize_path(destination_wrapper, relative_path)
@@ -220,29 +231,27 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
         destination_path = self.get_destination_key(destination_wrapper, relative_path)
 
         source_service = AzureBucketOperations.get_blob_service(source_wrapper.bucket, read=True, write=clean)
-        source_credentials = source_service.credentials
-        source_blob_url = self.service.make_blob_url(source_wrapper.bucket.path, full_path,
-                                                     sas_token=source_credentials.session_token.lstrip('?'))
+        source_sas = source_service.credentials.session_token.lstrip('?')
+        source_account = source_service.credentials.secret_key
+        source_blob_url = 'https://{}.blob.core.windows.net/{}/{}?{}'.format(
+            source_account, source_wrapper.bucket.path, full_path, source_sas
+        )
         destination_tags = self._destination_tags(source_wrapper, full_path, tags)
         destination_bucket = destination_wrapper.bucket.path
-        sync_copy = size < TransferBetweenAzureBucketsManager._SYNC_COPY_SIZE_LIMIT
-        if not size or size == 0:
-            sync_copy = None
         progress_callback = AzureProgressPercentage.callback(full_path, size, quiet, lock)
         if progress_callback:
             progress_callback(0, size)
         self.events.put_all([DataAccessEvent(full_path, DataAccessType.READ, storage=source_wrapper.bucket),
                              DataAccessEvent(destination_path, DataAccessType.WRITE, storage=destination_wrapper.bucket)])
-        self.service.copy_blob(destination_bucket, destination_path, source_blob_url,
-                               metadata=destination_tags,
-                               requires_sync=sync_copy)
-        if not sync_copy:
+        dest_blob_client = self.service.blob_client(destination_bucket, destination_path)
+        copy_props = dest_blob_client.start_copy_from_url(source_blob_url, metadata=destination_tags)
+        if copy_props.get('copy_status') != self._COPY_SUCCESS_STATUS:
             self._wait_for_copying(destination_bucket, destination_path, full_path)
         if progress_callback:
             progress_callback(size, size)
         if clean:
             self.events.put(DataAccessEvent(full_path, DataAccessType.DELETE, storage=source_wrapper.bucket))
-            source_service.delete_blob(source_wrapper.bucket.path, full_path)
+            source_service.blob_client(source_wrapper.bucket.path, full_path).delete_blob()
 
     def _wait_for_copying(self, destination_bucket, destination_path, full_path):
         for _ in range(0, TransferBetweenAzureBucketsManager._POLLS_ATTEMPTS):
@@ -256,8 +265,9 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
         raise RuntimeError('Blob copying from %s to %s has failed.' % (full_path, destination_path))
 
     def _get_copying_status(self, destination_bucket, destination_path):
-        blob = self.service.get_blob_properties(destination_bucket, destination_path)
-        return blob.properties.copy.status
+        blob_client = self.service.blob_client(destination_bucket, destination_path)
+        props = blob_client.get_blob_properties()
+        return props.copy.status if props.copy and props.copy.status else None
 
     def _destination_tags(self, source_wrapper, full_path, raw_tags):
         tags = StorageOperations.parse_tags(raw_tags) if raw_tags \
@@ -288,11 +298,18 @@ class AzureDownloadManager(AzureManager, AbstractTransferManager):
         self.create_local_folder(destination_key, lock)
         progress_callback = AzureProgressPercentage.callback(source_key, size, quiet, lock)
         self.events.put(DataAccessEvent(source_key, DataAccessType.READ, storage=source_wrapper.bucket))
-        self.service.get_blob_to_path(source_wrapper.bucket.path, source_key, to_string(destination_key),
-                                      progress_callback=progress_callback)
+        blob_client = self.service.blob_client(source_wrapper.bucket.path, source_key)
+        downloader = blob_client.download_blob()
+        total_read = 0
+        with open(to_string(destination_key), 'wb') as f:
+            for chunk in downloader.chunks():
+                f.write(chunk)
+                total_read += len(chunk)
+                if progress_callback:
+                    progress_callback(total_read, size)
         if clean:
             self.events.put(DataAccessEvent(source_key, DataAccessType.DELETE, storage=source_wrapper.bucket))
-            self.service.delete_blob(source_wrapper.bucket.path, source_key)
+            blob_client.delete_blob()
 
 
 class AzureUploadManager(AzureManager, AbstractTransferManager):
@@ -315,13 +332,12 @@ class AzureUploadManager(AzureManager, AbstractTransferManager):
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
         destination_tags = StorageOperations.generate_tags(tags, source_key)
-        progress_callback = AzureProgressPercentage.callback(relative_path, size, quiet, lock)
         max_connections = self.get_max_connections(io_threads)
         self.events.put(DataAccessEvent(destination_key, DataAccessType.WRITE, storage=destination_wrapper.bucket))
-        self.service.create_blob_from_path(destination_wrapper.bucket.path, destination_key, to_string(source_key),
-                                           metadata=destination_tags,
-                                           progress_callback=progress_callback,
-                                           max_connections=max_connections)
+        blob_client = self.service.blob_client(destination_wrapper.bucket.path, destination_key)
+        with open(to_string(source_key), 'rb') as f:
+            blob_client.upload_blob(f, overwrite=True, metadata=destination_tags,
+                                    max_concurrency=max_connections)
         if clean:
             source_wrapper.delete_item(source_key)
 
@@ -360,13 +376,11 @@ class TransferFromHttpOrFtpToAzureManager(AzureManager, AbstractTransferManager)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
         destination_tags = StorageOperations.generate_tags(tags, source_key)
-        progress_callback = AzureProgressPercentage.callback(relative_path, size, quiet, lock)
         max_connections = self.get_max_connections(io_threads)
         self.events.put(DataAccessEvent(destination_key, DataAccessType.WRITE, storage=destination_wrapper.bucket))
-        self.service.create_blob_from_stream(destination_wrapper.bucket.path, destination_key, _SourceUrlIO(source_key),
-                                             metadata=destination_tags,
-                                             progress_callback=progress_callback,
-                                             max_connections=max_connections)
+        blob_client = self.service.blob_client(destination_wrapper.bucket.path, destination_key)
+        blob_client.upload_blob(_SourceUrlIO(source_key), overwrite=True, metadata=destination_tags,
+                                max_concurrency=max_connections)
 
 
 class AzureTemporaryCredentials:
@@ -381,19 +395,20 @@ class AzureTemporaryCredentials:
         if AzureTemporaryCredentials.SAS_TOKEN not in os.environ:
             storage_account_key = os.environ[AzureTemporaryCredentials.AZURE_STORAGE_KEY]
 
-            client = BlockBlobService(account_name=storage_account, account_key=storage_account_key)
-
             generation_date = datetime.utcnow()
             expiration_date = generation_date + timedelta(hours=1)
 
             print('SAS token generation date: %s' % generation_date)
             print('SAS token expiration date: %s' % expiration_date)
 
-            permission = ContainerPermissions(True, False, False, True)
-            sas_token = client.generate_account_shared_access_signature('sco',
-                                                                        permission=permission,
-                                                                        expiry=expiration_date,
-                                                                        start=generation_date)
+            sas_token = generate_account_sas(
+                account_name=storage_account,
+                account_key=storage_account_key,
+                resource_types=ResourceTypes(service=True, container=True, object=True),
+                permission=AccountSasPermissions(read=True, list=True),
+                expiry=expiration_date,
+                start=generation_date,
+            )
         else:
             sas_token = os.environ[AzureTemporaryCredentials.SAS_TOKEN]
             expiration_date = datetime.utcnow() + timedelta(hours=1)
@@ -411,38 +426,47 @@ class AzureTemporaryCredentials:
         return DataStorage.get_single_temporary_credentials(bucket=bucket.identifier, read=read, write=write)
 
 
-class RefreshingBlockBlobService(BlockBlobService):
+class _RefreshingBlobServiceClient:
+    """BlobServiceClient wrapper with automatic SAS token refresh and proxy support."""
 
     def __init__(self, bucket, read, write, refresh_timeout=15,
                  refresh_credentials=AzureTemporaryCredentials.from_cp_api):
-        self.refresh_timeout = refresh_timeout
-        self.refresh_credentials = lambda: refresh_credentials(bucket, read, write)
-        self.credentials = self.refresh_credentials()
-        self.refresh_credentials_lock = Lock()
-        super(RefreshingBlockBlobService, self).__init__(account_name=self.credentials.secret_key,
-                                                         sas_token=self.credentials.session_token)
+        self._refresh_timeout = refresh_timeout
+        self._refresh_credentials_fn = lambda: refresh_credentials(bucket, read, write)
+        self.credentials = self._refresh_credentials_fn()
+        self._lock = Lock()
+        sas = self.credentials.session_token.lstrip('?')
+        account_name = self.credentials.secret_key
+        self._sas_credential = AzureSasCredential(sas)
+        account_url = 'https://{}.blob.core.windows.net'.format(account_name)
+        proxy_config = StorageOperations.get_proxy_config(account_url)
+        transport = self._make_transport(proxy_config)
+        kwargs = dict(transport=transport) if transport is not None else {}
+        self._client = BlobServiceClient(account_url, credential=self._sas_credential, **kwargs)
 
-    def _perform_request(self, request, parser=None, parser_args=None, operation_context=None, expected_errors=None):
-        with self.refresh_credentials_lock:
-            if self._expired(self.credentials):
-                self.credentials = self.refresh_credentials()
+    @staticmethod
+    def _make_transport(proxy_config):
+        if not proxy_config:
+            return None
+        if isinstance(proxy_config, dict):
+            proxies = proxy_config
+        else:
+            proxies = {'http': proxy_config, 'https': proxy_config}
+        return RequestsTransport(proxies=proxies)
 
-                self.sas_token = self.credentials.session_token
-                self.authentication = _StorageSASAuthentication(self.credentials.session_token)
-        return super(RefreshingBlockBlobService, self)._perform_request(request, parser, parser_args, operation_context,
-                                                                        expected_errors)
+    def _ensure_fresh(self):
+        with self._lock:
+            if self.credentials.expiration - datetime.utcnow() < timedelta(minutes=self._refresh_timeout):
+                self.credentials = self._refresh_credentials_fn()
+                self._sas_credential.update(self.credentials.session_token.lstrip('?'))
 
-    def _expired(self, credentials):
-        return credentials.expiration - datetime.utcnow() < timedelta(minutes=self.refresh_timeout)
+    def container_client(self, container):
+        self._ensure_fresh()
+        return self._client.get_container_client(container)
 
-
-class ProxyBlockBlobService(RefreshingBlockBlobService):
-
-    def _apply_host(self, request, operation_context, retry_context):
-        super(ProxyBlockBlobService, self)._apply_host(request, operation_context, retry_context)
-
-        request_url = self.protocol + '://' + request.host
-        self._httpclient.proxies = StorageOperations.get_proxy_config(request_url)
+    def blob_client(self, container, blob):
+        self._ensure_fresh()
+        return self._client.get_blob_client(container, blob)
 
 
 class AzureBucketOperations:
@@ -469,4 +493,4 @@ class AzureBucketOperations:
 
     @classmethod
     def get_blob_service(cls, *args, **kwargs):
-        return ProxyBlockBlobService(*args, **kwargs)
+        return _RefreshingBlobServiceClient(*args, **kwargs)

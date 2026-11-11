@@ -23,7 +23,6 @@ import platform
 import prettytable
 import sys
 from botocore.exceptions import ClientError
-from future.utils import iteritems
 from operator import itemgetter
 import concurrent.futures
 
@@ -663,7 +662,7 @@ class DataStorageOperations(object):
         table.field_names = ["Tag name", "Value"]
         table.align = "l"
         table.header = True
-        for (key, value) in iteritems(tags):
+        for (key, value) in tags.items():
             table.add_row([key, value])
         return table
 
@@ -802,7 +801,7 @@ class DataStorageOperations(object):
         metadata_mapping = dict()
         for metadata_entry in metadata_list:
             metadata_data_dict = {}
-            for key, data in iteritems(metadata_entry.data):
+            for key, data in metadata_entry.data.items():
                 if 'value' in data:
                     data_value = data['value']
                     if len(data_value) > 0:

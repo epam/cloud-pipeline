@@ -43,8 +43,7 @@ MOUNT_STOP_POLLING_DELAY_SEC = 0.1
 _monotonic = getattr(time, 'monotonic', time.time)
 
 
-class AbstractMount(object):
-    __metaclass__ = ABCMeta
+class AbstractMount(metaclass=ABCMeta):
 
     def get_mount_webdav_cmd(self, config, mountpoint, options, custom_options, web_dav_url, mode, threading=False,
                              log_level=None, show_archive=False):
