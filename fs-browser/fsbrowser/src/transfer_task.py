@@ -1,4 +1,4 @@
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -132,7 +132,7 @@ class TransferTask(Task):
         return stdout, stderr
 
     def execute_command(self, cmd, process_task):
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         if process_task:
             self.process = process
         stdout = self.read_stdout(process.stdout)
@@ -169,9 +169,16 @@ class TransferTask(Task):
 
     @staticmethod
     def compress_directory(output_filename, source_dir, follow_symlinks, exclude_list):
+        # TarFile.add() has no "exclude" since Python 3.7: its "filter" drops an item by returning None. A member is
+        # named after its path, without the leading "/", and the exclude patterns are written for the path itself.
+        def _filter(tarinfo):
+            path = os.path.join(os.sep, tarinfo.name) if os.path.isabs(source_dir) else tarinfo.name
+            if PatternMatcher.match_any(path, exclude_list):
+                return None
+            return TransferTask.set_permissions(tarinfo)
+
         with tarfile.open(output_filename, "w:gz", dereference=follow_symlinks) as tar:
-            tar.add(source_dir, exclude=lambda x: PatternMatcher.match_any(x, exclude_list),
-                    filter=TransferTask.set_permissions)
+            tar.add(source_dir, filter=_filter)
 
     @staticmethod
     def check_cyclic_symlinks(source_dir):
