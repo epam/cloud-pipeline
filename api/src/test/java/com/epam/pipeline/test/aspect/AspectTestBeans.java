@@ -24,6 +24,7 @@ import com.epam.pipeline.dao.cluster.ClusterDao;
 import com.epam.pipeline.dao.cluster.InstanceOfferDao;
 import com.epam.pipeline.dao.cluster.NatGatewayDao;
 import com.epam.pipeline.dao.cluster.NodeDiskDao;
+import com.epam.pipeline.dao.cluster.capacityreservation.CapacityReservationDao;
 import com.epam.pipeline.dao.cluster.pool.NodePoolDao;
 import com.epam.pipeline.dao.cluster.pool.NodeScheduleDao;
 import com.epam.pipeline.dao.configuration.RunConfigurationDao;
@@ -142,6 +143,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.security.access.PermissionEvaluator;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.security.acls.domain.PermissionFactory;
 import org.springframework.security.acls.model.SidRetrievalStrategy;
 
@@ -153,6 +155,9 @@ public class AspectTestBeans {
 
     @MockBean(name = "flywayInitializer")
     protected FlywayMigrationInitializer mockFlywayMigrationInitializer;
+
+    @MockBean
+    protected PlatformTransactionManager platformTransactionManager;
 
     @MockBean
     protected ImpersonationManager impersonationManager;
@@ -363,6 +368,9 @@ public class AspectTestBeans {
 
     @MockBean
     protected NodePoolDao mockNodePoolDao;
+
+    @MockBean
+    protected CapacityReservationDao mockCapacityReservationDao;
 
     @MockBean
     protected NodeScheduleDao nodeScheduleDao;

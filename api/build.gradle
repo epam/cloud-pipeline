@@ -217,6 +217,8 @@ dependencies {
     compile group: "com.amazonaws", name: "aws-java-sdk-omics", version: "1.12.717"
     compile group: 'com.amazonaws', name: 'aws-java-sdk-pricing', version: '1.12.780'
 
+    compile group: "software.amazon.awssdk", name: "ec2", version: "2.55.6"
+
 
     compile group: "com.azure", name: "azure-core", version: "1.54.0"
     //Azure Identity

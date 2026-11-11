@@ -18,9 +18,9 @@ package com.epam.pipeline.controller.cluster.pool;
 import com.epam.pipeline.acl.cluster.pool.NodePoolApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.controller.vo.cluster.pool.NodePoolFilterVO;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
-import com.epam.pipeline.entity.cluster.pool.NodePoolInfo;
 import com.epam.pipeline.entity.cluster.pool.NodePoolUsage;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -53,7 +53,7 @@ public class NodePoolController extends AbstractRestController {
     @GetMapping
     @ApiOperation(value = "Returns all registered node pools", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<? extends NodePoolInfo>> loadAll(
+    public Result<List<NodePool>> loadAll(
             final @RequestParam(defaultValue = "false") boolean loadStatus) {
         return Result.success(apiService.loadAll(loadStatus));
     }
@@ -66,17 +66,28 @@ public class NodePoolController extends AbstractRestController {
     }
 
     @PostMapping
-    @ApiOperation(value = "Creates or updates a node pool", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Creates a node pool, optionally requesting a capacity reservation for it, "
+            + "or updates the one", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<NodePool> createOrUpdate(final @RequestBody NodePoolVO vo) {
-        return Result.success(apiService.createOrUpdate(vo));
+        return Result.success(vo.getId() == null ? apiService.create(vo) : apiService.update(vo.getId(), vo));
     }
 
     @DeleteMapping("{id}")
-    @ApiOperation(value = "Deletes a node pool by id", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Deletes a node pool by id, if force=true also automatically deletes capacity reservation " +
+            "that was already provisioned for the pool", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<NodePool> delete(final @PathVariable Long id) {
-        return Result.success(apiService.delete(id));
+    public Result<NodePool> delete(final @PathVariable Long id,
+                                   final @RequestParam(defaultValue = "false") boolean force) {
+        return Result.success(apiService.delete(id, force));
+    }
+
+    @PostMapping("/filter")
+    @ApiOperation(value = "Returns node pools matching the given filter",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<NodePool>> filter(final @RequestBody NodePoolFilterVO filter) {
+        return Result.success(apiService.filter(filter));
     }
 
     @PostMapping("/usage")

@@ -15,8 +15,11 @@
 
 package com.epam.pipeline.controller.vo.cluster.pool;
 
+import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.PoolLabel;
+import com.epam.pipeline.entity.cluster.pool.NodePoolLaunchConfig;
+import com.epam.pipeline.entity.cluster.pool.NodePoolType;
 import com.epam.pipeline.entity.cluster.pool.filter.PoolFilter;
 import lombok.Data;
 
@@ -34,6 +37,7 @@ public class NodePoolVO {
     private int instanceDisk;
     private PriceType priceType;
     private Set<String> dockerImages;
+    @Deprecated
     private String instanceImage;
     private int count;
     private Long scheduleId;
@@ -45,4 +49,10 @@ public class NodePoolVO {
     private Double scaleDownThreshold;
     private Integer scaleStep;
     private Map<String, PoolLabel> kubeLabels;
+    private NodePoolType poolType;
+
+    private NodePoolLaunchConfig launchConfig;
+    private AMIConfiguration amiConfiguration;
+
+    private CapacityReservationRequest capacityReservationRequest;
 }

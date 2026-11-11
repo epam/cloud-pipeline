@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.notification;
 
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.dto.quota.AppliedQuota;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
@@ -689,6 +690,53 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         monitoringNotificationDao.updateNotificationTimestamp(filteredPools.stream()
                 .map(NodePool::getId)
                 .collect(Collectors.toList()), type);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void notifyCapacityReservation(final CapacityReservation reservation,
+                                          final NotificationType type,
+                                          final List<String> extraRecipients) {
+        if (reservation == null) {
+            log.debug("No capacity reservation provided to notify about");
+            return;
+        }
+        final NotificationSettings settings = settingsManager.load(type);
+        if (settings == null || !settings.isEnabled()) {
+            log.info("No template configured for {} notifications or it was disabled!", type);
+            return;
+        }
+
+        final NotificationMessage message = new NotificationMessage();
+        message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
+        message.setTemplateParameters(parameterManager.build(type, reservation));
+        message.setToUserId(getUserIdByName(reservation.getOwner()));
+        message.setCopyUserIds(ListUtils.union(getCCUsers(settings),
+                resolveUserIds(extraRecipients, reservation.getOwner())));
+        saveNotification(message);
+    }
+
+    private Long getUserIdByName(final String userName) {
+        if (StringUtils.isBlank(userName)) {
+            return null;
+        }
+        return Optional.ofNullable(userManager.loadUserByName(userName))
+                .map(PipelineUser::getId)
+                .orElse(null);
+    }
+
+    private List<Long> resolveUserIds(final List<String> userNames, final String owner) {
+        final List<String> names = ListUtils.emptyIfNull(userNames).stream()
+                .filter(StringUtils::isNotBlank)
+                .filter(name -> !name.equals(owner))
+                .distinct()
+                .collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(names)) {
+            return Collections.emptyList();
+        }
+        return userManager.loadUsersByNames(names).stream()
+                .map(PipelineUser::getId)
+                .collect(Collectors.toList());
     }
 
     private NotificationMessage buildMessageForFullNodePool(final List<NodePool> nodePools,
