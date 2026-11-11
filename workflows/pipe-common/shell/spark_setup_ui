@@ -87,7 +87,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self.send_header("Location", URL_PREFIX + "proxy:" + SPARK_MASTER_HOST)
             self.end_headers()
         else:
-            raise Exception("Unsupported response: " + resCode)
+            raise Exception("Unsupported response: " + str(resCode))
 
     def extractUrlDetails(self, path):
         if path.startswith("/proxy:"):

@@ -86,6 +86,7 @@
     - [The node logger and the search services do not use the docker registry login or prefix](#the-node-logger-and-the-search-services-do-not-use-the-docker-registry-login-or-prefix)
     - [A failed backup copy removes a good backup](#a-failed-backup-copy-removes-a-good-backup)
     - [`pipe storage cp` and `mv` fail with a file list on Windows and macOS](#pipe-storage-cp-and-mv-fail-with-a-file-list-on-windows-and-macos)
+    - [The pipeline repository is not mounted in a run when `python` is not the Python of the platform](#the-pipeline-repository-is-not-mounted-in-a-run-when-python-is-not-the-python-of-the-platform)
 
 ***
 
@@ -1045,3 +1046,7 @@ Please note:
 
 Previously, the `pipe storage cp` and `pipe storage mv` commands with the `--file-list` option failed in the Windows and macOS builds of the `pipe` CLI with the `a bytes-like object is required, not 'str'` error, as these builds run on Python 3. In the Linux build, the commands failed if a path in the list had non-ASCII characters. In all builds, a blank line in the list made them fail.
 Now, all builds read the file list as UTF-8 text, with or without a byte order mark, and skip blank lines. As in a folder transfer, paths with non-ASCII characters follow the `--on-unsafe-chars` option, and are skipped by default.
+### The pipeline repository is not mounted in a run when `python` is not the Python of the platform
+
+Previously, if the image of a pipeline run has `gitfs`, the run mounts the repository of the pipeline to `/code-repository/<pipeline name>` (`REPOSITORY_MOUNT`), if the user has the **WRITE** permission for the pipeline. The run checked this permission with the `python` that was first on `PATH`, not with the Python of the platform environment of the run (`CP_PYTHON2_PATH`). If that `python` could not run the check - e.g. there was no `python`, or it had no `pipeline` package of the platform - the run logged "User is not allowed to modify GIT repository." and did not mount the repository.
+Now, the permission check runs with `CP_PYTHON2_PATH`.
