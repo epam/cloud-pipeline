@@ -237,13 +237,16 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
         )
         destination_tags = self._destination_tags(source_wrapper, full_path, tags)
         destination_bucket = destination_wrapper.bucket.path
+        # A blob of less than 256 MB is copied synchronously: the call returns when the copy is done
+        sync_copy = bool(size) and size < TransferBetweenAzureBucketsManager._SYNC_COPY_SIZE_LIMIT
         progress_callback = AzureProgressPercentage.callback(full_path, size, quiet, lock)
         if progress_callback:
             progress_callback(0, size)
         self.events.put_all([DataAccessEvent(full_path, DataAccessType.READ, storage=source_wrapper.bucket),
                              DataAccessEvent(destination_path, DataAccessType.WRITE, storage=destination_wrapper.bucket)])
         dest_blob_client = self.service.blob_client(destination_bucket, destination_path)
-        copy_props = dest_blob_client.start_copy_from_url(source_blob_url, metadata=destination_tags)
+        copy_props = dest_blob_client.start_copy_from_url(source_blob_url, metadata=destination_tags,
+                                                          requires_sync=sync_copy)
         if copy_props.get('copy_status') != self._COPY_SUCCESS_STATUS:
             self._wait_for_copying(destination_bucket, destination_path, full_path)
         if progress_callback:
@@ -276,6 +279,7 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
 
 
 class AzureDownloadManager(AzureManager, AbstractTransferManager):
+    _MAX_CONNECTIONS = 2
 
     def get_destination_key(self, destination_wrapper, relative_path):
         if destination_wrapper.path.endswith(os.path.sep):
@@ -298,14 +302,11 @@ class AzureDownloadManager(AzureManager, AbstractTransferManager):
         progress_callback = AzureProgressPercentage.callback(source_key, size, quiet, lock)
         self.events.put(DataAccessEvent(source_key, DataAccessType.READ, storage=source_wrapper.bucket))
         blob_client = self.service.blob_client(source_wrapper.bucket.path, source_key)
-        downloader = blob_client.download_blob()
-        total_read = 0
+        # Two connections, as get_blob_to_path of the earlier Azure SDK used by default
+        downloader = blob_client.download_blob(max_concurrency=AzureDownloadManager._MAX_CONNECTIONS,
+                                               progress_hook=progress_callback)
         with open(to_string(destination_key), 'wb') as f:
-            for chunk in downloader.chunks():
-                f.write(chunk)
-                total_read += len(chunk)
-                if progress_callback:
-                    progress_callback(total_read, size)
+            downloader.readinto(f)
         if clean:
             self.events.put(DataAccessEvent(source_key, DataAccessType.DELETE, storage=source_wrapper.bucket))
             blob_client.delete_blob()
@@ -330,13 +331,14 @@ class AzureUploadManager(AzureManager, AbstractTransferManager):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
+        progress_callback = AzureProgressPercentage.callback(relative_path, size, quiet, lock)
         destination_tags = StorageOperations.generate_tags(tags, source_key)
         max_connections = self.get_max_connections(io_threads)
         self.events.put(DataAccessEvent(destination_key, DataAccessType.WRITE, storage=destination_wrapper.bucket))
         blob_client = self.service.blob_client(destination_wrapper.bucket.path, destination_key)
         with open(to_string(source_key), 'rb') as f:
             blob_client.upload_blob(f, overwrite=True, metadata=destination_tags,
-                                    max_concurrency=max_connections)
+                                    max_concurrency=max_connections, progress_hook=progress_callback)
         if clean:
             source_wrapper.delete_item(source_key)
 
@@ -374,12 +376,13 @@ class TransferFromHttpOrFtpToAzureManager(AzureManager, AbstractTransferManager)
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
+        progress_callback = AzureProgressPercentage.callback(relative_path, size, quiet, lock)
         destination_tags = StorageOperations.generate_tags(tags, source_key)
         max_connections = self.get_max_connections(io_threads)
         self.events.put(DataAccessEvent(destination_key, DataAccessType.WRITE, storage=destination_wrapper.bucket))
         blob_client = self.service.blob_client(destination_wrapper.bucket.path, destination_key)
         blob_client.upload_blob(_SourceUrlIO(source_key), overwrite=True, metadata=destination_tags,
-                                max_concurrency=max_connections)
+                                max_concurrency=max_connections, progress_hook=progress_callback)
 
 
 class AzureTemporaryCredentials:
@@ -425,6 +428,24 @@ class AzureTemporaryCredentials:
         return DataStorage.get_single_temporary_credentials(bucket=bucket.identifier, read=read, write=write)
 
 
+class _RefreshingSasCredential(AzureSasCredential):
+
+    def __init__(self, signature, ensure_fresh):
+        """
+        SAS credential that refreshes the temporary credentials, if they expire soon, before every request.
+
+        The SAS policy of azure-core reads the signature for every request (and retry) it sends, so a long
+        transfer or listing gets a fresh token as well, as the earlier Azure SDK service of the CLI did.
+        """
+        super(_RefreshingSasCredential, self).__init__(signature)
+        self._ensure_fresh = ensure_fresh
+
+    @property
+    def signature(self):
+        self._ensure_fresh()
+        return super(_RefreshingSasCredential, self).signature
+
+
 class _RefreshingBlobServiceClient:
     """BlobServiceClient wrapper with automatic SAS token refresh and proxy support."""
 
@@ -436,7 +457,7 @@ class _RefreshingBlobServiceClient:
         self._lock = Lock()
         sas = self.credentials.session_token.lstrip('?')
         account_name = self.credentials.secret_key
-        self._sas_credential = AzureSasCredential(sas)
+        self._sas_credential = _RefreshingSasCredential(sas, self._ensure_fresh)
         account_url = 'https://{}.blob.core.windows.net'.format(account_name)
         proxy_config = StorageOperations.get_proxy_config(account_url)
         # azure-core takes the proxies from the keyword arguments of the client: a transport's own proxies are ignored
