@@ -99,6 +99,7 @@
     - [Inner data storages navigation bar fails to navigate](#inner-data-storages-navigation-bar-fails-to-navigate)
     - [Region is being set incorrectly when trying to rerun pipeline](#region-is-being-set-incorrectly-when-trying-to-rerun-pipeline)
     - [`PAUSE` and `COMMIT` operations fail for the jobs with an autoscaled disk](#pause-and-commit-operations-fail-for-the-jobs-with-an-autoscaled-disk)
+    - [Packer node images for Amazon Linux 2023: the commit and the pause run on Python 2, no `lvm2`, failed downloads are ignored](#packer-node-images-for-amazon-linux-2023-the-commit-and-the-pause-run-on-python-2-no-lvm2-failed-downloads-are-ignored)
 
 ***
 
@@ -2232,3 +2233,19 @@ Previously, `PAUSE` and `COMMIT` operations failed with the `NullPointerExceptio
 
 - In **Groups**/**Roles** membership view, the vertical scrollbar was shown even if there was a plenty of space below the list. Currently, the list size is increased to the pop up size.
 - At the **Billing reports** page, if the whole header menu didn't not fit the screen width - the "discounts" links overflew the regions selector. Currently, row breaks feature is implemeted for this page.
+
+### Packer node images for Amazon Linux 2023: the commit and the pause run on Python 2, no `lvm2`, failed downloads are ignored
+
+Previously, the `deploy/infra/aws/packer` scripts, which build the Amazon Linux 2023 images for the AWS nodes:
+
+- installed the platform's Python 3.12 into `/opt/python3.12`. The commit and the pause of a run look for it in `/usr/local/python3.12` on the node, and use Python 2 when it is not there. So on the nodes of these images, the commit and the pause ran on Python 2.
+- did not install `lvm2`. When a node has more than one unmounted disk, e.g. the larger `c5d`, `m5d` and `r5d` types, which have several local NVMe disks and get no EBS data volume, the user data joins them into one volume with `pvcreate`, `vgcreate` and `lvcreate`. Without `lvm2`, this failed, and `/ebs` stayed on the root volume.
+- went on after a failed download of `btrfs`, Python 2, Python 3.12 or `jq`, and created the image anyway: e.g. with an empty `/usr/bin/btrfs` and no `mkfs.btrfs`. Also, they replaced the `jq` package of the image with a downloaded `jq` 1.6, and left the Nvidia `rpm` packages in `/opt` of the `gpu` image.
+
+Now:
+
+- Python 3.12 is installed into `/usr/local/python3.12`, as in the other AWS node images, so the commit and the pause use it. Python 2 (Miniconda2) is still installed.
+- `lvm2` is installed.
+- each download goes into a temporary folder first. A failed download, unpack or check of the result stops the build, so no image is created. `jq` is the package of Amazon Linux 2023, and the Nvidia files are removed after the install.
+
+`deploy/infra/aws/packer/README.md` now also lists the image contents and the IAM permissions that the build needs.
