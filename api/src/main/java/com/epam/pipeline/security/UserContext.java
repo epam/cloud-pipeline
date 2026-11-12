@@ -59,6 +59,12 @@ public class UserContext implements UserDetails {
      */
     private boolean authoritiesScoped;
 
+    /**
+     * Whether the token behind this principal may be traded for another. True unless the token
+     * says otherwise, so an ordinary login is unaffected.
+     */
+    private boolean exchangeable = true;
+
     public UserContext(JwtRawToken jwtRawToken, JwtTokenClaims claims) {
         this.jwtRawToken = jwtRawToken;
         this.userId = Optional.ofNullable(claims.getUserId()).filter(NumberUtils::isDigits).map(Long::parseLong)
@@ -69,6 +75,7 @@ public class UserContext implements UserDetails {
         this.groups = claims.getGroups();
         this.external = claims.isExternal();
         this.authoritiesScoped = claims.isAuthoritiesScoped();
+        this.exchangeable = claims.isExchangeable();
     }
 
     public UserContext(Long id, String userName) {
@@ -97,6 +104,9 @@ public class UserContext implements UserDetails {
                 // carried over deliberately: a token issued from this context must keep the
                 // restriction, or its holder could exchange a narrowed token for a full one
                 .authoritiesScoped(authoritiesScoped)
+                // carried over so the restriction cannot be shed by issuing a token from this
+                // context, the same way the narrowed authorities cannot
+                .exchangeable(exchangeable)
                 .build();
     }
 

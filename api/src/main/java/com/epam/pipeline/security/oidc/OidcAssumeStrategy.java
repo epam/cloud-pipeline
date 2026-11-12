@@ -62,6 +62,12 @@ public class OidcAssumeStrategy {
     /**
      * Keep only these authorities out of the ones the user already holds. Absent means keep them
      * all. Never widens: an authority the user does not hold is not granted by listing it here.
+     * <p>
+     * <strong>This applies to groups as well as roles.</strong> The two share one list, matched by
+     * plain name, so a list of roles alone removes every group the user belongs to — and with it
+     * every permission granted through a group, which is how storage access is usually given. A
+     * client that is meant to keep its user's group permissions has to name those groups here
+     * alongside the roles.
      */
     private List<String> authoritiesToKeep;
 
@@ -90,6 +96,22 @@ public class OidcAssumeStrategy {
      * session to begin with.
      */
     private boolean ignoreSubjectTokenLifetime;
+
+    /**
+     * Whether the issued token may be traded for another one through the platform's own
+     * token-issuing endpoints.
+     * <p>
+     * Off unless it is turned on, which is the opposite of the default for a platform token issued
+     * any other way. That is deliberate: an exchanged token lives no longer than the identity
+     * provider's token it came from, and that tie is the point — it is what makes ending a
+     * session at the provider end platform access too. A token that could be traded for another
+     * would let its holder turn five minutes into weeks and keep renewing long after the provider
+     * stopped vouching for them.
+     * <p>
+     * Turn it on only for a client that genuinely needs to mint platform tokens, knowing the tie
+     * is given up.
+     */
+    private boolean exchangeable;
 
     /**
      * Mark the issued token external, which limits data storage access to shared storages.
