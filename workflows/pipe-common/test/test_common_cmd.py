@@ -12,11 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import locale
+import sys
 import threading
 
 from mock import MagicMock, patch
 
 from pipeline.common import common
+
+# Python 3 decodes the output with the encoding of the locale and replaces a byte that is not valid there: with UTF-8,
+# the encoding of the test containers, it is U+FFFD. Python 2 keeps the bytes.
+NOT_UTF_8_OUTPUT = b'caf\xe9\n'.decode(locale.getpreferredencoding(False), 'replace') \
+    if sys.version_info[0] >= 3 else 'caf\xe9\n'
+DECODING_ARGUMENTS = {'errors': 'replace'} if sys.version_info[0] >= 3 else {}
 
 
 def popen_returning(out, err, returncode, on_start=None):
@@ -34,7 +42,8 @@ def test_command_is_started_without_extra_arguments_by_default():
         assert common.execute_cmd_command_and_get_stdout_stderr('ls', silent=True, executable='/bin/bash') \
             == (0, 'out', '')
     stdout, stderr = common._get_stdout_and_stderr()
-    popen.assert_called_once_with('ls', shell=True, stdout=stdout, stderr=stderr, executable='/bin/bash')
+    popen.assert_called_once_with('ls', shell=True, stdout=stdout, stderr=stderr, executable='/bin/bash',
+                                  universal_newlines=True, **DECODING_ARGUMENTS)
 
 
 def test_command_is_started_under_the_start_lock():
@@ -67,3 +76,19 @@ def test_start_lock_is_passed_through_execute_cmd_command():
     with patch.object(common, 'execute_cmd_command_and_get_stdout_stderr', return_value=(5, '', '')) as execute:
         assert common.execute_cmd_command('ls', True, '/bin/bash', start_lock=start_lock) == 5
     execute.assert_called_once_with('ls', True, '/bin/bash', start_lock=start_lock)
+
+
+def test_output_that_is_not_utf_8_does_not_fail_the_command():
+    assert common.execute_cmd_command_and_get_stdout_stderr(r"printf 'caf\351\n'; printf 'caf\351\n' 1>&2",
+                                                            silent=True) \
+        == (0, NOT_UTF_8_OUTPUT, NOT_UTF_8_OUTPUT)
+
+
+def test_output_that_is_not_utf_8_does_not_fail_the_command_started_under_the_start_lock():
+    assert common.execute_cmd_command_and_get_stdout_stderr(r"printf 'caf\351\n'", silent=True,
+                                                            start_lock=threading.Lock()) \
+        == (0, NOT_UTF_8_OUTPUT, '')
+
+
+def test_output_lines_that_are_not_utf_8_do_not_fail_the_command():
+    assert common.get_cmd_command_output(r"printf 'caf\351\nok\n'") == (0, [NOT_UTF_8_OUTPUT.rstrip('\n'), 'ok'])

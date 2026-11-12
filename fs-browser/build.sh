@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,41 +14,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-_BUILD_DOCKER_IMAGE="${_BUILD_DOCKER_IMAGE:-python:3.6-stretch}"
+# The bundle is built in lifescience/cloud-pipeline:pipe-cli-centos7-py312 (Docker Hub): CentOS 7 (glibc 2.17) with
+# Python 3.12.16 and PyInstaller 6.5.0. PyInstaller bundles every library but glibc, so the bundle runs on glibc 2.17
+# or later
+_BUILD_DOCKER_IMAGE="${_BUILD_DOCKER_IMAGE:-lifescience/cloud-pipeline:pipe-cli-centos7-py312}"
 _BUILD_SCRIPT_NAME=/tmp/build_pytinstaller_fsbrowser_$(date +%s).sh
 
 cat >$_BUILD_SCRIPT_NAME <<EOL
-###
-# Setup Pyinstaller
-###
-mkdir -p ${PYINSTALLER_PATH}
-cd ${PYINSTALLER_PATH}
-git clone --branch resolve_tmpdir https://github.com/mzueva/pyinstaller.git
-cd pyinstaller/bootloader/
-python ./waf all
+set -e
 
 ###
 # Setup dependencies
 ###
-python -m pip install -r ${FSBROWSER_SOURCES_DIR}/requirements.txt
+python3 -m pip install -r ${FSBROWSER_SOURCES_DIR}/requirements.txt
 
 ###
 # Setup fsbrowser
 ###
-python ${PYINSTALLER_PATH}/pyinstaller/pyinstaller.py -y --clean \
+# PyInstaller 6.5.0 of the builder image. Its build files stay in the container. pygit2 loads the cffi backend from its C
+# extension, so PyInstaller does not find it by itself
+pyinstaller -y --clean \
   --distpath ${FSBROWSER_DIST_PATH} \
+  --workpath /tmp/fsbrowser-build \
+  --specpath /tmp/fsbrowser-build \
   --runtime-tmpdir ${FSBROWSER_RUNTIME_TMP_DIR} \
   --add-data ${FSBROWSER_SOURCES_DIR}/fsbrowser:fsbrowser \
-  --add-data /usr/local/lib/python3.6/site-packages/flasgger:flasgger \
+  --collect-data flasgger \
   --hidden-import=pygit2 \
-  --hidden-import=requests \
-  --hidden-import=pkg_resources.py2_warn ${FSBROWSER_SOURCES_DIR}/fsbrowser/fsbrowser-cli.py
+  --hidden-import=_cffi_backend \
+  --hidden-import=requests ${FSBROWSER_SOURCES_DIR}/fsbrowser/fsbrowser-cli.py
 tar -zcf ${FSBROWSER_DIST_PATH}/fsbrowser.tar.gz -C ${FSBROWSER_DIST_PATH} fsbrowser-cli
 EOL
 
 docker pull $_BUILD_DOCKER_IMAGE &> /dev/null
 docker run -i --rm \
-           --env PYINSTALLER_PATH=$PYINSTALLER_PATH \
            --env FSBROWSER_SOURCES_DIR=$FSBROWSER_SOURCES_DIR \
            --env FSBROWSER_DIST_PATH=$FSBROWSER_DIST_PATH \
            --env FSBROWSER_RUNTIME_TMP_DIR="'"$FSBROWSER_RUNTIME_TMP_DIR"'" \
@@ -57,5 +56,7 @@ docker run -i --rm \
            -v $_BUILD_SCRIPT_NAME:$_BUILD_SCRIPT_NAME \
            $_BUILD_DOCKER_IMAGE \
            bash $_BUILD_SCRIPT_NAME
+_BUILD_EXIT_CODE=$?
 
 rm -f $_BUILD_SCRIPT_NAME
+exit $_BUILD_EXIT_CODE

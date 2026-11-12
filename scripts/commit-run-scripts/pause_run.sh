@@ -149,7 +149,6 @@ export LAYERS_COUNT_TO_SQUASH=${13}
 
 
 export TASK_NAME="PausePipelineRun"
-export CP_PYTHON2_PATH=python
 export RUNS_ROOT='/runs'
 
 export COMMON_REPO_DIR="$(pwd)/pipe-common"
@@ -186,6 +185,8 @@ chmod +x $SCRIPTS_DIR/*
 
 . $SCRIPTS_DIR/common_commit_initialization.sh
 
+# Nothing is done yet: 126 makes the API keep the run running, instead of failing it and terminating its node
+install_python || exit 126
 install_pip
 
 mkdir $COMMON_REPO_DIR

@@ -52,7 +52,7 @@ class FastQCReader(object):
         gc = 0
         read_length = 0
         with zipfile.ZipFile(fastqc_report, 'r') as folder:
-            content = folder.read(os.path.join(archive_name, "fastqc_data.txt"))
+            content = folder.read(os.path.join(archive_name, "fastqc_data.txt")).decode("utf-8")
             for line in content.split("\n"):
                 if line.startswith("Total Sequences"):
                     total_reads = int(cls.__get_value(line))
@@ -140,7 +140,7 @@ class CoverageMetricsReader(object):
                 if line:
                     total_bases += 1
                     total_coverage += int(line.split("\t")[2])
-        return 0 if total_bases == 0 else total_coverage / total_bases
+        return 0 if total_bases == 0 else total_coverage // total_bases
 
 
 class CollectSampleMetrics(object):

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,4 +14,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o allexport; source /etc/maintenance/env.sh; set -o allexport; python /etc/maintenance/maintenance.py >> /var/log/maintenance.log 2>&1
+set -o allexport; source /etc/maintenance/env.sh; set -o allexport; "${CP_PYTHON_PATH:-/usr/local/python3.12/bin/python3.12}" /etc/maintenance/maintenance.py >> /var/log/maintenance.log 2>&1

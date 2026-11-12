@@ -6,7 +6,6 @@ task build(type: Exec, dependsOn: ':fs-browser:fs-browser-client:build') {
     environment "FSBROWSER_SOURCES_DIR": "$project.rootDir/fs-browser"
     environment "FSBROWSER_DIST_PATH": "$project.rootDir/fs-browser/dist/dist-folder"
     environment "FSBROWSER_RUNTIME_TMP_DIR": "/tmp"
-    environment "PYINSTALLER_PATH": "/pyinstaller"
 
     commandLine "bash", "$project.rootDir/fs-browser/build.sh"
     doLast {
@@ -19,22 +18,22 @@ task build(type: Exec, dependsOn: ':fs-browser:fs-browser-client:build') {
     }
 }
 
-// available for Python 3 only
+// available for Python 3.12 or later only
 task pipBuild(type: Exec, dependsOn: ':fs-browser:fs-browser-client:build') {
     group = 'build'
     doFirst {
         setFBVersion()
+        delete(fileTree("$project.rootDir/fs-browser/dist").matching { include "fsbrowser-*.tar.gz" })
     }
     commandLine 'python', "$project.rootDir/fs-browser/setup.py", 'sdist'
     doLast {
         cleanFBVersion()
         delete("$project.rootDir/api/src/main/resources/static/fsbrowser.tar.gz")
+        // setup.py names the sdist after the PEP 440 form of the version, see _package_version()
         copy {
-            from "$project.rootDir/fs-browser/dist/fsbrowser-${version}.tar.gz"
+            from(fileTree("$project.rootDir/fs-browser/dist").matching { include "fsbrowser-*.tar.gz" })
             into "$project.rootDir/api/src/main/resources/static/"
-            rename { String fileName ->
-                fileName.replace("fsbrowser-${version}", "fsbrowser")
-            }
+            rename { String fileName -> "fsbrowser.tar.gz" }
         }
     }
 }

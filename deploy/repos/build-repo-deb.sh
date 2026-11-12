@@ -86,12 +86,12 @@ localedef -v -c -i en_US -f UTF-8 en_US.UTF-8
 
 yum install curl \
             wget \
-            python \
-            python-pip -y
+            python3 \
+            python3-pip -y
 
 if ! aws --version > /dev/null 2>&1; then
     echo "INFO: awscli is not installed, proceeding with installation"
-    pip install awscli
+    pip3 install awscli
 fi
 
 if ! deb-s3 > /dev/null 2>&1; then

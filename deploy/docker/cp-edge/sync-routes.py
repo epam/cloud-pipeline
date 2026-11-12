@@ -1,4 +1,4 @@
-# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ import json
 import os
 import re
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
 from multiprocessing.pool import ThreadPool as Pool
 
 import requests
@@ -32,11 +32,29 @@ try:
         from pykube.config import KubeConfig
         from pykube.http import HTTPClient
         from pykube.http import HTTPError
+        from pykube.http import KubernetesHTTPAdapter
         from pykube.objects import Pod
         from pykube.objects import Service
         from pykube.objects import Event
 except ImportError:
         raise RuntimeError('pykube is not installed. KubernetesJobTask requires pykube.')
+
+
+class UnverifiedKubernetesHTTPAdapter(KubernetesHTTPAdapter):
+        # pykube-ng sets the CA of the cluster config for each request, so session.verify = False of a client has no
+        # effect. This adapter keeps it, as pykube 0.15 did on Python 2
+        def _setup_request_certificates(self, config, request, kwargs):
+                verify = kwargs.get('verify')
+                super(UnverifiedKubernetesHTTPAdapter, self)._setup_request_certificates(config, request, kwargs)
+                if verify is False:
+                        kwargs['verify'] = False
+
+
+def get_unverified_kube_client(config):
+        client = HTTPClient(config, http_adapter=UnverifiedKubernetesHTTPAdapter(config))
+        client.session.verify = False
+        return client
+
 
 SVC_PORT_TMPL = 'svc-port-'
 SVC_PATH_TMPL = 'svc-path-'
@@ -49,7 +67,7 @@ SVC_URL_TMPL = '{{ ' \
                '"regionId": {region_id} ' \
                '}}'
 ROUTE_ID_TMPL = '{pod_id}-{endpoint_port}-{endpoint_num}'
-ROUTE_ID_PATTERN = '^(.*)-(\d+)-(\d+)$'
+ROUTE_ID_PATTERN = r'^(.*)-(\d+)-(\d+)$'
 EDGE_ROUTE_TARGET_TMPL = '{pod_ip}:{endpoint_port}'
 EDGE_ROUTE_TARGET_PATH_TMPL = '{pod_ip}:{endpoint_port}/{endpoint_path}'
 EDGE_ROUTE_NO_PATH_CROP = 'CP_EDGE_NO_PATH_CROP'
@@ -185,7 +203,7 @@ class RunLogger:
 
         def _log(self, message, status):
                 do_log("Log run log: " + message)
-                now = datetime.utcfromtimestamp(time.time()).strftime(DATE_FORMAT)
+                now = datetime.fromtimestamp(time.time(), timezone.utc).strftime(DATE_FORMAT)
                 date = now[0:len(now) - 3]
                 log_entry = json.dumps({"runId": self.run_id,
                                         "date": date,
@@ -371,7 +389,7 @@ def is_system_endpoint_name(endpoint):
 def construct_additional_endpoints_from_run_parameters(run_details):
 
         def extract_endpoint_num_from_run_parameter(run_parameter):
-                match = re.search('{}(\d+).*'.format(CP_CAP_CUSTOM_ENDPOINT_PREFIX), run_parameter["name"])
+                match = re.search(r'{}(\d+).*'.format(CP_CAP_CUSTOM_ENDPOINT_PREFIX), run_parameter["name"])
                 if match:
                         return match.group(1)
                 return None
@@ -945,8 +963,7 @@ def get_affected_routes(involved_routes, all_routes):
 
 do_log('============ Started iteration ============')
 
-kube_api = HTTPClient(KubeConfig.from_service_account())
-kube_api.session.verify = False
+kube_api = get_unverified_kube_client(KubeConfig.from_service_account())
 
 edge_region_name = os.getenv('CP_EDGE_REGION') or find_preference(API_GET_PREF, 'default.edge.region')
 edge_region_id = os.getenv('CP_EDGE_REGION_ID') or find_preference(API_GET_PREF, 'default.edge.region.id')

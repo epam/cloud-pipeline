@@ -1,4 +1,4 @@
-# Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ RUN yum install -y wget \
                    ncurses-devel \
                    unzip \
                    git \
-                   python2 \
                    fuse \
                    tzdata \
                    acl \
@@ -39,12 +38,19 @@ RUN yum install -y wget \
 
 RUN dnf install -y --allowerasing coreutils
 
-# Install pip
-RUN curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python2 && \
-    python2 -m pip install \
-    --index-url http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple \
-    --trusted-host cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com \
-    -I -q setuptools==44.1.1
+# Install Python 3.12: the platform's Python 3.12 distribution (python3.12.tar.gz of the public Cloud Pipeline bucket,
+# self-contained CPython 3.12), the Python that pipe-common requires, into /usr/local/python3.12. setuptools 81.0.0 is
+# the version that pipe-common's setup.py pins
+ARG CP_PYTHON3_DIST_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/python/3/python3.12.tar.gz"
+RUN wget -q "$CP_PYTHON3_DIST_URL" -O /tmp/python3.tgz && \
+    tar -xzf /tmp/python3.tgz -C /usr/local/ && \
+    rm -f /tmp/python3.tgz && \
+    ln -sf /usr/local/python3.12/bin/python3.12 /usr/local/bin/python3 && \
+    ln -sf /usr/local/python3.12/bin/pip3.12 /usr/local/bin/pip3 && \
+    /usr/local/python3.12/bin/python3.12 -m pip install \
+    --index-url http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi3/simple \
+    --trusted-host cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com \
+    --no-cache-dir -I -q setuptools==81.0.0
 
 # Install NFS/SMB/Lustre clients
 RUN yum install nfs-utils cifs-utils -y

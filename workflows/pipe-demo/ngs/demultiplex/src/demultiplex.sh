@@ -79,7 +79,7 @@ function merge_fastq {
 
     mkdir -p "${_OUTPUT_DIR}"
 
-    SAMPLES=$(${CP_PYTHON2_PATH} ${SCRIPTS_DIR}/src/read_samples.py --sample-sheet ${_SAMPLE_SHEET})
+    SAMPLES=$(${CP_PYTHON_PATH} ${SCRIPTS_DIR}/src/read_samples.py --sample-sheet ${_SAMPLE_SHEET})
     while read -r SAMPLE; do
         merge_sample ${_FASTQ_DIR} ${SAMPLE} ${_OUTPUT_DIR}
     done <<< "${SAMPLES}"

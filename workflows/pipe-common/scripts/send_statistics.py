@@ -468,7 +468,10 @@ def _get_capabilities(api):
 
 
 def _read_content(content, skip_first_row=True):
-    csv_content = io.BytesIO(content)
+    # The billing export is the bytes of the response, and the csv module reads text on Python 3
+    if isinstance(content, bytes):
+        content = content.decode('utf-8')
+    csv_content = io.StringIO(content, newline='')
     if skip_first_row:
         next(csv_content)
     reader = csv.DictReader(csv_content)

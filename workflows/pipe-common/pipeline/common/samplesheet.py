@@ -13,6 +13,15 @@
 # limitations under the License.
 
 import csv
+import sys
+
+
+def _open_csv(path):
+    # The csv module reads a file opened in the binary mode on Python 2, and in the text mode without newline
+    # translation on Python 3
+    if sys.version_info[0] >= 3:
+        return open(path, 'r', newline='')
+    return open(path, 'rb')
 
 
 class SampleSheetParser:
@@ -32,7 +41,7 @@ class SampleSheetParser:
     def parse_sample_sheet(self):
         samples = []
         columns_to_idx = {}
-        with open(self.path, 'rb') as f:
+        with _open_csv(self.path) as f:
             reader = csv.reader(f)
             data_section_started = False
             read_header = False
@@ -57,7 +66,7 @@ class SampleSheetParser:
                             sample[column] = row[idx]
                         samples.append(sample)
                     except Exception as e:
-                        print("Malformed sample sheet: {}. {}.".format(self.path, e.message))
+                        print("Malformed sample sheet: {}. {}.".format(self.path, str(e)))
                         continue
 
                 if row[0] == "[Data]":

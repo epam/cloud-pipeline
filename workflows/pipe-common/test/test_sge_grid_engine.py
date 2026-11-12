@@ -298,3 +298,14 @@ def test_force_kill_jobs():
     assert_first_argument_contained(executor.execute, 'qdel ')
     assert_first_argument_contained(executor.execute, ' 1 2')
     assert_first_argument_contained(executor.execute, '-f')
+
+
+def test_mem_request_is_rounded_up_to_whole_gibibytes():
+    # Python 2 divided the integers to an integer, which rounded a request of 500M down to 0 GiB
+    assert grid_engine._parse_mem('500M') == 1
+    assert grid_engine._parse_mem('1500M') == 2
+    assert grid_engine._parse_mem('2048M') == 2
+    assert grid_engine._parse_mem('2G') == 2
+    assert grid_engine._parse_mem('3g') == 3
+    assert grid_engine._parse_mem(str(1024 ** 3 + 1)) == 2
+    assert grid_engine._parse_mem('') == 0

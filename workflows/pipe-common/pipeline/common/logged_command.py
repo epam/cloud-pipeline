@@ -23,6 +23,10 @@ from threading import Thread
 
 lock = RLock()
 
+# Python 3 decodes the output of a command: "replace" keeps a byte that is not valid there from failing the command.
+# Python 2 returns the bytes as they are, and its Popen has no "errors".
+_DECODING_ARGUMENTS = {'errors': 'replace'} if sys.version_info[0] >= 3 else {}
+
 
 def watch_buffer(line_buffer):
     while True:
@@ -142,7 +146,8 @@ class LoggedCommand:
                 'state'     : _task_state}
 
     def execute(self):
-        process = subprocess.Popen(self.command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        process = subprocess.Popen(self.command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                   universal_newlines=True, **_DECODING_ARGUMENTS)
         use_buffer = self.buffer_size > 0
         if use_buffer:
             line_buffer = []

@@ -259,8 +259,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         allowed_networks = utils.get_networks_config(self.zone)
         if allowed_networks and len(allowed_networks) > 0:
             az_num = randint(0, len(allowed_networks) - 1)
-            az_name = allowed_networks.items()[az_num][0]
-            subnet_id = allowed_networks.items()[az_num][1]
+            az_name, subnet_id = list(allowed_networks.items())[az_num]
             resource_group, network = AzureInstanceProvider.get_res_grp_and_res_name_from_string(az_name, 'virtualNetworks')
             subnet = AzureInstanceProvider.get_subnet_name_from_id(subnet_id)
             utils.pipe_log('- Networks list found, subnet {} in VNET {} will be used'.format(subnet_id, az_name))
@@ -422,7 +421,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
                 },
                 "disablePasswordAuthentication": True,
             },
-            "custom_data": base64.b64encode(user_data_script)
+            "custom_data": base64.b64encode(user_data_script.encode('utf-8')).decode('utf-8')
         }
         return profile
 
@@ -516,7 +515,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
             nic.ip_configurations[0].public_ip_address = None
             self.network_client.network_interfaces.create_or_update(self.resource_group_name, vm_name + '-nic', nic).wait()
         except Exception as e:
-            print e
+            print(e)
 
     def get_any_network_from_location(self, location):
         resource_group, network, subnet = None, None, None
@@ -568,7 +567,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         _, config_tags = utils.load_cloud_config()
         if config_tags is None:
             return tags
-        for key, value in config_tags.iteritems():
+        for key, value in config_tags.items():
             tags.update({key: value})
         return tags
 

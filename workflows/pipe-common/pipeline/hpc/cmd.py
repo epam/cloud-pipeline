@@ -13,8 +13,13 @@
 #  limitations under the License.
 
 import subprocess
+import sys
 
 from pipeline.hpc.logger import Logger
+
+# Python 3 decodes the output of a command: "replace" keeps a byte that is not valid there from failing the command.
+# Python 2 returns the bytes as they are, and its Popen has no "errors".
+_DECODING_ARGUMENTS = {'errors': 'replace'} if sys.version_info[0] >= 3 else {}
 
 
 class ExecutionError(RuntimeError):
@@ -27,7 +32,8 @@ class CmdExecutor:
         pass
 
     def execute(self, command):
-        process = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        process = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE,
+                                   universal_newlines=True, **_DECODING_ARGUMENTS)
         out, err = process.communicate()
         exit_code = process.wait()
         if exit_code != 0:

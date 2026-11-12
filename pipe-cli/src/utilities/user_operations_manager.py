@@ -50,7 +50,7 @@ class UserOperationsManager:
             click.echo('No restrictions on runs launching configured')
             return
         if not verbose:
-            limit_entry = active_limits.items()[0]
+            limit_entry = list(active_limits.items())[0]
             source = limit_entry[0]
             limit = limit_entry[1]
             click.echo('The following restriction applied on runs launching: [{}: {}]'.format(source, limit))

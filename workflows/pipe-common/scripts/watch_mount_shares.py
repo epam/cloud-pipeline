@@ -14,7 +14,20 @@
 
 from collections import OrderedDict
 import datetime
-from distutils.spawn import find_executable
+try:
+    from shutil import which as find_executable
+except ImportError:
+    from distutils.spawn import find_executable
+
+try:
+    _UTC = datetime.timezone.utc
+except AttributeError:
+    class _UTC(datetime.tzinfo):
+        _ZERO = datetime.timedelta(0)
+        def utcoffset(self, dt): return self._ZERO
+        def tzname(self, dt): return 'UTC'
+        def dst(self, dt): return self._ZERO
+    _UTC = _UTC()
 import errno
 import logging
 import os
@@ -24,6 +37,7 @@ import subprocess
 import shutil
 import signal
 import socket
+import sys
 import time
 from pipeline import PipelineAPI
 from watchdog.observers.inotify import InotifyObserver
@@ -60,6 +74,7 @@ MODIFY_EVENT = 'm'
 MOVED_FROM_EVENT = 'mf'
 MOVED_TO_EVENT = 'mt'
 DELETE_EVENT = 'd'
+RECORDED_EVENT_TYPES = ('created', 'modified', 'deleted')
 
 WATCHER_MEM_CONSUMPTION_BYTES = 1024
 WATCHERS_USAGE_MEMORY_RATE = int(os.getenv('CP_CAP_NFS_MNT_OBSERVER_WATCHERS_MEM_CONSUMPTION_MAX_RATE', 100))
@@ -100,11 +115,21 @@ def configure_kernel_param(key, value):
     execute_cmd_command_and_get_stdout_stderr('sysctl -w {}={} && sysctl -p'.format(key, value), silent=True)
 
 
+# Python 3 decodes the output of a command: "replace" keeps a byte that is not valid there from failing the command.
+# Python 2 returns the bytes as they are, and its Popen has no "errors".
+_DECODING_ARGUMENTS = {'errors': 'replace'} if sys.version_info[0] >= 3 else {}
+
+
 def execute_cmd_command_and_get_stdout_stderr(command, silent=False, executable=None):
+    # universal_newlines=True makes communicate() return str under both Python 2 and 3 - without it,
+    # Python 3's Popen returns bytes, and every caller below (out.split(NEWLINE), stderr.rstrip(...))
+    # treats the result as str.
     if executable:
-        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE, executable=executable)
+        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE,
+                             executable=executable, universal_newlines=True, **_DECODING_ARGUMENTS)
     else:
-        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE,
+                             universal_newlines=True, **_DECODING_ARGUMENTS)
     stdout, stderr = p.communicate()
     if not silent and stderr:
         print(stderr)
@@ -129,11 +154,13 @@ def execute_command(command, max_attempts=1):
 
 
 def current_utc_time():
-    return datetime.datetime.utcnow()
+    return datetime.datetime.now(_UTC)
 
 
 def current_utc_time_millis():
-    return int((current_utc_time() - datetime.datetime(1970, 1, 1)).total_seconds() * 1000)
+    # current_utc_time() is tz-aware (via _UTC above) - the epoch reference must be too, or the
+    # subtraction raises "can't subtract offset-naive and offset-aware datetimes".
+    return int((current_utc_time() - datetime.datetime(1970, 1, 1, tzinfo=_UTC)).total_seconds() * 1000)
 
 
 def current_utc_time_str():
@@ -216,7 +243,7 @@ class CloudBucketDumpingEventHandler(FileSystemEventHandler):
 
     def _init_events_logger(self):
         self._events_local_file = os.path.join(self._activity_logging_local_dir, 'nfs_events')
-        single_event_file_size_limit_mb = EVENT_FILES_LIMIT_MB / (EVENT_FILES_BACKUP_COUNT + 1)
+        single_event_file_size_limit_mb = EVENT_FILES_LIMIT_MB // (EVENT_FILES_BACKUP_COUNT + 1)
         events_logging_handler = RotatingFileHandler(self._events_local_file, mode='a',
                                                      backupCount=EVENT_FILES_BACKUP_COUNT,
                                                      maxBytes=single_event_file_size_limit_mb * 1024 * 1024)
@@ -259,8 +286,9 @@ class CloudBucketDumpingEventHandler(FileSystemEventHandler):
             if type(event) is FileMovedEvent:
                 self._insert_event(event.src_path, MOVED_FROM_EVENT)
                 self._insert_event(event.dest_path, MOVED_TO_EVENT)
-            # TODO check if filtering could be applied at observer creation
-            elif event.event_type != 'closed':
+            # Only these events are recorded: watchdog also reports the file accesses ("opened", "closed",
+            # "closed_no_write"), and the first letter of "closed_no_write" is the code of a created file
+            elif event.event_type in RECORDED_EVENT_TYPES:
                 self._insert_event(event.src_path, event.event_type[:1])
 
     def check_timeout_and_dump(self):
@@ -313,7 +341,7 @@ class NFSMountWatcher:
 
     @staticmethod
     def _calculate_max_allowed_watchers():
-        return psutil.virtual_memory().total / WATCHER_MEM_CONSUMPTION_BYTES / 100 * WATCHERS_USAGE_MEMORY_RATE
+        return psutil.virtual_memory().total // WATCHER_MEM_CONSUMPTION_BYTES // 100 * WATCHERS_USAGE_MEMORY_RATE
 
     @staticmethod
     def _get_watchers_limit():
@@ -325,7 +353,7 @@ class NFSMountWatcher:
                     if len(content) > 0:
                         return int(content[0])
             except BaseException as e:
-                logging.error('Error during limit retrieval from the file: {}'.format(e.message))
+                logging.error('Error during limit retrieval from the file: {}'.format(str(e)))
         logging.info('Reading watchers configuration from the env var...')
         return int(os.getenv('CP_CAP_NFS_MNT_OBSERVER_RUN_WATCHERS', 65535))
 
@@ -388,7 +416,7 @@ class NFSMountWatcher:
             self._target_path_mapping[mnt_dest] = mnt_src
 
     def _remove_unmounted_watchers(self, latest_mounts_mapping):
-        for mnt_dest, mnt_src in self._target_path_mapping.items():
+        for mnt_dest, mnt_src in list(self._target_path_mapping.items()):
             if mnt_dest not in latest_mounts_mapping:
                 logging.warning(format_message('Removing observer from [{}]'.format(mnt_dest)))
                 if self.try_to_remove_path_from_observer(mnt_dest):
@@ -397,11 +425,11 @@ class NFSMountWatcher:
     def try_to_remove_path_from_observer(self, mnt_dest):
         try:
             if len(self._target_path_mapping.items()) > 1:
-                self._event_observer.unschedule(ObservedWatch(mnt_dest, True))
+                self._event_observer.unschedule(ObservedWatch(mnt_dest, recursive=True))
             return True
         except OSError as e:
             logging.error(
-                format_message('Unable to drop observation on [{}], an error occurred: {}'.format(mnt_dest, e.message)))
+                format_message('Unable to drop observation on [{}], an error occurred: {}'.format(mnt_dest, str(e))))
             return False
 
     def try_to_add_path_to_observer(self, mnt_dest):
@@ -412,7 +440,7 @@ class NFSMountWatcher:
             self._event_observer.schedule(self._event_handler, mnt_dest, recursive=True)
             return True
         except OSError as e:
-            logging.error(format_message('Unable to assign [{}], an error occurred: {}'.format(mnt_dest, e.message)))
+            logging.error(format_message('Unable to assign [{}], an error occurred: {}'.format(mnt_dest, str(e))))
             return False
 
     @staticmethod

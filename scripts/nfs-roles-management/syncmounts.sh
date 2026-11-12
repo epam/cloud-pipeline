@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -96,6 +96,8 @@ _MOUNT_ROOT="$3"
 
 _DAV_MOUNT_TAG_NAME=${CP_DAV_MOUNT_TAG_NAME:-"dav-mount"}
 _DAV_MOUNT_ALL_S3=${CP_DAV_MOUNT_ALL_S3:-"false"}
+_REGION_CREDS_DIR=${CP_DAV_REGION_CREDS_DIR:-"/root/.cloud/regioncreds"}
+_BLOBFUSE_TMP_DIR=${CP_DAV_BLOBFUSE_TMP_DIR:-"/mnt/blobfusetmp"}
 
 if [ -z "$_API_URL" ] || [ -z "$_API_TOKEN" ] || [ -z "$_MOUNT_ROOT" ]; then
     echo "[ERROR] Not enough input parameters, exiting"
@@ -154,7 +156,7 @@ while IFS='|' read -r mount_id region_id mount_root mount_type mount_options; do
         if [ "$mount_type" == "SMB" ]; then
             mount_protocol="cifs"
             remote_nfs_path="//${mount_root_srv}/${mount_root_path}"
-            region_cred_file="/root/.cloud/regioncreds/${region_id}"
+            region_cred_file="${_REGION_CREDS_DIR}/${region_id}"
             if [ ! -f ${region_cred_file} ]; then
                 echo "[ERROR] Cred file for Azure region ${region_id}, not found! CIFS storage ${mount_root_srv}/${mount_root_path} won't be mounted."
                 continue
@@ -246,18 +248,26 @@ while IFS='|' read -r id name path type region_id; do
      mkdir -p ${mount_root_srv_dir}
 
      if [[ "${type}" == "AZ" ]]; then
-         CP_TMP_DIR_PATH="/mnt/blobfusetmp/${path}"
+         CP_TMP_DIR_PATH="${_BLOBFUSE_TMP_DIR}/${path}"
          mkdir -p "$CP_TMP_DIR_PATH"
-         region_cred_file="/root/.cloud/regioncreds/${region_id}"
+         region_cred_file="${_REGION_CREDS_DIR}/${region_id}"
          if [[ ! -f ${region_cred_file} ]]; then
-            echo "[ERROR] Cred file for Azure region ${region_id}, not found!"
+            echo "[ERROR] Cred file for Azure region ${region_id}, not found: ${region_cred_file}"
             continue
          fi
          storage_account=$(cat ${region_cred_file} | jq -r .storage_account)
          storage_key=$(cat ${region_cred_file} | jq -r .storage_key)
          export AZURE_STORAGE_ACCOUNT="${storage_account}"
          export AZURE_STORAGE_ACCESS_KEY="${storage_key}"
-         blobfuse ${mount_root_srv_dir} --container-name=${path} --tmp-path=$CP_TMP_DIR_PATH
+         # blobfuse2's v1-compatible mount. It writes the config it generates to --output-file (by default config.yaml
+         # in the current directory). The other options keep the blobfuse 1 behavior: no remote version check,
+         # a mount over a non-empty tmp path after an unclean exit, and the 1 s entry and attribute cache of fuse2.
+         # fuse2 does not cache failed lookups, but blobfuse2 drops a 0 timeout and uses 120 s, so 1 s is the lowest
+         blobfuse2 mountv1 ${mount_root_srv_dir} --container-name=${path} --tmp-path=$CP_TMP_DIR_PATH \
+                   --output-file="${CP_TMP_DIR_PATH}.yaml" \
+                   --disable-version-check=true \
+                   --empty-dir-check=false \
+                   -o attr_timeout=1 -o entry_timeout=1 -o negative_timeout=1
          mount_result=$?
      elif [[ "${type}" == "S3" ]] || [[ "${type}" == "GCP" ]]; then
          pipe storage mount ${mount_root_srv_dir} -b ${path} -t --mode 775 -w ${CP_PIPE_FUSE_MOUNT_TIMEOUT:-10000} -o allow_other -c audit-buffer-ttl=0 -l /var/log/fuse_${id}.log
