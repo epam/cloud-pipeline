@@ -198,11 +198,7 @@ describe('handleExtractArchives', () => {
     }
   );
 
-  // The queued toast goes through messageApi.info - mirrors
-  // handleDownloadArchive's own "the queued toast is an info toast" test in
-  // data-storage/utils/download-archive.test.js, which spies on antd's
-  // `message` rather than taking one, since that handler has no injectable
-  // message API.
+  // The queued toast is an info toast, not a success one.
   test('the queued toast names the downloads view', async () => {
     const messageApi = {
       info: fn(),
@@ -220,10 +216,8 @@ describe('handleExtractArchives', () => {
     expect(messageApi.error).not.toHaveBeenCalled();
   });
 
-  // Mirrors the matching test in data-storage/utils/download-archive.test.js:
-  // the plain-string path (no `onShowDownloads`) is already covered by "the
-  // queued toast names the downloads view" above, since every other test
-  // here calls `handleExtractArchives` without the new, fifth argument.
+  // The plain-string path is covered above, where no `onShowDownloads` is
+  // passed.
   test('the queued toast carries a working link when onShowDownloads is given', async () => {
     const hideQueued = fn();
     const messageApi = {
@@ -267,9 +261,7 @@ describe('handleExtractArchives', () => {
     }
   );
 
-  // No `extract` argument given falls through to this module's own mock -
-  // the default the real `RemotePost` model will replace once the endpoint
-  // exists.
+  // With no `extract` argument, the module's own mock is used.
   test('defaults extract to this module\'s own mock when none is injected', async () => {
     useFakeTimers();
     const messageApi = {

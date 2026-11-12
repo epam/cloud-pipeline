@@ -29,15 +29,9 @@ import {
 } from '@test';
 import UploadButton from './UploadButton';
 
-// Clicking "Upload" or "Upload and extract" runs the same synchronous/NFS
-// upload path this component always had, which opens a real
-// `XMLHttpRequest` against `action`. jsdom's `XMLHttpRequest` is real (only
-// `fetch` is guarded, in `setup/env.js`), and there is no server behind
-// `/upload` here, so that request always fails - asynchronously, after
-// every assertion below has already run. None of these tests await or
-// assert on it; they only observe the modal's own state, which the
-// synchronous part of the click handler has already settled by the time
-// `click()` returns.
+// The upload path opens a real jsdom `XMLHttpRequest` (only `fetch` is
+// guarded), which fails asynchronously with no server behind `/upload`. These
+// tests assert only on modal state, already settled when `click()` returns.
 
 function zipFile (name = 'archive.zip') {
   return new File(['zip-content'], name, {type: 'application/zip'});
@@ -48,12 +42,8 @@ function textFile (name = 'notes.txt') {
 }
 
 /**
- * Picks `files` on the native `<input type="file">` `UploadButton` renders
- * through `antd`'s `Upload`. `input.files` is read-only, so it is replaced
- * with `Object.defineProperty` first; the `change` event that follows is a
- * plain bubbling DOM event, reaching the component the same way
- * `@testing-library/dom`'s own `fireEvent` would - React 15 delegates every
- * handler from a single document-level listener.
+ * Picks `files` on the native file input antd's `Upload` renders.
+ * `input.files` is read-only, hence `Object.defineProperty`.
  */
 async function selectFiles (input, files) {
   Object.defineProperty(input, 'files', {
@@ -64,20 +54,11 @@ async function selectFiles (input, files) {
   await Promise.resolve();
 }
 
-// `antd`'s Modal (rc-dialog) portals its content to a node it appends to
-// `document.body` itself, outside the container `render()` tracks, and only
-// detaches that node synchronously on unmount when `visible` is already
-// `false` - otherwise it re-renders the dialog closed first and detaches
-// from that transition's `afterClose`, which never fires in jsdom (no real
-// CSS animations). `UploadButton` never sets `uploadInfoVisible` back to
-// `false` from the states these tests stop in, so without help every test
-// here would leave its own portal behind for the next one to collide with
-// (see the "shows no such footer" tests, which started failing with
-// "multiple elements" once a prior test's leftover footer button was still
-// in the document). The instance handed back through `onInitialized` lets
-// each test force that flag closed before the harness's own
-// `afterEach(cleanup)` unmounts the tree - a test-only shortcut, not part of
-// the feature.
+// antd's Modal portals to `document.body`, outside the container `render()`
+// tracks, and detaches on unmount only when `visible` is already `false` -
+// otherwise through `afterClose`, which never fires in jsdom. So each test
+// forces the flag closed through the instance `onInitialized` hands back,
+// or its portal is left behind for the next test to collide with.
 let instance;
 
 function renderUploadButton (props) {
@@ -202,30 +183,19 @@ describe('UploadButton - the paused confirmation modal', () => {
 
       await click(screen.getByRole('button', {name: 'Upload'}));
 
-      // `rc-dialog` renders its close button with `aria-label="Close"`
-      // (`node_modules/rc-dialog/lib/Dialog.js`) - an accessible name, not
-      // an antd-internal class, so this satisfies rule 6. Its absence is
-      // the assertion: before this batch finishes, the modal must not
-      // offer a way to dismiss it mid-upload, as it never did before the
-      // confirmation step existed.
+      // rc-dialog gives its close button `aria-label="Close"` - an accessible
+      // name, not an antd class, so this satisfies rule 6. Its absence is the
+      // assertion: no way to dismiss the modal mid-upload.
       expect(screen.getByText('Uploading files...')).toBeInTheDocument();
       expect(screen.queryByRole('button', {name: 'Close'})).not.toBeInTheDocument();
     }
   );
 });
 
-// jsdom's XHR against `/upload` has no server to answer it, so every upload
-// in the first test below fails, which reaches exactly the "nothing to
-// extract" branch (every archive in the batch failed, so the batch has
-// nothing to send) - covered with real timers, since closing the modal this
-// way waits out the component's own 2 s grace period. That test still passes
-// the injectable `extractArchives` prop (see its propType on `UploadButton`)
-// purely to assert it is never called - it does not drive a real extraction,
-// since the upload itself never succeeds here. The resolved-extraction
-// branch and the idempotency guard are covered in the next describe block
-// instead, through an upload that does succeed. A rejected extraction no
-// longer changes anything the modal renders - it is a toast now, covered by
-// `handleExtractArchives`'s own test in `extract-storage-archives.test.js`.
+// Every upload in the first test below fails - no server behind jsdom's XHR -
+// which is the "nothing to extract" branch. It needs real timers to wait out
+// the component's 2 s grace period. The successful-extraction branch and the
+// idempotency guard are in the next block, over an upload that succeeds.
 describe('UploadButton - extraction after upload', () => {
   afterEach(() => {
     if (instance) {
@@ -263,27 +233,21 @@ describe('UploadButton - extraction after upload', () => {
 
       await click(screen.getByRole('button', {name: 'Upload and extract'}));
 
-      // The row reaching its own error marker means the real, unmocked XHR
-      // against `/upload` has failed, as it always does in this harness.
-      // Matched by the app's own `cp-error` class (not an antd internal),
-      // and by its exact text, so it cannot also match the title text next
-      // to it in the same row.
+      // The error marker means the real XHR has failed, as it always does
+      // here. Matched by the app's own `cp-error` class and exact text, so it
+      // cannot also match the title next to it.
       await waitFor(() => {
         expect(screen.getByText('- error', {selector: '.cp-error'})).toBeInTheDocument();
       }, {timeout: 5000});
 
-      // The modal closes the same way it always did before this mode
-      // existed - after its own 2 s grace period - which calls `onRefresh`
-      // because the upload attempt itself happened. `onRefresh` only fires
-      // from inside that close, so waiting on it is the real signal here;
-      // the modal's own visibility is `antd`'s CSS, not a DOM removal, so
-      // it is not what this test asserts on.
+      // `onRefresh` fires only from inside the modal's close, so it is the
+      // signal that the close happened - the modal's visibility is antd's
+      // CSS, not a DOM removal.
       await waitFor(() => {
         expect(onRefresh).toHaveBeenCalled();
       }, {timeout: 5000});
 
-      // The "extracts nothing" half this test is named for: every archive
-      // in the batch failed, so nothing was ever queued.
+      // Every archive in the batch failed, so nothing was queued.
       expect(extractArchives).not.toHaveBeenCalled();
     },
     10000
@@ -300,38 +264,21 @@ describe('UploadButton - extraction after upload', () => {
 
       await click(screen.getByRole('button', {name: 'Upload and extract'}));
 
-      // Anchored at the start of the row's own text, so this still matches
-      // only the row itself even if the real XHR has already failed and
-      // added its own error marker right after.
+      // Anchored at the start, so it still matches only the row once the XHR
+      // has failed and added its error marker.
       expect(screen.getByText('Uploading files...')).toBeInTheDocument();
       expect(screen.getByText(/^archive\.zip - /)).toBeInTheDocument();
       expect(screen.getByText(/^notes\.txt - /)).toBeInTheDocument();
-      // Real timers are restored in this block's own `afterEach`, above -
-      // not here, so a failed assertion above this line still leaves them
-      // restored for the next test.
+      // Real timers are restored in this block's `afterEach`, so a failed
+      // assertion above does not leave fake ones behind.
     }
   );
 });
 
-// `extractArchives` is a prop on the component (see its propType in
-// UploadButton.js) precisely so a test can reach the branches above: pass a
-// `fn()` and the component calls that instead of its own module-level mock.
-// No caller does this in the real app; it is a seam.
-//
-// Every test below still needs an upload that actually finishes, since
-// extraction only ever runs over files that uploaded. The synchronous/NFS
-// path posts through a real `XMLHttpRequest`, and jsdom's is real but talks
-// to no server - every request in the describe block above fails for that
-// reason. Rather than stand up a server, this block installs a test-local
-// `XMLHttpRequest` stub on `window` that answers every request with a
-// successful `{status: 'OK'}` response. That is the "stub the object on
-// window" option: nothing under `src/` is replaced, only the global
-// constructor the browser itself provides, so it is not a module mock.
-//
-// The modal no longer waits on the extraction call before closing, so there
-// is no rejected-extraction branch left to reach from here: that toast is
-// tested directly on `handleExtractArchives`, in
-// extract-storage-archives.test.js.
+// Extraction only runs over files that uploaded, so the tests below need an
+// upload that succeeds. This stubs `XMLHttpRequest` on `window` to answer
+// every request with `{status: 'OK'}` - a global the browser provides, not a
+// module under `src/`, so it is not a module mock.
 class SucceedingXMLHttpRequest {
   constructor () {
     this.upload = {};
@@ -362,14 +309,10 @@ describe('UploadButton - the injectable extraction call', () => {
 
   afterEach(() => {
     window.XMLHttpRequest = OriginalXMLHttpRequest;
-    // The component passes no `messageApi` of its own, so every extraction
-    // in this block toasts through antd's real, global `message` - and
-    // `rc-notification` attaches that toast to `document.body` itself,
-    // outside what this file's own `render()` tracks. A test whose injected
-    // `extractArchives` never settles (below) never runs the loading
-    // toast's own `hide()` either, which would otherwise leave "Starting
-    // archive extraction..." in the document for the rest of the file.
-    // `message.destroy()` is antd's own API, not module mocking.
+    // Extraction toasts through antd's global `message`, attached to
+    // `document.body` outside what `render()` tracks. A test whose
+    // `extractArchives` never settles never calls the loading toast's own
+    // `hide`, so it would be left in the document. `destroy` is antd's API.
     message.destroy();
     if (instance) {
       instance.setState({uploadInfoVisible: false, pendingConfirmation: false});

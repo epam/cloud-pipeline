@@ -40,11 +40,8 @@ import {
 const KB = 1024;
 const MB = 1024 * KB;
 const MAX_NFS_FILE_SIZE_MB = 500;
-// The one row margin both the confirmation state and the progress state use -
-// so a file's row is as tall before the upload starts as after, and only the
-// progress line's own visibility differs between the two. The exception is a
-// file that failed: its reason renders on a line of its own, below, and that
-// row does grow.
+// Shared by the confirmation and progress states, so a file's row is the same
+// height before and after the upload starts.
 const FILE_ROW_MARGIN_BOTTOM = 4;
 
 class UploadButton extends React.Component {
@@ -65,16 +62,10 @@ class UploadButton extends React.Component {
     style: PropTypes.object,
     disabled: PropTypes.bool,
     extractArchivesAvailable: PropTypes.bool,
-    // A seam for tests, which cannot reach the module's own `extractArchives`
-    // without a module mock: a test passes a `fn()` here instead. Passed
-    // through to `handleExtractArchives` as its own `extract` argument. Also
-    // the place the real `RemotePost` model goes once `POST
-    // /datastorage/{id}/extract` exists - no caller passes this today.
+    // A test seam, so a test needs no module mock. Also where the real model
+    // goes once the extract call is wired up; no caller passes it today.
     extractArchives: PropTypes.func,
-    // Opens the Downloads modal - passed straight through to
-    // `handleExtractArchives`, which wires it to the link its queued toast
-    // shows. The storage page is the only caller that can supply this: that
-    // modal's state lives there, not here.
+    // Opens the Storage tasks modal, whose state lives on the storage page.
     onShowDownloads: PropTypes.func
   };
 
@@ -91,17 +82,10 @@ class UploadButton extends React.Component {
   @observable s3StorageError;
   uploadButton;
 
-  // Guards each archive's path against being queued for extraction twice:
-  // `hideUploadInfoDelayedIfDone` runs once per file on the S3 path (plus
-  // once more after the upload loop awaits them all), and a retry can bring
-  // the same batch back through here again once a previously-failed archive
-  // lands. The guard has to work per path, not per batch - a single "has
-  // extraction started" boolean would stop a retried archive from ever being
-  // queued, since the same boolean would already read `true` from the
-  // batch's first completion. An instance field, not state - it has no
-  // bearing on what renders, only on which paths have already been queued.
-  // Reset in `hideUploadInfo`, the only place a batch's state is fully
-  // cleared.
+  // Which paths have been queued for extraction already. Per path, not per
+  // batch: completion is reached several times for one batch, and a retried
+  // archive that lands on a later pass still has to go out. Not state - it
+  // does not affect rendering. Reset in `hideUploadInfo`.
   queuedExtractionPaths = new Set();
 
   componentDidMount () {
@@ -170,64 +154,31 @@ class UploadButton extends React.Component {
       uploadInfoClosable: allDone
     }, () => {
       if (allDone) {
-        // A retryable failure must keep the modal open regardless of
-        // whether extraction also runs - `skipAutoClose` tells
-        // `extractOrCloseDelayed` not to arm the close timer either way.
-        // This same call also carries whatever archive has newly landed
-        // since the last completion - a retry that just succeeded, say -
-        // over to `extractOrCloseDelayed`, which queues it and decides on
-        // the close timer from `skipAutoClose` alone: queuing a path is
-        // never a reason, on its own, to skip or to arm that timer.
+        // A retryable failure keeps the modal open, whether or not extraction
+        // also runs.
         this.extractOrCloseDelayed(!!haveRetry);
       }
     });
   };
 
   /**
-   * The point both completion paths reach once every file in the batch is
-   * finished - this is exactly where each used to arm the 2 s close timer
-   * directly, and still does: the close timer is armed here whenever
-   * `skipAutoClose` allows it, on every call this function gets for the
-   * batch, including a later one a successful retry brings back through
-   * here. A batch started through "Upload and extract" also queues the
-   * extraction of whatever archive has newly landed since the last call -
-   * but does not wait on it: extraction is an async task, exactly like an
-   * archive download is, so the request only queues it and the modal closes
-   * on the same timer an ordinary upload uses. The toast
-   * `handleExtractArchives` shows is the whole of the user's feedback;
-   * following the task itself happens in the downloads view, not here.
-   * Queuing nothing new (nothing has landed since the last call, or there
-   * was nothing to begin with) is never a reason to skip arming the close
-   * timer - the two are decided independently.
+   * Reached by both completion paths once every file in the batch is
+   * finished, and more than once per batch. Arms the 2 s close timer, and on
+   * an "Upload and extract" batch also queues whatever archive has newly
+   * landed - without waiting on it. The two decisions are independent.
    *
-   * @param {boolean} [skipAutoClose=false] true when a file in the batch
-   *   still offers a retry (the S3 path's own affordance). The modal must
-   *   not auto-close while a retry is still possible, so the close timer is
-   *   not armed in that case - extraction, if any, is still queued over
-   *   whatever already landed.
+   * @param {boolean} [skipAutoClose=false] true while a file still offers a
+   *   retry; the modal must not auto-close then. Extraction is queued anyway.
    */
   extractOrCloseDelayed = (skipAutoClose = false) => {
     const {extractAfterUpload, uploadingFiles} = this.state;
     if (extractAfterUpload) {
       const paths = uploadedArchivePaths(uploadingFiles, this.props.path);
-      // Per-path guard, not a batch-wide one: this function can be reached
-      // more than once for the same batch (the S3 path calls it once per
-      // file, plus once after the loop, plus once more if a retry succeeds
-      // later), and a path already queued must not be sent again - but a
-      // path that only lands on a later call (a successful retry) still has
-      // to go out, which a single "has extraction started" boolean would
-      // have missed entirely.
       const newPaths = paths.filter(path => !this.queuedExtractionPaths.has(path));
       if (newPaths.length > 0) {
         newPaths.forEach(path => this.queuedExtractionPaths.add(path));
-        // `this.props.extractArchives` is the test seam described on the
-        // propType above; no caller sets it today, so this falls through to
-        // the module's own mock in every real render.
         const extract = this.props.extractArchives || extractArchives;
-        // Fired and left to run: `handleExtractArchives` owns the toast and
-        // its own error handling, and the modal does not sit open waiting
-        // for it. `this.props.onShowDownloads` is threaded straight through -
-        // it is what turns the toast's "Show storage tasks" into a link.
+        // Not awaited: `handleExtractArchives` owns the toast and the error.
         void handleExtractArchives(
           this.props.storageId,
           newPaths,
@@ -236,10 +187,6 @@ class UploadButton extends React.Component {
           this.props.onShowDownloads
         );
       }
-      // Every archive failed or was aborted, or nothing new has landed since
-      // the last call - either way there is nothing to queue this time, but
-      // that says nothing about the close timer below, which is armed from
-      // `skipAutoClose` alone.
     }
     if (!skipAutoClose) {
       setTimeout(this.hideUploadInfo, 2000);
@@ -269,16 +216,12 @@ class UploadButton extends React.Component {
   };
 
   /**
-   * The decision point a selected batch goes through once the 100 ms
-   * debounce settles, before anything uploads. When the caller has enabled
-   * `extractArchivesAvailable` and the batch holds at least one archive, the
-   * upload is paused: the modal opens in its confirmation state and
-   * `startUpload` is not called until the user picks "Upload" or "Upload and
-   * extract". Otherwise `startUpload` runs immediately, exactly as before
-   * this mode existed.
+   * Pauses a batch that holds an archive, where the caller allows extraction:
+   * the modal opens in its confirmation state and `startUpload` waits for the
+   * user's choice. Otherwise `startUpload` runs at once.
    *
-   * @param {function} startUpload the handler the caller would have gone to
-   *   directly - `startUploadToS3` or `onUploadStatusChangedSynchronous`.
+   * @param {function} startUpload `startUploadToS3` or
+   *   `onUploadStatusChangedSynchronous`
    */
   onFilesSelected = (startUpload) => {
     const {extractArchivesAvailable} = this.props;
@@ -296,9 +239,7 @@ class UploadButton extends React.Component {
   };
 
   /**
-   * Cancels a paused batch: nothing was uploaded, so `onRefresh` is not
-   * called, and every bit of selection state is cleared so the next pick
-   * starts clean.
+   * Cancels a paused batch. Nothing uploaded, so no `onRefresh`.
    */
   cancelConfirmation = () => {
     this.setState({
@@ -312,9 +253,8 @@ class UploadButton extends React.Component {
   };
 
   /**
-   * "Upload" and "Upload and extract" both land here, only disagreeing on
-   * `extractAfterUpload`. Starts through the same handler the batch would
-   * have used had the confirmation step never shown.
+   * "Upload" and "Upload and extract" both land here, differing only in
+   * `extractAfterUpload`.
    *
    * @param {boolean} extractAfterUpload
    */
@@ -325,14 +265,9 @@ class UploadButton extends React.Component {
     this.setState({
       pendingConfirmation: false,
       extractAfterUpload,
-      // The confirmation state leaves `uploadInfoClosable: true` behind (the
-      // modal is dismissable while it only lists the selection). The
-      // progress state that follows must not inherit that: before this
-      // confirmation step existed, the initial `false` was never touched
-      // until a batch actually finished, so it is reset here to restore
-      // that - without it the close X rendered mid-upload, and dismissing it
-      // ran `hideUploadInfo`, which cleared `extractAfterUpload` under an
-      // in-flight batch.
+      // The confirmation state is dismissable; the progress state must not
+      // inherit that, or dismissing it mid-upload clears `extractAfterUpload`
+      // under an in-flight batch.
       uploadInfoClosable: false
     }, startUpload);
   };
@@ -359,11 +294,8 @@ class UploadButton extends React.Component {
           uploadInfoClosable: false,
           uploadingFiles: [],
           synchronousUploadingFiles: [],
-          // `pendingConfirmation` and `extractAfterUpload` are independent
-          // of what `validateAndFilter` decided; left set, they would
-          // survive with the modal hidden until some later `hideUploadInfo`
-          // clears them, and arm extraction for a batch that never
-          // actually uploaded.
+          // Left set, these would arm extraction for a batch that never
+          // uploaded.
           pendingConfirmation: false,
           extractAfterUpload: false
         });
@@ -566,8 +498,7 @@ class UploadButton extends React.Component {
           uploadInfoClosable: false,
           uploadingFiles: [],
           synchronousUploadingFiles: [],
-          // See the matching comment in `onUploadStatusChangedSynchronous`:
-          // these two are independent of `validate`'s own outcome.
+          // See `onUploadStatusChangedSynchronous`.
           pendingConfirmation: false,
           extractAfterUpload: false
         });
@@ -775,29 +706,14 @@ class UploadButton extends React.Component {
   };
 
   /**
-   * One row renderer for both the confirmation state and the progress state,
-   * so a file's row is built the same way in either state and the two
-   * cannot drift apart in height - which is how they used to: the
-   * confirmation state rendered a single line while the progress state
-   * rendered a name line plus a `<Progress>` line, at a different margin.
+   * One row renderer for both states, so the rows cannot drift apart in
+   * height. The progress line is always rendered and only hidden by
+   * `visibility` while `pending`, which reserves its height. Its fixed 22px
+   * tracks `Progress`'s own height at this `strokeWidth`.
    *
-   * Both states now render the same two lines. The progress line - the
-   * `<Progress>` itself, in its `Col span={21}`, and on an S3 upload the
-   * retry/cancel actions in their `Col span={3}` - is always present, so its
-   * height is always reserved; only `visibility` hides it while `pending` is
-   * true and nothing has started uploading yet. The line itself is a fixed
-   * 22px tall (with a -4px top margin), chosen to keep the rows compact
-   * rather than guessed from nothing - the real `<Progress>` is still
-   * rendered inside it so the two states stay identical in every other
-   * respect. That 22px is tied to `Progress`'s own rendered height at this
-   * `strokeWidth`, and needs revisiting if that height ever changes.
-   *
-   * @param {object} file a `synchronousUploadingFiles` entry (`uid`, `name`,
-   *   `size`) while `pending`, or a `uploadingFiles` entry (also carrying
-   *   `status`, `percent`, `error`, `done`, `aborted`, `aborting`,
-   *   `retryCb`, `cancelCb`, `uploadID`) once the upload has started.
-   * @param {boolean} pending true while the batch only lists the selection,
-   *   nothing uploading yet.
+   * @param {object} file a `synchronousUploadingFiles` entry while `pending`,
+   *   an `uploadingFiles` entry once the upload has started
+   * @param {boolean} pending the batch only lists the selection so far
    */
   renderFileRow = (file, pending) => {
     const {uploadToS3} = this.props;
@@ -805,9 +721,8 @@ class UploadButton extends React.Component {
     if (!pending && file.status) {
       title = `${file.name} - ${file.status}`;
     }
-    // The hover title carries the status and the error too: the span below
-    // is clipped to one line, so the attribute is the only place a long
-    // name, a status or a failure reason is ever shown in full together.
+    // The span below is clipped to one line, so this attribute is the only
+    // place a long name, its status and its error are shown in full.
     let hoverTitle = title;
     if (!pending && file.error) {
       hoverTitle = `${hoverTitle} - ${file.error}`;
@@ -839,9 +754,8 @@ class UploadButton extends React.Component {
           </span>
         </Row>
         {
-          // Outside the clipped span above, and with no `nowrap` of its own,
-          // so a long failure reason wraps onto as many lines as it needs
-          // instead of being cut off together with the name.
+          // Outside the clipped span above, so a long reason wraps instead of
+          // being cut off with the name.
           !pending && file.error && (
             <Row type="flex" style={{width: '100%'}}>
               <span className="cp-error" style={{fontSize: 'small'}}>
@@ -926,11 +840,9 @@ class UploadButton extends React.Component {
         return false;
       };
     } else {
-      // Not routed through `onFilesSelected`: `antd`'s own `Upload` owns the
-      // start here (a GCP storage posts as soon as a file is picked), and no
-      // caller that enables `extractArchivesAvailable` uses this path. If
-      // that ever changes, the pause has to be built here too - enabling the
-      // prop for such a storage today does nothing, the upload just starts.
+      // Not routed through `onFilesSelected`: antd's `Upload` owns the start
+      // here, and no caller that enables `extractArchivesAvailable` uses this
+      // path. Enabling the prop for such a storage does nothing today.
       uploadProps.onChange = this.onUploadStatusChanged;
     }
     const button = (

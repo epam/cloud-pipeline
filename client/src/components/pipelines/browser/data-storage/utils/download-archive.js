@@ -263,13 +263,9 @@ export async function archiveDownloadAllowed (asyncTasks) {
  * @param {string|number} storageId
  * @param {string[]} paths
  * @param {string} archiveName
- * @param {function} [onShowDownloads] - opens the Storage tasks modal. With
- *   none given, the queued toast stays the plain string it was before a toast
- *   could open that modal itself - it still names the menu item ("Show
- *   storage tasks", in the storage view's presentation dropdown - see
- *   renderPresentationConfiguration in pipelines/browser/data-storage/
- *   index.js), because a user who has just queued an archive otherwise has
- *   nothing to go looking for.
+ * @param {function} [onShowDownloads] opens the Storage tasks modal. With
+ *   none, the queued toast is a plain string rather than a link; either way
+ *   it names the menu item that opens the modal.
  * @returns {Promise<void>}
  */
 export default async function handleDownloadArchive (
@@ -286,15 +282,10 @@ export default async function handleDownloadArchive (
   const hide = message.loading('Starting archive download...', 0);
   try {
     await asyncTasks.startArchiveDownload(storageId, paths, archiveName);
-    // The queued toast's own `hide` function does not exist until the
-    // `message.info` call below returns it - but the link inside the content
-    // that call is given has to call that same `hide`, so the toast does not
-    // sit over the Storage tasks modal the click just opened. A plain mutable
-    // holder breaks the chicken-and-egg: the click handler only reads
-    // `queuedHide.current` at click time, long after the assignment below has
-    // run. Harmless on a click after the toast has already timed out on its
-    // own - `hide` is antd's own `removeNotice`, a no-op once the notice is
-    // already gone.
+    // The link in the toast's content dismisses that same toast, so it does
+    // not sit over the modal the click opened - but its `hide` only exists
+    // once `message.info` has returned. The holder is read at click time,
+    // long after the assignment below. `hide` after a timeout is a no-op.
     const queuedHide = {current: undefined};
     const showDownloads = typeof onShowDownloads === 'function'
       ? () => {

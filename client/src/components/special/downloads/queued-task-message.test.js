@@ -25,12 +25,8 @@ describe('queuedTaskMessage', () => {
     expect(queuedTaskMessage(SENTENCE)).toBe(PLAIN_SENTENCE);
   });
 
-  // Anything that is not a function falls back the same way - a caller
-  // passing `undefined` through a chain of optional parameters is the
-  // realistic case, not a deliberate non-function value, but either way the
-  // existing handler tests (data-storage/utils/download-archive.test.js,
-  // extract-storage-archives.test.js) rely on getting this plain string back
-  // when they pass nothing.
+  // The realistic case is `undefined` reaching this through a chain of
+  // optional parameters; anything not a function falls back the same way.
   test('stays the plain sentence when onShowDownloads is not a function', () => {
     expect(queuedTaskMessage(SENTENCE, 'not a function')).toBe(PLAIN_SENTENCE);
   });
@@ -41,8 +37,8 @@ describe('queuedTaskMessage', () => {
       const onShowDownloads = fn();
       const {container} = render(queuedTaskMessage(SENTENCE, onShowDownloads));
 
-      // Character-for-character the same sentence the plain-string form
-      // reads, quotes included - the manual and the UI test cases quote it.
+      // The same sentence as the plain-string form, quotes included - the
+      // manual and the UI test cases quote it.
       expect(container.textContent).toBe(PLAIN_SENTENCE);
 
       // An `<a>` with no `href` carries no implicit `link` role, so the link

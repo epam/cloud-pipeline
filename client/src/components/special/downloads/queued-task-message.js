@@ -16,35 +16,17 @@
 
 import React from 'react';
 
-// The presentation dropdown's own action label (renderPresentationConfiguration,
-// pipelines/browser/data-storage/index.js) - read from here rather than
-// repeated there, so the menu item and the sentence below cannot drift apart.
-// The constant keeps this name; the user reads its value as "Show storage
-// tasks" - the modal it opens (downloads-modal.js) is named "Storage tasks"
-// to the user for the same reason: it is an async-task table, not only
-// downloads, now that an extraction task can land in it too.
+// The presentation dropdown's own action label, read from here rather than
+// repeated in data-storage/index.js so the two cannot drift apart.
 export const SHOW_DOWNLOADS_LABEL = 'Show storage tasks';
 
 /**
- * The content a queued-task toast shares between the two callers that queue
- * one - an archive download (pipelines/browser/data-storage/utils/
- * download-archive.js) and an archive extraction
- * (extract-storage-archives.js). `sentence` is the toast's own
- * first half ("Archive download has been queued.", "Archive extraction has
- * been queued."); this appends the second half, naming where the task is
- * followed.
+ * The second half of a queued-task toast, shared by the archive-download and
+ * archive-extraction handlers. `sentence` is their own first half.
  *
- * With no `onShowDownloads` (not a function) the result is the plain string
- * this already read before a toast could open the Downloads modal itself -
- * keeping that fallback matters: it is what a caller with no modal to open
- * still gets, and it is what the existing handler tests still assert on.
- *
- * With one, the result is a React node carrying the identical wording, only
- * the label itself turned into a link that calls `onShowDownloads` on click.
- * Dismissing the toast the link sits in - so it does not sit over the modal
- * it just opened - is the caller's job, not this function's: see the comment
- * next to where `handleDownloadArchive`/`handleExtractArchives` build the
- * function they pass in here.
+ * Without a function, the result is a plain string - what a caller with no
+ * modal to open gets. With one, the same wording as a node, the label turned
+ * into a link. Dismissing the toast the link sits in is the caller's job.
  *
  * @param {string} sentence
  * @param {function} [onShowDownloads]
@@ -58,11 +40,9 @@ export function queuedTaskMessage (sentence, onShowDownloads) {
     <span>
       {`${sentence} Follow its progress under "`}
       {/*
-        No `href`: the click opens the Downloads modal, there is nowhere to
-        navigate to, and this codebase does not add `href="javascript:;"`
-        for that (life-cycle-counter.js's own "Restore files" link does the
-        same). An `<a>` with no `href` carries no implicit `link` ARIA role,
-        so a test has to query it by its own text, not by role.
+        No `href`: the click opens a modal, there is nowhere to navigate to -
+        life-cycle-counter.js's "Restore files" link does the same. With no
+        `href` there is no implicit `link` role, so a test queries by text.
       */}
       <a className="cp-link" onClick={onShowDownloads}>{SHOW_DOWNLOADS_LABEL}</a>
       {'".'}

@@ -475,12 +475,9 @@ describe('handleDownloadArchive', () => {
     expect(success).not.toHaveBeenCalled();
   });
 
-  // The test above already covers the plain-string path (no `onShowDownloads`
-  // given, the four-argument call every other test here still makes) - this
-  // one covers the fifth, new argument: the queued toast's content turns into
-  // a node whose link opens the Storage tasks modal and dismisses its own
-  // toast. `mockReturnValue` stands in for the `hide` antd's own
-  // `message.info` returns, which is what the link has to call.
+  // The plain-string path is covered above, where no `onShowDownloads` is
+  // passed. `mockReturnValue` stands in for the `hide` antd's `message.info`
+  // returns, which the link has to call.
   test('the queued toast carries a working link when onShowDownloads is given', async () => {
     const asyncTasks = {startArchiveDownload: fn().mockResolvedValue({id: 1})};
     const hideQueued = fn();
@@ -500,8 +497,7 @@ describe('handleDownloadArchive', () => {
     await click(screen.getByText('Show storage tasks'));
 
     expect(onShowDownloads).toHaveBeenCalledTimes(1);
-    // Dismissed before (or regardless of) opening the modal, so the toast
-    // does not sit over it.
+    // Dismissed, so the toast does not sit over the modal it opened.
     expect(hideQueued).toHaveBeenCalledTimes(1);
   });
 
