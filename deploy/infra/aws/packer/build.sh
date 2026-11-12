@@ -103,6 +103,8 @@ else
     _types_list=($_TYPE)
 fi
 
+# A failed build of one type does not stop the build of the next one, but the script exits non-zero at the end
+_failed_types=()
 for _type_to_build in ${_types_list[@]}; do
     _config="$(mktemp --suffix .pkrvars.hcl)"
     \cp "$_type_to_build/ami.pkrvars.hcl" $_config
@@ -163,8 +165,16 @@ for _type_to_build in ${_types_list[@]}; do
     fi
     cd - &> /dev/null
 
-    $_packer_bin/packer init . && $_packer_bin/packer build --var-file=$_config .
+    if ! { "$_packer_bin/packer" init . && "$_packer_bin/packer" build --var-file="$_config" .; }; then
+        echo "[ERROR] The $_type_to_build image build failed"
+        _failed_types+=("$_type_to_build")
+    fi
 
     rm -rf $_packer_bin
     rm -f $_config
 done
+
+if [ "${#_failed_types[@]}" -ne 0 ]; then
+    echo "[ERROR] The image build failed for: ${_failed_types[*]}"
+    exit 1
+fi

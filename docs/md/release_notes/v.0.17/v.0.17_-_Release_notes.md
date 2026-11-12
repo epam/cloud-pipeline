@@ -104,6 +104,7 @@
     - [Runs on Amazon Linux 2023 nodes get no "OOM Logs" task](#runs-on-amazon-linux-2023-nodes-get-no-oom-logs-task)
     - [Rocky Linux 9, RHEL 9 and Amazon Linux 2023 runs: `curl-minimal` and `coreutils-single` stop the base packages install](#rocky-linux-9-rhel-9-and-amazon-linux-2023-runs-curl-minimal-and-coreutils-single-stop-the-base-packages-install)
     - [Filebeat of the API and TinyProxy services loads its own index template](#filebeat-of-the-api-and-tinyproxy-services-loads-its-own-index-template)
+    - [Packer node images for Amazon Linux 2023: the commit and the pause run on Python 2, no `lvm2`, failed downloads are ignored](#packer-node-images-for-amazon-linux-2023-the-commit-and-the-pause-run-on-python-2-no-lvm2-failed-downloads-are-ignored)
 
 ***
 
@@ -1874,7 +1875,7 @@ The WebDAV service (`cp-dav`) also moved from CentOS 7 to Rocky Linux 8 and got 
 
 ## Self-contained Python 3.12 distribution
 
-The runs, the node hosts and the platform images install the platform's Python 3.12 distribution, from `tools/python/3/python3.12.tar.gz` of the distribution bucket, into `/usr/local/python3.12` (the AWS node images into `/opt/python3.12`). It is now built from pinned sources by the `Build-Dependencies` workflow (`deploy/dependencies/python3/`), and it needs nothing from the tool image but `glibc` 2.17 or later:
+The runs, the node hosts and the platform images install the platform's Python 3.12 distribution, from `tools/python/3/python3.12.tar.gz` of the distribution bucket, into `/usr/local/python3.12`. It is now built from pinned sources by the `Build-Dependencies` workflow (`deploy/dependencies/python3/`), and it needs nothing from the tool image but `glibc` 2.17 or later:
 
 - CPython 3.12.16 with OpenSSL 3.5, instead of CPython 3.12.0 with OpenSSL 1.1.1, which has had no support since 2023.
 - Its modules carry their own libraries. So `ctypes` (and with it the NFS events observer of a run), `sqlite3`, `readline` and `curses` now work in the images that lack the `libffi.so.6`, `libsqlite3.so.0`, `libreadline.so.6` or `libncursesw.so.5` of the previous build, e.g. Rocky Linux 9, Ubuntu 20.04 and later, and Debian 11 and later.
@@ -2286,3 +2287,19 @@ The launch script does not replace `curl-minimal`, and its `curl` supports the `
 
 Previously, the Filebeat configs of the API service (`cp-api-srv`) and of the TinyProxy service (`cp-tinyproxy`), for Elasticsearch and for OpenSearch, had a misspelled `setup.tempalte.enabled: false` setting. Filebeat ignored it. So, on start, it loaded its own index template `security_log_template`, for the `security_log*` indices, if the search cluster did not have a template of this name yet: e.g. on a new cluster, before the search service put the platform's templates. If Filebeat then created the `security_log` index, the index got the Filebeat field mappings. With OpenSearch, such an index rejected the security log events of the API and TinyProxy services: the Filebeat template maps `user` as an object, and the events have `user` as text.  
 Now, the setting is spelled `setup.template.enabled`, as in the Filebeat configs of the EDGE service, and Filebeat does not load a template. The security logs go to the `security_log` index as before.
+
+### Packer node images for Amazon Linux 2023: the commit and the pause run on Python 2, no `lvm2`, failed downloads are ignored
+
+Previously, the `deploy/infra/aws/packer` scripts, which build the Amazon Linux 2023 images for the AWS nodes:
+
+- installed the platform's Python 3.12 into `/opt/python3.12`. The commit and the pause of a run look for it in `/usr/local/python3.12` on the node, and use Python 2 when it is not there. So on the nodes of these images, the commit and the pause ran on Python 2.
+- did not install `lvm2`. When a node has more than one unmounted disk, e.g. the larger `c5d`, `m5d` and `r5d` types, which have several local NVMe disks and get no EBS data volume, the user data joins them into one volume with `pvcreate`, `vgcreate` and `lvcreate`. Without `lvm2`, this failed, and `/ebs` stayed on the XFS root volume. With the default `btrfs` file system type, the user data still set the `btrfs` storage driver for Docker in `/ebs/docker`, so Docker could not start, and the node did not join the cluster. Only with `ext4` did the node start, with `/ebs` on the root volume.
+- went on after a failed download of `btrfs`, Python 2, Python 3.12 or `jq`, and created the image anyway: e.g. with an empty `/usr/bin/btrfs` and no `mkfs.btrfs`. Also, they replaced the `jq` package of the image with a downloaded `jq` 1.6, and left the Nvidia `rpm` packages in `/opt` of the `gpu` image.
+
+Now:
+
+- Python 3.12 is installed into `/usr/local/python3.12`, as in the other AWS node images, so the commit and the pause use it. Python 2 (Miniconda2) is still installed.
+- `lvm2` is installed.
+- each download goes into a temporary folder first. A failed download, unpack or check of the result stops the build, so no image is created. `jq` is the package of Amazon Linux 2023, and the Nvidia files are removed after the install.
+
+`deploy/infra/aws/packer/README.md` now also lists the image contents and the IAM permissions that the build needs.
