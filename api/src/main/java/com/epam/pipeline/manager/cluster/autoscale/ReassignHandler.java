@@ -34,6 +34,7 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
@@ -41,6 +42,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -48,6 +50,7 @@ import java.util.function.BiFunction;
 @Component
 @Slf4j
 public class ReassignHandler {
+    private static final String CP_CREATE_NEW_NODE = "CP_CREATE_NEW_NODE";
 
     private final AutoscalerService autoscalerService;
     private final CloudFacade cloudFacade;
@@ -88,14 +91,14 @@ public class ReassignHandler {
                     (map, id) -> map.put(id, autoscalerService.getPreviousRunInstance(id, client)), HashMap::putAll);
         // Try to find match with pre-pulled image
         final boolean reassignedWithMatchingImage = attemptReassign(freeInstances,
-                autoscalerService::requirementsMatchWithImages, requiredInstance, runId,
-                longId, scheduledRuns, reassignedNodes);
+                autoscalerService::requirementsMatchWithImages, requiredInstance, runId, longId,
+                pipelineRun, scheduledRuns, reassignedNodes);
         if (reassignedWithMatchingImage) {
             return true;
         }
         return attemptReassign(freeInstances,
-                autoscalerService::requirementsMatch, requiredInstance, runId,
-                longId, scheduledRuns, reassignedNodes);
+                autoscalerService::requirementsMatch, requiredInstance, runId, longId,
+                pipelineRun, scheduledRuns, reassignedNodes);
 
     }
 
@@ -104,6 +107,7 @@ public class ReassignHandler {
                                     final InstanceRequest requiredInstance,
                                     final String runId,
                                     final Long longId,
+                                    final Optional<PipelineRun> pipelineRun,
                                     final Set<String> scheduledRuns,
                                     final Set<String> reassignedNodes) {
         return freeInstances.entrySet()
@@ -115,22 +119,22 @@ public class ReassignHandler {
                         return false;
                     }
                     final boolean passedPoolFilter = Optional.ofNullable(previousInstance.getPool())
-                            .map(pool -> matchesPoolFilter(pool, longId))
+                            .map(pool -> matchesPoolFilter(pool, pipelineRun))
                             .orElse(true);
                     if (!passedPoolFilter) {
                         return false;
                     }
                     return reassignInstance(runId, longId, scheduledRuns, reassignedNodes,
-                            previousId, previousInstance, pipelineRunManager.findRun(longId));
+                            previousId, previousInstance, pipelineRun);
                 });
     }
 
-    private boolean matchesPoolFilter(final NodePool pool, final Long runId) {
+    private boolean matchesPoolFilter(final NodePool pool, final Optional<PipelineRun> pipelineRun) {
         final PoolFilter filter = pool.getFilter();
         if (filter == null || filter.isEmpty()) {
             return true;
         }
-        return pipelineRunManager.findRun(runId)
+        return pipelineRun
                 .map(run -> matchRun(filter, run))
                 .orElse(false);
     }
@@ -196,9 +200,14 @@ public class ReassignHandler {
     }
 
     private boolean reassignAllowed(final Optional<PipelineRun> pipelineRun) {
-        return !pipelineRun
-                .filter(iamProfileVerifier::isImageRestricted)
-                .isPresent();
+        return !pipelineRun.filter(this::requiresNewNode).isPresent()
+                && !pipelineRun.filter(iamProfileVerifier::isImageRestricted).isPresent();
+    }
+
+    private boolean requiresNewNode(final PipelineRun run) {
+        return ListUtils.emptyIfNull(run.getPipelineRunParameters()).stream()
+                .anyMatch(parameter -> Objects.equals(parameter.getName(), CP_CREATE_NEW_NODE)
+                        && BooleanUtils.toBoolean(parameter.getValue()));
     }
 
     private Map<String, String> findInstanceTags(final Long runId, final Optional<PipelineRun> optionalRun) {
