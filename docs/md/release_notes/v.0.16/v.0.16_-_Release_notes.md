@@ -38,6 +38,7 @@
 - [GitLab 19 support](#gitlab-19-support)
 - [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
 - [The `pipe` CLI on Python 3](#the-pipe-cli-on-python-3)
+- [pipe-common requires Python 3.12](#pipe-common-requires-python-312)
 
 ***
 
@@ -727,6 +728,24 @@ This brings the following changes:
 
 On a deployment that is updated, not installed anew, **Settings** → **CLI** keeps the old installation hints, with the `pipe-el6` download URLs and the Python 2 requirement of the **Source** option, until an admin updates the **`ui.pipe.cli.install.template`** preference.  
 For more details see [here](../../manual/14_CLI/14.1._Install_and_setup_CLI.md#how-to-install-and-setup-pipe-cli).
+## pipe-common requires Python 3.12
+
+`pipe-common` is the `pipeline` Python package of the platform. Every run installs it, and the platform scripts of a run use it, e.g. for the storage mounts, the data transfers, the cluster setup and the grid engine autoscaler. The platform services that run Python scripts install it as well.
+
+Now, `pipe-common` runs on Python 3 only, and requires Python 3.12 or later. `pip` no longer installs it for Python 2.  
+Its dependencies moved to the Python 3 versions that have the known security advisories fixed:
+
+- `certifi` 2026.10.23, `click` 8.5.0, `cryptography` 50.0.1, `docutils` 0.23, `httplib2` 0.32.1, `idna` 3.20, `luigi` 3.8.1, `oauthlib` 4.0.1, `paramiko` 5.0.0, `psutil` 7.2.2, `pyasn1` 0.6.5, `pyasn1-modules` 0.4.2, `PyJWT` 2.15.1, `PyNaCl` 1.6.2, `pyOpenSSL` 26.4.0, `PyYAML` 6.0.3, `requests` 2.34.2, `requests-oauthlib` 2.0.0, `rsa` 4.9.1, `six` 1.16.0, `tornado` 6.6, `urllib3` 2.8.0 and `watchdog` 6.0.0
+- `setuptools` 81.0.0, the last version that has `pkg_resources`
+- `packaging` 26.3 is a new dependency: the AWS provider compares the `boto3` versions with it, as Python 3.12 has no `distutils`
+- `pykube-ng` 23.6.0 instead of `pykube` 0.15. It provides the same `pykube` module
+- the Python 2 backports `backports-abc`, `backports.ssl-match-hostname`, `enum34` and `singledispatch` are no longer installed
+
+The Python 3 package mirror of the platform (`tools/python/pypi3/simple` in the public Cloud Pipeline bucket) serves all of these versions, for systems with `glibc` 2.17 or later, e.g. CentOS 7.
+
+The SGE autoscaler now rounds the memory request of a job up to whole GiB, as the Slurm autoscaler does. Previously, it rounded the request down, e.g. `-l ram=500M` counted as 0 GiB and `-l ram=1500M` as 1 GiB.
+
+Please note: a user script that imports the `pipeline` package, or a package that it brings, must run on Python 3.12, and work with these versions. E.g., the APIs of `luigi` 3, `PyJWT` 2 and `click` 8 differ from the versions that were installed before.
 
 ***
 
