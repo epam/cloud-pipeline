@@ -1248,9 +1248,11 @@ Previously, the search ELK service (`cp-search-elk`), which keeps the security e
 Now, on each start, the search ELK service checks the alias:
 
 - if neither the alias nor an index of that name exists, it creates the first index as the write index of the alias
-- if the alias has no write index, its newest index becomes the write index, and its daily rollover is resumed. The other indices stay in the alias with their events, and are deleted after `CP_SECURITY_LOGS_ROLLOVER_DAYS` days, as before
+- if the alias has no write index, its newest index becomes the write index. The other indices stay in the alias with their events, and are deleted after `CP_SECURITY_LOGS_ROLLOVER_DAYS` days, as before
 - if the alias has a single index, with no write index flag, that index becomes its explicit write index
-- if `security_log` is a plain index, its events are moved to a new index of the alias, and the plain index is deleted. The writes are blocked during the move, so the security events sent at that time are lost. If the move fails, e.g. if a field of the plain index has another type, the plain index is kept as it is, and the service logs an `[ERROR]` line
+- if the daily rollover of the write index stopped at an error, e.g. while the alias had no write index, the rollover is resumed
+- if `security_log` is a plain index, its events are copied to a new index of the alias. Once all of them are copied, the alias replaces the plain index, and the plain index is deleted, in one step. The writes are blocked during the copy, so the security events sent at that time are rejected and lost. If the copy fails, e.g. if a field of the plain index has another type, the copy is removed, the plain index keeps all its events and takes the writes again, and the service logs an `[ERROR]` line. The next start tries again
+- if a copy was interrupted, e.g. the service was stopped during the copy, the plain index still has all its events, but its writes stay blocked until the next start. The next start removes the unfinished copy, of that day or of an earlier one, and copies the events again
 
 Please note:
 
