@@ -61,6 +61,15 @@ async function selectFiles (input, files) {
 // or its portal is left behind for the next test to collide with.
 let instance;
 
+// Stands in for the CurrentUserAsyncTasks store the component is given: one
+// method, which queues one extraction task.
+function asyncTasksDouble (startArchiveExtraction) {
+  return {startArchiveExtraction};
+}
+
+// Extraction needs both the capability prop and the store, so the store is a
+// default here - a test that cares about the call passes its own spy, and the
+// one that checks the missing-store case passes `asyncTasks: undefined`.
 function renderUploadButton (props) {
   const utils = render(
     <UploadButton
@@ -68,6 +77,7 @@ function renderUploadButton (props) {
       path="folder"
       action="/upload"
       uploadToNFS
+      asyncTasks={asyncTasksDouble(fn().mockResolvedValue({id: 'task-1'}))}
       onInitialized={(created) => {
         instance = created;
       }}
@@ -112,6 +122,25 @@ describe('UploadButton - the paused confirmation modal', () => {
       expect(screen.getByText('archive.zip')).toBeInTheDocument();
     }
   );
+
+  // Both halves are required: the capability prop AND the store. Without the
+  // store there is nothing to queue with, so the pop-up must not be offered -
+  // otherwise the files upload and nothing reports the extraction that never
+  // happened.
+  test('a selection with an archive but no asyncTasks store shows no such footer', async () => {
+    useFakeTimers();
+    const {input} = renderUploadButton({
+      extractArchivesAvailable: true,
+      asyncTasks: undefined
+    });
+
+    await selectFiles(input, [zipFile('archive.zip')]);
+    await settleSelection();
+
+    expect(
+      screen.queryByRole('button', {name: 'Upload and extract'})
+    ).not.toBeInTheDocument();
+  });
 
   test('the same selection without extractArchivesAvailable shows no such footer', async () => {
     useFakeTimers();
@@ -219,11 +248,11 @@ describe('UploadButton - extraction after upload', () => {
       // succeeds, so `uploadedArchivePaths` has nothing to report and
       // `extractOrCloseDelayed`'s `newPaths.length > 0` check is never true.
       // This is the only place in the suite that reaches that early return.
-      const extractArchives = fn();
+      const startArchiveExtraction = fn();
       const {input} = renderUploadButton({
         extractArchivesAvailable: true,
         onRefresh,
-        extractArchives
+        asyncTasks: asyncTasksDouble(startArchiveExtraction)
       });
 
       await selectFiles(input, [zipFile('archive.zip')]);
@@ -248,7 +277,7 @@ describe('UploadButton - extraction after upload', () => {
       }, {timeout: 5000});
 
       // Every archive in the batch failed, so nothing was queued.
-      expect(extractArchives).not.toHaveBeenCalled();
+      expect(startArchiveExtraction).not.toHaveBeenCalled();
     },
     10000
   );
@@ -299,7 +328,7 @@ class SucceedingXMLHttpRequest {
   }
 }
 
-describe('UploadButton - the injectable extraction call', () => {
+describe('UploadButton - queueing the extraction', () => {
   let OriginalXMLHttpRequest;
 
   beforeEach(() => {
@@ -311,7 +340,7 @@ describe('UploadButton - the injectable extraction call', () => {
     window.XMLHttpRequest = OriginalXMLHttpRequest;
     // Extraction toasts through antd's global `message`, attached to
     // `document.body` outside what `render()` tracks. A test whose
-    // `extractArchives` never settles never calls the loading toast's own
+    // `startArchiveExtraction` never settles never calls the loading toast's own
     // `hide`, so it would be left in the document. `destroy` is antd's API.
     message.destroy();
     if (instance) {
@@ -324,12 +353,12 @@ describe('UploadButton - the injectable extraction call', () => {
     'a resolved extraction is called with the uploaded archive\'s path, and ' +
     'the modal still closes',
     async () => {
-      const extractArchives = fn(() => Promise.resolve());
+      const startArchiveExtraction = fn(() => Promise.resolve());
       const onRefresh = fn();
       const {input} = renderUploadButton({
         extractArchivesAvailable: true,
         storageId: 'storage-1',
-        extractArchives,
+        asyncTasks: asyncTasksDouble(startArchiveExtraction),
         onRefresh
       });
 
@@ -341,9 +370,10 @@ describe('UploadButton - the injectable extraction call', () => {
       await click(screen.getByRole('button', {name: 'Upload and extract'}));
 
       await waitFor(() => {
-        expect(extractArchives).toHaveBeenCalledTimes(1);
+        expect(startArchiveExtraction).toHaveBeenCalledTimes(1);
       }, {timeout: 5000});
-      expect(extractArchives).toHaveBeenCalledWith('storage-1', ['folder/archive.zip']);
+      expect(startArchiveExtraction)
+        .toHaveBeenCalledWith('storage-1', 'folder/archive.zip', 'folder/');
 
       // The modal does not wait on the extraction call before closing - it
       // closes on the same 2 s timer an ordinary upload uses, and
@@ -365,12 +395,12 @@ describe('UploadButton - the injectable extraction call', () => {
       // timer - an extraction this slow would just make that test slow, not
       // fail it. A promise that never settles at all is the only way to
       // pin "the modal does not wait on this call".
-      const extractArchives = fn(() => new Promise(() => {}));
+      const startArchiveExtraction = fn(() => new Promise(() => {}));
       const onRefresh = fn();
       const {input} = renderUploadButton({
         extractArchivesAvailable: true,
         storageId: 'storage-1',
-        extractArchives,
+        asyncTasks: asyncTasksDouble(startArchiveExtraction),
         onRefresh
       });
 
@@ -382,7 +412,7 @@ describe('UploadButton - the injectable extraction call', () => {
       await click(screen.getByRole('button', {name: 'Upload and extract'}));
 
       await waitFor(() => {
-        expect(extractArchives).toHaveBeenCalledTimes(1);
+        expect(startArchiveExtraction).toHaveBeenCalledTimes(1);
       }, {timeout: 5000});
 
       // The call above is still pending, and always will be - if the modal
@@ -402,12 +432,12 @@ describe('UploadButton - the injectable extraction call', () => {
       // modal open waiting on a manual close (see this file's own history).
       // Now extraction's outcome does not change what the modal does either
       // way - it still closes on its own, on the same timer.
-      const extractArchives = fn(() => Promise.reject(new Error('extraction failed')));
+      const startArchiveExtraction = fn(() => Promise.reject(new Error('extraction failed')));
       const onRefresh = fn();
       const {input} = renderUploadButton({
         extractArchivesAvailable: true,
         storageId: 'storage-1',
-        extractArchives,
+        asyncTasks: asyncTasksDouble(startArchiveExtraction),
         onRefresh
       });
 
@@ -419,7 +449,7 @@ describe('UploadButton - the injectable extraction call', () => {
       await click(screen.getByRole('button', {name: 'Upload and extract'}));
 
       await waitFor(() => {
-        expect(extractArchives).toHaveBeenCalledTimes(1);
+        expect(startArchiveExtraction).toHaveBeenCalledTimes(1);
       }, {timeout: 5000});
 
       // Not stuck: the modal closes on its own, with no further user
@@ -432,7 +462,7 @@ describe('UploadButton - the injectable extraction call', () => {
   );
 
   test(
-    'the idempotency guard: a two-archive S3-style batch calls the prop exactly once',
+    'the idempotency guard: a two-archive S3-style batch queues each archive once',
     async () => {
       // Driven directly through the instance rather than a real upload: the
       // S3 path's own completion method (`uploadItemToStorageSDK`'s
@@ -443,13 +473,15 @@ describe('UploadButton - the injectable extraction call', () => {
       // blocks, which reads as a hack rather than a stub. Calling the same
       // method the real path calls, with the state a finished two-archive
       // batch would carry, reaches the same guard honestly.
-      const extractArchives = fn(() => new Promise(() => {}));
+      // Settles, unlike the never-settling doubles above: the two archives are
+      // queued one after another, so a pending first call would stall the second.
+      const startArchiveExtraction = fn(() => Promise.resolve({id: 'task-1'}));
       renderUploadButton({
         extractArchivesAvailable: true,
         uploadToS3: true,
         uploadToNFS: false,
         storageId: 'storage-1',
-        extractArchives
+        asyncTasks: asyncTasksDouble(startArchiveExtraction)
       });
 
       await act(async () => {
@@ -467,11 +499,12 @@ describe('UploadButton - the injectable extraction call', () => {
         instance.hideUploadInfoDelayedIfDone();
       });
 
-      expect(extractArchives).toHaveBeenCalledTimes(1);
-      expect(extractArchives).toHaveBeenCalledWith(
-        'storage-1',
-        ['folder/one.zip', 'folder/two.zip']
-      );
+      // Two completions, two archives, and still exactly one task each - one
+      // task per archive, since `sourcePath` is a single path server-side.
+      expect(startArchiveExtraction.mock.calls).toEqual([
+        ['storage-1', 'folder/one.zip', 'folder/'],
+        ['storage-1', 'folder/two.zip', 'folder/']
+      ]);
     }
   );
 
@@ -483,14 +516,14 @@ describe('UploadButton - the injectable extraction call', () => {
       // test above is: this is the S3 path's own completion state (one
       // archive done, one file done-but-retryable), reached honestly by
       // calling the same method `uploadItemToStorageSDK`'s callbacks call.
-      const extractArchives = fn(() => Promise.resolve());
+      const startArchiveExtraction = fn(() => Promise.resolve());
       const onRefresh = fn();
       renderUploadButton({
         extractArchivesAvailable: true,
         uploadToS3: true,
         uploadToNFS: false,
         storageId: 'storage-1',
-        extractArchives,
+        asyncTasks: asyncTasksDouble(startArchiveExtraction),
         onRefresh
       });
 
@@ -517,11 +550,12 @@ describe('UploadButton - the injectable extraction call', () => {
       });
 
       await waitFor(() => {
-        expect(extractArchives).toHaveBeenCalledTimes(1);
+        expect(startArchiveExtraction).toHaveBeenCalledTimes(1);
       }, {timeout: 5000});
       // Only the archive that actually landed - the retryable file is not
       // an archive and did not succeed either way.
-      expect(extractArchives).toHaveBeenCalledWith('storage-1', ['folder/one.zip']);
+      expect(startArchiveExtraction)
+        .toHaveBeenCalledWith('storage-1', 'folder/one.zip', 'folder/');
 
       // A batch with a retryable failure never auto-closed before
       // extraction existed, and that must still hold: if a close timer had
@@ -549,14 +583,14 @@ describe('UploadButton - the injectable extraction call', () => {
       // above does) never sets that boolean in the first place, so it does
       // not exercise this guard. Driven through the instance for the same
       // reason the tests above are.
-      const extractArchives = fn(() => Promise.resolve());
+      const startArchiveExtraction = fn(() => Promise.resolve());
       const onRefresh = fn();
       renderUploadButton({
         extractArchivesAvailable: true,
         uploadToS3: true,
         uploadToNFS: false,
         storageId: 'storage-1',
-        extractArchives,
+        asyncTasks: asyncTasksDouble(startArchiveExtraction),
         onRefresh
       });
 
@@ -584,9 +618,10 @@ describe('UploadButton - the injectable extraction call', () => {
       });
 
       await waitFor(() => {
-        expect(extractArchives).toHaveBeenCalledTimes(1);
+        expect(startArchiveExtraction).toHaveBeenCalledTimes(1);
       }, {timeout: 5000});
-      expect(extractArchives).toHaveBeenCalledWith('storage-1', ['folder/landed.zip']);
+      expect(startArchiveExtraction)
+        .toHaveBeenCalledWith('storage-1', 'folder/landed.zip', 'folder/');
       expect(onRefresh).not.toHaveBeenCalled();
 
       // The retry succeeds: `retry.zip` is now done with no error and no
@@ -605,17 +640,18 @@ describe('UploadButton - the injectable extraction call', () => {
       });
 
       await waitFor(() => {
-        expect(extractArchives).toHaveBeenCalledTimes(2);
+        expect(startArchiveExtraction).toHaveBeenCalledTimes(2);
       }, {timeout: 5000});
       // Only the archive that newly landed - `landed.zip` is not sent again.
-      expect(extractArchives).toHaveBeenNthCalledWith(2, 'storage-1', ['folder/retry.zip']);
+      expect(startArchiveExtraction)
+        .toHaveBeenNthCalledWith(2, 'storage-1', 'folder/retry.zip', 'folder/');
 
       // A third completion with nothing new since the last one must not
       // queue either path again.
       await act(async () => {
         instance.hideUploadInfoDelayedIfDone();
       });
-      expect(extractArchives).toHaveBeenCalledTimes(2);
+      expect(startArchiveExtraction).toHaveBeenCalledTimes(2);
 
       // No retry is on offer any more, so the second completion (and this
       // third one) armed the close timer - the modal still closes and
@@ -628,14 +664,14 @@ describe('UploadButton - the injectable extraction call', () => {
   );
 
   test(
-    'plain Upload never calls the injectable extraction function',
+    'plain Upload never queues an extraction',
     async () => {
-      const extractArchives = fn(() => Promise.resolve());
+      const startArchiveExtraction = fn(() => Promise.resolve());
       const onRefresh = fn();
       const {input} = renderUploadButton({
         extractArchivesAvailable: true,
         storageId: 'storage-1',
-        extractArchives,
+        asyncTasks: asyncTasksDouble(startArchiveExtraction),
         onRefresh
       });
 
@@ -649,14 +685,14 @@ describe('UploadButton - the injectable extraction call', () => {
       // progress state" test clicks, but that test would still pass if
       // `confirmUpload(false)` wrongly set `extractAfterUpload: true`. This
       // one would not: it waits the batch out to a real close and checks
-      // the seam was never touched.
+      // nothing was queued.
       await click(screen.getByRole('button', {name: 'Upload'}));
 
       await waitFor(() => {
         expect(onRefresh).toHaveBeenCalled();
       }, {timeout: 5000});
 
-      expect(extractArchives).not.toHaveBeenCalled();
+      expect(startArchiveExtraction).not.toHaveBeenCalled();
     },
     10000
   );

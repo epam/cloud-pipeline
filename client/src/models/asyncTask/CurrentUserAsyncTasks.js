@@ -438,7 +438,9 @@ class CurrentUserAsyncTasks {
         // case, but an administrator lowering the preference leaves users
         // above it, and telling someone with five downloads that they have
         // three is worse than saying nothing.
-        reason: `You already have ${activeTasksCount} archive downloads in progress, ` +
+        // "archive tasks", not "downloads": `maxUserTasks` is one allowance
+        // covering every kind of archive task, extraction included.
+        reason: `You already have ${activeTasksCount} archive tasks in progress, ` +
           `and the limit is ${this.maxUserTasks}. ` +
           'Wait for one to finish before starting another.'
       };
@@ -470,6 +472,42 @@ class CurrentUserAsyncTasks {
     // Queueing a task is what starts watching it: one more click, one more
     // entry in `localStorage`, one more poll - until it finishes.
     this.trackTask(request.value || {});
+    return request.value;
+  }
+
+  /**
+   * One UNPACK_ARCHIVE task, for one archive: `sourcePath` is a single path
+   * server-side (`UnpackArchiveParams`), so a batch of archives is a batch of
+   * tasks. The destination is the same storage and the folder the archive was
+   * uploaded into.
+   *
+   * The task is deliberately not passed to `trackTask`: that drives the
+   * completion notification, whose finished-archive message offers a download
+   * link an extraction has no equivalent for. An extraction is followed in the
+   * Storage tasks table instead.
+   *
+   * @param {string|number} storageId
+   * @param {string} sourcePath the archive, with no trailing slash
+   * @param {string} destinationPath the folder to extract into; `''` is the
+   *   storage root
+   * @returns {Promise<*>}
+   */
+  async startArchiveExtraction (storageId, sourcePath, destinationPath) {
+    const {allowed, reason} = await this.checkActiveTasksLimit();
+    if (!allowed) {
+      throw new Error(reason);
+    }
+    const request = new AsyncTaskCreate();
+    await request.send({
+      type: ASYNC_TASK_TYPES.UNPACK_ARCHIVE,
+      sourceStorageId: storageId,
+      sourcePath,
+      destinationStorageId: storageId,
+      destinationPath: destinationPath || ''
+    });
+    if (request.error) {
+      throw new Error(request.error);
+    }
     return request.value;
   }
 

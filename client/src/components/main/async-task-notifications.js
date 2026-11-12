@@ -17,7 +17,12 @@
 import React from 'react';
 import {message} from 'antd';
 import asyncTasks from '../../models/asyncTask/CurrentUserAsyncTasks';
-import {ASYNC_TASK_STATUSES, normalizeStatus, archiveNameOf} from '../../models/asyncTask/statuses';
+import {
+  ASYNC_TASK_STATUSES,
+  normalizeStatus,
+  archiveNameOf,
+  taskIsDownloadArchive
+} from '../../models/asyncTask/statuses';
 import downloadArchiveTask from '../special/downloads/download-archive-task';
 
 // Announces, with an antd `message`, that one of the current user's
@@ -36,6 +41,13 @@ let started = false;
 let teardown = () => {};
 
 function notify (task, messageApi, download) {
+  // Download tasks only. Both messages below are download-shaped - one offers
+  // a link that consumes the task, which throws for any other type - and an
+  // extraction is not watched in the first place (`startArchiveExtraction`
+  // skips `trackTask`). Checked here as well so that invariant is local.
+  if (!taskIsDownloadArchive(task)) {
+    return;
+  }
   const status = normalizeStatus(task && task.status);
   const archiveName = archiveNameOf(task);
   if (status === ASYNC_TASK_STATUSES.SUCCESS) {

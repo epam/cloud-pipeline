@@ -84,17 +84,25 @@ describe('taskCanBeCancelled', () => {
 });
 
 describe('taskArchiveIsAvailable', () => {
-  test('true for SUCCESS', () => {
-    expect(taskArchiveIsAvailable({status: 'SUCCESS'})).toBe(true);
+  test('true for a successful download archive', () => {
+    expect(taskArchiveIsAvailable({type: 'DOWNLOAD_ARCHIVE', status: 'SUCCESS'})).toBe(true);
   });
   test('false for FAILED', () => {
-    expect(taskArchiveIsAvailable({status: 'FAILED'})).toBe(false);
+    expect(taskArchiveIsAvailable({type: 'DOWNLOAD_ARCHIVE', status: 'FAILED'})).toBe(false);
+  });
+  // `/async-task/{id}/consume` throws for an extraction, so a successful one
+  // still has nothing to hand over.
+  test('false for a successful extraction', () => {
+    expect(taskArchiveIsAvailable({type: 'UNPACK_ARCHIVE', status: 'SUCCESS'})).toBe(false);
   });
   test('false for undefined', () => {
     expect(taskArchiveIsAvailable(undefined)).toBe(false);
   });
   test('false for a task with no status', () => {
-    expect(taskArchiveIsAvailable({id: 1})).toBe(false);
+    expect(taskArchiveIsAvailable({type: 'DOWNLOAD_ARCHIVE', id: 1})).toBe(false);
+  });
+  test('false for a task with no type', () => {
+    expect(taskArchiveIsAvailable({status: 'SUCCESS'})).toBe(false);
   });
 });
 

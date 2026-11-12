@@ -2779,6 +2779,7 @@ export default class DataStorage extends React.Component {
                   // which the worker does not expose yet. Change this if the
                   // two ever diverge.
                   extractArchivesAvailable={this.archiveStorageTypeSupported}
+                  asyncTasks={this.props.asyncTasks}
                   onShowDownloads={this.showDownloadsModal}
                   // synchronous
                   uploadToS3={/^s3$/i.test(type)}

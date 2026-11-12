@@ -69,8 +69,38 @@ export const POLLED_STATUSES = [
 ];
 
 export const ASYNC_TASK_TYPES = {
-  DOWNLOAD_ARCHIVE: 'DOWNLOAD_ARCHIVE'
+  DOWNLOAD_ARCHIVE: 'DOWNLOAD_ARCHIVE',
+  UNPACK_ARCHIVE: 'UNPACK_ARCHIVE'
 };
+
+// What each type is called in the GUI. The Storage tasks table's Type column
+// and its filter both read this, so a type with no entry here shows its raw
+// enum rather than nothing.
+export const ASYNC_TASK_TYPE_NAMES = {
+  [ASYNC_TASK_TYPES.DOWNLOAD_ARCHIVE]: 'Download archive',
+  [ASYNC_TASK_TYPES.UNPACK_ARCHIVE]: 'Extract archive'
+};
+
+export function normalizeType (type) {
+  return type ? String(type).toUpperCase() : undefined;
+}
+
+export function typeOf (task) {
+  return normalizeType(task && task.type);
+}
+
+export function displayTaskType (type) {
+  const normalized = normalizeType(type);
+  return (normalized && ASYNC_TASK_TYPE_NAMES[normalized]) || normalized;
+}
+
+export function taskIsDownloadArchive (task) {
+  return typeOf(task) === ASYNC_TASK_TYPES.DOWNLOAD_ARCHIVE;
+}
+
+export function taskIsUnpackArchive (task) {
+  return typeOf(task) === ASYNC_TASK_TYPES.UNPACK_ARCHIVE;
+}
 
 // The single place that upper-cases a task's status before comparing it
 // against ASYNC_TASK_STATUSES. Exported so nothing outside this module
@@ -104,8 +134,11 @@ export function taskCanBeCancelled (task) {
   return taskIsActive(task);
 }
 
+// Only a download archive is ever handed over: `/async-task/{id}/consume`
+// throws for an extraction (UnpackArchiveTaskProcessor.consume), so a
+// Download button on a successful extraction row would always fail.
 export function taskArchiveIsAvailable (task) {
-  return statusOf(task) === ASYNC_TASK_STATUSES.SUCCESS;
+  return taskIsDownloadArchive(task) && statusOf(task) === ASYNC_TASK_STATUSES.SUCCESS;
 }
 
 // The archive-name display fallback shared by the Downloads modal's list and
@@ -140,4 +173,11 @@ export function ownerIsFiltered (owner, defaultOwner) {
     return false;
   }
   return (owner || undefined) !== defaultOwner;
+}
+
+// The Type column's own "differs from default" comparison, shared by
+// async-tasks-list.js and DownloadsManager's "Reset filters" control. The
+// default is every type, which the request expresses by sending no `type`.
+export function typeIsFiltered (type) {
+  return normalizeType(type) !== undefined;
 }

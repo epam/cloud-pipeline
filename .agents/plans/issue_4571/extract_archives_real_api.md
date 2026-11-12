@@ -1,38 +1,12 @@
 ---
-name: Upload-and-extract on the real async-task API
-overview: Move the extract-archive GUI next to the download-archive GUI, replace its mock with the real POST /async-task/create call for UNPACK_ARCHIVE, and make the Storage tasks table show and filter the task type so an extraction is visible there. The API verification below found four mismatches between what the GUI sends today and what the backend accepts, and one blocker outside the GUI - no worker runs an UNPACK_ARCHIVE task.
-todos:
-  - id: verify-worker
-    content: Decide what to do about the missing UNPACK_ARCHIVE worker in storage-async-task-service - build it, or ship the GUI knowingly queueing tasks that never run
-    status: pending
-  - id: move-files
-    content: Move extract-storage-archives.js/.test.js to pipelines/browser/data-storage/utils/extract-archives.js, mirroring the download-archive move
-    status: pending
-  - id: task-type-constant
-    content: Add UNPACK_ARCHIVE to ASYNC_TASK_TYPES and the per-type helpers in models/asyncTask/statuses.js
-    status: pending
-  - id: real-call
-    content: Replace the extractArchives mock with AsyncTaskCreate, one UNPACK_ARCHIVE task per archive, and drop the injectable seam the mock needed
-    status: pending
-  - id: quota
-    content: Handle the per-user active-task quota for a batch of N archives - check before queuing and report what was not queued
-    status: pending
-  - id: type-column
-    content: Add the Type column to the Storage tasks table and stop hard-coding type DOWNLOAD_ARCHIVE in the filter body
-    status: pending
-  - id: type-filter
-    content: Add the Type column filter, after deciding single-select (no backend change) or multi-select (needs a backend types list)
-    status: pending
-  - id: per-type-columns
-    content: Branch the Archive, Storage, Size and Actions columns per task type - UNPACK_ARCHIVE params and result are shaped differently and it has nothing to consume
-    status: pending
-  - id: notifications
-    content: Decide whether the completion-notification poll watches UNPACK_ARCHIVE too, and extend fetchActiveTasks if so
-    status: pending
-  - id: docs-cases
-    content: Update 8.2._Upload_Download_data.md and the release note - the "not available yet" notes go - and the UI test cases on their own branch
-    status: pending
-isProject: false
+issue: 4571
+branch: issue_4571/extract_archives_on_upload_gui
+base: java21_migration @ 9d34ca82e7
+area: gui
+author: Cloud Pipeline Agent
+model: opus
+cadence: checkpoint
+location: shared
 ---
 
 # Upload-and-extract on the real async-task API

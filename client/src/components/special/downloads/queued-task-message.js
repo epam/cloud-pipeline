@@ -30,15 +30,18 @@ export const SHOW_DOWNLOADS_LABEL = 'Show storage tasks';
  *
  * @param {string} sentence
  * @param {function} [onShowDownloads]
+ * @param {boolean} [plural] several tasks were queued, so the pronoun below
+ *   is "their" rather than "its"
  * @returns {string|React.ReactNode}
  */
-export function queuedTaskMessage (sentence, onShowDownloads) {
+export function queuedTaskMessage (sentence, onShowDownloads, plural = false) {
+  const lead = `${sentence} Follow ${plural ? 'their' : 'its'} progress under "`;
   if (typeof onShowDownloads !== 'function') {
-    return `${sentence} Follow its progress under "${SHOW_DOWNLOADS_LABEL}".`;
+    return `${lead}${SHOW_DOWNLOADS_LABEL}".`;
   }
   return (
     <span>
-      {`${sentence} Follow its progress under "`}
+      {lead}
       {/*
         No `href`: the click opens a modal, there is nowhere to navigate to -
         life-cycle-counter.js's "Restore files" link does the same. With no
@@ -47,5 +50,35 @@ export function queuedTaskMessage (sentence, onShowDownloads) {
       <a className="cp-link" onClick={onShowDownloads}>{SHOW_DOWNLOADS_LABEL}</a>
       {'".'}
     </span>
+  );
+}
+
+/**
+ * Shows the queued toast, whose link dismisses that same toast before opening
+ * the modal - so it does not sit over what the click just opened.
+ *
+ * The toast's `hide` only exists once `messageApi.info` has returned, while
+ * the content handed to that call already needs it, hence the holder: it is
+ * read at click time, long after the assignment below. A `hide` called after
+ * the toast has timed out on its own is antd's `removeNotice`, a no-op.
+ *
+ * @param {*} messageApi
+ * @param {string} sentence
+ * @param {function} [onShowDownloads]
+ * @param {boolean} [plural]
+ */
+export function showQueuedTaskMessage (messageApi, sentence, onShowDownloads, plural = false) {
+  const queuedHide = {current: undefined};
+  const showDownloads = typeof onShowDownloads === 'function'
+    ? () => {
+      if (queuedHide.current) {
+        queuedHide.current();
+      }
+      onShowDownloads();
+    }
+    : undefined;
+  queuedHide.current = messageApi.info(
+    queuedTaskMessage(sentence, showDownloads, plural),
+    5
   );
 }

@@ -539,7 +539,7 @@ describe('checkActiveTasksLimit', () => {
     const result = await store.checkActiveTasksLimit();
 
     expect(result.allowed).toBe(false);
-    expect(result.reason).toMatch(/2 archive downloads/);
+    expect(result.reason).toMatch(/2 archive tasks/);
   });
 
   // A check that cannot run must not be the thing that stops a legitimate
@@ -556,6 +556,88 @@ describe('checkActiveTasksLimit', () => {
   });
 });
 
+describe('startArchiveExtraction', () => {
+  it('posts one UNPACK_ARCHIVE task, with the same storage as the destination', async () => {
+    await setMaxUserTasks(5);
+    const api = stubApi();
+    stubWhoAmI(api);
+    api.reply(FILTER_ROUTE, filterPage([]));
+    const createdTask = {id: 101, status: 'PENDING', created: YESTERDAY(), owner: USER_NAME};
+    api.reply('/async-task/create', createdTask);
+    const store = newStore();
+
+    const result = await store.startArchiveExtraction(7, 'folder/data.zip', 'folder/');
+
+    const call = api.calls.find(c => c.path === '/async-task/create');
+    expect(call.method).toBe('POST');
+    expect(JSON.parse(call.body)).toEqual({
+      type: 'UNPACK_ARCHIVE',
+      sourceStorageId: 7,
+      sourcePath: 'folder/data.zip',
+      destinationStorageId: 7,
+      destinationPath: 'folder/'
+    });
+    expect(result).toEqual(createdTask);
+  });
+
+  // `destinationPath` is required server-side but may be empty - that is the
+  // storage root.
+  it('sends an empty destinationPath rather than omitting it', async () => {
+    await setMaxUserTasks(5);
+    const api = stubApi();
+    stubWhoAmI(api);
+    api.reply(FILTER_ROUTE, filterPage([]));
+    api.reply('/async-task/create', {id: 102, status: 'PENDING'});
+    const store = newStore();
+
+    await store.startArchiveExtraction(7, 'data.zip', undefined);
+
+    const call = api.calls.find(c => c.path === '/async-task/create');
+    expect(JSON.parse(call.body).destinationPath).toBe('');
+  });
+
+  it('rejects, naming the limit, without posting when the cap is reached', async () => {
+    await setMaxUserTasks(1);
+    const api = stubApi();
+    stubWhoAmI(api);
+    api.reply(FILTER_ROUTE, filterPage([{id: 1, status: 'RUNNING'}]));
+    const store = newStore();
+
+    await expect(store.startArchiveExtraction(7, 'a.zip', ''))
+      .rejects.toThrow(/1 archive task/);
+    expect(api.calls.some(c => c.path === '/async-task/create')).toBe(false);
+  });
+
+  // `handleExtractArchives` stops its batch on the first rejection, so this
+  // line is what makes a partial batch possible at all.
+  it('rejects when the server refuses the task', async () => {
+    await setMaxUserTasks(5);
+    const api = stubApi();
+    stubWhoAmI(api);
+    api.reply(FILTER_ROUTE, filterPage([]));
+    api.fail('/async-task/create', 'Permission is not granted');
+    const store = newStore();
+
+    await expect(store.startArchiveExtraction(7, 'a.zip', ''))
+      .rejects.toThrow(/Permission is not granted/);
+  });
+
+  // The completion notification offers a download link an extraction has no
+  // equivalent for, so an extraction is not watched.
+  it('does not watch or persist the task it queued', async () => {
+    await setMaxUserTasks(5);
+    const api = stubApi();
+    stubWhoAmI(api);
+    api.reply(FILTER_ROUTE, filterPage([]));
+    api.reply('/async-task/create', {id: 103, status: 'PENDING', created: YESTERDAY()});
+    const store = newStore();
+
+    await store.startArchiveExtraction(7, 'a.zip', '');
+
+    expect(loadEntries()).toEqual([]);
+  });
+});
+
 describe('startArchiveDownload', () => {
   it('rejects, naming the limit, without posting when the cap is reached', async () => {
     await setMaxUserTasks(1);
@@ -565,7 +647,7 @@ describe('startArchiveDownload', () => {
     const store = newStore();
 
     await expect(store.startArchiveDownload(7, ['a/'], 'archive-1'))
-      .rejects.toThrow(/1 archive download/);
+      .rejects.toThrow(/1 archive task/);
     expect(
       api.calls.some(c => c.path === '/async-task/create')
     ).toBe(false);
@@ -637,7 +719,7 @@ describe('startArchiveDownload', () => {
     expect(store.pollers.size).toBe(0);
 
     await expect(store.startArchiveDownload(7, ['a/'], 'archive-1'))
-      .rejects.toThrow(/2 archive downloads/);
+      .rejects.toThrow(/2 archive tasks/);
     expect(
       api.calls.some(c => c.path === '/async-task/create')
     ).toBe(false);

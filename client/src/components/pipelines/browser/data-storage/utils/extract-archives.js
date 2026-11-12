@@ -15,7 +15,7 @@
  */
 
 import {message} from 'antd';
-import {queuedTaskMessage} from './downloads/queued-task-message';
+import {showQueuedTaskMessage} from '../../../../special/downloads/queued-task-message';
 
 /**
  * @typedef {Object} UploadingFile
@@ -101,72 +101,100 @@ export function uploadedArchivePaths (uploadingFiles, path) {
   return [...new Set(paths)];
 }
 
-export const EXTRACT_ARCHIVES_MOCK_DELAY_MS = 1500;
-
 /**
- * A mock: the server call that queues the extraction is not wired up yet, so
- * this only waits and resolves. A missing id or an empty paths list is a
- * caller bug and rejects without waiting.
+ * The folder an uploaded archive sits in - where its contents are extracted.
+ * The leaf is dropped, not the prefix the caller passed: the archive's own
+ * path already carries it.
  *
- * @param {string|number} storageId
- * @param {string[]} paths
- * @returns {Promise<void>}
+ * @param {string} archivePath
+ * @returns {string} `''` for an archive at the storage root
  */
-export function extractArchives (storageId, paths) {
-  if (!storageId || !paths || paths.length === 0) {
-    return Promise.reject(
-      new Error('extractArchives: a storage id and at least one path are required')
-    );
-  }
-  return new Promise(resolve => {
-    setTimeout(resolve, EXTRACT_ARCHIVES_MOCK_DELAY_MS);
-  });
+export function extractionFolderOf (archivePath) {
+  const at = `${archivePath || ''}`.lastIndexOf('/');
+  return at < 0 ? '' : `${archivePath}`.slice(0, at + 1);
 }
 
 /**
- * Queues the extraction and reports it - a loading toast, then the queued
- * toast or the error toast. The error is reported and not re-thrown: the
- * caller (`UploadButton`) fires this and moves on, so nobody would catch it.
+ * How many of `paths` were queued, and why the rest were not.
  *
+ * @typedef {Object} ExtractionOutcome
+ * @property {number} queued
+ * @property {number} total
+ * @property {Error} [error] what stopped the run
+ */
+
+/**
+ * Queues one UNPACK_ARCHIVE task per archive and reports the outcome in one
+ * toast. Sequential and stopping at the first failure, because the per-user
+ * cap (`AsyncTaskApiService.assertUserQuota`) is counted per task and shared
+ * with archive downloads: a batch can run out of allowance part-way, and
+ * carrying on would only collect the same error N times.
+ *
+ * The error is reported and not re-thrown: the caller (`UploadButton`) fires
+ * this and moves on, so nobody would catch it.
+ *
+ * @param {{startArchiveExtraction: function}} asyncTasks
  * @param {string|number} storageId
- * @param {string[]} paths
+ * @param {string[]} paths the archives, each with no trailing slash
  * @param {*} [messageApi] antd's `message` by default; a parameter so this is
  *   testable without module mocking
- * @param {function} [extract] this module's `extractArchives` by default;
- *   `UploadButton`'s own `extractArchives` prop is threaded through it
  * @param {function} [onShowDownloads] opens the Storage tasks modal. With
  *   none, the queued toast is a plain string rather than a link.
- * @returns {Promise<void>}
+ * @returns {Promise<ExtractionOutcome>}
  */
 export async function handleExtractArchives (
+  asyncTasks,
   storageId,
   paths,
   messageApi = message,
-  extract = extractArchives,
   onShowDownloads
 ) {
+  const total = (paths || []).length;
+  if (!asyncTasks || typeof asyncTasks.startArchiveExtraction !== 'function' || total === 0) {
+    return {queued: 0, total};
+  }
   const hide = messageApi.loading('Starting archive extraction...', 0);
+  let queued = 0;
+  let failure;
   try {
-    await extract(storageId, paths);
-    // The link in the toast's content dismisses that same toast, whose `hide`
-    // only exists once `messageApi.info` has returned. The holder is read at
-    // click time, long after the assignment below.
-    const queuedHide = {current: undefined};
-    const showDownloads = typeof onShowDownloads === 'function'
-      ? () => {
-        if (queuedHide.current) {
-          queuedHide.current();
-        }
-        onShowDownloads();
-      }
-      : undefined;
-    queuedHide.current = messageApi.info(
-      queuedTaskMessage('Archive extraction has been queued.', showDownloads),
-      5
-    );
+    for (const path of paths) {
+      await asyncTasks.startArchiveExtraction(storageId, path, extractionFolderOf(path));
+      queued += 1;
+    }
   } catch (error) {
-    messageApi.error(error.message, 5);
+    failure = error;
   } finally {
     hide();
   }
+  if (queued === 0) {
+    messageApi.error(errorMessageOf(failure), 5);
+    return {queued, total, error: failure};
+  }
+  showQueuedTaskMessage(
+    messageApi,
+    queuedSentence(queued, total),
+    onShowDownloads,
+    queued > 1
+  );
+  if (failure) {
+    // Both toasts: the queued one names what did go out, this one why the
+    // rest did not.
+    messageApi.error(errorMessageOf(failure), 5);
+  }
+  return {queued, total, error: failure};
+}
+
+// A rejection is an Error from both throw sites today, but an empty error
+// toast is a bad way to find out otherwise.
+function errorMessageOf (failure) {
+  return (failure && failure.message) || 'Could not queue the archive extraction.';
+}
+
+function queuedSentence (queued, total) {
+  if (queued === total) {
+    return total === 1
+      ? 'Archive extraction has been queued.'
+      : `Extraction of ${total} archives has been queued.`;
+  }
+  return `Extraction of ${queued} of ${total} archives has been queued.`;
 }

@@ -33,9 +33,8 @@ import DataStorageGenerateUploadUrl from '../../models/dataStorage/DataStorageGe
 import {
   hasArchives,
   uploadedArchivePaths,
-  extractArchives,
   handleExtractArchives
-} from './extract-storage-archives';
+} from '../pipelines/browser/data-storage/utils/extract-archives';
 
 const KB = 1024;
 const MB = 1024 * KB;
@@ -62,9 +61,10 @@ class UploadButton extends React.Component {
     style: PropTypes.object,
     disabled: PropTypes.bool,
     extractArchivesAvailable: PropTypes.bool,
-    // A test seam, so a test needs no module mock. Also where the real model
-    // goes once the extract call is wired up; no caller passes it today.
-    extractArchives: PropTypes.func,
+    // The CurrentUserAsyncTasks store, which queues the extraction. Only the
+    // storage page passes it; without it `extractionOffered` is false and the
+    // confirmation pop-up is never shown.
+    asyncTasks: PropTypes.object,
     // Opens the Storage tasks modal, whose state lives on the storage page.
     onShowDownloads: PropTypes.func
   };
@@ -177,13 +177,12 @@ class UploadButton extends React.Component {
       const newPaths = paths.filter(path => !this.queuedExtractionPaths.has(path));
       if (newPaths.length > 0) {
         newPaths.forEach(path => this.queuedExtractionPaths.add(path));
-        const extract = this.props.extractArchives || extractArchives;
         // Not awaited: `handleExtractArchives` owns the toast and the error.
         void handleExtractArchives(
+          this.props.asyncTasks,
           this.props.storageId,
           newPaths,
           undefined,
-          extract,
           this.props.onShowDownloads
         );
       }
@@ -215,18 +214,27 @@ class UploadButton extends React.Component {
     });
   };
 
+  // Both halves are required. Without the store there is nothing to queue
+  // with, and offering "Upload and extract" would upload the files and then
+  // say nothing at all about the extraction that never happened.
+  get extractionOffered () {
+    const {extractArchivesAvailable, asyncTasks} = this.props;
+    return !!extractArchivesAvailable &&
+      !!asyncTasks &&
+      typeof asyncTasks.startArchiveExtraction === 'function';
+  }
+
   /**
-   * Pauses a batch that holds an archive, where the caller allows extraction:
-   * the modal opens in its confirmation state and `startUpload` waits for the
+   * Pauses a batch that holds an archive, where extraction is offered: the
+   * modal opens in its confirmation state and `startUpload` waits for the
    * user's choice. Otherwise `startUpload` runs at once.
    *
    * @param {function} startUpload `startUploadToS3` or
    *   `onUploadStatusChangedSynchronous`
    */
   onFilesSelected = (startUpload) => {
-    const {extractArchivesAvailable} = this.props;
     const {synchronousUploadingFiles} = this.state;
-    if (extractArchivesAvailable && hasArchives(synchronousUploadingFiles)) {
+    if (this.extractionOffered && hasArchives(synchronousUploadingFiles)) {
       this.setState({
         uploadInfoVisible: true,
         pendingConfirmation: true,

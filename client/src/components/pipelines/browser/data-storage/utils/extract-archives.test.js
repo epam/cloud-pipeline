@@ -14,16 +14,29 @@
  * limitations under the License.
  */
 
-import {fn, useFakeTimers, useRealTimers, advanceTimers, screen, click, render} from '@test';
+import {fn, screen, click, render} from '@test';
 import {
   ARCHIVE_EXTENSIONS,
   isArchive,
   hasArchives,
   uploadedArchivePaths,
-  extractArchives,
-  handleExtractArchives,
-  EXTRACT_ARCHIVES_MOCK_DELAY_MS
-} from './extract-storage-archives';
+  extractionFolderOf,
+  handleExtractArchives
+} from './extract-archives';
+
+// Stands in for the CurrentUserAsyncTasks store - one method is all this
+// module reaches for.
+function asyncTasksDouble (startArchiveExtraction) {
+  return {startArchiveExtraction: startArchiveExtraction || fn().mockResolvedValue({id: 'task-1'})};
+}
+
+function messageApiDouble (info) {
+  return {
+    info: info || fn(),
+    loading: fn().mockReturnValue(fn()),
+    error: fn()
+  };
+}
 
 describe('isArchive', () => {
   test.each([
@@ -147,67 +160,53 @@ describe('uploadedArchivePaths', () => {
   });
 });
 
-describe('extractArchives', () => {
-  afterEach(() => {
-    useRealTimers();
-  });
-
-  test('resolves only after the mock delay, not before', async () => {
-    useFakeTimers();
-    let resolved = false;
-    extractArchives(1, ['a.zip']).then(() => {
-      resolved = true;
-    });
-
-    advanceTimers(EXTRACT_ARCHIVES_MOCK_DELAY_MS - 1);
-    await Promise.resolve();
-    expect(resolved).toBe(false);
-
-    advanceTimers(1);
-    await Promise.resolve();
-    expect(resolved).toBe(true);
-  });
-
-  test('rejects immediately, before the delay, when the storage id is missing', async () => {
-    await expect(extractArchives(undefined, ['a.zip'])).rejects.toThrow();
-  });
-
-  test('rejects immediately when the paths list is empty or missing', async () => {
-    await expect(extractArchives(1, [])).rejects.toThrow();
-    await expect(extractArchives(1, undefined)).rejects.toThrow();
+describe('extractionFolderOf', () => {
+  test.each([
+    ['folder/archive.zip', 'folder/'],
+    ['a/b/archive.zip', 'a/b/'],
+    ['archive.zip', ''],
+    ['', ''],
+    [undefined, '']
+  ])('%j extracts into %j', (path, expected) => {
+    expect(extractionFolderOf(path)).toBe(expected);
   });
 });
 
 describe('handleExtractArchives', () => {
-  test(
-    'calls extract with the storage id and paths, and shows then hides the loading toast',
-    async () => {
-      const hide = fn();
-      const messageApi = {
-        info: fn(),
-        loading: fn().mockReturnValue(hide),
-        error: fn()
-      };
-      const extract = fn().mockResolvedValue();
+  test('queues one task per archive, each into the archive\'s own folder', async () => {
+    const startArchiveExtraction = fn().mockResolvedValue({id: 'task-1'});
+    const messageApi = messageApiDouble();
 
-      await handleExtractArchives('storage-1', ['a.zip'], messageApi, extract);
+    const outcome = await handleExtractArchives(
+      asyncTasksDouble(startArchiveExtraction),
+      7,
+      ['data/a.zip', 'b.zip'],
+      messageApi
+    );
 
-      expect(messageApi.loading).toHaveBeenCalledWith('Starting archive extraction...', 0);
-      expect(extract).toHaveBeenCalledWith('storage-1', ['a.zip']);
-      expect(hide).toHaveBeenCalledTimes(1);
-    }
-  );
+    expect(startArchiveExtraction.mock.calls).toEqual([
+      [7, 'data/a.zip', 'data/'],
+      [7, 'b.zip', '']
+    ]);
+    expect(outcome).toEqual({queued: 2, total: 2, error: undefined});
+  });
+
+  test('shows then hides the loading toast', async () => {
+    const hide = fn();
+    const messageApi = messageApiDouble();
+    messageApi.loading = fn().mockReturnValue(hide);
+
+    await handleExtractArchives(asyncTasksDouble(), 7, ['a.zip'], messageApi);
+
+    expect(messageApi.loading).toHaveBeenCalledWith('Starting archive extraction...', 0);
+    expect(hide).toHaveBeenCalledTimes(1);
+  });
 
   // The queued toast is an info toast, not a success one.
-  test('the queued toast names the downloads view', async () => {
-    const messageApi = {
-      info: fn(),
-      loading: fn().mockReturnValue(fn()),
-      error: fn()
-    };
-    const extract = fn().mockResolvedValue();
+  test('the queued toast names the storage tasks view', async () => {
+    const messageApi = messageApiDouble();
 
-    await handleExtractArchives('storage-1', ['a.zip'], messageApi, extract);
+    await handleExtractArchives(asyncTasksDouble(), 7, ['a.zip'], messageApi);
 
     expect(messageApi.info).toHaveBeenCalledWith(
       'Archive extraction has been queued. Follow its progress under "Show storage tasks".',
@@ -216,19 +215,84 @@ describe('handleExtractArchives', () => {
     expect(messageApi.error).not.toHaveBeenCalled();
   });
 
+  test('counts the archives in the toast when there is more than one', async () => {
+    const messageApi = messageApiDouble();
+
+    await handleExtractArchives(asyncTasksDouble(), 7, ['a.zip', 'b.zip'], messageApi);
+
+    // "their", not "its": more than one task was queued.
+    expect(messageApi.info).toHaveBeenCalledWith(
+      'Extraction of 2 archives has been queued. ' +
+      'Follow their progress under "Show storage tasks".',
+      5
+    );
+  });
+
+  // The cap is counted per task and shared with archive downloads, so a batch
+  // can run out of allowance part-way through.
+  test('stops at the first failure, and reports what was queued and what stopped it', async () => {
+    const startArchiveExtraction = fn()
+      .mockResolvedValueOnce({id: 'task-1'})
+      .mockRejectedValueOnce(new Error('too many archive tasks'));
+    const messageApi = messageApiDouble();
+
+    const outcome = await handleExtractArchives(
+      asyncTasksDouble(startArchiveExtraction),
+      7,
+      ['a.zip', 'b.zip', 'c.zip'],
+      messageApi
+    );
+
+    expect(startArchiveExtraction).toHaveBeenCalledTimes(2);
+    expect(outcome.queued).toBe(1);
+    expect(outcome.total).toBe(3);
+    expect(messageApi.info).toHaveBeenCalledWith(
+      'Extraction of 1 of 3 archives has been queued. ' +
+      'Follow its progress under "Show storage tasks".',
+      5
+    );
+    expect(messageApi.error).toHaveBeenCalledWith('too many archive tasks', 5);
+  });
+
+  test('reports only the error when nothing could be queued', async () => {
+    const startArchiveExtraction = fn().mockRejectedValue(new Error('too many archive tasks'));
+    const messageApi = messageApiDouble();
+
+    const outcome = await handleExtractArchives(
+      asyncTasksDouble(startArchiveExtraction),
+      7,
+      ['a.zip'],
+      messageApi
+    );
+
+    expect(messageApi.error).toHaveBeenCalledWith('too many archive tasks', 5);
+    expect(messageApi.info).not.toHaveBeenCalled();
+    expect(outcome.queued).toBe(0);
+  });
+
+  test('queues nothing, and shows no toast, without a store or without paths', async () => {
+    const messageApi = messageApiDouble();
+
+    expect(await handleExtractArchives(undefined, 7, ['a.zip'], messageApi))
+      .toEqual({queued: 0, total: 1});
+    expect(await handleExtractArchives(asyncTasksDouble(), 7, [], messageApi))
+      .toEqual({queued: 0, total: 0});
+
+    expect(messageApi.loading).not.toHaveBeenCalled();
+    expect(messageApi.info).not.toHaveBeenCalled();
+    expect(messageApi.error).not.toHaveBeenCalled();
+  });
+
   // The plain-string path is covered above, where no `onShowDownloads` is
   // passed.
   test('the queued toast carries a working link when onShowDownloads is given', async () => {
     const hideQueued = fn();
-    const messageApi = {
-      info: fn().mockReturnValue(hideQueued),
-      loading: fn().mockReturnValue(fn()),
-      error: fn()
-    };
-    const extract = fn().mockResolvedValue();
+    const messageApi = messageApiDouble(fn().mockReturnValue(hideQueued));
     const onShowDownloads = fn();
 
-    await handleExtractArchives('storage-1', ['a.zip'], messageApi, extract, onShowDownloads);
+    await handleExtractArchives(
+      asyncTasksDouble(), 7, ['a.zip'], messageApi, onShowDownloads
+    );
 
     expect(messageApi.info).toHaveBeenCalledTimes(1);
     const [content] = messageApi.info.mock.calls[0];
@@ -242,39 +306,5 @@ describe('handleExtractArchives', () => {
 
     expect(onShowDownloads).toHaveBeenCalledTimes(1);
     expect(hideQueued).toHaveBeenCalledTimes(1);
-  });
-
-  test(
-    'a rejecting extract reports through messageApi.error, with no queued-info toast',
-    async () => {
-      const messageApi = {
-        info: fn(),
-        loading: fn().mockReturnValue(fn()),
-        error: fn()
-      };
-      const extract = fn().mockRejectedValue(new Error('too many active tasks'));
-
-      await handleExtractArchives('storage-1', ['a.zip'], messageApi, extract);
-
-      expect(messageApi.error).toHaveBeenCalledWith('too many active tasks', 5);
-      expect(messageApi.info).not.toHaveBeenCalled();
-    }
-  );
-
-  // With no `extract` argument, the module's own mock is used.
-  test('defaults extract to this module\'s own mock when none is injected', async () => {
-    useFakeTimers();
-    const messageApi = {
-      info: fn(),
-      loading: fn().mockReturnValue(fn()),
-      error: fn()
-    };
-
-    const pending = handleExtractArchives('storage-1', ['a.zip'], messageApi);
-    advanceTimers(EXTRACT_ARCHIVES_MOCK_DELAY_MS);
-    await pending;
-
-    expect(messageApi.info).toHaveBeenCalled();
-    useRealTimers();
   });
 });

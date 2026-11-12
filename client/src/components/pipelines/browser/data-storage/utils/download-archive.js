@@ -23,7 +23,7 @@
 
 import moment from 'moment-timezone';
 import {message} from 'antd';
-import {queuedTaskMessage} from '../../../../special/downloads/queued-task-message';
+import {showQueuedTaskMessage} from '../../../../special/downloads/queued-task-message';
 
 function isFolder (item) {
   return /^folder$/i.test((item && item.type) || '');
@@ -282,23 +282,7 @@ export default async function handleDownloadArchive (
   const hide = message.loading('Starting archive download...', 0);
   try {
     await asyncTasks.startArchiveDownload(storageId, paths, archiveName);
-    // The link in the toast's content dismisses that same toast, so it does
-    // not sit over the modal the click opened - but its `hide` only exists
-    // once `message.info` has returned. The holder is read at click time,
-    // long after the assignment below. `hide` after a timeout is a no-op.
-    const queuedHide = {current: undefined};
-    const showDownloads = typeof onShowDownloads === 'function'
-      ? () => {
-        if (queuedHide.current) {
-          queuedHide.current();
-        }
-        onShowDownloads();
-      }
-      : undefined;
-    queuedHide.current = message.info(
-      queuedTaskMessage('Archive download has been queued.', showDownloads),
-      5
-    );
+    showQueuedTaskMessage(message, 'Archive download has been queued.', onShowDownloads);
   } catch (error) {
     message.error(error.message, 5);
     throw error;

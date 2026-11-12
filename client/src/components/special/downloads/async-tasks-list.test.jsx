@@ -39,6 +39,7 @@ import {ALL_ASYNC_TASK_STATUSES, POLLED_STATUSES} from '../../../models/asyncTas
 
 const SUCCESS_TASK = {
   id: 1,
+  type: 'DOWNLOAD_ARCHIVE',
   status: 'SUCCESS',
   params: {archiveName: 'archive-success', storageId: 7, paths: ['a/', 'b.txt']},
   created: '2026-10-21T13:13:02.274Z',
@@ -47,6 +48,7 @@ const SUCCESS_TASK = {
 
 const RUNNING_TASK = {
   id: 2,
+  type: 'DOWNLOAD_ARCHIVE',
   status: 'RUNNING',
   params: {archiveName: 'archive-running', storageId: 7, paths: ['c.txt']},
   created: '2026-10-21 13:15:19.689'
@@ -54,6 +56,7 @@ const RUNNING_TASK = {
 
 const FAILED_TASK = {
   id: 3,
+  type: 'DOWNLOAD_ARCHIVE',
   status: 'FAILED',
   errorMessage: 'Something went wrong',
   params: {archiveName: 'archive-failed', storageId: 7, paths: ['d.txt']},
@@ -63,6 +66,7 @@ const FAILED_TASK = {
 
 const PENDING_TASK = {
   id: 5,
+  type: 'DOWNLOAD_ARCHIVE',
   status: 'PENDING',
   params: {archiveName: 'archive-pending', storageId: 7, paths: ['e.txt']},
   created: '2026-10-21T13:13:02.274Z'
@@ -1025,17 +1029,17 @@ describe('the Owner column', () => {
     renderList({isAdmin: false});
 
     expect(screen.queryByText('Owner')).not.toBeInTheDocument();
-    // Only the Status column's own default filter icon remains - no second
-    // one for an Owner column that was never rendered at all.
-    expect(screen.getAllByTitle('Filter menu')).toHaveLength(1);
+    // Type and Status keep theirs - no third one for an Owner column that was
+    // never rendered at all.
+    expect(screen.getAllByTitle('Filter menu')).toHaveLength(2);
   });
 
   test('is present, with its own filter icon, when isAdmin is true', () => {
     renderList({isAdmin: true});
 
     expect(screen.getByText('Owner')).toBeInTheDocument();
-    // One default filter icon per filterable column - Status and Owner.
-    expect(screen.getAllByTitle('Filter menu')).toHaveLength(2);
+    // One default filter icon per filterable column - Type, Status, Owner.
+    expect(screen.getAllByTitle('Filter menu')).toHaveLength(3);
   });
 
   test(
@@ -1379,5 +1383,67 @@ describe('the Owner column', () => {
       const ownerColumn = instance.columns.find((column) => column.key === 'owner');
       expect(ownerColumn.filteredValue).toEqual([]);
     });
+  });
+});
+
+describe('the Type column filter', () => {
+  function renderList (props = {}) {
+    return renderWithLocale(
+      <AsyncTasksList tasks={[]} {...props} />,
+      {stores: {authenticatedUserInfo: authenticatedUserInfoDouble()}}
+    );
+  }
+
+  // Scoped to the Type column's own header cell: the default filter icons of
+  // the filterable columns cannot be told apart by title alone.
+  function openTypeFilter () {
+    const header = screen.getByText('Type').closest('th');
+    return click(within(header).getByTitle('Filter menu'));
+  }
+
+  test('renders the column, and a radio per type plus Any type', async () => {
+    renderList();
+
+    await openTypeFilter();
+
+    expect(screen.getByText('Any type')).toBeInTheDocument();
+    expect(screen.getByText('Download archive')).toBeInTheDocument();
+    expect(screen.getByText('Extract archive')).toBeInTheDocument();
+    expect(screen.getByText('OK')).toBeInTheDocument();
+    expect(screen.getByText('Reset to defaults')).toBeInTheDocument();
+  });
+
+  test('picking a type and clicking OK commits that type', async () => {
+    const onTypeFilterChange = fn();
+    renderList({onTypeFilterChange});
+
+    await openTypeFilter();
+    await click(screen.getByText('Extract archive'));
+    await click(screen.getByText('OK'));
+
+    expect(onTypeFilterChange).toHaveBeenCalledWith('UNPACK_ARCHIVE');
+  });
+
+  // "Any type" is the default, and the request expresses it by sending no
+  // `type` at all - so it commits `undefined`, not a value.
+  test('Reset to defaults commits undefined', async () => {
+    const onTypeFilterChange = fn();
+    renderList({typeFilter: 'UNPACK_ARCHIVE', onTypeFilterChange});
+
+    await openTypeFilter();
+    await click(screen.getByText('Reset to defaults'));
+
+    expect(onTypeFilterChange).toHaveBeenCalledWith(undefined);
+  });
+
+  test('the icon is only marked filtered once a type is committed', () => {
+    let instance;
+    renderList({ref: (r) => { instance = r; }});
+    expect(instance.columns.find((c) => c.key === 'type').filteredValue).toEqual([]);
+
+    let filteredInstance;
+    renderList({typeFilter: 'DOWNLOAD_ARCHIVE', ref: (r) => { filteredInstance = r; }});
+    expect(filteredInstance.columns.find((c) => c.key === 'type').filteredValue)
+      .toEqual(['filtered']);
   });
 });

@@ -25,6 +25,8 @@ import {
   taskIsActive,
   taskCanBeCancelled,
   taskArchiveIsAvailable,
+  taskIsUnpackArchive,
+  displayTaskType,
   normalizeStatus,
   archiveNameOf
 } from '../../../models/asyncTask/statuses';
@@ -60,12 +62,24 @@ function statusClassName (status) {
   return STATUS_CLASS_NAMES[normalizeStatus(status)];
 }
 
+// `archiveSizeBytes` for a download archive, `bytesWritten` for an
+// extraction (DownloadArchiveResult / UnpackArchiveResult). Both are reported
+// on SUCCESS only, so every other row has no size either way.
 function archiveSizeOf (task) {
-  const bytes = task.result && task.result.archiveSizeBytes;
+  const result = task.result || {};
+  const bytes = taskIsUnpackArchive(task) ? result.bytesWritten : result.archiveSizeBytes;
   if (bytes === undefined || bytes === null || Number.isNaN(Number(bytes))) {
     return undefined;
   }
   return bytes;
+}
+
+// An extraction names its archive by path and has no archive name of its own,
+// so the leaf of `sourcePath` is what identifies the row.
+function extractionNameOf (task) {
+  const path = (task.params && task.params.sourcePath) || '';
+  const segments = `${path}`.split('/');
+  return segments[segments.length - 1] || path || task.id;
 }
 
 // Mirrors the backend's own DownloadArchiveTaskProcessor.offeredArchiveName
@@ -127,7 +141,11 @@ export default function buildColumns ({
   statusesFilterDropdown,
   statusesFilterVisible,
   onStatusesFilterVisibleChange,
-  statusesFiltered
+  statusesFiltered,
+  typeFilterDropdown,
+  typeFilterVisible,
+  onTypeFilterVisibleChange,
+  typeFiltered
 }) {
   // Admin-only, and omitted from the array entirely (not merely hidden)
   // when `isAdmin` is false - a non-admin must see neither the column nor
@@ -145,20 +163,32 @@ export default function buildColumns ({
   } : null;
   return [
     {
+      title: 'Type',
+      key: 'type',
+      // Single-select: `AsyncTaskFilterVO.type` is one enum server-side, not
+      // a list, so this cannot be a checkbox filter like Status.
+      filterDropdown: typeFilterDropdown,
+      filterDropdownVisible: typeFilterVisible,
+      onFilterDropdownVisibleChange: onTypeFilterVisibleChange,
+      filteredValue: typeFiltered ? ['filtered'] : [],
+      render: (task) => displayTaskType(task.type)
+    },
+    {
       title: 'Archive',
       key: 'archive',
       // The archive's name, and how many items went into it:
       // `my-archive.zip (2 items)`, with the count's own popover listing the
-      // archived paths on hover. The count used to be a column of its own; it
-      // belongs here, where it reads as a property of the archive rather than
-      // as a bare number under a heading. Singular for one, matching the way
+      // archived paths on hover. Singular for one, matching the way
       // `data-storage/index.js` words its own item counts.
       //
       // A task with nothing to list renders the bare name - no count in
-      // brackets and no popover at all. The same guard the count itself
-      // already applied: an empty popover that opens on hover and shows
-      // nothing would be worse than no affordance.
+      // brackets and no popover at all.
       render: (task) => {
+        if (taskIsUnpackArchive(task)) {
+          // No `.zip` appended and no count: the archive is one file the user
+          // uploaded, named exactly as it is on the storage.
+          return extractionNameOf(task);
+        }
         const name = displayArchiveNameOf(task);
         const paths = (task.params && task.params.paths) || [];
         // `displayArchiveNameOf` hands back a falsy name untouched, so that an
@@ -197,7 +227,12 @@ export default function buildColumns ({
       // keeps the lookup correct if `storageNamesById` is ever built as a
       // `Map`, where a numeric and a string key are genuinely distinct.
       render: (task) => {
-        const storageId = task.params && task.params.storageId;
+        const params = task.params || {};
+        // An extraction reads and writes the same storage today, so its
+        // source id is the whole answer.
+        const storageId = taskIsUnpackArchive(task)
+          ? params.sourceStorageId
+          : params.storageId;
         if (storageId === undefined || storageId === null) {
           return storageId;
         }
