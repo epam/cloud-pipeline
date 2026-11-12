@@ -99,6 +99,7 @@
     - [Inner data storages navigation bar fails to navigate](#inner-data-storages-navigation-bar-fails-to-navigate)
     - [Region is being set incorrectly when trying to rerun pipeline](#region-is-being-set-incorrectly-when-trying-to-rerun-pipeline)
     - [`PAUSE` and `COMMIT` operations fail for the jobs with an autoscaled disk](#pause-and-commit-operations-fail-for-the-jobs-with-an-autoscaled-disk)
+    - [Runs on Amazon Linux 2023 nodes get no "OOM Logs" task](#runs-on-amazon-linux-2023-nodes-get-no-oom-logs-task)
 
 ***
 
@@ -2232,3 +2233,13 @@ Previously, `PAUSE` and `COMMIT` operations failed with the `NullPointerExceptio
 
 - In **Groups**/**Roles** membership view, the vertical scrollbar was shown even if there was a plenty of space below the list. Currently, the list size is increased to the pop up size.
 - At the **Billing reports** page, if the whole header menu didn't not fit the screen width - the "discounts" links overflew the regions selector. Currently, row breaks feature is implemeted for this page.
+
+### Runs on Amazon Linux 2023 nodes get no "OOM Logs" task
+
+[#4828](https://github.com/epam/cloud-pipeline/issues/4828)
+
+When the kernel of a node kills a process for lack of memory, the node reporter (`cp-node-reporter`) finds the kill in the kernel log and adds its message to the **OOM Logs** task of the node's run. If `CP_OOM_TAG_RUNS` is `true` in the `cp-config-global` config map, it also tags the run (`PROC_OUT_OF_MEMORY` by default).  
+Previously, the node reporter could not read the kernel log on the nodes that run Amazon Linux 2023, or another Linux that sets `kernel.dmesg_restrict` to `1`. With this setting, reading the kernel log needs the `CAP_SYSLOG` capability, which the node reporter did not have. Its log (`/opt/node-reporter/logs/<node>/oom.log`) had `dmesg: read kernel buffer failed: Operation not permitted` at each check. So the runs on such nodes got no **OOM Logs** task and no tag, even when their processes were killed.  
+Now, the node reporter runs with the `CAP_SYSLOG` capability, and reports the kills on these nodes as on the other nodes. No other capability is added.  
+Also, the node reporter image now sets `CP_PYTHON_PATH`. Since the Python 3 support of `pipe-common`, its `pipe_log` and `pipe_tag` commands run Python from this variable, and without it they failed on every node: no kill got into the **OOM Logs** task, and no run was tagged.  
+Please note: on the nodes with `kernel.dmesg_restrict` set to `1` that already run when the update is applied, the first check also reports the earlier kills that are still in the kernel log, including those of the previous runs on the node. They go to the node's current run, or, if the node has none, to the next run on it.
