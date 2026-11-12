@@ -1,0 +1,82 @@
+# The exact versions of all the packages, the pipe CLI builds install on Python 3.12.
+# build_linux.sh, mount/build_mount.sh, build_windows.sh and build_mac_arm.sh pass this file to pip with -c,
+# so every build bundles the same versions. requirements.txt and mount/requirements.txt keep the lower bounds of
+# the versions, for the installation from the source tarball (PipelineCLI.tar.gz).
+#
+# Each package here has a wheel for Linux x86_64 with glibc 2.17 (manylinux2014), Windows x86_64 and macOS arm64,
+# but fusepy and PTable, which are pure Python. To update the file: install requirements.txt, mount/requirements.txt
+# and setuptools==68.2.2 into a clean Python 3.12 virtual environment, and replace the list of the pipe CLI packages
+# below with the output of "pip freeze --all" without pip. Then check the wheels, and run the tests and the builds.
+#
+# The build tools: the Linux and Windows builder images have them already, the macOS build installs them.
+altgraph==0.17.5
+macholib==1.16.2
+pyinstaller==6.5.0
+pyinstaller-hooks-contrib==2026.9
+#
+# The packages of the pipe CLI and its mount
+azure-core==1.41.0
+azure-storage-blob==12.31.1
+bcrypt==5.0.0
+beautifulsoup4==4.15.0
+boto3==1.44.0
+botocore==1.44.0
+cachetools==8.0.0
+certifi==2026.10.23
+cffi==2.1.1
+charset-normalizer==3.5.2
+click==8.5.1
+colorama==0.4.6
+coverage==7.17.2
+cryptography==50.0.2
+dukpy==0.6.0
+filelock==4.2.10
+fusepy==3.0.1
+google-api-core==2.44.0
+google-auth==2.62.2
+google-cloud-core==2.8.0
+google-cloud-storage==3.17.1
+google-crc32c==1.9.0
+google-resumable-media==2.11.0
+googleapis-common-protos==1.76.0
+idna==3.20
+iniconfig==2.3.1
+invoke==3.0.3
+isodate==0.7.2
+jmespath==1.1.0
+opentelemetry-api==1.45.2
+packaging==26.3
+paramiko==5.1.0
+pluggy==1.7.0
+proto-plus==1.29.0
+protobuf==7.36.2
+psutil==7.2.2
+PTable==0.9.2
+pyasn1==0.6.5
+pyasn1_modules==0.4.2
+pycparser==3.12
+Pygments==2.21.0
+pygtrie==2.6.2
+PyJWT==2.15.1
+PyNaCl==1.6.2
+pyOpenSSL==26.4.0
+PyPAC==0.17.2
+pytest==9.2.0
+pytest-cov==7.1.0
+python-dateutil==2.9.0.post0
+python-intervals==1.10.0.post1
+pytz==2026.6
+requests==2.34.2
+requests-file==3.0.1
+requests-mock==1.12.1
+s3transfer==0.19.3
+scp==0.16.2
+setuptools==68.2.2
+six==1.17.0
+soupsieve==4.1
+tld==0.13.2
+tldextract==5.4.0
+treelib==1.8.0
+typing_extensions==4.16.0
+tzlocal==5.4.5
+urllib3==2.8.0

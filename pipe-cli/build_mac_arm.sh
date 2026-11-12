@@ -17,40 +17,43 @@
 ###
 # Setup Pyinstaller
 ###
-python -m pip install pyinstaller==5.13.2
+arch -arm64 python -m pip install "pyinstaller==6.5.0" -c ${PIPE_CLI_SOURCES_DIR}/constraints.txt
 
 ###
 # Setup common dependencies
 ###
-python -m pip install macholib==1.16.2
+arch -arm64 python -m pip install macholib==1.16.2 -c ${PIPE_CLI_SOURCES_DIR}/constraints.txt
 
 
 export LDFLAGS="-L$(brew --prefix openssl@1.1)/lib"
 export CFLAGS="-I$(brew --prefix openssl@1.1)/include"
 export PKG_CONFIG_PATH="$(brew --prefix openssl@1.1)/lib/pkgconfig"
 export TMP_MOUNT_BIN=$(pwd)/tmp/mount/dist
-python -m pip install -r ${PIPE_CLI_SOURCES_DIR}/requirements.txt
+arch -arm64 python -m pip install -r ${PIPE_CLI_SOURCES_DIR}/requirements.txt -c ${PIPE_CLI_SOURCES_DIR}/constraints.txt
 
 
 ###
 # Build pipe fuse
 ###
-python -m pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt
+arch -arm64 python -m pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt -c ${PIPE_CLI_SOURCES_DIR}/constraints.txt
 cd $PIPE_MOUNT_SOURCES_DIR && \
-pyinstaller \
+arch -arm64 pyinstaller \
+                                --target-arch arm64 \
                                 --paths "$PIPE_CLI_SOURCES_DIR" \
                                 --paths "$PIPE_MOUNT_SOURCES_DIR" \
-                                --hidden-import=UserList \
-                                --hidden-import=UserString \
-                                --hidden-import=commands \
-                                --hidden-import=ConfigParser \
-                                --hidden-import=UserDict \
+                                --collect-submodules pipefuse \
+                                --collect-submodules google.auth \
+                                --collect-submodules google.oauth2 \
+                                --collect-submodules google.cloud \
+                                --collect-submodules google.resumable_media \
+                                --collect-data botocore \
+                                --hidden-import=fuse \
+                                --hidden-import=cachetools \
+                                --hidden-import=intervals \
+                                --hidden-import=pygtrie \
                                 --hidden-import=itertools \
                                 --hidden-import=collections \
-                                --hidden-import=future.backports.misc \
-                                --hidden-import=commands \
                                 --hidden-import=base64 \
-                                --hidden-import=__builtin__ \
                                 --hidden-import=math \
                                 --hidden-import=reprlib \
                                 --hidden-import=functools \
@@ -87,25 +90,38 @@ function build_pipe {
     local pipe_commit_hash=$(git log --pretty=tformat:"%H" -n1 .)
     echo "__component_version__='$pipe_commit_hash'" >> $version_file
 
-    pyinstaller \
+    arch -arm64 pyinstaller \
+                                    --target-arch arm64 \
                                     --paths "$PIPE_CLI_SOURCES_DIR" \
-                                    --hidden-import=UserList \
-                                    --hidden-import=UserString \
-                                    --hidden-import=commands \
-                                    --hidden-import=ConfigParser \
-                                    --hidden-import=UserDict \
+                                    --collect-submodules src \
+                                    --collect-submodules google.auth \
+                                    --collect-submodules google.oauth2 \
+                                    --collect-submodules google.cloud \
+                                    --collect-submodules google.resumable_media \
+                                    --collect-submodules azure.core \
+                                    --collect-submodules azure.storage \
+                                    --collect-data botocore \
+                                    --collect-data azure \
+                                    --collect-data tldextract \
+                                    --hidden-import=pygtrie \
+                                    --hidden-import=pypac \
+                                    --hidden-import=treelib \
+                                    --hidden-import=psutil \
+                                    --hidden-import=scp \
+                                    --hidden-import=tzlocal \
+                                    --hidden-import=prettytable \
+                                    --hidden-import=jwt \
+                                    --hidden-import=paramiko \
                                     --hidden-import=itertools \
                                     --hidden-import=collections \
-                                    --hidden-import=future.backports.misc \
-                                    --hidden-import=commands \
                                     --hidden-import=base64 \
-                                    --hidden-import=__builtin__ \
                                     --hidden-import=math \
                                     --hidden-import=reprlib \
                                     --hidden-import=functools \
                                     --hidden-import=re \
                                     --hidden-import=subprocess \
                                     --hidden-import=_sysconfigdata \
+                                    --additional-hooks-dir="${PIPE_CLI_SOURCES_DIR}/hooks" \
                                     --additional-hooks-dir="${PIPE_MOUNT_SOURCES_DIR}/hooks" \
                                     --additional-hooks-dir="${PIPE_MOUNT_SOURCES_DIR}/hooks-py39" \
                                     -y \

@@ -13,8 +13,8 @@
 # limitations under the License.
 
 # Covers the pipeline repository mount of scripts/pipeline-launch/launch.sh: the permission check before the gitfs
-# mount runs with the Python of pipe-common ($CP_PYTHON2_PATH), not with the "python" first on PATH. Runs the mount
-# block of launch.sh with bash. The interpreter of $CP_PYTHON2_PATH, "python" and "gitfs" are stubs, which record their
+# mount runs with the Python of pipe-common ($CP_PYTHON_PATH), not with the "python" first on PATH. Runs the mount
+# block of launch.sh with bash. The interpreter of $CP_PYTHON_PATH, "python" and "gitfs" are stubs, which record their
 # calls; the pipe_log_* functions are stubs, which print the message. Needs bash.
 
 import os
@@ -59,15 +59,15 @@ def mount_repository(tmpdir):
     stub_bin = tmpdir.mkdir('stub-bin')
     _write_stub(stub_bin.join('python'), 'python', '1')
     _write_stub(stub_bin.join('gitfs'), 'gitfs', '0')
-    pipe_common_python = tmpdir.mkdir('cpbin').join('python2')
-    _write_stub(pipe_common_python, 'cp-python2', '$STUB_PERMISSION_RESULT')
+    pipe_common_python = tmpdir.mkdir('python3.12').join('python3.12')
+    _write_stub(pipe_common_python, 'cp-python3.12', '$STUB_PERMISSION_RESULT')
     calls = tmpdir.join('calls')
     mount = tmpdir.join('repository', 'pipeline')
 
     def run(permission_result):
         env = {
             'PATH': str(stub_bin) + os.pathsep + os.environ['PATH'],
-            'CP_PYTHON2_PATH': str(pipe_common_python),
+            'CP_PYTHON_PATH': str(pipe_common_python),
             'COMMON_REPO_DIR': '/opt/common',
             'GITFS_INSTALL': '1',
             'GIT_REPO': GIT_REPO,
@@ -90,7 +90,8 @@ def mount_repository(tmpdir):
 def test_the_permission_check_runs_with_the_python_of_pipe_common(mount_repository):
     output, calls = mount_repository('0')
 
-    assert calls == ['cp-python2 /opt/common/scripts/check_pipeline_permission.py --pipeline_id 42 --permission WRITE',
+    assert calls == ['cp-python3.12 /opt/common/scripts/check_pipeline_permission.py '
+                     '--pipeline_id 42 --permission WRITE',
                      'gitfs %s %s -o log=%s/gitfs.log,allow_other=true'
                      % (GIT_REPO, mount_repository.mount, mount_repository.log_dir)]
     assert 'INFO: GitFs is installed. Will try to mount git repository.' in output
@@ -100,5 +101,6 @@ def test_the_permission_check_runs_with_the_python_of_pipe_common(mount_reposito
 def test_the_repository_is_not_mounted_without_the_write_permission(mount_repository):
     output, calls = mount_repository('1')
 
-    assert calls == ['cp-python2 /opt/common/scripts/check_pipeline_permission.py --pipeline_id 42 --permission WRITE']
+    assert calls == ['cp-python3.12 /opt/common/scripts/check_pipeline_permission.py '
+                     '--pipeline_id 42 --permission WRITE']
     assert 'INFO: User is not allowed to modify GIT repository.' in output

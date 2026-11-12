@@ -44,7 +44,7 @@ class TestPipeline(object):
     v_1 = "v1"
     v_2 = "v2"
 
-    @requests_mock.mock()
+    @requests_mocked
     def test_get_pipeline_model(self, mock):
         mock.get(mocked_url('pipeline/find?id={}'.format(self.pipeline_id)),
                  text=mock_pipe(self.pipeline_id, self.pipeline_name, raw_date, self.v_1))
@@ -59,7 +59,7 @@ class TestPipeline(object):
         assert actual.repository == expected.repository
         assert actual.versions == expected.versions
 
-    @requests_mock.mock()
+    @requests_mocked
     def test_get_pipeline_model_with_versions(self, mock):
         mock.get(mocked_url('pipeline/find?id={}'.format(self.pipeline_id)),
                  text=mock_pipe(self.pipeline_id, self.pipeline_name, raw_date, self.v_1))
@@ -84,7 +84,7 @@ class TestPipeline(object):
         for (actual_version, expected_version) in zip(actual.versions, expected.versions):
             assert_version(actual_version, expected_version)
 
-    @requests_mock.mock()
+    @requests_mocked
     def test_get_pipeline_model_with_bucket(self, mock):
         mock.get(mocked_url('pipeline/find?id={}'.format(self.pipeline_id)),
                  text=mock_pipe(self.pipeline_id, self.pipeline_name, raw_date, self.v_1))
@@ -103,7 +103,7 @@ class TestPipeline(object):
         assert actual.versions == expected.versions
         assert_storage_rules(actual.storage_rules, expected.storage_rules)
 
-    @requests_mock.mock()
+    @requests_mocked
     def test_get_pipeline_model_with_run_parameters(self, mock):
         mock.get(mocked_url('pipeline/find?id={}'.format(self.pipeline_id)),
                  text=mock_pipe(self.pipeline_id, self.pipeline_name, raw_date, self.v_1))
@@ -130,7 +130,7 @@ class TestPipeline(object):
         assert actual.repository == expected.repository
         assert actual.versions == expected.versions
 
-    @requests_mock.mock()
+    @requests_mocked
     def test_price(self, mock):
         mock.post(mocked_url("pipeline/{}/price?version={}".format(self.pipeline_id, self.pipeline_name)),
                   text=mock_price(self.instance_disk, self.instance_type))
@@ -144,7 +144,7 @@ class TestPipeline(object):
         assert actual.maximum_time_price == expected.maximum_time_price
         assert actual.average_time_price == expected.average_time_price
 
-    @requests_mock.mock()
+    @requests_mocked
     def test_launch_pipeline(self, mock):
         mock.post(mocked_url('run'), text=mock_run(self.pipeline_id, docker_image=self.docker_image,
                                                    identifier=self.run_id))

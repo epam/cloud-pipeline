@@ -122,3 +122,11 @@ def test_centos_keeps_the_package_names(install_command):
 
 def test_ubuntu_keeps_the_package_names(install_command):
     assert install_command('procps coreutils', cp_os='ubuntu', cp_ver='22.04') == ['procps', 'coreutils']
+
+
+@pytest.mark.parametrize('cp_os,cp_ver', [('rocky', '8.7'), ('rocky', '9.8'), ('centos', '8')])
+def test_python_package_names_are_kept(install_command, cp_os, cp_ver):
+    # E.g. CP_CAP_EXTRA_PKG: "python" was renamed to "python2" for the Python 2 of the run, and "python3-devel"
+    # to "python23-devel" with it
+    assert install_command('python3-devel python3.12 python-unversioned-command', cp_os=cp_os, cp_ver=cp_ver) \
+        == ['python3-devel', 'python3.12', 'python-unversioned-command']
