@@ -11,20 +11,29 @@ in `$TYPE/ami.pkrvars.hcl`. Note that the AMI lookup requires `ec2:DescribeImage
 ## Resulting AMI name and tags
 
 The AMI is named `CloudPipeline-$TYPE-$TIMESTAMP` and is tagged with `OS_Version`, `Base_AMI_Name`,
-`Type`, `SHA` and, for the `gpu` type, `Nvidia_Driver_Version`. Those are assigned by the
-`CreateImage`/`CreateTags` calls, i.e. while the AMI is being created.
+`Type`, `SHA` and, for the `gpu` type, `Nvidia_Driver_Version`. Packer applies those tags with a `CreateTags`
+call, once the AMI is available, to the AMI and to its snapshots.
 
 ## Image contents and the user data
 
-`$TYPE/install-deps.sh` prepares Amazon Linux 2023 for the nodes: `nc`, `tc`, `iptables-legacy`, a static `btrfs`
-(with `mkfs.btrfs`), `jq`, the cgroup v1 hierarchy, a permissive SELinux, and the platform's Python 3.12 in
-`/usr/local/python3.12`, which the commit and the pause of a run use on the node. There is no Python 2. The `gpu` type
-also gets the Nvidia driver, Fabric Manager and `nvidia-persistenced`.
+`$TYPE/install-deps.sh` prepares Amazon Linux 2023 for the nodes: `nc`, `tc`, `iptables-legacy`, `lvm2` and `jq`
+from the packages of Amazon Linux 2023, a static `btrfs` (with `mkfs.btrfs`), the cgroup v1 hierarchy, a permissive
+SELinux, and the platform's Python 3.12 in `/usr/local/python3.12`, which the commit and the pause of a run use on the
+node. There is no Python 2. The `gpu` type also gets the Nvidia driver, Fabric Manager and `nvidia-persistenced`.
 
 Docker and the kubelet are not in the image: the `init_multicloud_v1.15.4.ext.sh` user data installs them, when a
 node starts. Set it as the `init_script` of the image in the `amis` list of the region in `cluster.networks.config`,
 e.g. `"init_script": "/opt/api/scripts/init_multicloud_v1.15.4.ext.sh"`. `init_multicloud.sh` and
 `init_multicloud_v1.15.4.sh` expect them in the image.
+
+This needs the fix of `init_multicloud_v1.15.4.ext.sh`, which downloads `init_multicloud_install_docker.sh` from
+`tools/scripts/` of the distribution URL. Without it, the user data downloads the script from `//scripts/`, which
+fails (HTTP 403), so the node gets no Docker and no kubelet, and never joins the cluster.
+
+The image does not pre-load the Kubernetes system images (Calico, Flannel, `kube-proxy`, `pause`) into
+`/opt/docker-system-images`, as the Amazon Linux 2 images of `deploy/infra/aws/install-*-node.sh` do. The user data
+downloads them when a node starts, and falls back to that folder only if the download fails: so on this image, a node
+then has no local copy of them.
 
 ## Connection to the temporary instance
 
@@ -80,7 +89,8 @@ VPC endpoints.
 ## IAM permissions of the build identity
 
 The identity, which runs packer, requires the following permissions. They are the calls, which the packer
-`amazon` plugin makes with the settings of `ami.pkr.hcl`:
+`amazon` plugin makes with the settings of `ami.pkr.hcl`, as checked against the plugin v1.8.4 (the version, which
+`packer init` installs for `>= 1.2.8` at the time of writing):
 
 * Always:
   * `ec2:DescribeRegions` - the region is validated before the build
@@ -88,22 +98,28 @@ The identity, which runs packer, requires the following permissions. They are th
   * `ec2:DescribeSubnets` - the VPC and the availability zone of `subnet_id`
   * `ec2:DescribeSecurityGroups` - the check of `security_group_ids`, or the wait for the temporary security group
   * `ec2:RunInstances`, `ec2:DescribeInstances`, `ec2:StopInstances` and `ec2:TerminateInstances` - the temporary instance
-  * `ec2:CreateImage` and `ec2:CreateTags` - the AMI, and the tags of the AMI and its snapshots
+  * `ec2:DescribeVolumes` - the check for the volumes, which the temporary instance leaves behind (without it,
+    packer logs an error)
+  * `ec2:CreateImage` and `ec2:CreateTags` - the AMI and its tags. No `snapshot_tags` are set, but packer applies
+    the AMI tags to the snapshots of the AMI as well, so `CreateTags` covers the snapshots too
 * A temporary key pair, i.e. no `ssh_keypair_name`: `ec2:CreateKeyPair` and `ec2:DeleteKeyPair`
-* A temporary security group, i.e. no `security_group_ids`: `ec2:CreateSecurityGroup`,
-  `ec2:AuthorizeSecurityGroupIngress` and `ec2:DeleteSecurityGroup`
+* A temporary security group, i.e. no `security_group_ids`: `ec2:CreateSecurityGroup` and
+  `ec2:DeleteSecurityGroup`, plus `ec2:AuthorizeSecurityGroupIngress` for the `private_ip` interface only (the ssh
+  rule; with `session_manager`, packer adds no rule)
 * The `session_manager` interface only, as `private_ip` does not use an instance profile:
   * `iam:PassRole` for the role behind `iam_instance_profile` - otherwise `RunInstances` is rejected
   * `ssm:StartSession` for the instance and the `AWS-StartPortForwardingSession` document, and `ssm:TerminateSession`
   * `ec2:DescribeInstanceStatus` allows packer to close the SSM tunnel gracefully, instead of leaving
     it idle for ~20 minutes
-  * `ssm:GetConnectionStatus` is optional: without it, packer does not restart the session, if the SSM agent
-    disconnects
+* An account, which encrypts the EBS volumes by default with a customer managed KMS key: `kms:CreateGrant`,
+  `kms:Decrypt`, `kms:DescribeKey`, `kms:GenerateDataKeyWithoutPlaintext` and `kms:ReEncrypt*` for that key, as the
+  volumes of the temporary instance are encrypted with it
 * No IAM read permissions: `skip_profile_validation = true` is set, so packer does not call
   `iam:GetInstanceProfile` to check the profile upfront. Without it the build fails immediately with
   `Couldn't find specified instance profile: ... AccessDenied ... iam:GetInstanceProfile`,
   even though the profile exists and is usable
 * No `ec2:ModifyImageAttribute`: the AMI gets no description (see the tags above), and is not shared
+* No `ssm:GetConnectionStatus`: packer calls it only with `session_manager_reconnect_on_reboot`, which is not set
 
 ## Nvidia driver (gpu)
 
@@ -138,10 +154,15 @@ taken from a single archive at `$nvidia_driver_url_prefix/$version.tgz`, e.g.
 
 ## Build using wrapper
 
+Run `build.sh` with `bash` from this directory: the file is not executable, and it uses the `cpu/` and `gpu/` paths
+relative to it.
+
 ```
+cd cloud-pipeline/deploy/infra/aws/packer
+
 # Make sure "--instance-profile" grants "AmazonSSMManagedInstanceCore" policy access or similar.
 # It is not required, if "--ssh-interface private_ip" is used
-build.sh --region us-east-1 \
+bash build.sh --region us-east-1 \
          --instance-profile SSM_Role \
          --subnet-id subnet-xxxxxxx \
          --type cpu|gpu|all \
