@@ -22,13 +22,7 @@ from pipefuse.chain import ChainingService
 _DEBUG_INPUT_OPERATIONS = ['read', 'write', 'getxattr']
 _DEBUG_OUTPUT_OPERATIONS = ['getxattr', 'listxattr']
 
-if sys.version_info >= (3, 0):
-    _BYTE_TYPES = (bytearray, bytes)
-    _TEXT_TYPES = ()
-else:
-    _BYTE_TYPES = (bytearray, bytes, str)
-    # str() of a non-ASCII unicode value fails on Python 2
-    _TEXT_TYPES = (type(u''),)
+_BYTE_TYPES = (bytearray, bytes)
 
 
 def _merge_arguments(args, kwargs):
@@ -56,8 +50,6 @@ def _trimmed(value):
         return 'BYTES'
     elif isinstance(value, _BYTE_TYPES):
         return 'BYTES#' + str(len(value))
-    elif isinstance(value, _TEXT_TYPES):
-        return value.encode('utf-8')
     else:
         return str(value)
 

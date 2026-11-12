@@ -12,9 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
 import json
 import os
+
+import requests_mock
+
 from src.config import Config
+
+
+def requests_mocked(func):
+    """
+    Decorates a test the way requests_mock.mock() does: the requests mocker is appended as the last argument.
+
+    pytest reads the signature behind functools.wraps and would look for a fixture named after that last
+    argument, so the decorated test hides it from its own signature.
+    """
+    decorated = requests_mock.mock()(func)
+    signature = inspect.signature(func)
+    decorated.__signature__ = signature.replace(parameters=list(signature.parameters.values())[:-1])
+    return decorated
 
 
 def mocked_url(url_prefix_to_mock):
@@ -188,7 +205,7 @@ def mock_price(instance_disk, instance_type):
     return json.dumps(price_response)
 
 
-def mock_run_filter(total_count="42", elements=[]):
+def mock_run_filter(total_count=42, elements=[]):
     response = {
         "payload": {
             "totalCount": total_count,
