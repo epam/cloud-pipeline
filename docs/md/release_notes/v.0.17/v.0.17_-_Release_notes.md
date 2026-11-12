@@ -2026,8 +2026,11 @@ Previously, the GUI used library versions with published security advisories:
 Now, the GUI uses `ansi_up` 5.2, `jquery.terminal` 2.48, `papaparse` 5.7, `highlight.js` 10.7, `react-dev-utils` 11 and `@babel/core` 7.29. In the run logs:
 
 - the search (**Ctrl+F**) finds a text with `&`, `<` or `>` in it. Before, it found no such text, and a search for `amp`, `lt` or `gt` broke the display of those characters
+- a search for a text with `|` or `\` finds it. Before, such a search could freeze the page or fail
+- the color at the end of a log no longer goes over to the first lines of another log, or of the next update of the same log
 - the bold text is shown in bold. Before, it was shown in a brighter color
-- a hyperlink of the `OSC 8` escape code is shown as a link if it is an `http` or `https` one, and is left out otherwise
+- a hyperlink of the `OSC 8` escape code is shown as a link that opens in a new tab if it is an `http` or `https` one, and is left out otherwise
+- an escape code that is not complete at the end of a line, e.g. a hyperlink with no end, is shown as text, with the rest of the line
 
 See details in [11. Manage Runs](../../manual/11_Manage_Runs/11._Manage_Runs.md#console-output).
 
