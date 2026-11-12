@@ -23,7 +23,8 @@ const os = require('os');
 const path = require('path');
 const {AWS_SDK_SUBPATH_IMPORT, resolveSubpathImport} = require('./aws-sdk-subpath-imports');
 
-// The "exports" of @smithy/core 3.x, as published: per-condition targets, nested for browser.
+// The "exports" of @smithy/core 3.40.0 for "./serde", as published: per-condition targets, nested
+// for browser.
 const SMITHY_CORE_EXPORTS = {
   '.': {module: './dist-es/index.js', require: './dist-cjs/index.js'},
   './package.json': './package.json',
@@ -44,14 +45,15 @@ const SMITHY_CORE_EXPORTS = {
   }
 };
 
-// The "exports" of @aws-sdk/core 3.x: no browser condition for this subpath.
-const AWS_SDK_CORE_EXPORTS = {
-  './client': {
-    types: './dist-types/submodules/client/index.d.ts',
-    module: './dist-es/submodules/client/index.js',
-    node: './dist-cjs/submodules/client/index.js',
-    import: './dist-es/submodules/client/index.js',
-    require: './dist-cjs/submodules/client/index.js'
+// Made-up packages and subpaths below: a subpath with no browser condition, a package with no
+// "exports", and an older nested copy of @smithy/core with a plain string target.
+const NO_BROWSER_CONDITION_EXPORTS = {
+  './plain': {
+    types: './dist-types/submodules/plain/index.d.ts',
+    module: './dist-es/submodules/plain/index.js',
+    node: './dist-cjs/submodules/plain/index.js',
+    import: './dist-es/submodules/plain/index.js',
+    require: './dist-cjs/submodules/plain/index.js'
   }
 };
 
@@ -71,7 +73,7 @@ function resolveFrom (context, request) {
 describe('AWS SDK subpath imports for webpack 4', () => {
   let root;
   let smithyCore;
-  let awsSdkCore;
+  let noBrowserCondition;
   let nestedSmithyCore;
   let source;
 
@@ -80,10 +82,12 @@ describe('AWS SDK subpath imports for webpack 4', () => {
     source = path.join(root, 'src', 'models');
     fs.mkdirSync(source, {recursive: true});
     smithyCore = writePackage(root, '@smithy/core', {exports: SMITHY_CORE_EXPORTS});
-    awsSdkCore = writePackage(root, '@aws-sdk/core', {exports: AWS_SDK_CORE_EXPORTS});
-    writePackage(root, '@aws-sdk/types', {main: './dist-cjs/index.js'});
-    const utilEndpoints = writePackage(root, '@aws-sdk/util-endpoints', {});
-    nestedSmithyCore = writePackage(utilEndpoints, '@smithy/core', {
+    noBrowserCondition = writePackage(root, '@aws-sdk/example-no-browser', {
+      exports: NO_BROWSER_CONDITION_EXPORTS
+    });
+    writePackage(root, '@aws-sdk/example-no-exports', {main: './dist-cjs/index.js'});
+    const importer = writePackage(root, '@aws-sdk/example-importer', {});
+    nestedSmithyCore = writePackage(importer, '@smithy/core', {
       exports: {'./serde': './dist-es/submodules/serde/index.js'}
     });
   });
@@ -108,12 +112,12 @@ describe('AWS SDK subpath imports for webpack 4', () => {
   });
 
   it('falls back to the ES module build where there is no browser condition', () => {
-    expect(resolveFrom(source, '@aws-sdk/core/client'))
-      .toBe(path.join(awsSdkCore, 'dist-es/submodules/client/index.js'));
+    expect(resolveFrom(source, '@aws-sdk/example-no-browser/plain'))
+      .toBe(path.join(noBrowserCondition, 'dist-es/submodules/plain/index.js'));
   });
 
   it('uses the copy that node resolution finds first from the importing file', () => {
-    const importer = path.join(root, 'node_modules', '@aws-sdk', 'util-endpoints', 'dist-es');
+    const importer = path.join(root, 'node_modules', '@aws-sdk', 'example-importer', 'dist-es');
     expect(resolveFrom(importer, '@smithy/core/serde'))
       .toBe(path.join(nestedSmithyCore, 'dist-es/submodules/serde/index.js'));
   });
@@ -121,11 +125,11 @@ describe('AWS SDK subpath imports for webpack 4', () => {
   it('leaves a subpath that "exports" does not list alone', () => {
     const deepImport = '@smithy/core/dist-es/index.js';
     expect(resolveFrom(source, deepImport)).toBe(deepImport);
-    expect(resolveFrom(source, '@aws-sdk/core/protocols')).toBe('@aws-sdk/core/protocols');
+    expect(resolveFrom(source, '@smithy/core/not-exported')).toBe('@smithy/core/not-exported');
   });
 
   it('leaves a package without "exports", or one not installed, alone', () => {
-    const noExports = '@aws-sdk/types/dist-es/index.js';
+    const noExports = '@aws-sdk/example-no-exports/dist-es/index.js';
     expect(resolveFrom(source, noExports)).toBe(noExports);
     expect(resolveFrom(source, '@smithy/missing/serde')).toBe('@smithy/missing/serde');
   });
