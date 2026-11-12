@@ -30,9 +30,12 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -50,6 +53,12 @@ public class UserContext implements UserDetails {
      */
     private boolean external;
 
+    /**
+     * Defines if the roles and groups held here were scoped down deliberately, and so are the whole
+     * of what the principal may do rather than a snapshot that may be refreshed from the database.
+     */
+    private boolean authoritiesScoped;
+
     public UserContext(JwtRawToken jwtRawToken, JwtTokenClaims claims) {
         this.jwtRawToken = jwtRawToken;
         this.userId = Optional.ofNullable(claims.getUserId()).filter(NumberUtils::isDigits).map(Long::parseLong)
@@ -59,6 +68,7 @@ public class UserContext implements UserDetails {
         this.roles = claims.getRoles().stream().map(Role::new).collect(Collectors.toList());
         this.groups = claims.getGroups();
         this.external = claims.isExternal();
+        this.authoritiesScoped = claims.isAuthoritiesScoped();
     }
 
     public UserContext(Long id, String userName) {
@@ -84,6 +94,9 @@ public class UserContext implements UserDetails {
                         .collect(Collectors.toList()))
                 .groups(groups)
                 .external(external)
+                // carried over deliberately: a token issued from this context must keep the
+                // restriction, or its holder could exchange a narrowed token for a full one
+                .authoritiesScoped(authoritiesScoped)
                 .build();
     }
 
@@ -93,6 +106,33 @@ public class UserContext implements UserDetails {
                 ListUtils.emptyIfNull(roles).stream().map(role -> new SimpleGrantedAuthority(role.getName())),
                 ListUtils.emptyIfNull(groups).stream().map(SimpleGrantedAuthority::new))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Drops every role and group that is not in the given sets, keeping the intersection.
+     * <p>
+     * Used where a restriction has to be applied to authorities that came from somewhere else:
+     * the token's authorities narrowed by what the stored user still holds, so that revoking a
+     * role in the database continues to take effect, or the stored user's authorities narrowed by
+     * what a token carries. Either way the result can only be smaller than both.
+     * <p>
+     * A null set removes everything, because "nothing is allowed" is the safe reading of a
+     * restriction that failed to say what it permits.
+     */
+    public void retainAuthorities(final Collection<String> allowedRoles,
+                                  final Collection<String> allowedGroups) {
+        final Set<String> keptRoles = new HashSet<>(ListUtils.emptyIfNull(asList(allowedRoles)));
+        this.roles = ListUtils.emptyIfNull(roles).stream()
+                .filter(role -> keptRoles.contains(role.getName()))
+                .collect(Collectors.toList());
+        final Set<String> keptGroups = new HashSet<>(ListUtils.emptyIfNull(asList(allowedGroups)));
+        this.groups = ListUtils.emptyIfNull(groups).stream()
+                .filter(keptGroups::contains)
+                .collect(Collectors.toList());
+    }
+
+    private static List<String> asList(final Collection<String> values) {
+        return Objects.isNull(values) ? null : new ArrayList<>(values);
     }
 
     public PipelineUser toPipelineUser() {
