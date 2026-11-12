@@ -95,6 +95,7 @@
     - [`pipe storage cp` and `mv` fail with a file list on Windows and macOS](#pipe-storage-cp-and-mv-fail-with-a-file-list-on-windows-and-macos)
     - [The pipeline repository is not mounted in a run when `python` is not the Python of the platform](#the-pipeline-repository-is-not-mounted-in-a-run-when-python-is-not-the-python-of-the-platform)
     - [`pipe storage mount`: WebDAV mounts and extended attributes fail in the Windows and macOS builds](#pipe-storage-mount-webdav-mounts-and-extended-attributes-fail-in-the-windows-and-macos-builds)
+    - [Amazon Linux 2023 nodes do not join the cluster: the Docker install script is not found](#amazon-linux-2023-nodes-do-not-join-the-cluster-the-docker-install-script-is-not-found)
 
 ***
 
@@ -1241,3 +1242,7 @@ Previously, the Windows and macOS builds of the `pipe` CLI, which run on Python 
 
 In the Linux build, extended attributes with non-ASCII characters in their values failed in the same way.
 Now, the files in a storage mounted over WebDAV can be listed, created, written and truncated in the Python 3 builds too, and the extended attribute values are kept in the storage as UTF-8 text, in all builds.
+### Amazon Linux 2023 nodes do not join the cluster: the Docker install script is not found
+
+Previously, the `init_multicloud_v1.15.4.ext.sh` user data, which installs Docker and the kubelet when an Amazon Linux 2023 node starts, downloaded `init_multicloud_install_docker.sh` from `<distribution URL>/scripts/`. With the default distribution URL, which ends with a slash, this was `...amazonaws.com//scripts/...`, and the download failed (HTTP 403). The node then ran an empty file instead: it got no Docker and no kubelet, and never joined the cluster.
+Now, the user data downloads the script from `<distribution URL>/tools/scripts/`, where the public Cloud Pipeline bucket has it, and adds the slash to a distribution URL that has none.
