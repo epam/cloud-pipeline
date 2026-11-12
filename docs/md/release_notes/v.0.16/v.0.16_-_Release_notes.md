@@ -109,6 +109,7 @@
     - [Filebeat of the API and TinyProxy services loads its own index template](#filebeat-of-the-api-and-tinyproxy-services-loads-its-own-index-template)
     - [The VM monitor does not check the open files on Amazon Linux 2023 nodes and other hosts with systemd 240 or later](#the-vm-monitor-does-not-check-the-open-files-on-amazon-linux-2023-nodes-and-other-hosts-with-systemd-240-or-later)
     - [Git synchronization: a new GitLab 9 user has to confirm the email](#git-synchronization-a-new-gitlab-9-user-has-to-confirm-the-email)
+    - [The timeout of the API HTTP sessions cannot be set](#the-timeout-of-the-api-http-sessions-cannot-be-set)
 
 ***
 
@@ -1389,3 +1390,7 @@ Please note: with this limit, the percent of the whole host is always 0. So on t
 
 Previously, the Git synchronization service (`cp-git-sync`) created a GitLab user with the `skip_confirmation` parameter of the GitLab API v4, also when it called the API v3. The API v3 does not know this parameter. So on the API v3, a new user had to confirm the email. GitLab 9 uses the API v3: the installer leaves the **`git.gitlab.api.version`** preference at its default `v3` there. Also, if **`git.gitlab.api.version`** had no value, the synchronization called GitLab at a wrong path, e.g. `/api//users` or `/api/None/users`, and skipped the pipelines of that GitLab server.
 Now, the synchronization creates a user with `confirm=no` on the API v3, and with `skip_confirmation` on the API v4, as before. If **`git.gitlab.api.version`** has no value, the synchronization calls the API v3, the default of the preference. See details in [12.10. Manage system-level settings](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#git).
+### The timeout of the API HTTP sessions cannot be set
+
+Previously, an HTTP session of the API service (`cp-api-srv`) always expired after 30 minutes without requests: the API set no timeout, so the default of Spring Session applied.
+Now, the `CP_API_SRV_SESSION_TIMEOUT_SEC` environment variable of the API service sets this timeout, in seconds. The default is `1800` (30 minutes), as before. The timeout applies to both session stores of `CP_API_SRV_SESSION_STORE_TYPE`: `jdbc` (the default) and `HASH_MAP`. Set the variable with `-env CP_API_SRV_SESSION_TIMEOUT_SEC=<seconds>` of `pipectl install`. In an existing deployment, add it to the `cp-config-global` ConfigMap and restart the API service. A session keeps the timeout it was created with, so a new value applies to the sessions created after the restart.
