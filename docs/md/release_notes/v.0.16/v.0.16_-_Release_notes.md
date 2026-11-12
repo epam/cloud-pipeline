@@ -40,6 +40,7 @@
 - [The `pipe` CLI on Python 3](#the-pipe-cli-on-python-3)
 - [pipe-common requires Python 3.12](#pipe-common-requires-python-312)
 - [Runs on Python 3.12](#runs-on-python-312)
+- [The API service on Python 3.12 and Rocky Linux 9.8](#the-api-service-on-python-312-and-rocky-linux-98)
 
 ***
 
@@ -787,6 +788,36 @@ Please note:
 - a deployment whose distribution URL (the `base.global.distribution.url` preference, or the distribution URL of a region) is its own bucket must publish `tools/python/3/python3.12.tar.gz` and the Python 3 package mirror `tools/python/pypi3/` there, before it is updated to this version. Otherwise, the runs of the images without Python 3.12 fail at startup, and so do commits and pauses on the node hosts without Python 3.12 (a pause leaves the run running). If it is an S3 bucket URL of the `https://<bucket>.s3.<region>.amazonaws.com/` form, the runs with `CP_REPO_ENABLED`, and all commits and pauses, also cannot install `pipe-common` without the mirror
 - a pipeline that runs a Python script with `python`, and imports the `pipeline` package there, must run it with `$CP_PYTHON_PATH` now. E.g. a pipeline that was created from the **Python** or **Luigi** template of an earlier version
 - the `pipeline` package is installed for the platform's Python 3.12 only. The `python` of a tool image, e.g. the Python 2 of CentOS 7, no longer has it
+## The API service on Python 3.12 and Rocky Linux 9.8
+
+The image of the API service (`cp-api-srv`) moved from CentOS 7, which has reached its end of life, to Rocky Linux 9.8. The Git synchronization service (`cp-git-sync`) runs the same image.
+
+Python in this image:
+
+- The image has Python 3.12 only: the platform's Python 3.12 distribution, in `/usr/local/python3.12`, the version that the platform's `pipeline` package requires. It is the `python3` and `pip3` on the `PATH`. Python 2 is no longer installed, and there is no `python` command. `/usr/bin/python3` stays the Python 3.9 of Rocky Linux 9, for `dnf`.
+- The API runs its Python scripts with the interpreter that the **`CP_PYTHON_PATH`** environment variable of the service names. The start scripts of the image set it to `/usr/local/python3.12/bin/python3.12`, unless the deployment sets it, and stop if that file does not exist. Previously, the API ran `python`, i.e. Python 2.7. These scripts are:
+    - the scripts that create, reassign and terminate the cloud nodes of the runs (`nodeup.py`, `nodedown.py`, ...) for AWS, Azure and GCP
+    - the reader of the Luigi pipeline graphs. Its path, the `luigi.graph.script` property of the image's `application.properties`, is now `/usr/local/python3.12/lib/python3.12/site-packages/scripts/deps_graph.py`
+- The Git synchronization (`syncgit.py`) runs on the same Python 3.12, with the same options, including the `ROLE_PIPELINE_ADMIN` and `ROLE_PIPELINE_READER` groups.
+- The cloud SDKs of these scripts are installed for Python 3.12:
+    - AWS: `boto3` 1.34.69
+    - Azure: `azure-common` 1.1.18, `azure-mgmt-resource` 2.0.0, `azure-mgmt-compute` 4.5.1 and `azure-mgmt-network` 2.0.0, the versions that support the auth file of an Azure region. `azure-cli-core` 2.29.2 serves a deployment that was installed with the Azure CLI login files (`azureProfile.json` and `accessTokens.json`) instead of an auth file. It is the last version that reads `accessTokens.json`
+    - GCP: `google-api-python-client` 1.12.11
+- `awscli`, the `azure` 4.0.0 bundle and the other Python 2 packages of the image (`psycopg2`, `sqlalchemy`, ...) are no longer installed, because nothing in the image used them.
+
+Other platform scripts that are Python code:
+
+- The search scripts that add the repository hooks of the pipelines and reindex the folder tree (`scripts/elasticsearch`) are Python 3 code now. They use the `pipeline` package, so they run on Python 3.12.
+- The scripts of the storage synchronization of the WebDAV service (`nfs-roles-management`) are now compatible with Python 3, and still work on Python 2. The WebDAV service runs them on Python 3 when its own image moves to Python 3.
+
+Other changes:
+
+- The Lustre client of the image is now the el8 build of version 2.10.8, as in the Rocky Linux tool images. It replaces the el7 build of version 2.12.5.  
+Please note: AWS lists the 2.10 Lustre clients as not compatible with FSx for Lustre file systems of version 2.15 ([Lustre file system and client kernel compatibility](https://docs.aws.amazon.com/fsx/latest/LustreGuide/lustre-client-matrix.html)). Only the user-space tools `mount.lustre` and `lfs` come from the image: the kernel module is the one of the node. Mounts of FSx for Lustre 2.15 file systems from the API service were not tested with this client.
+- The API follows the `DEFAULT` crypto policy of Rocky Linux 9. In TLS connections and certificate chains, it now rejects SHA-1 signatures, and RSA, DSA and DH keys shorter than 2048 bits (on CentOS 7, the limit was 1024 bits). So a server that the API connects to, e.g. GitLab, a docker registry or an LDAP server, must have a certificate that meets these limits. This does not apply to the 1024-bit JWT signing keys that the installer creates.  
+Java also rejects all DSA signatures and EC keys shorter than 256 bits. The API's own HTTPS certificate (`cp-api-srv-ssl.p12`) must meet these limits too. The `ssh` client that the API uses to commit and pause runs (OpenSSH 9.9) rejects RSA keys shorter than 2048 bits, so the key of the **`commit.deploy.key`** preference must have at least 2048 bits. `git` in the image (OpenSSL 3.5) has the same SHA-1 and 2048-bit limits.
+- `git` in the image works in a repository that belongs to another user in the folder of the mounted NFS storages (`/opt/api/file-systems`), as the `git` of CentOS 7 did. Since version 2.35.2, `git` refuses such a repository, and it still does so in other folders.
+- The Filebeat log shipper of the API runs with `seccomp` disabled. Its `seccomp` policy does not allow the `clone3` system call, which Rocky Linux 9 uses to start threads.
 
 ***
 

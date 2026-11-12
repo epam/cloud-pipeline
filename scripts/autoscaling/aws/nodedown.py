@@ -15,6 +15,7 @@
 import boto3
 import argparse
 import pykube
+from pipeline.common.kubernetes import get_unverified_kube_client
 import time
 
 RUN_ID_LABEL = 'runid'
@@ -112,10 +113,9 @@ def get_aws_region(api, run_id):
 
 def get_kube_api():
     try:
-        api = pykube.HTTPClient(pykube.KubeConfig.from_service_account())
+        api = get_unverified_kube_client(pykube.KubeConfig.from_service_account())
     except Exception:
-        api = pykube.HTTPClient(pykube.KubeConfig.from_file(KUBE_CONFIG_PATH))
-    api.session.verify = False
+        api = get_unverified_kube_client(pykube.KubeConfig.from_file(KUBE_CONFIG_PATH))
     return api
 
 def main():

@@ -35,7 +35,7 @@ def touch_item(api, id, acl_class):
         api.execute_request(str(api.api_url) + '/grant?id={id}&aclClass={aclClass}&user={userName}&isPrincipal=false'
                             .format(**permissions), method='delete')
     except BaseException as e:
-        print(str(e.message))
+        print(str(e))
 
 
 def run():

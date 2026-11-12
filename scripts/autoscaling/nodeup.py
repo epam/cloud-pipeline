@@ -73,7 +73,7 @@ def main():
 
     wait_time_sec = utils.get_autoscale_preference(utils.NODE_WAIT_TIME_SEC)
     if wait_time_sec and wait_time_sec.isdigit():
-        num_rep = int(wait_time_sec) / time_rep
+        num_rep = int(wait_time_sec) // time_rep
 
 
     cloud_provider = autoscaling.create_cloud_provider(cloud, region_id)
