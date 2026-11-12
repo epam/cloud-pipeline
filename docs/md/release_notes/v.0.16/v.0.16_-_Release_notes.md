@@ -44,6 +44,7 @@
 - [Rocky Linux 9.8 for the platform services](#rocky-linux-98-for-the-platform-services)
 - [Python 3.12 for EDGE, WebDAV, FS Browser and the node reporter](#python-312-for-edge-webdav-fs-browser-and-the-node-reporter)
 - [Python 3.12 in the node images](#python-312-in-the-node-images)
+- [Amazon Linux 2023 node images built with Packer](#amazon-linux-2023-node-images-built-with-packer)
 
 ***
 
@@ -885,6 +886,20 @@ Now, these scripts no longer install Python 2 or its `pip`:
 The Python 2 that the base image has stays. On Amazon Linux 2, `yum`, `cloud-init` and the AWS CLI v1 run on it, and the install script calls this AWS CLI to tag the instance when it is done. On CentOS 7, `yum` and the Azure VM agent run on it.
 
 Please note: only the images that are built anew change.
+
+## Amazon Linux 2023 node images built with Packer
+
+The `init_multicloud_v1.15.4.ext.sh` user data is the one for the compute nodes on Amazon Linux 2023: it installs Docker and the kubelet when a node starts. Previously, the repository had no script to build the AWS image that this user data needs.
+
+Now, `deploy/infra/aws/packer` builds such images with Packer, as on the `develop` branch:
+
+- `build.sh` downloads Packer 1.14.3 and builds the `cpu` image, the `gpu` image, or both, in the given region and subnet. The base is the latest Amazon Linux 2023 AMI with the 6.1 kernel, unless `--source-ami` sets another one.
+- The images have `nc`, `tc`, `iptables-legacy`, a static `btrfs`, `jq`, the cgroup v1 hierarchy and a permissive SELinux. As the other AWS node images, they get the platform's Python 3.12 in `/usr/local/python3.12`, and no Python 2 (Amazon Linux 2023 has none). If Python 3.12 cannot be installed, the build fails.
+- The `gpu` image also has the Nvidia driver (595.58.03 by default), Fabric Manager and `nvidia-persistenced`. They can come from an internal mirror instead of the Nvidia sites.
+- Packer connects to the build instance through AWS Systems Manager (by default), or over SSH to its private IP. It can use an existing key pair and security group.
+- The images have no Docker and no kubelet. So set `init_multicloud_v1.15.4.ext.sh` as the `init_script` of such an image in the **`cluster.networks.config`** preference, e.g. `/opt/api/scripts/init_multicloud_v1.15.4.ext.sh`.
+
+`deploy/infra/aws/packer/README.md` describes the options, the network access and the IAM permissions that the build needs.
 
 ***
 
