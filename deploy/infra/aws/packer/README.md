@@ -79,8 +79,31 @@ VPC endpoints.
 
 ## IAM permissions of the build identity
 
-The identity, which runs packer, requires the usual EC2 build permissions (`RunInstances`,
-`CreateImage`, `DescribeImages`, `CreateTags`, etc.) and:
+The identity, which runs packer, requires the following permissions. They are the calls, which the packer
+`amazon` plugin makes with the settings of `ami.pkr.hcl`:
+
+* Always:
+  * `ec2:DescribeRegions` - the region is validated before the build
+  * `ec2:DescribeImages` - the source AMI lookup, the check of the new AMI name and the wait for the new AMI
+  * `ec2:DescribeSubnets` - the VPC and the availability zone of `subnet_id`
+  * `ec2:DescribeSecurityGroups` - the check of `security_group_ids`, or the wait for the temporary security group
+  * `ec2:RunInstances`, `ec2:DescribeInstances`, `ec2:StopInstances` and `ec2:TerminateInstances` - the temporary instance
+  * `ec2:CreateImage` and `ec2:CreateTags` - the AMI, and the tags of the AMI and its snapshots
+* A temporary key pair, i.e. no `ssh_keypair_name`: `ec2:CreateKeyPair` and `ec2:DeleteKeyPair`
+* A temporary security group, i.e. no `security_group_ids`: `ec2:CreateSecurityGroup`,
+  `ec2:AuthorizeSecurityGroupIngress` and `ec2:DeleteSecurityGroup`
+* The `session_manager` interface only, as `private_ip` does not use an instance profile:
+  * `iam:PassRole` for the role behind `iam_instance_profile` - otherwise `RunInstances` is rejected
+  * `ssm:StartSession` for the instance and the `AWS-StartPortForwardingSession` document, and `ssm:TerminateSession`
+  * `ec2:DescribeInstanceStatus` allows packer to close the SSM tunnel gracefully, instead of leaving
+    it idle for ~20 minutes
+  * `ssm:GetConnectionStatus` is optional: without it, packer does not restart the session, if the SSM agent
+    disconnects
+* No IAM read permissions: `skip_profile_validation = true` is set, so packer does not call
+  `iam:GetInstanceProfile` to check the profile upfront. Without it the build fails immediately with
+  `Couldn't find specified instance profile: ... AccessDenied ... iam:GetInstanceProfile`,
+  even though the profile exists and is usable
+* No `ec2:ModifyImageAttribute`: the AMI gets no description (see the tags above), and is not shared
 
 ## Nvidia driver (gpu)
 
