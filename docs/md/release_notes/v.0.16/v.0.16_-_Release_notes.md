@@ -95,6 +95,7 @@
     - [`pipe storage cp` and `mv` fail with a file list on Windows and macOS](#pipe-storage-cp-and-mv-fail-with-a-file-list-on-windows-and-macos)
     - [The pipeline repository is not mounted in a run when `python` is not the Python of the platform](#the-pipeline-repository-is-not-mounted-in-a-run-when-python-is-not-the-python-of-the-platform)
     - [`pipe storage mount`: WebDAV mounts and extended attributes fail in the Windows and macOS builds](#pipe-storage-mount-webdav-mounts-and-extended-attributes-fail-in-the-windows-and-macos-builds)
+    - [GUI: the AWS HealthOmics library brings an XML parser with security advisories](#gui-the-aws-healthomics-library-brings-an-xml-parser-with-security-advisories)
 
 ***
 
@@ -1241,3 +1242,7 @@ Previously, the Windows and macOS builds of the `pipe` CLI, which run on Python 
 
 In the Linux build, extended attributes with non-ASCII characters in their values failed in the same way.
 Now, the files in a storage mounted over WebDAV can be listed, created, written and truncated in the Python 3 builds too, and the extended attribute values are kept in the storage as UTF-8 text, in all builds.
+### GUI: the AWS HealthOmics library brings an XML parser with security advisories
+
+Previously, the GUI used `@aws-sdk/client-omics` 3.565.0 to upload files to the AWS HealthOmics storages and to download them. Through `@aws-sdk/core` 3.556.0, this library brought `fast-xml-parser` 4.2.5, which has a critical and two high security advisories: an entity encoding bypass in the `DOCTYPE` entity names, and a denial of service through the entity expansion. The GUI did not parse XML with it: the HealthOmics API uses JSON, and the parser was not a part of the built GUI. But `npm audit` and the dependency scanners reported it.
+Now, the GUI uses `@aws-sdk/client-omics` 3.974.0, and its dependencies have no `fast-xml-parser`. At the time of this change, `npm audit` reports no advisories for `@aws-sdk/client-omics` and its dependencies. Before, it reported 9: 7 for `fast-xml-parser`, 1 for `uuid` and 1 for `@smithy/config-resolver`. For the upload and the download of the HealthOmics files, the GUI sends the same requests as before. The GUI is built with `npm run build` on Node.js 14, as before. The new AWS SDK packages declare Node.js 18 or 20 and later, so `npm install` warns about them. This does not apply to the GUI, which runs these packages in the browser.
