@@ -106,6 +106,7 @@
     - [Rocky Linux 9, RHEL 9 and Amazon Linux 2023 runs: `curl-minimal` and `coreutils-single` stop the base packages install](#rocky-linux-9-rhel-9-and-amazon-linux-2023-runs-curl-minimal-and-coreutils-single-stop-the-base-packages-install)
     - [Filebeat of the API and TinyProxy services loads its own index template](#filebeat-of-the-api-and-tinyproxy-services-loads-its-own-index-template)
     - [Packer node images for Amazon Linux 2023: the commit and the pause run on Python 2, no `lvm2`, failed downloads are ignored](#packer-node-images-for-amazon-linux-2023-the-commit-and-the-pause-run-on-python-2-no-lvm2-failed-downloads-are-ignored)
+    - [Autoscaler keeps a free node for a waiting run that may not get it](#autoscaler-keeps-a-free-node-for-a-waiting-run-that-may-not-get-it)
 
 ***
 
@@ -2327,3 +2328,12 @@ Now:
 - each download goes into a temporary folder first. A failed download, unpack or check of the result stops the build, so no image is created. `jq` is the package of Amazon Linux 2023, and the Nvidia files are removed after the install.
 
 `deploy/infra/aws/packer/README.md` now also lists the image contents and the IAM permissions that the build needs.
+
+### Autoscaler keeps a free node for a waiting run that may not get it
+
+Previously, the autoscaler kept a free node in the cluster when the node matched the instance type, disk and other settings of a waiting run. It did so even for a run that could not get a free node: a run with the `CP_CREATE_NEW_NODE` or `CP_CAP_DEDICATED_INSTANCE` parameter set to `true`, a Windows run, a run whose image config in `cluster.networks.config` has an `IamInstanceProfile`, or any run while `cluster.disable.reassign` is `true`. When the cluster was above `cluster.max.size`, the run waited for room, and such a node stayed up, and was paid for, until another node left the cluster.  
+Now, the autoscaler keeps no free node for such a run. The node expires as any other free node.
+
+When the cluster has reached `cluster.max.size`, and `cluster.kill.not.matching.nodes` is `true`, the autoscaler scales down a free node that the waiting run does not take, to make room for a new node. Previously, it could pick a free node of a hot node pool or of a local cluster. Such a node has no run ID, so the autoscaler failed to scale it down, and the waiting run was not processed until the next check, where the same could happen again. Now, these nodes are not scaled down this way: the pools keep their nodes.
+
+Also, a run whose parameter list or tags are not set is handled as a run with none. Previously, the autoscaler failed on such a run with an error in the API log. With no parameter list, each check of the autoscaler stopped there, so no waiting run got a node, and no free node was scaled down. With no tags, a waiting run did not get the `NODE_PENDING` tag when the cluster was full.
