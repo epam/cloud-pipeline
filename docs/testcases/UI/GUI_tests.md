@@ -153,7 +153,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Data_storages</b> (145 tests, 86 automated)</summary>
+<summary><b>Data_storages</b> (146 tests, 86 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -302,6 +302,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-949**](Data_storages/Version_control/EPMCMBIBPC-949.md) | [MANUAL] [Negative] Try to restore latest version of file |  |
 | [**EPMCMBIBPC-993**](Data_storages/Version_control/EPMCMBIBPC-993.md) | [MANUAL] Validation of hard deletion of marked for delete file |  |
 | [**EPMCMBIBPC-998**](Data_storages/Version_control/EPMCMBIBPC-998.md) | [MANUAL] Validation of hard deletion of marked for non-empty folder |  |
+| [**client_npm_vulnerabilities_3**](Data_storages/client_npm_vulnerabilities/client_npm_vulnerabilities_3.md) | Terminal of the Miew viewer for a PDB file |  |
 
 </details>
 
@@ -1005,7 +1006,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Runs</b> (35 tests, 3 automated)</summary>
+<summary><b>Runs</b> (33 tests, 3 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -1040,6 +1041,8 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-266**](Runs/EPMCMBIBPC-266.md) | [MANUAL] Navigate to node from pipeline log |  |
 | [**EPMCMBIBPC-3170**](Runs/EPMCMBIBPC-3170.md) | [MANUAL] Platform usage (pipelines) | :white_check_mark: |
 | [**EPMCMBIBPC-3171**](Runs/EPMCMBIBPC-3171.md) | [MANUAL] Platform usage (tools) | :white_check_mark: |
+| [**client_npm_vulnerabilities_1**](Runs/client_npm_vulnerabilities/client_npm_vulnerabilities_1.md) | Console output shows the ANSI escape codes as styles and the HTML of a log as text |  |
+| [**client_npm_vulnerabilities_2**](Runs/client_npm_vulnerabilities/client_npm_vulnerabilities_2.md) | Search in the console output finds a text with the HTML special characters |  |
 
 </details>
 
