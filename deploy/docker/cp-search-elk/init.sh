@@ -174,9 +174,9 @@ done
 # and no security event is stored. Former versions of this script added a bootstrap index on each start, which leads
 # to that state.
 SECURITY_LOG_ALIAS="$CP_SECURITY_LOGS_ELASTIC_PREFIX"
-SECURITY_LOG_BOOTSTRAP_INDEX="%3C${SECURITY_LOG_ALIAS}-%7Bnow%2Fm%7Byyyy.MM.dd%7D%7D-000001%3E"
-# Marks the copy of a plain index (see repair_security_log_index), until the alias replaces that index
-SECURITY_LOG_MOVE_ALIAS="${SECURITY_LOG_ALIAS}_move_in_progress"
+# The copy of a plain index (see repair_security_log_index) has this alias, followed by the uuid of that index in lower
+# case, until the security log alias replaces that index
+SECURITY_LOG_MOVE_ALIAS="${SECURITY_LOG_ALIAS}_move_from_"
 
 function elk_status() {
     curl -s -o /dev/null -w '%{http_code}' "localhost:9200/$1"
@@ -186,6 +186,12 @@ function elk_status() {
 function elk_count() {
     curl -sf -XPOST "localhost:9200/$1/_refresh" > /dev/null \
         && curl -sf "localhost:9200/$1/_count" | jq -r '.count // empty' 2>/dev/null
+}
+
+# Prints the uuid of the plain index, if the name of the security log alias is an index, and nothing otherwise
+function security_log_index_uuid() {
+    curl -sf "localhost:9200/$SECURITY_LOG_ALIAS/_settings/index.uuid" \
+        | jq -r --arg a "$SECURITY_LOG_ALIAS" '.[$a].settings.index.uuid // empty' 2>/dev/null
 }
 
 # Prints the indices of the security log alias, the newest first: "<index> <true|false: is it the write index>"
@@ -212,12 +218,54 @@ function update_security_log_alias() {
     fi
 }
 
-# Removes the copies that interrupted moves left, e.g. when the container was stopped during the copy. Such a copy
-# still has the move alias, and the plain index still has all its documents: the move deletes the plain index in the
-# same request that removes that alias from the copy
+# Creates the first free bootstrap index of the day, <alias>-<yyyy.MM.dd>-00000<n>, with the aliases of $1 (JSON), and
+# sets SECURITY_LOG_NEW_INDEX to its name. A name may be taken by an index outside the alias, which is kept. If $2 is
+# "adopt" (there is no plain index), and the taken index is the copy of a move, it becomes the write index instead
+function create_security_log_index() {
+    local _n _response _taken _marker
+    for _n in 1 2 3 4 5 6 7 8 9; do
+        _response="$(curl -s -H 'Content-Type: application/json' -d "{\"aliases\": $1}" \
+                          -XPUT "localhost:9200/%3C${SECURITY_LOG_ALIAS}-%7Bnow%2Fm%7Byyyy.MM.dd%7D%7D-00000$_n%3E")"
+        SECURITY_LOG_NEW_INDEX="$(jq -r '.index // empty' <<< "$_response" 2>/dev/null)"
+        if [ "$SECURITY_LOG_NEW_INDEX" ]; then
+            return 0
+        fi
+        _taken="$(jq -r 'select(.error.type == "resource_already_exists_exception") | .error.index' \
+                       <<< "$_response" 2>/dev/null)"
+        if [ -z "$_taken" ]; then
+            break
+        fi
+        if [ "$2" == "adopt" ]; then
+            _marker="$(curl -sf "localhost:9200/$_taken/_alias/$SECURITY_LOG_MOVE_ALIAS*" \
+                            | jq -r '.[].aliases | keys[0] // empty' 2>/dev/null)"
+        fi
+        if [ "$_marker" ]; then
+            msg "[WARN] $_taken, the copy of a move whose plain index is gone, becomes the write index"
+            SECURITY_LOG_NEW_INDEX="$_taken"
+            update_security_log_alias \
+                "{\"add\": {\"index\": \"$_taken\", \"alias\": \"$SECURITY_LOG_ALIAS\", \"is_write_index\": true}},
+                 {\"remove\": {\"index\": \"$_taken\", \"alias\": \"$_marker\"}}"
+            return
+        fi
+        msg "[WARN] $_taken exists outside the $SECURITY_LOG_ALIAS alias: it is kept, and the next number is used"
+    done
+    msg "[ERROR] Unable to create a security log index: $_response"
+    return 1
+}
+
+# Removes the copies that interrupted moves of the plain index left, e.g. when the container was stopped during the
+# copy. Such a copy has the move alias of the plain index ($1), and the plain index still has all its documents: the
+# move deletes the plain index in the same request that removes that alias from the copy. The copies of another plain
+# index (e.g. one deleted by hand) are kept, as their documents may be nowhere else
 function remove_security_log_copies() {
-    local _count _copy _copied
-    for _copy in $(curl -sf "localhost:9200/_alias/$SECURITY_LOG_MOVE_ALIAS" | jq -r 'keys[]' 2>/dev/null); do
+    local _copy _marker _count _copied
+    while read -r _copy _marker; do
+        if [ -z "$_copy" ]; then
+            continue
+        elif [ "$_marker" != "$1" ]; then
+            msg "[WARN] $_copy is the copy of another $SECURITY_LOG_ALIAS index ($_marker): it is kept"
+            continue
+        fi
         _count="$(elk_count "$SECURITY_LOG_ALIAS")"
         _copied="$(elk_count "$_copy")"
         if ! [[ "$_count" =~ ^[0-9]+$ && "$_copied" =~ ^[0-9]+$ ]] || [ "$_copied" -gt "$_count" ]; then
@@ -230,13 +278,21 @@ function remove_security_log_copies() {
             msg "[ERROR] Unable to remove $_copy"
             return 1
         fi
-    done
+    done <<< "$(curl -sf "localhost:9200/_alias/$SECURITY_LOG_MOVE_ALIAS*" \
+                | jq -r 'to_entries[] | .key as $i | .value.aliases | keys[] | "\($i) \(.)"' 2>/dev/null)"
 }
 
-# Allows the writes to the plain index again, after a move that failed
+# Sets the write block of the plain index of the uuid $2 to $1 (true or null). A settings request to the name of an
+# alias changes the indices of that alias, so the name is checked to be that plain index first
+function block_security_log_index() {
+    [ "$2" ] && [ "$(security_log_index_uuid)" == "$2" ] \
+        && curl -sf -H 'Content-Type: application/json' -XPUT "localhost:9200/$SECURITY_LOG_ALIAS/_settings" \
+                -d "{\"index.blocks.write\": $1}" > /dev/null
+}
+
+# Allows the writes to the plain index of the uuid $1 again, after a move that failed
 function unblock_security_log_index() {
-    if ! curl -sf -H 'Content-Type: application/json' -XPUT "localhost:9200/$SECURITY_LOG_ALIAS/_settings" \
-            -d '{"index.blocks.write": null}' > /dev/null; then
+    if ! block_security_log_index null "$1"; then
         msg "[ERROR] Unable to allow the writes to $SECURITY_LOG_ALIAS again: the security events are rejected" \
             "until the next start"
     fi
@@ -248,24 +304,19 @@ function unblock_security_log_index() {
 # the alias replaces the plain index in the same request that deletes it. The writes are blocked during the copy, so
 # the security events sent meanwhile are rejected. If the move fails, the plain index takes the writes again.
 function repair_security_log_index() {
-    local _index _response _count _copied _code
+    local _uuid _marker _index _response _count _copied _code
     msg "[WARN] $SECURITY_LOG_ALIAS is an index, not an alias: its documents are moved to a new index with that alias"
-    if ! remove_security_log_copies; then
+    _uuid="$(security_log_index_uuid)"
+    _marker="$SECURITY_LOG_MOVE_ALIAS${_uuid,,}"
+    if [ -z "$_uuid" ] || ! remove_security_log_copies "$_marker" \
+            || ! create_security_log_index "{\"$_marker\": {}}"; then
         msg "[ERROR] $SECURITY_LOG_ALIAS is left as it is, and the security logs are not rolled over"
-        unblock_security_log_index
+        unblock_security_log_index "$_uuid"
         return 1
     fi
-    _index="$(curl -s -H 'Content-Type: application/json' -XPUT "localhost:9200/$SECURITY_LOG_BOOTSTRAP_INDEX" \
-                   -d "{\"aliases\": {\"$SECURITY_LOG_MOVE_ALIAS\": {}}}" | jq -r '.index // empty' 2>/dev/null)"
-    if [ -z "$_index" ]; then
-        msg "[ERROR] Unable to create a new security log index: $SECURITY_LOG_ALIAS is left as it is," \
-            "and the security logs are not rolled over"
-        unblock_security_log_index
-        return 1
-    fi
+    _index="$SECURITY_LOG_NEW_INDEX"
     # The documents written before the block are copied, and counted, only once a refresh makes them searchable
-    if curl -sf -H 'Content-Type: application/json' -XPUT "localhost:9200/$SECURITY_LOG_ALIAS/_settings" \
-            -d '{"index.blocks.write": true}' > /dev/null \
+    if block_security_log_index true "$_uuid" \
             && curl -sf -XPOST "localhost:9200/$SECURITY_LOG_ALIAS/_refresh" > /dev/null; then
         _response="$(curl -s -H 'Content-Type: application/json' -XPOST "localhost:9200/_reindex?refresh=true" \
                           -d "{\"source\": {\"index\": \"$SECURITY_LOG_ALIAS\"}, \"dest\": {\"index\": \"$_index\"}}")"
@@ -275,7 +326,7 @@ function repair_security_log_index() {
                 && [[ "$_count" =~ ^[0-9]+$ ]] && [ "$_count" == "$_copied" ] \
                 && update_security_log_alias "{\"remove_index\": {\"index\": \"$SECURITY_LOG_ALIAS\"}},
                     {\"add\": {\"index\": \"$_index\", \"alias\": \"$SECURITY_LOG_ALIAS\", \"is_write_index\": true}},
-                    {\"remove\": {\"index\": \"$_index\", \"alias\": \"$SECURITY_LOG_MOVE_ALIAS\"}}"; then
+                    {\"remove\": {\"index\": \"$_index\", \"alias\": \"$_marker\"}}"; then
             msg "Security log index $SECURITY_LOG_ALIAS is replaced by the alias: $_copied documents are moved to $_index"
             return 0
         fi
@@ -298,26 +349,26 @@ function repair_security_log_index() {
     if ! curl -sf -XDELETE "localhost:9200/$_index" > /dev/null; then
         msg "[ERROR] Unable to remove $_index: the next start removes it"
     fi
-    unblock_security_log_index
+    unblock_security_log_index "$_uuid"
     return 1
 }
 
 function setup_security_log_alias() {
-    local _code _response _indices _write_index _newest _actions
+    local _code _indices _write_index _newest _actions
     _code="$(elk_status "_alias/$SECURITY_LOG_ALIAS")"
     if [ "$_code" == "404" ]; then
-        if [ "$(elk_status "$SECURITY_LOG_ALIAS")" != "200" ]; then
+        if [ -z "$(security_log_index_uuid)" ]; then
             msg "Creating security log index"
-            _response="$(curl -s -H 'Content-Type: application/json' \
-                              -XPUT "localhost:9200/$SECURITY_LOG_BOOTSTRAP_INDEX" \
-                              -d "{\"aliases\": {\"$SECURITY_LOG_ALIAS\": {\"is_write_index\": true}}}")"
-            if [ "$(jq -r '.acknowledged' <<< "$_response" 2>/dev/null)" == "true" ]; then
-                msg "Security log index is created: $SECURITY_LOG_ALIAS writes to $(jq -r '.index' <<< "$_response")"
+            if create_security_log_index "{\"$SECURITY_LOG_ALIAS\": {\"is_write_index\": true}}" adopt; then
+                msg "Security log index is ready: $SECURITY_LOG_ALIAS writes to $SECURITY_LOG_NEW_INDEX"
                 return
             fi
-            # A write may have created the plain index in the meantime
-            if [ "$(elk_status "$SECURITY_LOG_ALIAS")" != "200" ]; then
-                msg "[ERROR] Unable to create the security log index: $_response"
+            # The request may fail after the index is created (e.g. on an ack timeout), or a write may have created
+            # the plain index in the meantime
+            if [ "$(elk_status "_alias/$SECURITY_LOG_ALIAS")" == "200" ]; then
+                msg "Security log index is ready: the $SECURITY_LOG_ALIAS alias exists"
+                return
+            elif [ -z "$(security_log_index_uuid)" ]; then
                 return 1
             fi
         fi
