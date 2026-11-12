@@ -107,6 +107,7 @@
     - [GUI build: the `sass` version is not pinned](#gui-build-the-sass-version-is-not-pinned)
     - [Rocky Linux 9, RHEL 9 and Amazon Linux 2023 runs: `curl-minimal` and `coreutils-single` stop the base packages install](#rocky-linux-9-rhel-9-and-amazon-linux-2023-runs-curl-minimal-and-coreutils-single-stop-the-base-packages-install)
     - [Filebeat of the API and TinyProxy services loads its own index template](#filebeat-of-the-api-and-tinyproxy-services-loads-its-own-index-template)
+    - [A new install points the API at the transport port of the search Elasticsearch](#a-new-install-points-the-api-at-the-transport-port-of-the-search-elasticsearch)
 
 ***
 
@@ -1377,3 +1378,9 @@ Now, on any RPM-based image, `curl` is not installed if the image has `curl-mini
 
 Previously, the Filebeat configs of the API service (`cp-api-srv`) and of the TinyProxy service (`cp-tinyproxy`) had a misspelled `setup.tempalte.enabled: false` setting. Filebeat ignored it. So, on start, it loaded its own index template `security_log_template`, for the `security_log*` indices, if the search cluster did not have this template yet: e.g. on a new cluster, before the search service put the platform's templates. A `security_log` index created before the search service replaced that template got the Filebeat field mappings.
 Now, the setting is spelled `setup.template.enabled`, as in the Filebeat configs of the EDGE service, and Filebeat does not load a template. The security logs go to the `security_log` index as before.
+### A new install points the API at the transport port of the search Elasticsearch
+
+Previously, when `pipectl` installed the search services (`cp-search`), it set the **`search.elastic.port`** preference twice: first to the HTTP port of the search Elasticsearch (`cp-search-elk`), `CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT` (`30091` by default), and then to its transport port, `CP_SEARCH_ELK_TRANSPORT_INTERNAL_PORT` (`30092` by default, port `9300` of the container). The API calls Elasticsearch over HTTP at the port of this preference. So the global search, the billing reports, the system logs and the storage request statistics failed after such an install.
+Now, `pipectl` sets **`search.elastic.port`** to the HTTP port only. The transport port is used by the search Elasticsearch itself, and no preference needs it. See details in [12.10. Manage system-level settings](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#search).
+
+Please note: a deployment whose search services were installed by a `pipectl` of this version since May 2024, at the first install or with `-s cp-search`, has the transport port in **`search.elastic.port`**, unless an administrator has changed it since. Check this preference (**Settings** > **Preferences** > **Search**). If it is `30092` (or the value of `CP_SEARCH_ELK_TRANSPORT_INTERNAL_PORT`), set it to the value of `CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT`, `30091` by default. A re-deploy of the search services with a `pipectl` with this fix sets it too.
