@@ -34,6 +34,7 @@ const getLocalIdent = require('./getLocalIdent');
 const paths = require('./paths');
 const getClientEnvironment = require('./env');
 const ModuleNotFoundPlugin = require('react-dev-utils/ModuleNotFoundPlugin');
+const {AWS_SDK_SUBPATH_IMPORT, resolveSubpathImport} = require('./aws-sdk-subpath-imports');
 
 // Source maps are resource heavy and can cause out of memory issue for large source files.
 // const shouldUseSourceMap = process.env.GENERATE_SOURCEMAP !== 'false';
@@ -566,7 +567,11 @@ module.exports = function (webpackEnv) {
       // solution that requires the user to opt into importing specific locales.
       // https://github.com/jmblog/how-to-optimize-momentjs-with-webpack
       // You can remove this if you don't use Moment.js:
-      new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/)
+      new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/),
+      // An AWS SDK v3 subpath import ("@smithy/core/serde") gets the browser build that the
+      // package's "exports" names; webpack 4 does not read "exports" itself.
+      // See ./aws-sdk-subpath-imports.js
+      new webpack.NormalModuleReplacementPlugin(AWS_SDK_SUBPATH_IMPORT, resolveSubpathImport)
     ].filter(Boolean),
 
     // Some libraries import Node modules but don't use them in the browser.
