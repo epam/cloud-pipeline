@@ -17,6 +17,7 @@
 import {ansiToHtml, createAnsiConverter, findText} from './log-line-html';
 
 const RED = 'color:rgb(187,0,0)';
+const NEW_TAB = 'target="_blank" rel="noopener noreferrer"';
 
 const toHtml = (line) => ansiToHtml(createAnsiConverter(), line);
 
@@ -36,9 +37,9 @@ describe('ansiToHtml', () => {
       .toBe('&lt;img src=&quot;x&quot; onerror=&#x27;alert(1)&#x27;&gt; &amp; more');
   });
 
-  it('renders an http(s) hyperlink and drops a javascript one', () => {
+  it('renders an http(s) hyperlink that opens in a new tab, and drops a javascript one', () => {
     expect(toHtml('\u001b]8;;https://example.com/?a="b"\u0007site\u001b]8;;\u0007'))
-      .toBe('<a href="https://example.com/?a=&quot;b&quot;">site</a>');
+      .toBe(`<a href="https://example.com/?a=&quot;b&quot;" ${NEW_TAB}>site</a>`);
     expect(toHtml('\u001b]8;;javascript:alert(1)\u0007click\u001b]8;;\u0007 end'))
       .toBe(' end');
   });
@@ -56,10 +57,17 @@ describe('ansiToHtml', () => {
     expect(ansiToHtml(converter, '[31msecond')).toBe('[31msecond');
   });
 
-  it('does not hide the lines after an unterminated hyperlink', () => {
+  it('shows the rest of an unterminated hyperlink as text, and the lines after it', () => {
     const converter = createAnsiConverter();
-    expect(ansiToHtml(converter, 'link \u001b]8;;http://example.com\u0007text')).toBe('link ');
+    expect(ansiToHtml(converter, 'link \u001b]8;;http://example.com\u0007text'))
+      .toBe('link ]8;;http://example.comtext');
     expect(ansiToHtml(converter, 'next line')).toBe('next line');
+  });
+
+  it('shows an incomplete escape sequence as text, escaped and with no control characters', () => {
+    expect(toHtml('progress \u001b[12')).toBe('progress [12');
+    expect(toHtml('a \u001b]8;;http://x/?a=1&b="2"\u0007<b>'))
+      .toBe('a ]8;;http://x/?a=1&amp;b=&quot;2&quot;&lt;b&gt;');
   });
 
   it('returns an empty string for an empty line', () => {
@@ -83,7 +91,18 @@ describe('findText', () => {
   it('does not search in a hyperlink address', () => {
     const html = toHtml('\u001b]8;;https://example.com/error\u0007error\u001b]8;;\u0007');
     expect(findText(html, 'error').result)
-      .toBe(`<a href="https://example.com/error">${mark('error')}</a>`);
+      .toBe(`<a href="https://example.com/error" ${NEW_TAB}>${mark('error')}</a>`);
+  });
+
+  it('finds the regular expression characters as characters, and ends for any search', () => {
+    const html = toHtml('a|b \\b c\\d x.*y');
+    expect(findText(html, 'a|').result).toBe(`${mark('a|')}b \\b c\\d x.*y`);
+    expect(findText(html, '\\b').result).toBe(`a|b ${mark('\\b')} c\\d x.*y`);
+    expect(findText(html, '\\').result)
+      .toBe(`a|b ${mark('\\')}b c${mark('\\')}d x.*y`);
+    expect(findText(html, '.*').result).toBe(`a|b \\b c\\d x${mark('.*')}y`);
+    expect(findText(html, '|x')).toEqual({result: html, positions: [], lastIndex: 0});
+    expect(findText(html, '')).toEqual({result: html, positions: [], lastIndex: 0});
   });
 
   it('finds a search string with quotes', () => {

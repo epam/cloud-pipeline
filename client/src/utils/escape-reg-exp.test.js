@@ -39,4 +39,24 @@ describe('escapeRegExp', () => {
   it('honours an explicit character list', () => {
     expect(escapeRegExp('a.b-c', ['.'])).toBe('a\\.b-c');
   });
+
+  it('escapes the alternation and the backslash, and a backslash only once', () => {
+    expect(escapeRegExp('a|b')).toBe('a\\|b');
+    expect(escapeRegExp('\\b')).toBe('\\\\b');
+    expect(escapeRegExp('\\.')).toBe('\\\\\\.');
+  });
+
+  it('produces a pattern that matches only the original, for any special character', () => {
+    ['a|', '|x', '\\b', '\\', '.*', 'C:\\data\\(1)', '^$'].forEach(literal => {
+      const regExp = new RegExp(`^${escapeRegExp(literal)}$`);
+      expect(regExp.test(literal)).toBe(true);
+      expect(regExp.test('')).toBe(false);
+      expect(regExp.test('ab')).toBe(false);
+    });
+  });
+
+  it('escapes the alternation and the backslash with a list that leaves out a wildcard', () => {
+    const escaped = escapeRegExp('*.csv|\\x', ESCAPE_CHARACTERS.filter(c => c !== '*'));
+    expect(escaped).toBe('*\\.csv\\|\\\\x');
+  });
 });
