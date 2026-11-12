@@ -274,6 +274,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#notable-bug-fixes">Notable Bug fixes</a>
         <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#nextflow-run-view-some-tasks-stay-running-after-the-run-finishes">Nextflow run view: some tasks stay RUNNING after the run finishes</a>
+    </li>
     <li class="toctree-l3"><a class="reference internal" href="#users-export-the-names-of-the-date-columns-depend-on-the-api-time-zone">Users export: the names of the date columns depend on the API time zone</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#a-committed-image-of-a-user-with-a-large-uid-writes-hundreds-of-gb-to-the-disk">A committed image of a user with a large UID writes hundreds of GB to the disk</a>
@@ -770,6 +772,7 @@
 <hr />
 <ul>
 <li><a href="#notable-bug-fixes">Notable Bug fixes</a><ul>
+<li><a href="#nextflow-run-view-some-tasks-stay-running-after-the-run-finishes">Nextflow run view: some tasks stay <code>RUNNING</code> after the run finishes</a></li>
 <li><a href="#users-export-the-names-of-the-date-columns-depend-on-the-api-time-zone">Users export: the names of the date columns depend on the API time zone</a></li>
 <li><a href="#a-committed-image-of-a-user-with-a-large-uid-writes-hundreds-of-gb-to-the-disk">A committed image of a user with a large UID writes hundreds of GB to the disk</a></li>
 <li><a href="#detached-configuration-the-old-name-stays-in-the-library-after-a-rename">Detached configuration: the old name stays in the Library after a rename</a></li>
@@ -2354,6 +2357,10 @@ In the current version, two new roles were introduced. Both cover every pipeline
 <p>For more details see <a href="../../../manual/10_Manage_Tools/10.4._Edit_a_Tool/#set-a-default-version">here</a>.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
+<h3 id="nextflow-run-view-some-tasks-stay-running-after-the-run-finishes">Nextflow run view: some tasks stay <code>RUNNING</code> after the run finishes</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/4785">#4785</a></p>
+<p>Previously, the last task statuses of a Nextflow run were lost when the runtime data sync did not run - e.g. with <code>evalType</code> set to <code>WORKDIR</code> in the <code>NF_TASK</code> entry of the <code>launch.run.sync.runtime.data</code> preference. So some tasks stayed <code>RUNNING</code> in the <strong>Nextflow</strong> view of a finished run.
+Now, the last statuses are always sent when Nextflow finishes.</p>
 <h3 id="users-export-the-names-of-the-date-columns-depend-on-the-api-time-zone">Users export: the names of the date columns depend on the API time zone</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/4739">#4739</a></p>
 <p>Previously, the users export named its date columns after the default time zone of the API server, while the dates are written in UTC. So with another zone set for the API, the names did not match the data, e.g. <code>registrationDate Europe/Berlin</code>. And on an API image whose system names the zone <code>Etc/UTC</code>, as Rocky Linux 9 does, a script that looks for <code>registrationDate UTC</code> did not find the column.
