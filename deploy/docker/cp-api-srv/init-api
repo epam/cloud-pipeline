@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,17 @@
 # limitations under the License.
 
 export CP_DOLLAR='$'
+
+# --- Python interpreter ---
+# The Python 3.12 of this image runs the platform scripts (git sync, cluster commands, the luigi graph reader);
+# the Java side resolves the same CP_PYTHON_PATH.
+export CP_PYTHON_PATH="${CP_PYTHON_PATH:-/usr/local/python3.12/bin/python3.12}"
+if [ ! -x "$CP_PYTHON_PATH" ]; then
+    echo "Python 3.12 is not found at $CP_PYTHON_PATH, exiting."
+    exit 1
+fi
+export PATH="/usr/local/python3.12/bin:$PATH"
+echo "Python interpreter (CP_PYTHON_PATH): $CP_PYTHON_PATH"
 
 function is_dir_empty {
     local dir_path="$1"
@@ -182,7 +193,6 @@ function sign_and_publish_pipe_win_distribution() {
     unzip -qq pipe.zip
     rm -f pipe.zip
     sign_win_executable "pipe/pipe.exe" "$cert_path" "$cert_pass" "$cert_desc" "$cert_url"
-    sign_win_executable "pipe/ntlmaps/ntlmaps.exe" "$cert_path" "$cert_pass" "$cert_desc" "$cert_url"
     zip -q -r "$output_dir/pipe.zip" pipe
     rm -rf pipe
 }

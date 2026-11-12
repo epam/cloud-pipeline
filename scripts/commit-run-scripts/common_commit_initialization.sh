@@ -74,7 +74,8 @@ commit_file() {
 }
 
 configure_pip() {
-    if [ -z "$CP_REPO_PYPI_BASE_URL_DEFAULT" ]; then
+    # The Python 3 mirror (pypi3): pip runs with the platform's Python 3.12 only
+    if [ -z "$CP_REPO_PYPI3_BASE_URL_DEFAULT" ]; then
         # Converts regional s3 endpoints
         # https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/
         # to regional website s3 endpoints
@@ -83,33 +84,67 @@ configure_pip() {
             | sed -r 's|^https?://(.*)\.s3\.(.*)\.amazonaws\.com(.*)|http://\1.s3-website.\2.amazonaws.com\3|g')"
         if [ "$_WEBSITE_DISTRIBUTION_URL" != "$GLOBAL_DISTRIBUTION_URL" ]; then
             # If the conversion was successful
-            CP_REPO_PYPI_BASE_URL_DEFAULT="${_WEBSITE_DISTRIBUTION_URL}tools/python/pypi/simple"
+            CP_REPO_PYPI3_BASE_URL_DEFAULT="${_WEBSITE_DISTRIBUTION_URL}tools/python/pypi3/simple"
         else
-            CP_REPO_PYPI_BASE_URL_DEFAULT="http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi/simple"
+            CP_REPO_PYPI3_BASE_URL_DEFAULT="http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi3/simple"
         fi
     fi
-    if [ -z "$CP_REPO_PYPI_TRUSTED_HOST_DEFAULT" ]; then
-        CP_REPO_PYPI_TRUSTED_HOST_DEFAULT="$(echo "$CP_REPO_PYPI_BASE_URL_DEFAULT" | sed -r 's|^.*://([^/]*)/?.*$|\1|g')"
+    if [ -z "$CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT" ]; then
+        CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT="$(echo "$CP_REPO_PYPI3_BASE_URL_DEFAULT" | sed -r 's|^.*://([^/]*)/?.*$|\1|g')"
     fi
-    export CP_REPO_PYPI_BASE_URL_DEFAULT
-    export CP_REPO_PYPI_TRUSTED_HOST_DEFAULT
-    export CP_PIP_EXTRA_ARGS="${CP_PIP_EXTRA_ARGS} --index-url $CP_REPO_PYPI_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI_TRUSTED_HOST_DEFAULT"
-    echo "Using pypi repository $CP_REPO_PYPI_BASE_URL_DEFAULT ($CP_REPO_PYPI_TRUSTED_HOST_DEFAULT)..."
+    export CP_REPO_PYPI3_BASE_URL_DEFAULT
+    export CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT
+    export CP_PIP_EXTRA_ARGS="${CP_PIP_EXTRA_ARGS} --index-url $CP_REPO_PYPI3_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT"
+    echo "Using pypi repository $CP_REPO_PYPI3_BASE_URL_DEFAULT ($CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT)..."
+}
+
+# This runs on the node host, not in the container of the run. pipe-common needs Python 3.12: the platform's Python 3.12
+# in /usr/local/python3.12, as a run has it in its container. A host that has none gets it installed there.
+# Returns 1 if there is none and it cannot be installed: the caller decides what that means for the run
+install_python() {
+    export CP_PYTHON_PATH="/usr/local/python3.12/bin/python3.12"
+    if [ ! -x "$CP_PYTHON_PATH" ]; then
+        local _python3_distro_url="${CP_PYTHON3_DISTRO_URL:-"${GLOBAL_DISTRIBUTION_URL:-https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/}tools/python/3/python3.12.tar.gz"}"
+        echo "Python 3.12 is not found, installing it from $_python3_distro_url"
+        # Each commit or pause of the host's runs downloads into its own folder, and the distro is moved in place
+        # only when it is complete
+        local _python3_tmp_dir
+        _python3_tmp_dir="$(mktemp -d /usr/local/.cp-python3.XXXXXX)"
+        if [ -n "$_python3_tmp_dir" ] \
+                && { wget -q --no-check-certificate "$_python3_distro_url" -O "$_python3_tmp_dir/python3.tgz" \
+                     || curl -s -k -f "$_python3_distro_url" -o "$_python3_tmp_dir/python3.tgz"; } \
+                && tar -xzf "$_python3_tmp_dir/python3.tgz" -C "$_python3_tmp_dir" \
+                && [ -x "$_python3_tmp_dir/python3.12/bin/python3.12" ] \
+                && [ ! -x "$CP_PYTHON_PATH" ]; then
+            rm -rf /usr/local/python3.12
+            mv "$_python3_tmp_dir/python3.12" /usr/local/python3.12
+            # Only a distro that brings an openssl folder (the previous python3.12.0 build) replaces the host's one
+            if [ -d "$_python3_tmp_dir/openssl" ]; then
+                rm -rf /usr/local/openssl
+                mv "$_python3_tmp_dir/openssl" /usr/local/openssl
+            fi
+        fi
+        [ -n "$_python3_tmp_dir" ] && rm -rf "$_python3_tmp_dir"
+    fi
+    if [ ! -x "$CP_PYTHON_PATH" ]; then
+        echo "[ERROR] Python 3.12 is not found on the node host and cannot be installed: $CP_PYTHON_PATH"
+        return 1
+    fi
 }
 
 install_pip() {
-    pip --version
+    $CP_PYTHON_PATH -m pip --version
     if [[ "$?" -ne 0 ]]; then
         echo "Installing pip"
-        curl "${GLOBAL_DISTRIBUTION_URL}tools/pip/2.7/get-pip.py" -o "get-pip.py"
-        python get-pip.py
+        $CP_PYTHON_PATH -m ensurepip --upgrade
     fi
     configure_pip
 }
 
 install_pipeline_code() {
     echo "Installing pipeline packages and code"
-    pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
+    # Fixed setuptools version to be compatible with the pipe-common package: 81.0.0 is the last one with pkg_resources
+    $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==81.0.0
     mkdir $COMMON_REPO_DIR
     cd $COMMON_REPO_DIR
     download_file ${DISTRIBUTION_URL}pipe-common.tar.gz
@@ -120,7 +155,7 @@ install_pipeline_code() {
         exit "$_DOWNLOAD_RESULT"
     fi
     tar xf pipe-common.tar.gz
-    pip install $CP_PIP_EXTRA_ARGS . -q -I
+    $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS . -q -I
     # Init path for shell scripts from common repository
     chmod +x $COMMON_REPO_DIR/shell/*
     export PATH=$PATH:$COMMON_REPO_DIR/shell

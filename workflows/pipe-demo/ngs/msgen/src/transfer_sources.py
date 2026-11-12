@@ -71,7 +71,7 @@ def fetch_dts_registry(api, task_name):
     try:
         dts_data = api.load_dts_registry()
     except BaseException as e:
-        Logger.info('DTS is not available: %s' % e.message, task_name=task_name)
+        Logger.info('DTS is not available: %s' % str(e), task_name=task_name)
         return result
     for registry in dts_data:
         for prefix in registry['prefixes']:

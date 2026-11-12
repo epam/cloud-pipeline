@@ -92,7 +92,7 @@ def slurm_setup_master(tmpdir, shared_folder):
             'CP_CAP_SLURM_PREINSTALLED': 'true',
             'RESUMED_RUN': 'true' if resumed else 'false',
             'CP_CAP_SCRIPTS_DIR': str(scripts_dir),
-            'CP_PYTHON2_PATH': str(stub_bin.join('python')),
+            'CP_PYTHON_PATH': str(stub_bin.join('python')),
             'COMMON_REPO_DIR': str(tmpdir.join('pipe-common')),
             'LOG_DIR': str(tmpdir.join('log'))
         }

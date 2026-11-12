@@ -20,7 +20,6 @@ import platform
 import traceback
 
 import errno
-import future.utils
 import sys
 from cachetools import TTLCache
 from pipefuse.storage_path_permissions import StoragePathPermissionsFileSystemClient, PermissionsManager, \
@@ -79,7 +78,7 @@ from src.common.audit import LoggingAuditConsumer, ChunkingAuditConsumer, \
 from src.config import Config as PipeConfig
 
 _allowed_logging_level_names = ['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET']
-_allowed_logging_levels = future.utils.lfilter(lambda name: isinstance(name, str), _allowed_logging_level_names)
+_allowed_logging_levels = list(filter(lambda name: isinstance(name, str), _allowed_logging_level_names))
 _allowed_logging_levels_string = ', '.join(_allowed_logging_levels)
 _default_logging_level = 'ERROR'
 _debug_logging_level = 'DEBUG'

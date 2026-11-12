@@ -46,10 +46,7 @@ def __matching_delimiter(path, reference_path, delimiter=DEFAULT_DELIMITER):
 
 
 def lazy_range(start, end):
-    try:
-        return xrange(start, end)
-    except NameError:
-        return range(start, end)
+    return range(start, end)
 
 
 def without_prefix(string, prefix):

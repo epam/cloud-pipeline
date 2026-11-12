@@ -21,10 +21,9 @@ import pytest
 import requests
 from requests.adapters import BaseAdapter
 
-try:
-    from unittest.mock import MagicMock
-except ImportError:
-    from mock import MagicMock
+from datetime import datetime, timedelta
+from types import SimpleNamespace
+from unittest.mock import MagicMock
 
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'mount'))
 
@@ -78,7 +77,6 @@ class _RecordingAdapter(BaseAdapter):
 
 @pytest.fixture
 def webdav():
-    pytest.importorskip('easywebdav')
     from pipefuse.webdav import WebDavClient
     client = WebDavClient('https://webdav.example/webdav/', 'token')
     adapter = _RecordingAdapter()
@@ -283,3 +281,17 @@ class TestRecordingFileSystemClient(object):
         inner.upload_xattr.assert_called_once_with(path, u'user.key', VALUE)
         assert any(u'upload_xattr' in message and path in message and VALUE in message
                    for message in handler.messages)
+
+
+class TestGcpMountClient(object):
+
+    def test_client_is_created_with_temporary_credentials(self):
+        pytest.importorskip('intervals')
+        from pipefuse import gcp
+        credentials = SimpleNamespace(session_token='token', secret_key='project',
+                                      expiration=datetime.utcnow() + timedelta(hours=1))
+
+        client = gcp._RefreshingClient(lambda: credentials)
+
+        assert client.project == 'project'
+        assert client._credentials.token == 'token'

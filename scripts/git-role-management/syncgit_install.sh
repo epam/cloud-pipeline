@@ -28,11 +28,11 @@ mkdir -p /etc/git-role-management
 cp -r * /etc/git-role-management/
 
 # Configure
-python /etc/git-role-management/syncgit.py configure --api=$SYNC_GIT_API --key=$SYNC_GIT_API_KEY
+python3 /etc/git-role-management/syncgit.py configure --api=$SYNC_GIT_API --key=$SYNC_GIT_API_KEY
 
 # Clean gitlab for the first time
-python /etc/git-role-management/syncgit.py purge
+python3 /etc/git-role-management/syncgit.py purge
 
 # Install cron - each 5 min
-echo '*/5 * * * * root flock -xn /etc/git-role-management/syncgit.lock -c "python /etc/git-role-management/syncgit.py sync > /etc/git-role-management/syncgit.log"' > /etc/cron.d/syncgit
+echo '*/5 * * * * root flock -xn /etc/git-role-management/syncgit.lock -c "python3 /etc/git-role-management/syncgit.py sync > /etc/git-role-management/syncgit.log"' > /etc/cron.d/syncgit
 chmod 0644 /etc/cron.d/syncgit
