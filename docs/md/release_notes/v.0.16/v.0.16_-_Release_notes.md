@@ -754,7 +754,8 @@ Python in these images:
 
 Other changes:
 
-- The Lustre client in the search image is now the el8 build of version 2.10.8, as in the Rocky Linux tool images. It replaces the el7 build of version 2.12.5.
+- The Lustre client in the search image is now the el8 build of version 2.10.8, as in the Rocky Linux tool images. It replaces the el7 build of version 2.12.5.  
+    **_Note_**: AWS lists the 2.10 Lustre clients as not compatible with the FSx for Lustre file systems of version 2.15 (the 2.12 clients are). The image brings only the user space tools, e.g. `mount.lustre` and `lfs`: the Lustre kernel module is the one of the node. The mounts of FSx for Lustre 2.15 file systems from the search service with this client are not tested.
 - The Java services in these images follow the `DEFAULT` crypto policy of Rocky Linux 9. In TLS connections and certificate chains, they now reject:
     - SHA-1 signatures in any certificate (on CentOS 7, only in the server certificates that chain to the CA certificates of the JDK), and DSA signatures with any hash
     - RSA, DSA and DH keys shorter than 2048 bits (on CentOS 7, 1024 bits), and EC keys shorter than 256 bits (on CentOS 7, 224 bits)
