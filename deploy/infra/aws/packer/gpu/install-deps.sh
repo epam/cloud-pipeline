@@ -139,7 +139,7 @@ if [ "$NVIDIA_DRIVER_URL_PREFIX" ]; then
     # A custom location serves everything as a single archive:
     # the driver runfile and the Nvidia rpm packages, e.g. Fabric Manager
     NVIDIA_DIST_DIR="$(mktemp -d)"
-    curl -k -L -o "$NVIDIA_DIST_DIR/$DRIVER_VERSION.tgz" "$NVIDIA_DRIVER_URL_PREFIX/$DRIVER_VERSION.tgz"
+    curl -k -f -L -o "$NVIDIA_DIST_DIR/$DRIVER_VERSION.tgz" "$NVIDIA_DRIVER_URL_PREFIX/$DRIVER_VERSION.tgz"
     tar -zxf "$NVIDIA_DIST_DIR/$DRIVER_VERSION.tgz" -C "$NVIDIA_DIST_DIR"
     rm -f "$NVIDIA_DIST_DIR/$DRIVER_VERSION.tgz"
 
@@ -168,10 +168,11 @@ if [ "$NVIDIA_DRIVER_URL_PREFIX" ]; then
 
 else
 
-    # The driver runfile and the rpm packages are downloaded into a temporary folder, which is removed afterwards
+    # The driver runfile and the rpm packages are downloaded into a temporary folder, which is removed afterwards.
+    # A failed download (curl -f) stops the build
     NVIDIA_DIST_DIR="$(mktemp -d)"
     NVIDIA_RUN_FILE="$NVIDIA_DIST_DIR/NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run"
-    curl -k -L -o "$NVIDIA_RUN_FILE" "https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run"
+    curl -k -f -L -o "$NVIDIA_RUN_FILE" "https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run"
     chmod +x "$NVIDIA_RUN_FILE"
     "$NVIDIA_RUN_FILE" -s
 
@@ -179,7 +180,7 @@ else
     NVIDIA_PUBLIC_RPM_URL_PREFIX="https://developer.download.nvidia.com/compute/cuda/repos/amzn2023/x86_64"
     for _nvidia_package in nvidia-fabricmanager libnvidia-cfg nvidia-persistenced; do
         _nvidia_rpm="${_nvidia_package}-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm"
-        curl -k -L -o "$NVIDIA_DIST_DIR/$_nvidia_rpm" "$NVIDIA_PUBLIC_RPM_URL_PREFIX/$_nvidia_rpm"
+        curl -k -f -L -o "$NVIDIA_DIST_DIR/$_nvidia_rpm" "$NVIDIA_PUBLIC_RPM_URL_PREFIX/$_nvidia_rpm"
         yum install -y "$NVIDIA_DIST_DIR/$_nvidia_rpm"
     done
 
