@@ -95,6 +95,7 @@
     - [`pipe storage cp` and `mv` fail with a file list on Windows and macOS](#pipe-storage-cp-and-mv-fail-with-a-file-list-on-windows-and-macos)
     - [The pipeline repository is not mounted in a run when `python` is not the Python of the platform](#the-pipeline-repository-is-not-mounted-in-a-run-when-python-is-not-the-python-of-the-platform)
     - [`pipe storage mount`: WebDAV mounts and extended attributes fail in the Windows and macOS builds](#pipe-storage-mount-webdav-mounts-and-extended-attributes-fail-in-the-windows-and-macos-builds)
+    - [Runs from RHEL images do not get the setup of the RHEL family](#runs-from-rhel-images-do-not-get-the-setup-of-the-rhel-family)
 
 ***
 
@@ -1241,3 +1242,9 @@ Previously, the Windows and macOS builds of the `pipe` CLI, which run on Python 
 
 In the Linux build, extended attributes with non-ASCII characters in their values failed in the same way.
 Now, the files in a storage mounted over WebDAV can be listed, created, written and truncated in the Python 3 builds too, and the extended attribute values are kept in the storage as UTF-8 text, in all builds.
+### Runs from RHEL images do not get the setup of the RHEL family
+
+Previously, a run from a Red Hat Enterprise Linux image, including the UBI images (`ID=rhel` in `/etc/os-release`), got the `linux` OS family (`CP_OS_FAMILY`), not `rhel`. So the run did not install the packages of `CP_CAP_EXTRA_PKG_RHEL`, did not start systemd for `CP_CAP_SYSTEMD_CONTAINER` or `CP_CAP_KUBE`, and its Slurm setup failed with "Can't install SLURM packages". Docker in Docker installed docker `18.09.6`, not `20.10.24` as on Rocky Linux.
+Now, RHEL images are in the `rhel` family, as CentOS and Rocky Linux are, and get the same setup. The Cloud Pipeline package repository has no RHEL packages, so a RHEL run uses the repositories of the image only, and says so in its log. The UBI repositories lack some packages that the capabilities install, e.g. `e2fsprogs` and `xfsprogs` for Docker in Docker. Where they are missing, the Docker in Docker setup fails, and its log names them.
+
+For more details see [Supported OS families](../../manual/10_Manage_Tools/10.3._Add_a_Tool.md#supported-os-families).
