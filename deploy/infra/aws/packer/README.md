@@ -14,6 +14,17 @@ The AMI is named `CloudPipeline-$TYPE-$TIMESTAMP` and is tagged with `OS_Version
 `Type`, `SHA` and, for the `gpu` type, `Nvidia_Driver_Version`. Those are assigned by the
 `CreateImage`/`CreateTags` calls, i.e. while the AMI is being created.
 
+## Image contents and the user data
+
+`$TYPE/install-deps.sh` prepares Amazon Linux 2023 for the nodes: `nc`, `tc`, `iptables-legacy`, a static `btrfs`
+(with `mkfs.btrfs`), `jq`, the cgroup v1 hierarchy, a permissive SELinux, and the platform's Python 3.12 in
+`/usr/local/python3.12`, which the commit and the pause of a run use on the node. There is no Python 2. The `gpu` type
+also gets the Nvidia driver, Fabric Manager and `nvidia-persistenced`.
+
+Docker and the kubelet are not in the image: the `init_multicloud_v1.15.4.ext.sh` user data installs them, when a
+node starts. Set it as the `init_script` of the image in the `amis` list of the region in `cluster.networks.config`,
+e.g. `"init_script": "/opt/api/scripts/init_multicloud_v1.15.4.ext.sh"`. `init_multicloud.sh` and
+`init_multicloud_v1.15.4.sh` expect them in the image.
 
 ## Connection to the temporary instance
 
