@@ -106,6 +106,7 @@
     - [Rocky Linux 9, RHEL 9 and Amazon Linux 2023 runs: `curl-minimal` and `coreutils-single` stop the base packages install](#rocky-linux-9-rhel-9-and-amazon-linux-2023-runs-curl-minimal-and-coreutils-single-stop-the-base-packages-install)
     - [Filebeat of the API and TinyProxy services loads its own index template](#filebeat-of-the-api-and-tinyproxy-services-loads-its-own-index-template)
     - [Packer node images for Amazon Linux 2023: the commit and the pause run on Python 2, no `lvm2`, failed downloads are ignored](#packer-node-images-for-amazon-linux-2023-the-commit-and-the-pause-run-on-python-2-no-lvm2-failed-downloads-are-ignored)
+    - [The VM monitor does not check the open files on Amazon Linux 2023 nodes and other hosts with systemd 240 or later](#the-vm-monitor-does-not-check-the-open-files-on-amazon-linux-2023-nodes-and-other-hosts-with-systemd-240-or-later)
 
 ***
 
@@ -2327,3 +2328,10 @@ Now:
 - each download goes into a temporary folder first. A failed download, unpack or check of the result stops the build, so no image is created. `jq` is the package of Amazon Linux 2023, and the Nvidia files are removed after the install.
 
 `deploy/infra/aws/packer/README.md` now also lists the image contents and the IAM permissions that the build needs.
+
+### The VM monitor does not check the open files on Amazon Linux 2023 nodes and other hosts with systemd 240 or later
+
+If `CP_VM_MONITOR_NODE_ENABLE` is `true`, the VM monitor service (`cp-vm-monitor`) checks the open files on the cluster nodes with the `cloud-pipeline/cp-node-monitor=true` label (`CP_VM_MONITOR_NODE_MONITORING_NODE_LABEL`). The platform does not set this label: an administrator sets it on the nodes to check. Every minute by default (`CP_VM_MONITOR_NODE_CRON`), the service gets the number of open files and their limit from the node reporter (`cp-node-reporter`) of each such node: for the whole host, and for the processes of `CP_NODE_REPORTER_STATS_PROCS_INCLUDE` (`dockerd`, `docker-containerd` and `containerd` by default). If a number is more than the threshold percent of its hard limit (`CP_VM_MONITOR_NODE_THRESHOLDS`, `{NOFILE:60}` by default), the service sends the "Nodes exceed thresholds" email. The percent is rounded down first: with the default threshold, the email starts at 61%.  
+Previously, the VM monitor read these numbers as 32-bit integers. For the whole host, the node reporter sends `fs.file-max` as the limit. systemd 240 and later set it to 9223372036854775807, e.g. on Amazon Linux 2023 and Rocky Linux 9. The VM monitor could not read the answer of such a node at all, and logged `Failed to resolve stats from <pod> for <node>.` at each check. So it checked no process of these nodes, and sent no email for them.  
+Now, the VM monitor reads these numbers as 64-bit integers, and checks these nodes as the other nodes.  
+Please note: with this limit, the percent of the whole host is always 0. So on these nodes, only the processes can exceed the threshold.
