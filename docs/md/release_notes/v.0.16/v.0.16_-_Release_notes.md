@@ -95,6 +95,7 @@
     - [`pipe storage cp` and `mv` fail with a file list on Windows and macOS](#pipe-storage-cp-and-mv-fail-with-a-file-list-on-windows-and-macos)
     - [The pipeline repository is not mounted in a run when `python` is not the Python of the platform](#the-pipeline-repository-is-not-mounted-in-a-run-when-python-is-not-the-python-of-the-platform)
     - [`pipe storage mount`: WebDAV mounts and extended attributes fail in the Windows and macOS builds](#pipe-storage-mount-webdav-mounts-and-extended-attributes-fail-in-the-windows-and-macos-builds)
+    - [The notifier log names only the main recipient of an email](#the-notifier-log-names-only-the-main-recipient-of-an-email)
 
 ***
 
@@ -1241,3 +1242,18 @@ Previously, the Windows and macOS builds of the `pipe` CLI, which run on Python 
 
 In the Linux build, extended attributes with non-ASCII characters in their values failed in the same way.
 Now, the files in a storage mounted over WebDAV can be listed, created, written and truncated in the Python 3 builds too, and the extended attribute values are kept in the storage as UTF-8 text, in all builds.
+### The notifier log names only the main recipient of an email
+
+Previously, the notifier (`cp-notifier`) logged only the main recipient (To) of each email, e.g. the owner of a run with **Keep owners informed**. Its log line did not name the subject of the email, or the users who get a copy of it as BCC, e.g. the **Informed users** and, with **Keep admins informed**, the admins. So the log did not show which email was sent, and to whom.
+Now, the log line of each email names its subject and all its recipients:
+
+```
+Email from message 123 with subject 'Job #14638 is now STOPPED' formed and will be send to: [owner@example.com], cc: [], bcc: [admin@example.com]
+```
+
+The `Message with id: <id> was successfully send` line with the same id shows that the mail server accepted the email. The notifier handles several messages at a time (`submit.threads`), so the lines of different emails can be mixed. The `notifier/smtp/README.md` file of the repository describes the notifier's log lines and where its log is.
+
+Please note:
+
+- the log now has the BCC addresses too, which an email hides from its other recipients. The To address was logged before. The log also has the subjects now, and a subject can name storages and data paths: e.g. the default `DATASTORAGE_LIFECYCLE_ACTION`, `DATASTORAGE_LIFECYCLE_RESTORE_ACTION` and `STORAGE_QUOTA_EXCEEDING` templates do, and a message sent with `POST /notification/message` can have any subject. So keep the notifier log as private as the email addresses of the users and the names of their data: it is in `/opt/notifier/logs` on the node of the notifier, and in `kubectl logs deploy/cp-notifier`
+- `cc` is always empty, as the notifier sends all copies as BCC
