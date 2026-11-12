@@ -75,6 +75,7 @@ public class ScaleDownHandler {
     private final KubernetesManager kubernetesManager;
     private final PipelineRunCRUDService runCRUDService;
     private final PreferenceManager preferenceManager;
+    private final ReassignHandler reassignHandler;
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public void checkFreeNodes(final Set<String> scheduledRuns,
@@ -404,6 +405,10 @@ public class ScaleDownHandler {
         }
     }
 
+    /**
+     * Collects the instances of the pending runs that a free node can be kept for.
+     * A pending run that may not get a free node is left out: it will never take one.
+     */
     private List<InstanceRequest> getRequiredInstances(
             final Set<String> scheduledRuns,
             final KubernetesClient client) {
@@ -413,8 +418,9 @@ public class ScaleDownHandler {
                 .filter(kubernetesManager::isPodUnscheduled)
                 .map(pod -> pod.getMetadata().getLabels().get(KubernetesConstants.RUN_ID_LABEL))
                 .filter(runId -> !scheduledRuns.contains(runId))
-                .map(runId -> {
-                    final PipelineRun pipelineRun = runCRUDService.loadRunById(Long.parseLong(runId));
+                .map(runId -> runCRUDService.loadRunById(Long.parseLong(runId)))
+                .filter(reassignHandler::isReassignAllowed)
+                .map(pipelineRun -> {
                     final InstanceRequest instanceRequest = new InstanceRequest();
                     instanceRequest.setRequestedImage(pipelineRun.getActualDockerImage());
                     instanceRequest.setInstance(autoscalerService.fillInstance(pipelineRun.getInstance()));

@@ -33,6 +33,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -89,6 +90,26 @@ public class ReassignHandlerTest {
         verify(cloudFacade, never()).reassignNode(anyLong(), anyLong(), anyStringMap());
         assertThat(scheduledRuns).isEmpty();
         assertThat(reassignedNodes).isEmpty();
+    }
+
+    @Test
+    public void shouldNotReassignWithOtherTrueValuesOfCreateNewNodeParameter() {
+        for (final String value : Arrays.asList("TRUE", "yes", "on", "Y", "t")) {
+            mockRun(pipelineRun(new PipelineRunParameter(CP_CREATE_NEW_NODE, value)));
+
+            assertThat(tryReassign(FREE_NODE)).as(value).isFalse();
+        }
+        verify(cloudFacade, never()).reassignNode(anyLong(), anyLong(), anyStringMap());
+    }
+
+    @Test
+    public void shouldNotReassignRestrictedImageRunWithoutCreateNewNodeParameter() {
+        final PipelineRun run = pipelineRun();
+        mockRun(run);
+        doReturn(true).when(iamProfileVerifier).isImageRestricted(run);
+
+        assertThat(tryReassign(FREE_NODE)).isFalse();
+        verify(cloudFacade, never()).reassignNode(anyLong(), anyLong(), anyStringMap());
     }
 
     @Test

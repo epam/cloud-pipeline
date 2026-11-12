@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -81,7 +81,7 @@ public class ReassignHandler {
                                    final InstanceRequest requiredInstance,
                                    final List<String> freeNodes) {
         final Optional<PipelineRun> pipelineRun = pipelineRunManager.findRun(longId);
-        if (!reassignAllowed(pipelineRun)) {
+        if (!pipelineRun.map(this::isReassignAllowed).orElse(true)) {
             log.debug("Reassign is not allowed for run '{}'", runId);
             return false;
         }
@@ -199,9 +199,15 @@ public class ReassignHandler {
         return cloudFacade.reassignNode(Long.valueOf(previousNodeId), runId, tags);
     }
 
-    private boolean reassignAllowed(final Optional<PipelineRun> pipelineRun) {
-        return !pipelineRun.filter(this::requiresNewNode).isPresent()
-                && !pipelineRun.filter(iamProfileVerifier::isImageRestricted).isPresent();
+    /**
+     * Checks whether a run may get a free node of an earlier run.
+     *
+     * @param run the run that waits for a node
+     * @return {@code false} if the run asks for a new node with {@code CP_CREATE_NEW_NODE},
+     * or matches an image config with an {@code IamInstanceProfile} in {@code cluster.networks.config}
+     */
+    public boolean isReassignAllowed(final PipelineRun run) {
+        return !requiresNewNode(run) && !iamProfileVerifier.isImageRestricted(run);
     }
 
     private boolean requiresNewNode(final PipelineRun run) {
