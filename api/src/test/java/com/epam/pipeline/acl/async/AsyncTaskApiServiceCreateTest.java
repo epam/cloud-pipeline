@@ -19,7 +19,7 @@ package com.epam.pipeline.acl.async;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dto.async.AsyncTask;
 import com.epam.pipeline.dto.async.UnpackArchiveParams;
-import com.epam.pipeline.entity.datastorage.ArchiveTasksConfig;
+import com.epam.pipeline.entity.async.AsyncTasksConfig;
 import com.epam.pipeline.manager.async.AsyncTaskManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -63,8 +63,8 @@ public class AsyncTaskApiServiceCreateTest {
                 Mockito.mock(CheckPermissionHelper.class),
                 messageHelper);
         Mockito.when(authManager.getAuthorizedUser()).thenReturn(OWNER);
-        Mockito.when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_ARCHIVE_CONFIG))
-                .thenReturn(ArchiveTasksConfig.builder().maxUserTasks(TASK_LIMIT).build());
+        Mockito.when(preferenceManager.getPreference(SystemPreferences.SYSTEM_ASYNC_TASKS_CONFIG))
+                .thenReturn(AsyncTasksConfig.builder().maxUserTasks(TASK_LIMIT).build());
         Mockito.when(asyncTaskManager.create(Mockito.any(), Mockito.any()))
                 .thenReturn(AsyncTask.builder().id(TASK_ID).build());
     }

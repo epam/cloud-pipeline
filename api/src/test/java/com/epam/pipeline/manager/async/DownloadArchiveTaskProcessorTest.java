@@ -23,11 +23,11 @@ import com.epam.pipeline.dto.async.AsyncTaskType;
 import com.epam.pipeline.dto.async.DownloadArchiveConsumable;
 import com.epam.pipeline.dto.async.DownloadArchiveParams;
 import com.epam.pipeline.dto.async.DownloadArchiveResult;
+import com.epam.pipeline.entity.async.AsyncTasksConfig;
+import com.epam.pipeline.entity.async.StorageDownloadArchiveTaskConfig;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
-import com.epam.pipeline.entity.datastorage.ArchiveTasksConfig;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
-import com.epam.pipeline.entity.datastorage.DownloadArchiveConfig;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
@@ -70,7 +70,7 @@ public class DownloadArchiveTaskProcessorTest {
         Mockito.when(storagePermissionManager.hasStoragePermission(Mockito.any(), Mockito.any()))
                 .thenReturn(true);
         Mockito.when(dataStorageManager.load(Mockito.anyLong())).thenReturn(storage(STORAGE_ID));
-        Mockito.when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_ARCHIVE_CONFIG))
+        Mockito.when(preferenceManager.getPreference(SystemPreferences.SYSTEM_ASYNC_TASKS_CONFIG))
                 .thenReturn(config());
     }
 
@@ -149,8 +149,8 @@ public class DownloadArchiveTaskProcessorTest {
 
     @Test
     public void shouldRefuseToHandOverWhenNoArchiveStorageIsConfigured() {
-        Mockito.when(preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_ARCHIVE_CONFIG))
-                .thenReturn(ArchiveTasksConfig.builder().build());
+        Mockito.when(preferenceManager.getPreference(SystemPreferences.SYSTEM_ASYNC_TASKS_CONFIG))
+                .thenReturn(AsyncTasksConfig.builder().build());
 
         assertThrows(() -> processor.consume(task(AsyncTaskStatus.SUCCESS)));
     }
@@ -233,10 +233,10 @@ public class DownloadArchiveTaskProcessorTest {
                 .build();
     }
 
-    private ArchiveTasksConfig config() {
-        return ArchiveTasksConfig.builder()
-                .tasks(ArchiveTasksConfig.Tasks.builder()
-                        .download(DownloadArchiveConfig.builder()
+    private AsyncTasksConfig config() {
+        return AsyncTasksConfig.builder()
+                .tasks(AsyncTasksConfig.Tasks.builder()
+                        .storageDownloadAsArchive(StorageDownloadArchiveTaskConfig.builder()
                                 .destinationStorageId(ARCHIVE_STORAGE_ID)
                                 .build())
                         .build())

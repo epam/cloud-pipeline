@@ -16,8 +16,8 @@
 Storage async task service - the executor behind "download a folder as one archive".
 
 It takes DOWNLOAD_ARCHIVE tasks from the platform API, packs the requested files into a ZIP, uploads
-it to the bucket named in the `tasks.download` section of `storage.archive.config`, and reports back. It
-has no inbound port.
+it to the bucket named in the `tasks.storageDownloadAsArchive` section of
+`system.async.tasks.config`, and reports back. It has no inbound port.
 
 Nothing is defined here on purpose: imports in this file run before any submodule and make import
 cycles easy to create.

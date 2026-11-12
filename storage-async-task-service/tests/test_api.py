@@ -205,9 +205,9 @@ def test_leaves_out_every_filter_field_that_was_not_asked_for():
 # ---------------------------------------------------------------- answers become the model
 
 def test_reads_the_value_out_of_a_preference():
-    api = _api(_FakeClient({'name': 'storage.archive.config', 'value': '{"a": 1}'}))
+    api = _api(_FakeClient({'name': 'system.async.tasks.config', 'value': '{"a": 1}'}))
 
-    assert api.get_preference('storage.archive.config') == '{"a": 1}'
+    assert api.get_preference('system.async.tasks.config') == '{"a": 1}'
 
 
 def test_reads_a_storage_with_the_role_it_names():

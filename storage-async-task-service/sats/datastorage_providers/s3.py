@@ -52,7 +52,7 @@ def absolute_key(storage_prefix: str, relative_key: str) -> str:
 
 
 def archive_key(prefix: str, task_id: str) -> str:
-    """The object key of a task's archive. Mirrors `DataStorageDownloadArchiveManager.archiveKey`."""
+    """The object key of a task's archive. Mirrors `DownloadArchiveTaskProcessor.archivePath`."""
     return f'{prefix}{task_id}{ARCHIVE_EXTENSION}'
 
 
