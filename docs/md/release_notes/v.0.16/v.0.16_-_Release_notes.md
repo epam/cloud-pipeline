@@ -101,6 +101,7 @@
     - [The notifier log names only the main recipient of an email](#the-notifier-log-names-only-the-main-recipient-of-an-email)
     - [Amazon Linux 2023 nodes do not join the cluster: the Docker install script is not found](#amazon-linux-2023-nodes-do-not-join-the-cluster-the-docker-install-script-is-not-found)
     - [Runs from RHEL images do not get the setup of the RHEL family](#runs-from-rhel-images-do-not-get-the-setup-of-the-rhel-family)
+    - [System logs: no security event is stored once the `security_log` alias has no write index](#system-logs-no-security-event-is-stored-once-the-security_log-alias-has-no-write-index)
 
 ***
 
@@ -1310,3 +1311,21 @@ Previously, a run from a Red Hat Enterprise Linux image, including the UBI image
 Now, RHEL images are in the `rhel` family, as CentOS and Rocky Linux are, and get the same setup, except the Cloud Pipeline package repository. The public repository has no RHEL packages, so a RHEL run adds it only if the repository of the deployment has a folder for its RHEL version. Otherwise, the run uses the repositories of the image only, and says so in its log. Docker in Docker installs docker `20.10.24`, as on Rocky Linux. The UBI repositories lack some packages that the run and its capabilities install, e.g. `e2fsprogs` and `xfsprogs` for Docker in Docker, `nfs-utils` and `cifs-utils` for the NFS and SMB mounts, and `munge` for Slurm. Where `e2fsprogs` and `xfsprogs` are missing, the Docker in Docker setup fails, and its log names them.
 
 For more details see [Supported OS families](../../manual/10_Manage_Tools/10.3._Add_a_Tool.md#supported-os-families).
+### System logs: no security event is stored once the `security_log` alias has no write index
+
+Previously, the search ELK service (`cp-search-elk`), which keeps the security events of the **System logs** in daily indices behind the `security_log` alias (`CP_SECURITY_LOGS_ELASTIC_PREFIX`), only checked on start that something of that name existed. Its former versions added a new index to that alias on each start. Once the alias pointed to two indices and none of them was the write index, every write of a security event and every daily rollover failed, so no security event was stored, and a restart did not repair it. Also, a security event written before the service had created the alias (e.g. by the API while the search ELK service started) created a plain `security_log` index instead. That index was never rolled over, so the cleanup deleted it with all its events once it was older than `CP_SECURITY_LOGS_ROLLOVER_DAYS` days, and the **System logs** did not show its events.
+Now, on each start, the search ELK service checks the alias:
+
+- if neither the alias nor an index of that name exists, it creates an index of the day as the write index of the alias, e.g. `security_log-<date>-000001`. Indices of that day outside the alias are kept, and the new index takes the number after the highest of them, e.g. `security_log-<date>-000002`
+- if the alias has no write index, its newest index becomes the write index. The other indices stay in the alias with their events, and are deleted after `CP_SECURITY_LOGS_ROLLOVER_DAYS` days, as before
+- if the alias has a single index, with no write index flag, that index becomes its explicit write index
+- if the daily rollover of the write index stopped at an error, e.g. while the alias had no write index, the rollover is resumed
+- if `security_log` is a plain index, its events are copied to a new index of the alias, with the number after the highest of the day. Once all of them are copied, the alias replaces the plain index, and the plain index is deleted, in one step. The writes are blocked during the copy, so the security events sent at that time are rejected and lost. If the copy fails, e.g. if a field of the plain index has another type, the copy is removed, the plain index keeps all its events and takes the writes again, and the service logs an `[ERROR]` line. The next start tries again
+- if a copy was interrupted, e.g. the service was stopped during the copy, the plain index still has all its events, and the unfinished copy and the write block of the plain index stay until the next start. If the outcome of the copy cannot be checked, e.g. Elasticsearch answers with an error, the write block is cleared, and the unfinished copy stays until the next start. The next start removes the unfinished copies of that plain index, of that day or of an earlier one, and copies the events again
+- an unfinished copy of another plain index, e.g. of one that was deleted by hand, is kept outside the alias with a `[WARN]` line, as its events may be nowhere else. Its events are still shown in the **System logs**, and it is deleted after `CP_SECURITY_LOGS_ROLLOVER_DAYS` days, as the other indices
+
+Please note:
+
+- the security events that failed to be stored while the alias had no write index are not recovered
+- do not delete a write-blocked `security_log` index by hand: restart the search ELK service instead, and it moves the events
+- the moved events of a plain index are kept in the index of the day of the move. So the **System logs** show them only if the period of the filter reaches that day
