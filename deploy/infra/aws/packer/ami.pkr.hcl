@@ -1,0 +1,83 @@
+packer {
+  required_plugins {
+    amazon = {
+      version = ">= 1.2.8"
+      source  = "github.com/hashicorp/amazon"
+    }
+    git = {
+      version = ">= 0.6.2"
+      source  = "github.com/ethanmdavidson/git"
+    }
+  }
+}
+
+data "git-commit" "cwd-head" { }
+
+# Latest Amazon Linux 2023 AMI with the 6.1 kernel, used when "source_ami" is not set explicitly
+data "amazon-ami" "amzn2023" {
+  filters = {
+    name                = "al2023-ami-2023.*-kernel-6.1-${var.source_ami_architecture}"
+    architecture        = "${var.source_ami_architecture}"
+    root-device-type    = "ebs"
+    virtualization-type = "hvm"
+    state               = "available"
+  }
+  owners      = ["amazon"]
+  most_recent = true
+  region      = "${var.region}"
+}
+
+locals {
+  timestamp = formatdate("YYYYMMDDHHmmss", timestamp())
+  truncated_sha = substr(data.git-commit.cwd-head.hash, 0, 8)
+  source_ami = var.source_ami != "" ? var.source_ami : data.amazon-ami.amzn2023.id
+  # Tags are assigned to the AMI, while it is being created, in contrast to the description,
+  # which is applied afterwards and requires an extra permission, and is not set at all
+  ami_tags = merge({
+                     OS_Version = "amzn2023"
+                     Base_AMI_Name = "{{ .SourceAMIName }}"
+                     Type = "${var.ami_type}"
+                     SHA = "${local.truncated_sha}"
+                   },
+                   (var.ami_type == "gpu"
+                    ? { Nvidia_Driver_Version = "${var.nvidia_driver_version}" }
+                    : {}))
+}
+
+source "amazon-ebs" "cloud-pipeline-ami" {
+  ami_name             = "CloudPipeline-${var.ami_type}-${local.timestamp}"
+  instance_type        = "${var.instance_type}"
+  region               = "${var.region}"
+  source_ami           = "${local.source_ami}"
+  ssh_username         = "${var.ssh_username}"
+  ssh_interface        = "${var.ssh_interface}"
+  communicator         = "ssh"
+  # Required for the "session_manager" ssh interface only and can be empty otherwise
+  iam_instance_profile = "${var.iam_instance_profile}"
+  skip_profile_validation = true
+  subnet_id            = "${var.subnet_id}"
+  # If not set - a temporary security group and a temporary key pair are created by packer
+  security_group_ids   = var.security_group_ids
+  temporary_security_group_source_cidrs = var.temporary_security_group_source_cidrs
+  ssh_keypair_name     = "${var.ssh_keypair_name}"
+  ssh_private_key_file = "${var.ssh_private_key_file}"
+  tags = local.ami_tags
+}
+
+build {
+  name = "cloud-pipeline-ami"
+  sources = [
+    "source.amazon-ebs.cloud-pipeline-ami"
+  ]
+
+  provisioner "file" {
+    source = "${var.deps_file}"
+    destination = "/tmp/install-deps.sh"
+  }
+
+  provisioner "shell" {
+    inline = [
+      "sudo env NVIDIA_DRIVER_VERSION='${var.nvidia_driver_version}' NVIDIA_DRIVER_URL_PREFIX='${var.nvidia_driver_url_prefix}' bash /tmp/install-deps.sh"
+    ]
+  }
+}
