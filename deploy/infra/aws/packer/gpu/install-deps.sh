@@ -43,48 +43,78 @@ yum install -y nc
 yum install -y iproute-tc
 yum install -y iptables-legacy
 update-alternatives --set iptables /usr/sbin/iptables-legacy
+# The user data joins more than one unmounted disk into one LVM volume (pvcreate, vgcreate, lvcreate)
+yum install -y lvm2
+
+# Each download below goes into a temporary folder and is installed only if it succeeds: a failed download,
+# unpack or check stops the build (set -e), so no image is created without the file
 
 # btrfs-progs package is not avaialble in 2023+
 # Replaced with:
 # - https://btrfs.readthedocs.io/en/latest/INSTALL.html#all-in-one-binary-busybox-style
 # - https://github.com/kdave/btrfs-progs
-cd /usr/bin && \
-wget -q "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/btrfs/6.17/btrfs.box.static" -O btrfs && \
-chmod +x btrfs && \
-ln -s btrfs mkfs.btrfs
+BTRFS_URL="https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/btrfs/6.17/btrfs.box.static"
+BTRFS_TMP_DIR="$(mktemp -d)"
+wget -q "$BTRFS_URL" -O "$BTRFS_TMP_DIR/btrfs" || { rm -rf "$BTRFS_TMP_DIR"; echo "[ERROR] Cannot download btrfs from $BTRFS_URL"; exit 1; }
+chmod +x "$BTRFS_TMP_DIR/btrfs"
+"$BTRFS_TMP_DIR/btrfs" --version
+install -m 0755 "$BTRFS_TMP_DIR/btrfs" /usr/bin/btrfs
+rm -rf "$BTRFS_TMP_DIR"
+ln -s btrfs /usr/bin/mkfs.btrfs
+/usr/bin/mkfs.btrfs --version
 
-# python2
-cd /opt && \
-wget -q "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz" && \
-tar -zxf Miniconda2-4.7.12.1-Linux-x86_64.tar.gz && \
-rm -f Miniconda2-4.7.12.1-Linux-x86_64.tar.gz && \
-ln -s /opt/conda/bin/python2 /usr/bin/python2 && \
-ln -s /opt/conda/bin/python2 /usr/bin/python && \
-ln -s /opt/conda/bin/pip /usr/bin/pip2 && \
+# Python 2 (Miniconda2) in /opt/conda: the commit and the pause of a run use python2 on the node,
+# if there is no /usr/local/python3.12/bin/python3.12
+CP_PYTHON2_DISTRO_URL="https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz"
+PYTHON2_TMP_DIR="$(mktemp -d)"
+wget -q "$CP_PYTHON2_DISTRO_URL" -O "$PYTHON2_TMP_DIR/python2.tgz" || { rm -rf "$PYTHON2_TMP_DIR"; echo "[ERROR] Cannot download Python 2 from $CP_PYTHON2_DISTRO_URL"; exit 1; }
+tar -zxf "$PYTHON2_TMP_DIR/python2.tgz" -C /opt
+rm -rf "$PYTHON2_TMP_DIR"
+/opt/conda/bin/python2 --version
+ln -s /opt/conda/bin/python2 /usr/bin/python2
+ln -s /opt/conda/bin/python2 /usr/bin/python
+ln -s /opt/conda/bin/pip /usr/bin/pip2
 ln -s /opt/conda/bin/pip /usr/bin/pip
 
-# python3
-cd /opt && \
-rm -rf python3.12 openssl && \
-wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/3/python3.12.tar.gz" -O python3.12.tar.gz && \
-tar -zxf python3.12.tar.gz && \
-rm -f python3.12.tar.gz
+# The platform's Python 3.12 distribution in /usr/local/python3.12, the path that it is built for, as
+# deploy/infra/aws/install-*-node.sh install it: the commit and the pause of a run use it on the node
+function install_python3_packages {
+      local _install_path="$1"
+      local _tmp_install_dir
+      _tmp_install_dir="$(mktemp -d)"
+      rm -rf "${_install_path}/python3.12" "${_install_path}/openssl"
+      CP_PYTHON3_DISTRO_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/3/python3.12.tar.gz"
 
-if command -v python3 &>/dev/null; then
-    echo "python3 is already available ($(command -v python3)), leaving it untouched"
-else
-    ln -s /opt/python3.12/bin/python3.12 /usr/bin/python3
-fi
+      echo "Getting python3 distro from $CP_PYTHON3_DISTRO_URL"
+      if ! wget -q "${CP_PYTHON3_DISTRO_URL}" -O "${_tmp_install_dir}/python3.tgz" \
+            || ! tar zxf "${_tmp_install_dir}/python3.tgz" -C "${_install_path}" \
+            || ! "${_install_path}/python3.12/bin/python3.12" -c 'import ssl' \
+            || ! "${_install_path}/python3.12/bin/python3.12" -m pip --version; then
+            rm -rf "${_tmp_install_dir}"
+            echo "[ERROR] Cannot install the python3 distro from $CP_PYTHON3_DISTRO_URL into ${_install_path}/python3.12"
+            return 1
+      fi
+      rm -rf "${_tmp_install_dir}"
+      echo "Python3 distro is installed into ${_install_path}/python3.12"
 
-if command -v pip3 &>/dev/null; then
-    echo "pip3 is already available ($(command -v pip3)), leaving it untouched"
-else
-    ln -s /opt/python3.12/bin/pip3.12 /usr/bin/pip3
-fi
+      if command -v python3 &>/dev/null; then
+            echo "python3 is already available ($(command -v python3)), leaving it untouched"
+      else
+            ln -s "${_install_path}/python3.12/bin/python3.12" "/usr/bin/python3"
+      fi
 
-# Install jq
-wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
-chmod +x /usr/bin/jq
+      if command -v pip3 &>/dev/null; then
+            echo "pip3 is already available ($(command -v pip3)), leaving it untouched"
+      else
+            ln -s "${_install_path}/python3.12/bin/pip3.12" "/usr/bin/pip3"
+      fi
+}
+
+install_python3_packages "/usr/local"
+
+# Install jq: the package of Amazon Linux 2023, which its AMI already has
+yum install -y jq
+jq --version
 
 # Enable forwarding
 cat <<EOF >/etc/sysctl.d/k8s.conf
@@ -117,7 +147,7 @@ if [ "$NVIDIA_DRIVER_URL_PREFIX" ]; then
     # A custom location serves everything as a single archive:
     # the driver runfile and the Nvidia rpm packages, e.g. Fabric Manager
     NVIDIA_DIST_DIR="$(mktemp -d)"
-    curl -k -L -o "$NVIDIA_DIST_DIR/$DRIVER_VERSION.tgz" "$NVIDIA_DRIVER_URL_PREFIX/$DRIVER_VERSION.tgz"
+    curl -k -f -L -o "$NVIDIA_DIST_DIR/$DRIVER_VERSION.tgz" "$NVIDIA_DRIVER_URL_PREFIX/$DRIVER_VERSION.tgz"
     tar -zxf "$NVIDIA_DIST_DIR/$DRIVER_VERSION.tgz" -C "$NVIDIA_DIST_DIR"
     rm -f "$NVIDIA_DIST_DIR/$DRIVER_VERSION.tgz"
 
@@ -146,19 +176,23 @@ if [ "$NVIDIA_DRIVER_URL_PREFIX" ]; then
 
 else
 
-    curl -k -L -O https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run
-    chmod +x ./NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run
-    ./NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run -s
-    rm -f ./NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run
+    # The driver runfile and the rpm packages are downloaded into a temporary folder, which is removed afterwards.
+    # A failed download (curl -f) stops the build
+    NVIDIA_DIST_DIR="$(mktemp -d)"
+    NVIDIA_RUN_FILE="$NVIDIA_DIST_DIR/NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run"
+    curl -k -f -L -o "$NVIDIA_RUN_FILE" "https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run"
+    chmod +x "$NVIDIA_RUN_FILE"
+    "$NVIDIA_RUN_FILE" -s
 
     # Fabric Manager for A100, H100, H200 and friends
     NVIDIA_PUBLIC_RPM_URL_PREFIX="https://developer.download.nvidia.com/compute/cuda/repos/amzn2023/x86_64"
-    curl -k -L -O $NVIDIA_PUBLIC_RPM_URL_PREFIX/nvidia-fabricmanager-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
-    yum install -y ./nvidia-fabricmanager-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
-    curl -k -L -O $NVIDIA_PUBLIC_RPM_URL_PREFIX/libnvidia-cfg-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
-    yum install -y ./libnvidia-cfg-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
-    curl -k -L -O $NVIDIA_PUBLIC_RPM_URL_PREFIX/nvidia-persistenced-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
-    yum install -y ./nvidia-persistenced-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
+    for _nvidia_package in nvidia-fabricmanager libnvidia-cfg nvidia-persistenced; do
+        _nvidia_rpm="${_nvidia_package}-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm"
+        curl -k -f -L -o "$NVIDIA_DIST_DIR/$_nvidia_rpm" "$NVIDIA_PUBLIC_RPM_URL_PREFIX/$_nvidia_rpm"
+        yum install -y "$NVIDIA_DIST_DIR/$_nvidia_rpm"
+    done
+
+    rm -rf "$NVIDIA_DIST_DIR"
 
 fi
 
