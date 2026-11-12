@@ -23,8 +23,8 @@ Test verifies that the search in the console output of a run log (**Ctrl+F**):
 | 9 | Clear the search field, type `RED TEXT` | <li> `1 of 1` is shown next to the buttons <li> `red text` is highlighted in the line `red text plain text` |
 | 10 | Clear the search field, type `example link` | <li> `1 of 1` is shown next to the buttons <li> The text of the `example link` link is highlighted |
 | 11 | Clear the search field, type `after the un` | <li> `1 of 2` is shown next to the buttons <li> `after the un` is highlighted in the lines ` after the unsafe link` and `after the unterminated link`, and its first match has a brighter background than the second one |
-| 12 | Press **Enter** | `2 of 2` is shown next to the buttons, and the match in the line `after the unterminated link` has the brighter background |
-| 13 | Press **Shift+Enter** | `1 of 2` is shown next to the buttons, and the match in the line ` after the unsafe link` has the brighter background |
+| 12 | Press **Ctrl+G** | `2 of 2` is shown next to the buttons, and the match in the line `after the unterminated link` has the brighter background |
+| 13 | Press **Ctrl+Shift+G** | `1 of 2` is shown next to the buttons, and the match in the line ` after the unsafe link` has the brighter background |
 | 14 | Press **Esc** | The search field disappears, and nothing is highlighted |
 
 **After**:
