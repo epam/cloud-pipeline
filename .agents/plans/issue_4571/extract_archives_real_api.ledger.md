@@ -14,7 +14,8 @@
 | docs-cases | manual and release note | done | opus · medium | | the caveat now says "queued, not yet carried out" rather than "not available" |
 | — | fresh-eyes review | done | opus | | 6 findings + nits; no functional defect in the request bodies |
 | — | review fixes | done | opus · high | | findings 1, 3, 4, 5 and the nits; 6 left as designed |
-| docs-cases | UI test cases | not done | | | own branch `issue_4571/extract_archives_on_upload_gui_testcases`, PR #4719 |
+| docs-cases | UI test cases | done | opus · medium | 902764a8dd, #4719 | 4571_4 rewritten, 4571_7/8/9 added |
+| cap-in-modal | the cap check in the confirmation pop-up | done | opus · high | | at the cap, "Upload and extract" is disabled and an info Alert says why |
 
 decision · the UNPACK_ARCHIVE worker in `storage-async-task-service` is out of scope — the user chose
 "GUI only, keep a doc note". The GUI queues real tasks that nothing executes, and the manual and the
@@ -42,3 +43,12 @@ note · the duplicated queued-toast block moved into `showQueuedTaskMessage`, so
 the dismiss-on-click half as well as the wording.
 note · "Upload and extract" is now gated on the store as well as the capability prop - without the
 store the pop-up never appears, rather than uploading and silently queueing nothing.
+decision · the cap is checked as the confirmation pop-up opens, mirroring what "Download archive"
+does before opening its own. The answer is an Alert in the pop-up, not a toast: the pop-up is already
+open and is where the choice is made.
+decision · only "Upload and extract" is disabled at the cap. Upload and Cancel keep working - the
+files can still be uploaded, and refusing the whole upload over an extraction would be worse.
+note · the check is optimistic while in flight and on failure, like `archiveDownloadAllowed`: the
+server enforces the quota, so a check that cannot run must not refuse the extraction.
+note · `componentWillUnmount` is new on UploadButton - the async check needs an unmounted guard, and
+the pending selection debounce is cleared there too.

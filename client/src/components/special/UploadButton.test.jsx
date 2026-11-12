@@ -63,8 +63,11 @@ let instance;
 
 // Stands in for the CurrentUserAsyncTasks store the component is given: one
 // method, which queues one extraction task.
-function asyncTasksDouble (startArchiveExtraction) {
-  return {startArchiveExtraction};
+function asyncTasksDouble (startArchiveExtraction, checkActiveTasksLimit) {
+  return {
+    startArchiveExtraction,
+    checkActiveTasksLimit: checkActiveTasksLimit || fn().mockResolvedValue({allowed: true})
+  };
 }
 
 // Extraction needs both the capability prop and the store, so the store is a
@@ -696,4 +699,78 @@ describe('UploadButton - queueing the extraction', () => {
     },
     10000
   );
+});
+
+describe('UploadButton - the archive-task cap in the confirmation pop-up', () => {
+  afterEach(() => {
+    if (instance) {
+      instance.setState({uploadInfoVisible: false, pendingConfirmation: false});
+      instance = null;
+    }
+    useRealTimers();
+  });
+
+  const AT_THE_CAP = 'You already have 2 archive tasks in progress, and the limit is 2.';
+
+  async function openConfirmation (asyncTasks) {
+    useFakeTimers();
+    const {input} = renderUploadButton({extractArchivesAvailable: true, asyncTasks});
+    await selectFiles(input, [zipFile('archive.zip')]);
+    await settleSelection();
+    // Real timers from here: the check resolves through a promise chain.
+    useRealTimers();
+    return input;
+  }
+
+  test('at the cap, Upload and extract is disabled and an info alert says why', async () => {
+    const checkActiveTasksLimit = fn().mockResolvedValue({allowed: false, reason: AT_THE_CAP});
+    await openConfirmation(asyncTasksDouble(fn(), checkActiveTasksLimit));
+
+    await waitFor(() => {
+      expect(screen.getByText(AT_THE_CAP)).toBeInTheDocument();
+    });
+    expect(
+      screen.getByRole('button', {name: 'Upload and extract'})
+    ).toBeDisabled();
+    // Only that one button - the files can still be uploaded.
+    expect(screen.getByRole('button', {name: 'Upload'})).not.toBeDisabled();
+    expect(screen.getByRole('button', {name: 'Cancel'})).not.toBeDisabled();
+  });
+
+  test('below the cap, the button stays enabled and no alert is shown', async () => {
+    const checkActiveTasksLimit = fn().mockResolvedValue({allowed: true});
+    await openConfirmation(asyncTasksDouble(fn(), checkActiveTasksLimit));
+
+    await waitFor(() => expect(checkActiveTasksLimit).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
+    expect(screen.queryByText(AT_THE_CAP)).not.toBeInTheDocument();
+  });
+
+  // The server enforces the quota, so a check that cannot run must not refuse.
+  test('a failing check leaves the button enabled', async () => {
+    const checkActiveTasksLimit = fn().mockRejectedValue(new Error('network is down'));
+    await openConfirmation(asyncTasksDouble(fn(), checkActiveTasksLimit));
+
+    await waitFor(() => expect(checkActiveTasksLimit).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
+  });
+
+  test('a store with no cap check at all leaves the button enabled', async () => {
+    await openConfirmation({startArchiveExtraction: fn()});
+
+    expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
+  });
+
+  // So a blocked batch leaves no alert behind for the next one.
+  test('Cancel clears the alert', async () => {
+    const checkActiveTasksLimit = fn().mockResolvedValue({allowed: false, reason: AT_THE_CAP});
+    await openConfirmation(asyncTasksDouble(fn(), checkActiveTasksLimit));
+
+    await waitFor(() => expect(screen.getByText(AT_THE_CAP)).toBeInTheDocument());
+
+    await click(screen.getByRole('button', {name: 'Cancel'}));
+
+    expect(screen.queryByText(AT_THE_CAP)).not.toBeInTheDocument();
+    expect(instance.state.extractionBlockedReason).toBeUndefined();
+  });
 });

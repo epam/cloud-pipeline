@@ -26,7 +26,8 @@ import {
   Modal,
   Progress,
   Col,
-  Tooltip
+  Tooltip,
+  Alert
 } from 'antd';
 import S3Storage, {MAX_FILE_SIZE_DESCRIPTION} from '../../models/s3-upload/s3-storage';
 import DataStorageGenerateUploadUrl from '../../models/dataStorage/DataStorageGenerateUploadUrl';
@@ -75,7 +76,9 @@ class UploadButton extends React.Component {
     uploadingFiles: [],
     synchronousUploadingFiles: [],
     pendingConfirmation: false,
-    extractAfterUpload: false
+    extractAfterUpload: false,
+    // `undefined` while the cap check has not answered, which is allowed.
+    extractionBlockedReason: undefined
   };
 
   @observable s3Storage;
@@ -88,9 +91,23 @@ class UploadButton extends React.Component {
   // does not affect rendering. Reset in `hideUploadInfo`.
   queuedExtractionPaths = new Set();
 
+  unmounted = false;
+
+  // A new selection bumps this, so an in-flight check for the previous batch
+  // is ignored when it lands.
+  extractionLimitToken = 0;
+
   componentDidMount () {
     const {onInitialized} = this.props;
     onInitialized && onInitialized(this);
+  }
+
+  componentWillUnmount () {
+    this.unmounted = true;
+    if (this.uploadTimeout) {
+      clearTimeout(this.uploadTimeout);
+      this.uploadTimeout = null;
+    }
   }
 
   triggerClick = () => {
@@ -206,7 +223,8 @@ class UploadButton extends React.Component {
       uploadingFiles: [],
       synchronousUploadingFiles: [],
       pendingConfirmation: false,
-      extractAfterUpload: false
+      extractAfterUpload: false,
+      extractionBlockedReason: undefined
     }, async () => {
       if (this.props.onRefresh) {
         this.props.onRefresh(uploadingFiles.map(f => f.name));
@@ -239,12 +257,42 @@ class UploadButton extends React.Component {
         uploadInfoVisible: true,
         pendingConfirmation: true,
         uploadInfoClosable: true,
-        uploadingFiles: []
-      });
+        uploadingFiles: [],
+        extractionBlockedReason: undefined
+      }, this.checkExtractionLimit);
       return;
     }
     startUpload();
   };
+
+  /**
+   * The cap check `archiveDownloadAllowed` runs for a download, answered as an
+   * alert in the pop-up rather than a toast. Optimistic while in flight and on
+   * failure: the server enforces the quota itself.
+   */
+  checkExtractionLimit = () => {
+    const {asyncTasks} = this.props;
+    if (!asyncTasks || typeof asyncTasks.checkActiveTasksLimit !== 'function') {
+      return;
+    }
+    this.extractionLimitToken += 1;
+    const token = this.extractionLimitToken;
+    Promise.resolve()
+      .then(() => asyncTasks.checkActiveTasksLimit())
+      .then(({allowed, reason} = {}) => {
+        if (this.unmounted || token !== this.extractionLimitToken) {
+          return;
+        }
+        this.setState({extractionBlockedReason: allowed ? undefined : reason});
+      })
+      .catch((error) => {
+        console.warn('Could not check the active archive-task limit', error);
+      });
+  };
+
+  get extractionBlocked () {
+    return !!this.state.extractionBlockedReason;
+  }
 
   /**
    * Cancels a paused batch. Nothing uploaded, so no `onRefresh`.
@@ -255,6 +303,7 @@ class UploadButton extends React.Component {
       uploadInfoClosable: false,
       pendingConfirmation: false,
       extractAfterUpload: false,
+      extractionBlockedReason: undefined,
       uploadingFiles: [],
       synchronousUploadingFiles: []
     });
@@ -305,7 +354,8 @@ class UploadButton extends React.Component {
           // Left set, these would arm extraction for a batch that never
           // uploaded.
           pendingConfirmation: false,
-          extractAfterUpload: false
+          extractAfterUpload: false,
+          extractionBlockedReason: undefined
         });
         return;
       }
@@ -318,7 +368,8 @@ class UploadButton extends React.Component {
           uploadingFiles: [],
           synchronousUploadingFiles: [],
           pendingConfirmation: false,
-          extractAfterUpload: false
+          extractAfterUpload: false,
+          extractionBlockedReason: undefined
         });
         return;
       }
@@ -508,7 +559,8 @@ class UploadButton extends React.Component {
           synchronousUploadingFiles: [],
           // See `onUploadStatusChangedSynchronous`.
           pendingConfirmation: false,
-          extractAfterUpload: false
+          extractAfterUpload: false,
+          extractionBlockedReason: undefined
         });
         return;
       }
@@ -695,9 +747,11 @@ class UploadButton extends React.Component {
         >
           Cancel
         </Button>
+        {/* Only this one is disabled at the cap - plain Upload still works. */}
         <Button
           id="upload-and-extract-button"
           style={{marginRight: 8}}
+          disabled={this.extractionBlocked}
           onClick={this.confirmUpload(true)}
         >
           Upload and extract
@@ -909,6 +963,17 @@ class UploadButton extends React.Component {
           closable={this.state.pendingConfirmation ? true : this.state.uploadInfoClosable}
           onCancel={this.state.pendingConfirmation ? this.cancelConfirmation : this.hideUploadInfo}
           visible={this.state.uploadInfoVisible}>
+          {
+            // `info`, not `warning`: the selection is fine and Upload works.
+            this.state.pendingConfirmation && this.extractionBlocked && (
+              <Alert
+                type="info"
+                showIcon
+                style={{marginBottom: 8}}
+                message={this.state.extractionBlockedReason}
+              />
+            )
+          }
           {
             this.state.pendingConfirmation &&
             this.state.synchronousUploadingFiles.map(
