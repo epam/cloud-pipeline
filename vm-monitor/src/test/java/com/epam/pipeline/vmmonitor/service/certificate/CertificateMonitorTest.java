@@ -41,6 +41,7 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -55,6 +56,7 @@ public class CertificateMonitorTest {
 
     private static final String EXPIRED = "expired.pem";
     private static final String VALID = "valid.pem";
+    private static final String ADDED = "added.pem";
     // Not a certificate file name: the link to it is
     private static final String LINK_TARGET = "target.data";
     private static final String MASKS = "pem,crt";
@@ -162,11 +164,12 @@ public class CertificateMonitorTest {
         final Path moved = root.resolve("moved-pki");
         Files.move(folder, moved);
         monitor.monitorChanges();
-        // The same files, with the same attributes
+        copy(EXPIRED, moved.resolve(ADDED));
+        // The same files, with the same attributes, and one new file
         Files.move(moved, folder);
         monitor.monitorChanges();
 
-        verify(notifier, never()).notifyExpiringCertificate(any());
+        assertThat(notifiedPaths(1), containsInAnyOrder(folder.resolve(ADDED)));
     }
 
     @Test
@@ -199,7 +202,7 @@ public class CertificateMonitorTest {
         monitor.monitorChanges();
 
         // The folder has its baseline: a new file is checked, and a removed one is forgotten
-        final Path added = copy(EXPIRED, folder.resolve("added.pem"));
+        final Path added = copy(EXPIRED, folder.resolve(ADDED));
         monitor.monitorChanges();
         Files.delete(expired);
         monitor.monitorChanges();
@@ -215,8 +218,9 @@ public class CertificateMonitorTest {
 
     @Test
     public void changesCheckShouldNotNotifyCertificatesCheckedByTheFullScan() throws IOException {
-        final Path expired = copy(EXPIRED, folder.resolve(EXPIRED));
         final CertificateMonitor monitor = monitor(true);
+        monitor.monitorChanges();
+        final Path expired = copy(EXPIRED, folder.resolve(EXPIRED));
         monitor.monitor();
         assertThat(notifiedPaths(1), containsInAnyOrder(expired));
         clearInvocations(notifier);
@@ -224,6 +228,21 @@ public class CertificateMonitorTest {
         monitor.monitorChanges();
 
         verify(notifier, never()).notifyExpiringCertificate(any());
+    }
+
+    @Test
+    public void changesCheckShouldGoOnAndRecordTheFilesIfANotificationFails() throws IOException {
+        final CertificateMonitor monitor = monitor(true);
+        monitor.monitorChanges();
+        doThrow(new IllegalStateException("test")).when(notifier).notifyExpiringCertificate(any());
+
+        final Path expired = copy(EXPIRED, folder.resolve(EXPIRED));
+        final Path otherExpired = copy(EXPIRED, folder.resolve("other.pem"));
+        final Path expiredInOtherFolder = copy(EXPIRED, otherFolder.resolve(EXPIRED));
+        monitor.monitorChanges();
+        monitor.monitorChanges();
+
+        assertThat(notifiedPaths(3), containsInAnyOrder(expired, otherExpired, expiredInOtherFolder));
     }
 
     @Test
@@ -253,7 +272,7 @@ public class CertificateMonitorTest {
         monitor.monitorChanges();
         verify(notifier, never()).notifyExpiringCertificate(any());
 
-        final Path added = copy(EXPIRED, later.resolve("added.pem"));
+        final Path added = copy(EXPIRED, later.resolve(ADDED));
         monitor.monitorChanges();
 
         assertThat(notifiedPaths(1), containsInAnyOrder(added));

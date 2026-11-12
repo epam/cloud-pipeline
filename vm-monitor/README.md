@@ -32,9 +32,16 @@ There are two scans:
 - **The full scan** checks every certificate file. A certificate that expires soon is reported by every full scan,
   until it is replaced or removed.
 - **The changes check** checks only the files that are new or changed since the last scan of their folder. So a
-  certificate that is added close to its expiration is reported within a minute, not at the next full scan.
+  certificate that is added close to its expiration is reported at the next changes check (every minute by default),
+  not at the next full scan. The checks of the service run one after another, on one thread, so a check can start
+  later while another one runs.
   - A file is changed when its modification time, size or file key (the inode on Linux) is different. So a file
-    that is replaced by another file with the same modification time is checked too.
+    that is replaced by another file with the same modification time is checked too. The content is not compared:
+    any rewrite or `touch` of a certificate file that expires soon sends another notification, and a file that is
+    overwritten in place with the same modification time and size is not checked until the next full scan.
+  - If the check of a file fails, e.g. the notification cannot be formed, the error is logged:
+    `Failed to check new or changed certificate file <path>: ...`. The other files are still checked, and the file
+    is not checked again until it changes.
   - The first scan of a folder after the service starts only records its files. So a restart sends no notifications.
     The full scan records the files too, so the changes check does not check them again.
   - A file that is removed is forgotten. If it is added again, it is a new file.

@@ -56,7 +56,7 @@ import java.util.stream.Stream;
  * <p>
  * {@link #monitor()} is the full scan: it checks every certificate file. {@link #monitorChanges()} checks only the
  * files that are new or changed since their folder was scanned last time, so that a certificate which is added close
- * to its expiration is reported at once, not at the next full scan.
+ * to its expiration is reported at the next check, not at the next full scan.
  * <p>
  * The first complete scan of a folder is its baseline: {@link #monitorChanges()} only records its files, so a
  * restart of the service sends no notifications. A scan that fails part way keeps the files recorded before for the
@@ -137,9 +137,18 @@ public class CertificateMonitor implements Monitor {
         return !UNREADABLE.equals(previous) && !file.equals(previous);
     }
 
+    /**
+     * Checks one new or changed file. A failure, e.g. of the notification, is logged and does not stop the check of
+     * the other files: the folder is still recorded, so the file is not checked again until it changes.
+     */
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private void checkChangedCertificate(final Path filePath) {
         log.info("Checking new or changed certificate file {}", filePath);
-        checkExpiration(filePath);
+        try {
+            checkExpiration(filePath);
+        } catch (RuntimeException e) {
+            log.error("Failed to check new or changed certificate file {}: {}", filePath, e.getMessage());
+        }
     }
 
     /**
