@@ -72,32 +72,42 @@ ln -s /opt/conda/bin/pip /usr/bin/pip
 function install_python3_packages {
       local _install_path="$1"
       local _tmp_install_dir
-      _tmp_install_dir="$(mktemp -d)"
-      rm -rf "${_install_path}/python3.12" "${_install_path}/openssl"
       CP_PYTHON3_DISTRO_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/3/python3.12.tar.gz"
 
+      # The distro is unpacked next to its place, as scripts/pipeline-launch/launch.sh does, and moved in place
+      # only when it runs. The check reads the version it prints, as a file that is not a binary, e.g. an empty one,
+      # is run by bash as a script, and succeeds
+      _tmp_install_dir="$(mktemp -d "${_install_path}/.cp-python3.XXXXXX")"
       echo "Getting python3 distro from $CP_PYTHON3_DISTRO_URL"
       if ! wget -q "${CP_PYTHON3_DISTRO_URL}" -O "${_tmp_install_dir}/python3.tgz" \
-            || ! tar zxf "${_tmp_install_dir}/python3.tgz" -C "${_install_path}" \
-            || ! "${_install_path}/python3.12/bin/python3.12" -c 'import ssl' \
-            || ! "${_install_path}/python3.12/bin/python3.12" -m pip --version; then
+            || ! tar zxf "${_tmp_install_dir}/python3.tgz" -C "${_tmp_install_dir}" \
+            || [ "$("${_tmp_install_dir}/python3.12/bin/python3.12" -c 'import ssl, sys; print("%d.%d" % sys.version_info[:2])')" != "3.12" ] \
+            || ! "${_tmp_install_dir}/python3.12/bin/python3.12" -m pip --version; then
             rm -rf "${_tmp_install_dir}"
             echo "[ERROR] Cannot install the python3 distro from $CP_PYTHON3_DISTRO_URL into ${_install_path}/python3.12"
             return 1
       fi
+      rm -rf "${_install_path}/python3.12"
+      mv "${_tmp_install_dir}/python3.12" "${_install_path}/python3.12"
+      # The distro has its OpenSSL built in, and /usr/local/openssl may be the image's own: only a distro that brings
+      # an openssl folder (the previous python3.12.0 build) replaces it
+      if [ -d "${_tmp_install_dir}/openssl" ]; then
+            rm -rf "${_install_path}/openssl"
+            mv "${_tmp_install_dir}/openssl" "${_install_path}/openssl"
+      fi
       rm -rf "${_tmp_install_dir}"
       echo "Python3 distro is installed into ${_install_path}/python3.12"
 
+      # python3 and pip3 are linked to it only if the image has no python3 of its own, so that pip3 matches python3
       if command -v python3 &>/dev/null; then
-            echo "python3 is already available ($(command -v python3)), leaving it untouched"
+            echo "python3 is already available ($(command -v python3)), leaving python3 and pip3 untouched"
       else
             ln -s "${_install_path}/python3.12/bin/python3.12" "/usr/bin/python3"
-      fi
-
-      if command -v pip3 &>/dev/null; then
-            echo "pip3 is already available ($(command -v pip3)), leaving it untouched"
-      else
-            ln -s "${_install_path}/python3.12/bin/pip3.12" "/usr/bin/pip3"
+            if command -v pip3 &>/dev/null; then
+                  echo "pip3 is already available ($(command -v pip3)), leaving it untouched"
+            else
+                  ln -s "${_install_path}/python3.12/bin/pip3.12" "/usr/bin/pip3"
+            fi
       fi
 }
 
