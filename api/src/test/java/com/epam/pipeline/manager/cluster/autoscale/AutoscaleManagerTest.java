@@ -15,6 +15,7 @@
 
 package com.epam.pipeline.manager.cluster.autoscale;
 
+import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
@@ -58,7 +59,9 @@ import org.mockito.internal.util.reflection.Whitebox;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -86,6 +89,8 @@ public class AutoscaleManagerTest {
     private static final int NODEUP_GENERIC_FAILURE_EXIT_CODE = 1;
     private static final String READY_FREE_NODE_ID = "222";
     private static final String NOT_READY_FREE_NODE_ID = "333";
+    private static final String FREE_POOL_NODE_ID = AutoscaleContants.NODE_POOL_PREFIX + "1";
+    private static final String FREE_LOCAL_NODE_ID = AutoscaleContants.NODE_LOCAL_PREFIX + "1";
 
     @Mock
     private PipelineRunManager pipelineRunManager;
@@ -412,6 +417,45 @@ public class AutoscaleManagerTest {
         verify(reassignHandler).tryReassignNode(eq(kubernetesClient), any(), any(), eq(TEST_RUN_ID.toString()),
                 eq(TEST_RUN_ID), any(), eq(Collections.emptyList()));
         verify(cloudFacade).scaleDownNode(Long.valueOf(NOT_READY_FREE_NODE_ID));
+    }
+
+    @Test
+    public void testFreePoolAndLocalNodesNotScaledDownWhenClusterIsFull() {
+        mockFullClusterWithFreeNodes(FREE_POOL_NODE_ID, FREE_LOCAL_NODE_ID);
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(cloudFacade, never()).scaleDownNode(any(Long.class));
+        verify(cloudFacade, never()).scaleUpNode(any(), any(), any(), any());
+        verify(pipelineRunManager).updateTags(eq(TEST_RUN_ID), any(TagsVO.class), eq(false));
+    }
+
+    @Test
+    public void testFreeRunNodeScaledDownNextToFreePoolNodeWhenClusterIsFull() {
+        mockFullClusterWithFreeNodes(FREE_POOL_NODE_ID, READY_FREE_NODE_ID);
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(cloudFacade).scaleDownNode(Long.valueOf(READY_FREE_NODE_ID));
+        verify(cloudFacade).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
+    }
+
+    /**
+     * The given free nodes are ready, in this order, and the cluster has reached its maximum size.
+     * The pending run takes none of them.
+     */
+    private void mockFullClusterWithFreeNodes(final String... nodeIds) {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_KILL_NOT_MATCHING_NODES)).thenReturn(true);
+        when(kubernetesManager.getSchedulableNodesIds(kubernetesClient))
+                .thenReturn(new LinkedHashSet<>(Arrays.asList(nodeIds)));
+        for (final String nodeId : nodeIds) {
+            when(kubernetesManager.isNodeAvailable(kubernetesClient, nodeId)).thenReturn(true);
+        }
+        doReturn(new NodeList("", Collections.singletonList(new Node()), "", null))
+                .when(kubernetesManager).getAvailableNodes(any());
+        when(cloudFacade.scaleUpNode(any(), any(), any(), any())).thenReturn(new RunInstance());
+        testRun.setTags(new HashMap<>());
     }
 
     private void mockNodeUpRetryCountParameter(final String value) {
