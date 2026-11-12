@@ -2029,7 +2029,7 @@ Now, the GUI uses `ansi_up` 5.2, `jquery.terminal` 2.48, `papaparse` 5.7, `highl
 - a search for a text with `|` or `\` finds it. Before, such a search could freeze the page or fail
 - the color at the end of a log no longer goes over to the first lines of another log, or of the next update of the same log
 - the bold text is shown in bold. Before, it was shown in a brighter color
-- a hyperlink of the `OSC 8` escape code is shown as a link that opens in a new tab if it is an `http` or `https` one, and is left out otherwise
+- a hyperlink of the `OSC 8` escape code is shown as a link that opens in a new tab if it is an `http` or `https` one. Of any other hyperlink, only the text is shown
 - an escape code that is not complete at the end of a line, e.g. a hyperlink with no end, is shown as text, with the rest of the line
 
 See details in [11. Manage Runs](../../manual/11_Manage_Runs/11._Manage_Runs.md#console-output).
