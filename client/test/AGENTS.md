@@ -142,11 +142,9 @@ These are the deliverable as much as the tests are. A test file may cite one of 
 ## Two things that are easy to get wrong here
 
 - **Run `nvm use` inside `client` before any check here, including `test:live`.** A shell's
-  default Node is often a newer LTS, not the 14 this app needs (`client/.nvmrc`,
-  `.agents/localenv/node.md`). Under the wrong Node, `jest`/`babel-jest` fail every suite —
-  unit or live — with `[BABEL] ... Requires Babel "^7.22.0 || ^8.0.0-0", but was loaded with
-  "7.2.2"`. That message points at a plugin version mismatch, but the actual cause is the Node
-  version; reinstalling or touching `node_modules` will not fix it.
+  default Node is often a newer LTS, not the 14 this app is built and checked with
+  (`client/.nvmrc`, `.agents/localenv/node.md`), and a pass on another Node proves nothing about
+  that one.
 - **Raw `Date` local-time methods (`getHours`, `toString`, ...) still follow the machine's
   timezone**, even though `setup/timezone.js` pins `moment-timezone`'s default to UTC.
   Assigning `process.env.TZ` does not work either — Node reads the zone once at startup, before any

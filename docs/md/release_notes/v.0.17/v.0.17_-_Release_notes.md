@@ -73,6 +73,7 @@
 
 - [Notable Bug fixes](#notable-bug-fixes)
     - [Nextflow run view: some tasks stay `RUNNING` after the run finishes](#nextflow-run-view-some-tasks-stay-running-after-the-run-finishes)
+    - [GUI: library versions with security advisories](#gui-library-versions-with-security-advisories)
     - [Users export: the names of the date columns depend on the API time zone](#users-export-the-names-of-the-date-columns-depend-on-the-api-time-zone)
     - [A committed image of a user with a large UID writes hundreds of GB to the disk](#a-committed-image-of-a-user-with-a-large-uid-writes-hundreds-of-gb-to-the-disk)
     - [Detached configuration: the old name stays in the Library after a rename](#detached-configuration-the-old-name-stays-in-the-library-after-a-rename)
@@ -2024,6 +2025,29 @@ For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#se
 
 Previously, the last task statuses of a Nextflow run were lost when the runtime data sync did not run - e.g. with `evalType` set to `WORKDIR` in the `NF_TASK` entry of the `launch.run.sync.runtime.data` preference. So some tasks stayed `RUNNING` in the **Nextflow** view of a finished run.
 Now, the last statuses are always sent when Nextflow finishes.
+
+### GUI: library versions with security advisories
+
+Previously, the GUI used library versions with published security advisories:
+
+- `ansi_up` 2, which renders the colors of the run logs: cross-site scripting
+- `jquery.terminal` 1.10, the terminal of the **Miew** viewer: cross-site scripting
+- `papaparse` 4, which parses the `CSV`/`TSV` files for their previews and editors: a regular expression denial of service
+- `highlight.js` 9, which highlights the code in Markdown and in the bash command views: a regular expression denial of service in some languages
+- `react-dev-utils` 7 and `@babel/core` 7.2, used to build the GUI: an OS command injection and an arbitrary file read
+
+Now, the GUI uses `ansi_up` 5.2, `jquery.terminal` 2.48, `papaparse` 5.7, `highlight.js` 10.7, `react-dev-utils` 11 and `@babel/core` 7.29. In the run logs:
+
+- the search (**Ctrl+F**) finds a text with `&`, `<` or `>` in it. Before, it found no such text, and a search for `amp`, `lt` or `gt` broke the display of those characters
+- a search for a text with `|` or `\` finds it. Before, such a search could freeze the page or fail
+- the color at the end of a log no longer goes over to the first lines of another log, or of the next update of the same log
+- the bold text is shown in bold. Before, it was shown in a brighter color
+- a hyperlink of the `OSC 8` escape code is shown as a link that opens in a new tab if it is an `http` or `https` one. Of any other hyperlink, only the text is shown
+- an escape code that is not complete at the end of a line, e.g. a hyperlink with no end, is shown as text, with the rest of the line
+
+See details in [11. Manage Runs](../../manual/11_Manage_Runs/11._Manage_Runs.md#console-output).
+
+Also, the GUI checks that the region of an AWS S3 storage is a valid part of a host name before it sends S3 requests there, as the advisory for the AWS SDK for JavaScript v2 recommends.
 
 ### Users export: the names of the date columns depend on the API time zone
 
