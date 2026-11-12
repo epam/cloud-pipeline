@@ -102,6 +102,54 @@ def test_rhel_does_not_install_coreutils_next_to_coreutils_single(install_comman
     assert install_command('git coreutils', cp_os='rhel', installed=('coreutils-single',)) == ['git']
 
 
+def _base_packages():
+    # The base packages that launch.sh installs at every run start
+    with open(LAUNCH_SH) as f:
+        for line in f:
+            if line.startswith('_CP_INIT_DEPS_LIST='):
+                return line.split('=', 1)[1].strip().strip('"')
+    raise AssertionError('_CP_INIT_DEPS_LIST not found in ' + LAUNCH_SH)
+
+
+@pytest.mark.parametrize('cp_os,installed', [
+    # What the rockylinux/rockylinux:9.8 and the registry.access.redhat.com/ubi9/ubi images have
+    ('rocky', ('curl-minimal', 'coreutils-single', 'tzdata')),
+    ('rhel', ('curl-minimal', 'coreutils-single', 'tzdata', 'acl'))])
+def test_el9_base_packages_install_skips_curl_next_to_curl_minimal(install_command, cp_os, installed):
+    # They conflict: yum fails, and the run gets none of the base packages
+    expected = [package for package in _base_packages().split()
+                if package not in ('curl', 'coreutils') and package not in installed]
+    assert install_command(_base_packages(), cp_os=cp_os, cp_ver='9.8', installed=installed) == expected
+    assert 'git' in expected and 'wget' in expected and 'fuse' in expected
+
+
+@pytest.mark.parametrize('cp_os,cp_ver', [('almalinux', '9.4'), ('centos', '9'), ('amzn', '2023')])
+def test_other_rpm_distributions_do_not_install_curl_next_to_curl_minimal(install_command, cp_os, cp_ver):
+    assert install_command('git curl', cp_os=cp_os, cp_ver=cp_ver, installed=('curl-minimal',)) == ['git']
+
+
+def test_rocky_does_not_install_curl_next_to_curl_minimal_with_ignore_installed_packages(install_command):
+    # The other packages are installed again, but curl cannot be installed next to curl-minimal
+    assert install_command('git curl', cp_ver='9.8', installed=('git', 'curl-minimal'), ignore_installed='true') \
+        == ['git']
+
+
+def test_rocky_installs_curl_if_neither_is_installed(install_command):
+    assert install_command('git curl', cp_ver='9.8', installed=('git',)) == ['curl']
+
+
+def test_rocky_does_not_install_curl_again(install_command):
+    assert install_command('git curl', cp_ver='8.9', installed=('git', 'curl')) == []
+
+
+def test_rocky_keeps_the_curl_minimal_name(install_command):
+    assert install_command('curl-minimal', cp_ver='9.8') == ['curl-minimal']
+
+
+def test_ubuntu_installs_curl(install_command):
+    assert install_command('git curl', cp_os='ubuntu', cp_ver='22.04') == ['git', 'curl']
+
+
 def test_rocky_and_rhel_name_procps_procps_ng(install_command):
     assert install_command('procps git') == ['procps-ng', 'git']
     assert install_command('git procps', cp_os='rhel', cp_ver='9.4') == ['git', 'procps-ng']

@@ -779,6 +779,13 @@ function get_install_command_by_current_distr {
                      check_installed "rpm" && rpm -q coreutils-single &> /dev/null; then
                         continue
                   fi
+                  # The images of Rocky Linux 9, RHEL 9 and the other EL 9 distributions may have curl-minimal instead
+                  # of curl: it has the curl command, and yum fails the whole install if curl is asked for next to it.
+                  # Checked with rpm itself, as CP_IGNORE_INSTALLED_PACKAGES does not make curl installable next to it
+                  if [ "$_TOOL_TO_CHECK" == "curl" ] && \
+                     check_installed "rpm" && rpm -q curl-minimal &> /dev/null; then
+                        continue
+                  fi
                   _TOOLS_TO_INSTALL_VERIFIED="$_TOOLS_TO_INSTALL_VERIFIED $_TOOL_TO_CHECK"
             fi
       done
