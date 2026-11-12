@@ -79,6 +79,7 @@
     - [NICE DCV setup reports a failure only after 30 minutes, with no reason](#nice-dcv-setup-reports-a-failure-only-after-30-minutes-with-no-reason)
     - [`sge create` and `sge configure` fail in tools without `diff`, and the extra SGE queues fail on Python 3](#sge-create-and-sge-configure-fail-in-tools-without-diff-and-the-extra-sge-queues-fail-on-python-3)
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
+    - [System logs: no security event is stored once the `security_log` alias has no write index](#system-logs-no-security-event-is-stored-once-the-security_log-alias-has-no-write-index)
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
     - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
     - [Storage files are not indexed when an object key is longer than 512 bytes](#storage-files-are-not-indexed-when-an-object-key-is-longer-than-512-bytes)
@@ -2091,6 +2092,27 @@ Also, a price list that can't be loaded no longer stops the billing service. The
 
 Previously, the installer created a backup worker for the GitLab database (`cp-bkp-worker-cp-gitlab-db`), but the worker image had no backup script for it. So every scheduled run of this worker failed with "Cannot find the backup script for cp-gitlab-db", and the administrators got a failure notification. The GitLab backup of the `cp-bkp-worker-cp-git` worker still included the database.
 In the current version, the worker dumps the GitLab database with `pg_dump`, and copies the dump to the backup storages, as it does for the other services. A failure of `pg_dump` fails the backup, so an empty dump does not replace the good ones.
+
+### System logs: no security event is stored once the `security_log` alias has no write index
+
+Previously, the search ELK curator service (`cp-search-elk-curator`), which sets up the indices of the security events of the **System logs** on start, only checked that something named `security_log` (`CP_SECURITY_LOGS_ELASTIC_PREFIX`) existed. The events are kept in daily indices behind the `security_log` alias, in Elasticsearch or in OpenSearch (`CP_SEARCH_ELK_TYPE`). Former versions of the search ELK service (`cp-search-elk`), which did this setup before, added a new index to that alias on each start. Once the alias pointed to two indices and none of them was the write index, every write of a security event and every daily rollover failed, so no security event was stored, and a restart did not repair it. Also, a security event written before the service had created the alias (e.g. by the API while the service started) created a plain `security_log` index instead. That index was never rolled over, so the cleanup deleted it with all its events once it was older than `CP_SECURITY_LOGS_ROLLOVER_DAYS` days, and the **System logs** did not show its events. And if the first index of the day, `security_log-<date>-000001`, already existed outside the alias, the alias was not created at all.
+Now, on each start, the service checks the alias, in Elasticsearch and in OpenSearch alike, and with the `CP_SEARCH_ELK_AUTH_SECRET` credentials, if they are set:
+
+- if neither the alias nor an index of that name exists, it creates an index of the day as the write index of the alias, e.g. `security_log-<date>-000001`. Indices of that day outside the alias are kept, and the new index takes the number after the highest of them, e.g. `security_log-<date>-000002`
+- if the alias has no write index, its newest index becomes the write index. The other indices stay in the alias with their events, and are deleted after `CP_SECURITY_LOGS_ROLLOVER_DAYS` days, as before
+- if the alias has a single index, with no write index flag, that index becomes its explicit write index
+- if the daily rollover of the write index stopped at an error, e.g. while the alias had no write index, the rollover is resumed. In OpenSearch, that is an index whose rollover failed after all its retries
+- if `security_log` is a plain index, its events are copied to a new index of the alias, with the number after the highest of the day. Once all of them are copied, the alias replaces the plain index, and the plain index is deleted, in one step. The writes are blocked during the copy, so the security events sent at that time are rejected and lost. If the copy fails, e.g. if a field of the plain index has another type, the copy is removed, the plain index keeps all its events and takes the writes again, and the service logs an `[ERROR]` line. The next start tries again
+- if a copy was interrupted, e.g. the service was stopped during the copy, the plain index still has all its events, and the unfinished copy and the write block of the plain index stay until the next start. Elasticsearch or OpenSearch may still run that copy. If the outcome of the copy cannot be checked, e.g. Elasticsearch or OpenSearch answers with an error, the write block is cleared, and the unfinished copy stays until the next start. The next start stops a copy that still runs, removes the unfinished copies of that plain index, of that day or of an earlier one, and copies the events again
+- if two starts of the service run at the same time, e.g. two pods during a rollout, only one of them moves the events: the later start stops and replaces the copy of the earlier one, and the earlier start then leaves the move to it
+- an unfinished copy of another plain index, e.g. of one that was deleted by hand, is kept outside the alias with a `[WARN]` line, as its events may be nowhere else. Its events are still shown in the **System logs**, and it is deleted after `CP_SECURITY_LOGS_ROLLOVER_DAYS` days, as the other indices
+
+Please note:
+
+- the security events that failed to be stored while the alias had no write index are not recovered
+- do not delete a write-blocked `security_log` index by hand: restart the search ELK curator service instead, and it moves the events
+- the moved events of a plain index are kept in the index of the day of the move. So the **System logs** show them only if the period of the filter reaches that day
+
 ### AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias
 
 [#4707](https://github.com/epam/cloud-pipeline/issues/4707)
