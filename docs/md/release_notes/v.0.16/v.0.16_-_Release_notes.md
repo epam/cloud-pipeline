@@ -46,6 +46,7 @@
 - [Python 3.12 in the node images](#python-312-in-the-node-images)
 - [New and changed certificate files are checked between the daily scans](#new-and-changed-certificate-files-are-checked-between-the-daily-scans)
 - [Amazon Linux 2023 node images built with Packer](#amazon-linux-2023-node-images-built-with-packer)
+- [A run can ask for a new node](#a-run-can-ask-for-a-new-node)
 
 ***
 
@@ -926,6 +927,18 @@ Now, `deploy/infra/aws/packer` builds such images with Packer, as on the `develo
 - The images do not pre-load the Kubernetes system images into `/opt/docker-system-images`, as the Amazon Linux 2 images do. The user data downloads them when a node starts, so a node of such an image has no local copy to fall back to, if that download fails.
 
 `deploy/infra/aws/packer/README.md` describes the options, the network access and the IAM permissions that the build needs.
+
+## A run can ask for a new node
+
+Previously, the autoscaler gave a run a free node of an earlier run, if such a node matched the run's instance type, disk and other requirements. A run could not ask for a new node. So it was not known in advance whether a run would start a new node in its **InitializeNode** task or get a free one, e.g. for a test that checks the node start.
+
+In the current version, a run with the `CP_CREATE_NEW_NODE` parameter set to `true` (`yes` and `on` work too, in any letter case) always gets a new node. The autoscaler never gives such a run a free node: it starts a new node, and the run waits for it, as for any new node. A run without this parameter, or with another value, can get a free node as before.
+
+The parameter is not in the default list of the system parameters (`launch.system.parameters`), so the **Add system parameter** dialog of the **Launch** form does not offer it. Add it with **Add parameter** as a String parameter.
+
+When the cluster has reached `cluster.max.size`, and `cluster.kill.not.matching.nodes` is `true`, every free node is treated as not matching for such a run: the autoscaler scales one of them down to make room for the new node.
+
+For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#active-run-states).
 
 ***
 
