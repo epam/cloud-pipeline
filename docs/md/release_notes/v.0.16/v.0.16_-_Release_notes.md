@@ -95,6 +95,7 @@
     - [`pipe storage cp` and `mv` fail with a file list on Windows and macOS](#pipe-storage-cp-and-mv-fail-with-a-file-list-on-windows-and-macos)
     - [The pipeline repository is not mounted in a run when `python` is not the Python of the platform](#the-pipeline-repository-is-not-mounted-in-a-run-when-python-is-not-the-python-of-the-platform)
     - [`pipe storage mount`: WebDAV mounts and extended attributes fail in the Windows and macOS builds](#pipe-storage-mount-webdav-mounts-and-extended-attributes-fail-in-the-windows-and-macos-builds)
+    - [GUI: library versions with security advisories](#gui-library-versions-with-security-advisories)
 
 ***
 
@@ -1241,3 +1242,28 @@ Previously, the Windows and macOS builds of the `pipe` CLI, which run on Python 
 
 In the Linux build, extended attributes with non-ASCII characters in their values failed in the same way.
 Now, the files in a storage mounted over WebDAV can be listed, created, written and truncated in the Python 3 builds too, and the extended attribute values are kept in the storage as UTF-8 text, in all builds.
+### GUI: library versions with security advisories
+
+Previously, the GUI used library versions with published security advisories:
+
+- `ansi_up` 2, which renders the colors of the run logs: cross-site scripting
+- `jquery.terminal` 1.10, the terminal of the **Miew** viewer: cross-site scripting
+- `papaparse` 4, which parses the `CSV`/`TSV` files for their previews and editors: a regular expression denial of service
+- `highlight.js` 9, which highlights the code in Markdown and in the bash command views: a regular expression denial of service in some languages
+- `react-dev-utils` 7 and `@babel/core` 7.2, used to build the GUI: an OS command injection and an arbitrary file read
+- `webpack-dev-server` 3 and its dependencies, such as `node-forge` and `webpack-dev-middleware`: the development server of the GUI (the `npm start` script), which is not used to build it
+
+Now, the GUI uses `ansi_up` 5.2, `jquery.terminal` 2.48, `papaparse` 5.7, `highlight.js` 10.7, `react-dev-utils` 11 and `@babel/core` 7.29, and the development server is removed. The GUI is built with `npm run build`, as before. In the run logs:
+
+- the search (**Ctrl+F**) finds a text with `&`, `<` or `>` in it. Before, it found no such text, and a search for `amp`, `lt` or `gt` broke the display of those characters
+- a search for a text with `|`, `\` or `+` finds that text. Before, such a search could freeze the page, fail, or find another text
+- the color at the end of a log no longer goes over to the first lines of another log, or of the next update of the same log
+- the bold text is shown in bold. Before, it was shown in a brighter color
+- a hyperlink of the `OSC 8` escape code is shown as a link that opens in a new tab if it is an `http` or `https` one, and is left out otherwise
+- an escape code that is not complete at the end of a line, e.g. a hyperlink with no end, is shown as text, with the rest of the line
+
+See details in [11. Manage Runs](../../manual/11_Manage_Runs/11._Manage_Runs.md#console-output).
+
+Also, the GUI checks that the region of an AWS S3 storage is a valid part of a host name before it sends S3 requests there, as the advisory for the AWS SDK for JavaScript v2 recommends.
+
+At the time of this change, `npm audit` reports 528 (592 before): 22 critical, 230 high, 257 moderate and 19 low. Most of them come from the build and test tools: webpack 4 with its loaders and plugins, PostCSS, `react-dev-utils`, Babel, Jest, ESLint and stylelint. The others are in libraries that the GUI includes, e.g. `lodash` 3 (of `dagre` and `pipeline-builder`), `fast-xml-parser` 4.2 (of `@aws-sdk/client-omics`) and `handsontable` 0.33. There are 2 more critical ones than before: `react-dev-utils` 11.0.4 brings `immer` 8.0.1 and `shell-quote` 1.7.2, which have critical advisories.
