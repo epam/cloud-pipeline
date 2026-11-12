@@ -38,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class OidcKeySourceProviderTest {
 
     private static final String ISSUER_URL = "https://token.actions.githubusercontent.com";
+    private static final String OTHER_ISSUER_URL = "https://login.microsoftonline.com/tenant/v2.0";
     private static final String KEYS_FIELD = "keys";
     private static final String FIRST_KEY_ID = "first";
     private static final String SECOND_KEY_ID = "second";
@@ -150,6 +151,44 @@ public class OidcKeySourceProviderTest {
                 .isInstanceOf(OidcTokenVerificationException.class);
         assertThatThrownBy(() -> provider.getKeySource(issuer))
                 .isInstanceOf(OidcTokenVerificationException.class);
+    }
+
+    @Test
+    public void shouldKeepTheSourceOfAnIssuerThatIsStillConfigured() throws JOSEException {
+        final OidcIssuer issuer = issuerWithKey(FIRST_KEY_ID);
+        final JWKSource<SecurityContext> before = provider.getKeySource(issuer);
+
+        provider.retainConfigured(Collections.singleton(ISSUER_URL));
+
+        assertThat(provider.getKeySource(issuer)).isSameAs(before);
+    }
+
+    /**
+     * A deleted issuer is never asked for again, so nothing else would ever drop its entry or stop
+     * the background thread its cache runs.
+     */
+    @Test
+    public void shouldDropTheSourceOfAnIssuerThatIsNoLongerConfigured() throws JOSEException {
+        final OidcIssuer issuer = issuerWithKey(FIRST_KEY_ID);
+        final JWKSource<SecurityContext> before = provider.getKeySource(issuer);
+
+        provider.retainConfigured(Collections.<String>emptySet());
+
+        assertThat(provider.getKeySource(issuer)).isNotSameAs(before);
+    }
+
+    @Test
+    public void shouldDropOnlyTheIssuersThatWentAway() throws JOSEException {
+        final OidcIssuer kept = issuerWithKey(FIRST_KEY_ID);
+        final OidcIssuer removed = issuerWithKey(SECOND_KEY_ID);
+        removed.setIssuer(OTHER_ISSUER_URL);
+        final JWKSource<SecurityContext> keptSource = provider.getKeySource(kept);
+        final JWKSource<SecurityContext> removedSource = provider.getKeySource(removed);
+
+        provider.retainConfigured(Collections.singleton(ISSUER_URL));
+
+        assertThat(provider.getKeySource(kept)).isSameAs(keptSource);
+        assertThat(provider.getKeySource(removed)).isNotSameAs(removedSource);
     }
 
     private static OidcIssuer issuer() {

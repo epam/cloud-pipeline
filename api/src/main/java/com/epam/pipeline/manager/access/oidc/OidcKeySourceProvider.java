@@ -37,8 +37,10 @@ import java.net.URI;
 import java.net.URL;
 import java.text.ParseException;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -84,6 +86,25 @@ public class OidcKeySourceProvider {
             close(existing);
             return buildCached(issuer, fingerprint);
         }).keySourceOrFail();
+    }
+
+    /**
+     * Forgets the issuers that are no longer configured.
+     * <p>
+     * The fingerprint notices an issuer that was edited, but it can say nothing about one that was
+     * deleted: nothing asks for that issuer's source again, so its entry would sit here with the
+     * background thread of its refresh-ahead cache still running, refetching the key set of a
+     * provider the platform has stopped trusting. No token could be accepted through it — an
+     * unconfigured issuer is refused before the source is ever reached — so this is about not
+     * leaving work running, not about access.
+     */
+    public void retainConfigured(final Set<String> configuredIssuers) {
+        for (final String name : new HashSet<>(keySources.keySet())) {
+            if (!configuredIssuers.contains(name)) {
+                close(keySources.remove(name));
+                log.info("Dropped the key source of issuer {}, which is no longer configured", name);
+            }
+        }
     }
 
     private CachedKeySource buildCached(final OidcIssuer issuer, final int fingerprint) {

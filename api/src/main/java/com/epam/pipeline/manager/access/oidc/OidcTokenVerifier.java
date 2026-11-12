@@ -34,6 +34,7 @@ import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
@@ -132,6 +133,9 @@ public class OidcTokenVerifier {
         }
         final List<OidcIssuer> issuers = preferenceManager.getPreference(
                 SystemPreferences.SYSTEM_OIDC_TOKEN_EXCHANGE_ISSUERS);
+        // the configured list is read on every exchange anyway, which makes this the one place
+        // that can tell the provider an issuer has been deleted rather than merely edited
+        keySourceProvider.retainConfigured(configuredNames(issuers));
         if (CollectionUtils.isEmpty(issuers)) {
             throw new OidcTokenVerificationException("Token exchange is not configured");
         }
@@ -140,6 +144,13 @@ public class OidcTokenVerifier {
                 .findFirst()
                 .orElseThrow(() -> new OidcTokenVerificationException(String.format(
                         "Issuer %s is not configured for token exchange", issuerName)));
+    }
+
+    private static Set<String> configuredNames(final List<OidcIssuer> issuers) {
+        return ListUtils.emptyIfNull(issuers).stream()
+                .map(OidcIssuer::getIssuer)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
     }
 
     private JWTClaimsSet process(final SignedJWT jwt, final OidcIssuer issuer) {
