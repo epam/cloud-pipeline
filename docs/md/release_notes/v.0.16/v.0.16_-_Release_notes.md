@@ -932,11 +932,13 @@ Now, `deploy/infra/aws/packer` builds such images with Packer, as on the `develo
 
 Previously, the autoscaler gave a run a free node of an earlier run, if such a node matched the run's instance type, disk and other requirements. A run could not ask for a new node. So it was not known in advance whether a run would start a new node in its **InitializeNode** task or get a free one, e.g. for a test that checks the node start.
 
-In the current version, a run with the `CP_CREATE_NEW_NODE` parameter set to `true` (`yes` and `on` work too, in any letter case) always gets a new node. The autoscaler never gives such a run a free node: it starts a new node, and the run waits for it, as for any new node. A run without this parameter, or with another value, can get a free node as before.
+In the current version, a run with the `CP_CREATE_NEW_NODE` parameter set to `true`, `yes`, `on`, `y` or `t`, in any letter case, always gets a new node. The autoscaler never gives such a run a free node: it starts a new node, and the run waits for it, as for any new node. A run without this parameter, or with another value (e.g. `false`, `1` or an empty one), can get a free node as before.
 
-The parameter is not in the default list of the system parameters (`launch.system.parameters`), so the **Add system parameter** dialog of the **Launch** form does not offer it. Add it with **Add parameter** as a String parameter.
+The parameter is not in the default list of the system parameters (`launch.system.parameters`), so the **Add system parameter** dialog of the **Launch** form does not offer it. Add it with **Add parameter** as a String parameter. If an admin adds it to `launch.system.parameters`, the dialog offers it, and **Add parameter** does not accept this name ("Name is reserved for system parameter").
 
-When the cluster has reached `cluster.max.size`, and `cluster.kill.not.matching.nodes` is `true`, every free node is treated as not matching for such a run: the autoscaler scales one of them down to make room for the new node.
+Previously, a free node that matched a waiting run was kept in the cluster for that run, even when the run could not get it: e.g. when the run's image config in `cluster.networks.config` has an `IamInstanceProfile`. When the cluster was above `cluster.max.size`, the run waited for room, and such a node stayed up, and was paid for, until another node left the cluster. Now, the autoscaler keeps no free node for a run that may not get one, i.e. a run with `CP_CREATE_NEW_NODE` or such an `IamInstanceProfile`. The node expires as any other free node.
+
+When the cluster has reached `cluster.max.size`, and `cluster.kill.not.matching.nodes` is `true`, every free node is treated as not matching for such a run: the autoscaler scales one of them down to make room for the new node. A free node of a node pool, or of a local cluster, is not scaled down this way. Previously, when such a node came first in the list of the free nodes, the autoscaler failed to scale it down, and the waiting run was not processed until the next check, where the same could happen again.
 
 For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#active-run-states).
 
