@@ -25,7 +25,7 @@ function envsubst_inplace() {
 }
 
 if [ -n "$CP_SEARCH_ELK_AUTH_SECRET" ]; then
-    _ELK_AUTH_HEADER="Authorization: Basic $(echo -n "$CP_SEARCH_ELK_AUTH_SECRET" | base64)"
+    _ELK_AUTH_HEADER="Authorization: Basic $(echo -n "$CP_SEARCH_ELK_AUTH_SECRET" | base64 -w0)"
 fi
 
 msg "Waiting for ElasticSearch..."
@@ -114,7 +114,7 @@ elif [ "${CP_SEARCH_ELK_TYPE}" == "opensearch" ]; then
       if [ -n "$_ELK_AUTH_HEADER" ]; then
         curl -H "$_ELK_AUTH_HEADER" -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_index_template/$_template_name" -d "@$_template_path"
       else
-        curl "$_ELK_AUTH_HEADER" -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_index_template/$_template_name" -d "@$_template_path"
+        curl -H 'Content-Type: application/json' -XPUT "${CP_SEARCH_ELK_ADDRESS}/_index_template/$_template_name" -d "@$_template_path"
       fi
 
     done
