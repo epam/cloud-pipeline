@@ -33,6 +33,7 @@ public class ArchiveRunDaoTest extends AbstractJdbcTest {
     private static final String USER = "OWNER";
     private static final String POD = "pod-id";
     private static final String TEST = "test";
+    private static final String DIGEST = "sha256:digest";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -44,6 +45,7 @@ public class ArchiveRunDaoTest extends AbstractJdbcTest {
     @Test
     public void shouldBatchInsertArchiveRuns() {
         final PipelineRun run1 = run();
+        run1.setActualDockerImageDigest(DIGEST);
         pipelineRunDao.createPipelineRun(run1);
         final PipelineRun run2 = run();
         pipelineRunDao.createPipelineRun(run2);

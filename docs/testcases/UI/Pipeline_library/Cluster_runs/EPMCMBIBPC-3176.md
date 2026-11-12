@@ -8,7 +8,7 @@ Test verifies launching a Kubernetes cluster: the master/worker setup tasks, and
 | :---: | --- | --- |
 | 1 | Repeat steps 1-8 of the [EPMCMBIBPC-975](EPMCMBIBPC-975.md) case |  |
 | 2 | Set the **Enable Kubernetes** checkbox |  |
-| 3 | Click the **OK** button | The name of the **Configure cluster** control becomes **Kubernetes Cluster (1 child node)** |
+| 3 | Click the **OK** button | The name of the **Configure cluster** control becomes **Kubernetes Cluster (1 child node), LFS** |
 | 4 | Expand the **Advanced** section |  |
 | 5 | Set the **Start idle** checkbox |  |
 | 6 | Click the **Launch** button |  |

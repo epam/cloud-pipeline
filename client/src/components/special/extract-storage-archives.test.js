@@ -199,8 +199,10 @@ describe('handleExtractArchives', () => {
   );
 
   // The queued toast goes through messageApi.info - mirrors
-  // handleDownloadArchive's own "goes through messageApi.info, not success"
-  // test in download-storage-archive.test.js.
+  // handleDownloadArchive's own "the queued toast is an info toast" test in
+  // data-storage/utils/download-archive.test.js, which spies on antd's
+  // `message` rather than taking one, since that handler has no injectable
+  // message API.
   test('the queued toast names the downloads view', async () => {
     const messageApi = {
       info: fn(),
@@ -218,8 +220,8 @@ describe('handleExtractArchives', () => {
     expect(messageApi.error).not.toHaveBeenCalled();
   });
 
-  // Mirrors the matching test in download-storage-archive.test.js: the
-  // plain-string path (no `onShowDownloads`) is already covered by "the
+  // Mirrors the matching test in data-storage/utils/download-archive.test.js:
+  // the plain-string path (no `onShowDownloads`) is already covered by "the
   // queued toast names the downloads view" above, since every other test
   // here calls `handleExtractArchives` without the new, fifth argument.
   test('the queued toast carries a working link when onShowDownloads is given', async () => {

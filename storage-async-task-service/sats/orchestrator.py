@@ -17,7 +17,7 @@ The loop. Reads the preference, runs the cleaner, claims what it has room for, a
 
 One round:
 
-    1. read `storage.download.archive.config`      so a change applies without a restart
+    1. read `storage.archive.config`               so a change applies without a restart
     2. run the four cleaner cleanups               before claiming, so a stuck task is out of the way
     3. claim tasks while slots are free            one call per task
     4. sleep until the next round                  interruptibly

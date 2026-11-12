@@ -21,4 +21,5 @@ Test verifies that a user with full permissions only on the specific tool can ov
 | 1 | Click **COMMIT** button |  |
 | 2 | Select the registry, tool group and tool name from the prerequisites (default registry - library - endpoint-test) |  |
 | 3 | Select the existing version (latest) |  |
-| 4 | Click **COMMIT** button | The **COMMIT** button immediately changes to unavailable and the commit finishes successfully |
+| 4 | Click **COMMIT** button | A confirmation pop-up appears: "`{image name}` already exists. Overwrite?" |
+| 5 | Click **OK** | The **COMMIT** button immediately changes to unavailable and the commit finishes successfully |

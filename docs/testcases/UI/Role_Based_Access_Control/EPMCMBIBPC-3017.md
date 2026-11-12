@@ -9,7 +9,7 @@ Test verifies that granting the ROLE_ADMIN role reveals the admin-only settings 
 | Steps | Actions | Expected results |
 | :---: | --- | --- |
 | 1 | Login as the non-admin user from the prerequisites |  |
-| 2 | Click the gear icon in the main menu on the left side of the page to open **Settings** | The **System events**, **User management**, **Email notifications**, **Preferences**, **Cloud Region** tabs are invisible |
+| 2 | Click the gear icon in the main menu on the left side of the page to open **Settings** | The **System events**, **User management**, **Email notifications**, **Preferences**, **Cloud regions** tabs are invisible |
 | 3 | Log out |  |
 | 4 | Login as the admin from the prerequisites |  |
 | 5 | Repeat step 2 |  |
@@ -20,4 +20,4 @@ Test verifies that granting the ROLE_ADMIN role reveals the admin-only settings 
 | 10 | Click the **+ Add** button next to the drop-down list | The **ROLE_ADMIN** record appears in the roles/groups list |
 | 11 | Click **OK** |  |
 | 12 | Log out |  |
-| 13 | Repeat steps 1-2 | The **System events**, **User management**, **Email notifications**, **Preferences**, **Cloud Region** tabs are visible |
+| 13 | Repeat steps 1-2 | The **System events**, **User management**, **Email notifications**, **Preferences**, **Cloud regions** tabs are visible |

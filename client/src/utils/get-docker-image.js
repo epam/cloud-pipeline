@@ -1,8 +1,10 @@
+import {getTaglessImageVersion} from './tool-default-version';
+
 /**
  * Splits a `registry/group/tool[:version]` docker image, lower-cased.
  * @param {string} dockerImage
- * @returns {{registry: string, group: string, tool: string, version: string}|undefined} -
- * undefined for an image in any other format
+ * @returns {{registry: string, group: string, tool: string, version?: string}|undefined} -
+ * undefined for an image in any other format; the version is undefined for an image without a tag
  */
 export function parseDockerImage (dockerImage) {
   const parts = (dockerImage || '').trim().toLowerCase().split('/');
@@ -10,7 +12,7 @@ export function parseDockerImage (dockerImage) {
     return undefined;
   }
   const [registry, group, toolAndVersion] = parts;
-  const [tool, version = 'latest'] = toolAndVersion.split(':');
+  const [tool, version] = toolAndVersion.split(':');
   return {registry, group, tool, version};
 }
 
@@ -52,6 +54,6 @@ export function getDockerImage (dockerImage, dockerRegistries) {
     registry,
     group,
     tool,
-    version: diVersion
+    version: diVersion || getTaglessImageVersion(tool)
   };
 }

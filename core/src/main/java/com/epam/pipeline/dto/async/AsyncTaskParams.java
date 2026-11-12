@@ -22,7 +22,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = DownloadArchiveParams.class, name = "DOWNLOAD_ARCHIVE")
+    @JsonSubTypes.Type(value = DownloadArchiveParams.class, name = "DOWNLOAD_ARCHIVE"),
+    @JsonSubTypes.Type(value = UnpackArchiveParams.class, name = "UNPACK_ARCHIVE")
     })
 public interface AsyncTaskParams {
     @JsonIgnore

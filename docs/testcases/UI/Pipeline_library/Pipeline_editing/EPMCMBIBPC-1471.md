@@ -5,7 +5,7 @@ Test verifies that the create-pipeline pop-up opens with focus on the name field
 | Steps | Actions | Expected results |
 | :---: | --- | --- |
 | 1 | Open the Library page |  |
-| 2 | Hover over **+ Create** button |  |
+| 2 | Click on **+ Create** button |  |
 | 3 | Hover over **Pipeline** |  |
 | 4 | Click upon any pipeline template | Pop-up appears with focus on the pipeline name input field (cursor is already there, field edges are highlighted) |
 | 5 | Start typing the pipeline name |  |

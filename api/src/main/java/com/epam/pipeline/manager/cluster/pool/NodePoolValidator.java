@@ -41,6 +41,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.pipeline.ToolUtils;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.utils.DoubleUtils;
+import com.epam.pipeline.utils.InstanceTypePatternMatcher;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -53,11 +54,9 @@ import java.util.Objects;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -166,15 +165,30 @@ public class NodePoolValidator {
         final CapacityReservationType type = request.getReservationType();
         Assert.notNull(type,
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_TYPE_REQUIRED));
-        Assert.isTrue(CapacityReservationType.FUTURE_DATED == type,
-                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_TYPE_NOT_SUPPORTED, type));
 
         Assert.isTrue(vo.getCount() >= 1,
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_INSTANCE_COUNT_INVALID));
 
-        validateReservationSize(vo);
-        validateReservationWindow(request);
-        validateReservationInstance(vo, request);
+        if (CapacityReservationType.CAPACITY_BLOCK == type) {
+            validateCapacityBlockPurchase(request);
+            validateReservationInstance(vo, request);
+        } else {
+            Assert.isTrue(CapacityReservationType.FUTURE_DATED == type,
+                    messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_TYPE_NOT_SUPPORTED, type));
+            validateReservationSize(vo);
+            validateReservationWindow(request);
+            validateReservationInstance(vo, request);
+        }
+    }
+
+    /**
+     * A capacity block names an exact offering, not a window to search. So there is no size or lead-time policy
+     * to check here. The AWS limits - 1 to 64 instances, and a start no more than 8 weeks away - are already
+     * checked when the offering is searched for.
+     */
+    private void validateCapacityBlockPurchase(final CapacityReservationRequest request) {
+        Assert.isTrue(StringUtils.isNotBlank(request.getCapacityBlockOfferingId()),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_OFFERING_ID_REQUIRED));
     }
 
     private void validateReservationSize(final NodePoolVO vo) {
@@ -194,27 +208,15 @@ public class NodePoolValidator {
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_PLATFORM_NOT_SUPPORTED,
                         platform));
 
-        final String family = instanceFamily(vo.getInstanceType());
-        final Set<String> supportedFamilies = supportedInstanceFamilies();
-        Assert.isTrue(supportedFamilies.isEmpty() || supportedFamilies.contains(family),
+        final String pattern = supportedInstanceTypePattern(request.getReservationType());
+        Assert.isTrue(InstanceTypePatternMatcher.matches(vo.getInstanceType(), pattern),
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_FAMILY_NOT_SUPPORTED,
-                        vo.getInstanceType(), String.join(", ", supportedFamilies)));
+                        vo.getInstanceType(), request.getReservationType(), pattern));
     }
 
-    private static String instanceFamily(final String instanceType) {
-        if (StringUtils.isBlank(instanceType)) {
-            return StringUtils.EMPTY;
-        }
-        final int firstDigit = StringUtils.indexOfAny(instanceType, "0123456789".split(StringUtils.EMPTY));
-        return (firstDigit < 0 ? instanceType : instanceType.substring(0, firstDigit)).toLowerCase(Locale.ROOT);
-    }
-
-    private Set<String> supportedInstanceFamilies() {
-        return Arrays.stream(StringUtils.split(StringUtils.defaultString(preferenceManager.getPreference(
-                                SystemPreferences.CLUSTER_CAPACITY_RESERVATION_INSTANCE_FAMILIES)), ','))
-                .map(family -> family.trim().toLowerCase(Locale.ROOT))
-                .filter(StringUtils::isNotBlank)
-                .collect(Collectors.toSet());
+    private String supportedInstanceTypePattern(final CapacityReservationType type) {
+        return preferenceManager.getPreference(SystemPreferences.CLUSTER_CAPACITY_RESERVATION_INSTANCE_FAMILIES)
+                .get(type);
     }
 
     private void validateReservationWindow(final CapacityReservationRequest request) {

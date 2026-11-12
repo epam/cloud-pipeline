@@ -27,8 +27,9 @@ export const SHOW_DOWNLOADS_LABEL = 'Show storage tasks';
 
 /**
  * The content a queued-task toast shares between the two callers that queue
- * one - an archive download (download-storage-archive.js) and an archive
- * extraction (extract-storage-archives.js). `sentence` is the toast's own
+ * one - an archive download (pipelines/browser/data-storage/utils/
+ * download-archive.js) and an archive extraction
+ * (extract-storage-archives.js). `sentence` is the toast's own
  * first half ("Archive download has been queued.", "Archive extraction has
  * been queued."); this appends the second half, naming where the task is
  * followed.

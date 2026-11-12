@@ -1,0 +1,12 @@
+# Sources of the Python 3.12 distribution, each checked against its SHA256 before it is used.
+# <name> <version> <sha256> <url>
+cpython 3.12.16 b5796915dc45ff745cfb4e990a7e7c93d6f546328a102ce31448d69ebc37575c https://www.python.org/ftp/python/3.12.16/Python-3.12.16.tar.xz
+openssl 3.5.9 603f5602e2eef00d77fbd429d34dcd5822bb301757a1bc9cdb24c670f1eb859a https://github.com/openssl/openssl/releases/download/openssl-3.5.9/openssl-3.5.9.tar.gz
+libffi 3.8.0 7da3e2d9a171eb0a038f592ecad3ff2bb2550f3496d87b3b29ad0cf4430c0db4 https://github.com/libffi/libffi/releases/download/v3.8.0/libffi-3.8.0.tar.gz
+sqlite 3.53.1 83e6b2020a034e9a7ad4a72feea59e1ad52f162e09cbd26735a3ffb98359fc4f https://www.sqlite.org/2026/sqlite-autoconf-3530100.tar.gz
+ncurses 6.5 136d91bc269a9a5785e5f9e980bc76ab57428f604ce3e5a5a90cebc767971cc6 https://ftp.gnu.org/gnu/ncurses/ncurses-6.5.tar.gz
+libedit 20260512-3.1 432d5e7ea8b0116dd39f2eca7bc11d0eed77faa6b77ea526ace89907c23ea4a0 https://thrysoee.dk/editline/libedit-20260512-3.1.tar.gz
+xz 5.8.4 0014c7886930454fe8bd4228665b51af55eeae560ea135c9c4cd33f55b2591d9 https://github.com/tukaani-project/xz/releases/download/v5.8.4/xz-5.8.4.tar.gz
+bzip2 1.0.8 ab5a03176ee106d3f0fa90e381da478ddae405918153cca248e682cd0c4a2269 https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz
+zlib 1.3.2 bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16 https://github.com/madler/zlib/releases/download/v1.3.2/zlib-1.3.2.tar.gz
+libuuid 1.0.3 46af3275291091009ad7f1b899de3d0cea0252737550e7919d17237997db5644 https://sourceforge.net/projects/libuuid/files/libuuid-1.0.3.tar.gz/download

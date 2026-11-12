@@ -118,6 +118,8 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     private static final String NAME = "name";
     private static final String DESCRIPTION = "description";
     private static final String CHANGED = "changed";
+    private static final String ACCESS_POINT_ARN = "arn:aws:s3:us-east-1:123456789012:accesspoint/test-ap";
+    private static final String INVALID_ACCESS_POINT_ARN = "arn:aws:s3:::bucket";
     private static final String TEST_MOUNT_POINT = "testMountPoint";
     private static final String TEST_MOUNT_OPTIONS = "testMountOptions";
     private static final String FORBIDDEN_MOUNT_POINT = "/runs/";
@@ -563,6 +565,67 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         storageManager.update(storageVO);
         loaded = storageManager.load(saved.getId());
         assertDataStorageAccordingToUpdateStorageVO(storageVO, loaded);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldSaveS3AccessPointArn() {
+        final DataStorageVO storageVO = constructS3StorageVO();
+        storageVO.setAccessPointArn(ACCESS_POINT_ARN);
+
+        final AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
+
+        assertThat(loadAccessPointArn(saved.getId())).isEqualTo(ACCESS_POINT_ARN);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldFailToSaveInvalidS3AccessPointArn() {
+        final DataStorageVO storageVO = constructS3StorageVO();
+        storageVO.setAccessPointArn(INVALID_ACCESS_POINT_ARN);
+
+        assertThrows(IllegalArgumentException.class,
+            () -> storageManager.create(storageVO, false, false, false));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldSetKeepAndClearS3AccessPointArnOnUpdate() {
+        final DataStorageVO storageVO = constructS3StorageVO();
+        final AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
+        storageVO.setId(saved.getId());
+
+        storageVO.setAccessPointArn(ACCESS_POINT_ARN);
+        storageManager.update(storageVO);
+        assertThat(loadAccessPointArn(saved.getId())).isEqualTo(ACCESS_POINT_ARN);
+
+        storageVO.setAccessPointArn(null);
+        storageManager.update(storageVO);
+        assertThat(loadAccessPointArn(saved.getId())).isEqualTo(ACCESS_POINT_ARN);
+
+        storageVO.setAccessPointArn("");
+        storageManager.update(storageVO);
+        assertThat(loadAccessPointArn(saved.getId())).isNull();
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldFailToUpdateInvalidS3AccessPointArn() {
+        final DataStorageVO storageVO = constructS3StorageVO();
+        final AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
+        storageVO.setId(saved.getId());
+        storageVO.setAccessPointArn(INVALID_ACCESS_POINT_ARN);
+
+        assertThrows(IllegalArgumentException.class, () -> storageManager.update(storageVO));
+    }
+
+    private DataStorageVO constructS3StorageVO() {
+        return ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS);
+    }
+
+    private String loadAccessPointArn(final Long id) {
+        return ((S3bucketDataStorage) storageManager.load(id)).getAccessPointArn();
     }
 
     @Test

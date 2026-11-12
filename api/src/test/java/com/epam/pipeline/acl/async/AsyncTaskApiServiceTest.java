@@ -25,7 +25,6 @@ import com.epam.pipeline.dto.async.AsyncTaskStatus;
 import com.epam.pipeline.dto.async.AsyncTaskType;
 import com.epam.pipeline.dto.async.DownloadArchiveConsumable;
 import com.epam.pipeline.manager.async.AsyncTaskManager;
-import com.epam.pipeline.manager.datastorage.DataStorageDownloadArchiveManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import org.junit.jupiter.api.Test;
@@ -63,9 +62,6 @@ public class AsyncTaskApiServiceTest extends AbstractAclTest {
 
     @Autowired
     private AsyncTaskManager mockAsyncTaskManager;
-
-    @Autowired
-    private DataStorageDownloadArchiveManager mockDownloadArchiveManager;
 
     @Autowired
     private AuthManager mockAuthManager;
@@ -139,7 +135,6 @@ public class AsyncTaskApiServiceTest extends AbstractAclTest {
         mockTaskOwnedBy(ANOTHER_SIMPLE_USER);
 
         assertThrows(IllegalArgumentException.class, () -> asyncTaskApiService.consume(TASK_ID));
-        verify(mockDownloadArchiveManager, never()).consume(any());
     }
 
     @Test
@@ -268,13 +263,12 @@ public class AsyncTaskApiServiceTest extends AbstractAclTest {
         mockSecurityContext();
         mockUser(SIMPLE_USER);
         mockTaskOwnedBy(ANOTHER_SIMPLE_USER);
-        doReturn(DownloadArchiveConsumable.builder().url(ARCHIVE_URL).build())
-                .when(mockDownloadArchiveManager).consume(any());
+        mockArchiveReadyToHandOver();
 
         final AsyncTaskConsumeResult consumed = asyncTaskApiService.consume(TASK_ID);
 
         assertEquals(AsyncTaskType.DOWNLOAD_ARCHIVE, consumed.getType());
-        verify(mockDownloadArchiveManager).consume(any());
+        assertEquals(ARCHIVE_URL, ((DownloadArchiveConsumable) consumed.getResult()).getUrl());
     }
 
     @Test
@@ -296,6 +290,11 @@ public class AsyncTaskApiServiceTest extends AbstractAclTest {
      */
     private void asAdmin() {
         doReturn(true).when(mockAuthManager).isAdmin();
+    }
+
+    private void mockArchiveReadyToHandOver() {
+        doReturn(AsyncTaskConsumeResult.of(DownloadArchiveConsumable.builder().url(ARCHIVE_URL).build()))
+                .when(mockAsyncTaskManager).consume(any());
     }
 
     private AsyncTaskStatusVO statusReport() {

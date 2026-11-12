@@ -196,6 +196,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
         DATASTORAGE_S3_KMS_KEY_ARN,
         DATASTORAGE_S3_USE_ASSUMED_CREDS,
         DATASTORAGE_S3_TEMP_CREDS_ROLE,
+        DATASTORAGE_S3_ACCESS_POINT_ARN,
         DATASTORAGE_MOUNT_STATUS,
         DATASTORAGE_PATH_PERMISSIONS_ENABLED,
         ENABLE_VERSIONING,
@@ -319,6 +320,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                                         rs.getString(DATASTORAGE_S3_KMS_KEY_ARN.name()),
                                         rs.getString(DATASTORAGE_S3_TEMP_CREDS_ROLE.name()),
                                         rs.getBoolean(DATASTORAGE_S3_USE_ASSUMED_CREDS.name()),
+                                        rs.getString(DATASTORAGE_S3_ACCESS_POINT_ARN.name()),
                                         rs.getString(DATASTORAGE_MOUNT_STATUS.name()),
                                         Collections.emptySet(),
                                         null);

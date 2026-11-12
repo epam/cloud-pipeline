@@ -533,8 +533,10 @@ public class GitManager implements InitializingBean {
 
         final GitProject forkedProject = copyProject(projectName, newProjectName, tmpGroupName, defaultNamespace);
 
+        // GitLab 18.0 and later only schedules a top-level group for deletion. It is not waited for:
+        // the group gets a new name at once, and it is removed with its projects after the deletion delay.
         deleteGitGroup(tmpGroupName);
-        LOGGER.debug("The temporary git group '{}' was deleted", tmpGroupName);
+        LOGGER.debug("The temporary git group '{}' was deleted or scheduled for deletion", tmpGroupName);
 
         return forkedProject;
     }
@@ -769,7 +771,8 @@ public class GitManager implements InitializingBean {
             return resultProject;
         } catch (Exception e) {
             deleteGitGroup(tmpGroupName);
-            LOGGER.debug("The temporary git group '{}' was deleted due to unexpected error", tmpGroupName);
+            LOGGER.debug("The temporary git group '{}' was deleted or scheduled for deletion due to unexpected error",
+                    tmpGroupName);
             throw new IllegalArgumentException(e.getMessage(), e);
         }
     }

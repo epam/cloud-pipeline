@@ -24,6 +24,7 @@ import com.epam.pipeline.controller.vo.async.AsyncTaskFilterVO;
 import com.epam.pipeline.controller.vo.async.AsyncTaskStatusVO;
 import com.epam.pipeline.dto.async.AsyncTask;
 import com.epam.pipeline.dto.async.AsyncTaskConsumeResult;
+import com.epam.pipeline.dto.async.AsyncTaskParams;
 import com.epam.pipeline.dto.async.AsyncTaskType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -128,5 +129,16 @@ public class AsyncTaskController extends AbstractRestController {
     public Result<AsyncTask> updateStatus(@PathVariable(value = ID) final String id,
                                           @RequestBody final AsyncTaskStatusVO status) {
         return Result.success(asyncTaskApiService.updateStatus(id, status));
+    }
+
+    @PostMapping("/create")
+    @ResponseBody
+    @Operation(
+            summary = "Creates an asynchronous task.",
+            description = "Creates an asynchronous task. The payload's own 'type' field picks its "
+                    + "concrete shape, so one call handles every task type.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
+    public Result<AsyncTask> createAsyncTask(@RequestBody final AsyncTaskParams params) {
+        return Result.success(asyncTaskApiService.createAsyncTask(params));
     }
 }

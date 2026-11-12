@@ -30,9 +30,12 @@ import com.epam.pipeline.entity.cluster.LaunchCapability;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationMonitorSettings;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationPolicy;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
+import com.epam.pipeline.entity.datastorage.ArchiveTasksConfig;
 import com.epam.pipeline.entity.datastorage.DownloadArchiveConfig;
+import com.epam.pipeline.entity.datastorage.UnpackArchiveConfig;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.datastorage.nfs.NFSMountPolicy;
 import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
@@ -209,21 +212,31 @@ public class SystemPreferences {
         "storage.max.download.size", 10000, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference DATA_STORAGE_TEMP_CREDENTIALS_DURATION = new IntPreference(
         "storage.temp.credentials.duration", 3600, DATA_STORAGE_GROUP, isGreaterThan(0));
-    public static final ObjectPreference<DownloadArchiveConfig> DATA_STORAGE_DOWNLOAD_ARCHIVE_CONFIG =
+    public static final ObjectPreference<ArchiveTasksConfig> DATA_STORAGE_ARCHIVE_CONFIG =
         new ObjectPreference<>(
-            "storage.download.archive.config",
-            DownloadArchiveConfig.builder()
-                .destinationPrefix("archives/")
-                .maxSizeBytes(107374182400L)
-                .maxFilesCount(100000)
-                .ttlDays(7)
-                .maxUserTasks(3)
-                .workerMaxRunningMinutes(240)
+            "storage.archive.config",
+            ArchiveTasksConfig.builder()
+                .maxUserTasks(ArchiveTasksConfig.DEFAULT_MAX_USER_TASKS)
                 .stuckTasksThresholdMinutes(360)
+                .tasks(ArchiveTasksConfig.Tasks.builder()
+                    .download(DownloadArchiveConfig.builder()
+                        .destinationPrefix("archives/")
+                        .maxSizeBytes(107374182400L)
+                        .maxFilesCount(100000)
+                        .ttlDays(7)
+                        .workerMaxRunningMinutes(240)
+                        .build())
+                    .unpack(UnpackArchiveConfig.builder()
+                        .maxArchiveSizeBytes(53687091200L)
+                        .maxSizeBytes(214748364800L)
+                        .maxFilesCount(100000)
+                        .workerMaxRunningMinutes(240)
+                        .build())
+                    .build())
                 .build(),
-            new TypeReference<DownloadArchiveConfig>() {},
+            new TypeReference<ArchiveTasksConfig>() {},
             DATA_STORAGE_GROUP,
-            isNullOrValidJson(new TypeReference<DownloadArchiveConfig>() {}));
+            isNullOrValidJson(new TypeReference<ArchiveTasksConfig>() {}));
     public static final IntPreference PROFILE_TEMP_CREDENTIALS_DURATION = new IntPreference(
             "profile.temp.credentials.duration", 3600, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference STORAGE_MOUNTS_PER_GB_RATIO = new IntPreference(
@@ -443,6 +456,28 @@ public class SystemPreferences {
             GIT_GROUP, isNullOrValidJson(new TypeReference<GitlabIssueLabelsFilter>() {}), true);
     public static final LongPreference GIT_DEFAULT_TOKEN_DURATION_DAYS = new LongPreference(
             "git.default.token.duration.days", 1L, GIT_GROUP, isGreaterThan(0L));
+    /**
+     * Enables the scheduled rotation of the git.token, when it is close to its expiry.
+     */
+    public static final BooleanPreference GIT_TOKEN_ROTATION_ENABLED = new BooleanPreference(
+            "git.token.rotation.enabled", true, GIT_GROUP, pass);
+    /**
+     * A cron expression, that defines when to check the git.token expiry.
+     */
+    public static final StringPreference GIT_TOKEN_ROTATION_SCHEDULE = new StringPreference(
+            "git.token.rotation.schedule", "0 0 3 ? * *", GIT_GROUP, PreferenceValidators.isValidCron);
+    /**
+     * The git.token is rotated, when it expires in this number of days or fewer.
+     */
+    public static final IntPreference GIT_TOKEN_ROTATION_THRESHOLD_DAYS = new IntPreference(
+            "git.token.rotation.threshold.days", 30, GIT_GROUP, isGreaterThan(0));
+    /**
+     * The lifetime of a rotated git.token in days. Gitlab rejects a lifetime over 365 days, and the default
+     * leaves a day for a time zone difference between Gitlab and the API.
+     */
+    public static final IntPreference GIT_TOKEN_ROTATION_LIFETIME_DAYS = new IntPreference(
+            "git.token.rotation.lifetime.days", 364, GIT_GROUP,
+            isGreaterThan(0).and(isLessThan(366)));
 
     // DOCKER_SECURITY_GROUP
     /**
@@ -660,8 +695,18 @@ public class SystemPreferences {
                                    new TypeReference<List<CapacityReservationPolicy>>() {}, CLUSTER_GROUP,
                                    isNullOrValidJson(new TypeReference<List<CapacityReservationPolicy>>() {}), true);
 
-    public static final StringPreference CLUSTER_CAPACITY_RESERVATION_INSTANCE_FAMILIES = new StringPreference(
-            "cluster.capacity.reservation.instance.families", "c,m,r,i,t,g", CLUSTER_GROUP, pass);
+    /**
+     * The instance types the platform may reserve capacity for, per {@link CapacityReservationType}. The value
+     * is a comma-separated list of {@link org.springframework.util.AntPathMatcher} patterns for the instance
+     * type name, in the same format as {@link #CLUSTER_ALLOWED_INSTANCE_TYPES}. A reservation type with no entry
+     * has no restriction.
+     */
+    public static final ObjectPreference<Map<CapacityReservationType, String>>
+            CLUSTER_CAPACITY_RESERVATION_INSTANCE_FAMILIES = new ObjectPreference<>(
+                    "cluster.capacity.reservation.instance.families",
+                    Collections.singletonMap(CapacityReservationType.FUTURE_DATED, "c*,m*,r*,i*,t*,g*"),
+                    new TypeReference<Map<CapacityReservationType, String>>() {}, CLUSTER_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<CapacityReservationType, String>>() {}));
 
     public static final ObjectPreference<CapacityReservationMonitorSettings>
             CLUSTER_CAPACITY_RESERVATION_MONITOR_SETTINGS = new ObjectPreference<>(
@@ -669,6 +714,12 @@ public class SystemPreferences {
                     new CapacityReservationMonitorSettings(1),
                     new TypeReference<CapacityReservationMonitorSettings>() {}, CLUSTER_GROUP,
                     isValidCapacityReservationMonitorSettings, true);
+    /**
+     * How long, in seconds, the autoscaler waits for a run bound with CP_CAP_POOL_ID while its pool is taken by
+     * another run. {@code 0} means wait without a limit. Default: 86400 (24 hours).
+     */
+    public static final IntPreference CLUSTER_OCCUPIED_NODE_POOL_WAIT_SEC = new IntPreference(
+            "cluster.occupied.node.pool.wait.sec", 86400, CLUSTER_GROUP, isGreaterThanOrEquals(0));
     public static final IntPreference CLUSTER_REASSIGN_DISK_DELTA = new IntPreference("cluster.reassign.disk.delta",
             100, CLUSTER_GROUP, isGreaterThanOrEquals(0));
     public static final IntPreference CLUSTER_LOST_RUN_ATTEMPTS = new IntPreference("cluster.lost.run.attempts",
@@ -874,6 +925,14 @@ public class SystemPreferences {
 
     public static final BooleanPreference LAUNCH_DOCKER_PREFLIGHT_CHECKS = new BooleanPreference(
             "launch.docker.preflight.checks", true, LAUNCH_GROUP, pass, true);
+
+    /**
+     * Pins the pod of a launched run to the digest, which the run's docker image tag points to at the launch,
+     * so the run cannot pick up another image if the tag is moved later. Applies to the runs launched
+     * after it is enabled only, the runs created before keep using the tag.
+     */
+    public static final BooleanPreference LAUNCH_DOCKER_IMAGE_PIN_DIGEST = new BooleanPreference(
+            "launch.docker.image.pin.digest", false, LAUNCH_GROUP, pass);
 
     /**
      * Specifies a comma-separated list of environment variables that should be inherited by DIND containers
@@ -1741,7 +1800,7 @@ public class SystemPreferences {
                     new TypeReference<List<CloudAccessManagementConfig>>() {}, CLOUD,
                     isNullOrValidJson(new TypeReference<List<CloudAccessManagementConfig>>() {}));
 
-    private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
+    private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d+)\\.(\\d+)");
 
     // System Jobs
     public static final StringPreference SYSTEM_JOBS_SCRIPTS_LOCATION = new StringPreference(

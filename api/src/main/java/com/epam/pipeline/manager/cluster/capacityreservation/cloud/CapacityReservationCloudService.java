@@ -16,8 +16,12 @@
 
 package com.epam.pipeline.manager.cluster.capacityreservation.cloud;
 
+import com.epam.pipeline.controller.vo.cluster.capacityreservation.CapacityBlockOfferingRequest;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockInstanceTypeInfo;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockOffering;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservation;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 
 import java.time.Duration;
@@ -32,15 +36,24 @@ import java.util.Optional;
  * {@link #getProvider()}. A provider with no implementation cannot back a node pool with a reservation at all.
  *
  * <p>The contract, in the order the monitor uses it: {@link #getMinimumLead()} and {@link #candidateZones} say what
- * the provider will even consider, {@link #createFutureDated} asks for the capacity, {@link #describe} follows what
- * became of the request, {@link #launchSpecification} says how a node consumes the reservation, and
- * {@link #cancel} gives it back. {@link #findByClientToken} answers what an attempt bought when its reply was lost.
+ * the provider will even consider, {@link #createFutureDated} asks for the capacity, or
+ * {@link #purchaseCapacityBlock} buys one exact offering instead of searching a window, {@link #describe}
+ * follows what became of the request, {@link #launchSpecification} says how a node consumes the reservation, and
+ * {@link #cancel} gives the capacity back - but never a capacity block, which it refuses, because no provider
+ * takes a bought block back. A caller must not call {@link #cancel} for a capacity block at all, rather than
+ * rely on that refusal. {@link #findByClientToken} answers what an attempt bought when its reply was lost.
  *
- * <p>The three calls that can lead to capacity being paid for - {@link #candidateZones},
- * {@link #createFutureDated} and {@link #findByClientToken} - raise
+ * <p>The calls that can lead to capacity being paid for - {@link #candidateZones}, {@link #createFutureDated},
+ * {@link #purchaseCapacityBlock} and {@link #findByClientToken} - raise
  * {@link CapacityReservationSubmissionUncertainException} rather than reporting a refusal when they fail in a way
- * that leaves the outcome unknown, so the caller can retry the same attempt. {@link #describe} and {@link #cancel}
- * report their failures as they come.
+ * that leaves the outcome unknown, so the caller can retry the same attempt. {@link #purchaseCapacityBlock} has
+ * no idempotency token on the provider side, unlike {@link #createFutureDated}, so such a retry is not safe by
+ * itself. The caller must first check with {@link #findByClientToken} that the earlier unclear attempt did not
+ * already buy the block. {@link #describe} and {@link #cancel} report their failures as they come.
+ *
+ * <p>{@link #listCapacityBlockOfferings} and {@link #listCapacityBlockInstanceTypes} are different from the rest.
+ * They search a catalogue before any {@link CapacityReservation} exists, so they take a region directly instead
+ * of a reservation.
  */
 public interface CapacityReservationCloudService {
 
@@ -54,9 +67,16 @@ public interface CapacityReservationCloudService {
 
     CloudCapacityReservation createFutureDated(CapacityReservation reservation);
 
+    CloudCapacityReservation purchaseCapacityBlock(CapacityReservation reservation);
+
     CloudCapacityReservation describe(CapacityReservation reservation);
 
     void cancel(CapacityReservation reservation);
 
     Optional<CloudCapacityReservation> findByClientToken(CapacityReservation reservation, String clientToken);
+
+    List<CapacityBlockOffering> listCapacityBlockOfferings(AbstractCloudRegion region,
+                                                            CapacityBlockOfferingRequest request);
+
+    List<CapacityBlockInstanceTypeInfo> listCapacityBlockInstanceTypes(AbstractCloudRegion region);
 }

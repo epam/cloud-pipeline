@@ -16,10 +16,16 @@
 
 package com.epam.pipeline.manager.cloud.aws.capacityreservation;
 
+import com.epam.pipeline.controller.vo.cluster.capacityreservation.CapacityBlockOfferingRequest;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockInstanceTypeInfo;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockOffering;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockResourceType;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservationState;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.utils.DateUtils;
@@ -31,6 +37,7 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
@@ -46,17 +53,25 @@ import software.amazon.awssdk.services.ec2.model.CapacityReservationDeliveryPref
 import software.amazon.awssdk.services.ec2.model.CapacityReservationState;
 import software.amazon.awssdk.services.ec2.model.CreateCapacityReservationCancellationQuoteRequest;
 import software.amazon.awssdk.services.ec2.model.CreateCapacityReservationRequest;
+import software.amazon.awssdk.services.ec2.model.DescribeCapacityBlockOfferingsRequest;
 import software.amazon.awssdk.services.ec2.model.DescribeCapacityReservationsRequest;
 import software.amazon.awssdk.services.ec2.model.DescribeInstanceTypeOfferingsRequest;
+import software.amazon.awssdk.services.ec2.model.DescribeInstanceTypesRequest;
 import software.amazon.awssdk.services.ec2.model.Ec2Exception;
 import software.amazon.awssdk.services.ec2.model.Filter;
+import software.amazon.awssdk.services.ec2.model.GpuDeviceInfo;
 import software.amazon.awssdk.services.ec2.model.InstanceMatchCriteria;
+import software.amazon.awssdk.services.ec2.model.InstanceTypeInfo;
 import software.amazon.awssdk.services.ec2.model.InstanceTypeOffering;
 import software.amazon.awssdk.services.ec2.model.LocationType;
+import software.amazon.awssdk.services.ec2.model.MemoryInfo;
+import software.amazon.awssdk.services.ec2.model.PurchaseCapacityBlockRequest;
 import software.amazon.awssdk.services.ec2.model.ResourceType;
 import software.amazon.awssdk.services.ec2.model.Tag;
 import software.amazon.awssdk.services.ec2.model.TagSpecification;
+import software.amazon.awssdk.services.ec2.model.VCpuInfo;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -73,14 +88,19 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * AWS implementation of {@link CapacityReservationCloudService}, over the EC2 future-dated capacity reservation
- * API.
+ * AWS implementation of {@link CapacityReservationCloudService}, over the EC2 future-dated
+ * and ML capacity block reservation API.
  *
- * <p>What it asks of AWS, and what it makes of the answers:
+ * <p>What it does in AWS:
  * <ul>
  *   <li><b>Submits</b> a request as a future-dated reservation - {@code InstanceMatchCriteria=targeted},
  *       {@code DeliveryPreference=incremental}, committed for the duration the request names - under a client token
  *       that makes the call idempotent, and tags it with that token and its own id.</li>
+ *   <li><b>Buys</b> a capacity block: the exact offering the reservation names, tagged the same way. AWS takes no
+ *       idempotency token for this call, so {@link #findByClientToken} and that tag are the only way to tell what
+ *       an attempt with a lost reply bought.</li>
+ *   <li><b>Searches</b> the capacity block catalogue: the offerings a region sells now, and the instance types it
+ *       sells as capacity blocks at all. Neither call commits to anything.</li>
  *   <li><b>Offers zones</b>: those of the region's configured networks that actually offer the instance type - or
  *       every zone that offers it, where the region configures no networks - so a request is only ever made where
  *       AWS could deliver it.</li>
@@ -90,18 +110,17 @@ import java.util.stream.Collectors;
  *       short grace period before it is believed.</li>
  *   <li><b>Cancels</b>: plainly once nothing is committed any more, and through a cancellation quote while the
  *       reservation is scheduled or still inside its commitment. A reservation AWS no longer knows, or an id it
- *       cannot parse, is nothing to cancel.</li>
+ *       cannot parse, is nothing to cancel. A capacity block is refused, see {@link #cancel}.</li>
  * </ul>
  *
- * <p>The three calls that can lead to capacity being paid for - the zone lookup, the submission itself and the
- * lookup by client token - raise {@link CapacityReservationSubmissionUncertainException} instead of reporting a
- * refusal whenever an error leaves the outcome genuinely unknown: throttling, a server-side failure, a reply that
- * never arrived. The caller then retries the same client token rather than paying for a second reservation. A
- * definitive refusal is passed on as it is, including insufficient capacity, which AWS reports with a server-side
- * status but which refuses this configuration rather than failing the call.
- *
- * <p>AWS will not assess a future-dated request made less than {@link #MINIMUM_LEAD_DAYS} days ahead, which is what
- * {@link #getMinimumLead()} reports to the monitor.
+ * <p>The four calls that can lead to capacity being paid for - the zone lookup, the future-dated submission, the
+ * capacity block purchase and the lookup by client token - raise
+ * {@link CapacityReservationSubmissionUncertainException} instead of reporting a refusal whenever an error leaves
+ * the outcome genuinely unknown: throttling, a server-side failure, a reply that never arrived. The caller then
+ * retries the same client token rather than paying for a second reservation. A capacity block purchase is the
+ * exception: it has no idempotency token, so the caller must first check with {@link #findByClientToken}, see
+ * {@link #purchaseCapacityBlock}. A definitive refusal is passed on as it is, including insufficient capacity,
+ * which AWS reports with a server-side status but which refuses this configuration rather than failing the call.
  */
 @Service
 @Slf4j
@@ -127,6 +146,15 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
     static final Duration UNKNOWN_RESERVATION_GRACE_PERIOD = Duration.ofMinutes(5);
     private static final Set<String> INSUFFICIENT_CAPACITY_ERROR_CODES = new HashSet<>(Arrays.asList(
             "InsufficientCapacity", "InsufficientInstanceCapacity", "InsufficientReservedInstanceCapacity"));
+
+    private static final String SUPPORTED_USAGE_CLASS_FILTER = "supported-usage-class";
+    private static final String CAPACITY_BLOCK_USAGE_CLASS = "capacity-block";
+    static final int HOURS_PER_DAY = 24;
+    static final int ONE_DAY_STEP_MAX_DAYS = 14;
+    private static final int SEVEN_DAY_STEP_DAYS = 7;
+    static final int SEVEN_DAY_STEP_MAX_DAYS = 182;
+    static final int MAX_CAPACITY_BLOCK_INSTANCE_COUNT = 64;
+    static final int MAX_CAPACITY_BLOCK_START_DATE_LEAD_WEEKS = 8;
 
     private final CloudRegionManager regionManager;
     private final AWSV2EC2ClientProvider clientProvider;
@@ -204,6 +232,34 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
         });
     }
 
+    /**
+     * Buys the exact offering named on the reservation. There is no window and no zone to pick, because the
+     * offering already fixes both.
+     *
+     * <p>Unlike {@link #createFutureDated}, this AWS call takes no idempotency token. The tag that
+     * {@link #tags(CapacityReservation)} puts on the purchase is the only way to tell a lost reply from a
+     * purchase that never happened. So a caller must first check with {@link #findByClientToken}, before it
+     * calls this method again for the same reservation.
+     */
+    @Override
+    public CloudCapacityReservation purchaseCapacityBlock(final CapacityReservation reservation) {
+        final AwsRegion region = region(reservation);
+        final PurchaseCapacityBlockRequest request = PurchaseCapacityBlockRequest.builder()
+                .capacityBlockOfferingId(reservation.getCapacityBlockOfferingId())
+                .instancePlatform(reservation.getInstancePlatform())
+                .tagSpecifications(tags(reservation))
+                .build();
+
+        log.debug("Purchasing capacity block {} for node pool, offering {}", reservation.getId(),
+                reservation.getCapacityBlockOfferingId());
+
+        return uncertainOnTransientFailure(reservation, () -> {
+            try (Ec2Client client = clientProvider.client(region)) {
+                return toCloudReservation(client.purchaseCapacityBlock(request).capacityReservation());
+            }
+        });
+    }
+
     @Override
     public CloudCapacityReservation describe(final CapacityReservation reservation) {
         final AwsRegion region = region(reservation);
@@ -233,10 +289,17 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
     }
 
     /**
-     * Ends the reservation at AWS.
+     * Ends the reservation at AWS. A capacity block is refused right away, because AWS has no cancel call for
+     * one and this method could only fail. A caller that may still reach this method for a capacity block, for
+     * example automatic cleanup, must check the type itself and not call the method at all. AWS reclaims the
+     * block on its own.
      */
     @Override
     public void cancel(final CapacityReservation reservation) {
+        Assert.state(CapacityReservationType.CAPACITY_BLOCK != reservation.getReservationType(),
+                String.format("Capacity block %s (%s) cannot be cancelled: the cloud provider gives no way to "
+                        + "give a purchased capacity block back.",
+                        reservation.getId(), reservation.getCloudReservationId()));
         final AwsRegion region = region(reservation);
         try (Ec2Client client = clientProvider.client(region)) {
             final Optional<software.amazon.awssdk.services.ec2.model.CapacityReservation> current =
@@ -344,6 +407,127 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
                         .map(AwsCapacityReservationService::toCloudReservation);
             }
         });
+    }
+
+    /**
+     * Searches the capacity block offerings AWS sells now. Nothing is paid for or committed to here, so a failed
+     * search is reported as it comes. It is not retried as uncertain, the way {@link #createFutureDated} is.
+     */
+    @Override
+    public List<CapacityBlockOffering> listCapacityBlockOfferings(final AbstractCloudRegion region,
+                                                                  final CapacityBlockOfferingRequest request) {
+        validateCapacityBlockDuration(request.getCapacityDurationHours());
+        validateCapacityBlockInstanceCount(request.getInstanceCount());
+        validateCapacityBlockStartDateRange(request.getStartDateRange());
+        final DescribeCapacityBlockOfferingsRequest.Builder awsRequest = DescribeCapacityBlockOfferingsRequest
+                .builder()
+                .instanceType(request.getInstanceType())
+                .instanceCount(request.getInstanceCount())
+                .capacityDurationHours(request.getCapacityDurationHours())
+                .startDateRange(toInstant(request.getStartDateRange()));
+        Optional.ofNullable(request.getEndDateRange()).ifPresent(end -> awsRequest.endDateRange(toInstant(end)));
+        try (Ec2Client client = clientProvider.client((AwsRegion) region)) {
+            return client.describeCapacityBlockOfferingsPaginator(awsRequest.build())
+                    .capacityBlockOfferings().stream()
+                    .map(AwsCapacityReservationService::toCapacityBlockOffering)
+                    .collect(Collectors.toList());
+        }
+    }
+
+    /**
+     * Lists the instance types a region sells as capacity blocks now. Same as
+     * {@code aws ec2 describe-instance-types --filters "Name=supported-usage-class,Values=capacity-block"}.
+     */
+    @Override
+    public List<CapacityBlockInstanceTypeInfo> listCapacityBlockInstanceTypes(final AbstractCloudRegion region) {
+        final DescribeInstanceTypesRequest awsRequest = DescribeInstanceTypesRequest.builder()
+                .filters(Filter.builder()
+                        .name(SUPPORTED_USAGE_CLASS_FILTER)
+                        .values(CAPACITY_BLOCK_USAGE_CLASS)
+                        .build())
+                .build();
+        try (Ec2Client client = clientProvider.client((AwsRegion) region)) {
+            return client.describeInstanceTypesPaginator(awsRequest)
+                    .instanceTypes().stream()
+                    .map(AwsCapacityReservationService::toCapacityBlockInstanceTypeInfo)
+                    .collect(Collectors.toList());
+        }
+    }
+
+    private static CapacityBlockInstanceTypeInfo toCapacityBlockInstanceTypeInfo(final InstanceTypeInfo info) {
+        final GpuDeviceInfo gpu = Optional.ofNullable(info.gpuInfo())
+                .map(gpuInfo -> gpuInfo.gpus().stream().findFirst().orElse(null))
+                .orElse(null);
+        return CapacityBlockInstanceTypeInfo.builder()
+                .instanceType(info.instanceTypeAsString())
+                .vCPU(Optional.ofNullable(info.vCpuInfo()).map(VCpuInfo::defaultVCpus).orElse(null))
+                .memoryInMiB(Optional.ofNullable(info.memoryInfo()).map(MemoryInfo::sizeInMiB).orElse(null))
+                .gpuCount(gpu == null ? null : gpu.count())
+                .gpuDeviceName(gpu == null ? null : gpu.name())
+                .build();
+    }
+
+    /**
+     * AWS sells a capacity block only in 1-day steps up to {@value #ONE_DAY_STEP_MAX_DAYS} days, and after that
+     * only in 7-day steps up to {@value #SEVEN_DAY_STEP_MAX_DAYS} days. Any other duration is refused. This is
+     * checked here, before the request is built, so the user gets a clear message instead of a bare AWS refusal.
+     */
+    static void validateCapacityBlockDuration(final Integer hours) {
+        Assert.isTrue(hours != null && hours % HOURS_PER_DAY == 0 && isValidCapacityBlockDurationDays(
+                hours / HOURS_PER_DAY),
+                String.format("Capacity block duration must be a whole number of days, in 1-day steps up to %d "
+                        + "days or 7-day steps up to %d days; %s hours is neither.",
+                        ONE_DAY_STEP_MAX_DAYS, SEVEN_DAY_STEP_MAX_DAYS, hours));
+    }
+
+    private static boolean isValidCapacityBlockDurationDays(final int days) {
+        if (days >= 1 && days <= ONE_DAY_STEP_MAX_DAYS) {
+            return true;
+        }
+        return days <= SEVEN_DAY_STEP_MAX_DAYS && days % SEVEN_DAY_STEP_DAYS == 0;
+    }
+
+    /**
+     * AWS sells at most {@value #MAX_CAPACITY_BLOCK_INSTANCE_COUNT} instances in one capacity block offering.
+     * This is checked here, before the request is built, so the user gets a clear message instead of a bare AWS
+     * refusal.
+     */
+    static void validateCapacityBlockInstanceCount(final Integer instanceCount) {
+        Assert.isTrue(instanceCount != null && instanceCount >= 1
+                        && instanceCount <= MAX_CAPACITY_BLOCK_INSTANCE_COUNT,
+                String.format("Capacity block instance count must be an integer between 1 and %d; %s is not.",
+                        MAX_CAPACITY_BLOCK_INSTANCE_COUNT, instanceCount));
+    }
+
+    /**
+     * A search must have a start date to look from. AWS sells a capacity block that starts no more than
+     * {@value #MAX_CAPACITY_BLOCK_START_DATE_LEAD_WEEKS} weeks from now.
+     */
+    static void validateCapacityBlockStartDateRange(final LocalDateTime startDateRange) {
+        final LocalDateTime latestStartDate = DateUtils.nowUTC().plusWeeks(MAX_CAPACITY_BLOCK_START_DATE_LEAD_WEEKS);
+        Assert.isTrue(startDateRange != null && !startDateRange.isAfter(latestStartDate),
+                String.format("Capacity block start date must be set, and no more than %d weeks away; %s is not.",
+                        MAX_CAPACITY_BLOCK_START_DATE_LEAD_WEEKS, startDateRange));
+    }
+
+    private static CapacityBlockOffering toCapacityBlockOffering(
+            final software.amazon.awssdk.services.ec2.model.CapacityBlockOffering offering) {
+        return CapacityBlockOffering.builder()
+                .offeringId(offering.capacityBlockOfferingId())
+                .resourceType(StringUtils.isNotBlank(offering.ultraserverType())
+                        ? CapacityBlockResourceType.ULTRASERVER
+                        : CapacityBlockResourceType.INSTANCE)
+                .instanceType(offering.instanceType())
+                .availabilityZone(offering.availabilityZone())
+                .instanceCount(offering.instanceCount())
+                .startDate(toLocalDateTime(offering.startDate()))
+                .endDate(toLocalDateTime(offering.endDate()))
+                .capacityDurationHours(offering.capacityBlockDurationHours())
+                .upfrontFeeAmount(StringUtils.isBlank(offering.upfrontFee()) ? null : new BigDecimal(
+                        offering.upfrontFee()))
+                .upfrontFeeCurrency(offering.currencyCode())
+                .tenancy(offering.tenancyAsString())
+                .build();
     }
 
     /**

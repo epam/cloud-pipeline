@@ -35,10 +35,13 @@ import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.cluster.pool.NodePoolLaunchConfig;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
+import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
@@ -64,6 +67,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.epam.pipeline.entity.contextual.ContextualPreferenceLevel.REGION;
 import static com.epam.pipeline.entity.contextual.ContextualPreferenceLevel.TOOL;
@@ -72,6 +76,7 @@ import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_FAL
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_INSTANCE_HDD_EXTRA_MULTI;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_SPOT;
 import static com.epam.pipeline.manager.preference.SystemPreferences.COMMIT_TIMEOUT;
+import static com.epam.pipeline.manager.preference.SystemPreferences.LAUNCH_DOCKER_IMAGE_PIN_DIGEST;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_3;
@@ -97,10 +102,13 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.quality.Strictness.LENIENT;
@@ -126,6 +134,9 @@ public class PipelineRunManagerLaunchTest {
     private static final String TEST_USER = "user";
     private static final String TEST_USER_2 = "user2";
     private static final String IMAGE = "testImage";
+    private static final String DIGEST = "sha256:digest";
+    private static final String ANOTHER_DIGEST = "sha256:another";
+    private static final String DEFAULT_VERSION = "defaultVersion";
     private static final String STRING_TYPE = "string";
     private static final String RESOLVED_VALUE = "resolved";
     private static final LocalDateTime TEST_PERIOD = LocalDateTime.of(2019, 4, 2, 0, 0);
@@ -202,6 +213,9 @@ public class PipelineRunManagerLaunchTest {
     @Mock
     private RestartRunManager restartRunManager;
 
+    @Mock
+    private NodePoolManager nodePoolManager;
+
     private final Tool tool = getTool(IMAGE, DEFAULT_COMMAND);
     private final AwsRegion defaultAwsRegion = getDefaultAwsRegion(ID);
     private final AwsRegion nonAllowedAwsRegion = getNonDefaultAwsRegion(ID_2);
@@ -249,6 +263,43 @@ public class PipelineRunManagerLaunchTest {
         doReturn(true).when(instanceOfferManager).isPriceTypeAllowed(anyString(), any(), anyBoolean());
         doReturn(true).when(permissionHelper).isAllowed(any(), any());
         doReturn(Optional.empty()).when(pipelineVersionManager).resolvePipelineVersion(any(), any());
+        doReturn(true).when(preferenceManager).getPreference(LAUNCH_DOCKER_IMAGE_PIN_DIGEST);
+        doReturn(Optional.empty()).when(toolManager).resolveImageDigest(any(), any());
+    }
+
+    @Test
+    public void launchPipelineShouldPinDockerImageDigestBeforePodLaunch() {
+        doReturn(DEFAULT_VERSION).when(toolManager).resolveDefaultVersion(tool);
+        doReturn(Optional.of(DIGEST)).when(toolManager).resolveImageDigest(eq(tool.getImage()), any());
+        final AtomicReference<String> launchedDigest = new AtomicReference<>();
+        doAnswer(invocation -> {
+            launchedDigest.set(((PipelineRun) invocation.getArguments()[0]).getActualDockerImageDigest());
+            return DEFAULT_COMMAND;
+        }).when(pipelineLauncher).launch(any(), any(), any(), any());
+
+        final PipelineRun run = launchTool(configuration, INSTANCE_TYPE);
+
+        assertEquals(DIGEST, launchedDigest.get());
+        assertEquals(DIGEST, run.getActualDockerImageDigest());
+        verify(toolManager).resolveImageDigest(tool.getImage(), DEFAULT_VERSION);
+    }
+
+    @Test
+    public void launchPipelineShouldNotPinDockerImageDigestIfItIsNotResolved() {
+        final PipelineRun run = launchTool(configuration, INSTANCE_TYPE);
+
+        assertNull(run.getActualDockerImageDigest());
+    }
+
+    @Test
+    public void launchPipelineShouldNotPinDockerImageDigestIfPinningIsDisabled() {
+        doReturn(false).when(preferenceManager).getPreference(LAUNCH_DOCKER_IMAGE_PIN_DIGEST);
+        doReturn(Optional.of(DIGEST)).when(toolManager).resolveImageDigest(eq(tool.getImage()), any());
+
+        final PipelineRun run = launchTool(configuration, INSTANCE_TYPE);
+
+        assertNull(run.getActualDockerImageDigest());
+        verify(toolManager, never()).resolveImageDigest(anyString(), any());
     }
 
     @Test
@@ -518,6 +569,153 @@ public class PipelineRunManagerLaunchTest {
     }
 
     @Test
+    public void launchPipelineRejectsAnUnknownPool() {
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        doReturn(Optional.empty()).when(nodePoolManager).find(ID_2);
+
+        assertThrows(IllegalArgumentException.class, () -> launchPipeline(configuration, INSTANCE_TYPE));
+    }
+
+    @Test
+    public void launchPipelineRejectsAPoolWhoseInstanceTypeDoesNotMatchTheRun() {
+        configuration.setInstanceType(INSTANCE_TYPE);
+        doReturn(Optional.empty()).when(instanceOfferManager).findOffer(anyString(), anyLong());
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        doReturn(Optional.of(poolWithInstanceType("other.type"))).when(nodePoolManager).find(ID_2);
+
+        assertThrows(IllegalArgumentException.class, () -> launchPipeline(configuration, INSTANCE_TYPE));
+    }
+
+    @Test
+    public void launchPipelineSucceedsWhenThePoolsInstanceTypeMatchesTheRun() {
+        configuration.setInstanceType(INSTANCE_TYPE);
+        doReturn(Optional.empty()).when(instanceOfferManager).findOffer(anyString(), anyLong());
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        doReturn(Optional.of(poolWithInstanceType(INSTANCE_TYPE))).when(nodePoolManager).find(ID_2);
+
+        assertNotNull(launchPipeline(configuration, INSTANCE_TYPE));
+    }
+
+    @Test
+    public void launchPipelineDoesNotCheckInstanceTypeWhenTheRunDoesNotRequestOne() {
+        // configuration.getInstanceType() is null in this fixture, so there is nothing to compare.
+        // A pool with any instance type must be accepted then.
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        doReturn(Optional.of(poolWithInstanceType("other.type"))).when(nodePoolManager).find(ID_2);
+
+        assertNotNull(launchPipeline(configuration, INSTANCE_TYPE));
+    }
+
+    @Test
+    public void launchPipelineRejectsAPoolWhoseRegionDoesNotMatchTheRun() {
+        // the shared `configuration` fixture already requests defaultAwsRegion (ID)
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        doReturn(Optional.of(poolWithRegion(NON_DEFAULT_REGION_ID))).when(nodePoolManager).find(ID_2);
+
+        assertThrows(IllegalArgumentException.class, () -> launchPipeline(configuration, INSTANCE_TYPE));
+    }
+
+    @Test
+    public void launchPipelineSucceedsWhenThePoolsRegionMatchesTheRun() {
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        doReturn(Optional.of(poolWithRegion(REGION_ID))).when(nodePoolManager).find(ID_2);
+
+        assertNotNull(launchPipeline(configuration, INSTANCE_TYPE));
+    }
+
+    @Test
+    public void launchPipelineRejectsAMalformedPoolId() {
+        setPoolIdParameter(configuration, "not-a-number");
+
+        assertThrows(IllegalArgumentException.class, () -> launchPipeline(configuration, INSTANCE_TYPE));
+        verify(nodePoolManager, never()).find(any());
+    }
+
+    @Test
+    public void launchPipelineDoesNotValidateAnyPoolWhenTheParameterIsAbsent() {
+        launchPipeline(configuration, INSTANCE_TYPE);
+
+        verify(nodePoolManager, never()).find(any());
+    }
+
+    @Test
+    public void launchPipelineUsesThePoolsOwnPodAssignPolicyWhenOneExists() {
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        doReturn(Optional.of(poolWithAssignPolicy(poolIdSelectorPolicy(ID_2)))).when(nodePoolManager).find(ID_2);
+
+        assertNotNull(launchPipeline(configuration, INSTANCE_TYPE));
+
+        assertTrue(configuration.getPodAssignPolicy()
+                .isMatch(KubernetesConstants.NODE_POOL_ID_LABEL, String.valueOf(ID_2)));
+    }
+
+    @Test
+    public void launchPipelineOverridesAClientSuppliedPodAssignPolicyWithThePoolsOwn() {
+        configuration.setPodAssignPolicy(RunContainerSpec.builder()
+                .selector(RunContainerSpec.PodAssignSelector.builder()
+                        .label("custom-label").value("custom-value").build())
+                .build());
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        doReturn(Optional.of(poolWithAssignPolicy(poolIdSelectorPolicy(ID_2)))).when(nodePoolManager).find(ID_2);
+
+        assertNotNull(launchPipeline(configuration, INSTANCE_TYPE));
+
+        assertTrue(configuration.getPodAssignPolicy()
+                .isMatch(KubernetesConstants.NODE_POOL_ID_LABEL, String.valueOf(ID_2)));
+    }
+
+    @Test
+    public void launchPipelineKeepsTheDefaultPodAssignPolicyWhenThePoolHasNoLaunchConfig() {
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        doReturn(Optional.of(poolWithInstanceType(null))).when(nodePoolManager).find(ID_2);
+
+        assertNotNull(launchPipeline(configuration, INSTANCE_TYPE));
+
+        assertTrue(configuration.getPodAssignPolicy().isMatch(KubernetesConstants.RUN_ID_LABEL));
+    }
+
+    private void setPoolIdParameter(final PipelineConfiguration configuration, final String value) {
+        final Map<String, PipeConfValueVO> parameters = new HashMap<>();
+        parameters.put(PipelineRunManager.CP_CAP_POOL_ID, new PipeConfValueVO(value));
+        configuration.setParameters(parameters);
+    }
+
+    private NodePool poolWithInstanceType(final String instanceType) {
+        final NodePool pool = new NodePool();
+        pool.setId(ID_2);
+        pool.setName("pool");
+        pool.setInstanceType(instanceType);
+        return pool;
+    }
+
+    private NodePool poolWithRegion(final Long regionId) {
+        final NodePool pool = new NodePool();
+        pool.setId(ID_2);
+        pool.setName("pool");
+        pool.setRegionId(regionId);
+        return pool;
+    }
+
+    private NodePool poolWithAssignPolicy(final RunContainerSpec policy) {
+        final NodePool pool = new NodePool();
+        pool.setId(ID_2);
+        pool.setName("pool");
+        final NodePoolLaunchConfig launchConfig = new NodePoolLaunchConfig();
+        launchConfig.setKubeAssignPolicy(policy);
+        pool.setLaunchConfig(launchConfig);
+        return pool;
+    }
+
+    private RunContainerSpec poolIdSelectorPolicy(final Long poolId) {
+        return RunContainerSpec.builder()
+                .selector(RunContainerSpec.PodAssignSelector.builder()
+                        .label(KubernetesConstants.NODE_POOL_ID_LABEL)
+                        .value(String.valueOf(poolId))
+                        .build())
+                .build();
+    }
+
+    @Test
     public void restartRunShouldPreserveFallbackInstanceTypes() {
         final String fallbackType = "fallback.type";
         final PipelineRun run = getRunToRestart();
@@ -562,6 +760,46 @@ public class PipelineRunManagerLaunchTest {
         assertThat(restartedRun.getPipelineRunParameters().size(), is(1));
         assertEquals(TEST_NAME, restartedRun.getPipelineRunParameters().get(0).getName());
         assertEquals(TEST_STRING, restartedRun.getPipelineRunParameters().get(0).getValue());
+    }
+
+    @Test
+    public void restartRunShouldKeepDockerImageDigestOfParentRun() {
+        final PipelineRun run = getRunToRestart();
+        run.setActualDockerImageDigest(DIGEST);
+        mockRestart();
+        doReturn(Optional.of(ANOTHER_DIGEST)).when(toolManager).resolveImageDigest(eq(IMAGE), any());
+
+        final PipelineRun restartedRun = pipelineRunManager.restartRun(run);
+
+        assertEquals(DIGEST, restartedRun.getActualDockerImageDigest());
+        verify(toolManager, never()).resolveImageDigest(anyString(), any());
+    }
+
+    @Test
+    public void restartRunShouldNotPinDockerImageDigestIfPinningIsDisabled() {
+        final PipelineRun run = getRunToRestart();
+        run.setActualDockerImageDigest(DIGEST);
+        mockRestart();
+        doReturn(false).when(preferenceManager).getPreference(LAUNCH_DOCKER_IMAGE_PIN_DIGEST);
+        doReturn(Optional.of(ANOTHER_DIGEST)).when(toolManager).resolveImageDigest(eq(IMAGE), any());
+
+        final PipelineRun restartedRun = pipelineRunManager.restartRun(run);
+
+        assertNull(restartedRun.getActualDockerImageDigest());
+        verify(toolManager, never()).resolveImageDigest(anyString(), any());
+    }
+
+    @Test
+    public void restartRunShouldNotPinDockerImageDigestIfParentRunIsNotPinned() {
+        final PipelineRun run = getRunToRestart();
+        run.setActualDockerImageDigest(null);
+        mockRestart();
+        doReturn(Optional.of(ANOTHER_DIGEST)).when(toolManager).resolveImageDigest(eq(IMAGE), any());
+
+        final PipelineRun restartedRun = pipelineRunManager.restartRun(run);
+
+        assertNull(restartedRun.getActualDockerImageDigest());
+        verify(toolManager, never()).resolveImageDigest(anyString(), any());
     }
 
     private PipelineRun getRunToRestart() {

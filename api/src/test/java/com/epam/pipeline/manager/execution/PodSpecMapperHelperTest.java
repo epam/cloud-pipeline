@@ -16,12 +16,14 @@
 
 package com.epam.pipeline.manager.execution;
 
+import com.epam.pipeline.entity.pipeline.PipelineRun;
 import io.fabric8.kubernetes.api.model.Toleration;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -31,6 +33,9 @@ public class PodSpecMapperHelperTest {
     public static final String ANOTHER_LABEL_KEY = "another-label-key";
     public static final String LABEL_VALUE = "label-value";
     public static final String EMPTY = "";
+    private static final String DIGEST = "sha256:digest";
+    private static final String TAG_IMAGE = "registry:443/group/tool:latest";
+    private static final String PINNED_IMAGE = "registry:443/group/tool@" + DIGEST;
 
     @Test
     public void tolerationLabelWithoutValueShouldBeMappedToTolerationWithExistsOperator() {
@@ -71,5 +76,29 @@ public class PodSpecMapperHelperTest {
         toleration = tolerations.get(1);
         assertEquals(ANOTHER_LABEL_KEY, toleration.getKey());
         assertEquals(PodSpecMapperHelper.TOLERATION_OP_EXISTS, toleration.getOperator());
+    }
+
+    @Test
+    public void shouldPinDockerImageToRunDigest() {
+        assertEquals(Optional.of(PINNED_IMAGE),
+                PodSpecMapperHelper.buildPinnedDockerImage(run(DIGEST), true));
+    }
+
+    @Test
+    public void shouldNotPinDockerImageIfPinningIsNotAllowed() {
+        assertEquals(Optional.empty(), PodSpecMapperHelper.buildPinnedDockerImage(run(DIGEST), false));
+    }
+
+    @Test
+    public void shouldNotPinDockerImageOfRunWithoutDigest() {
+        assertEquals(Optional.empty(), PodSpecMapperHelper.buildPinnedDockerImage(run(null), true));
+        assertEquals(Optional.empty(), PodSpecMapperHelper.buildPinnedDockerImage(run(EMPTY), true));
+    }
+
+    private PipelineRun run(final String digest) {
+        final PipelineRun run = new PipelineRun();
+        run.setActualDockerImage(TAG_IMAGE);
+        run.setActualDockerImageDigest(digest);
+        return run;
     }
 }

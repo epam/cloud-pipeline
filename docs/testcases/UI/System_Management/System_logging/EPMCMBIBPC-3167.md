@@ -16,5 +16,5 @@ Test verifies that creating and deleting a user is recorded in the system logs.
 | 7 | Click the **Edit** button in the row next to the found user |  |
 | 8 | Click **DELETE** |  |
 | 9 | Click **OK** in the pop-up |  |
-| 10 | Click the **SYSTEM LOGS** tab |  |
+| 10 | Click the **LOGS** tab |  |
 | 11 | Enter the name of the user created at steps 4-5 into the **Message** field, press **Enter** | <li>In the logs table, there is a row with log message "Create user with name: <username>", type "security", where <username> is the name of the user created at steps 4-5 <li>In the logs table, there is a row with log message "Delete user with name: <username> id...", type "security", where <username> is the name of the user created at steps 4-5 |

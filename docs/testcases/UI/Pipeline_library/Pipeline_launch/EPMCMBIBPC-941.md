@@ -10,7 +10,7 @@ Test verifies that Output, Path, Input path and Common path parameters set via t
 | 4 | On the pipeline page select **CODE** tab |  |
 | 5 | Add a script for saving files into the code file (replace the code file with the attached one) |  |
 | 6 | Click **RUN** button |  |
-| 7 | Hover over the **v** element to the right of the **Add parameters** button: select **Output path parameter** item; specify the parameter name in the left field of the appeared row; click the grey button of the right field; in the appeared pop-up window select an existing data storage in the library-tree on the left panel; select a folder on the right panel; click **OK** button |  |
+| 7 | Hover over the **v** element to the right of the **Add parameter** button: select **Output path parameter** item; specify the parameter name in the left field of the appeared row; click the grey button of the right field; in the appeared pop-up window select an existing data storage in the library-tree on the left panel; select a folder on the right panel; click **OK** button |  |
 | 8 | Repeat step 7 for the **Path parameter** |  |
 | 9 | Repeat step 7 for the **Input path parameter** |  |
 | 10 | Repeat step 7 for the **Common path parameter** |  |

@@ -42,7 +42,7 @@ def _api(preference=None):
     # A preference with a bucket, so that the round gets as far as claiming. Without one the
     # orchestrator stops after the cleanups, which is its own behaviour and tested below.
     api.preference = (preference if preference is not None
-                      else json.dumps({'destinationStorageId': 9}))
+                      else json.dumps({'tasks': {'download': {'destinationStorageId': 9}}}))
     return api
 
 

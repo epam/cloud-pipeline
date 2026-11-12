@@ -28,7 +28,7 @@ describe('queuedTaskMessage', () => {
   // Anything that is not a function falls back the same way - a caller
   // passing `undefined` through a chain of optional parameters is the
   // realistic case, not a deliberate non-function value, but either way the
-  // existing handler tests (download-storage-archive.test.js,
+  // existing handler tests (data-storage/utils/download-archive.test.js,
   // extract-storage-archives.test.js) rely on getting this plain string back
   // when they pass nothing.
   test('stays the plain sentence when onShowDownloads is not a function', () => {

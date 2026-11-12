@@ -225,7 +225,8 @@ class SlurmGridEngine(GridEngine):
             number = int(mem_request)
             modifier = 1
         size_in_bytes = number * modifier
-        size_in_gibibytes = int(math.ceil(size_in_bytes / modifiers['G']))
+        # Python 2 divides integers to an integer, which rounds 500M down to 0
+        size_in_gibibytes = int(math.ceil(size_in_bytes / float(modifiers['G'])))
         return size_in_gibibytes
 
     def _parse_nodelist(self, nodelist):
@@ -288,13 +289,17 @@ class SlurmJobValidator(GridEngineJobValidator):
 
 class SlurmLaunchAdapter(GridEngineLaunchAdapter):
 
-    def __init__(self):
-        pass
+    def __init__(self, queue=None):
+        self._queue = queue
 
     def get_worker_init_task_name(self):
         return 'SLURMWorkerSetup'
 
     def get_worker_launch_params(self):
-        return {
+        params = {
             'CP_CAP_SLURM': 'false'
         }
+        # An additional worker joins the nodeset of its queue by the feature of the queue name (slurm_setup_worker)
+        if self._queue:
+            params['CP_CAP_SLURM_QUEUE_NAME'] = self._queue
+        return params

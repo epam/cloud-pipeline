@@ -28,7 +28,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = DownloadArchiveResult.class, name = "DOWNLOAD_ARCHIVE")
+    @JsonSubTypes.Type(value = DownloadArchiveResult.class, name = "DOWNLOAD_ARCHIVE"),
+    @JsonSubTypes.Type(value = UnpackArchiveResult.class, name = "UNPACK_ARCHIVE")
     })
 public interface AsyncTaskResult {
     @JsonIgnore

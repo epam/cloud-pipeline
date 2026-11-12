@@ -92,6 +92,7 @@ public final class MessageConstants {
     public static final String ERROR_TOOL_INVALID_IMAGE = "error.tool.invalid.image";
     public static final String ERROR_TOOL_VERSION_INVALID_SIZE = "error.tool.version.invalid.size";
     public static final String ERROR_TOOL_VERSION_DELETE_FAILED = "error.tool.version.delete.failed";
+    public static final String ERROR_TOOL_DEFAULT_VERSION_NOT_FOUND = "error.tool.default.version.not.found";
     public static final String ERROR_TOOL_CLOUD_REGION_NOT_ALLOWED = "error.tool.cloud.region.not.allowed";
 
     public static final String ERROR_TOOL_SYMLINK_SOURCE_TOOL_ID_MISSING = "error.tool.symlink.source.tool.id.missing";
@@ -266,6 +267,8 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_NAME_IS_EMPTY = "error.datastorage.name.is.empty";
     public static final String ERROR_DATASTORAGE_NOT_SUPPORTED = "error.datastorage.not.supported";
     public static final String ERROR_DATASTORAGE_PATH_IS_EMPTY = "error.datastorage.path.is.empty";
+    public static final String ERROR_DATASTORAGE_ACCESS_POINT_ARN_INVALID =
+            "error.datastorage.access.point.arn.invalid";
     public static final String ERROR_DATASTORAGE_RULE_NOT_FOUND = "error.datastorage.rule.not.found";
     public static final String ERROR_DATASTORAGE_RULE_STS_OR_LTS_REQUIRED =
             "error.datastorage.rule.sts.or.lts.required";
@@ -791,12 +794,16 @@ public final class MessageConstants {
             "error.capacity.reservation.not.terminal";
     public static final String ERROR_CAPACITY_RESERVATION_ILLEGAL_TRANSITION =
             "error.capacity.reservation.illegal.transition";
+    public static final String ERROR_CAPACITY_RESERVATION_BLOCK_NOT_CANCELLABLE =
+            "error.capacity.reservation.block.not.cancellable";
     public static final String ERROR_CAPACITY_RESERVATION_SPOT_NOT_SUPPORTED =
             "error.capacity.reservation.spot.not.supported";
     public static final String ERROR_CAPACITY_RESERVATION_TYPE_REQUIRED =
             "error.capacity.reservation.type.required";
     public static final String ERROR_CAPACITY_RESERVATION_TYPE_NOT_SUPPORTED =
             "error.capacity.reservation.type.not.supported";
+    public static final String ERROR_CAPACITY_RESERVATION_OFFERING_ID_REQUIRED =
+            "error.capacity.reservation.offering.id.required";
     public static final String ERROR_CAPACITY_RESERVATION_DATES_REQUIRED =
             "error.capacity.reservation.dates.required";
     public static final String ERROR_CAPACITY_RESERVATION_START_DATE_IN_PAST =
@@ -819,6 +826,18 @@ public final class MessageConstants {
             "error.capacity.reservation.platform.not.supported";
     public static final String ERROR_CAPACITY_RESERVATION_FAMILY_NOT_SUPPORTED =
             "error.capacity.reservation.family.not.supported";
+    public static final String ERROR_CAPACITY_BLOCK_OFFERING_REGION_REQUIRED =
+            "error.capacity.block.offering.region.required";
+    public static final String ERROR_CAPACITY_BLOCK_OFFERING_INSTANCE_TYPE_REQUIRED =
+            "error.capacity.block.offering.instance.type.required";
+    public static final String ERROR_CAPACITY_BLOCK_OFFERING_INSTANCE_COUNT_REQUIRED =
+            "error.capacity.block.offering.instance.count.required";
+    public static final String ERROR_CAPACITY_BLOCK_OFFERING_DURATION_REQUIRED =
+            "error.capacity.block.offering.duration.required";
+    public static final String ERROR_CAPACITY_BLOCK_OFFERING_START_DATE_REQUIRED =
+            "error.capacity.block.offering.start.date.required";
+    public static final String ERROR_CAPACITY_BLOCK_RESOURCE_TYPE_NOT_SUPPORTED =
+            "error.capacity.block.resource.type.not.supported";
     public static final String ERROR_NODE_POOL_MISSING_PRICE_TYPE = "error.node.pool.missing.price.type";
     public static final String ERROR_NODE_POOL_MISSING_REGION = "error.node.pool.missing.region";
     public static final String ERROR_NODE_POOL_MISSING_INSTANCE_TYPE = "error.node.pool.missing.instance.type";
@@ -835,6 +854,15 @@ public final class MessageConstants {
     public static final String ERROR_NODE_POOL_ZONE_NOT_CONFIGURED = "error.node.pool.zone.not.configured";
     public static final String ERROR_NODE_POOL_SUBNET_NOT_CONFIGURED = "error.node.pool.subnet.not.configured";
     public static final String ERROR_NODE_POOL_SUBNET_NOT_IN_NETWORKS = "error.node.pool.subnet.not.in.networks";
+    public static final String ERROR_NODE_POOL_INSTANCE_MISMATCH = "error.node.pool.instance.mismatch";
+    public static final String ERROR_NODE_POOL_REGION_MISMATCH = "error.node.pool.region.mismatch";
+    public static final String ERROR_CAPACITY_POOL_ID_INVALID = "error.capacity.pool.id.invalid";
+    public static final String ERROR_NODE_POOL_RESERVED_NODE_MISMATCH = "error.node.pool.reserved.node.mismatch";
+    public static final String ERROR_NODE_POOL_RESERVATION_EXPIRED = "error.node.pool.reservation.expired";
+    public static final String ERROR_NODE_POOL_FILTER_MISMATCH = "error.node.pool.filter.mismatch";
+    public static final String ERROR_NODE_POOL_ID_NO_LONGER_ACTIVE = "error.node.pool.id.no.longer.active";
+    public static final String INFO_NODE_POOL_ID_WAITING = "info.node.pool.id.waiting";
+    public static final String ERROR_NODE_POOL_ID_BUSY_WAIT_TIMEOUT = "error.node.pool.id.busy.wait.timeout";
 
     // Users import events
     public static final String EVENT_USER_CREATED = "user.import.event.user.created";
@@ -1030,8 +1058,6 @@ public final class MessageConstants {
     public static final String ERROR_ASYNC_TASK_RESULT_INVALID = "error.async.task.result.invalid";
     public static final String ERROR_ASYNC_TASK_PAYLOAD_TYPE_MISMATCH =
             "error.async.task.payload.type.mismatch";
-    public static final String ERROR_ASYNC_TASK_ARCHIVE_PATHS_REQUIRED =
-            "error.async.task.archive.paths.required";
     public static final String ERROR_ASYNC_TASK_ARCHIVE_NAME_INVALID =
             "error.async.task.archive.name.invalid";
     public static final String ERROR_ASYNC_TASK_ARCHIVE_NOT_READY = "error.async.task.archive.not.ready";
@@ -1044,8 +1070,19 @@ public final class MessageConstants {
     public static final String ERROR_ASYNC_TASK_PAYLOAD_REQUIRED = "error.async.task.payload.required";
     public static final String ERROR_ASYNC_TASK_PAYLOAD_UNEXPECTED =
             "error.async.task.payload.unexpected";
+    public static final String ERROR_ASYNC_TASK_NOTHING_TO_CONSUME =
+            "error.async.task.nothing.to.consume";
     public static final String ERROR_ASYNC_TASK_STATUS_NOT_REPORTABLE =
             "error.async.task.status.not.reportable";
+    public static final String ERROR_ASYNC_TASK_TYPE_NOT_SUPPORTED =
+            "error.async.task.type.not.supported";
+
+    public static final String ERROR_ASYNC_TASK_PARAMS_REQUIRED = "error.async.task.params.required";
+    public static final String ERROR_ASYNC_TASK_FIELD_REQUIRED = "error.async.task.field.required";
+    public static final String ERROR_ASYNC_TASK_PATH_INVALID = "error.async.task.path.invalid";
+    public static final String ERROR_ASYNC_TASK_PATH_NOT_CANONICAL =
+            "error.async.task.path.not.canonical";
+    public static final String ERROR_ASYNC_TASK_PATH_NOT_A_FILE = "error.async.task.path.not.a.file";
 
     private MessageConstants() {
         // no-op

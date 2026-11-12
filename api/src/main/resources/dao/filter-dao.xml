@@ -43,6 +43,7 @@
                         r.node_platform,
                         r.docker_image,
                         r.actual_docker_image,
+                        r.actual_docker_image_digest,
                         r.platform,
                         r.cmd_template,
                         r.actual_cmd,

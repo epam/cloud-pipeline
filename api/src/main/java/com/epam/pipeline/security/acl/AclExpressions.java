@@ -109,6 +109,14 @@ public final class AclExpressions {
             ADMIN_ONLY + OR + STORAGE_ADMIN_ONLY
                     + OR + "@storagePermissionManager.storageMgmtPermission(#storage.id, 'OWNER')";
 
+    /**
+     * An S3 access point ARN widens the temporary credentials issued for a storage,
+     * so only admins may set or clear it on an existing storage.
+     */
+    public static final String STORAGE_MGMT_UPDATE_WITH_ACCESS_POINT =
+            "(" + STORAGE_MGMT_UPDATE + ")" + AND
+                    + "(#storage.accessPointArn == null" + OR + ADMIN_ONLY + OR + STORAGE_ADMIN_ONLY + ")";
+
     public static final String STORAGE_ID_MGMT_DELETE =
             ADMIN_ONLY + OR + STORAGE_ADMIN_ONLY + OR + "(" + "hasRole('STORAGE_MANAGER')"
                 + AND + "@storagePermissionManager.storageMgmtPermission(#id, 'OWNER')" + ")";
@@ -244,6 +252,8 @@ public final class AclExpressions {
             + "@capacityReservationPermissionManager.reservationPermission(#id, 'READ')";
     public static final String CAPACITY_RESERVATION_ID_OWNER = ADMIN_ONLY + OR
             + "@capacityReservationPermissionManager.reservationOwner(#id)";
+    public static final String CAPACITY_BLOCK_OFFERING_READ = ADMIN_ONLY + OR + RUN_ADMIN_ONLY + OR
+            + NODE_POOL_MANAGER_ONLY;
 
     private AclExpressions() {
         // no op

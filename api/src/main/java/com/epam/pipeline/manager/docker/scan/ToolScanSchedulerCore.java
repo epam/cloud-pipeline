@@ -129,7 +129,7 @@ class ToolScanSchedulerCore {
         } catch (Exception e) {
             log.error(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_FAILED, tool.getImage()), e);
             toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
-                    "latest", null, null, new HashMap<>(), null, null);
+                    toolManager.resolveDefaultVersion(tool), null, null, new HashMap<>(), null, null);
         }
     }
 

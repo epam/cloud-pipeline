@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.git;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -41,6 +42,7 @@ public class GitRepositoryUrlTest {
     private static final String PROJECT = "awesome-game";
     private static final String USERNAME = "username";
     private static final String PASSWORD = "pAssw0rd";
+    private static final String DOTTED_TOKEN = "glpat-not_a-real-token.01.checksum";
 
     @ParameterizedTest
     @MethodSource("data2")
@@ -84,8 +86,29 @@ public class GitRepositoryUrlTest {
                         "url with username, password and port",
                         "https://username:pAssw0rd@git.company-name-42.com:42/graphic/awesome-game.git",
                         PROTOCOL, USERNAME, PASSWORD, "git.company-name-42.com:42", NAMESPACE, PROJECT
+                ),
+                Arguments.of(
+                        "url with username and a GitLab token with dots",
+                        "https://username:" + DOTTED_TOKEN + "@git.company-name-42.com/graphic/awesome-game.git",
+                        PROTOCOL, USERNAME, DOTTED_TOKEN, HOST, NAMESPACE, PROJECT
                 )
         );
+    }
+
+    @Test
+    public void shouldAcceptGitLabTokenWithDotsAsPassword() {
+        final GitRepositoryUrl url = GitRepositoryUrl.from(URL_WITH_NAMESPACE_AND_PROJECT)
+                .withUsername("root")
+                .withPassword(DOTTED_TOKEN);
+        assertEquals("https://root:" + DOTTED_TOKEN + "@git.company-name-42.com/graphic/awesome-game.git",
+                url.asString());
+    }
+
+    @Test
+    public void shouldRejectPasswordWithAtSign() {
+        assertThrows(IllegalArgumentException.class, () -> GitRepositoryUrl.from(URL_WITH_NAMESPACE_AND_PROJECT)
+                .withUsername("root")
+                .withPassword("pass@word"));
     }
 
     public static Stream<Arguments> data() {

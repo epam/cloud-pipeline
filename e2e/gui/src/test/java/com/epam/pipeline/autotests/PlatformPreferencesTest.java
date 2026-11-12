@@ -22,6 +22,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.DEPLOYMENT_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.FILE_SYSTEM_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.IOPS;
 import static com.epam.pipeline.autotests.ao.Primitive.THROUGHPUT;
+import com.epam.pipeline.autotests.ao.PreferencesAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.SupportButtonAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
@@ -46,7 +47,7 @@ import java.util.regex.Pattern;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.SUCCESS;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
-import static com.epam.pipeline.autotests.ao.SettingsPageAO.PreferencesAO.UserInterfaceAO.SUPPORT_TEMPLATE;
+import static com.epam.pipeline.autotests.ao.PreferencesAO.UserInterfaceAO.SUPPORT_TEMPLATE;
 import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
@@ -137,7 +138,7 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
     @Test
     @TestCase(value = {"2356"})
     public void checkSeveralSupportIconsConfiguration() {
-        final SettingsPageAO.PreferencesAO preferencesAO = navigationMenu()
+        final PreferencesAO preferencesAO = navigationMenu()
                 .settings()
                 .switchToPreferences();
         final String supportTemplateValue = preferencesAO

@@ -153,8 +153,9 @@ export function extractArchives (storageId, paths) {
  * Queues the extraction and reports the outcome - the loading toast while
  * the request is in flight, then the queued-info toast on success or the
  * error toast on failure, exactly the shape `handleDownloadArchive`
- * (`download-storage-archive.js`) already uses for a download. The parallel
- * is deliberate: extraction is queued the same way a download is, so the
+ * (`data-storage/utils/download-archive.js`) already uses for a download.
+ * The parallel is deliberate: extraction is queued the same way a download
+ * is, so the
  * caller (`UploadButton`) does not wait on this either - it fires this and
  * moves on, and the toast is the whole of the user's feedback.
  *
@@ -187,7 +188,7 @@ export async function handleExtractArchives (
   try {
     await extract(storageId, paths);
     // See the matching comment in `handleDownloadArchive`
-    // (download-storage-archive.js) for why the holder below is
+    // (data-storage/utils/download-archive.js) for why the holder below is
     // unavoidable: the toast's own content needs a function that dismisses
     // the toast before `messageApi.info` - the call that creates the toast -
     // has returned the `hide` to dismiss it with.
