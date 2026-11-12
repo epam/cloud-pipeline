@@ -45,7 +45,7 @@ class TestStorage(object):
     versioning = True
     on_cloud = True
 
-    @requests_mock.mock()
+    @requests_mocked
     def test_save_storage(self, mock):
         mock.post(mocked_url("datastorage/save"),
                   text=mock_datastorage(self.storage_id, self.name, self.path, self.type,
@@ -64,7 +64,7 @@ class TestStorage(object):
 
         assert_storages(actual, expected)
 
-    @requests_mock.mock()
+    @requests_mocked
     def test_policy(self, mock):
         mock.get(mocked_url("datastorage/find"),
                  text=mock_datastorage(self.storage_id, self.name, self.path, self.type,

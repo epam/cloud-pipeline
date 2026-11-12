@@ -37,7 +37,11 @@
 - [Access to the pipeline repositories for the pipeline roles](#access-to-the-pipeline-repositories-for-the-pipeline-roles)
 - [GitLab 19 support](#gitlab-19-support)
 - [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
+- [The `pipe` CLI on Python 3](#the-pipe-cli-on-python-3)
 - [pipe-common requires Python 3.12](#pipe-common-requires-python-312)
+- [Runs on Python 3.12](#runs-on-python-312)
+- [The API service on Python 3.12 and Rocky Linux 9.8](#the-api-service-on-python-312-and-rocky-linux-98)
+- [Rocky Linux 9.8 for the platform services](#rocky-linux-98-for-the-platform-services)
 - [Python 3.12 for EDGE, WebDAV, FS Browser and the node reporter](#python-312-for-edge-webdav-fs-browser-and-the-node-reporter)
 
 ***
@@ -712,9 +716,25 @@ On connect to a run, the Cloud Pipeline Remote extension for VS Code and Cursor 
 In the current version, a run can ask for another folder, e.g. a project folder in the image. For that, set the new system parameter **`CP_VSCODE_WORKSPACE_DIR`** to the absolute path of the folder - at launch, or as a default parameter of a tool. The extension opens this folder for any user who connects to the run, if the user can open it. Otherwise, the extension shows a warning with the reason, and opens the home folder, as before.  
 On a deployment that is updated, not installed anew, the parameter is offered in the list of system parameters only after an admin adds it to the **`launch.system.parameters`** preference. Until then, it can be set as a regular parameter of a run.
 
+## The `pipe` CLI on Python 3
+
+The `pipe` CLI runs on Python 3.12. Its Linux binary and tarball were built with Python 2.7, and now are built with Python 3.12 on CentOS 7. Its Windows build moved from Python 3.6 to 3.12, and its macOS (arm64) build from Python 3.9 to 3.12.  
+This brings the following changes:
+
+- the Linux binary and tarball run on the Linux distributions with `glibc` 2.17 or later, e.g. CentOS / RHEL 7, Amazon Linux 2, Ubuntu 16.04, Debian 9 or later. They bring OpenSSL 3.5 with them, and take the CA certificates and the OpenSSL configuration from `/etc/pki/tls` of the system, if it has one
+- the `pipe-el6` binary and tarball for CentOS 6 / RHEL 6 are no longer provided
+- the NTLM proxy authentication is removed, with the NTLM proxy of the Windows build. `pipe configure` fails, if one of its options is set: `--proxy-ntlm`, `--proxy-ntlm-user`, `--proxy-ntlm-domain` or `--proxy-ntlm-pass`. If the saved configuration of an earlier version enables it, `pipe` prints a warning and uses the proxy without it
+- the `--codec` option of `pipe configure` is removed, as Python 3 always uses Unicode text. `pipe configure` fails, if it is set
+- the Linux binary still unpacks itself into `~/.pipe/tmp` on each start. If it cannot create this folder, e.g. when the home folder cannot be written, it now unpacks itself into the system temporary folder (`$TMPDIR`, `/tmp` by default)
+- the installation from the source tarball (**Operation System** → **Source** in **Settings** → **CLI**) requires Python 3.10 or later
+- `pipe` requires newer versions of several Python dependencies, as the earlier versions have published security advisories, e.g. `requests` 2.33.0, `cryptography` 50.0.0 and `PyJWT` 2.15.0 or later. The builds of `pipe` take the exact versions from `pipe-cli/constraints.txt`
+- the Google Cloud Storage transfers use only the public API of the Google Cloud Storage client library, so they work with its current versions
+
+On a deployment that is updated, not installed anew, **Settings** → **CLI** keeps the old installation hints, with the `pipe-el6` download URLs and the Python 2 requirement of the **Source** option, until an admin updates the **`ui.pipe.cli.install.template`** preference.  
+For more details see [here](../../manual/14_CLI/14.1._Install_and_setup_CLI.md#how-to-install-and-setup-pipe-cli).
 ## pipe-common requires Python 3.12
 
-`pipe-common` is the `pipeline` Python package of the platform. Every run installs it, and the platform scripts of a run use it, e.g. for the storage mounts, the data transfers, the cluster setup and the grid engine autoscaler. The platform services that run Python scripts install it as well.
+`pipe-common` is the `pipeline` Python package of the platform. Every run installs it, and the platform scripts of a run use it, e.g. for the storage mounts, the data transfers, the cluster setup and the grid engine autoscaler. The platform services that run Python scripts install it as well. A run installs it with the platform's Python 3.12, see [Runs on Python 3.12](#runs-on-python-312).
 
 Now, `pipe-common` runs on Python 3 only, and requires Python 3.12 or later. `pip` no longer installs it for Python 2.  
 Its dependencies moved to the Python 3 versions that have the known security advisories fixed:
@@ -731,6 +751,106 @@ The SGE autoscaler now rounds the memory request of a job up to whole GiB, as th
 
 Please note: a user script that imports the `pipeline` package, or a package that it brings, must run on Python 3.12, and work with these versions. E.g., the APIs of `luigi` 3, `PyJWT` 2 and `click` 8 differ from the versions that were installed before.
 
+## Runs on Python 3.12
+
+Previously, a run took Python 2 for the platform's scripts and the `pipeline` package (`pipe-common`): Miniconda2, if `CP_CAP_INSTALL_PRIVATE_DEPS` was set, or else the `python2` of the tool image, or the one from the OS repositories. `CP_PYTHON2_PATH` pointed to it.
+
+Now, the runs use Python 3.12 only, as `pipe-common` requires it (see [pipe-common requires Python 3.12](#pipe-common-requires-python-312)):
+
+- When a run starts, it installs the platform's Python 3.12 distribution into `/usr/local/python3.12`. It no longer looks for Python 2, or installs it. The distribution is downloaded from the `tools/python/3/python3.12.tar.gz` file of `GLOBAL_DISTRIBUTION_URL` (by default, the public Cloud Pipeline bucket), with `wget`, or with `curl` if `wget` fails, and without a check of the server certificate, as the other downloads of a run. The new `CP_PYTHON3_DISTRO_URL` parameter sets another location.
+- If the download fails, the run uses the Python 3.12 that the tool image already has: the one in `/usr/local/python3.12` (e.g. of a committed run), or else a `python3.12` in `PATH`. If the image has neither, the run fails at startup. Previously, a run without Python 2 installed it from the OS repositories. Now, an image without Python 3.12 needs `GLOBAL_DISTRIBUTION_URL` (or `CP_PYTHON3_DISTRO_URL`) reachable from the run.
+- A `python3.12` from `PATH` must have `pip` and accept packages: e.g. the one of the `python:3.12` images from Docker Hub. A Python of the OS packages, e.g. `/usr/bin/python3.12` of Ubuntu 24.04, does not do: it has no `pip`, or its `pip` refuses to install into it (PEP 668), so the run fails when it installs `pipe-common`. `pipe-common` is installed into such a Python with `pip install -I`, which replaces the versions of the packages it needs that the image has there, e.g. `requests`, `urllib3`, `cryptography`, `setuptools` and `click`.
+- `CP_PYTHON_PATH` points to this Python 3.12. `pipe-common`, the platform's scripts and the shell commands of a run (e.g. `pipe_log`, the cluster and grid engine setup, the NICE DCV and NoMachine desktops) run with it.
+- `CP_PYTHON2_PATH` is kept for the user scripts that call it. It points to the same Python 3.12, so such a script must run on Python 3.
+- The platform's Python 3.12 comes before the Python of the tool image:
+    - `/usr/local/python3.12/bin` goes first in `PATH`, for the command of the run and for its SSH sessions (`/etc/cp_env.sh`). `/usr/local/bin/python3` and `/usr/local/bin/pip3` are links to the platform's Python 3.12. The `/usr/local/python3.12` of the tool image, if it has one, is replaced at every run start.
+    - So the image's own `python3` and `pip3` are shadowed in a run and in its SSH sessions, including those of conda (e.g. `/opt/conda/bin`) and of the `python` images from Docker Hub (`/usr/local/bin`). So are the commands of the packages installed into the platform's Python 3.12, e.g. `luigi`. `python` and `pip` are not linked: they stay the ones of the image.
+    - A tool that starts with `#!/usr/bin/env python3` runs on the platform's Python 3.12, and does not see the modules of the image's own Python.
+    - Packages installed with `pip3` go into the platform's Python 3.12, and are lost at the next run start, also in an image committed from the run. Install them into the image's own Python by its full path (e.g. `/opt/conda/bin/pip`), or into a virtual environment (e.g. `python3 -m venv /opt/venv`), instead.
+    - To call the Python of the image, use its full path (e.g. `/opt/conda/bin/python3`) or its version (e.g. `python3.11`). A user script that imports the `pipeline` package must run with `$CP_PYTHON_PATH`.
+- The run keeps the `/usr/local/openssl` of the image, unless the distribution has one of its own: `python3.12.tar.gz` has none, the previous `python3.12.0.tar.gz` has one.
+- The `CP_CAP_INSTALL_PRIVATE_DEPS` and `CP_CONDA_DISTRO_URL` parameters no longer have an effect. A run with `CP_CAP_INSTALL_PRIVATE_DEPS` set to `true` logs a warning about it.
+- When the platform's package repositories are used (`CP_REPO_ENABLED`), `pip` installs from the Python 3 package mirror. It is `CP_REPO_PYPI3_BASE_URL_DEFAULT` (and `CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT`), if set. Otherwise, if `GLOBAL_DISTRIBUTION_URL` is an S3 bucket URL of the `https://<bucket>.s3.<region>.amazonaws.com/` form, it is `tools/python/pypi3/simple` of the website endpoint of that bucket (`http://<bucket>.s3-website.<region>.amazonaws.com/`). For any other `GLOBAL_DISTRIBUTION_URL`, it is the public mirror, `http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi3/simple`. The new `CP_REPO_PYPI3_*` parameters replace `CP_REPO_PYPI_BASE_URL_DEFAULT` and `CP_REPO_PYPI_TRUSTED_HOST_DEFAULT`, which set the mirror of the Python 2 packages and no longer have an effect. A run where `CP_REPO_PYPI_BASE_URL_DEFAULT` is set, and `CP_REPO_PYPI3_BASE_URL_DEFAULT` is not, logs a warning about it.
+- The NICE DCV desktop installs Flask 3.1.3 and Flask-HTTPAuth 4.8.1, and the NoMachine desktop installs Flask 3.1.3, for this Python 3.12.
+- The **Python** and **Luigi** pipeline templates, and the data loader system pipeline, run their scripts with `$CP_PYTHON_PATH` instead of `python`. So do the demo pipelines.
+- On CentOS 8 and Rocky Linux 8 and 9, the names of the packages that a run installs (e.g. from `CP_CAP_EXTRA_PKG`) are no longer changed from `python` to `python2`. E.g. `python3-devel` was installed as `python23-devel`, which does not exist.
+- A run with `CP_PIPELINE_CLI_BINARY_NAME` set to `pipe-el6` installs the `pipe` build of the `pipe` CLI, with a warning: the CentOS 6 build is no longer published. The `pipe` CLI needs `glibc` 2.17 or later.
+
+Committing and pausing a run also run Python code: on the node host, outside the container of the run. If the node host has no Python 3.12 in `/usr/local/python3.12`, these operations install it there, from the `tools/python/3/python3.12.tar.gz` file of `GLOBAL_DISTRIBUTION_URL`. The API passes them the distribution URL of the region of the run, or else the `base.global.distribution.url` preference. They install `pipe-common` with this Python 3.12, always from the Python 3 package mirror that this `GLOBAL_DISTRIBUTION_URL` gives, as above: the `CP_REPO_PYPI3_*` and `CP_PYTHON3_DISTRO_URL` parameters of the run do not reach the node host. The `python` and `pip` of the node host are no longer used. If the node host has no Python 3.12 and cannot get it, a pause is not done and the run keeps running, and a commit fails.
+
+The distribution is CPython 3.12.16 with OpenSSL 3.5.9, built in the `manylinux2014` image (`glibc` 2.17), with OpenSSL, libffi, SQLite, ncurses, libedit, xz, bzip2, zlib and libuuid built into it. So its modules, but `crypt`, load in any tool image with `glibc` 2.17 or later, whatever other libraries the image has. These features do not work in all the tool images:
+
+- **`crypt` needs `libcrypt.so.1`.** On Rocky Linux 9 and RHEL 9, it comes from the `libxcrypt-compat` package.
+- **`ssl` needs the CA certificates of the image.** Minimal Debian and Ubuntu images have none until the `ca-certificates` package is installed. `pip` and `requests` work without them: they trust their own CA bundle.
+
+For more details see [Image requirements](../../manual/10_Manage_Tools/10.3._Add_a_Tool.md#image-requirements).
+
+Please note:
+
+- a deployment whose distribution URL (the `base.global.distribution.url` preference, or the distribution URL of a region) is its own bucket must publish `tools/python/3/python3.12.tar.gz` and the Python 3 package mirror `tools/python/pypi3/` there, before it is updated to this version. Otherwise, the runs of the images without Python 3.12 fail at startup, and so do commits and pauses on the node hosts without Python 3.12 (a pause leaves the run running). If it is an S3 bucket URL of the `https://<bucket>.s3.<region>.amazonaws.com/` form, the runs with `CP_REPO_ENABLED`, and all commits and pauses, also cannot install `pipe-common` without the mirror
+- a pipeline that runs a Python script with `python`, and imports the `pipeline` package there, must run it with `$CP_PYTHON_PATH` now. E.g. a pipeline that was created from the **Python** or **Luigi** template of an earlier version
+- the `pipeline` package is installed for the platform's Python 3.12 only. The `python` of a tool image, e.g. the Python 2 of CentOS 7, no longer has it
+## The API service on Python 3.12 and Rocky Linux 9.8
+
+The image of the API service (`cp-api-srv`) moved from CentOS 7, which has reached its end of life, to Rocky Linux 9.8. The Git synchronization service (`cp-git-sync`) runs the same image.
+
+Python in this image:
+
+- The image has Python 3.12 only: the platform's Python 3.12 distribution, in `/usr/local/python3.12`, the version that the platform's `pipeline` package requires. It is the `python3` and `pip3` on the `PATH`. Python 2 is no longer installed, and there is no `python` command. `/usr/bin/python3` stays the Python 3.9 of Rocky Linux 9, for `dnf`.
+- The API runs its Python scripts with the interpreter that the **`CP_PYTHON_PATH`** environment variable of the service names. The start scripts of the image set it to `/usr/local/python3.12/bin/python3.12`, unless the deployment sets it, and stop if that file does not exist. Previously, the API ran `python`, i.e. Python 2.7. These scripts are:
+    - the scripts that create, reassign and terminate the cloud nodes of the runs (`nodeup.py`, `nodedown.py`, ...) for AWS, Azure and GCP
+    - the reader of the Luigi pipeline graphs. Its path, the `luigi.graph.script` property of the image's `application.properties`, is now `/usr/local/python3.12/lib/python3.12/site-packages/scripts/deps_graph.py`
+- The Git synchronization (`syncgit.py`) runs on the same Python 3.12, with the same options, including the `ROLE_PIPELINE_ADMIN` and `ROLE_PIPELINE_READER` groups.
+- The cloud SDKs of these scripts are installed for Python 3.12:
+    - AWS: `boto3` 1.34.69
+    - Azure: `azure-common` 1.1.18, `azure-mgmt-resource` 2.0.0, `azure-mgmt-compute` 4.5.1 and `azure-mgmt-network` 2.0.0, the versions that support the auth file of an Azure region. `azure-cli-core` 2.29.2 serves a deployment that was installed with the Azure CLI login files (`azureProfile.json` and `accessTokens.json`) instead of an auth file. It is the last version that reads `accessTokens.json`
+    - GCP: `google-api-python-client` 1.12.11
+- `awscli`, the `azure` 4.0.0 bundle and the other Python 2 packages of the image (`psycopg2`, `sqlalchemy`, ...) are no longer installed, because nothing in the image used them.
+
+Other platform scripts that are Python code:
+
+- The search scripts that add the repository hooks of the pipelines and reindex the folder tree (`scripts/elasticsearch`) are Python 3 code now. They use the `pipeline` package, so they run on Python 3.12.
+- The scripts of the storage synchronization of the WebDAV service (`nfs-roles-management`) are now compatible with Python 3, and still work on Python 2. The WebDAV service runs them on Python 3 when its own image moves to Python 3.
+
+Other changes:
+
+- The Lustre client of the image is now the el8 build of version 2.10.8, as in the Rocky Linux tool images. It replaces the el7 build of version 2.12.5.  
+Please note: AWS lists the 2.10 Lustre clients as not compatible with FSx for Lustre file systems of version 2.15 ([Lustre file system and client kernel compatibility](https://docs.aws.amazon.com/fsx/latest/LustreGuide/lustre-client-matrix.html)). Only the user-space tools `mount.lustre` and `lfs` come from the image: the kernel module is the one of the node. Mounts of FSx for Lustre 2.15 file systems from the API service were not tested with this client.
+- The API follows the `DEFAULT` crypto policy of Rocky Linux 9. In TLS connections and certificate chains, it now rejects SHA-1 signatures, and RSA, DSA and DH keys shorter than 2048 bits (on CentOS 7, the limit was 1024 bits). So a server that the API connects to, e.g. GitLab, a docker registry or an LDAP server, must have a certificate that meets these limits. This does not apply to the 1024-bit JWT signing keys that the installer creates.  
+Java also rejects all DSA signatures and EC keys shorter than 256 bits. The API's own HTTPS certificate (`cp-api-srv-ssl.p12`) must meet these limits too. The `ssh` client that the API uses to commit and pause runs (OpenSSH 9.9) rejects RSA keys shorter than 2048 bits, so the key of the **`commit.deploy.key`** preference must have at least 2048 bits. `git` in the image (OpenSSL 3.5) has the same SHA-1 and 2048-bit limits.
+- `git` in the image works in a repository that belongs to another user in the folder of the mounted NFS storages (`/opt/api/file-systems`), as the `git` of CentOS 7 did. Since version 2.35.2, `git` refuses such a repository, and it still does so in other folders.
+- The Filebeat log shipper of the API runs with `seccomp` disabled. Its `seccomp` policy does not allow the `clone3` system call, which Rocky Linux 9 uses to start threads.
+## Rocky Linux 9.8 for the platform services
+
+The images of these platform services moved to Rocky Linux 9.8.
+
+From CentOS 7, which has reached its end of life:
+
+- the search service (`cp-search`), the notifier (`cp-notifier`) and the billing service (`cp-billing-srv`)
+- the monitoring service (`cp-monitoring-srv`) and the VM monitor (`cp-vm-monitor`)
+- the data sharing service (`cp-share-srv`) and the docker components scanner (`cp-docker-comp`)
+- the node logger (`cp-node-logger`) and the leader elector (`cp-leader-elector`)
+- the test SAML identity provider (`cp-idp`)
+
+From Ubuntu 18.04: the Git reader (`cp-gitlab-reader`) and the storage lifecycle service (`cp-storage-lifecycle-service`).
+
+Python in these images:
+
+- Rocky Linux 9 has no Python 2 package. The images that installed Python 2 no longer do, because nothing in them used it.
+- The storage lifecycle service runs on the platform's Python 3.12 distribution, the version that the platform's `pipeline` package requires. It ran on Python 3.6. It now uses `boto3` and `botocore` 1.34.69, which work with the `urllib3` 2.8.0 of the `pipeline` package.
+- The Git reader keeps Python 3.6, now installed with `micromamba` from conda-forge, because its dependency versions are for Python 3.6.
+- The leader elector runs on Python 3.9 of Rocky Linux 9. It ran on Python 3.6 of CentOS 7.
+
+Other changes:
+
+- The Lustre client in the search image is now the el8 build of version 2.10.8, as in the Rocky Linux tool images. It replaces the el7 build of version 2.12.5.  
+    **_Note_**: AWS lists the 2.10 Lustre clients as not compatible with the FSx for Lustre file systems of version 2.15 (the 2.12 clients are). The image brings only the user space tools, e.g. `mount.lustre` and `lfs`: the Lustre kernel module is the one of the node. The mounts of FSx for Lustre 2.15 file systems from the search service with this client are not tested.
+- The Java services in these images follow the `DEFAULT` crypto policy of Rocky Linux 9. In TLS connections and certificate chains, they now reject:
+    - SHA-1 signatures in any certificate (on CentOS 7, only in the server certificates that chain to the CA certificates of the JDK), and DSA signatures with any hash
+    - RSA, DSA and DH keys shorter than 2048 bits (on CentOS 7, 1024 bits), and EC keys shorter than 256 bits (on CentOS 7, 224 bits)
+
+    So a server that a service connects to, for example an SMTP server, must have a certificate chain that meets these limits. The policy covers only TLS and certificate chains, so it does not apply to the 1024-bit JWT signing keys that the installer creates.
+- The test identity provider runs on Node.js 24, and it accepts SHA-1 signatures, because the API signs its SAML requests with RSA-SHA1.
 ## Python 3.12 for EDGE, WebDAV, FS Browser and the node reporter
 
 These platform services now run their Python scripts on the platform's Python 3.12 distribution (`tools/python/3/python3.12.tar.gz` in the public Cloud Pipeline bucket), the Python that `pipe-common` requires. They ran on Python 2, or on an older Python 3. Their images moved to Rocky Linux 9.8.
@@ -943,7 +1063,7 @@ Please note:
 
 [#4618](https://github.com/epam/cloud-pipeline/issues/4618)
 
-Previously, the image of the backup workers (`cp-bkp-worker-*`) was based on CentOS 7. The `pipe` CLI is built on Rocky Linux 8 with Python 3.12, and requires `glibc` 2.28 or later, while CentOS 7 has `glibc` 2.17. So a backup worker could not run `pipe`, and could not copy the backups to the storage.
+Previously, the image of the backup workers (`cp-bkp-worker-*`) was based on CentOS 7. The `pipe` CLI was built on Rocky Linux 8 with Python 3.12, and required `glibc` 2.28 or later, while CentOS 7 has `glibc` 2.17. So a backup worker could not run `pipe`, and could not copy the backups to the storage.
 In the current version, the backup worker image is based on Rocky Linux 9.8.
 
 ### The backup worker of the GitLab database always fails
@@ -1089,8 +1209,8 @@ Previously, the `pipe storage cp` and `pipe storage mv` commands with the `--fil
 Now, all builds read the file list as UTF-8 text, with or without a byte order mark, and skip blank lines. As in a folder transfer, paths with non-ASCII characters follow the `--on-unsafe-chars` option, and are skipped by default.
 ### The pipeline repository is not mounted in a run when `python` is not the Python of the platform
 
-Previously, if the image of a pipeline run has `gitfs`, the run mounts the repository of the pipeline to `/code-repository/<pipeline name>` (`REPOSITORY_MOUNT`), if the user has the **WRITE** permission for the pipeline. The run checked this permission with the `python` that was first on `PATH`, not with the Python of the platform environment of the run (`CP_PYTHON2_PATH`). If that `python` could not run the check - e.g. there was no `python`, or it had no `pipeline` package of the platform - the run logged "User is not allowed to modify GIT repository." and did not mount the repository.
-Now, the permission check runs with `CP_PYTHON2_PATH`.
+Previously, if the image of a pipeline run has `gitfs`, the run mounts the repository of the pipeline to `/code-repository/<pipeline name>` (`REPOSITORY_MOUNT`), if the user has the **WRITE** permission for the pipeline. The run checked this permission with the `python` that was first on `PATH`, not with the Python of the platform environment of the run. If that `python` could not run the check - e.g. there was no `python`, or it had no `pipeline` package of the platform - the run logged "User is not allowed to modify GIT repository." and did not mount the repository.
+Now, the permission check runs with the Python of the platform, `CP_PYTHON_PATH` (see [Runs on Python 3.12](#runs-on-python-312)).
 ### `pipe storage mount`: WebDAV mounts and extended attributes fail in the Windows and macOS builds
 
 [#4725](https://github.com/epam/cloud-pipeline/issues/4725)

@@ -16,6 +16,7 @@ import argparse
 import os
 
 import pykube
+from pipeline.common.kubernetes import get_unverified_kube_client
 from azure.common.client_factory import get_client_from_auth_file, get_client_from_cli_profile
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.network import NetworkManagementClient
@@ -131,10 +132,9 @@ def get_cloud_region(api, run_id):
 
 def get_kube_api():
     try:
-        api = pykube.HTTPClient(pykube.KubeConfig.from_service_account())
+        api = get_unverified_kube_client(pykube.KubeConfig.from_service_account())
     except Exception as e:
-        api = pykube.HTTPClient(pykube.KubeConfig.from_file("~/.kube/config"))
-    api.session.verify = False
+        api = get_unverified_kube_client(pykube.KubeConfig.from_file("~/.kube/config"))
     return api
 
 
