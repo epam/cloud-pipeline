@@ -292,6 +292,8 @@
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#the-backup-worker-of-the-gitlab-database-always-fails">The backup worker of the GitLab database always fails</a>
     </li>
+    <li class="toctree-l3"><a class="reference internal" href="#system-logs-no-security-event-is-stored-once-the-security_log-alias-has-no-write-index">System logs: no security event is stored once the security_log alias has no write index</a>
+    </li>
     <li class="toctree-l3"><a class="reference internal" href="#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias">AWS: pipe storage commands fail for a storage registered by an S3 access point alias</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect">VS Code extension: the run owner's home folder is not opened on connect</a>
@@ -337,6 +339,12 @@
     <li class="toctree-l3"><a class="reference internal" href="#broken-layouts">Broken layouts</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#runs-on-amazon-linux-2023-nodes-get-no-oom-logs-task">Runs on Amazon Linux 2023 nodes get no "OOM Logs" task</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#rocky-linux-9-rhel-9-and-amazon-linux-2023-runs-curl-minimal-and-coreutils-single-stop-the-base-packages-install">Rocky Linux 9, RHEL 9 and Amazon Linux 2023 runs: curl-minimal and coreutils-single stop the base packages install</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#filebeat-of-the-api-and-tinyproxy-services-loads-its-own-index-template">Filebeat of the API and TinyProxy services loads its own index template</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#packer-node-images-for-amazon-linux-2023-the-commit-and-the-pause-run-on-python-2-no-lvm2-failed-downloads-are-ignored">Packer node images for Amazon Linux 2023: the commit and the pause run on Python 2, no lvm2, failed downloads are ignored</a>
     </li>
         </ul>
     </li>
@@ -779,6 +787,7 @@
 <li><a href="#nice-dcv-setup-reports-a-failure-only-after-30-minutes-with-no-reason">NICE DCV setup reports a failure only after 30 minutes, with no reason</a></li>
 <li><a href="#sge-create-and-sge-configure-fail-in-tools-without-diff-and-the-extra-sge-queues-fail-on-python-3"><code>sge create</code> and <code>sge configure</code> fail in tools without <code>diff</code>, and the extra SGE queues fail on Python 3</a></li>
 <li><a href="#the-backup-worker-of-the-gitlab-database-always-fails">The backup worker of the GitLab database always fails</a></li>
+<li><a href="#system-logs-no-security-event-is-stored-once-the-security_log-alias-has-no-write-index">System logs: no security event is stored once the <code>security_log</code> alias has no write index</a></li>
 <li><a href="#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias">AWS: <code>pipe storage</code> commands fail for a storage registered by an S3 access point alias</a></li>
 <li><a href="#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect">VS Code extension: the run owner's home folder is not opened on connect</a></li>
 <li><a href="#storage-files-are-not-indexed-when-an-object-key-is-longer-than-512-bytes">Storage files are not indexed when an object key is longer than 512 bytes</a></li>
@@ -801,6 +810,9 @@
 <li><a href="#region-is-being-set-incorrectly-when-trying-to-rerun-pipeline">Region is being set incorrectly when trying to rerun pipeline</a></li>
 <li><a href="#pause-and-commit-operations-fail-for-the-jobs-with-an-autoscaled-disk"><code>PAUSE</code> and <code>COMMIT</code> operations fail for the jobs with an autoscaled disk</a></li>
 <li><a href="#runs-on-amazon-linux-2023-nodes-get-no-oom-logs-task">Runs on Amazon Linux 2023 nodes get no "OOM Logs" task</a></li>
+<li><a href="#rocky-linux-9-rhel-9-and-amazon-linux-2023-runs-curl-minimal-and-coreutils-single-stop-the-base-packages-install">Rocky Linux 9, RHEL 9 and Amazon Linux 2023 runs: <code>curl-minimal</code> and <code>coreutils-single</code> stop the base packages install</a></li>
+<li><a href="#filebeat-of-the-api-and-tinyproxy-services-loads-its-own-index-template">Filebeat of the API and TinyProxy services loads its own index template</a></li>
+<li><a href="#packer-node-images-for-amazon-linux-2023-the-commit-and-the-pause-run-on-python-2-no-lvm2-failed-downloads-are-ignored">Packer node images for Amazon Linux 2023: the commit and the pause run on Python 2, no <code>lvm2</code>, failed downloads are ignored</a></li>
 </ul>
 </li>
 </ul>
@@ -2250,7 +2262,7 @@ The parameter also defines when a run is relaunched in another region in case of
 <p>The WebDAV service (<code>cp-dav</code>) also moved from CentOS 7 to Rocky Linux 8 and got the same <code>CP_PYTHON_VERSION</code>/Python 3.12 support, covering its NFS-synchronization scripts and the storage <code>chown</code>/checksum helper. The SMB server component keeps its own separate Python 3.12 environment, unaffected by this toggle.</p>
 <hr />
 <h2 id="self-contained-python-312-distribution">Self-contained Python 3.12 distribution</h2>
-<p>The runs, the node hosts and the platform images install the platform's Python 3.12 distribution, from <code>tools/python/3/python3.12.tar.gz</code> of the distribution bucket, into <code>/usr/local/python3.12</code> (the AWS node images into <code>/opt/python3.12</code>). It is now built from pinned sources by the <code>Build-Dependencies</code> workflow (<code>deploy/dependencies/python3/</code>), and it needs nothing from the tool image but <code>glibc</code> 2.17 or later:</p>
+<p>The runs, the node hosts and the platform images install the platform's Python 3.12 distribution, from <code>tools/python/3/python3.12.tar.gz</code> of the distribution bucket, into <code>/usr/local/python3.12</code>. It is now built from pinned sources by the <code>Build-Dependencies</code> workflow (<code>deploy/dependencies/python3/</code>), and it needs nothing from the tool image but <code>glibc</code> 2.17 or later:</p>
 <ul>
 <li>CPython 3.12.16 with OpenSSL 3.5, instead of CPython 3.12.0 with OpenSSL 1.1.1, which has had no support since 2023.</li>
 <li>Its modules carry their own libraries. So <code>ctypes</code> (and with it the NFS events observer of a run), <code>sqlite3</code>, <code>readline</code> and <code>curses</code> now work in the images that lack the <code>libffi.so.6</code>, <code>libsqlite3.so.0</code>, <code>libreadline.so.6</code> or <code>libncursesw.so.5</code> of the previous build, e.g. Rocky Linux 9, Ubuntu 20.04 and later, and Debian 11 and later.</li>
@@ -2406,6 +2418,25 @@ Now, the billing service takes only the storage prices it bills, and skips the p
 <p><a href="https://github.com/epam/cloud-pipeline/issues/4618">#4618</a></p>
 <p>Previously, the installer created a backup worker for the GitLab database (<code>cp-bkp-worker-cp-gitlab-db</code>), but the worker image had no backup script for it. So every scheduled run of this worker failed with "Cannot find the backup script for cp-gitlab-db", and the administrators got a failure notification. The GitLab backup of the <code>cp-bkp-worker-cp-git</code> worker still included the database.
 In the current version, the worker dumps the GitLab database with <code>pg_dump</code>, and copies the dump to the backup storages, as it does for the other services. A failure of <code>pg_dump</code> fails the backup, so an empty dump does not replace the good ones.</p>
+<h3 id="system-logs-no-security-event-is-stored-once-the-security_log-alias-has-no-write-index">System logs: no security event is stored once the <code>security_log</code> alias has no write index</h3>
+<p>Previously, the search ELK curator service (<code>cp-search-elk-curator</code>), which sets up the indices of the security events of the <strong>System logs</strong> on start, only checked that something named <code>security_log</code> (<code>CP_SECURITY_LOGS_ELASTIC_PREFIX</code>) existed. The events are kept in daily indices behind the <code>security_log</code> alias, in Elasticsearch or in OpenSearch (<code>CP_SEARCH_ELK_TYPE</code>). Former versions of the search ELK service (<code>cp-search-elk</code>), which did this setup before, added a new index to that alias on each start. Once the alias pointed to two indices and none of them was the write index, every write of a security event and every daily rollover failed, so no security event was stored, and a restart did not repair it. Also, a security event written before the service had created the alias (e.g. by the API while the service started) created a plain <code>security_log</code> index instead. That index was never rolled over, so the cleanup deleted it with all its events once it was older than <code>CP_SECURITY_LOGS_ROLLOVER_DAYS</code> days, and the <strong>System logs</strong> did not show its events. And if the first index of the day, <code>security_log-&lt;date&gt;-000001</code>, already existed outside the alias, the alias was not created at all.
+Now, on each start, the service checks the alias, in Elasticsearch and in OpenSearch alike, and with the <code>CP_SEARCH_ELK_AUTH_SECRET</code> credentials, if they are set:</p>
+<ul>
+<li>if neither the alias nor an index of that name exists, it creates an index of the day as the write index of the alias, e.g. <code>security_log-&lt;date&gt;-000001</code>. Indices of that day outside the alias are kept, and the new index takes the number after the highest of them, e.g. <code>security_log-&lt;date&gt;-000002</code></li>
+<li>if the alias has no write index, its newest index becomes the write index. The other indices stay in the alias with their events, and are deleted after <code>CP_SECURITY_LOGS_ROLLOVER_DAYS</code> days, as before</li>
+<li>if the alias has a single index, with no write index flag, that index becomes its explicit write index</li>
+<li>if the daily rollover of the write index stopped at an error, e.g. while the alias had no write index, the rollover is resumed. In OpenSearch, that is an index whose rollover failed after all its retries</li>
+<li>if <code>security_log</code> is a plain index, its events are copied to a new index of the alias, with the number after the highest of the day. Once all of them are copied, the alias replaces the plain index, and the plain index is deleted, in one step. The writes are blocked during the copy, so the security events sent at that time are rejected and lost. If the copy fails, e.g. if a field of the plain index has another type, the copy is removed, the plain index keeps all its events and takes the writes again, and the service logs an <code>[ERROR]</code> line. The next start tries again</li>
+<li>if a copy was interrupted, e.g. the service was stopped during the copy, the plain index still has all its events, and the unfinished copy and the write block of the plain index stay until the next start. Elasticsearch or OpenSearch may still run that copy. If the outcome of the copy cannot be checked, e.g. Elasticsearch or OpenSearch answers with an error, the write block is cleared, and the unfinished copy stays until the next start. The next start stops a copy that still runs, removes the unfinished copies of that plain index, of that day or of an earlier one, and copies the events again</li>
+<li>if two starts of the service run at the same time, e.g. two pods during a rollout, only one of them moves the events: the later start stops and replaces the copy of the earlier one, and the earlier start then leaves the move to it</li>
+<li>an unfinished copy of another plain index, e.g. of one that was deleted by hand, is kept outside the alias with a <code>[WARN]</code> line, as its events may be nowhere else. Its events are still shown in the <strong>System logs</strong>, and it is deleted after <code>CP_SECURITY_LOGS_ROLLOVER_DAYS</code> days, as the other indices</li>
+</ul>
+<p>Please note:</p>
+<ul>
+<li>the security events that failed to be stored while the alias had no write index are not recovered</li>
+<li>do not delete a write-blocked <code>security_log</code> index by hand: restart the search ELK curator service instead, and it moves the events</li>
+<li>the moved events of a plain index are kept in the index of the day of the move. So the <strong>System logs</strong> show them only if the period of the filter reaches that day</li>
+</ul>
 <h3 id="aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias">AWS: <code>pipe storage</code> commands fail for a storage registered by an S3 access point alias</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/4707">#4707</a></p>
 <p>Previously, an <code>S3</code> storage registered with an access point alias as its path - e.g. the alias of an access point attached to an <code>FSx for NetApp ONTAP</code> volume - could not be accessed with the temporary credentials issued by the platform.
@@ -2502,6 +2533,27 @@ Previously, the node reporter could not read the kernel log on the nodes that ru
 Now, the node reporter runs with the <code>CAP_SYSLOG</code> capability, and reports the kills on these nodes as on the other nodes. No other capability is added.<br />
 Also, the node reporter image now sets <code>CP_PYTHON_PATH</code>. Since the Python 3 support of <code>pipe-common</code>, its <code>pipe_log</code> and <code>pipe_tag</code> commands run Python from this variable, and without it they failed on every node: no kill got into the <strong>OOM Logs</strong> task, and no run was tagged.<br />
 Please note: on the nodes with <code>kernel.dmesg_restrict</code> set to <code>1</code> that already run when the update is applied, the first check also reports the earlier kills that are still in the kernel log, including those of the previous runs on the node. They go to the node's current run, or, if the node has none, to the next run on it.</p>
+<h3 id="rocky-linux-9-rhel-9-and-amazon-linux-2023-runs-curl-minimal-and-coreutils-single-stop-the-base-packages-install">Rocky Linux 9, RHEL 9 and Amazon Linux 2023 runs: <code>curl-minimal</code> and <code>coreutils-single</code> stop the base packages install</h3>
+<p>Previously, at the start of a run, the launch script installed the base packages that the image did not have (<code>git</code>, <code>curl</code>, <code>wget</code>, <code>fuse</code>, <code>tzdata</code>, <code>acl</code> and <code>coreutils</code>) with one <code>yum</code> call. The images of Rocky Linux 9, Red Hat UBI 9 and Amazon Linux 2023 have the <code>curl-minimal</code> package instead of <code>curl</code>. <code>yum</code> cannot install <code>curl</code> next to it, so the whole call failed, and the run did not get <code>git</code>, <code>wget</code> and <code>fuse</code> either. On Amazon Linux 2023, the call also failed on <code>coreutils</code>, as the image has <code>coreutils-single</code>: the launch script skipped <code>coreutils</code> next to <code>coreutils-single</code> on Rocky Linux and RHEL only.<br />
+Now, on any RPM-based image, <code>curl</code> is not installed if the image has <code>curl-minimal</code>, and <code>coreutils</code> is not installed if the image has <code>coreutils-single</code>. This applies to <code>curl</code> and <code>coreutils</code> in <code>CP_CAP_EXTRA_PKG</code> and <code>CP_CAP_EXTRA_PKG_RHEL</code> too, and with <code>CP_IGNORE_INSTALLED_PACKAGES</code>. The run log gets an <code>[INFO]</code> line for each package that is skipped.<br />
+The launch script does not replace <code>curl-minimal</code>, and its <code>curl</code> supports the <code>file</code>, <code>ftp(s)</code> and <code>http(s)</code> protocols only. A tool that needs another protocol, e.g. <code>sftp</code>, <code>scp</code> or <code>ldap</code>, needs an image with the full <code>curl</code>.</p>
+<h3 id="filebeat-of-the-api-and-tinyproxy-services-loads-its-own-index-template">Filebeat of the API and TinyProxy services loads its own index template</h3>
+<p>Previously, the Filebeat configs of the API service (<code>cp-api-srv</code>) and of the TinyProxy service (<code>cp-tinyproxy</code>), for Elasticsearch and for OpenSearch, had a misspelled <code>setup.tempalte.enabled: false</code> setting. Filebeat ignored it. So, on start, it loaded its own index template <code>security_log_template</code>, for the <code>security_log*</code> indices, if the search cluster did not have a template of this name yet: e.g. on a new cluster, before the search service put the platform's templates. If Filebeat then created the <code>security_log</code> index, the index got the Filebeat field mappings. With OpenSearch, such an index rejected the security log events of the API and TinyProxy services: the Filebeat template maps <code>user</code> as an object, and the events have <code>user</code> as text.<br />
+Now, the setting is spelled <code>setup.template.enabled</code>, as in the Filebeat configs of the EDGE service, and Filebeat does not load a template. The security logs go to the <code>security_log</code> index as before.</p>
+<h3 id="packer-node-images-for-amazon-linux-2023-the-commit-and-the-pause-run-on-python-2-no-lvm2-failed-downloads-are-ignored">Packer node images for Amazon Linux 2023: the commit and the pause run on Python 2, no <code>lvm2</code>, failed downloads are ignored</h3>
+<p>Previously, the <code>deploy/infra/aws/packer</code> scripts, which build the Amazon Linux 2023 images for the AWS nodes:</p>
+<ul>
+<li>installed the platform's Python 3.12 into <code>/opt/python3.12</code>. The commit and the pause of a run look for it in <code>/usr/local/python3.12</code> on the node, and use Python 2 when it is not there. So on the nodes of these images, the commit and the pause ran on Python 2.</li>
+<li>did not install <code>lvm2</code>. When a node has more than one unmounted disk, e.g. the larger <code>c5d</code>, <code>m5d</code> and <code>r5d</code> types, which have several local NVMe disks and get no EBS data volume, the user data joins them into one volume with <code>pvcreate</code>, <code>vgcreate</code> and <code>lvcreate</code>. Without <code>lvm2</code>, this failed, and <code>/ebs</code> stayed on the XFS root volume. With the default <code>btrfs</code> file system type, the user data still set the <code>btrfs</code> storage driver for Docker in <code>/ebs/docker</code>, so Docker could not start, and the node did not join the cluster. Only with <code>ext4</code> did the node start, with <code>/ebs</code> on the root volume.</li>
+<li>went on after a failed download of <code>btrfs</code>, Python 2, Python 3.12 or <code>jq</code>, and created the image anyway: e.g. with an empty <code>/usr/bin/btrfs</code> and no <code>mkfs.btrfs</code>. Also, they replaced the <code>jq</code> package of the image with a downloaded <code>jq</code> 1.6, and left the Nvidia <code>rpm</code> packages in <code>/opt</code> of the <code>gpu</code> image.</li>
+</ul>
+<p>Now:</p>
+<ul>
+<li>Python 3.12 is installed into <code>/usr/local/python3.12</code>, as in the other AWS node images, so the commit and the pause use it. Python 2 (Miniconda2) is still installed.</li>
+<li><code>lvm2</code> is installed.</li>
+<li>each download goes into a temporary folder first. A failed download, unpack or check of the result stops the build, so no image is created. <code>jq</code> is the package of Amazon Linux 2023, and the Nvidia files are removed after the install.</li>
+</ul>
+<p><code>deploy/infra/aws/packer/README.md</code> now also lists the image contents and the IAM permissions that the build needs.</p>
               
             </div>
           </div><footer>

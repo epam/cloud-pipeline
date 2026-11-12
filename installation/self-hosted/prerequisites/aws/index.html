@@ -483,6 +483,7 @@
 <li>CPU-only: <code>ami-0383ffd4e3eea1784</code></li>
 <li>GPU/CUDA: <code>ami-0b1141f33ec5cf631</code></li>
 </ul>
+<p>Amazon Linux 2023 images for the nodes can be built in the account instead, with the Packer templates in <code>deploy/infra/aws/packer</code> of the repository (see its <code>README.md</code>). Such an image needs the <code>init_multicloud_v1.15.4_al2023.sh</code> user data, which installs Docker and the kubelet when a node starts.</p>
 <h2 id="vpc-s3-endpoint">VPC S3 Endpoint</h2>
 <p>A new VPC endpoint shall be created for the S3 service. 
 * Policy:</p>
