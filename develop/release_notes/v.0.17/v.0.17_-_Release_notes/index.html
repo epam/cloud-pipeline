@@ -334,6 +334,8 @@
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#broken-layouts">Broken layouts</a>
     </li>
+    <li class="toctree-l3"><a class="reference internal" href="#runs-on-amazon-linux-2023-nodes-get-no-oom-logs-task">Runs on Amazon Linux 2023 nodes get no "OOM Logs" task</a>
+    </li>
         </ul>
     </li>
     </ul>
@@ -795,6 +797,7 @@
 <li><a href="#inner-data-storages-navigation-bar-fails-to-navigate">Inner data storages navigation bar fails to navigate</a></li>
 <li><a href="#region-is-being-set-incorrectly-when-trying-to-rerun-pipeline">Region is being set incorrectly when trying to rerun pipeline</a></li>
 <li><a href="#pause-and-commit-operations-fail-for-the-jobs-with-an-autoscaled-disk"><code>PAUSE</code> and <code>COMMIT</code> operations fail for the jobs with an autoscaled disk</a></li>
+<li><a href="#runs-on-amazon-linux-2023-nodes-get-no-oom-logs-task">Runs on Amazon Linux 2023 nodes get no "OOM Logs" task</a></li>
 </ul>
 </li>
 </ul>
@@ -2485,6 +2488,13 @@ Also, the <strong>Launch Command</strong> generation function used single-quotes
 <li>In <strong>Groups</strong>/<strong>Roles</strong> membership view, the vertical scrollbar was shown even if there was a plenty of space below the list. Currently, the list size is increased to the pop up size.</li>
 <li>At the <strong>Billing reports</strong> page, if the whole header menu didn't not fit the screen width - the "discounts" links overflew the regions selector. Currently, row breaks feature is implemeted for this page.</li>
 </ul>
+<h3 id="runs-on-amazon-linux-2023-nodes-get-no-oom-logs-task">Runs on Amazon Linux 2023 nodes get no "OOM Logs" task</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/4828">#4828</a></p>
+<p>When the kernel of a node kills a process for lack of memory, the node reporter (<code>cp-node-reporter</code>) finds the kill in the kernel log and adds its message to the <strong>OOM Logs</strong> task of the node's run. If <code>CP_OOM_TAG_RUNS</code> is <code>true</code> in the <code>cp-config-global</code> config map, it also tags the run (<code>PROC_OUT_OF_MEMORY</code> by default).<br />
+Previously, the node reporter could not read the kernel log on the nodes that run Amazon Linux 2023, or another Linux that sets <code>kernel.dmesg_restrict</code> to <code>1</code>. With this setting, reading the kernel log needs the <code>CAP_SYSLOG</code> capability, which the node reporter did not have. Its log (<code>/opt/node-reporter/logs/&lt;node&gt;/oom.log</code>) had <code>dmesg: read kernel buffer failed: Operation not permitted</code> at each check. So the runs on such nodes got no <strong>OOM Logs</strong> task and no tag, even when their processes were killed.<br />
+Now, the node reporter runs with the <code>CAP_SYSLOG</code> capability, and reports the kills on these nodes as on the other nodes. No other capability is added.<br />
+Also, the node reporter image now sets <code>CP_PYTHON_PATH</code>. Since the Python 3 support of <code>pipe-common</code>, its <code>pipe_log</code> and <code>pipe_tag</code> commands run Python from this variable, and without it they failed on every node: no kill got into the <strong>OOM Logs</strong> task, and no run was tagged.<br />
+Please note: on the nodes with <code>kernel.dmesg_restrict</code> set to <code>1</code> that already run when the update is applied, the first check also reports the earlier kills that are still in the kernel log, including those of the previous runs on the node. They go to the node's current run, or, if the node has none, to the next run on it.</p>
               
             </div>
           </div><footer>
