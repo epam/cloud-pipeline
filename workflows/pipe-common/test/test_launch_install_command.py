@@ -13,7 +13,8 @@
 # limitations under the License.
 
 # Covers the package names of the base packages install of scripts/pipeline-launch/launch.sh: which packages
-# get_install_command_by_current_distr puts into the install command on Rocky Linux, RHEL, CentOS and Ubuntu.
+# get_install_command_by_current_distr puts into the install command on Rocky Linux, RHEL, CentOS, Amazon Linux and
+# Ubuntu, and the [INFO] lines it logs for the packages that it skips.
 # Runs the function and check_package_installed of launch.sh with bash. check_installed is replaced by a stub, which
 # reports the package manager of the OS, and rpm and dpkg by stubs first on PATH, which know the installed packages.
 # Needs bash and GNU sed.
@@ -55,7 +56,8 @@ def install_command(tmpdir):
         + _function_source('get_install_command_by_current_distr') \
         + 'get_install_command_by_current_distr _COMMAND "$STUB_PACKAGES"\necho "$_COMMAND"\n'
 
-    def run(packages, cp_os='rocky', cp_ver='8.7', installed=(), ignore_installed=''):
+    def run(packages, cp_os='rocky', cp_ver='8.7', installed=(), ignore_installed='', log=None):
+        # log: a list that gets the [INFO] lines of the function (its stderr)
         package_managers = ('apt-get', 'dpkg') if cp_os in ('ubuntu', 'debian') else ('yum', 'rpm')
         stubs = 'function check_installed { case "$1" in %s) return 0 ;; esac; return 1; }\n' \
                 % '|'.join(package_managers)
@@ -67,7 +69,11 @@ def install_command(tmpdir):
             'STUB_PACKAGES': packages,
             'STUB_INSTALLED': ' '.join(installed)
         }
-        output = subprocess.check_output(['bash', '-c', stubs + script], env=env).decode('utf-8').strip()
+        process = subprocess.run(['bash', '-c', stubs + script], env=env, stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE, check=True)
+        output = process.stdout.decode('utf-8').strip()
+        if log is not None:
+            log.extend(process.stderr.decode('utf-8').splitlines())
         if not output:
             return []
         assert ' install ' in output, output
@@ -102,6 +108,17 @@ def test_rhel_does_not_install_coreutils_next_to_coreutils_single(install_comman
     assert install_command('git coreutils', cp_os='rhel', installed=('coreutils-single',)) == ['git']
 
 
+@pytest.mark.parametrize('cp_os,cp_ver', [('amzn', '2023'), ('almalinux', '9.4'), ('centos', '9')])
+def test_other_rpm_distributions_do_not_install_coreutils_next_to_coreutils_single(install_command, cp_os, cp_ver):
+    assert install_command('git coreutils', cp_os=cp_os, cp_ver=cp_ver, installed=('coreutils-single',)) == ['git']
+
+
+def test_skipped_coreutils_is_logged(install_command):
+    log = []
+    assert install_command('git coreutils', cp_ver='9.8', installed=('coreutils-single',), log=log) == ['git']
+    assert log == ['[INFO] coreutils is not installed: the image has coreutils-single, which has the same commands']
+
+
 def _base_packages():
     # The base packages that launch.sh installs at every run start
     with open(LAUNCH_SH) as f:
@@ -111,16 +128,21 @@ def _base_packages():
     raise AssertionError('_CP_INIT_DEPS_LIST not found in ' + LAUNCH_SH)
 
 
-@pytest.mark.parametrize('cp_os,installed', [
-    # What the rockylinux/rockylinux:9.8 and the registry.access.redhat.com/ubi9/ubi images have
-    ('rocky', ('curl-minimal', 'coreutils-single', 'tzdata')),
-    ('rhel', ('curl-minimal', 'coreutils-single', 'tzdata', 'acl'))])
-def test_el9_base_packages_install_skips_curl_next_to_curl_minimal(install_command, cp_os, installed):
+@pytest.mark.parametrize('cp_os,cp_ver,installed', [
+    # What the rockylinux/rockylinux:9.8, registry.access.redhat.com/ubi9/ubi and amazonlinux:2023 images have
+    ('rocky', '9.8', ('curl-minimal', 'coreutils-single', 'tzdata')),
+    ('rhel', '9.8', ('curl-minimal', 'coreutils-single', 'tzdata', 'acl')),
+    ('amzn', '2023', ('curl-minimal', 'coreutils-single', 'tzdata'))])
+def test_base_packages_install_skips_curl_and_coreutils_next_to_the_minimal_packages(install_command, cp_os, cp_ver,
+                                                                                    installed):
     # They conflict: yum fails, and the run gets none of the base packages
     expected = [package for package in _base_packages().split()
                 if package not in ('curl', 'coreutils') and package not in installed]
-    assert install_command(_base_packages(), cp_os=cp_os, cp_ver='9.8', installed=installed) == expected
+    log = []
+    assert install_command(_base_packages(), cp_os=cp_os, cp_ver=cp_ver, installed=installed, log=log) == expected
     assert 'git' in expected and 'wget' in expected and 'fuse' in expected
+    assert len(log) == 2 and log[0].startswith('[INFO] curl is not installed') \
+        and log[1].startswith('[INFO] coreutils is not installed'), log
 
 
 @pytest.mark.parametrize('cp_os,cp_ver', [('almalinux', '9.4'), ('centos', '9'), ('amzn', '2023')])
@@ -135,7 +157,17 @@ def test_rocky_does_not_install_curl_next_to_curl_minimal_with_ignore_installed_
 
 
 def test_rocky_installs_curl_if_neither_is_installed(install_command):
-    assert install_command('git curl', cp_ver='9.8', installed=('git',)) == ['curl']
+    log = []
+    assert install_command('git curl', cp_ver='9.8', installed=('git',), log=log) == ['curl']
+    assert log == []
+
+
+def test_skipped_curl_is_logged(install_command):
+    # E.g. curl in CP_CAP_EXTRA_PKG: the curl of curl-minimal has no sftp, scp or ldap
+    log = []
+    assert install_command('curl', cp_ver='9.8', installed=('curl-minimal',), log=log) == []
+    assert log == ['[INFO] curl is not installed: the image has curl-minimal, '
+                   'its curl supports file, ftp(s) and http(s) only']
 
 
 def test_rocky_does_not_install_curl_again(install_command):
