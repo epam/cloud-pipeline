@@ -68,6 +68,7 @@
 - [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
 - [Pinning a run to the Docker image digest](#pinning-a-run-to-the-docker-image-digest)
 - [Default version of a tool](#default-version-of-a-tool)
+- [OIDC token exchange](#oidc-token-exchange)
 
 ***
 
@@ -2008,6 +2009,31 @@ In **`v0.17`**, any version of a tool can be set as its default version. The def
 Users with the **WRITE** permission for a tool set and unset the default version at the **Versions** tab of the tool. Until a default version is set, and once it is unset or deleted, the `latest` version is used, as before. The default version can also be managed via the API: `POST /tool/{id}/defaultVersion?version=<version>` sets it, `DELETE /tool/{id}/defaultVersion` removes it, and the tool returns it as the `defaultVersion` field.
 
 For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#set-a-default-version).
+
+***
+
+## OIDC token exchange
+
+An application that calls the Cloud Pipeline API for its signed-in users previously needed a Cloud Pipeline token issued from the platform side - in practice a long-lived one, copied into the application's configuration, and often a single token shared by all of its users. The API could then not tell which user was really acting.
+
+In **`v0.17`**, such an application can trade a user's own access token, issued by the corporate identity provider, for a short-lived Cloud Pipeline token for that same user, as [RFC 8693](https://www.rfc-editor.org/rfc/rfc8693) describes:
+
+```
+POST /restapi/oauth/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=urn:ietf:params:oauth:grant-type:token-exchange
+subject_token=<the user's access token>
+subject_token_type=urn:ietf:params:oauth:token-type:access_token
+```
+
+So the application stores no static token from Cloud Pipeline, every call is made and audited as the real user with that user's own permissions, and blocking a user takes effect within one token lifetime. The issued token is an ordinary platform token, which the API, the edge and `pipe` accept as any other.
+
+The administrator configures the trusted identity providers in the **`system.oidc.token.exchange.issuers`** preference. Each provider holds a list of **clients** - the callers trusted under it, because one provider issues tokens for many callers: every repository on github.com shares one issuer, as does every application in an Entra ID tenant. A client is identified by conditions on the token's claims, and says which user it may act as: a user named by a claim of the token, or a fixed service account for a CI job. A client can also narrow the authorities its tokens carry, so an application can be given read-only access to the API on behalf of users who have more.
+
+The exchange never creates a user: the user has to exist in Cloud Pipeline already, and the usual blocking checks apply. The issued token lives no longer than the provider's token it came from, so ending a user's session at the provider ends their Cloud Pipeline access, and it cannot be traded for a longer-lived one unless the client is configured to allow it.
+
+For more details see [here](../../manual/12_Manage_Settings/12.16._OIDC_token_exchange.md).
 
 ***
 
