@@ -1,0 +1,77 @@
+/*
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* eslint-env jest */
+
+import React from 'react';
+import {render, screen, change, keyDown, fn} from '@test';
+import RunTaskLogs from './index';
+
+const LOGS = [
+  'plain line',
+  '<b>not bold</b> & "quoted"',
+  '\u001b[31mred line\u001b[0m',
+  'link \u001b]8;;http://example.com\u0007unterminated',
+  'after the link'
+].join('\n');
+
+// jsdom does not implement scrolling, and the component scrolls to the last line
+const {scrollTo} = Element.prototype;
+
+beforeEach(() => {
+  Element.prototype.scrollTo = fn();
+});
+
+afterEach(() => {
+  Element.prototype.scrollTo = scrollTo;
+});
+
+function renderLogs () {
+  render(<RunTaskLogs logs={LOGS} showDate={false} />);
+}
+
+describe('RunTaskLogs', () => {
+  it('shows the log text as text, not as HTML', () => {
+    renderLogs();
+
+    expect(screen.getByText('<b>not bold</b> & "quoted"')).toBeInTheDocument();
+    expect(screen.queryByText('not bold')).toBeNull();
+  });
+
+  it('shows the colors of a line', () => {
+    renderLogs();
+
+    expect(screen.getByText('red line')).toHaveStyle({color: 'rgb(187, 0, 0)'});
+  });
+
+  it('shows the lines after an unterminated hyperlink', () => {
+    renderLogs();
+
+    expect(screen.getByText('link')).toBeInTheDocument();
+    expect(screen.getByText('after the link')).toBeInTheDocument();
+  });
+
+  it('finds and marks a search string with quotes and angle brackets', async () => {
+    renderLogs();
+
+    await keyDown(window, {code: 'KeyF', ctrlKey: true});
+    await change(screen.getByRole('textbox'), '</b> & "quoted"');
+
+    expect(screen.getByText('1 of 1')).toBeInTheDocument();
+    expect(screen.getByText('</b> & "quoted"'))
+      .toHaveClass('cp-search-highlight-text', 'active');
+  });
+});
