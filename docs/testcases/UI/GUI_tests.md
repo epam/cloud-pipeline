@@ -1005,7 +1005,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Runs</b> (35 tests, 3 automated)</summary>
+<summary><b>Runs</b> (32 tests, 3 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -1040,6 +1040,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-266**](Runs/EPMCMBIBPC-266.md) | [MANUAL] Navigate to node from pipeline log |  |
 | [**EPMCMBIBPC-3170**](Runs/EPMCMBIBPC-3170.md) | [MANUAL] Platform usage (pipelines) | :white_check_mark: |
 | [**EPMCMBIBPC-3171**](Runs/EPMCMBIBPC-3171.md) | [MANUAL] Platform usage (tools) | :white_check_mark: |
+| [**create_new_node_parameter_1**](Runs/create_new_node_parameter/create_new_node_parameter_1.md) | A run with the `CP_CREATE_NEW_NODE` parameter set to `true` gets a new node, not a free one |  |
 
 </details>
 
