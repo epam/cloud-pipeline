@@ -254,6 +254,22 @@ public class OidcTokenVerifierTest {
                 .isInstanceOf(OidcTokenVerificationException.class);
     }
 
+    /**
+     * Removing an issuer from the preference takes effect on the next exchange, because the
+     * configured list is read every time rather than held.
+     */
+    @Test
+    public void shouldStopAcceptingTokensOnceTheIssuerIsRemovedFromTheConfiguration() throws JOSEException {
+        final String token = token(claims().build(), signingKey, JWSAlgorithm.RS256);
+        assertThat(verifier.verify(token).getClaims().getSubject()).isEqualTo(SUBJECT);
+
+        Mockito.when(preferenceManager.getPreference(SystemPreferences.SYSTEM_OIDC_TOKEN_EXCHANGE_ISSUERS))
+                .thenReturn(Collections.emptyList());
+
+        assertThatThrownBy(() -> verifier.verify(token))
+                .isInstanceOf(OidcTokenVerificationException.class);
+    }
+
     @Test
     public void shouldRejectBlankToken() {
         assertThatThrownBy(() -> verifier.verify("  "))
