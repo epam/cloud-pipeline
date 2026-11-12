@@ -14,7 +14,8 @@ This is due to the following reasons:
 - It helps to decrease the time for node relaunch.
 - It helps to decrease the time for Docker image and data ("type": "common") download.
 - Most pipelines will take much longer than 1 hour to complete.  
-    **_Note_**: same instance configuration must be used in order to reuse currently active nodes.
+    **_Note_**: same instance configuration must be used in order to reuse currently active nodes.  
+    A run with the `CP_CREATE_NEW_NODE` parameter set to `true` never reuses an active node: it always gets a new one.
 
 If the node has no running jobs 10 minutes before the new hour of payment begins, it will be terminated.
 

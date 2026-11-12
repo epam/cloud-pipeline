@@ -85,6 +85,7 @@ import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.CP_N
 import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE;
 import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODEUP_LIMIT_EXCEEDED_EXIT_CODE;
 import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODEUP_SPOT_FAILED_EXIT_CODE;
+import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODE_LOCAL_PREFIX;
 import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODE_POOL_PREFIX;
 
 @Service
@@ -331,7 +332,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
 
                     // a free node which is not ready can't take the run either, so it can be scaled down as well
                     List<String> nonMatchingFreeNodes = getFreeNodes(nodes, allPods, reassignedNodes,
-                        nodeId -> kubernetesManager.isNodeAvailable(client, nodeId));
+                        nodeId -> isRunNode(nodeId) && kubernetesManager.isNodeAvailable(client, nodeId));
 
                     if (!CollectionUtils.isEmpty(nonMatchingFreeNodes)) {
                         String nodeId = nonMatchingFreeNodes.get(0);
@@ -358,6 +359,14 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             }
         }
 
+        /**
+         * A pool node or a local node is not a node of a run: it has no run ID to scale it down by.
+         * The pools keep their nodes, and the local nodes are never scaled down.
+         */
+        private boolean isRunNode(final String nodeId) {
+            return !nodeId.startsWith(NODE_POOL_PREFIX) && !nodeId.startsWith(NODE_LOCAL_PREFIX);
+        }
+
         private List<String> getFreeNodes(final Set<String> nodes, final Set<String> allPods,
                                           final Set<String> reassignedNodes, final Predicate<String> nodeFilter) {
             return nodes.stream()
@@ -367,7 +376,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         }
 
         private void labelPendingRun(final PipelineRun run) {
-            final Map<String, String> tags = MapUtils.emptyIfNull(run.getTags());
+            // a copy: for a run with null tags, emptyIfNull gives an immutable map
+            final Map<String, String> tags = new HashMap<>(MapUtils.emptyIfNull(run.getTags()));
             if (!tags.containsKey(NODE_PENDING_TAG)) {
                 tags.put(NODE_PENDING_TAG, KubernetesConstants.TRUE_LABEL_VALUE);
                 pipelineRunManager.updateTags(run.getId(), new TagsVO(tags), false);
@@ -375,7 +385,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         }
 
         private void unLabelPendingRun(final PipelineRun run) {
-            final Map<String, String> tags = MapUtils.emptyIfNull(run.getTags());
+            // a copy: for a run with null tags, emptyIfNull gives an immutable map
+            final Map<String, String> tags = new HashMap<>(MapUtils.emptyIfNull(run.getTags()));
             if (tags.containsKey(NODE_PENDING_TAG)) {
                 tags.remove(NODE_PENDING_TAG);
                 pipelineRunManager.updateTags(run.getId(), new TagsVO(tags), true);
