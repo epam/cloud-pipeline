@@ -24,6 +24,7 @@ try:
     from pykube.objects import Event
 except ImportError:
     raise RuntimeError('pykube is not installed. KubernetesJobTask requires pykube.')
+from .kubernetes import get_unverified_kube_client
 
 
 class PodLauncher:
@@ -37,8 +38,7 @@ class PodLauncher:
         # Thus connection to the kube master fails, as it is self signed
         if os.getenv('CP_PYKUBE_SKIP_REQUESTS_CA_BUNDLE', None) == "true":
             os.environ['REQUESTS_CA_BUNDLE'] = ''
-        self.kube_api = HTTPClient(KubeConfig.from_service_account())
-        self.kube_api.session.verify = False
+        self.kube_api = get_unverified_kube_client(KubeConfig.from_service_account())
         if task_name:
             self.task_name = task_name
         else:
@@ -51,7 +51,7 @@ class PodLauncher:
             tmp_dir = os.environ.get('TMP_DIR')
             env_file_path = os.path.join(tmp_dir, str(uuid.uuid4()) + ".sh")
             with open(env_file_path, 'w') as env_file:
-                for key, value in os.environ.iteritems():
+                for key, value in os.environ.items():
                     env_file.write("{}=\"{}\"\n".format(key, value))
             cmd = cmd[:-1] if cmd.endswith(";") else cmd
             cmd = "set -o allexport; source {env_file}; {cmd}; rm {env_file};".format(
@@ -67,8 +67,8 @@ class PodLauncher:
             seen_events = set()
             self.track_pod(pod_id, seen_events)
         except Exception as e:
-            Logger.fail(str(e.message), task_name=self.task_name)
-            raise RuntimeError(str(e.message))
+            Logger.fail(str(e), task_name=self.task_name)
+            raise RuntimeError(str(e))
 
     def track_pod(self, pod_id, seen_events):
         """Poll pod status while active"""

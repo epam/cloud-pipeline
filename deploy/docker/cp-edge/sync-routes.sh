@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o allexport; source /etc/sync-routes/env.sh; set -o allexport; python /etc/sync-routes/sync-routes.py >> /var/log/sync-routes.log 2>&1
+set -o allexport; source /etc/sync-routes/env.sh; set -o allexport; "${CP_PYTHON_PATH:-/usr/local/python3.12/bin/python3.12}" /etc/sync-routes/sync-routes.py >> /var/log/sync-routes.log 2>&1

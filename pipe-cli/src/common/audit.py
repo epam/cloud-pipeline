@@ -24,10 +24,7 @@ from threading import Thread
 import pytz
 import time
 
-try:
-    from queue import Queue  # Python 3
-except ImportError:
-    from Queue import Queue  # Python 2
+from queue import Queue
 
 
 class DataAccessType:
@@ -70,8 +67,7 @@ def chunks(l, n):
         yield l[i:i + n]
 
 
-class AuditContainer:
-    __metaclass__ = ABCMeta
+class AuditContainer(metaclass=ABCMeta):
 
     @abstractmethod
     def put(self, entry):
@@ -173,8 +169,7 @@ class DelayingAuditContainer(AuditContainer):
         self._inner.close()
 
 
-class AuditConsumer:
-    __metaclass__ = ABCMeta
+class AuditConsumer(metaclass=ABCMeta):
 
     @abstractmethod
     def consume(self, entries):

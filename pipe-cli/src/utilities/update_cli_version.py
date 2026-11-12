@@ -19,6 +19,7 @@ from abc import ABCMeta
 
 import click
 import requests
+import urllib3
 import platform
 import zipfile
 import uuid
@@ -45,7 +46,7 @@ class UpdateCLIVersionManager(object):
 
         if not path:
             path = updater.build_path_from_api()
-        requests.urllib3.disable_warnings()
+        urllib3.disable_warnings()
         if not self.is_downloadable(path):
             raise RuntimeError("Provided url '%s' not downloadable or invalid." % path)
 
@@ -67,8 +68,7 @@ class UpdateCLIVersionManager(object):
         return content_type is None or 'html' not in content_type.lower()
 
 
-class CLIVersionUpdater:
-    __metaclass__ = ABCMeta
+class CLIVersionUpdater(metaclass=ABCMeta):
 
     CP_RESTAPI_SUFFIX = 'restapi/'
 

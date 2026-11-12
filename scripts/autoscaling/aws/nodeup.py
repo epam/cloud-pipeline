@@ -21,6 +21,7 @@ from time import sleep
 import boto3
 from botocore.config import Config
 import pykube
+from pipeline.common.kubernetes import get_unverified_kube_client
 import logging
 import os
 import pytz
@@ -30,7 +31,10 @@ from itertools import groupby
 from operator import itemgetter
 from random import randint
 import json
-from distutils.version import LooseVersion
+try:
+    from packaging.version import Version as LooseVersion
+except ImportError:
+    from distutils.version import LooseVersion
 import fnmatch
 import sys
 import math
@@ -195,7 +199,7 @@ def get_networks_config(ec2, aws_region, instance_type):
 
     if allowed_networks and len(allowed_networks) > 0:
         try:
-            allowed_networks_details = ec2.describe_subnets(SubnetIds=allowed_networks.values())['Subnets']
+            allowed_networks_details = ec2.describe_subnets(SubnetIds=list(allowed_networks.values()))['Subnets']
             
             # Get the list of AZs, which offer the "instance_type", as some of the AZs can't provide certain types and an error is thrown:
             #   Your requested instance type (xxxxx) is not supported in your requested Availability Zone (xxxxx)
@@ -369,7 +373,7 @@ def resource_tags(cloud_region):
     merged_tags = merge_tags(region_tags, config_tags)
     if merged_tags is None:
         return tags
-    for key, value in merged_tags.iteritems():
+    for key, value in merged_tags.items():
         tags.append({"Key": key, "Value": value})
     return tags
 
@@ -380,9 +384,9 @@ def merge_tags(region_tags, global_tags):
     if global_tags is None:
         return region_tags
     merged = {}
-    for key, value in global_tags.iteritems():
+    for key, value in global_tags.items():
         merged[key] = value
-    for key, value in region_tags.iteritems():
+    for key, value in region_tags.items():
         merged[key] = value
     return merged
 
@@ -464,15 +468,14 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
     elif allowed_networks and len(allowed_networks) > 0:
         if availability_zone:
             pipe_log('- Desired availability zone {} was specified, trying to use it'.format(availability_zone))
-            for az_name, az_subnet_id in allowed_networks.iteritems():
+            for az_name, az_subnet_id in allowed_networks.items():
                 if az_name == availability_zone:
                     az_name = availability_zone
                     subnet_id = az_subnet_id
                     break
         if subnet_id is None:
             az_num = randint(0, len(allowed_networks)-1)
-            az_name = allowed_networks.items()[az_num][0]
-            subnet_id = allowed_networks.items()[az_num][1]
+            az_name, subnet_id = list(allowed_networks.items())[az_num]
         pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet_id, az_name))
 
 
@@ -552,10 +555,10 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
             **additional_args
         )
     except ClientError as client_error:
-        if 'InstanceLimitExceeded' in client_error.message:
+        if 'InstanceLimitExceeded' in str(client_error):
             pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
             sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
-        elif 'InsufficientInstanceCapacity' in client_error.message:
+        elif 'InsufficientInstanceCapacity' in str(client_error):
             pipe_log_warn(INSUFFICIENT_CAPACITY_ERROR_MASSAGE)
             sys.exit(INSUFFICIENT_CAPACITY_EXIT_CODE)
         else:
@@ -632,7 +635,7 @@ def fetch_network_interface_info(ec2, network_interface, availability_zone, allo
     if availability_zone is not None and availability_zone != eni_az_name:
         raise RuntimeError('- Specified network interface {} is located in az {}, but explicitly configured az is {}, operation failed.'.format(network_interface, eni_az_name, availability_zone))
 
-    if allowed_networks and len(allowed_networks) > 0 and eni_az_name not in [az_name for az_name, _ in allowed_networks.iteritems()]:
+    if allowed_networks and len(allowed_networks) > 0 and eni_az_name not in [az_name for az_name, _ in allowed_networks.items()]:
         raise RuntimeError('- Specified network interface {} is located in az {}, but this az is not in allowed list, operation failed.'.format(network_interface, eni_az_name))
 
     subnet_id = eni_subnet_id
@@ -657,7 +660,7 @@ def get_certs_string():
             return ""
         else:
             entries = []
-            for url, cert in result.iteritems():
+            for url, cert in result.items():
                 entries.append(command_pattern.format(url=url, cert=cert))
             return " && ".join(entries)
     return ""
@@ -783,7 +786,7 @@ def get_swap_ratio(swap_params):
 
 def replace_docker_images(pre_pull_images, user_data_script):
     global api_token
-    payload = jwt.decode(api_token, verify=False)
+    payload = jwt.decode(api_token, options={"verify_signature": False}, algorithms=["RS256"])
     if 'sub' in payload:
         subject = payload['sub']
         user_data_script = user_data_script\
@@ -841,8 +844,8 @@ def get_current_status(ec2, ins_id):
         else:
             return -1
     except ClientError as client_error:
-        if 'does not exist' in client_error.message:
-            pipe_log_warn('Get status request for instance %s returned error %s.' % (ins_id, client_error.message))
+        if 'does not exist' in str(client_error):
+            pipe_log_warn('Get status request for instance %s returned error %s.' % (ins_id, str(client_error)))
             return -1
         else:
             raise client_error
@@ -1217,8 +1220,8 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, pool_id, ins_img, ins
             LaunchSpecification=specifications,
         )
     except ClientError as client_error:
-        if 'Max spot instance count exceeded' in client_error.message or \
-                'InstanceLimitExceeded' in client_error.message:
+        if 'Max spot instance count exceeded' in str(client_error) or \
+                'InstanceLimitExceeded' in str(client_error):
             pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
             sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
         else:
@@ -1518,7 +1521,7 @@ def main():
 
     wait_time_sec = get_preference(NODE_WAIT_TIME_SEC)
     if wait_time_sec and wait_time_sec.isdigit():
-        num_rep = int(wait_time_sec) / time_rep
+        num_rep = int(wait_time_sec) // time_rep
 
     aws_region = get_aws_region(region_id)
     boto3.setup_default_session(region_name=aws_region)
@@ -1562,10 +1565,9 @@ def main():
 
         # Setup kubernetes client
         try:
-            api = pykube.HTTPClient(pykube.KubeConfig.from_service_account())
+            api = get_unverified_kube_client(pykube.KubeConfig.from_service_account())
         except Exception:
-            api = pykube.HTTPClient(pykube.KubeConfig.from_file(KUBE_CONFIG_PATH))
-        api.session.verify = False
+            api = get_unverified_kube_client(pykube.KubeConfig.from_file(KUBE_CONFIG_PATH))
 
         api_url = os.environ["API"]
         api_token = os.environ["API_TOKEN"]

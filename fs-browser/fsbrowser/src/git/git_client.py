@@ -1,4 +1,4 @@
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -340,7 +340,7 @@ class GitClient:
         except KeyError:
             self.logger.log("Can not remove file '%s' from index" % path_to_unstage)
             return
-        index.add(pygit2.IndexEntry(path_to_unstage, obj.oid, obj.filemode))
+        index.add(pygit2.IndexEntry(path_to_unstage, obj.id, obj.filemode))
         self.logger.log("File '%s' removed from index" % path_to_unstage)
 
     def _fix_permissions(self, folder):

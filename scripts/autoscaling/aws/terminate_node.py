@@ -14,6 +14,7 @@
 
 import boto3
 import pykube
+from pipeline.common.kubernetes import get_unverified_kube_client
 import argparse
 import time
 
@@ -79,10 +80,9 @@ def get_aws_region(api, nodename):
 
 def get_kube_api():
     try:
-        api = pykube.HTTPClient(pykube.KubeConfig.from_service_account())
+        api = get_unverified_kube_client(pykube.KubeConfig.from_service_account())
     except Exception:
-        api = pykube.HTTPClient(pykube.KubeConfig.from_file(KUBE_CONFIG_PATH))
-    api.session.verify = False
+        api = get_unverified_kube_client(pykube.KubeConfig.from_file(KUBE_CONFIG_PATH))
     return api
 
 

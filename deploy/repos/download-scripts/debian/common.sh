@@ -7,12 +7,10 @@ apt-get update
 apt-get install --download-only -y \
     sudo \
     locales \
-    python \
     git \
     curl \
     wget \
     fuse \
-    python-docutils \
     tzdata \
     acl \
     coreutils \

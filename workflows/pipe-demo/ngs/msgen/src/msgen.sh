@@ -36,13 +36,13 @@ MSGEN_TASK_NAME="MicrosoftGenomics"
 function get_storage_region_id() {
     local _STORAGE_NAME="$1"
 
-    echo $(${CP_PYTHON2_PATH} -c "import os; from pipeline.api import PipelineAPI; print(PipelineAPI(\"$API\", \"$LOG_DIR\").find_datastorage('$_STORAGE_NAME').region_id)")
+    echo $(${CP_PYTHON_PATH} -c "import os; from pipeline.api import PipelineAPI; print(PipelineAPI(\"$API\", \"$LOG_DIR\").find_datastorage('$_STORAGE_NAME').region_id)")
 }
 
 function expand_vars() {
     local _STRING="$1"
 
-    echo $(${CP_PYTHON2_PATH} -c "import os; print(os.path.expandvars(\"$_STRING\"));")
+    echo $(${CP_PYTHON_PATH} -c "import os; print(os.path.expandvars(\"$_STRING\"));")
 }
 
 function sample_description() {
@@ -228,7 +228,7 @@ function check_workflow_finished_successfully() {
 function upload_inputs_to_azure() {
     local _REMOTE_PATHS_VAR="$1"
     local _TRANSFER_BUCKET="$2"
-    UPLOADED_PATHS=$(${CP_PYTHON2_PATH} ${SCRIPTS_DIR}/src/transfer_sources.py --paths-var "$_REMOTE_PATHS_VAR" \
+    UPLOADED_PATHS=$(${CP_PYTHON_PATH} ${SCRIPTS_DIR}/src/transfer_sources.py --paths-var "$_REMOTE_PATHS_VAR" \
                                                                                --transfer-bucket "$_TRANSFER_BUCKET" \
                                                                                --upload \
                                                                                --task-name "$MSGEN_TASK_NAME")
@@ -243,7 +243,7 @@ function upload_inputs_to_azure() {
 function download_outputs_from_azure() {
     local _LOCAL_PATHS="$1"
     local _TRANSFER_BUCKET="$2"
-    DOWNLOADED_PATHS=$(${CP_PYTHON2_PATH} ${SCRIPTS_DIR}/src/transfer_sources.py --paths "$_LOCAL_PATHS" \
+    DOWNLOADED_PATHS=$(${CP_PYTHON_PATH} ${SCRIPTS_DIR}/src/transfer_sources.py --paths "$_LOCAL_PATHS" \
                                                                                  --transfer-bucket "$_TRANSFER_BUCKET" \
                                                                                  --task-name "$MSGEN_TASK_NAME")
     if [[ "$?" != "0" ]]

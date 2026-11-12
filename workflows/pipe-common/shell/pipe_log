@@ -44,12 +44,12 @@ if [ "$LOG_STATUS" == "WARNING" ]
 then
   LOG_STATUS="RUNNING"
   CMD="from pipeline import bcolors; print(bcolors.WARNING + \"${LOG_TEXT}\" + bcolors.ENDC)"
-  LOG_TEXT=$($CP_PYTHON2_PATH -c "$CMD")
+  LOG_TEXT=$($CP_PYTHON_PATH -c "$CMD")
 fi
 
 ## Validate status code
 CMD="import pipeline.api; print(pipeline.api.TaskStatus.__dict__[\"${LOG_STATUS}\"])"
-LOG_STATUS_ID=$($CP_PYTHON2_PATH -c "$CMD")
+LOG_STATUS_ID=$($CP_PYTHON_PATH -c "$CMD")
 if [ $? -ne 0 ]
   then
     echo "[ERROR] Invalid log status ${LOG_STATUS}"
@@ -58,4 +58,4 @@ fi
 
 # Call log API
 CMD="from pipeline import Logger; Logger.log_task_event(\"${LOG_TASK}\", \"${LOG_TEXT}\", status=${LOG_STATUS_ID}, api_url=\"${API}\", log_dir=\"${LOG_DIR}\", run_id=${RUN_ID})"
-$CP_PYTHON2_PATH -c "$CMD"
+$CP_PYTHON_PATH -c "$CMD"

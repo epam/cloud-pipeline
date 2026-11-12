@@ -12,10 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-try:
-    from urllib import quote
-except ImportError:
-    from urllib.parse import quote
+from urllib.parse import quote
 
 from src.api.base import API
 from src.model.docker_registry_model import ToolScanResultsModel

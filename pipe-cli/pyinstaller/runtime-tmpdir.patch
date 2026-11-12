@@ -1,0 +1,74 @@
+--- a/bootloader/src/pyi_utils.c
++++ b/bootloader/src/pyi_utils.c
+@@ -42,6 +42,7 @@
+     #include <signal.h>  /* kill, */
+     #include <sys/wait.h>
+     #include <unistd.h>  /* rmdir, unlink, mkdtemp */
++    #include <wordexp.h> /* wordexp */
+ #endif /* ifdef _WIN32 */
+ #ifndef SIGCLD
+ #define SIGCLD SIGCHLD /* not defined on OS X */
+@@ -379,6 +380,47 @@
+         return 1;
+     }
+     return 0;
++}
++
++/*
++ * Cloud Pipeline: the runtime-tmpdir of the pipe CLI is ~/.pipe/tmp. Expand "~" and the environment variables
++ * in it, and create the folder with its parents, as the bootloader of the earlier pipe CLI builds did
++ * (https://github.com/mzueva/pyinstaller/tree/resolve_tmpdir). The commands in it are not run.
++ * Returns 1, if the folder is there, and 0, if it cannot be expanded or created.
++ */
++static int
++pyi_resolve_runtime_tmpdir(char *buff, const char *runtime_tmpdir)
++{
++    wordexp_t expanded;
++    char *p;
++    int resolved = 0;
++
++    if (wordexp(runtime_tmpdir, &expanded, WRDE_NOCMD) != 0) {
++        return 0;
++    }
++    /* Leave room for the "/_MEIXXXXXX" that pyi_test_temp_path() appends */
++    if (expanded.we_wordc == 1 && expanded.we_wordv[0][0] != 0 && strlen(expanded.we_wordv[0]) < PATH_MAX - 16) {
++        strcpy(buff, expanded.we_wordv[0]);
++        resolved = 1;
++    }
++    wordfree(&expanded);
++    if (!resolved) {
++        return 0;
++    }
++    for (p = buff + 1; *p; p++) {
++        if (*p == PYI_SEP) {
++            *p = 0;
++            if (mkdir(buff, S_IRWXU) != 0 && errno != EEXIST) {
++                *p = PYI_SEP;
++                return 0;
++            }
++            *p = PYI_SEP;
++        }
++    }
++    if (mkdir(buff, S_IRWXU) != 0 && errno != EEXIST) {
++        return 0;
++    }
++    return 1;
+ }
+ 
+ /* TODO merge this function with windows version. */
+@@ -386,10 +428,12 @@
+ pyi_create_tempdir(char *buff, const char *runtime_tmpdir)
+ {
+     if (runtime_tmpdir != NULL) {
+-      strcpy(buff, runtime_tmpdir);
+-      if (pyi_test_temp_path(buff))
++      if (pyi_resolve_runtime_tmpdir(buff, runtime_tmpdir) && pyi_test_temp_path(buff))
+         return 1;
+-    } else {
++      /* Cloud Pipeline: fall back to the default temporary folders below */
++      VS("LOADER: cannot use the runtime-tmpdir %s, using the default temporary folder\n", runtime_tmpdir);
++    }
++    {
+       /* On OSX the variable TMPDIR is usually defined. */
+       static const char *envname[] = {
+           "TMPDIR", "TEMP", "TMP", 0
