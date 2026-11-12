@@ -98,6 +98,7 @@
     - [`pipe storage mount`: WebDAV mounts and extended attributes fail in the Windows and macOS builds](#pipe-storage-mount-webdav-mounts-and-extended-attributes-fail-in-the-windows-and-macos-builds)
     - [Runs on Amazon Linux 2023 nodes get no "OOM Logs" task](#runs-on-amazon-linux-2023-nodes-get-no-oom-logs-task)
     - [The notifier log names only the main recipient of an email](#the-notifier-log-names-only-the-main-recipient-of-an-email)
+    - [Amazon Linux 2023 nodes do not join the cluster: the Docker install script is not found](#amazon-linux-2023-nodes-do-not-join-the-cluster-the-docker-install-script-is-not-found)
 
 ***
 
@@ -1283,3 +1284,7 @@ Please note:
 
 - the log now has the BCC addresses too, which an email hides from its other recipients. The To address was logged before. The log also has the subjects now, and a subject can name storages and data paths: e.g. the default `DATASTORAGE_LIFECYCLE_ACTION`, `DATASTORAGE_LIFECYCLE_RESTORE_ACTION` and `STORAGE_QUOTA_EXCEEDING` templates do, and a message sent with `POST /notification/message` can have any subject. So keep the notifier log as private as the email addresses of the users and the names of their data: it is in `/opt/notifier/logs` on the node of the notifier, and in `kubectl logs deploy/cp-notifier`
 - `cc` is always empty, as the notifier sends all copies as BCC
+### Amazon Linux 2023 nodes do not join the cluster: the Docker install script is not found
+
+Previously, the `init_multicloud_v1.15.4.ext.sh` user data, which installs Docker and the kubelet when an Amazon Linux 2023 node starts, downloaded `init_multicloud_install_docker.sh` from `<distribution URL>/scripts/`. With the default distribution URL, which ends with a slash, this was `...amazonaws.com//scripts/...`, and the download failed (HTTP 403). The node then ran an empty file instead: it got no Docker and no kubelet, and never joined the cluster.
+Now, the user data downloads the script from `<distribution URL>/tools/scripts/`, where the public Cloud Pipeline bucket has it, and adds the slash to a distribution URL that has none.
