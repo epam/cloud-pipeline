@@ -66,6 +66,7 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_API_SRV_SAML_USER_ATTRIBUTES= \             # Sets a list of the attributes, that will be parsed from the IdP SAML Response object and added to the user's profile. The value shall be comma-delimited list of "User_Attribute=IdP_Attribute" pairs (default: Email=email,FirstName=firstName,LastName=lastName,Name=firstName)
                 -env CP_API_SRV_IDP_CERT_PATH= \                    # Allows to set the path to the directory containing IdP's signing certificate (idp-public-cert.pem). If not set - $CP_IDP_CERT_DIR will be used. This is useful if the IdP provides different signing certificate for different services
                 -env CP_API_SRV_ANONYMOUS_URLS= \                   # Sets a list of urls that can be accessed by anonymous users if anonymous user access is enabled via CP_API_SRV_SAML_ALLOW_ANONYMOUS_USER.
+                -env CP_API_SRV_SESSION_TIMEOUT_SEC= \              # Sets the timeout of the API HTTP sessions, in seconds: a session expires after this time without requests (default: 1800). A new value applies to the sessions created after the API restart
                 -env CP_PREF_CLUSTER_CADVISOR_DISABLE_PROXY= \      # Disables the proxy settings when API communicates to the cAdvisor service within worker nodes (Default: true)
 
                 # GitLab

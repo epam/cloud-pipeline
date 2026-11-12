@@ -46,6 +46,7 @@
 - [Python 3.12 in the node images](#python-312-in-the-node-images)
 - [New and changed certificate files are checked between the daily scans](#new-and-changed-certificate-files-are-checked-between-the-daily-scans)
 - [Amazon Linux 2023 node images built with Packer](#amazon-linux-2023-node-images-built-with-packer)
+- [A run can ask for a new node](#a-run-can-ask-for-a-new-node)
 
 ***
 
@@ -107,6 +108,10 @@
     - [GUI build: the `sass` version is not pinned](#gui-build-the-sass-version-is-not-pinned)
     - [Rocky Linux 9, RHEL 9 and Amazon Linux 2023 runs: `curl-minimal` and `coreutils-single` stop the base packages install](#rocky-linux-9-rhel-9-and-amazon-linux-2023-runs-curl-minimal-and-coreutils-single-stop-the-base-packages-install)
     - [Filebeat of the API and TinyProxy services loads its own index template](#filebeat-of-the-api-and-tinyproxy-services-loads-its-own-index-template)
+    - [The VM monitor does not check the open files on Amazon Linux 2023 nodes and other hosts with systemd 240 or later](#the-vm-monitor-does-not-check-the-open-files-on-amazon-linux-2023-nodes-and-other-hosts-with-systemd-240-or-later)
+    - [Git synchronization: a new GitLab 9 user has to confirm the email](#git-synchronization-a-new-gitlab-9-user-has-to-confirm-the-email)
+    - [The timeout of the API HTTP sessions cannot be set](#the-timeout-of-the-api-http-sessions-cannot-be-set)
+    - [A new install points the API at the transport port of the search Elasticsearch](#a-new-install-points-the-api-at-the-transport-port-of-the-search-elasticsearch)
 
 ***
 
@@ -927,6 +932,20 @@ Now, `deploy/infra/aws/packer` builds such images with Packer, as on the `develo
 
 `deploy/infra/aws/packer/README.md` describes the options, the network access and the IAM permissions that the build needs.
 
+## A run can ask for a new node
+
+Previously, the autoscaler gave a run a free node of an earlier run, if such a node matched the run's instance type, disk and other requirements. A run could not ask for a new node. So it was not known in advance whether a run would start a new node in its **InitializeNode** task or get a free one, e.g. for a test that checks the node start.
+
+In the current version, a run with the `CP_CREATE_NEW_NODE` parameter set to `true`, `yes`, `on`, `y` or `t`, in any letter case, always gets a new node. The autoscaler never gives such a run a free node: it starts a new node, and the run waits for it, as for any new node. A run without this parameter, or with another value (e.g. `false`, `1` or an empty one), can get a free node as before.
+
+The parameter is not in the default list of the system parameters (`launch.system.parameters`), so the **Add system parameter** dialog of the **Launch** form does not offer it. Add it with **Add parameter** as a String parameter. If an admin adds it to `launch.system.parameters`, the dialog offers it, and **Add parameter** does not accept this name ("Name is reserved for system parameter").
+
+Previously, a free node that matched a waiting run was kept in the cluster for that run, even when the run could not get it: e.g. when the run's image config in `cluster.networks.config` has an `IamInstanceProfile`. When the cluster was above `cluster.max.size`, the run waited for room, and such a node stayed up, and was paid for, until another node left the cluster. Now, the autoscaler keeps no free node for a run that may not get one, i.e. a run with `CP_CREATE_NEW_NODE` or such an `IamInstanceProfile`. The node expires as any other free node.
+
+When the cluster has reached `cluster.max.size`, and `cluster.kill.not.matching.nodes` is `true`, every free node is treated as not matching for such a run: the autoscaler scales one of them down to make room for the new node. A free node of a node pool, or of a local cluster, is not scaled down this way. Previously, when such a node came first in the list of the free nodes, the autoscaler failed to scale it down, and the waiting run was not processed until the next check, where the same could happen again.
+
+For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#active-run-states).
+
 ***
 
 ## Notable Bug fixes
@@ -1377,3 +1396,23 @@ Now, on any RPM-based image, `curl` is not installed if the image has `curl-mini
 
 Previously, the Filebeat configs of the API service (`cp-api-srv`) and of the TinyProxy service (`cp-tinyproxy`) had a misspelled `setup.tempalte.enabled: false` setting. Filebeat ignored it. So, on start, it loaded its own index template `security_log_template`, for the `security_log*` indices, if the search cluster did not have this template yet: e.g. on a new cluster, before the search service put the platform's templates. A `security_log` index created before the search service replaced that template got the Filebeat field mappings.
 Now, the setting is spelled `setup.template.enabled`, as in the Filebeat configs of the EDGE service, and Filebeat does not load a template. The security logs go to the `security_log` index as before.
+### The VM monitor does not check the open files on Amazon Linux 2023 nodes and other hosts with systemd 240 or later
+
+If `CP_VM_MONITOR_NODE_ENABLE` is `true`, the VM monitor service (`cp-vm-monitor`) checks the open files on the cluster nodes with the `cloud-pipeline/cp-node-monitor=true` label (`CP_VM_MONITOR_NODE_MONITORING_NODE_LABEL`). The platform does not set this label: an administrator sets it on the nodes to check. Every minute by default (`CP_VM_MONITOR_NODE_CRON`), the service gets the number of open files and their limit from the node reporter (`cp-node-reporter`) of each such node: for the whole host, and for the processes of `CP_NODE_REPORTER_STATS_PROCS_INCLUDE` (`dockerd`, `docker-containerd` and `containerd` by default). If a number is more than the threshold percent of its hard limit (`CP_VM_MONITOR_NODE_THRESHOLDS`, `{NOFILE:60}` by default), the service sends the "Nodes exceed thresholds" email. The percent is rounded down first: with the default threshold, the email starts at 61%.  
+Previously, the VM monitor read these numbers as 32-bit integers. For the whole host, the node reporter sends `fs.file-max` as the limit. systemd 240 and later set it to 9223372036854775807, e.g. on Amazon Linux 2023 and Rocky Linux 9. The VM monitor could not read the answer of such a node at all, and logged `Failed to resolve stats from <pod> for <node>.` at each check. So it checked no process of these nodes, and sent no email for them.  
+Now, the VM monitor reads these numbers as 64-bit integers, and checks these nodes as the other nodes.  
+Please note: with this limit, the percent of the whole host is always 0. So on these nodes, only the processes can exceed the threshold.
+### Git synchronization: a new GitLab 9 user has to confirm the email
+
+Previously, the Git synchronization service (`cp-git-sync`) created a GitLab user with the `skip_confirmation` parameter of the GitLab API v4, also when it called the API v3. The API v3 does not know this parameter. So on the API v3, a new user had to confirm the email. GitLab 9 uses the API v3: the installer leaves the **`git.gitlab.api.version`** preference at its default `v3` there. Also, if **`git.gitlab.api.version`** had no value, the synchronization called GitLab at a wrong path, e.g. `/api//users` or `/api/None/users`, and skipped the pipelines of that GitLab server.
+Now, the synchronization creates a user with `confirm=no` on the API v3, and with `skip_confirmation` on the API v4, as before. If **`git.gitlab.api.version`** has no value, the synchronization calls the API v3, the default of the preference. See details in [12.10. Manage system-level settings](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#git).
+### The timeout of the API HTTP sessions cannot be set
+
+Previously, an HTTP session of the API service (`cp-api-srv`) always expired after 30 minutes without requests: the API set no timeout, so the default of Spring Session applied.
+Now, the `CP_API_SRV_SESSION_TIMEOUT_SEC` environment variable of the API service sets this timeout, in seconds. The default is `1800` (30 minutes), as before. The timeout applies to both session stores of `CP_API_SRV_SESSION_STORE_TYPE`: `jdbc` (the default) and `HASH_MAP`. Set the variable with `-env CP_API_SRV_SESSION_TIMEOUT_SEC=<seconds>` of `pipectl install`. In an existing deployment, add it to the `cp-config-global` ConfigMap and restart the API service. A session keeps the timeout it was created with, so a new value applies to the sessions created after the restart.
+### A new install points the API at the transport port of the search Elasticsearch
+
+Previously, when `pipectl` installed the search services (`cp-search`), it set the **`search.elastic.port`** preference twice: first to the HTTP port of the search Elasticsearch (`cp-search-elk`), `CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT` (`30091` by default), and then to its transport port, `CP_SEARCH_ELK_TRANSPORT_INTERNAL_PORT` (`30092` by default, port `9300` of the container). The API calls Elasticsearch over HTTP at the port of this preference. So the global search, the billing reports, the system logs and the storage request statistics failed after such an install.
+Now, `pipectl` sets **`search.elastic.port`** to the HTTP port only. The transport port is used by the search Elasticsearch itself, and no preference needs it. See details in [12.10. Manage system-level settings](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#search).
+
+Please note: `pipectl` sets **`search.elastic.port`** each time it deploys the search services: on every `pipectl install` without `-s` options, which deploys all the services, and on `pipectl install -s cp-search`. So a deployment where a `pipectl` of this version built since June 2024 last deployed the search services has the transport port in **`search.elastic.port`**, unless an administrator has changed it since. Check this preference (**Settings** > **Preferences** > **Search**). If it is `30092` (or the value of `CP_SEARCH_ELK_TRANSPORT_INTERNAL_PORT`), set it to the value of `CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT`, `30091` by default. A re-deploy of the search services with a `pipectl` with this fix sets it too.

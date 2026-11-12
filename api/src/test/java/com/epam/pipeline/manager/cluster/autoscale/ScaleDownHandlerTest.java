@@ -18,13 +18,17 @@ package com.epam.pipeline.manager.cluster.autoscale;
 
 import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.controller.vo.TagsVO;
+import com.epam.pipeline.entity.cluster.pool.InstanceRequest;
+import com.epam.pipeline.entity.cluster.pool.RunningInstance;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
+import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
@@ -33,7 +37,11 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.NodeCondition;
 import io.fabric8.kubernetes.api.model.NodeList;
+import io.fabric8.kubernetes.api.model.ObjectMeta;
+import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.PodCondition;
 import io.fabric8.kubernetes.api.model.PodList;
+import io.fabric8.kubernetes.api.model.PodStatus;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import org.junit.Before;
 import org.junit.Test;
@@ -67,6 +75,8 @@ import static org.mockito.Mockito.verify;
 public class ScaleDownHandlerTest {
 
     private static final Long RUN_ID = 1L;
+    private static final Long PENDING_RUN_ID = 2L;
+    private static final String CP_CREATE_NEW_NODE = "CP_CREATE_NEW_NODE";
     private static final String NODE_LABEL = String.valueOf(RUN_ID);
     private static final String NODE_NAME = TEST_STRING;
     private static final String INSTANCE_ID = "i-123";
@@ -87,9 +97,13 @@ public class ScaleDownHandlerTest {
     private final PipelineRunCRUDService runCRUDService = mock(PipelineRunCRUDService.class);
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
     private final KubernetesClient client = mock(KubernetesClient.class);
+    private final IAMProfileVerifier iamProfileVerifier = mock(IAMProfileVerifier.class);
+    private final ReassignHandler reassignHandler = new ReassignHandler(autoscalerService, cloudFacade,
+            pipelineRunManager, Collections.emptyList(), mock(MetadataManager.class), iamProfileVerifier);
 
     private final ScaleDownHandler scaleDownHandler = new ScaleDownHandler(autoscalerService, cloudFacade,
-            pipelineRunManager, runLogManager, kubernetesManager, runCRUDService, preferenceManager);
+            pipelineRunManager, runLogManager, kubernetesManager, runCRUDService, preferenceManager,
+            reassignHandler);
 
     private final LocalDateTime now = DateUtils.nowUTC().truncatedTo(ChronoUnit.SECONDS);
     private final LocalDateTime nodeStart = now.minusHours(2);
@@ -167,6 +181,80 @@ public class ScaleDownHandlerTest {
         verify(runLogManager).saveLog(runLog.capture());
         assertThat(runLog.getValue().getLogText()).contains(RUN_LOG_DATE_FORMATTER.format(availableSince));
         verify(cloudFacade, never()).scaleDownNode(anyLong());
+    }
+
+    @Test
+    public void shouldKeepFreeNodeForPendingRunWhichMayGetIt() {
+        mockFreeNodeMatchingPendingRun(getPendingRun());
+
+        checkFreeNodes(getReadyNode(), Collections.emptySet());
+
+        verify(cloudFacade, never()).scaleDownNode(anyLong());
+    }
+
+    @Test
+    public void shouldNotKeepFreeNodeForPendingRunWithCreateNewNodeParameter() {
+        final PipelineRun pendingRun = getPendingRun();
+        pendingRun.setPipelineRunParameters(Collections.singletonList(
+                new PipelineRunParameter(CP_CREATE_NEW_NODE, "true")));
+        mockFreeNodeMatchingPendingRun(pendingRun);
+
+        checkFreeNodes(getReadyNode(), Collections.emptySet());
+
+        verify(cloudFacade).scaleDownNode(RUN_ID);
+    }
+
+    @Test
+    public void shouldNotKeepFreeNodeForPendingRunWithRestrictedImage() {
+        final PipelineRun pendingRun = getPendingRun();
+        doReturn(true).when(iamProfileVerifier).isImageRestricted(pendingRun);
+        mockFreeNodeMatchingPendingRun(pendingRun);
+
+        checkFreeNodes(getReadyNode(), Collections.emptySet());
+
+        verify(cloudFacade).scaleDownNode(RUN_ID);
+    }
+
+    /**
+     * The free node matches the pending run and has expired, so it is kept only for the pending run.
+     */
+    private void mockFreeNodeMatchingPendingRun(final PipelineRun pendingRun) {
+        final PodList pods = new PodList();
+        pods.setItems(Collections.singletonList(getUnscheduledPod(PENDING_RUN_ID)));
+        doReturn(pods).when(kubernetesManager).getPodList(client);
+        doReturn(pendingRun).when(runCRUDService).loadRunById(PENDING_RUN_ID);
+        final RunningInstance freeNode = new RunningInstance();
+        freeNode.setInstance(new RunInstance());
+        doReturn(freeNode).when(autoscalerService).getPreviousRunInstance(NODE_LABEL, client);
+        doReturn(true).when(autoscalerService).requirementsMatch(eq(freeNode), any(InstanceRequest.class));
+        doReturn(Optional.empty()).when(autoscalerService).findPool(NODE_LABEL, client);
+        doReturn(true).when(cloudFacade).isNodeExpired(RUN_ID);
+    }
+
+    private Node getReadyNode() {
+        return getNode(getNodeLabels(), getCondition(READY, TRUE, now, now.minusMinutes(5)));
+    }
+
+    private Pod getUnscheduledPod(final Long runId) {
+        final ObjectMeta metadata = new ObjectMeta();
+        metadata.setLabels(Collections.singletonMap(KubernetesConstants.RUN_ID_LABEL, String.valueOf(runId)));
+        final PodCondition condition = new PodCondition();
+        condition.setReason(KubernetesConstants.POD_UNSCHEDULABLE);
+        final PodStatus status = new PodStatus();
+        status.setPhase("Pending");
+        status.setConditions(Collections.singletonList(condition));
+        final Pod pod = new Pod();
+        pod.setMetadata(metadata);
+        pod.setStatus(status);
+        return pod;
+    }
+
+    private PipelineRun getPendingRun() {
+        final PipelineRun run = new PipelineRun();
+        run.setId(PENDING_RUN_ID);
+        run.setInstance(new RunInstance());
+        run.setPipelineRunParameters(Collections.emptyList());
+        return run;
     }
 
     private void checkFreeNodes(final Node node, final Set<String> pods) {
