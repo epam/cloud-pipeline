@@ -103,6 +103,7 @@
     - [Runs from RHEL images do not get the setup of the RHEL family](#runs-from-rhel-images-do-not-get-the-setup-of-the-rhel-family)
     - [System logs: no security event is stored once the `security_log` alias has no write index](#system-logs-no-security-event-is-stored-once-the-security_log-alias-has-no-write-index)
     - [GUI: library versions with security advisories](#gui-library-versions-with-security-advisories)
+    - [GUI: the AWS HealthOmics library brings an XML parser with security advisories](#gui-the-aws-healthomics-library-brings-an-xml-parser-with-security-advisories)
 
 ***
 
@@ -1355,3 +1356,9 @@ See details in [11. Manage Runs](../../manual/11_Manage_Runs/11._Manage_Runs.md#
 Also, the GUI checks that the region of an AWS S3 storage is a valid part of a host name before it sends S3 requests there, as the advisory for the AWS SDK for JavaScript v2 recommends.
 
 At the time of this change, `npm audit` reports 528 (592 before): 22 critical, 230 high, 257 moderate and 19 low. Most of them come from the build and test tools: webpack 4 with its loaders and plugins, PostCSS, `react-dev-utils`, Babel, Jest, ESLint and stylelint. The others are in libraries that the GUI includes, e.g. `lodash` 3 (of `dagre` and `pipeline-builder`), `fast-xml-parser` 4.2 (of `@aws-sdk/client-omics`) and `handsontable` 0.33. There are 2 more critical ones than before: `react-dev-utils` 11.0.4 brings `immer` 8.0.1 and `shell-quote` 1.7.2, which have critical advisories.
+### GUI: the AWS HealthOmics library brings an XML parser with security advisories
+
+Previously, the GUI used `@aws-sdk/client-omics` 3.565.0 to upload files to the AWS HealthOmics storages and to download them. Through `@aws-sdk/core` 3.556.0, this library brought `fast-xml-parser` 4.2.5, which has a critical and two high security advisories: an entity encoding bypass in the `DOCTYPE` entity names, and a denial of service through the entity expansion. The GUI did not parse XML with it: the HealthOmics API uses JSON, and the parser was not a part of the built GUI. But `npm audit` and the dependency scanners reported it.
+Now, the GUI uses `@aws-sdk/client-omics` 3.974.0, and its dependencies have no `fast-xml-parser`. At the time of this change, `npm audit` reports no advisories for `@aws-sdk/client-omics` and its dependencies. Before, it reported 9: 7 for `fast-xml-parser`, 1 for `uuid` and 1 for `@smithy/config-resolver`. For the upload and the download of the HealthOmics files, the GUI sends the same requests as before.
+`client/package.json` also pins the 59 AWS SDK packages that `@aws-sdk/client-omics` depends on (`@aws-sdk/*`, `@smithy/*`, `@aws-crypto/*` and `@aws/*`) to exact versions. The GUI has no lockfile on this line, and npm 6 has no `overrides`. Without these pins, each build would get the latest versions that the version ranges of these packages allow, i.e. packages that were not tested with the GUI. So a change of the `@aws-sdk/client-omics` version must update these pins together.
+The GUI is built with `npm run build` on Node.js 14, as before. Most of the new AWS SDK packages declare Node.js 16 or later, so `npm install` warns about them. This does not apply to the GUI, which runs these packages in the browser.
