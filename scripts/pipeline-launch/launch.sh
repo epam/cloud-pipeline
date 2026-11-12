@@ -521,7 +521,7 @@ function define_distro_name_and_version {
           ubuntu | debian)
             CP_OS_FAMILY=debian
             ;;
-          centos | rocky | fedora | ol | amzn)
+          centos | rocky | fedora | ol | amzn | rhel)
             CP_OS_FAMILY=rhel
             ;;
           *)
@@ -664,7 +664,19 @@ EOF
             # System package manager setup
             local CP_REPO_BASE_URL_DEFAULT="${CP_REPO_BASE_URL_DEFAULT:-"${GLOBAL_DISTRIBUTION_URL}tools/repos"}"
             local CP_REPO_BASE_URL="${CP_REPO_BASE_URL_DEFAULT}/${CP_OS}/${CP_VER}"
-            if [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ]; then
+            # The public Cloud Pipeline yum repository has CentOS and Rocky Linux packages only (no rhel/<version>
+            # folder). So RHEL and UBI images use it only if the repository of a deployment has their version, which is
+            # checked once, within CP_REPO_ACCESS_TIMEOUT_SEC (30 s by default). Otherwise they keep their own
+            # repositories
+            local _CP_REPO_CHECK_TIMEOUT_SEC="${CP_REPO_ACCESS_TIMEOUT_SEC:-30}"
+            [[ "$_CP_REPO_CHECK_TIMEOUT_SEC" =~ ^[1-9][0-9]*$ ]] || _CP_REPO_CHECK_TIMEOUT_SEC=30
+            if [ "$CP_OS" == "rhel" ] && \
+               ! curl -skf -o /dev/null --max-time "$_CP_REPO_CHECK_TIMEOUT_SEC" "${CP_REPO_BASE_URL}/cloud-pipeline.repo"; then
+                  # As on CentOS and Rocky Linux: remove nvidia repositories, as they cause run initialization failure
+                  # with or without the Cloud Pipeline repository
+                  rm -f /etc/yum.repos.d/cuda.repo
+                  echo "[INFO] The Cloud Pipeline repository has no packages for ${CP_OS} ${CP_VER} (${CP_REPO_BASE_URL}), it is not configured. The packages are installed from the repositories of the image"
+            elif [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
                   for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
                         # Remove nvidia repositories, as they cause run initialization failure
                         rm -f /etc/yum.repos.d/cuda.repo
@@ -2299,7 +2311,7 @@ echo "-"
 # Force SystemD capability if the Kubernetes is requested
 if ( check_cp_cap "CP_CAP_SYSTEMD_CONTAINER" || check_cp_cap "CP_CAP_KUBE" ) \
     && check_installed "systemctl" && \
-    ( [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ] ); then
+    ( [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ] ); then
 
         # Make sure sysctl is available
         _SYSCTL_INSTALL_COMMAND=
@@ -2441,7 +2453,7 @@ if [ "$CP_PIPE_COMMON_ENABLED" != "false" ]; then
       if [ "$CP_CAP_EXTRA_PKG" ]; then
             get_install_command_by_current_distr EXTRA_PKG_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG"
       fi
-      if ([ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ]) && [ "$CP_CAP_EXTRA_PKG_RHEL" ]; then
+      if ([ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]) && [ "$CP_CAP_EXTRA_PKG_RHEL" ]; then
             get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_RHEL"
       elif ([ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]) && [ "$CP_CAP_EXTRA_PKG_DEB" ]; then
             get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_DEB"

@@ -44,6 +44,8 @@
 - [Rocky Linux 9.8 for the platform services](#rocky-linux-98-for-the-platform-services)
 - [Python 3.12 for EDGE, WebDAV, FS Browser and the node reporter](#python-312-for-edge-webdav-fs-browser-and-the-node-reporter)
 - [Python 3.12 in the node images](#python-312-in-the-node-images)
+- [New and changed certificate files are checked between the daily scans](#new-and-changed-certificate-files-are-checked-between-the-daily-scans)
+- [Amazon Linux 2023 node images built with Packer](#amazon-linux-2023-node-images-built-with-packer)
 
 ***
 
@@ -95,6 +97,12 @@
     - [`pipe storage cp` and `mv` fail with a file list on Windows and macOS](#pipe-storage-cp-and-mv-fail-with-a-file-list-on-windows-and-macos)
     - [The pipeline repository is not mounted in a run when `python` is not the Python of the platform](#the-pipeline-repository-is-not-mounted-in-a-run-when-python-is-not-the-python-of-the-platform)
     - [`pipe storage mount`: WebDAV mounts and extended attributes fail in the Windows and macOS builds](#pipe-storage-mount-webdav-mounts-and-extended-attributes-fail-in-the-windows-and-macos-builds)
+    - [Runs on Amazon Linux 2023 nodes get no "OOM Logs" task](#runs-on-amazon-linux-2023-nodes-get-no-oom-logs-task)
+    - [The notifier log names only the main recipient of an email](#the-notifier-log-names-only-the-main-recipient-of-an-email)
+    - [Amazon Linux 2023 nodes do not join the cluster: the Docker install script is not found](#amazon-linux-2023-nodes-do-not-join-the-cluster-the-docker-install-script-is-not-found)
+    - [Runs from RHEL images do not get the setup of the RHEL family](#runs-from-rhel-images-do-not-get-the-setup-of-the-rhel-family)
+    - [System logs: no security event is stored once the `security_log` alias has no write index](#system-logs-no-security-event-is-stored-once-the-security_log-alias-has-no-write-index)
+    - [GUI: library versions with security advisories](#gui-library-versions-with-security-advisories)
 
 ***
 
@@ -886,6 +894,35 @@ The Python 2 that the base image has stays. On Amazon Linux 2, `yum`, `cloud-ini
 
 Please note: only the images that are built anew change.
 
+## New and changed certificate files are checked between the daily scans
+
+The VM monitor (`cp-vm-monitor`) emails the admins about the platform's certificates that expire soon ("Certificate expires soon"). Previously, it checked the certificate files only once a day (at 00:00 by default, **`CP_VM_MONITOR_PKI_MONITORING_CRON`**). So a certificate that was added close to its expiration was reported up to a day later.
+
+In the current version, the VM monitor also checks the certificate files that are new or changed since its last scan, every minute by default. A new or changed certificate that expires soon is reported at the next such check. The check reads only those files, so the other certificates that expire soon are not reported at each check: they are still reported once a day.
+
+A file is new or changed if its modification time, size or file key (the inode on Linux) is different. The content is not compared. So any rewrite or `touch` of a certificate file that expires soon sends another email, and a file that is overwritten in place with the same modification time and size is not checked until the next daily scan.
+
+**`CP_VM_MONITOR_PKI_CHANGES_ENABLE`** in the `cp-config-global` config map turns this check off (`false`), and **`CP_VM_MONITOR_PKI_CHANGES_CRON`** sets its schedule (every minute by default). The VM monitor reads them when it starts. The `vm-monitor/README.md` file of the repository describes the certificate checks and their log lines.
+
+Please note:
+
+- the first check after a start of the VM monitor only records the files it finds, so a restart sends no emails. A certificate that was added while the VM monitor was not running is reported by the next daily scan
+- a file that has a certificate file name but is not a certificate, e.g. a private key in a `.pem` file, logs an error (`Error generating certificate from <file>`) each time it changes, as it does at each daily scan
+## Amazon Linux 2023 node images built with Packer
+
+The `init_multicloud_v1.15.4.ext.sh` user data is the one for the compute nodes on Amazon Linux 2023: it installs Docker and the kubelet when a node starts. Previously, the repository had no script to build the AWS image that this user data needs.
+
+Now, `deploy/infra/aws/packer` builds such images with Packer, as on the `develop` branch:
+
+- `build.sh` downloads Packer 1.14.3 and builds the `cpu` image, the `gpu` image, or both, in the given region and subnet. The base is the latest Amazon Linux 2023 AMI with the 6.1 kernel, unless `--source-ami` sets another one.
+- The images have `nc`, `tc`, `iptables-legacy`, `lvm2` and `jq` from the packages of Amazon Linux 2023, a static `btrfs`, the cgroup v1 hierarchy and a permissive SELinux. As the other AWS node images, they get the platform's Python 3.12 in `/usr/local/python3.12`, and no Python 2 (Amazon Linux 2023 has none). If Python 3.12 cannot be installed, the build fails.
+- The `gpu` image also has the Nvidia driver (595.58.03 by default), Fabric Manager and `nvidia-persistenced`. They can come from an internal mirror instead of the Nvidia sites.
+- Packer connects to the build instance through AWS Systems Manager (by default), or over SSH to its private IP. It can use an existing key pair and security group.
+- The images have no Docker and no kubelet. So set `init_multicloud_v1.15.4.ext.sh` as the `init_script` of such an image in the **`cluster.networks.config`** preference, e.g. `/opt/api/scripts/init_multicloud_v1.15.4.ext.sh`. A node starts only with the fix of this user data, which downloads the Docker install script from `tools/scripts/` of the distribution URL: without it, the download fails, and the node gets no Docker and no kubelet, and never joins the cluster.
+- The images do not pre-load the Kubernetes system images into `/opt/docker-system-images`, as the Amazon Linux 2 images do. The user data downloads them when a node starts, so a node of such an image has no local copy to fall back to, if that download fails.
+
+`deploy/infra/aws/packer/README.md` describes the options, the network access and the IAM permissions that the build needs.
+
 ***
 
 ## Notable Bug fixes
@@ -1241,3 +1278,80 @@ Previously, the Windows and macOS builds of the `pipe` CLI, which run on Python 
 
 In the Linux build, extended attributes with non-ASCII characters in their values failed in the same way.
 Now, the files in a storage mounted over WebDAV can be listed, created, written and truncated in the Python 3 builds too, and the extended attribute values are kept in the storage as UTF-8 text, in all builds.
+
+### Runs on Amazon Linux 2023 nodes get no "OOM Logs" task
+
+[#4828](https://github.com/epam/cloud-pipeline/issues/4828)
+
+When the kernel of a node kills a process for lack of memory, the node reporter (`cp-node-reporter`) finds the kill in the kernel log and adds its message to the **OOM Logs** task of the node's run. If `CP_OOM_TAG_RUNS` is `true` in the `cp-config-global` config map, it also tags the run (`PROC_OUT_OF_MEMORY` by default).  
+Previously, the node reporter could not read the kernel log on the nodes that run Amazon Linux 2023, or another Linux that sets `kernel.dmesg_restrict` to `1`. With this setting, reading the kernel log needs the `CAP_SYSLOG` capability, which the node reporter did not have. Its log (`/opt/node-reporter/logs/<node>/oom.log`) had `dmesg: read kernel buffer failed: Operation not permitted` at each check. So the runs on such nodes got no **OOM Logs** task and no tag, even when their processes were killed.  
+Now, the node reporter runs with the `CAP_SYSLOG` capability, and reports the kills on these nodes as on the other nodes. No other capability is added.  
+Please note: on the nodes with `kernel.dmesg_restrict` set to `1` that already run when the update is applied, the first check also reports the earlier kills that are still in the kernel log, including those of the previous runs on the node. They go to the node's current run, or, if the node has none, to the next run on it.
+### The notifier log names only the main recipient of an email
+
+Previously, the notifier (`cp-notifier`) logged only the main recipient (To) of each email, e.g. the owner of a run with **Keep owners informed**. Its log line did not name the subject of the email, or the users who get a copy of it as BCC, e.g. the **Informed users** and, with **Keep admins informed**, the admins. So the log did not show which email was sent, and to whom.
+Now, the log line of each email names its subject and all its recipients:
+
+```
+Email from message 123 with subject 'Job #14638 is now STOPPED' formed and will be send to: [owner@example.com], cc: [], bcc: [admin@example.com]
+```
+
+The `Message with id: <id> was successfully send` line with the same id shows that the mail server accepted the email. The notifier handles several messages at a time (`submit.threads`), so the lines of different emails can be mixed. The `notifier/smtp/README.md` file of the repository describes the notifier's log lines and where its log is.
+
+Please note:
+
+- the log now has the BCC addresses too, which an email hides from its other recipients. The To address was logged before. The log also has the subjects now, and a subject can name storages and data paths: e.g. the default `DATASTORAGE_LIFECYCLE_ACTION`, `DATASTORAGE_LIFECYCLE_RESTORE_ACTION` and `STORAGE_QUOTA_EXCEEDING` templates do, and a message sent with `POST /notification/message` can have any subject. So keep the notifier log as private as the email addresses of the users and the names of their data: it is in `/opt/notifier/logs` on the node of the notifier, and in `kubectl logs deploy/cp-notifier`
+- `cc` is always empty, as the notifier sends all copies as BCC
+### Amazon Linux 2023 nodes do not join the cluster: the Docker install script is not found
+
+Previously, the `init_multicloud_v1.15.4.ext.sh` user data, which installs Docker and the kubelet when an Amazon Linux 2023 node starts, downloaded `init_multicloud_install_docker.sh` from `<distribution URL>/scripts/`. With the default distribution URL, which ends with a slash, this was `...amazonaws.com//scripts/...`, and the download failed (HTTP 403). The node then ran an empty file instead: it got no Docker and no kubelet, and never joined the cluster.
+Now, the user data downloads the script from `<distribution URL>/tools/scripts/`, where the public Cloud Pipeline bucket has it, and adds the slash to a distribution URL that has none.
+### Runs from RHEL images do not get the setup of the RHEL family
+
+Previously, a run from a Red Hat Enterprise Linux image, including the UBI images (`ID=rhel` in `/etc/os-release`), got the `linux` OS family (`CP_OS_FAMILY`), not `rhel`. So the run did not install the packages of `CP_CAP_EXTRA_PKG_RHEL`, did not start systemd for `CP_CAP_SYSTEMD_CONTAINER` or `CP_CAP_KUBE`, and its Slurm setup failed with "Can't install SLURM packages". Docker in Docker installed docker `18.09.6` and asked for `btrfs-progs`, which RHEL 8 and 9 do not have. So Docker in Docker failed on every RHEL 8 and 9 image, with a subscription or not.
+Now, RHEL images are in the `rhel` family, as CentOS and Rocky Linux are, and get the same setup, except the Cloud Pipeline package repository. The public repository has no RHEL packages, so a RHEL run adds it only if the repository of the deployment has a folder for its RHEL version. Otherwise, the run uses the repositories of the image only, and says so in its log. Docker in Docker installs docker `20.10.24`, as on Rocky Linux. The UBI repositories lack some packages that the run and its capabilities install, e.g. `e2fsprogs` and `xfsprogs` for Docker in Docker, `nfs-utils` and `cifs-utils` for the NFS and SMB mounts, and `munge` for Slurm. Where `e2fsprogs` and `xfsprogs` are missing, the Docker in Docker setup fails, and its log names them.
+
+For more details see [Supported OS families](../../manual/10_Manage_Tools/10.3._Add_a_Tool.md#supported-os-families).
+### System logs: no security event is stored once the `security_log` alias has no write index
+
+Previously, the search ELK service (`cp-search-elk`), which keeps the security events of the **System logs** in daily indices behind the `security_log` alias (`CP_SECURITY_LOGS_ELASTIC_PREFIX`), only checked on start that something of that name existed. Its former versions added a new index to that alias on each start. Once the alias pointed to two indices and none of them was the write index, every write of a security event and every daily rollover failed, so no security event was stored, and a restart did not repair it. Also, a security event written before the service had created the alias (e.g. by the API while the search ELK service started) created a plain `security_log` index instead. That index was never rolled over, so the cleanup deleted it with all its events once it was older than `CP_SECURITY_LOGS_ROLLOVER_DAYS` days, and the **System logs** did not show its events.
+Now, on each start, the search ELK service checks the alias:
+
+- if neither the alias nor an index of that name exists, it creates an index of the day as the write index of the alias, e.g. `security_log-<date>-000001`. Indices of that day outside the alias are kept, and the new index takes the number after the highest of them, e.g. `security_log-<date>-000002`
+- if the alias has no write index, its newest index becomes the write index. The other indices stay in the alias with their events, and are deleted after `CP_SECURITY_LOGS_ROLLOVER_DAYS` days, as before
+- if the alias has a single index, with no write index flag, that index becomes its explicit write index
+- if the daily rollover of the write index stopped at an error, e.g. while the alias had no write index, the rollover is resumed
+- if `security_log` is a plain index, its events are copied to a new index of the alias, with the number after the highest of the day. Once all of them are copied, the alias replaces the plain index, and the plain index is deleted, in one step. The writes are blocked during the copy, so the security events sent at that time are rejected and lost. If the copy fails, e.g. if a field of the plain index has another type, the copy is removed, the plain index keeps all its events and takes the writes again, and the service logs an `[ERROR]` line. The next start tries again
+- if a copy was interrupted, e.g. the service was stopped during the copy, the plain index still has all its events, and the unfinished copy and the write block of the plain index stay until the next start. If the outcome of the copy cannot be checked, e.g. Elasticsearch answers with an error, the write block is cleared, and the unfinished copy stays until the next start. The next start removes the unfinished copies of that plain index, of that day or of an earlier one, and copies the events again
+- an unfinished copy of another plain index, e.g. of one that was deleted by hand, is kept outside the alias with a `[WARN]` line, as its events may be nowhere else. Its events are still shown in the **System logs**, and it is deleted after `CP_SECURITY_LOGS_ROLLOVER_DAYS` days, as the other indices
+
+Please note:
+
+- the security events that failed to be stored while the alias had no write index are not recovered
+- do not delete a write-blocked `security_log` index by hand: restart the search ELK service instead, and it moves the events
+- the moved events of a plain index are kept in the index of the day of the move. So the **System logs** show them only if the period of the filter reaches that day
+### GUI: library versions with security advisories
+
+Previously, the GUI used library versions with published security advisories:
+
+- `ansi_up` 2, which renders the colors of the run logs: cross-site scripting
+- `jquery.terminal` 1.10, the terminal of the **Miew** viewer: cross-site scripting
+- `papaparse` 4, which parses the `CSV`/`TSV` files for their previews and editors: a regular expression denial of service
+- `highlight.js` 9, which highlights the code in Markdown and in the bash command views: a regular expression denial of service in some languages
+- `react-dev-utils` 7 and `@babel/core` 7.2, used to build the GUI: an OS command injection and an arbitrary file read
+- `webpack-dev-server` 3 and its dependencies, such as `node-forge` and `webpack-dev-middleware`: the development server of the GUI (the `npm start` script), which is not used to build it
+
+Now, the GUI uses `ansi_up` 5.2, `jquery.terminal` 2.48, `papaparse` 5.7, `highlight.js` 10.7, `react-dev-utils` 11 and `@babel/core` 7.29, and the development server is removed. The GUI is built with `npm run build`, as before. In the run logs:
+
+- the search (**Ctrl+F**) finds a text with `&`, `<` or `>` in it. Before, it found no such text, and a search for `amp`, `lt` or `gt` broke the display of those characters
+- a search for a text with `|`, `\` or `+` finds that text. Before, such a search could freeze the page, fail, or find another text
+- the color at the end of a log no longer goes over to the first lines of another log, or of the next update of the same log
+- the bold text is shown in bold. Before, it was shown in a brighter color
+- a hyperlink of the `OSC 8` escape code is shown as a link that opens in a new tab if it is an `http` or `https` one, and is left out otherwise
+- an escape code that is not complete at the end of a line, e.g. a hyperlink with no end, is shown as text, with the rest of the line
+
+See details in [11. Manage Runs](../../manual/11_Manage_Runs/11._Manage_Runs.md#console-output).
+
+Also, the GUI checks that the region of an AWS S3 storage is a valid part of a host name before it sends S3 requests there, as the advisory for the AWS SDK for JavaScript v2 recommends.
+
+At the time of this change, `npm audit` reports 528 (592 before): 22 critical, 230 high, 257 moderate and 19 low. Most of them come from the build and test tools: webpack 4 with its loaders and plugins, PostCSS, `react-dev-utils`, Babel, Jest, ESLint and stylelint. The others are in libraries that the GUI includes, e.g. `lodash` 3 (of `dagre` and `pipeline-builder`), `fast-xml-parser` 4.2 (of `@aws-sdk/client-omics`) and `handsontable` 0.33. There are 2 more critical ones than before: `react-dev-utils` 11.0.4 brings `immer` 8.0.1 and `shell-quote` 1.7.2, which have critical advisories.

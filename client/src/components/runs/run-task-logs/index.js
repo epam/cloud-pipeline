@@ -18,19 +18,16 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Button, Checkbox, Icon, Input} from 'antd';
-import AnsiUP from 'ansi_up';
 import FileSaver from 'file-saver';
 import PipelineRunLog from '../../../models/pipelines/PipelineRunLog';
 import continuousFetch from '../../../utils/continuous-fetch';
 import displayDate from '../../../utils/displayDate';
 import {searchDialogBlocker} from '../../search/SearchDialog';
-import escapeRegExp from '../../../utils/escape-reg-exp';
+import {ansiToHtml, createAnsiConverter, findText} from './log-line-html';
 import styles from './run-task-logs.css';
 
 const SCROLLED_DOWN_OFFSET = 20;
 const MAX_LINES_TO_DISPLAY = 500;
-
-const ansiUp = new AnsiUP();
 
 function formatLineNumber (lineNumber, length) {
   if (typeof String.prototype.padStart === 'function') {
@@ -41,77 +38,6 @@ function formatLineNumber (lineNumber, length) {
     result = '0'.concat(result);
   }
   return result;
-}
-
-function markSearch (source, search, options = {}) {
-  const {
-    lastIndex = 0,
-    currentIndex
-  } = options;
-  const tagRegExp = new RegExp(`(${escapeRegExp(search)})`, 'ig');
-  let result = '';
-  let e = tagRegExp.exec(source);
-  let position = 0;
-  const positions = [];
-  while (e) {
-    const classes = classNames(
-      'cp-search-highlight-text',
-      {
-        inactive: currentIndex !== undefined && lastIndex + positions.length !== currentIndex,
-        active: currentIndex !== undefined && lastIndex + positions.length === currentIndex
-      }
-    );
-    positions.push(e.index);
-    result = result
-      .concat(source.slice(position, e.index))
-      .concat(`<span class="${classes}">`)
-      .concat(e[0])
-      .concat('</span>');
-    position = e.index + e[0].length;
-    e = tagRegExp.exec(source);
-  }
-  result = result.concat(source.slice(position));
-  return {
-    result,
-    positions
-  };
-}
-
-function findText (html, text, options = {}) {
-  const {
-    lastIndex = 0,
-    currentIndex
-  } = options;
-  const tagRegExp = /<[^>]+>/g;
-  let result = '';
-  let e = tagRegExp.exec(html);
-  let position = 0;
-  const positions = [];
-  let index = lastIndex;
-  while (e) {
-    const {
-      result: marked,
-      positions: partPositions = []
-    } = markSearch(html.slice(position, e.index), text, {lastIndex: index, currentIndex});
-    index += partPositions.length;
-    positions.push(...partPositions.map((n) => n + position));
-    result = result
-      .concat(marked)
-      .concat(e[0]);
-    position = e.index + e[0].length;
-    e = tagRegExp.exec(html);
-  }
-  const {
-    result: other,
-    positions: otherPositions = []
-  } = markSearch(html.slice(position), text, {lastIndex: index, currentIndex});
-  positions.push(...otherPositions.map((n) => n + position));
-  result = result.concat(other);
-  return {
-    result,
-    positions,
-    lastIndex: index
-  };
 }
 
 function downloadCurrentLog (logs = '', fileName = 'logs') {
@@ -274,10 +200,12 @@ class RunTaskLogs extends React.Component {
       fetchAllLogs = true
     } = this.props;
     if (logsProps && typeof logsProps === 'string' && !runId) {
+      // A converter per conversion: the colors carry over between the lines of a log only
+      const converter = createAnsiConverter();
       this.setState({logs: logsProps.split('\n').map(text => ({
         date: undefined,
         log: text,
-        logHTML: ansiUp.ansi_to_html(text),
+        logHTML: ansiToHtml(converter, text),
         isError: isError(text),
         isWarning: isWarning(text)
       }))}, () => {
@@ -310,12 +238,14 @@ class RunTaskLogs extends React.Component {
           const {scrolledDown} = this;
           const firstLogs = !this.state.logs || this.state.logs.length === 0;
           const currentLine = this.getCurrentLine();
+          // A converter per poll: the colors carry over between the lines of a log only
+          const converter = createAnsiConverter();
           const logs = (request ? (request.value || []) : [])
             .filter((log) => log.logText && log.logText.length)
             .map((log) => log.logText.split('\n').map((line) => ({
               date: displayDate(log.date),
               log: line,
-              logHTML: ansiUp.ansi_to_html(line),
+              logHTML: ansiToHtml(converter, line),
               isError: isError(line),
               isWarning: isWarning(line)
             })))
