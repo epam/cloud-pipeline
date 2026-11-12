@@ -370,9 +370,11 @@ module.exports = function (webpackEnv) {
                 compact: isEnvProduction
               }
             },
+            // The AWS SDK v3 packages (@aws-sdk, @smithy, @aws, @aws-crypto) may use a syntax that
+            // webpack 4 cannot parse, e.g. "?." and "??".
             {
               test: /\.js$/,
-              include: /node_modules[\\/](@smithy|@aws-sdk)/,
+              include: /node_modules[\\/](@smithy|@aws)/,
               use: {
                 loader: require.resolve('babel-loader'),
                 options: {
