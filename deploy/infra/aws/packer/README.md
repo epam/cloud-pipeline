@@ -23,8 +23,8 @@ SELinux. The `gpu` type also gets the Nvidia driver, Fabric Manager and `nvidia-
 The image has two Pythons for the commit and the pause of a run, which run on the node:
 
 * the platform's Python 3.12 in `/usr/local/python3.12`, which they use if `/usr/local/python3.12/bin/python3.12`
-  exists. `python3` and `pip3` are linked to it only where the base image has none, so `python3` stays the
-  Python 3.9 of Amazon Linux 2023
+  exists. `python3` and `pip3` are linked to it only where the base image has no `python3`, so on Amazon Linux 2023
+  `python3` stays its Python 3.9, and `pip3` is not linked to Python 3.12
 * Python 2 (Miniconda2) in `/opt/conda`, linked as `python2`, `python`, `pip2` and `pip`, which they use otherwise
 
 Each download goes into a temporary folder first. If a download, an unpack or a check of the result fails, the build
@@ -33,6 +33,11 @@ stops, and no AMI is created.
 Docker and the kubelet are not in the image: the `init_multicloud_v1.15.4_al2023.sh` user data installs them, when a
 node starts. Set it as the `init_script` of the image in the `amis` list of the region in `cluster.networks.config`,
 e.g. `"init_script": "/opt/api/scripts/init_multicloud_v1.15.4_al2023.sh"`.
+
+The image does not pre-load the Kubernetes system images (Calico, Flannel, `kube-proxy`, `pause`) into
+`/opt/docker-system-images`, as the Amazon Linux 2 images of `deploy/infra/aws/install-*-node.sh` do. The user data
+downloads them when a node starts, and falls back to that folder only if the download fails: so on this image, a node
+then has no local copy of them.
 
 ## Connection to the temporary instance
 
@@ -154,7 +159,8 @@ taken from a single archive at `$nvidia_driver_url_prefix/$version.tgz`, e.g.
 ## Build using wrapper
 
 Run `build.sh` with `bash` from this directory: the file is not executable, and it uses the `cpu/` and `gpu/` paths
-relative to it.
+relative to it. With `--type all` (or no `--type`), it builds the `cpu` image and then the `gpu` image, also when the
+`cpu` build fails, and exits with a non-zero code if any of the builds failed.
 
 ```
 cd cloud-pipeline/deploy/infra/aws/packer
