@@ -19,10 +19,7 @@ from time import sleep as real_sleep
 
 import pytest
 
-try:
-    from unittest.mock import MagicMock, create_autospec, patch
-except ImportError:
-    from mock import MagicMock, create_autospec, patch
+from unittest.mock import MagicMock, create_autospec, patch
 
 from src.utilities.storage import mount as mount_module
 from src.utilities.storage.mount import Mount
@@ -129,7 +126,7 @@ def test_stop_terminates_the_mount_process_that_does_not_exit(fuse_child):
 
 def test_stop_waits_for_the_mount_process_to_exit(no_sleep, fuse_child, monkeypatch):
     monkeypatch.setattr(mount_module, 'MOUNT_STOP_TIMEOUT_SEC', 5)
-    # A real Popen signature, so a call that Python 2 does not support fails here as well
+    # A real Popen signature, so a call that it does not support fails here as well
     proc = create_autospec(subprocess.Popen, instance=True)
     proc.pid = 1
     proc.poll.side_effect = [None, None, 0, 0]

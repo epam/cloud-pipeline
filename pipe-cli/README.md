@@ -15,7 +15,7 @@
 ## Build using pip
 
 Requirements
-* Python 2.7 or Python 3.6
+* Python 3.10 or later
 * `pip` package manager
 
 To install a Cloud Pipeline CLI run the following command
@@ -24,19 +24,31 @@ To install a Cloud Pipeline CLI run the following command
 $ python setup.py sdist
 ...
 
-$ cd dist
-
 # Replace X with current version and install
-$ pip install Pipeline CLI-0.X.tar.gz
+$ pip install dist/PipelineCLI-0.X.tar.gz
 ```
 
-## Build a single-file distribution
-```
-pyinstaller     --hidden-import=UserList \
-                --hidden-import=UserString \
-                --hidden-import=commands \
-                --add-data "res/effective_tld_names.dat.txt:tld/res/" \
-                pipe.py
+## Build the binaries
+
+The binaries bundle Python 3.12 with PyInstaller. Their builds install the exact package versions of
+`constraints.txt` (`pip install -r requirements.txt -c constraints.txt`), while `requirements.txt` and
+`mount/requirements.txt` keep the lower bounds for the installation from the source tarball.
+
+| Binaries | Gradle task | Script | Builder |
+|---|---|---|---|
+| Linux binary and tarball, with `pipe-fuse` and `pipe-omics` | `pipe-cli:buildLinux` | `build_linux.sh` | `lifescience/cloud-pipeline:pipe-cli-centos7-py312` (`docker/pipe-cli-builder-centos7`) |
+| Windows | `pipe-cli:buildWin` | `build_windows.sh` | `lifescience/cloud-pipeline:pyinstaller-win64-py312` (`docker/win64-py312`) |
+| macOS arm64 | `pipe-cli:buildMacArm` | `build_mac_arm.sh` | the Python 3.12 of the macOS host |
+
+The Linux binaries are built on CentOS 7, so they run on `glibc` 2.17 or later. `build_linux.sh` checks them in a
+`centos:7` container with `check_linux_bundle.sh`. It also rebuilds the bootloader of PyInstaller with
+`pyinstaller/runtime-tmpdir.patch`, so the one-file binary unpacks itself into `~/.pipe/tmp`.
+
+## Run the tests
+
+```bash
+$ pip install -r requirements.txt -r mount/requirements.txt -c constraints.txt
+$ python -m pytest tests
 ```
 
 ## Command structure

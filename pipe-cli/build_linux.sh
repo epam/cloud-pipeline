@@ -18,8 +18,18 @@ cd $PIPE_CLI_SOURCES_DIR
 PIPE_COMMIT_HASH=$(git log --pretty=tformat:"%H" -n1 .)
 cd -
 
+# The one-file binary unpacks itself into this folder at run time. The bootloader expands "~" in it
+# (see pyinstaller/build_bootloader.sh). build.gradle passes it as "\~/.pipe/tmp", which keeps the shell from expanding it.
+_PIPE_CLI_RUNTIME_TMP_DIR='~/.pipe/tmp'
+if [ "$PIPE_CLI_RUNTIME_TMP_DIR" ]; then
+    _PIPE_CLI_RUNTIME_TMP_DIR="${PIPE_CLI_RUNTIME_TMP_DIR#\\}"
+fi
+
+# The bundles are built on CentOS 7 (see docker/pipe-cli-builder-centos7): PyInstaller bundles every library but
+# glibc, so they run on glibc 2.17 or later. The bundles built on Rocky Linux 8 (docker/pipe-cli-builder,
+# lifescience/cloud-pipeline:pipe-cli-rocky8-py312) need glibc 2.28.
 _BUILD_PIPE_OMICS_SCRIPT_NAME=/tmp/build_pipe_omics_pytinstaller_linux_$(date +%s).sh
-_BUILD_PIPE_OMICS_DOCKER_IMAGE="${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:pipe-omics-centos7-py310"
+_BUILD_PIPE_OMICS_DOCKER_IMAGE="${_BUILD_PIPE_OMICS_DOCKER_IMAGE:-lifescience/cloud-pipeline:pipe-cli-centos7-py312}"
 
 # This dir will be mounted to the docker container to build pipe-omics and then to the container
 # where pipe-cli will be built, to copy pipe-omics inside a pipe-cli
@@ -32,7 +42,8 @@ cat > "$_BUILD_PIPE_OMICS_SCRIPT_NAME" <<EOL
 # Build pipe-omics
 ###
 
-python3.10 -m pip install -r \${PIPE_OMICS_SOURCES_DIR}/requirements.txt
+python3 -m pip install -r \${PIPE_OMICS_SOURCES_DIR}/requirements.txt
+pip install 'setuptools==68.2.2'
 
 cd \$PIPE_OMICS_SOURCES_DIR && \
 pyinstaller \
@@ -62,7 +73,6 @@ docker run -i --rm \
            --env PIPE_CLI_SOURCES_DIR="$PIPE_CLI_SOURCES_DIR" \
            --env PIPE_OMICS_SOURCES_DIR="$PIPE_OMICS_SOURCES_DIR" \
            --env PIPE_CLI_LINUX_DIST_DIR="$PIPE_CLI_LINUX_DIST_DIR" \
-           --env PIPE_CLI_RUNTIME_TMP_DIR="'"$PIPE_CLI_RUNTIME_TMP_DIR"'" \
            "$_BUILD_PIPE_OMICS_DOCKER_IMAGE" \
            bash "$_BUILD_PIPE_OMICS_SCRIPT_NAME"
 _BUILD_PIPE_OMICS_EXIT_CODE=$?
@@ -75,7 +85,7 @@ if [ "$_BUILD_PIPE_OMICS_EXIT_CODE" != 0 ]; then
 fi
 
 _BUILD_SCRIPT_NAME=/tmp/build_pytinstaller_linux_$(date +%s).sh
-_BUILD_DOCKER_IMAGE="${_BUILD_DOCKER_IMAGE:-python:2.7-stretch}"
+_BUILD_DOCKER_IMAGE="${_BUILD_DOCKER_IMAGE:-lifescience/cloud-pipeline:pipe-cli-centos7-py312}"
 
 cat >$_BUILD_SCRIPT_NAME <<EOL
 
@@ -95,19 +105,15 @@ elif [ -f "/etc/centos-release" ]; then
 fi
 
 ###
-# Setup Pyinstaller
-###
-
-mkdir -p $PYINSTALLER_PATH
-cd $PYINSTALLER_PATH
-git clone --branch resolve_tmpdir https://github.com/mzueva/pyinstaller.git
-cd pyinstaller/bootloader/
-python2 ./waf all
-
-###
 # Setup common dependencies
 ###
-python2 -m pip install -r ${PIPE_CLI_SOURCES_DIR}/requirements.txt
+# constraints.txt pins every package, so each build bundles the same versions
+pip install -r ${PIPE_CLI_SOURCES_DIR}/requirements.txt -c ${PIPE_CLI_SOURCES_DIR}/constraints.txt || exit 1
+
+###
+# Setup the bootloader that resolves the runtime-tmpdir of the one-file binary
+###
+bash ${PIPE_CLI_SOURCES_DIR}/pyinstaller/build_bootloader.sh || exit 1
 
 ###
 # Build pipe fuse
@@ -120,53 +126,32 @@ else
 fi
 cp ${PIPE_MOUNT_SOURCES_DIR}/libfuse/libfuse.so.\${libfuse_version} ${PIPE_MOUNT_SOURCES_DIR}/libfuse/libfuse.so.frozen
 
-python2 -m pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt
+pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt -c ${PIPE_CLI_SOURCES_DIR}/constraints.txt || exit 1
+pip install 'setuptools==68.2.2' || exit 1
 cd $PIPE_MOUNT_SOURCES_DIR && \
-python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
+pyinstaller \
+                                --paths "${PIPE_MOUNT_SOURCES_DIR}" \
                                 --paths "${PIPE_CLI_SOURCES_DIR}" \
-                                --hidden-import=UserList \
-                                --hidden-import=UserString \
-                                --hidden-import=commands \
-                                --hidden-import=ConfigParser \
-                                --hidden-import=UserDict \
-                                --hidden-import=itertools \
-                                --hidden-import=collections \
-                                --hidden-import=future.backports.misc \
-                                --hidden-import=commands \
-                                --hidden-import=base64 \
-                                --hidden-import=__builtin__ \
-                                --hidden-import=math \
-                                --hidden-import=reprlib \
-                                --hidden-import=functools \
-                                --hidden-import=re \
-                                --hidden-import=subprocess \
+                                --collect-submodules pipefuse \
+                                --collect-submodules src \
+                                --collect-submodules google.auth \
+                                --collect-submodules google.oauth2 \
+                                --collect-submodules google.cloud \
+                                --collect-submodules google.resumable_media \
+                                --collect-data botocore \
+                                --hidden-import=fuse \
+                                --hidden-import=cachetools \
+                                --hidden-import=intervals \
+                                --hidden-import=pygtrie \
                                 --additional-hooks-dir="${PIPE_MOUNT_SOURCES_DIR}/hooks" \
                                 -y \
                                 --clean \
-                                --runtime-tmpdir $PIPE_CLI_RUNTIME_TMP_DIR \
+                                --runtime-tmpdir '$_PIPE_CLI_RUNTIME_TMP_DIR' \
                                 --distpath /tmp/mount/dist \
                                 --add-data "${PIPE_MOUNT_SOURCES_DIR}/libfuse/libfuse.so.frozen:libfuse" \
                                 ${PIPE_MOUNT_SOURCES_DIR}/pipe-fuse.py
 
 chmod +x /tmp/mount/dist/pipe-fuse/pipe-fuse
-
-###
-# Build ntlm proxy
-###
-cd /tmp
-git clone https://github.com/sidoruka/ntlmaps.git && \
-cd ntlmaps && \
-git checkout 5f798a88369eddbe732364b98fbd445aacc809d0
-
-python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
-        main.py -y \
-        --clean \
-        --distpath /tmp/ntlmaps/dist \
-        -p /tmp/ntlmaps/lib \
-        --add-data ./server.cfg:./ \
-        --name ntlmaps
-
-chmod +x /tmp/ntlmaps/dist/ntlmaps/ntlmaps
 
 ###
 # Build pipe
@@ -187,30 +172,33 @@ function build_pipe {
     echo "__component_version__='\${PIPE_COMMIT_HASH}'" >> \$version_file
 
     cd $PIPE_CLI_SOURCES_DIR
-    python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
+    pyinstaller \
+                                    --paths "$PIPE_CLI_SOURCES_DIR" \
+                                    --collect-submodules src \
+                                    --collect-submodules google.auth \
+                                    --collect-submodules google.oauth2 \
+                                    --collect-submodules google.cloud \
+                                    --collect-submodules google.resumable_media \
+                                    --collect-submodules azure.core \
+                                    --collect-submodules azure.storage \
+                                    --collect-data botocore \
+                                    --collect-data azure \
+                                    --collect-data tldextract \
+                                    --hidden-import=pygtrie \
+                                    --hidden-import=pypac \
+                                    --hidden-import=treelib \
+                                    --hidden-import=psutil \
+                                    --hidden-import=scp \
+                                    --hidden-import=tzlocal \
+                                    --hidden-import=prettytable \
+                                    --hidden-import=jwt \
+                                    --hidden-import=paramiko \
                                     --add-data "$PIPE_CLI_SOURCES_DIR/res/effective_tld_names.dat.txt:tld/res/" \
-                                    --hidden-import=UserList \
-                                    --hidden-import=UserString \
-                                    --hidden-import=commands \
-                                    --hidden-import=ConfigParser \
-                                    --hidden-import=UserDict \
-                                    --hidden-import=itertools \
-                                    --hidden-import=collections \
-                                    --hidden-import=future.backports.misc \
-                                    --hidden-import=commands \
-                                    --hidden-import=base64 \
-                                    --hidden-import=__builtin__ \
-                                    --hidden-import=math \
-                                    --hidden-import=reprlib \
-                                    --hidden-import=functools \
-                                    --hidden-import=re \
-                                    --hidden-import=subprocess \
                                     --additional-hooks-dir="$PIPE_CLI_SOURCES_DIR/hooks" \
                                     -y \
                                     --clean \
-                                    --runtime-tmpdir $PIPE_CLI_RUNTIME_TMP_DIR \
+                                    --runtime-tmpdir '$_PIPE_CLI_RUNTIME_TMP_DIR' \
                                     --distpath \$distpath \
-                                    --add-data /tmp/ntlmaps/dist/ntlmaps:ntlmaps \
                                     --add-data /tmp/mount/dist/pipe-fuse:mount \
                                     --add-data /tmp/pipe-omics/dist/pipe-omics:pipe-omics \
                                     ${PIPE_CLI_SOURCES_DIR}/pipe.py \$onefile
@@ -232,8 +220,6 @@ docker run -i --rm \
            --env PIPE_CLI_SOURCES_DIR=$PIPE_CLI_SOURCES_DIR \
            --env PIPE_MOUNT_SOURCES_DIR=$PIPE_MOUNT_SOURCES_DIR \
            --env PIPE_CLI_LINUX_DIST_DIR=$PIPE_CLI_LINUX_DIST_DIR \
-           --env PIPE_CLI_RUNTIME_TMP_DIR="'"$PIPE_CLI_RUNTIME_TMP_DIR"'" \
-           --env PYINSTALLER_PATH=$PYINSTALLER_PATH \
            --env PIPE_COMMIT_HASH=$PIPE_COMMIT_HASH \
            $_BUILD_DOCKER_IMAGE \
            bash $_BUILD_SCRIPT_NAME
@@ -244,4 +230,11 @@ rm -f $_BUILD_SCRIPT_NAME
 if [ "$_BUILD_EXIT_CODE" != 0 ]; then
     echo "[ERROR] The pipe build in $_BUILD_DOCKER_IMAGE failed"
     exit "$_BUILD_EXIT_CODE"
+fi
+
+# Check the bundles on the oldest distribution they shall run on. An empty _BUILD_CHECK_DOCKER_IMAGE skips the check,
+# e.g. for the bundles built on Rocky Linux 8, which do not run on CentOS 7.
+_BUILD_CHECK_DOCKER_IMAGE="${_BUILD_CHECK_DOCKER_IMAGE-centos:7}"
+if [ "$_BUILD_CHECK_DOCKER_IMAGE" ]; then
+    bash "$PIPE_CLI_SOURCES_DIR/check_linux_bundle.sh" "$PIPE_CLI_LINUX_DIST_DIR/dist" "$_BUILD_CHECK_DOCKER_IMAGE"
 fi

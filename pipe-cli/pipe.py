@@ -16,6 +16,8 @@ import logging
 import os
 import traceback
 
+logging.captureWarnings(True)
+
 import click
 import functools
 import sys
@@ -103,10 +105,7 @@ def enable_debug_logging(ctx, param, value):
     if not value:
         return
     # Enable body/headers logging from httplib requests
-    try:
-        from http.client import HTTPConnection  # py3
-    except ImportError:
-        from httplib import HTTPConnection      # py2
+    from http.client import HTTPConnection
     HTTPConnection.debuglevel = 5
     log_level = logging.DEBUG
     log_format = os.getenv('CP_LOGGING_FORMAT') or ctx.params.get('log_format') or DEFAULT_LOGGING_FORMAT
@@ -162,10 +161,7 @@ def stacktracing(func, ctx, *args, **kwargs):
     except click.Abort:
         raise
     except Exception as runtime_error:
-        if sys.version_info >= (3, 0):
-            click.echo(u'Error: {}'.format(str(runtime_error)), err=True)
-        else:
-            click.echo(u'Error: {}'.format(unicode(runtime_error)), err=True)
+        click.echo(u'Error: {}'.format(str(runtime_error)), err=True)
         if trace:
             traceback.print_exc()
         sys.exit(1)
@@ -316,6 +312,20 @@ def cli():
     pass
 
 
+_NTLM_PROXY_REMOVED = 'NTLM proxy authentication is no longer supported: the --proxy-ntlm, --proxy-ntlm-user, ' \
+                      '--proxy-ntlm-domain and --proxy-ntlm-pass options are removed. ' \
+                      'Set --proxy to a proxy that does not require NTLM authentication.'
+_CODEC_REMOVED = 'The --codec option is removed: pipe runs on Python 3, which always uses Unicode text.'
+
+
+def _reject_removed_option(message):
+    def _callback(ctx, param, value):
+        if value:
+            raise click.UsageError(message, ctx=ctx)
+        return value
+    return _callback
+
+
 @cli.command()
 @click.option('-l', '--login',
               is_flag=True,
@@ -335,21 +345,16 @@ def cli():
               prompt='Proxy address',
               help='URL of a proxy for all calls',
               default='')
-@click.option('-nt', '--proxy-ntlm',
-              help='Use NTLM authentication for the server, specified by the "--proxy"',
-              is_flag=True)
-@click.option('-nu', '--proxy-ntlm-user',
-              help='Username for the NTLM authentication against the server, specified by the "--proxy"',
-              default=None)
-@click.option('-nd', '--proxy-ntlm-domain',
-              help='Domain name of the user, specified by the "--proxy-ntlm-user"',
-              default=None)
-@click.option('-np', '--proxy-ntlm-pass',
-              help='Password of the user, specified by the "--proxy-ntlm-user"',
-              default=None)
-@click.option('-c', '--codec',
-              help='Encoding that shall be used',
-              default=None)
+@click.option('-nt', '--proxy-ntlm', is_flag=True, hidden=True, is_eager=True, expose_value=False,
+              callback=_reject_removed_option(_NTLM_PROXY_REMOVED))
+@click.option('-nu', '--proxy-ntlm-user', hidden=True, is_eager=True, expose_value=False,
+              callback=_reject_removed_option(_NTLM_PROXY_REMOVED))
+@click.option('-nd', '--proxy-ntlm-domain', hidden=True, is_eager=True, expose_value=False,
+              callback=_reject_removed_option(_NTLM_PROXY_REMOVED))
+@click.option('-np', '--proxy-ntlm-pass', hidden=True, is_eager=True, expose_value=False,
+              callback=_reject_removed_option(_NTLM_PROXY_REMOVED))
+@click.option('-c', '--codec', hidden=True, is_eager=True, expose_value=False,
+              callback=_reject_removed_option(_CODEC_REMOVED))
 @click.option('-cs', '--config-store',
               help='CLI configuration mode(home-dir/install-dir)',
               default='home-dir')
@@ -363,8 +368,7 @@ def cli():
               help='Path to a CA certificate bundle file used to verify S3 SSL connections '
                    '(e.g. required when a ZScaler proxy intercepts TLS traffic)',
               default=None)
-def configure(login, auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain,
-              proxy_ntlm_pass, codec, config_store, no_launch_browser, ca_bundle):
+def configure(login, auth_token, api, timezone, proxy, config_store, no_launch_browser, ca_bundle):
     """Configures CLI parameters
     """
     if auth_token and login:
@@ -373,33 +377,11 @@ def configure(login, auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_us
     if not auth_token and not login:
         auth_token = click.prompt('Authentication token', default=None)
 
-    if proxy_ntlm and not proxy_ntlm_user:
-        proxy_ntlm_user = click.prompt('Username for the proxy NTLM authentication', type=str)
-    if proxy_ntlm and not proxy_ntlm_domain:
-        proxy_ntlm_domain = click.prompt('Domain of the {} user'.format(proxy_ntlm_user), type=str)
-    if proxy_ntlm and not proxy_ntlm_pass:
-        proxy_ntlm_pass = click.prompt('Password of the {} user'.format(proxy_ntlm_user), type=str, hide_input=True)
-
     if not auth_token and login:
-        proxies = Config.build_proxies(proxy,
-                                       proxy_ntlm,
-                                       proxy_ntlm_user,
-                                       proxy_ntlm_domain,
-                                       proxy_ntlm_pass,
-                                       api)
+        proxies = Config.build_proxies(proxy, api)
         auth_token = TokenlessAccessManager(api, proxies).fetch_token(no_launch_browser)
 
-    Config.store(auth_token,
-                 api,
-                 timezone,
-                 proxy,
-                 proxy_ntlm,
-                 proxy_ntlm_user,
-                 proxy_ntlm_domain,
-                 proxy_ntlm_pass,
-                 codec,
-                 config_store,
-                 ca_bundle)
+    Config.store(auth_token, api, timezone, proxy, config_store, ca_bundle)
 
 
 def echo_title(title, line=True):
@@ -1706,9 +1688,9 @@ def ssh(ctx, run_id, retries, region):
 
     II. Execute a single command via SSH for some run (12345):
 
-        pipe ssh pipeline-12345 echo \$HOSTNAME
+        pipe ssh pipeline-12345 echo \\$HOSTNAME
 
-        pipe ssh 12345 echo \$HOSTNAME
+        pipe ssh 12345 echo \\$HOSTNAME
     """
     ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args), retries=retries, region=region)
     sys.exit(ssh_exit_code)

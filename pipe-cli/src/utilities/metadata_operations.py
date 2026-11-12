@@ -14,7 +14,6 @@
 
 import click
 import prettytable
-from future.utils import iteritems
 
 from src.api.metadata import Metadata
 
@@ -116,7 +115,7 @@ class MetadataOperations(object):
         table.field_names = ["Tag name", "Value", "Type"]
         table.align = "l"
         table.header = True
-        for (key, entry) in iteritems(metadata):
+        for (key, entry) in metadata.items():
             entry_value = None
             entry_type = None
             if 'value' in entry:

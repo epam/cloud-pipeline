@@ -27,7 +27,6 @@ import time
 from botocore.exceptions import ClientError
 from dateutil.tz import tzlocal
 from fuse import FuseOSError, Operations
-from future.utils import binary_type, text_type
 
 from pipefuse import fuseutils
 from pipefuse.chain import ChainingService
@@ -299,7 +298,7 @@ class PipeFS(Operations, ChainingService):
     @errorlogged
     def setxattr(self, path, name, value, options, *args):
         # FUSE passes the value as bytes, while the storage clients keep extended attributes as text
-        if isinstance(value, binary_type):
+        if isinstance(value, bytes):
             value = value.decode('utf-8')
         self._client.upload_xattr(path, name, value)
         return 0
@@ -311,7 +310,7 @@ class PipeFS(Operations, ChainingService):
         if xattr is None:
             raise NoDataOperationException()
         # FUSE expects the value as bytes
-        return xattr.encode('utf-8') if isinstance(xattr, text_type) else xattr
+        return xattr.encode('utf-8') if isinstance(xattr, str) else xattr
 
     @errorlogged
     def listxattr(self, path):
