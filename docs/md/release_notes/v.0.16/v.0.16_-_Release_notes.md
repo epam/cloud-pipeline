@@ -100,6 +100,7 @@
     - [Runs on Amazon Linux 2023 nodes get no "OOM Logs" task](#runs-on-amazon-linux-2023-nodes-get-no-oom-logs-task)
     - [The notifier log names only the main recipient of an email](#the-notifier-log-names-only-the-main-recipient-of-an-email)
     - [Amazon Linux 2023 nodes do not join the cluster: the Docker install script is not found](#amazon-linux-2023-nodes-do-not-join-the-cluster-the-docker-install-script-is-not-found)
+    - [Runs from RHEL images do not get the setup of the RHEL family](#runs-from-rhel-images-do-not-get-the-setup-of-the-rhel-family)
 
 ***
 
@@ -1303,3 +1304,9 @@ Please note:
 
 Previously, the `init_multicloud_v1.15.4.ext.sh` user data, which installs Docker and the kubelet when an Amazon Linux 2023 node starts, downloaded `init_multicloud_install_docker.sh` from `<distribution URL>/scripts/`. With the default distribution URL, which ends with a slash, this was `...amazonaws.com//scripts/...`, and the download failed (HTTP 403). The node then ran an empty file instead: it got no Docker and no kubelet, and never joined the cluster.
 Now, the user data downloads the script from `<distribution URL>/tools/scripts/`, where the public Cloud Pipeline bucket has it, and adds the slash to a distribution URL that has none.
+### Runs from RHEL images do not get the setup of the RHEL family
+
+Previously, a run from a Red Hat Enterprise Linux image, including the UBI images (`ID=rhel` in `/etc/os-release`), got the `linux` OS family (`CP_OS_FAMILY`), not `rhel`. So the run did not install the packages of `CP_CAP_EXTRA_PKG_RHEL`, did not start systemd for `CP_CAP_SYSTEMD_CONTAINER` or `CP_CAP_KUBE`, and its Slurm setup failed with "Can't install SLURM packages". Docker in Docker installed docker `18.09.6` and asked for `btrfs-progs`, which RHEL 8 and 9 do not have. So Docker in Docker failed on every RHEL 8 and 9 image, with a subscription or not.
+Now, RHEL images are in the `rhel` family, as CentOS and Rocky Linux are, and get the same setup, except the Cloud Pipeline package repository. The public repository has no RHEL packages, so a RHEL run adds it only if the repository of the deployment has a folder for its RHEL version. Otherwise, the run uses the repositories of the image only, and says so in its log. Docker in Docker installs docker `20.10.24`, as on Rocky Linux. The UBI repositories lack some packages that the run and its capabilities install, e.g. `e2fsprogs` and `xfsprogs` for Docker in Docker, `nfs-utils` and `cifs-utils` for the NFS and SMB mounts, and `munge` for Slurm. Where `e2fsprogs` and `xfsprogs` are missing, the Docker in Docker setup fails, and its log names them.
+
+For more details see [Supported OS families](../../manual/10_Manage_Tools/10.3._Add_a_Tool.md#supported-os-families).
