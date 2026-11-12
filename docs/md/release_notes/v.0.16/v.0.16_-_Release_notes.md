@@ -110,6 +110,7 @@
     - [The VM monitor does not check the open files on Amazon Linux 2023 nodes and other hosts with systemd 240 or later](#the-vm-monitor-does-not-check-the-open-files-on-amazon-linux-2023-nodes-and-other-hosts-with-systemd-240-or-later)
     - [Git synchronization: a new GitLab 9 user has to confirm the email](#git-synchronization-a-new-gitlab-9-user-has-to-confirm-the-email)
     - [The timeout of the API HTTP sessions cannot be set](#the-timeout-of-the-api-http-sessions-cannot-be-set)
+    - [A new install points the API at the transport port of the search Elasticsearch](#a-new-install-points-the-api-at-the-transport-port-of-the-search-elasticsearch)
 
 ***
 
@@ -1394,3 +1395,9 @@ Now, the synchronization creates a user with `confirm=no` on the API v3, and wit
 
 Previously, an HTTP session of the API service (`cp-api-srv`) always expired after 30 minutes without requests: the API set no timeout, so the default of Spring Session applied.
 Now, the `CP_API_SRV_SESSION_TIMEOUT_SEC` environment variable of the API service sets this timeout, in seconds. The default is `1800` (30 minutes), as before. The timeout applies to both session stores of `CP_API_SRV_SESSION_STORE_TYPE`: `jdbc` (the default) and `HASH_MAP`. Set the variable with `-env CP_API_SRV_SESSION_TIMEOUT_SEC=<seconds>` of `pipectl install`. In an existing deployment, add it to the `cp-config-global` ConfigMap and restart the API service. A session keeps the timeout it was created with, so a new value applies to the sessions created after the restart.
+### A new install points the API at the transport port of the search Elasticsearch
+
+Previously, when `pipectl` installed the search services (`cp-search`), it set the **`search.elastic.port`** preference twice: first to the HTTP port of the search Elasticsearch (`cp-search-elk`), `CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT` (`30091` by default), and then to its transport port, `CP_SEARCH_ELK_TRANSPORT_INTERNAL_PORT` (`30092` by default, port `9300` of the container). The API calls Elasticsearch over HTTP at the port of this preference. So the global search, the billing reports, the system logs and the storage request statistics failed after such an install.
+Now, `pipectl` sets **`search.elastic.port`** to the HTTP port only. The transport port is used by the search Elasticsearch itself, and no preference needs it. See details in [12.10. Manage system-level settings](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#search).
+
+Please note: `pipectl` sets **`search.elastic.port`** each time it deploys the search services: on every `pipectl install` without `-s` options, which deploys all the services, and on `pipectl install -s cp-search`. So a deployment where a `pipectl` of this version built since June 2024 last deployed the search services has the transport port in **`search.elastic.port`**, unless an administrator has changed it since. Check this preference (**Settings** > **Preferences** > **Search**). If it is `30092` (or the value of `CP_SEARCH_ELK_TRANSPORT_INTERNAL_PORT`), set it to the value of `CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT`, `30091` by default. A re-deploy of the search services with a `pipectl` with this fix sets it too.
