@@ -310,7 +310,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**4571_6**](Data_storages/4571/4571_6.md) | [Negative] The upload confirmation pop-up is not offered outside AWS S3 and NFS-mounted-NFS storages |  |
 | [**4571_7**](Data_storages/4571/4571_7.md) | The Storage tasks window names each task's type, and filters on one type at a time |  |
 | [**4571_8**](Data_storages/4571/4571_8.md) | [Negative] An extraction task offers Cancel, and never Download |  |
-| [**4571_9**](Data_storages/4571/4571_9.md) | [MANUAL] A batch that runs out of the archive-task allowance queues what it can, and says so |  |
+| [**4571_9**](Data_storages/4571/4571_9.md) | [MANUAL] The archive-task allowance: a batch queues what it can, and at the limit Upload and extract is disabled |  |
 
 </details>
 
