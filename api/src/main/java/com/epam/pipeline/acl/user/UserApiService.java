@@ -43,6 +43,8 @@ import com.epam.pipeline.manager.user.UsersFileImportManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PostFilter;
+import com.epam.pipeline.security.UserContext;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -51,6 +53,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static com.epam.pipeline.security.acl.AclExpressions.*;
 
@@ -259,6 +262,7 @@ public class UserApiService {
      */
     @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public JwtRawToken issueTokenForCurrentUser(final Long expiration) {
+        assertTokenExchangeable();
         return authManager.issueTokenForCurrentUser(expiration, !authManager.isAdmin());
     }
 
@@ -277,8 +281,25 @@ public class UserApiService {
      */
     @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public NamedJwtToken issueNamedJwtTokenForCurrentUser(final Long expiration, final String registryLabel) {
+        assertTokenExchangeable();
         return namedJwtTokenManager.issueNamedTokenForCurrentUser(expiration, !authManager.isAdmin(),
                 NamedJwtToken.normalizeTokenName(registryLabel));
+    }
+
+    /**
+     * A token may say that it must not be traded for another.
+     * <p>
+     * Every token is exchangeable unless it says otherwise, so this changes nothing for an
+     * ordinary login. It matters for a token whose life is deliberately tied to something outside
+     * the platform: trading it for a second token would give the holder one with its own, longer
+     * life, and they could keep renewing long after whatever vouched for them stopped. A client
+     * that needs a fresh token obtains one the same way it obtained the first.
+     */
+    private void assertTokenExchangeable() {
+        final UserContext context = authManager.getUserContext();
+        if (Objects.nonNull(context) && !context.isExchangeable()) {
+            throw new AccessDeniedException("This token cannot be used to issue another token");
+        }
     }
 
     @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
