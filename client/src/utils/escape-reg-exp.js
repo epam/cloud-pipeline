@@ -14,14 +14,19 @@
  *  limitations under the License.
  */
 
-const ESCAPE_CHARACTERS = ['.', '-', '*', '?', '^', '$', '(', ')', '[', ']', '{', '}'];
+const ESCAPE_CHARACTERS = [
+  '\\', '.', '-', '+', '*', '?', '^', '$', '(', ')', '[', ']', '{', '}', '|'
+];
 
 export {ESCAPE_CHARACTERS};
 export default function escapeRegExp (string, characters = ESCAPE_CHARACTERS) {
-  let result = string;
-  characters.forEach(character => {
-    result = result
-      .replace(new RegExp('\\' + character, 'g'), `\\${character}`);
-  });
-  return result;
+  if (!characters.length) {
+    return string;
+  }
+  // One pass, so that the backslash of an escape is not escaped again
+  const charactersRegExp = new RegExp(
+    `[${characters.map(character => `\\${character}`).join('')}]`,
+    'g'
+  );
+  return string.replace(charactersRegExp, '\\$&');
 }

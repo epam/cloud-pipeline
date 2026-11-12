@@ -38,25 +38,39 @@ function unescapeHtml (html) {
   return html.replace(/&(?:amp|lt|gt|quot|#x27);/g, entity => HTML_ENTITIES[entity]);
 }
 
+// eslint-disable-next-line no-control-regex
+const CONTROL_CHARACTERS = /[\x00-\x1f\x7f]/g;
+
+// ansi_up writes a hyperlink as <a href="...">, with the address escaped
+const LINK_REGEXP = /<a href="([^"]*)">/g;
+const LINK_IN_NEW_TAB = '<a href="$1" target="_blank" rel="noopener noreferrer">';
+
 export function createAnsiConverter () {
   return new AnsiUp();
 }
 
 /**
  * Converts a log line to HTML. The colors carry over to the next line, as in a terminal,
- * so convert the lines of a log in their order, with one converter.
+ * so convert the lines of one log in their order, with one converter.
  * ansi_up is a streaming parser: it keeps an escape sequence that is not complete
  * at the end of its input, and puts it in front of the next input.
  * An unterminated hyperlink would then hide all the lines after it,
- * so an incomplete sequence is dropped instead. `_buffer` is not a public field
- * of ansi_up: log-line-html.test.js checks it after an update of ansi_up.
+ * so what is kept is shown as text of this line instead, with no control characters.
+ * `_buffer` is not a public field of ansi_up: log-line-html.test.js checks it
+ * after an update of ansi_up.
+ * A hyperlink opens in a new tab.
  * @param {AnsiUp} converter
  * @param {string} line
  * @returns {string}
  */
 export function ansiToHtml (converter, line) {
   converter._buffer = '';
-  return converter.ansi_to_html(line || '');
+  const html = converter.ansi_to_html(line || '');
+  const rest = (converter._buffer || '').replace(CONTROL_CHARACTERS, '');
+  converter._buffer = '';
+  return html
+    .replace(LINK_REGEXP, LINK_IN_NEW_TAB)
+    .concat(escapeHtml(rest));
 }
 
 /**
@@ -81,7 +95,8 @@ function markSearch (source, search, options = {}) {
   let position = 0;
   let htmlPosition = 0;
   const positions = [];
-  while (e) {
+  // A pattern of an escaped search string matches no empty string, but the loop must end anyway
+  while (e && e[0].length > 0) {
     const classes = classNames(
       'cp-search-highlight-text',
       {

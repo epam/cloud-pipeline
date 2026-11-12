@@ -17,16 +17,22 @@
 /* eslint-env jest */
 
 import React from 'react';
-import {render, screen, change, keyDown, fn} from '@test';
+import {render, screen, change, keyDown, fn, stubApi, waitFor} from '@test';
 import RunTaskLogs from './index';
 
 const LOGS = [
   'plain line',
   '<b>not bold</b> & "quoted"',
   '\u001b[31mred line\u001b[0m',
+  '\u001b]8;;https://example.com\u0007example link\u001b]8;;\u0007',
   'link \u001b]8;;http://example.com\u0007unterminated',
   'after the link'
 ].join('\n');
+
+// A log that ends inside a color
+const COLORED_END = 'plain first\n\u001b[31mred last';
+
+const RED = {color: 'rgb(187, 0, 0)'};
 
 // jsdom does not implement scrolling, and the component scrolls to the last line
 const {scrollTo} = Element.prototype;
@@ -54,14 +60,44 @@ describe('RunTaskLogs', () => {
   it('shows the colors of a line', () => {
     renderLogs();
 
-    expect(screen.getByText('red line')).toHaveStyle({color: 'rgb(187, 0, 0)'});
+    expect(screen.getByText('red line')).toHaveStyle(RED);
   });
 
-  it('shows the lines after an unterminated hyperlink', () => {
+  it('opens a hyperlink in a new tab', () => {
     renderLogs();
 
-    expect(screen.getByText('link')).toBeInTheDocument();
+    const link = screen.getByRole('link', {name: 'example link'});
+    expect(link).toHaveAttribute('href', 'https://example.com');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  it('shows the rest of an unterminated hyperlink as text, and the lines after it', () => {
+    renderLogs();
+
+    expect(screen.getByText('link ]8;;http://example.comunterminated')).toBeInTheDocument();
     expect(screen.getByText('after the link')).toBeInTheDocument();
+  });
+
+  it('does not carry the color at the end of a log over to another log view', () => {
+    render(<RunTaskLogs logs={COLORED_END} showDate={false} />);
+    render(<RunTaskLogs logs={COLORED_END} showDate={false} />);
+
+    const firstLines = screen.getAllByText('plain first');
+    expect(firstLines).toHaveLength(2);
+    firstLines.forEach(line => expect(line).not.toHaveStyle(RED));
+    screen.getAllByText('red last').forEach(line => expect(line).toHaveStyle(RED));
+  });
+
+  it('does not carry the color at the end of a run log over to the next load', async () => {
+    stubApi({'/run/1/logs': [{date: '2026-11-12 10:00:00.000', logText: COLORED_END}]});
+
+    render(<RunTaskLogs runId={1} autoUpdate={false} showDate={false} />);
+    await screen.findByText('red last');
+    render(<RunTaskLogs runId={1} autoUpdate={false} showDate={false} />);
+
+    await waitFor(() => expect(screen.getAllByText('plain first')).toHaveLength(2));
+    screen.getAllByText('plain first').forEach(line => expect(line).not.toHaveStyle(RED));
   });
 
   it('finds and marks a search string with quotes and angle brackets', async () => {

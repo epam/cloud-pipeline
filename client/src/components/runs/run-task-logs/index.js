@@ -29,8 +29,6 @@ import styles from './run-task-logs.css';
 const SCROLLED_DOWN_OFFSET = 20;
 const MAX_LINES_TO_DISPLAY = 500;
 
-const ansiUp = createAnsiConverter();
-
 function formatLineNumber (lineNumber, length) {
   if (typeof String.prototype.padStart === 'function') {
     return `${lineNumber}`.padStart(length, '0');
@@ -202,10 +200,12 @@ class RunTaskLogs extends React.Component {
       fetchAllLogs = true
     } = this.props;
     if (logsProps && typeof logsProps === 'string' && !runId) {
+      // A converter per conversion: the colors carry over between the lines of a log only
+      const converter = createAnsiConverter();
       this.setState({logs: logsProps.split('\n').map(text => ({
         date: undefined,
         log: text,
-        logHTML: ansiToHtml(ansiUp, text),
+        logHTML: ansiToHtml(converter, text),
         isError: isError(text),
         isWarning: isWarning(text)
       }))}, () => {
@@ -238,12 +238,14 @@ class RunTaskLogs extends React.Component {
           const {scrolledDown} = this;
           const firstLogs = !this.state.logs || this.state.logs.length === 0;
           const currentLine = this.getCurrentLine();
+          // A converter per poll: the colors carry over between the lines of a log only
+          const converter = createAnsiConverter();
           const logs = (request ? (request.value || []) : [])
             .filter((log) => log.logText && log.logText.length)
             .map((log) => log.logText.split('\n').map((line) => ({
               date: displayDate(log.date),
               log: line,
-              logHTML: ansiToHtml(ansiUp, line),
+              logHTML: ansiToHtml(converter, line),
               isError: isError(line),
               isWarning: isWarning(line)
             })))
