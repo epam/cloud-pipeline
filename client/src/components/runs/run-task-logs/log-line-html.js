@@ -41,12 +41,23 @@ function unescapeHtml (html) {
 // eslint-disable-next-line no-control-regex
 const CONTROL_CHARACTERS = /[\x00-\x1f\x7f]/g;
 
-// ansi_up writes a hyperlink as <a href="...">, with the address escaped
-const LINK_REGEXP = /<a href="([^"]*)">/g;
-const LINK_IN_NEW_TAB = '<a href="$1" target="_blank" rel="noopener noreferrer">';
+const SAFE_LINK_REGEXP = /^https?:/i;
+
+// Renders an OSC 8 hyperlink: an http(s) one as a link that opens in a new tab,
+// any other one as its text only
+export function processHyperlink (packet) {
+  const text = escapeHtml(packet.text);
+  if (!SAFE_LINK_REGEXP.test(packet.url)) {
+    return text;
+  }
+  const href = escapeHtml(packet.url);
+  return `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+}
 
 export function createAnsiConverter () {
-  return new AnsiUp();
+  const converter = new AnsiUp();
+  converter.process_hyperlink = processHyperlink;
+  return converter;
 }
 
 /**
@@ -56,9 +67,8 @@ export function createAnsiConverter () {
  * at the end of its input, and puts it in front of the next input.
  * An unterminated hyperlink would then hide all the lines after it,
  * so what is kept is shown as text of this line instead, with no control characters.
- * `_buffer` is not a public field of ansi_up: log-line-html.test.js checks it
- * after an update of ansi_up.
- * A hyperlink opens in a new tab.
+ * `_buffer` and `process_hyperlink` are not public members of ansi_up, so package.json pins
+ * ansi_up to an exact version, and log-line-html.test.js checks them after an update of ansi_up.
  * @param {AnsiUp} converter
  * @param {string} line
  * @returns {string}
@@ -68,9 +78,7 @@ export function ansiToHtml (converter, line) {
   const html = converter.ansi_to_html(line || '');
   const rest = (converter._buffer || '').replace(CONTROL_CHARACTERS, '');
   converter._buffer = '';
-  return html
-    .replace(LINK_REGEXP, LINK_IN_NEW_TAB)
-    .concat(escapeHtml(rest));
+  return html.concat(escapeHtml(rest));
 }
 
 /**

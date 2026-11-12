@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {ansiToHtml, createAnsiConverter, findText} from './log-line-html';
+import {ansiToHtml, createAnsiConverter, findText, processHyperlink} from './log-line-html';
 
 const RED = 'color:rgb(187,0,0)';
 const NEW_TAB = 'target="_blank" rel="noopener noreferrer"';
@@ -37,11 +37,19 @@ describe('ansiToHtml', () => {
       .toBe('&lt;img src=&quot;x&quot; onerror=&#x27;alert(1)&#x27;&gt; &amp; more');
   });
 
-  it('renders an http(s) hyperlink that opens in a new tab, and drops a javascript one', () => {
+  it('renders an http(s) hyperlink that opens in a new tab', () => {
     expect(toHtml('\u001b]8;;https://example.com/?a="b"\u0007site\u001b]8;;\u0007'))
       .toBe(`<a href="https://example.com/?a=&quot;b&quot;" ${NEW_TAB}>site</a>`);
+    expect(toHtml('\u001b]8;;HTTP://example.com\u0007site\u001b]8;;\u0007'))
+      .toBe(`<a href="HTTP://example.com" ${NEW_TAB}>site</a>`);
+  });
+
+  it('shows only the text of any other hyperlink, escaped', () => {
     expect(toHtml('\u001b]8;;javascript:alert(1)\u0007click\u001b]8;;\u0007 end'))
-      .toBe(' end');
+      .toBe('click end');
+    expect(toHtml('\u001b]8;;file:///etc/hosts\u0007<hosts>\u001b]8;;\u0007'))
+      .toBe('&lt;hosts&gt;');
+    expect(toHtml('\u001b]8;;\u0007no address\u001b]8;;\u0007')).toBe('no address');
   });
 
   it('carries a color over to the next line', () => {
@@ -73,6 +81,31 @@ describe('ansiToHtml', () => {
   it('returns an empty string for an empty line', () => {
     expect(toHtml('')).toBe('');
     expect(toHtml(undefined)).toBe('');
+  });
+});
+
+describe('processHyperlink', () => {
+  const link = (url, text) => processHyperlink({url, text});
+
+  it('renders an http(s) address as a link that opens in a new tab, in any case', () => {
+    ['http://example.com', 'https://example.com', 'HTTPS://example.com']
+      .forEach((url) => expect(link(url, 'site')).toBe(`<a href="${url}" ${NEW_TAB}>site</a>`));
+  });
+
+  it('escapes the address and the text of a link', () => {
+    expect(link('https://x/?a="b"&c=<d>', '<b>\'q\'</b>'))
+      .toBe(`<a href="https://x/?a=&quot;b&quot;&amp;c=&lt;d&gt;" ${NEW_TAB}>` +
+        '&lt;b&gt;&#x27;q&#x27;&lt;/b&gt;</a>');
+  });
+
+  it('returns only the escaped text for any other address', () => {
+    ['javascript:alert(1)', 'file:///etc/hosts', 'data:text/html,x', 'mailto:a@b.c', '']
+      .forEach((url) => expect(link(url, '<click>')).toBe('&lt;click&gt;'));
+  });
+
+  it('accepts http(s) only at the start of the address, as the scheme', () => {
+    ['xhttp://example.com', ' https://example.com', 'httpx://example.com', 'https//example.com']
+      .forEach((url) => expect(link(url, 'site')).toBe('site'));
   });
 });
 

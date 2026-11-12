@@ -70,6 +70,18 @@ describe('RunTaskLogs', () => {
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   });
 
+  it('shows the text of a hyperlink that is not http(s), with no link', () => {
+    render(
+      <RunTaskLogs
+        logs={'\u001b]8;;file:///etc/hosts\u0007hosts\u001b]8;;\u0007 file link'}
+        showDate={false}
+      />
+    );
+
+    expect(screen.getByText('hosts file link')).toBeInTheDocument();
+    expect(screen.queryByRole('link')).toBeNull();
+  });
+
   it('shows the rest of an unterminated hyperlink as text, and the lines after it', () => {
     renderLogs();
 
