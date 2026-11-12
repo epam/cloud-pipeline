@@ -894,10 +894,11 @@ The `init_multicloud_v1.15.4.ext.sh` user data is the one for the compute nodes 
 Now, `deploy/infra/aws/packer` builds such images with Packer, as on the `develop` branch:
 
 - `build.sh` downloads Packer 1.14.3 and builds the `cpu` image, the `gpu` image, or both, in the given region and subnet. The base is the latest Amazon Linux 2023 AMI with the 6.1 kernel, unless `--source-ami` sets another one.
-- The images have `nc`, `tc`, `iptables-legacy`, a static `btrfs`, `jq`, the cgroup v1 hierarchy and a permissive SELinux. As the other AWS node images, they get the platform's Python 3.12 in `/usr/local/python3.12`, and no Python 2 (Amazon Linux 2023 has none). If Python 3.12 cannot be installed, the build fails.
+- The images have `nc`, `tc`, `iptables-legacy`, `lvm2` and `jq` from the packages of Amazon Linux 2023, a static `btrfs`, the cgroup v1 hierarchy and a permissive SELinux. As the other AWS node images, they get the platform's Python 3.12 in `/usr/local/python3.12`, and no Python 2 (Amazon Linux 2023 has none). If Python 3.12 cannot be installed, the build fails.
 - The `gpu` image also has the Nvidia driver (595.58.03 by default), Fabric Manager and `nvidia-persistenced`. They can come from an internal mirror instead of the Nvidia sites.
 - Packer connects to the build instance through AWS Systems Manager (by default), or over SSH to its private IP. It can use an existing key pair and security group.
-- The images have no Docker and no kubelet. So set `init_multicloud_v1.15.4.ext.sh` as the `init_script` of such an image in the **`cluster.networks.config`** preference, e.g. `/opt/api/scripts/init_multicloud_v1.15.4.ext.sh`.
+- The images have no Docker and no kubelet. So set `init_multicloud_v1.15.4.ext.sh` as the `init_script` of such an image in the **`cluster.networks.config`** preference, e.g. `/opt/api/scripts/init_multicloud_v1.15.4.ext.sh`. A node starts only with the fix of this user data, which downloads the Docker install script from `tools/scripts/` of the distribution URL: without it, the download fails, and the node gets no Docker and no kubelet, and never joins the cluster.
+- The images do not pre-load the Kubernetes system images into `/opt/docker-system-images`, as the Amazon Linux 2 images do. The user data downloads them when a node starts, so a node of such an image has no local copy to fall back to, if that download fails.
 
 `deploy/infra/aws/packer/README.md` describes the options, the network access and the IAM permissions that the build needs.
 
