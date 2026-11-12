@@ -40,7 +40,6 @@ export SCRIPTS_DIR="$(pwd)/commit-run-scripts"
 export COMMON_REPO_DIR="$(pwd)/pipe-common"
 
 export FULL_NEW_IMAGE_NAME="${REGISTRY_TO_PUSH}/${NEW_IMAGE_NAME}"
-export CP_PYTHON2_PATH=python
 
 if [[ "$#" -ge 16 ]]; then
     export DOCKER_LOGIN=${15}
@@ -79,6 +78,7 @@ chmod +x $SCRIPTS_DIR/*
 
 . $SCRIPTS_DIR/common_commit_initialization.sh
 
+install_python || exit 1
 install_pip
 
 mkdir $COMMON_REPO_DIR
