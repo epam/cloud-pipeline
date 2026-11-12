@@ -21,17 +21,13 @@ import React from 'react';
 export const SHOW_DOWNLOADS_LABEL = 'Show storage tasks';
 
 /**
- * The second half of a queued-task toast, shared by the archive-download and
- * archive-extraction handlers. `sentence` is their own first half.
+ * The second half of a queued-task toast, shared by the download and the
+ * extraction handler. Without a function it is a plain string; with one, the
+ * label becomes a link. Dismissing the toast it sits in is the caller's job.
  *
- * Without a function, the result is a plain string - what a caller with no
- * modal to open gets. With one, the same wording as a node, the label turned
- * into a link. Dismissing the toast the link sits in is the caller's job.
- *
- * @param {string} sentence
+ * @param {string} sentence their own first half
  * @param {function} [onShowDownloads]
- * @param {boolean} [plural] several tasks were queued, so the pronoun below
- *   is "their" rather than "its"
+ * @param {boolean} [plural] "their" rather than "its"
  * @returns {string|React.ReactNode}
  */
 export function queuedTaskMessage (sentence, onShowDownloads, plural = false) {
@@ -55,12 +51,8 @@ export function queuedTaskMessage (sentence, onShowDownloads, plural = false) {
 
 /**
  * Shows the queued toast, whose link dismisses that same toast before opening
- * the modal - so it does not sit over what the click just opened.
- *
- * The toast's `hide` only exists once `messageApi.info` has returned, while
- * the content handed to that call already needs it, hence the holder: it is
- * read at click time, long after the assignment below. A `hide` called after
- * the toast has timed out on its own is antd's `removeNotice`, a no-op.
+ * the modal. The toast's `hide` only exists once `info` has returned, hence
+ * the holder: it is read at click time. A late `hide` is a no-op.
  *
  * @param {*} messageApi
  * @param {string} sentence

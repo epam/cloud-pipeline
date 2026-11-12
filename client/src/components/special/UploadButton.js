@@ -90,10 +90,9 @@ class UploadButton extends React.Component {
   @observable s3StorageError;
   uploadButton;
 
-  // Which paths have been queued for extraction already. Per path, not per
-  // batch: completion is reached several times for one batch, and a retried
-  // archive that lands on a later pass still has to go out. Not state - it
-  // does not affect rendering. Reset in `hideUploadInfo`.
+  // Per path, not per batch: completion is reached several times for one batch,
+  // and a retried archive landing later still has to go out. Reset in
+  // `hideUploadInfo`.
   queuedExtractionPaths = new Set();
 
   unmounted = false;
@@ -185,13 +184,12 @@ class UploadButton extends React.Component {
   };
 
   /**
-   * Reached by both completion paths once every file in the batch is
-   * finished, and more than once per batch. Arms the 2 s close timer, and on
-   * an "Upload and extract" batch also queues whatever archive has newly
-   * landed - without waiting on it. The two decisions are independent.
+   * Reached by both completion paths once the batch is finished, and more than
+   * once per batch. Arms the 2 s close timer, and on an "Upload and extract"
+   * batch also queues whatever newly landed - without waiting on it.
    *
    * @param {boolean} [skipAutoClose=false] true while a file still offers a
-   *   retry; the modal must not auto-close then. Extraction is queued anyway.
+   *   retry. Extraction is queued anyway.
    */
   extractOrCloseDelayed = (skipAutoClose = false) => {
     const {extractAfterUpload, uploadingFiles} = this.state;
@@ -252,8 +250,7 @@ class UploadButton extends React.Component {
 
   /**
    * Pauses a batch that holds an archive, where extraction is offered: the
-   * modal opens in its confirmation state and `startUpload` waits for the
-   * user's choice. Otherwise `startUpload` runs at once.
+   * modal opens in its confirmation state and waits for the choice.
    *
    * @param {function} startUpload `startUploadToS3` or
    *   `onUploadStatusChangedSynchronous`
@@ -279,9 +276,8 @@ class UploadButton extends React.Component {
    * alert in the pop-up rather than a toast. Optimistic while in flight and on
    * failure: the server enforces the quota itself.
    */
-  // Polled, not checked once: the user can wait in the open pop-up for one of
-  // their tasks to finish and then press "Upload and extract". Stopped when
-  // the pop-up closes, so nothing polls in the background.
+  // Polled so the user can wait in the open pop-up for a task to finish.
+  // Stopped when the pop-up closes.
   startExtractionLimitPolling = () => {
     const {asyncTasks} = this.props;
     if (!asyncTasks || typeof asyncTasks.checkActiveTasksLimit !== 'function') {
@@ -828,13 +824,11 @@ class UploadButton extends React.Component {
   };
 
   /**
-   * One row renderer for both states, so the rows cannot drift apart in
-   * height. The progress line is always rendered and only hidden by
-   * `visibility` while `pending`, which reserves its height. Its fixed 22px
-   * tracks `Progress`'s own height at this `strokeWidth`.
+   * One row renderer for both states, so the rows cannot drift apart in height.
+   * The progress line is always rendered and only hidden by `visibility`, which
+   * reserves its height. Its fixed 22px tracks `Progress`'s own.
    *
-   * @param {object} file a `synchronousUploadingFiles` entry while `pending`,
-   *   an `uploadingFiles` entry once the upload has started
+   * @param {object} file a `synchronousUploadingFiles` or `uploadingFiles` entry
    * @param {boolean} pending the batch only lists the selection so far
    */
   renderFileRow = (file, pending) => {

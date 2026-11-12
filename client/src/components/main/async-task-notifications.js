@@ -41,10 +41,8 @@ let started = false;
 let teardown = () => {};
 
 function notify (task, messageApi, download) {
-  // Download tasks only. Both messages below are download-shaped - one offers
-  // a link that consumes the task, which throws for any other type - and an
-  // extraction is not watched in the first place (`startArchiveExtraction`
-  // skips `trackTask`). Checked here as well so that invariant is local.
+  // Download tasks only: both messages are download-shaped, and one offers a
+  // link that consumes the task, which throws for any other type.
   if (!taskIsDownloadArchive(task)) {
     return;
   }

@@ -417,9 +417,8 @@ class CurrentUserAsyncTasks {
    * failure of this request is not allowed to be the thing that stops a
    * legitimate download.
    *
-   * `remaining` is how many more tasks fit, for a caller queueing several at
-   * once. It is `undefined` wherever the check could not run, which is not the
-   * same as zero and must not be read as a refusal.
+   * `remaining` is how many more tasks fit, and is `undefined` where the check
+   * could not run - which is not zero and must not be read as a refusal.
    *
    * @returns {Promise<{allowed: boolean, reason: string|undefined,
    *   activeCount: number|undefined, limit: number|undefined,
@@ -493,16 +492,12 @@ class CurrentUserAsyncTasks {
 
   /**
    * One UNPACK_ARCHIVE task, for one archive: `sourcePath` is a single path
-   * server-side, so a batch of archives is a batch of tasks. The destination
-   * is the same storage and the folder the archive was uploaded into.
-   *
-   * Not passed to `trackTask`: that drives the completion notification, whose
-   * message offers a download link an extraction has no equivalent for.
+   * server-side. Not passed to `trackTask` - the completion notification offers
+   * a download link an extraction has no equivalent for.
    *
    * @param {string|number} storageId
    * @param {string} sourcePath the archive, with no trailing slash
-   * @param {string} destinationPath the folder to extract into; `''` is the
-   *   storage root
+   * @param {string} destinationPath the folder to extract into; `''` is the root
    * @returns {Promise<*>}
    */
   async startArchiveExtraction (storageId, sourcePath, destinationPath) {
@@ -517,10 +512,8 @@ class CurrentUserAsyncTasks {
       sourcePath,
       destinationStorageId: storageId,
       destinationPath: destinationPath || '',
-      // `overwrite` because the alternative is all-or-nothing: one collision
-      // refuses the whole task. `deleteSourceOnSuccess` because the user asked
-      // for the contents, not the archive; it runs last, so a failure leaves
-      // the archive in place.
+      // `overwrite` avoids the all-or-nothing refusal on a collision. The archive
+      // goes because the user wanted its contents; the server deletes it last.
       overwrite: true,
       deleteSourceOnSuccess: true
     });

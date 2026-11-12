@@ -42,10 +42,8 @@ export const ARCHIVE_EXTENSIONS = [
 ];
 
 /**
- * A case-insensitive suffix test. A bare suffix (`.zip`, `.tar.gz`) is not an
- * archive, and is ruled out before the scan rather than by a length check:
- * `.tar.gz` also ends in the shorter `.gz`, so it is longer than a suffix it
- * matches.
+ * A case-insensitive suffix test. A bare suffix is not an archive, ruled out
+ * before the scan: `.tar.gz` is longer than the `.gz` it also ends with.
  *
  * @param {string} name
  * @returns {boolean}
@@ -70,8 +68,8 @@ export function hasArchives (files) {
 }
 
 /**
- * How many archives are in the selection - one task each, so this is what the
- * batch costs against the user's archive-task allowance.
+ * One task per archive, so this is what a batch costs against the user's
+ * archive-task allowance.
  *
  * @param {{name: string}[]} files
  * @returns {number}
@@ -122,12 +120,9 @@ function baseNameOf (fileName) {
 }
 
 /**
- * Where an archive's contents go: a folder beside it, named after the archive
- * itself - `data/files/a.tar.gz` extracts into `data/files/a/`.
- *
- * Falls back to the archive's own folder for a name that would not be a legal
- * folder - the server rejects a `.` or `..` segment outright
- * (`AsyncTaskParamsValidator.assertSafePath`).
+ * A folder beside the archive, named after it: `a/b.tar.gz` gives `a/b/`. A
+ * name that would not be a legal folder keeps the archive's own folder, since
+ * `assertSafePath` rejects a `.` or `..` segment.
  *
  * @param {string} archivePath
  * @returns {string} always ends with `/`, or is `''` for the storage root
@@ -153,20 +148,14 @@ export function extractionFolderOf (archivePath) {
  */
 
 /**
- * Queues one UNPACK_ARCHIVE task per archive and reports the outcome in one
- * toast. Sequential and stopping at the first failure, because the per-user
- * cap (`AsyncTaskApiService.assertUserQuota`) is counted per task and shared
- * with archive downloads: a batch can run out of allowance part-way, and
- * carrying on would only collect the same error N times.
- *
- * The error is reported and not re-thrown: the caller (`UploadButton`) fires
- * this and moves on, so nobody would catch it.
+ * Queues one UNPACK_ARCHIVE task per archive, reported in one toast. Stops at
+ * the first failure, since the cap is counted per task. The error is reported,
+ * not re-thrown - the caller does not await this.
  *
  * @param {{startArchiveExtraction: function}} asyncTasks
  * @param {string|number} storageId
  * @param {string[]} paths the archives, each with no trailing slash
- * @param {*} [messageApi] antd's `message` by default; a parameter so this is
- *   testable without module mocking
+ * @param {*} [messageApi] antd's `message` by default, so this is testable
  * @param {function} [onShowDownloads] opens the Storage tasks modal. With
  *   none, the queued toast is a plain string rather than a link.
  * @returns {Promise<ExtractionOutcome>}

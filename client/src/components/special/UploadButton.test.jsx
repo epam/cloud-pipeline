@@ -54,11 +54,9 @@ async function selectFiles (input, files) {
   await Promise.resolve();
 }
 
-// antd's Modal portals to `document.body`, outside the container `render()`
-// tracks, and detaches on unmount only when `visible` is already `false` -
-// otherwise through `afterClose`, which never fires in jsdom. So each test
-// forces the flag closed through the instance `onInitialized` hands back,
-// or its portal is left behind for the next test to collide with.
+// antd's Modal portals to `document.body` and detaches on unmount only when
+// `visible` is already false. So each test forces that flag closed through the
+// instance `onInitialized` hands back, or leaves its portal for the next one.
 let instance;
 
 // Stands in for the CurrentUserAsyncTasks store the component is given: one
@@ -126,10 +124,8 @@ describe('UploadButton - the paused confirmation modal', () => {
     }
   );
 
-  // Both halves are required: the capability prop AND the store. Without the
-  // store there is nothing to queue with, so the pop-up must not be offered -
-  // otherwise the files upload and nothing reports the extraction that never
-  // happened.
+  // Both halves are required: without the store there is nothing to queue with,
+  // so offering the choice would upload and then report nothing.
   test('a selection with an archive but no asyncTasks store shows no such footer', async () => {
     useFakeTimers();
     const {input} = renderUploadButton({
@@ -225,20 +221,17 @@ describe('UploadButton - the paused confirmation modal', () => {
 });
 
 // Every upload in the first test below fails - no server behind jsdom's XHR -
-// which is the "nothing to extract" branch. It needs real timers to wait out
-// the component's 2 s grace period. The successful-extraction branch and the
-// idempotency guard are in the next block, over an upload that succeeds.
+// which is the "nothing to extract" branch, and needs real timers to wait out
+// the 2 s grace period.
 describe('UploadButton - extraction after upload', () => {
   afterEach(() => {
     if (instance) {
       instance.setState({uploadInfoVisible: false, pendingConfirmation: false});
       instance = null;
     }
-    // Restored here rather than as the last statement of the one test that
-    // needs fake timers: an assertion failing earlier in that test would
-    // otherwise skip the real `useRealTimers()` call it has today, and fake
-    // timers would leak into the next describe block, whose `waitFor(...,
-    // {timeout: 5000})` would then hang on a timer that never advances.
+    // Here, not at the end of the one test that needs fake timers: a failing
+    // assertion there would leak them into the next block, whose `waitFor` would
+    // hang on a timer that never advances.
     useRealTimers();
   });
 
@@ -247,10 +240,7 @@ describe('UploadButton - extraction after upload', () => {
     'and closes the modal the ordinary way',
     async () => {
       const onRefresh = fn();
-      // Passed only to assert it is never called - the upload below never
-      // succeeds, so `uploadedArchivePaths` has nothing to report and
-      // `extractOrCloseDelayed`'s `newPaths.length > 0` check is never true.
-      // This is the only place in the suite that reaches that early return.
+      // Never called: the upload never succeeds, so there is nothing to queue.
       const startArchiveExtraction = fn();
       const {input} = renderUploadButton({
         extractArchivesAvailable: true,
@@ -307,9 +297,8 @@ describe('UploadButton - extraction after upload', () => {
   );
 });
 
-// Extraction only runs over files that uploaded, so the tests below need an
-// upload that succeeds. This stubs `XMLHttpRequest` on `window` to answer
-// every request with `{status: 'OK'}` - a global the browser provides, not a
+// Extraction only runs over files that uploaded, so these need an upload that
+// succeeds. Stubbing `XMLHttpRequest` on `window` is a browser global, not a
 // module under `src/`, so it is not a module mock.
 class SucceedingXMLHttpRequest {
   constructor () {
@@ -341,10 +330,8 @@ describe('UploadButton - queueing the extraction', () => {
 
   afterEach(() => {
     window.XMLHttpRequest = OriginalXMLHttpRequest;
-    // Extraction toasts through antd's global `message`, attached to
-    // `document.body` outside what `render()` tracks. A test whose
-    // `startArchiveExtraction` never settles never calls the loading toast's own
-    // `hide`, so it would be left in the document. `destroy` is antd's API.
+    // Extraction toasts through antd's global `message`, outside what `render()`
+    // tracks. A check that never settles never calls the loading toast's `hide`.
     message.destroy();
     if (instance) {
       instance.setState({uploadInfoVisible: false, pendingConfirmation: false});
@@ -392,12 +379,8 @@ describe('UploadButton - queueing the extraction', () => {
     'an extraction that never settles still lets the modal close and call ' +
     'onRefresh',
     async () => {
-      // The resolved-extraction test above injects an already-settled
-      // promise, so it would still pass even if `extractOrCloseDelayed`
-      // regressed back into `await`-ing the call before arming the close
-      // timer - an extraction this slow would just make that test slow, not
-      // fail it. A promise that never settles at all is the only way to
-      // pin "the modal does not wait on this call".
+      // A promise that never settles is the only way to pin "the modal does not
+      // wait on this call" - an already-settled one would pass either way.
       const startArchiveExtraction = fn(() => new Promise(() => {}));
       const onRefresh = fn();
       const {input} = renderUploadButton({
@@ -430,11 +413,8 @@ describe('UploadButton - queueing the extraction', () => {
   test(
     'a rejected extraction still closes the modal and does not leave it stuck',
     async () => {
-      // Mirrors the never-settling test above for the other outcome a real
-      // extraction call can have: before this phase, a rejection left the
-      // modal open waiting on a manual close (see this file's own history).
-      // Now extraction's outcome does not change what the modal does either
-      // way - it still closes on its own, on the same timer.
+      // The other outcome: a rejection used to leave the modal open. It now closes
+      // on its own timer either way.
       const startArchiveExtraction = fn(() => Promise.reject(new Error('extraction failed')));
       const onRefresh = fn();
       const {input} = renderUploadButton({
@@ -467,15 +447,9 @@ describe('UploadButton - queueing the extraction', () => {
   test(
     'the idempotency guard: a two-archive S3-style batch queues each archive once',
     async () => {
-      // Driven directly through the instance rather than a real upload: the
-      // S3 path's own completion method (`uploadItemToStorageSDK`'s
-      // onDone/onError/abort callbacks) calls `hideUploadInfoDelayedIfDone`
-      // once per finished file, which is the scenario this guard exists
-      // for - but reaching it through a genuine S3 upload would need real
-      // AWS credentials and a network call the unit suite's network guard
-      // blocks, which reads as a hack rather than a stub. Calling the same
-      // method the real path calls, with the state a finished two-archive
-      // batch would carry, reaches the same guard honestly.
+      // Driven through the instance: the S3 path calls this once per finished file,
+      // and reaching that through a real upload would need AWS credentials and a
+      // network call the unit suite blocks.
       // Settles, unlike the never-settling doubles above: the two archives are
       // queued one after another, so a pending first call would stall the second.
       const startArchiveExtraction = fn(() => Promise.resolve({id: 'task-1'}));
@@ -515,10 +489,8 @@ describe('UploadButton - queueing the extraction', () => {
     'a retryable failure in the batch still extracts the archive that landed, ' +
     'without arming the auto-close timer',
     async () => {
-      // Driven through the instance for the same reason the idempotency
-      // test above is: this is the S3 path's own completion state (one
-      // archive done, one file done-but-retryable), reached honestly by
-      // calling the same method `uploadItemToStorageSDK`'s callbacks call.
+      // Through the instance, as above: this is the S3 path's completion state with
+      // one archive done and one file done-but-retryable.
       const startArchiveExtraction = fn(() => Promise.resolve());
       const onRefresh = fn();
       renderUploadButton({
@@ -560,10 +532,8 @@ describe('UploadButton - queueing the extraction', () => {
       expect(startArchiveExtraction)
         .toHaveBeenCalledWith('storage-1', 'folder/one.zip', 'folder/one/');
 
-      // A batch with a retryable failure never auto-closed before
-      // extraction existed, and that must still hold: if a close timer had
-      // been armed anyway, it would have fired well within this real delay
-      // and called `onRefresh`.
+      // A retryable failure never auto-closed, and must not now: an armed timer
+      // would have fired well within this real delay.
       await new Promise((resolve) => setTimeout(resolve, 2200));
       expect(onRefresh).not.toHaveBeenCalled();
     },
@@ -574,18 +544,9 @@ describe('UploadButton - queueing the extraction', () => {
     'a retry that newly lands an archive queues exactly that archive and ' +
     'arms the close; a second completion with nothing new queues nothing',
     async () => {
-      // A batch-wide "extraction already started" boolean got the first
-      // completion below half right - it queues what already landed - and
-      // then swallows every later one entirely, because the flag it set
-      // the first time never lets a later call past its own guard: a
-      // second completion would neither queue the archive that only landed
-      // on retry, nor arm the close timer, leaving the modal open forever.
-      // Reaching that requires two archives, one that lands on the first
-      // completion and one that only lands on a later one - a single
-      // archive that fails then retries (as the "retryable failure" test
-      // above does) never sets that boolean in the first place, so it does
-      // not exercise this guard. Driven through the instance for the same
-      // reason the tests above are.
+      // A batch-wide "already started" flag would queue the first completion and
+      // swallow every later one, leaving the modal open forever. Needs two
+      // archives, one landing on a later completion than the other.
       const startArchiveExtraction = fn(() => Promise.resolve());
       const onRefresh = fn();
       renderUploadButton({
@@ -683,11 +644,8 @@ describe('UploadButton - queueing the extraction', () => {
         expect(screen.getByRole('button', {name: 'Upload'})).toBeInTheDocument();
       });
 
-      // The "Upload" button, not "Upload and extract" - exactly what the
-      // earlier "clicking Upload replaces the three buttons with the
-      // progress state" test clicks, but that test would still pass if
-      // `confirmUpload(false)` wrongly set `extractAfterUpload: true`. This
-      // one would not: it waits the batch out to a real close and checks
+      // The earlier "clicking Upload" test would pass even if `confirmUpload(false)`
+      // wrongly set `extractAfterUpload`. This one waits the batch out and checks
       // nothing was queued.
       await click(screen.getByRole('button', {name: 'Upload'}));
 
@@ -748,8 +706,8 @@ describe('UploadButton - the archive-task cap in the confirmation pop-up', () =>
     expect(screen.queryByText(AT_THE_CAP)).not.toBeInTheDocument();
   });
 
-  // One task per archive, so a selection can cost more than the allowance has
-  // left - said up front rather than left to two toasts afterwards.
+  // One task per archive, so a selection can cost more than is left - said up
+  // front rather than in two toasts afterwards.
   test('fewer slots than archives warns up front, and still allows the batch', async () => {
     useFakeTimers();
     const {input} = renderUploadButton({
@@ -832,8 +790,7 @@ describe('UploadButton - the archive-task cap in the confirmation pop-up', () =>
     expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
   });
 
-  // The point of polling: the user waits in the open pop-up for one of their
-  // tasks to finish, and the button becomes usable without re-picking files.
+  // The point of polling: the button becomes usable without re-picking files.
   test('the check is polled, so the button unblocks once a slot frees up', async () => {
     let atTheCap = true;
     const checkActiveTasksLimit = fn(() => Promise.resolve(
