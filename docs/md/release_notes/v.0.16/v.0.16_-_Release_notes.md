@@ -44,6 +44,7 @@
 - [Rocky Linux 9.8 for the platform services](#rocky-linux-98-for-the-platform-services)
 - [Python 3.12 for EDGE, WebDAV, FS Browser and the node reporter](#python-312-for-edge-webdav-fs-browser-and-the-node-reporter)
 - [Python 3.12 in the node images](#python-312-in-the-node-images)
+- [A new or changed certificate that expires soon is reported within a minute](#a-new-or-changed-certificate-that-expires-soon-is-reported-within-a-minute)
 
 ***
 
@@ -885,6 +886,19 @@ Now, these scripts no longer install Python 2 or its `pip`:
 The Python 2 that the base image has stays. On Amazon Linux 2, `yum`, `cloud-init` and the AWS CLI v1 run on it, and the install script calls this AWS CLI to tag the instance when it is done. On CentOS 7, `yum` and the Azure VM agent run on it.
 
 Please note: only the images that are built anew change.
+
+## A new or changed certificate that expires soon is reported within a minute
+
+The VM monitor (`cp-vm-monitor`) emails the admins about the platform's certificates that expire soon ("Certificate expires soon"). Previously, it checked the certificate files only once a day (at 00:00 by default, **`CP_VM_MONITOR_PKI_MONITORING_CRON`**). So a certificate that was added close to its expiration was reported up to a day later.
+
+In the current version, the VM monitor also checks every minute for the certificate files that are new or changed since its last scan, and reports them at once if they expire soon. It checks only those files, so the other certificates that expire soon are not reported every minute: they are still reported once a day.
+
+**`CP_VM_MONITOR_PKI_CHANGES_ENABLE`** in the `cp-config-global` config map turns this check off (`false`), and **`CP_VM_MONITOR_PKI_CHANGES_CRON`** sets its schedule (every minute by default). The VM monitor reads them when it starts. The `vm-monitor/README.md` file of the repository describes the certificate checks and their log lines.
+
+Please note:
+
+- the VM monitor scans nothing when it starts. Its first check after a start only records the files it finds, so a restart sends no emails. A certificate that was added while the VM monitor was not running is reported by the next daily scan
+- a file that has a certificate file name but is not a certificate, e.g. a private key in a `.pem` file, logs an error (`Error generating certificate from <file>`) each time it changes, as it does at each daily scan
 
 ***
 
