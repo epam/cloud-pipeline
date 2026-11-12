@@ -95,6 +95,7 @@
     - [`pipe storage cp` and `mv` fail with a file list on Windows and macOS](#pipe-storage-cp-and-mv-fail-with-a-file-list-on-windows-and-macos)
     - [The pipeline repository is not mounted in a run when `python` is not the Python of the platform](#the-pipeline-repository-is-not-mounted-in-a-run-when-python-is-not-the-python-of-the-platform)
     - [`pipe storage mount`: WebDAV mounts and extended attributes fail in the Windows and macOS builds](#pipe-storage-mount-webdav-mounts-and-extended-attributes-fail-in-the-windows-and-macos-builds)
+    - [System logs: no security event is stored once the `security_log` alias has no write index](#system-logs-no-security-event-is-stored-once-the-security_log-alias-has-no-write-index)
 
 ***
 
@@ -1241,3 +1242,17 @@ Previously, the Windows and macOS builds of the `pipe` CLI, which run on Python 
 
 In the Linux build, extended attributes with non-ASCII characters in their values failed in the same way.
 Now, the files in a storage mounted over WebDAV can be listed, created, written and truncated in the Python 3 builds too, and the extended attribute values are kept in the storage as UTF-8 text, in all builds.
+### System logs: no security event is stored once the `security_log` alias has no write index
+
+Previously, the search ELK service (`cp-search-elk`), which keeps the security events of the **System logs** in daily indices behind the `security_log` alias (`CP_SECURITY_LOGS_ELASTIC_PREFIX`), only checked on start that something of that name existed. Its former versions added a new index to that alias on each start. Once the alias pointed to two indices and none of them was the write index, every write of a security event and every daily rollover failed, so no security event was stored, and a restart did not repair it. Also, a security event written before the service had created the alias (e.g. by the API while the search ELK service started) created a plain `security_log` index instead. That index was never rolled over, so the cleanup deleted it with all its events once it was older than `CP_SECURITY_LOGS_ROLLOVER_DAYS` days, and the **System logs** did not show its events.
+Now, on each start, the search ELK service checks the alias:
+
+- if neither the alias nor an index of that name exists, it creates the first index as the write index of the alias
+- if the alias has no write index, its newest index becomes the write index, and its daily rollover is resumed. The other indices stay in the alias with their events, and are deleted after `CP_SECURITY_LOGS_ROLLOVER_DAYS` days, as before
+- if the alias has a single index, with no write index flag, that index becomes its explicit write index
+- if `security_log` is a plain index, its events are moved to a new index of the alias, and the plain index is deleted. The writes are blocked during the move, so the security events sent at that time are lost. If the move fails, e.g. if a field of the plain index has another type, the plain index is kept as it is, and the service logs an `[ERROR]` line
+
+Please note:
+
+- the security events that failed to be stored while the alias had no write index are not recovered
+- the moved events of a plain index are kept in the index of the day of the move. So the **System logs** show them only if the period of the filter reaches that day
