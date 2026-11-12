@@ -783,12 +783,18 @@ function get_install_command_by_current_distr {
       for _TOOL_TO_CHECK in $_TOOLS_TO_INSTALL; do
             check_package_installed "$_TOOL_TO_CHECK"
             if [ $? -ne 0 ]; then
-                  # Rocky Linux and RHEL images may have coreutils-single instead of coreutils: it has the same
-                  # commands, and yum fails to install coreutils next to it. Checked with rpm itself, as
-                  # CP_IGNORE_INSTALLED_PACKAGES does not make coreutils installable next to it
+                  # The RPM-based images (e.g. Rocky Linux, RHEL, Amazon Linux 2023) may have coreutils-single instead
+                  # of coreutils, and curl-minimal instead of curl. Each has the commands of the full package, and yum
+                  # fails the whole install if the full package is asked for next to it. Checked with rpm itself, as
+                  # CP_IGNORE_INSTALLED_PACKAGES does not make the full package installable next to it
                   if [ "$_TOOL_TO_CHECK" == "coreutils" ] && \
-                     { [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; } && \
                      check_installed "rpm" && rpm -q coreutils-single &> /dev/null; then
+                        echo "[INFO] coreutils is not installed: the image has coreutils-single, which has the same commands" >&2
+                        continue
+                  fi
+                  if [ "$_TOOL_TO_CHECK" == "curl" ] && \
+                     check_installed "rpm" && rpm -q curl-minimal &> /dev/null; then
+                        echo "[INFO] curl is not installed: the image has curl-minimal, its curl supports file, ftp(s) and http(s) only" >&2
                         continue
                   fi
                   _TOOLS_TO_INSTALL_VERIFIED="$_TOOLS_TO_INSTALL_VERIFIED $_TOOL_TO_CHECK"

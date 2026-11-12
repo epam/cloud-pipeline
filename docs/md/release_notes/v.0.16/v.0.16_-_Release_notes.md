@@ -104,6 +104,9 @@
     - [System logs: no security event is stored once the `security_log` alias has no write index](#system-logs-no-security-event-is-stored-once-the-security_log-alias-has-no-write-index)
     - [GUI: library versions with security advisories](#gui-library-versions-with-security-advisories)
     - [GUI: the AWS HealthOmics library brings an XML parser with security advisories](#gui-the-aws-healthomics-library-brings-an-xml-parser-with-security-advisories)
+    - [GUI build: the `sass` version is not pinned](#gui-build-the-sass-version-is-not-pinned)
+    - [Rocky Linux 9, RHEL 9 and Amazon Linux 2023 runs: `curl-minimal` and `coreutils-single` stop the base packages install](#rocky-linux-9-rhel-9-and-amazon-linux-2023-runs-curl-minimal-and-coreutils-single-stop-the-base-packages-install)
+    - [Filebeat of the API and TinyProxy services loads its own index template](#filebeat-of-the-api-and-tinyproxy-services-loads-its-own-index-template)
 
 ***
 
@@ -1362,3 +1365,15 @@ Previously, the GUI used `@aws-sdk/client-omics` 3.565.0 to upload files to the 
 Now, the GUI uses `@aws-sdk/client-omics` 3.974.0, and its dependencies have no `fast-xml-parser`. At the time of this change, `npm audit` reports no advisories for `@aws-sdk/client-omics` and its dependencies. Before, it reported 9: 7 for `fast-xml-parser`, 1 for `uuid` and 1 for `@smithy/config-resolver`. For the upload and the download of the HealthOmics files, the GUI sends the same requests as before.
 `client/package.json` also pins the 59 AWS SDK packages that `@aws-sdk/client-omics` depends on (`@aws-sdk/*`, `@smithy/*`, `@aws-crypto/*` and `@aws/*`) to exact versions. The GUI has no lockfile on this line, and npm 6 has no `overrides`. Without these pins, each build would get the latest versions that the version ranges of these packages allow, i.e. packages that were not tested with the GUI. So a change of the `@aws-sdk/client-omics` version must update these pins together.
 The GUI is built with `npm run build` on Node.js 14, as before. Most of the new AWS SDK packages declare Node.js 16 or later, so `npm install` warns about them. This does not apply to the GUI, which runs these packages in the browser.
+### GUI build: the `sass` version is not pinned
+
+Previously, the GUI asked for `sass` `^1.59.2`. The GUI has no lock file, so each build took the newest `sass` 1.x. At the time of this change, it is 1.108.2. It requires Node.js 20.19 or later, and brings `chokidar` 5, which is an ES module only. The GUI is built on Node.js 14, so a later `sass` 1.x could break the build.
+Now, `sass` is pinned to 1.99.0, the latest version that supports Node.js 14. It brings `chokidar` 4, which supports Node.js 14 too. The built GUI is the same: the build gives the same files as with `sass` 1.108.2.
+### Rocky Linux 9, RHEL 9 and Amazon Linux 2023 runs: `curl-minimal` and `coreutils-single` stop the base packages install
+
+Previously, at the start of a run, the launch script installed the base packages that the image did not have (`git`, `curl`, `wget`, `fuse`, `tzdata`, `acl` and `coreutils`) with one `yum` call. The images of Rocky Linux 9, Red Hat UBI 9 and Amazon Linux 2023 have the `curl-minimal` package instead of `curl`. `yum` cannot install `curl` next to it, so the whole call failed, and the run did not get `git`, `wget` and `fuse` either. On Amazon Linux 2023, the call also failed on `coreutils`, as the image has `coreutils-single`: the launch script skipped `coreutils` next to `coreutils-single` on Rocky Linux and RHEL only.
+Now, on any RPM-based image, `curl` is not installed if the image has `curl-minimal`, and `coreutils` is not installed if the image has `coreutils-single`. This applies to `curl` and `coreutils` in `CP_CAP_EXTRA_PKG` and `CP_CAP_EXTRA_PKG_RHEL` too, and with `CP_IGNORE_INSTALLED_PACKAGES`. The run log gets an `[INFO]` line for each package that is skipped. The launch script does not replace `curl-minimal`, and its `curl` supports the `file`, `ftp(s)` and `http(s)` protocols only. A tool that needs another protocol, e.g. `sftp`, `scp` or `ldap`, needs an image with the full `curl`.
+### Filebeat of the API and TinyProxy services loads its own index template
+
+Previously, the Filebeat configs of the API service (`cp-api-srv`) and of the TinyProxy service (`cp-tinyproxy`) had a misspelled `setup.tempalte.enabled: false` setting. Filebeat ignored it. So, on start, it loaded its own index template `security_log_template`, for the `security_log*` indices, if the search cluster did not have this template yet: e.g. on a new cluster, before the search service put the platform's templates. A `security_log` index created before the search service replaced that template got the Filebeat field mappings.
+Now, the setting is spelled `setup.template.enabled`, as in the Filebeat configs of the EDGE service, and Filebeat does not load a template. The security logs go to the `security_log` index as before.
