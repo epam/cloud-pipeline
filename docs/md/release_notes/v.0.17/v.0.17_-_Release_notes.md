@@ -70,6 +70,7 @@
 - [Default version of a tool](#default-version-of-a-tool)
 - [NICE DCV desktop: no wallpaper, a keyboard layout switcher, Ubuntu 24.04](#nice-dcv-desktop-no-wallpaper-a-keyboard-layout-switcher-ubuntu-2404)
 - [Retries of a failed scratch Lustre file system](#retries-of-a-failed-scratch-lustre-file-system)
+- [OIDC token exchange](#oidc-token-exchange)
 
 ***
 
@@ -2057,6 +2058,31 @@ Now, the master run deletes a `FAILED` file system, waits until it is gone, and 
 The workers of the cluster do not create the file system. Previously, a worker failed at once only if the first answer of the API was `FAILED`. If the file system was being deleted, or turned `FAILED` later, the worker waited for 20 minutes and then tried to mount it. Now, a worker fails at once in all these cases.
 
 Please note: the workers wait for the master's `InitializeSharedFS` task for about 20 minutes (`CP_CLUSTER_WAIT_FOR_NODE_ATTEMPTS`, `120` checks, 10 seconds apart). One attempt of the master can take up to `CP_CAP_LUSTRE_WAIT_ATTEMPTS` × 5 seconds (20 minutes by default), plus the deletion wait and the pause. So if the master retries, its workers may fail with "Failed to attach to master node" before the file system is ready.
+
+***
+
+## OIDC token exchange
+
+An application that calls the Cloud Pipeline API for its signed-in users previously needed a Cloud Pipeline token issued from the platform side - in practice a long-lived one, copied into the application's configuration, and often a single token shared by all of its users. The API could then not tell which user was really acting.
+
+In **`v0.17`**, such an application can trade a user's own access token, issued by the corporate identity provider, for a short-lived Cloud Pipeline token for that same user, as [RFC 8693](https://www.rfc-editor.org/rfc/rfc8693) describes:
+
+```
+POST /restapi/oauth/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=urn:ietf:params:oauth:grant-type:token-exchange
+subject_token=<the user's access token>
+subject_token_type=urn:ietf:params:oauth:token-type:access_token
+```
+
+So the application stores no static token from Cloud Pipeline, every call is made and audited as the real user with that user's own permissions, and blocking a user takes effect within one token lifetime. The issued token is an ordinary platform token, which the API, the edge and `pipe` accept as any other.
+
+The administrator configures the trusted identity providers in the **`system.oidc.token.exchange.issuers`** preference. Each provider holds a list of **clients** - the callers trusted under it, because one provider issues tokens for many callers: every repository on github.com shares one issuer, as does every application in an Entra ID tenant. A client is identified by conditions on the token's claims, and says which user it may act as: a user named by a claim of the token, or a fixed service account for a CI job. A client can also narrow the authorities its tokens carry, so an application can be given read-only access to the API on behalf of users who have more.
+
+The exchange never creates a user: the user has to exist in Cloud Pipeline already, and the usual blocking checks apply. The issued token lives no longer than the provider's token it came from, so ending a user's session at the provider ends their Cloud Pipeline access, and it cannot be traded for a longer-lived one unless the client is configured to allow it.
+
+For more details see [here](../../manual/12_Manage_Settings/12.16._OIDC_token_exchange.md).
 
 ***
 
