@@ -22,7 +22,7 @@ observe, and whether an archive was left in the bucket.
 import zipfile
 
 from sats.datastorage_providers.s3 import archive_key
-from sats.config import StorageDownloadArchiveConfig, ServiceConfig
+from sats.config import StorageDownloadArchiveTaskConfig, ServiceConfig
 from sats.model import ArchiveTask, Storage, StorageType, TaskStatus
 from sats.worker.archive_preparation_worker import ArchivePreparationWorker
 
@@ -46,7 +46,7 @@ def _service_config(tmp_path, status_poll_seconds=0):
 
 
 def _archive_config(max_files=None, max_size=None, worker_minutes=10, prefix='archives/', storage=9):
-    return StorageDownloadArchiveConfig(
+    return StorageDownloadArchiveTaskConfig(
         destination_storage_id=storage,
         destination_prefix=prefix,
         max_size_bytes=max_size,

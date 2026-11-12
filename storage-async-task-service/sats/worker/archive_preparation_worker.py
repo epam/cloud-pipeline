@@ -49,7 +49,7 @@ from pathlib import Path
 from ..api import CloudPipelineApi
 from ..datastorage_providers.s3 import ArchiveBucket, absolute_key, archive_key
 from ..cloud.aws import build_s3_client
-from ..config import ServiceConfig, StorageDownloadArchiveConfig
+from ..config import ServiceConfig, StorageDownloadArchiveTaskConfig
 from ..util.errors import ApiError, ApiRejected, CredentialsUnavailable, InvalidTask, StopReason, \
     StopRequested, ThresholdExceeded, UnsupportedSource
 from ..util.log import get_logger
@@ -86,7 +86,7 @@ class ArchivePreparationWorker(AsyncTaskWorker):
     TASK_TYPE = AsyncTaskType.DOWNLOAD_ARCHIVE
 
     def __init__(self, api: CloudPipelineApi, service_config: ServiceConfig,
-                 archive_config: StorageDownloadArchiveConfig, task: ArchiveTask,
+                 archive_config: StorageDownloadArchiveTaskConfig, task: ArchiveTask,
                  bucket: ArchiveBucket | None = None):
         self._api = api
         self._config = service_config

@@ -43,7 +43,7 @@ from collections.abc import Callable
 from ..api import CloudPipelineApi
 from ..datastorage_providers.s3 import ArchiveBucket, absolute_key, archive_key
 from ..cloud.aws import build_s3_client
-from ..config import ServiceConfig, StorageDownloadArchiveConfig
+from ..config import ServiceConfig, StorageDownloadArchiveTaskConfig
 from ..util.errors import ApiError, ApiRejected
 from ..util.log import get_logger
 from ..model import ArchiveTask, AsyncTaskType, Storage, TaskStatus, utc_now
@@ -78,7 +78,7 @@ class Cleaner:
         self._storages: dict[int, Storage] = {}
         self._buckets: dict[int, ArchiveBucket] = {}
 
-    def cleanup(self, archive_config: StorageDownloadArchiveConfig, active_ids: set[str]) -> None:
+    def cleanup(self, archive_config: StorageDownloadArchiveTaskConfig, active_ids: set[str]) -> None:
         """
         One pass of all four cleanups.
 
@@ -101,7 +101,7 @@ class Cleaner:
 
     # ------------------------------------------------------------------ cleanup 1
 
-    def _finish_unconfirmed_cancellations(self, archive_config: StorageDownloadArchiveConfig) -> None:
+    def _finish_unconfirmed_cancellations(self, archive_config: StorageDownloadArchiveTaskConfig) -> None:
         """
         Finishes a cancellation whose worker never came back.
 
@@ -126,7 +126,7 @@ class Cleaner:
 
     # ------------------------------------------------------------------ cleanup 2
 
-    def _fail_stuck_tasks(self, archive_config: StorageDownloadArchiveConfig) -> None:
+    def _fail_stuck_tasks(self, archive_config: StorageDownloadArchiveTaskConfig) -> None:
         """
         Fails a task whose status has not changed for longer than `stuckTasksThresholdMinutes`.
 
@@ -134,7 +134,7 @@ class Cleaner:
         status change: a worker deleting a large archive after announcing `STOPPING` is not stuck.
 
         This is why the threshold must exceed `workerMaxRunningMinutes` by a margin - see
-        `StorageDownloadArchiveConfig.warnings`.
+        `StorageDownloadArchiveTaskConfig.warnings`.
 
         The transition is reported before the archive is deleted. A worker that was only slow may
         report `SUCCESS` meanwhile; then the `FAILED` move is refused and the user keeps a working
@@ -158,7 +158,7 @@ class Cleaner:
 
     # ------------------------------------------------------------------ cleanup 3
 
-    def _expire_finished_tasks(self, archive_config: StorageDownloadArchiveConfig) -> None:
+    def _expire_finished_tasks(self, archive_config: StorageDownloadArchiveTaskConfig) -> None:
         """
         Deletes archives older than `ttlDays` and marks their tasks `EXPIRED`.
 
@@ -248,7 +248,7 @@ class Cleaner:
         return self._buckets[storage.id]
 
     @staticmethod
-    def _stuck_before(archive_config: StorageDownloadArchiveConfig) -> datetime.datetime:
+    def _stuck_before(archive_config: StorageDownloadArchiveTaskConfig) -> datetime.datetime:
         """The moment a status change has to predate for its task to count as stuck."""
         return utc_now() - datetime.timedelta(minutes=archive_config.stuck_tasks_threshold_minutes)
 
@@ -272,7 +272,7 @@ class Cleaner:
                         error)
             return False
 
-    def _delete_archive(self, archive_config: StorageDownloadArchiveConfig, task: ArchiveTask,
+    def _delete_archive(self, archive_config: StorageDownloadArchiveTaskConfig, task: ArchiveTask,
                         uploaded: bool = False) -> bool:
         """
         Deletes the archive of a task, if it has one. Returns whether the bucket is now clean.

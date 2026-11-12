@@ -17,7 +17,7 @@
 import {stubApi} from '@test';
 import preferences, {
   DEFAULT_NODE_UP_RETRY_COUNT,
-  DEFAULT_STORAGE_ARCHIVE_MAX_USER_TASKS
+  DEFAULT_ASYNC_TASKS_MAX_USER_TASKS
 } from './PreferencesLoad';
 
 describe('allowNodeUpRetryCount', () => {
@@ -76,14 +76,14 @@ describe('defaultNodeUpRetryCount', () => {
   });
 });
 
-describe('storageArchiveConfig', () => {
+describe('asyncTasksConfig', () => {
   it('falls back to the default maxUserTasks when the preference is absent', async () => {
     stubApi({'/preferences': []});
     preferences.invalidateCache();
     await preferences.fetch();
 
-    expect(preferences.storageArchiveConfig).toEqual({
-      maxUserTasks: DEFAULT_STORAGE_ARCHIVE_MAX_USER_TASKS
+    expect(preferences.asyncTasksConfig).toEqual({
+      maxUserTasks: DEFAULT_ASYNC_TASKS_MAX_USER_TASKS
     });
   });
 
@@ -93,12 +93,12 @@ describe('storageArchiveConfig', () => {
     stubApi({
       '/preferences': [
         {
-          name: 'storage.archive.config',
+          name: 'system.async.tasks.config',
           value: JSON.stringify({
             maxUserTasks: 7,
             tasks: {
-              download: {ttlDays: 7},
-              unpack: {maxFilesCount: 100}
+              storageDownloadAsArchive: {ttlDays: 7},
+              storageUnpackArchive: {maxFilesCount: 100}
             }
           })
         }
@@ -107,10 +107,10 @@ describe('storageArchiveConfig', () => {
     preferences.invalidateCache();
     await preferences.fetch();
 
-    expect(preferences.storageArchiveConfig.maxUserTasks).toBe(7);
-    expect(preferences.storageArchiveConfig.tasks).toEqual({
-      download: {ttlDays: 7},
-      unpack: {maxFilesCount: 100}
+    expect(preferences.asyncTasksConfig.maxUserTasks).toBe(7);
+    expect(preferences.asyncTasksConfig.tasks).toEqual({
+      storageDownloadAsArchive: {ttlDays: 7},
+      storageUnpackArchive: {maxFilesCount: 100}
     });
   });
 
@@ -118,63 +118,64 @@ describe('storageArchiveConfig', () => {
     stubApi({
       '/preferences': [
         {
-          name: 'storage.archive.config',
-          value: JSON.stringify({tasks: {download: {ttlDays: 14}}})
+          name: 'system.async.tasks.config',
+          value: JSON.stringify({tasks: {storageDownloadAsArchive: {ttlDays: 14}}})
         }
       ]
     });
     preferences.invalidateCache();
     await preferences.fetch();
 
-    expect(preferences.storageArchiveConfig.maxUserTasks)
-      .toBe(DEFAULT_STORAGE_ARCHIVE_MAX_USER_TASKS);
-    expect(preferences.storageArchiveConfig.tasks).toEqual({download: {ttlDays: 14}});
+    expect(preferences.asyncTasksConfig.maxUserTasks)
+      .toBe(DEFAULT_ASYNC_TASKS_MAX_USER_TASKS);
+    expect(preferences.asyncTasksConfig.tasks)
+      .toEqual({storageDownloadAsArchive: {ttlDays: 14}});
   });
 
   it('does not read maxUserTasks out of a section', async () => {
-    // A copy inside `tasks.download` must not win, or an administrator would have two of a value
-    // that is deliberately single - see the api's own ArchiveTasksConfig.
+    // A copy inside a section must not win, or an administrator would have two of a value
+    // that is deliberately single - see the api's own AsyncTasksConfig.
     stubApi({
       '/preferences': [
         {
-          name: 'storage.archive.config',
-          value: JSON.stringify({tasks: {download: {maxUserTasks: 99}}})
+          name: 'system.async.tasks.config',
+          value: JSON.stringify({tasks: {storageDownloadAsArchive: {maxUserTasks: 99}}})
         }
       ]
     });
     preferences.invalidateCache();
     await preferences.fetch();
 
-    expect(preferences.storageArchiveConfig.maxUserTasks)
-      .toBe(DEFAULT_STORAGE_ARCHIVE_MAX_USER_TASKS);
+    expect(preferences.asyncTasksConfig.maxUserTasks)
+      .toBe(DEFAULT_ASYNC_TASKS_MAX_USER_TASKS);
   });
 
   it('falls back to the default maxUserTasks and does not throw for a bad value', async () => {
     stubApi({
       '/preferences': [
-        {name: 'storage.archive.config', value: 'not-json'}
+        {name: 'system.async.tasks.config', value: 'not-json'}
       ]
     });
     preferences.invalidateCache();
     await preferences.fetch();
 
-    expect(() => preferences.storageArchiveConfig).not.toThrow();
-    expect(preferences.storageArchiveConfig).toEqual({
-      maxUserTasks: DEFAULT_STORAGE_ARCHIVE_MAX_USER_TASKS
+    expect(() => preferences.asyncTasksConfig).not.toThrow();
+    expect(preferences.asyncTasksConfig).toEqual({
+      maxUserTasks: DEFAULT_ASYNC_TASKS_MAX_USER_TASKS
     });
   });
 
   it('falls back to the default maxUserTasks when the value is not a JSON object', async () => {
     stubApi({
       '/preferences': [
-        {name: 'storage.archive.config', value: JSON.stringify([1, 2, 3])}
+        {name: 'system.async.tasks.config', value: JSON.stringify([1, 2, 3])}
       ]
     });
     preferences.invalidateCache();
     await preferences.fetch();
 
-    expect(preferences.storageArchiveConfig).toEqual({
-      maxUserTasks: DEFAULT_STORAGE_ARCHIVE_MAX_USER_TASKS
+    expect(preferences.asyncTasksConfig).toEqual({
+      maxUserTasks: DEFAULT_ASYNC_TASKS_MAX_USER_TASKS
     });
   });
 });

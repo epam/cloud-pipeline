@@ -30,7 +30,7 @@ TASK_ID = '4f1a2c90-0000-4000-8000-000000000001'
     ('', f'{TASK_ID}.zip'),
 ])
 def test_builds_the_storage_relative_key(prefix, expected):
-    # This is the key the API derives too - see `DataStorageDownloadArchiveManager.archivePath`.
+    # This is the key the API derives too - see `DownloadArchiveTaskProcessor.archivePath`.
     assert archive_key(prefix, TASK_ID) == expected
 
 

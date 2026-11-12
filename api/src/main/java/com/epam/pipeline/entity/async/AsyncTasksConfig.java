@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.datastorage;
+package com.epam.pipeline.entity.async;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
@@ -25,16 +25,16 @@ import lombok.NoArgsConstructor;
 import java.util.Optional;
 
 /**
- * Everything tunable about the asynchronous archive tasks, in one preference. Part of it is read here,
- * part by the executor service through {@code GET /preferences/{key}}.
+ * Everything tunable about the asynchronous tasks, in one preference. Part of it is read here, part by
+ * the executor service through {@code GET /preferences/{key}}.
  *
  * <pre>
  * {
  *   "maxUserTasks": 3,
  *   "stuckTasksThresholdMinutes": 120,
  *   "tasks": {
- *     "download": { ... },
- *     "unpack":   { ... }
+ *     "storageDownloadAsArchive": { ... },
+ *     "storageUnpackArchive":     { ... }
  *   }
  * }
  * </pre>
@@ -44,7 +44,7 @@ import java.util.Optional;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ArchiveTasksConfig {
+public class AsyncTasksConfig {
 
     public static final int DEFAULT_MAX_USER_TASKS = 3;
 
@@ -72,38 +72,39 @@ public class ArchiveTasksConfig {
     @AllArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Tasks {
-        private DownloadArchiveConfig download;
-        private UnpackArchiveConfig unpack;
+        private StorageDownloadArchiveTaskConfig storageDownloadAsArchive;
+        private StorageUnpackArchiveTaskConfig storageUnpackArchive;
     }
 
     /**
-     * The one place the {@code maxUserTasks} fallback lives, so the two managers that enforce the
-     * quota cannot drift apart on what an unset value means.
+     * The one place the {@code maxUserTasks} fallback lives, so whoever enforces the quota - the api
+     * here, and the executor services reading the same preference - cannot drift apart on what an
+     * unset value means.
      */
-    public static int maxUserTasksOrDefault(final ArchiveTasksConfig config) {
+    public static int maxUserTasksOrDefault(final AsyncTasksConfig config) {
         return Optional.ofNullable(config)
-                .map(ArchiveTasksConfig::getMaxUserTasks)
+                .map(AsyncTasksConfig::getMaxUserTasks)
                 .orElse(DEFAULT_MAX_USER_TASKS);
     }
 
     /**
-     * The {@code download} section, never null, so a caller reads a default out of an absent section
-     * instead of guarding two levels of nesting at every use.
+     * The {@code storageDownloadAsArchive} section, never null, so a caller reads a default out of an
+     * absent section instead of guarding two levels of nesting at every use.
      */
-    public static DownloadArchiveConfig downloadOrEmpty(final ArchiveTasksConfig config) {
+    public static StorageDownloadArchiveTaskConfig downloadOrEmpty(final AsyncTasksConfig config) {
         return Optional.ofNullable(config)
-                .map(ArchiveTasksConfig::getTasks)
-                .map(Tasks::getDownload)
-                .orElseGet(() -> DownloadArchiveConfig.builder().build());
+                .map(AsyncTasksConfig::getTasks)
+                .map(Tasks::getStorageDownloadAsArchive)
+                .orElseGet(() -> StorageDownloadArchiveTaskConfig.builder().build());
     }
 
     /**
-     * The {@code unpack} section, never null, for the same reason.
+     * The {@code storageUnpackArchive} section, never null, for the same reason.
      */
-    public static UnpackArchiveConfig unpackOrEmpty(final ArchiveTasksConfig config) {
+    public static StorageUnpackArchiveTaskConfig unpackOrEmpty(final AsyncTasksConfig config) {
         return Optional.ofNullable(config)
-                .map(ArchiveTasksConfig::getTasks)
-                .map(Tasks::getUnpack)
-                .orElseGet(() -> UnpackArchiveConfig.builder().build());
+                .map(AsyncTasksConfig::getTasks)
+                .map(Tasks::getStorageUnpackArchive)
+                .orElseGet(() -> StorageUnpackArchiveTaskConfig.builder().build());
     }
 }

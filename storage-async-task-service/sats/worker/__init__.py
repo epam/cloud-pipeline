@@ -27,7 +27,7 @@ task is a module here and one line in `_WORKERS`.
 from __future__ import annotations
 
 from ..api import CloudPipelineApi
-from ..config import ServiceConfig, StorageDownloadArchiveConfig
+from ..config import ServiceConfig, StorageDownloadArchiveTaskConfig
 from ..model import ArchiveTask, AsyncTaskType
 from .archive_preparation_worker import ArchivePreparationWorker
 from .base import AsyncTaskWorker
@@ -49,7 +49,7 @@ SUPPORTED_TASK_TYPES: tuple[AsyncTaskType, ...] = tuple(_WORKERS)
 
 
 def worker_for(api: CloudPipelineApi, service_config: ServiceConfig,
-               archive_config: StorageDownloadArchiveConfig,
+               archive_config: StorageDownloadArchiveTaskConfig,
                task: ArchiveTask) -> AsyncTaskWorker:
     """
     The worker for a claimed task.

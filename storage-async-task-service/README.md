@@ -83,15 +83,15 @@ Every setting is both an option and an environment variable, and the option wins
 
 ## The platform preference
 
-Everything an administrator tunes is in `storage.archive.config`, read again on every round, so a
-change applies without a restart:
+Everything an administrator tunes is in `system.async.tasks.config`, read again on every round, so
+a change applies without a restart:
 
 ```json
 {
   "maxUserTasks": 3,
   "stuckTasksThresholdMinutes": 360,
   "tasks": {
-    "download": {
+    "storageDownloadAsArchive": {
       "destinationStorageId": 9,
       "destinationPrefix": "archives/",
       "maxSizeBytes": 107374182400,
@@ -111,8 +111,8 @@ be a trap, which is why neither sits inside `tasks`. A value put in the wrong le
 absent and silently replaced by its default, so the warnings this service logs at startup name the
 level each setting is read from.
 
-Without `tasks.download.destinationStorageId` nothing is claimed and tasks stay pending. `null` in either
-threshold means no limit.
+Without `tasks.storageDownloadAsArchive.destinationStorageId` nothing is claimed and tasks stay
+pending. `null` in either threshold means no limit.
 
 ## How it is deployed
 
