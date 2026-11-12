@@ -101,9 +101,27 @@ public class UserAccessService {
         }
         validateUserBlockStatus(pipelineUser);
         validateUserGroupsBlockStatus(pipelineUser);
+        if (jwtUser.isAuthoritiesScoped()) {
+            // The token was issued with a narrowed set of authorities, so replacing them wholesale
+            // would restore exactly the rights it was issued to withhold. They are intersected
+            // rather than kept verbatim, so that withdrawing a role or a group in the database
+            // still takes effect on the next request — which is why a deployment turns this
+            // validation on in the first place. The block checks above also still read the stored
+            // user, so blocking a user or one of their groups continues to stop such a token.
+            log.debug("Narrowing the authorities of user {} to the ones its token carries",
+                    jwtUser.getUsername());
+            jwtUser.retainAuthorities(roleNames(pipelineUser), pipelineUser.getGroups());
+            return jwtUser;
+        }
         jwtUser.setRoles(pipelineUser.getRoles());
         jwtUser.setGroups(pipelineUser.getGroups());
         return jwtUser;
+    }
+
+    private static List<String> roleNames(final PipelineUser user) {
+        return ListUtils.emptyIfNull(user.getRoles()).stream()
+                .map(Role::getName)
+                .collect(Collectors.toList());
     }
 
     public void validateUserBlockStatus(final PipelineUser user) {

@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.security.jwt;
 
+import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_AUTHORITIES_SCOPED;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_GROUPS;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_ORG_UNIT_ID;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_ROLES;
@@ -215,6 +216,10 @@ public class JwtTokenGenerator {
 
         if (claims.isExternal()) {
             tokenBuilder.withClaim(CLAIM_EXTERNAL, claims.isExternal());
+        }
+
+        if (claims.isAuthoritiesScoped()) {
+            tokenBuilder.withClaim(CLAIM_AUTHORITIES_SCOPED, claims.isAuthoritiesScoped());
         }
 
         return tokenBuilder;

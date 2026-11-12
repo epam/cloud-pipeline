@@ -34,6 +34,7 @@ public class JwtTokenClaims {
     public static final String CLAIM_ROLES = "roles";
     public static final String CLAIM_GROUPS = "groups";
     public static final String CLAIM_EXTERNAL = "external";
+    public static final String CLAIM_AUTHORITIES_SCOPED = "authorities_scoped";
 
     @JsonProperty("jti")
     private String jwtTokenId;
@@ -52,4 +53,15 @@ public class JwtTokenClaims {
     private List<String> roles;
     private List<String> groups;
     private boolean external;
+
+    /**
+     * Marks a token whose authorities were deliberately scoped down when it was issued: the roles
+     * and groups it carries are the whole of what its holder may do, and must not be replaced by
+     * whatever the user happens to hold in the database.
+     * <p>
+     * Without it, a deployment that turns on {@code jwt.validate.token.user} would reload the
+     * authorities on every request and hand back exactly the rights the token was issued to
+     * withhold.
+     */
+    private boolean authoritiesScoped;
 }
