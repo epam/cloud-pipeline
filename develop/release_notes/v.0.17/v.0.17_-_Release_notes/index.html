@@ -276,6 +276,8 @@
         <ul>
     <li class="toctree-l3"><a class="reference internal" href="#nextflow-run-view-some-tasks-stay-running-after-the-run-finishes">Nextflow run view: some tasks stay RUNNING after the run finishes</a>
     </li>
+    <li class="toctree-l3"><a class="reference internal" href="#gui-library-versions-with-security-advisories">GUI: library versions with security advisories</a>
+    </li>
     <li class="toctree-l3"><a class="reference internal" href="#users-export-the-names-of-the-date-columns-depend-on-the-api-time-zone">Users export: the names of the date columns depend on the API time zone</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#a-committed-image-of-a-user-with-a-large-uid-writes-hundreds-of-gb-to-the-disk">A committed image of a user with a large UID writes hundreds of GB to the disk</a>
@@ -781,6 +783,7 @@
 <ul>
 <li><a href="#notable-bug-fixes">Notable Bug fixes</a><ul>
 <li><a href="#nextflow-run-view-some-tasks-stay-running-after-the-run-finishes">Nextflow run view: some tasks stay <code>RUNNING</code> after the run finishes</a></li>
+<li><a href="#gui-library-versions-with-security-advisories">GUI: library versions with security advisories</a></li>
 <li><a href="#users-export-the-names-of-the-date-columns-depend-on-the-api-time-zone">Users export: the names of the date columns depend on the API time zone</a></li>
 <li><a href="#a-committed-image-of-a-user-with-a-large-uid-writes-hundreds-of-gb-to-the-disk">A committed image of a user with a large UID writes hundreds of GB to the disk</a></li>
 <li><a href="#detached-configuration-the-old-name-stays-in-the-library-after-a-rename">Detached configuration: the old name stays in the Library after a rename</a></li>
@@ -2373,6 +2376,26 @@ In the current version, two new roles were introduced. Both cover every pipeline
 <p><a href="https://github.com/epam/cloud-pipeline/issues/4785">#4785</a></p>
 <p>Previously, the last task statuses of a Nextflow run were lost when the runtime data sync did not run - e.g. with <code>evalType</code> set to <code>WORKDIR</code> in the <code>NF_TASK</code> entry of the <code>launch.run.sync.runtime.data</code> preference. So some tasks stayed <code>RUNNING</code> in the <strong>Nextflow</strong> view of a finished run.
 Now, the last statuses are always sent when Nextflow finishes.</p>
+<h3 id="gui-library-versions-with-security-advisories">GUI: library versions with security advisories</h3>
+<p>Previously, the GUI used library versions with published security advisories:</p>
+<ul>
+<li><code>ansi_up</code> 2, which renders the colors of the run logs: cross-site scripting</li>
+<li><code>jquery.terminal</code> 1.10, the terminal of the <strong>Miew</strong> viewer: cross-site scripting</li>
+<li><code>papaparse</code> 4, which parses the <code>CSV</code>/<code>TSV</code> files for their previews and editors: a regular expression denial of service</li>
+<li><code>highlight.js</code> 9, which highlights the code in Markdown and in the bash command views: a regular expression denial of service in some languages</li>
+<li><code>react-dev-utils</code> 7 and <code>@babel/core</code> 7.2, used to build the GUI: an OS command injection and an arbitrary file read</li>
+</ul>
+<p>Now, the GUI uses <code>ansi_up</code> 5.2, <code>jquery.terminal</code> 2.48, <code>papaparse</code> 5.7, <code>highlight.js</code> 10.7, <code>react-dev-utils</code> 11 and <code>@babel/core</code> 7.29. In the run logs:</p>
+<ul>
+<li>the search (<strong>Ctrl+F</strong>) finds a text with <code>&amp;</code>, <code>&lt;</code> or <code>&gt;</code> in it. Before, it found no such text, and a search for <code>amp</code>, <code>lt</code> or <code>gt</code> broke the display of those characters</li>
+<li>a search for a text with <code>|</code> or <code>\</code> finds it. Before, such a search could freeze the page or fail</li>
+<li>the color at the end of a log no longer goes over to the first lines of another log, or of the next update of the same log</li>
+<li>the bold text is shown in bold. Before, it was shown in a brighter color</li>
+<li>a hyperlink of the <code>OSC 8</code> escape code is shown as a link that opens in a new tab if it is an <code>http</code> or <code>https</code> one. Of any other hyperlink, only the text is shown</li>
+<li>an escape code that is not complete at the end of a line, e.g. a hyperlink with no end, is shown as text, with the rest of the line</li>
+</ul>
+<p>See details in <a href="../../../manual/11_Manage_Runs/11._Manage_Runs/#console-output">11. Manage Runs</a>.</p>
+<p>Also, the GUI checks that the region of an AWS S3 storage is a valid part of a host name before it sends S3 requests there, as the advisory for the AWS SDK for JavaScript v2 recommends.</p>
 <h3 id="users-export-the-names-of-the-date-columns-depend-on-the-api-time-zone">Users export: the names of the date columns depend on the API time zone</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/4739">#4739</a></p>
 <p>Previously, the users export named its date columns after the default time zone of the API server, while the dates are written in UTC. So with another zone set for the API, the names did not match the data, e.g. <code>registrationDate Europe/Berlin</code>. And on an API image whose system names the zone <code>Etc/UTC</code>, as Rocky Linux 9 does, a script that looks for <code>registrationDate UTC</code> did not find the column.

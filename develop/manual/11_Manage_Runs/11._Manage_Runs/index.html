@@ -778,6 +778,13 @@ Clicking a task and its console output will be loaded in the right panel.<br />
 <img alt="CP_ManageRuns" src="../attachments/ManageRuns_15.png" /></p>
 <p><strong><em>Note</em></strong>: the <strong>Follow log</strong> control enables auto scrolling of the console output. It is useful for logs monitoring. <strong>Follow log</strong> is enabled by default, tick the box to turn it off.<br />
 <img alt="CP_ManageRuns" src="../attachments/ManageRuns_16.png" /></p>
+<p>The console output shows the colors and the bold, italic and underlined text that the ANSI escape codes of the log set. A hyperlink of the <code>OSC 8</code> escape code is shown as a link that opens in a new tab if it is an <code>http</code> or <code>https</code> one. Of any other hyperlink, only the text is shown. An escape code that is not complete at the end of a line, e.g. a hyperlink with no end, is shown as text, with no control characters, together with the rest of the line.</p>
+<p>To search in the console output, press <strong>Ctrl+F</strong>. A search field appears at the top of the output:</p>
+<ul>
+<li>type at least 2 characters: the matches in the shown lines are highlighted, with no regard to the case, and the number of the current match and of all matches is shown next to the buttons, e.g. <code>2 of 5</code>. A text in which the color changes is not found</li>
+<li>click <strong>Next</strong> or press <strong>Enter</strong> to move to the next match, click <strong>Prev</strong> or press <strong>Shift+Enter</strong> to move to the previous one</li>
+<li>click <strong>Close</strong> or press <strong>Esc</strong> to close the search</li>
+</ul>
 <p>Also, during a pipeline run an extended <strong><em>node-level</em></strong> logging is maintained:</p>
 <ul>
 <li><code>kubelet</code> logs (from all compute nodes) are written to the files</li>
