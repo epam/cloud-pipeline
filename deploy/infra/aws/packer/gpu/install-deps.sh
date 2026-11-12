@@ -43,15 +43,24 @@ yum install -y nc
 yum install -y iproute-tc
 yum install -y iptables-legacy
 update-alternatives --set iptables /usr/sbin/iptables-legacy
+# The user data joins more than one unmounted disk into one LVM volume (pvcreate, vgcreate, lvcreate)
+yum install -y lvm2
 
 # btrfs-progs package is not avaialble in 2023+
 # Replaced with:
 # - https://btrfs.readthedocs.io/en/latest/INSTALL.html#all-in-one-binary-busybox-style
 # - https://github.com/kdave/btrfs-progs
-cd /usr/bin && \
-wget -q "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/btrfs/6.17/btrfs.box.static" -O btrfs && \
-chmod +x btrfs && \
-ln -s btrfs mkfs.btrfs
+# It is downloaded into a temporary folder, and installed only if the download succeeds and the file runs:
+# otherwise the build stops
+BTRFS_URL="https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/btrfs/6.17/btrfs.box.static"
+BTRFS_TMP_DIR="$(mktemp -d)"
+wget -q "$BTRFS_URL" -O "$BTRFS_TMP_DIR/btrfs" || { echo "[ERROR] Cannot download btrfs from $BTRFS_URL"; exit 1; }
+chmod +x "$BTRFS_TMP_DIR/btrfs"
+"$BTRFS_TMP_DIR/btrfs" --version
+install -m 0755 "$BTRFS_TMP_DIR/btrfs" /usr/bin/btrfs
+rm -rf "$BTRFS_TMP_DIR"
+ln -s btrfs /usr/bin/mkfs.btrfs
+/usr/bin/mkfs.btrfs --version
 
 # Install the platform's Python 3.12 distribution into /usr/local/python3.12, the path that it is built for, as
 # deploy/infra/aws/install-*-node.sh do. The commit and pause of a run use it on the node host. There is no Python 2.
@@ -95,9 +104,9 @@ function install_python3 {
 }
 install_python3
 
-# Install jq
-wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
-chmod +x /usr/bin/jq
+# Install jq: the package of Amazon Linux 2023, which its AMI already has
+yum install -y jq
+jq --version
 
 # Enable forwarding
 cat <<EOF >/etc/sysctl.d/k8s.conf
@@ -159,19 +168,22 @@ if [ "$NVIDIA_DRIVER_URL_PREFIX" ]; then
 
 else
 
-    curl -k -L -O https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run
-    chmod +x ./NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run
-    ./NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run -s
-    rm -f ./NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run
+    # The driver runfile and the rpm packages are downloaded into a temporary folder, which is removed afterwards
+    NVIDIA_DIST_DIR="$(mktemp -d)"
+    NVIDIA_RUN_FILE="$NVIDIA_DIST_DIR/NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run"
+    curl -k -L -o "$NVIDIA_RUN_FILE" "https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run"
+    chmod +x "$NVIDIA_RUN_FILE"
+    "$NVIDIA_RUN_FILE" -s
 
     # Fabric Manager for A100, H100, H200 and friends
     NVIDIA_PUBLIC_RPM_URL_PREFIX="https://developer.download.nvidia.com/compute/cuda/repos/amzn2023/x86_64"
-    curl -k -L -O $NVIDIA_PUBLIC_RPM_URL_PREFIX/nvidia-fabricmanager-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
-    yum install -y ./nvidia-fabricmanager-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
-    curl -k -L -O $NVIDIA_PUBLIC_RPM_URL_PREFIX/libnvidia-cfg-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
-    yum install -y ./libnvidia-cfg-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
-    curl -k -L -O $NVIDIA_PUBLIC_RPM_URL_PREFIX/nvidia-persistenced-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
-    yum install -y ./nvidia-persistenced-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
+    for _nvidia_package in nvidia-fabricmanager libnvidia-cfg nvidia-persistenced; do
+        _nvidia_rpm="${_nvidia_package}-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm"
+        curl -k -L -o "$NVIDIA_DIST_DIR/$_nvidia_rpm" "$NVIDIA_PUBLIC_RPM_URL_PREFIX/$_nvidia_rpm"
+        yum install -y "$NVIDIA_DIST_DIR/$_nvidia_rpm"
+    done
+
+    rm -rf "$NVIDIA_DIST_DIR"
 
 fi
 
