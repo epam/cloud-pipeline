@@ -4,7 +4,7 @@ Test verifies that the console output of a run log:
 - shows the color and the bold text that ANSI escape codes set
 - shows the HTML special characters of a log line as text
 - shows an `https` hyperlink of the `OSC 8` escape code as a link, and leaves out a `javascript:` one
-- shows the lines that follow an unterminated hyperlink
+- shows an unterminated hyperlink as text, and the lines that follow it
 
 **Prerequisites**:
 - Non-admin user with the permission to launch a test tool
@@ -28,7 +28,7 @@ Test verifies that the console output of a run log:
 | 8 | On the **Runs** page, click the just-launched run (save the run ID) | The run logs page opens |
 | 9 | Wait until the run gets the **Running** state, and the **Console** task appears in the tasks list | |
 | 10 | Click the **Console** task | The console output contains the lines of the *Table* below, each shown as its *Expected view* says |
-| 11 | Click the `example link` link | The `https://example.com` page opens |
+| 11 | Click the `example link` link | The `https://example.com` page opens in a new tab |
 
 | Line | Printed (`ESC` is the escape character, `BEL` the bell one) | Expected view |
 | --- | --- | --- |
@@ -37,7 +37,7 @@ Test verifies that the console output of a run log:
 | 3 | `<b>not bold</b> & "quoted" text` | `<b>not bold</b> & "quoted" text` as it is: the tags are text, `not bold` is not bold |
 | 4 | `ESC]8;;https://example.com ESC\` `example link` `ESC]8;; ESC\` | `example link` as a link to `https://example.com` |
 | 5 | `ESC]8;;javascript:alert(1) ESC\` `unsafe link` `ESC]8;; ESC\` ` after the unsafe link` | ` after the unsafe link` only: no link and no `unsafe link` text, and no alert pop-up appears |
-| 6 | `link ` `ESC]8;;https://example.com BEL` `unterminated` | `link ` only |
+| 6 | `link ` `ESC]8;;https://example.com BEL` `unterminated` | `link ]8;;https://example.comunterminated`: the escape code is shown as text, with no escape or bell character |
 | 7 | `after the unterminated link` | `after the unterminated link`: the lines after the 6th one are shown |
 
 **After**:
