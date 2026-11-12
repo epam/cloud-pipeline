@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 # limitations under the License.
 
 function msg() {
-    echo "[$(date "+%F %H:%M:%S")] $1"
+    echo "[$(date "+%F %H:%M:%S")] $*"
 }
 
 function envsubst_inplace() {
@@ -168,19 +168,137 @@ for _template_path in /etc/search-elk/templates/*.json; do
   curl -H 'Content-Type: application/json' -XPUT "localhost:9200/_template/$_template_name" -d "@$_template_path"
 done
 
-INDEX="{
-  \"aliases\": {
-    \"$CP_SECURITY_LOGS_ELASTIC_PREFIX\": {}
-  }
-}"
+# Security log indices. Filebeat (cp-api-srv, cp-edge, cp-tinyproxy) and the API write the security events to the
+# alias, and security_log_policy rolls it over to a new index daily. Both need the alias to have exactly one write
+# index: once it points to several indices and none of them is the write index, every write and every rollover fails,
+# and no security event is stored. Former versions of this script added a bootstrap index on each start, which leads
+# to that state.
+SECURITY_LOG_ALIAS="$CP_SECURITY_LOGS_ELASTIC_PREFIX"
+SECURITY_LOG_BOOTSTRAP_INDEX="%3C${SECURITY_LOG_ALIAS}-%7Bnow%2Fm%7Byyyy.MM.dd%7D%7D-000001%3E"
 
-status_code=$(curl --write-out %{http_code} --silent --output /dev/null localhost:9200/${CP_SECURITY_LOGS_ELASTIC_PREFIX})
-if [[ "$status_code" == 404 ]] ; then
-  msg "Creating security log index"
-  curl -H 'Content-Type: application/json' -XPUT localhost:9200/%3C${CP_SECURITY_LOGS_ELASTIC_PREFIX}-%7Bnow%2Fm%7Byyyy.MM.dd%7D%7D-000001%3E -d "$INDEX"
-else
-  msg "Security log index already exists"
-fi
+function elk_status() {
+    curl -s -o /dev/null -w '%{http_code}' "localhost:9200/$1"
+}
+
+# Prints the indices of the security log alias, the newest first: "<index> <true|false: is it the write index>"
+function security_log_alias_indices() {
+    local _aliases _settings
+    _aliases="$(curl -sf "localhost:9200/_alias/$SECURITY_LOG_ALIAS")" || return 1
+    _settings="$(curl -sf "localhost:9200/$SECURITY_LOG_ALIAS/_settings/index.creation_date")" || return 1
+    jq -rs --arg alias "$SECURITY_LOG_ALIAS" '
+        .[1] as $settings
+        | .[0] | to_entries
+        | map({index: .key,
+               write: (.value.aliases[$alias].is_write_index // false),
+               created: ($settings[.key].settings.index.creation_date // "0" | tonumber)})
+        | sort_by(.created, .index) | reverse | .[] | "\(.index) \(.write)"' <<< "$_aliases $_settings"
+}
+
+# Applies the alias actions (a comma-separated list of JSON objects)
+function update_security_log_alias() {
+    local _response
+    _response="$(curl -s -H 'Content-Type: application/json' -XPOST localhost:9200/_aliases -d "{\"actions\": [$1]}")"
+    if [ "$(jq -r '.acknowledged' <<< "$_response" 2>/dev/null)" != "true" ]; then
+        msg "[ERROR] Unable to update the $SECURITY_LOG_ALIAS alias: $_response"
+        return 1
+    fi
+}
+
+# A write to the alias before it exists (while this script waits for Elasticsearch) creates a plain index of the same
+# name instead. It is never rolled over, so curator deletes it whole once it is older than the retention period, and
+# the API does not search it (it reads the <alias>-* indices). Its documents are copied to a new bootstrap index, and
+# the alias replaces the plain index in the same request that deletes it. The writes are blocked during the copy, so
+# the security events sent meanwhile are rejected.
+function repair_security_log_index() {
+    local _index _response _count _copied
+    msg "[WARN] $SECURITY_LOG_ALIAS is an index, not an alias: its documents are moved to a new index with that alias"
+    _index="$(curl -s -XPUT "localhost:9200/$SECURITY_LOG_BOOTSTRAP_INDEX" | jq -r '.index // empty' 2>/dev/null)"
+    if [ -z "$_index" ]; then
+        msg "[ERROR] Unable to create a new security log index: $SECURITY_LOG_ALIAS is left as it is," \
+            "and the security logs are not rolled over"
+        return 1
+    fi
+    if curl -sf -H 'Content-Type: application/json' -XPUT "localhost:9200/$SECURITY_LOG_ALIAS/_settings" \
+            -d '{"index.blocks.write": true}' > /dev/null; then
+        _response="$(curl -s -H 'Content-Type: application/json' -XPOST "localhost:9200/_reindex?refresh=true" \
+                          -d "{\"source\": {\"index\": \"$SECURITY_LOG_ALIAS\"}, \"dest\": {\"index\": \"$_index\"}}")"
+        _count="$(curl -s "localhost:9200/$SECURITY_LOG_ALIAS/_count" | jq -r '.count' 2>/dev/null)"
+        _copied="$(curl -s "localhost:9200/$_index/_count" | jq -r '.count' 2>/dev/null)"
+        if jq -e '.timed_out == false and .failures == [] and .created == .total' <<< "$_response" > /dev/null 2>&1 \
+                && [[ "$_count" =~ ^[0-9]+$ ]] && [ "$_count" == "$_copied" ] \
+                && update_security_log_alias "{\"remove_index\": {\"index\": \"$SECURITY_LOG_ALIAS\"}},
+                    {\"add\": {\"index\": \"$_index\", \"alias\": \"$SECURITY_LOG_ALIAS\", \"is_write_index\": true}}"; then
+            msg "Security log index $SECURITY_LOG_ALIAS is replaced by the alias: $_copied documents are moved to $_index"
+            # The ILM rollover of the new index fails if it was checked before the alias pointed to it
+            curl -s -XPOST "localhost:9200/$_index/_ilm/retry" > /dev/null
+            return 0
+        fi
+    fi
+    _response="${_response:-none}"
+    msg "[ERROR] Unable to move the documents of $SECURITY_LOG_ALIAS (${_count:-?}) to $_index (${_copied:-?}):" \
+        "$SECURITY_LOG_ALIAS is left as it is, and the security logs are not rolled over. Reindex: ${_response:0:1000}"
+    # The alias replaces the plain index in a single request: while the alias does not exist, the plain index is there
+    if [ "$(elk_status "_alias/$SECURITY_LOG_ALIAS")" == "404" ]; then
+        curl -s -XDELETE "localhost:9200/$_index" > /dev/null
+        curl -s -H 'Content-Type: application/json' -XPUT "localhost:9200/$SECURITY_LOG_ALIAS/_settings" \
+             -d '{"index.blocks.write": null}' > /dev/null
+    fi
+    return 1
+}
+
+function setup_security_log_alias() {
+    local _code _response _indices _write_index _newest _actions
+    _code="$(elk_status "_alias/$SECURITY_LOG_ALIAS")"
+    if [ "$_code" == "404" ]; then
+        if [ "$(elk_status "$SECURITY_LOG_ALIAS")" != "200" ]; then
+            msg "Creating security log index"
+            _response="$(curl -s -H 'Content-Type: application/json' \
+                              -XPUT "localhost:9200/$SECURITY_LOG_BOOTSTRAP_INDEX" \
+                              -d "{\"aliases\": {\"$SECURITY_LOG_ALIAS\": {\"is_write_index\": true}}}")"
+            if [ "$(jq -r '.acknowledged' <<< "$_response" 2>/dev/null)" == "true" ]; then
+                msg "Security log index is created: $SECURITY_LOG_ALIAS writes to $(jq -r '.index' <<< "$_response")"
+                return
+            fi
+            # A write may have created the plain index in the meantime
+            if [ "$(elk_status "$SECURITY_LOG_ALIAS")" != "200" ]; then
+                msg "[ERROR] Unable to create the security log index: $_response"
+                return 1
+            fi
+        fi
+        repair_security_log_index
+        return
+    fi
+    if [ "$_code" != "200" ] || ! _indices="$(security_log_alias_indices)" || [ -z "$_indices" ]; then
+        msg "[ERROR] Unable to read the $SECURITY_LOG_ALIAS alias (HTTP $_code): the security log indices are not checked"
+        return 1
+    fi
+    _write_index="$(awk '$2 == "true" {print $1}' <<< "$_indices")"
+    if [ "$_write_index" ]; then
+        msg "Security log index already exists: $SECURITY_LOG_ALIAS writes to $_write_index"
+        return
+    fi
+    _newest="$(head -n 1 <<< "$_indices" | cut -d' ' -f1)"
+    if [ "$(wc -l <<< "$_indices")" -eq 1 ]; then
+        # A single index takes the writes without the flag, but only until another index is added to the alias
+        msg "Security log index already exists: $_newest becomes the explicit write index of $SECURITY_LOG_ALIAS"
+        update_security_log_alias \
+            "{\"add\": {\"index\": \"$_newest\", \"alias\": \"$SECURITY_LOG_ALIAS\", \"is_write_index\": true}}"
+        return
+    fi
+    # No write index: the newest index of the alias takes the writes, the other ones keep their data for the searches
+    msg "[WARN] The $SECURITY_LOG_ALIAS alias has no write index ($(cut -d' ' -f1 <<< "$_indices" | xargs)):" \
+        "$_newest becomes its write index"
+    _actions="$(cut -d' ' -f1 <<< "$_indices" | while read -r _index; do
+        printf '{"add": {"index": "%s", "alias": "%s", "is_write_index": %s}},' \
+            "$_index" "$SECURITY_LOG_ALIAS" "$([ "$_index" == "$_newest" ] && echo true || echo false)"
+    done)"
+    update_security_log_alias "${_actions%,}" || return 1
+    # The ILM rollover of the write index failed while the alias had no write index, and stopped: it is resumed. The
+    # other indices are left in that state: they are not the write index, so their rollover would fail again
+    curl -s -XPOST "localhost:9200/$_newest/_ilm/retry" > /dev/null
+}
+
+setup_security_log_alias
 
 for _pipeline_path in /etc/search-elk/pipelines/*.json; do
   _pipeline_name="$(basename "$_pipeline_path" .json)"
