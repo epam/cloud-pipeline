@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,20 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM centos:7
-
-RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+FROM rockylinux/rockylinux:9.8
 
 # Prerequisites
-RUN yum install -y \
+RUN dnf install -y \
                 wget \
-                curl \
                 java-1.8.0-openjdk \
-                python \
-                unzip
+                unzip && \
+    dnf clean all
 
 # API distribution
 ARG CP_API_DIST_URL=""

@@ -41,6 +41,7 @@
 - [pipe-common requires Python 3.12](#pipe-common-requires-python-312)
 - [Runs on Python 3.12](#runs-on-python-312)
 - [The API service on Python 3.12 and Rocky Linux 9.8](#the-api-service-on-python-312-and-rocky-linux-98)
+- [Rocky Linux 9.8 for the platform services](#rocky-linux-98-for-the-platform-services)
 
 ***
 
@@ -818,6 +819,37 @@ Please note: AWS lists the 2.10 Lustre clients as not compatible with FSx for Lu
 Java also rejects all DSA signatures and EC keys shorter than 256 bits. The API's own HTTPS certificate (`cp-api-srv-ssl.p12`) must meet these limits too. The `ssh` client that the API uses to commit and pause runs (OpenSSH 9.9) rejects RSA keys shorter than 2048 bits, so the key of the **`commit.deploy.key`** preference must have at least 2048 bits. `git` in the image (OpenSSL 3.5) has the same SHA-1 and 2048-bit limits.
 - `git` in the image works in a repository that belongs to another user in the folder of the mounted NFS storages (`/opt/api/file-systems`), as the `git` of CentOS 7 did. Since version 2.35.2, `git` refuses such a repository, and it still does so in other folders.
 - The Filebeat log shipper of the API runs with `seccomp` disabled. Its `seccomp` policy does not allow the `clone3` system call, which Rocky Linux 9 uses to start threads.
+## Rocky Linux 9.8 for the platform services
+
+The images of these platform services moved to Rocky Linux 9.8.
+
+From CentOS 7, which has reached its end of life:
+
+- the search service (`cp-search`), the notifier (`cp-notifier`) and the billing service (`cp-billing-srv`)
+- the monitoring service (`cp-monitoring-srv`) and the VM monitor (`cp-vm-monitor`)
+- the data sharing service (`cp-share-srv`) and the docker components scanner (`cp-docker-comp`)
+- the node logger (`cp-node-logger`) and the leader elector (`cp-leader-elector`)
+- the test SAML identity provider (`cp-idp`)
+
+From Ubuntu 18.04: the Git reader (`cp-gitlab-reader`) and the storage lifecycle service (`cp-storage-lifecycle-service`).
+
+Python in these images:
+
+- Rocky Linux 9 has no Python 2 package. The images that installed Python 2 no longer do, because nothing in them used it.
+- The storage lifecycle service runs on the platform's Python 3.12 distribution, the version that the platform's `pipeline` package requires. It ran on Python 3.6. It now uses `boto3` and `botocore` 1.34.69, which work with the `urllib3` 2.8.0 of the `pipeline` package.
+- The Git reader keeps Python 3.6, now installed with `micromamba` from conda-forge, because its dependency versions are for Python 3.6.
+- The leader elector runs on Python 3.9 of Rocky Linux 9. It ran on Python 3.6 of CentOS 7.
+
+Other changes:
+
+- The Lustre client in the search image is now the el8 build of version 2.10.8, as in the Rocky Linux tool images. It replaces the el7 build of version 2.12.5.  
+    **_Note_**: AWS lists the 2.10 Lustre clients as not compatible with the FSx for Lustre file systems of version 2.15 (the 2.12 clients are). The image brings only the user space tools, e.g. `mount.lustre` and `lfs`: the Lustre kernel module is the one of the node. The mounts of FSx for Lustre 2.15 file systems from the search service with this client are not tested.
+- The Java services in these images follow the `DEFAULT` crypto policy of Rocky Linux 9. In TLS connections and certificate chains, they now reject:
+    - SHA-1 signatures in any certificate (on CentOS 7, only in the server certificates that chain to the CA certificates of the JDK), and DSA signatures with any hash
+    - RSA, DSA and DH keys shorter than 2048 bits (on CentOS 7, 1024 bits), and EC keys shorter than 256 bits (on CentOS 7, 224 bits)
+
+    So a server that a service connects to, for example an SMTP server, must have a certificate chain that meets these limits. The policy covers only TLS and certificate chains, so it does not apply to the 1024-bit JWT signing keys that the installer creates.
+- The test identity provider runs on Node.js 24, and it accepts SHA-1 signatures, because the API signs its SAML requests with RSA-SHA1.
 
 ***
 
