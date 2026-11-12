@@ -91,6 +91,7 @@ public class AutoscaleManagerTest {
     private static final String NOT_READY_FREE_NODE_ID = "333";
     private static final String FREE_POOL_NODE_ID = AutoscaleContants.NODE_POOL_PREFIX + "1";
     private static final String FREE_LOCAL_NODE_ID = AutoscaleContants.NODE_LOCAL_PREFIX + "1";
+    private static final String NODE_PENDING_TAG = "NODE_PENDING";
 
     @Mock
     private PipelineRunManager pipelineRunManager;
@@ -438,6 +439,20 @@ public class AutoscaleManagerTest {
 
         verify(cloudFacade).scaleDownNode(Long.valueOf(READY_FREE_NODE_ID));
         verify(cloudFacade).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
+    }
+
+    @Test
+    public void testRunWithoutTagsGetsPendingTagWhenClusterIsFull() {
+        mockFullClusterWithFreeNodes();
+        testRun.setTags(null);
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(pipelineRunManager).updateTags(eq(TEST_RUN_ID),
+                argThat(Matchers.hasProperty("tags", Matchers.hasEntry(NODE_PENDING_TAG,
+                        KubernetesConstants.TRUE_LABEL_VALUE))),
+                eq(false));
+        verify(cloudFacade, never()).scaleUpNode(any(), any(), any(), any());
     }
 
     /**

@@ -376,7 +376,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         }
 
         private void labelPendingRun(final PipelineRun run) {
-            final Map<String, String> tags = MapUtils.emptyIfNull(run.getTags());
+            // a copy: for a run with null tags, emptyIfNull gives an immutable map
+            final Map<String, String> tags = new HashMap<>(MapUtils.emptyIfNull(run.getTags()));
             if (!tags.containsKey(NODE_PENDING_TAG)) {
                 tags.put(NODE_PENDING_TAG, KubernetesConstants.TRUE_LABEL_VALUE);
                 pipelineRunManager.updateTags(run.getId(), new TagsVO(tags), false);
@@ -384,7 +385,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         }
 
         private void unLabelPendingRun(final PipelineRun run) {
-            final Map<String, String> tags = MapUtils.emptyIfNull(run.getTags());
+            // a copy: for a run with null tags, emptyIfNull gives an immutable map
+            final Map<String, String> tags = new HashMap<>(MapUtils.emptyIfNull(run.getTags()));
             if (tags.containsKey(NODE_PENDING_TAG)) {
                 tags.remove(NODE_PENDING_TAG);
                 pipelineRunManager.updateTags(run.getId(), new TagsVO(tags), true);
