@@ -1870,7 +1870,7 @@ The WebDAV service (`cp-dav`) also moved from CentOS 7 to Rocky Linux 8 and got 
 
 ## Self-contained Python 3.12 distribution
 
-The runs, the node hosts and the platform images install the platform's Python 3.12 distribution, from `tools/python/3/python3.12.tar.gz` of the distribution bucket, into `/usr/local/python3.12` (the AWS node images into `/opt/python3.12`). It is now built from pinned sources by the `Build-Dependencies` workflow (`deploy/dependencies/python3/`), and it needs nothing from the tool image but `glibc` 2.17 or later:
+The runs, the node hosts and the platform images install the platform's Python 3.12 distribution, from `tools/python/3/python3.12.tar.gz` of the distribution bucket, into `/usr/local/python3.12`. It is now built from pinned sources by the `Build-Dependencies` workflow (`deploy/dependencies/python3/`), and it needs nothing from the tool image but `glibc` 2.17 or later:
 
 - CPython 3.12.16 with OpenSSL 3.5, instead of CPython 3.12.0 with OpenSSL 1.1.1, which has had no support since 2023.
 - Its modules carry their own libraries. So `ctypes` (and with it the NFS events observer of a run), `sqlite3`, `readline` and `curses` now work in the images that lack the `libffi.so.6`, `libsqlite3.so.0`, `libreadline.so.6` or `libncursesw.so.5` of the previous build, e.g. Rocky Linux 9, Ubuntu 20.04 and later, and Debian 11 and later.
@@ -2239,7 +2239,7 @@ Previously, `PAUSE` and `COMMIT` operations failed with the `NullPointerExceptio
 Previously, the `deploy/infra/aws/packer` scripts, which build the Amazon Linux 2023 images for the AWS nodes:
 
 - installed the platform's Python 3.12 into `/opt/python3.12`. The commit and the pause of a run look for it in `/usr/local/python3.12` on the node, and use Python 2 when it is not there. So on the nodes of these images, the commit and the pause ran on Python 2.
-- did not install `lvm2`. When a node has more than one unmounted disk, e.g. the larger `c5d`, `m5d` and `r5d` types, which have several local NVMe disks and get no EBS data volume, the user data joins them into one volume with `pvcreate`, `vgcreate` and `lvcreate`. Without `lvm2`, this failed, and `/ebs` stayed on the root volume.
+- did not install `lvm2`. When a node has more than one unmounted disk, e.g. the larger `c5d`, `m5d` and `r5d` types, which have several local NVMe disks and get no EBS data volume, the user data joins them into one volume with `pvcreate`, `vgcreate` and `lvcreate`. Without `lvm2`, this failed, and `/ebs` stayed on the XFS root volume. With the default `btrfs` file system type, the user data still set the `btrfs` storage driver for Docker in `/ebs/docker`, so Docker could not start, and the node did not join the cluster. Only with `ext4` did the node start, with `/ebs` on the root volume.
 - went on after a failed download of `btrfs`, Python 2, Python 3.12 or `jq`, and created the image anyway: e.g. with an empty `/usr/bin/btrfs` and no `mkfs.btrfs`. Also, they replaced the `jq` package of the image with a downloaded `jq` 1.6, and left the Nvidia `rpm` packages in `/opt` of the `gpu` image.
 
 Now:
