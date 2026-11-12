@@ -19,11 +19,7 @@
 import {spyOn} from '@test';
 import getMarkdownRenderer from './renderer';
 
-const render = (markdown) => {
-  const container = document.createElement('div');
-  container.innerHTML = getMarkdownRenderer().render(markdown);
-  return container;
-};
+const render = (markdown) => getMarkdownRenderer().render(markdown);
 
 // highlight.js warns about a deprecated call once per page, so this test runs first
 it('highlights the code with no deprecated highlight.js call', () => {
@@ -39,15 +35,13 @@ it('highlights the code with no deprecated highlight.js call', () => {
 
 describe('getMarkdownRenderer', () => {
   it('highlights a code block in the language it names', () => {
-    const container = render('```python\ndef f(x):\n    return x\n```');
+    const html = render('```python\ndef f(x):\n    return x\n```');
 
-    expect(container.querySelector('.hljs-keyword').textContent).toBe('def');
-    expect(container.querySelector('.hljs-title').textContent).toBe('f');
+    expect(html).toContain('<span class="hljs-keyword">def</span>');
+    expect(html).toContain('<span class="hljs-title">f</span>');
   });
 
   it('highlights a code block with no language as bash', () => {
-    const container = render('```\necho done\n```');
-
-    expect(container.querySelector('.hljs-built_in').textContent).toBe('echo');
+    expect(render('```\necho done\n```')).toContain('<span class="hljs-built_in">echo</span>');
   });
 });
