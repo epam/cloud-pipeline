@@ -37,7 +37,7 @@ class GitServer(object):
         self.synchronized_users = []
         self.__pipeline_server_ = pipeline_server
         self.initialized = False
-        self.__gitlab_api_version__ = ''
+        self.__gitlab_api_version__ = GitLab.DEFAULT_API_VERSION
 
     def initialize(self):
         try:
@@ -46,7 +46,8 @@ class GitServer(object):
             self.__preferences__ = preference_api.list()
             self.__access_token__ = self.__find_preference_value__('git.token')
             self.__root_user_name__ = self.__find_preference_value__('git.user.name')
-            self.__gitlab_api_version__ = self.__find_preference_value__('git.gitlab.api.version')
+            self.__gitlab_api_version__ = self.__find_preference_value__('git.gitlab.api.version') \
+                or GitLab.DEFAULT_API_VERSION
             if self.__root_user_name__ is not None:
                 self.__root_user_name__ = self.__root_user_name__.lower()
             self.__api__ = GitLab(self.__server__, self.__access_token__, self.__gitlab_api_version__)
@@ -548,6 +549,7 @@ class GitServer(object):
         return None, None
 
     def get_ssh_key_value(self, key):
+        # v4 returns the key with the comment GitLab appended to it: compare the type and the key only
         if self.__gitlab_api_version__ == 'v3':
             return key
         return ' '.join(key.split(' ')[:2]).strip()
