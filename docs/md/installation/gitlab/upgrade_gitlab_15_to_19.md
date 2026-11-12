@@ -133,8 +133,7 @@ Every image checks the version of the data it starts on, and stops when a requir
 * A Cloud Pipeline build that has the GitLab 19 support, deployed to the `api` before the first stop (see the checks).
 * The `lifescience/cloud-pipeline:git-19-<version>` image of the same build in the registry of the deployment.
 * The `lifescience/cloud-pipeline:cp-bkp-worker-<version>` image of the same build, for the backup workers. An older
-  worker image is based on CentOS 7: it cannot run the `pipe` of this build, and has no backup script for
-  `cp-gitlab-db`.
+  worker image has no backup script for `cp-gitlab-db`.
 
 ### Session setup
 

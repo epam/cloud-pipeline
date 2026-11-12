@@ -37,6 +37,7 @@
 - [Access to the pipeline repositories for the pipeline roles](#access-to-the-pipeline-repositories-for-the-pipeline-roles)
 - [GitLab 19 support](#gitlab-19-support)
 - [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
+- [The `pipe` CLI on Python 3](#the-pipe-cli-on-python-3)
 - [pipe-common requires Python 3.12](#pipe-common-requires-python-312)
 
 ***
@@ -711,6 +712,22 @@ On connect to a run, the Cloud Pipeline Remote extension for VS Code and Cursor 
 In the current version, a run can ask for another folder, e.g. a project folder in the image. For that, set the new system parameter **`CP_VSCODE_WORKSPACE_DIR`** to the absolute path of the folder - at launch, or as a default parameter of a tool. The extension opens this folder for any user who connects to the run, if the user can open it. Otherwise, the extension shows a warning with the reason, and opens the home folder, as before.  
 On a deployment that is updated, not installed anew, the parameter is offered in the list of system parameters only after an admin adds it to the **`launch.system.parameters`** preference. Until then, it can be set as a regular parameter of a run.
 
+## The `pipe` CLI on Python 3
+
+The `pipe` CLI runs on Python 3.12. Its Linux binary and tarball were built with Python 2.7, and now are built with Python 3.12 on CentOS 7. Its Windows build moved from Python 3.6 to 3.12, and its macOS (arm64) build from Python 3.9 to 3.12.  
+This brings the following changes:
+
+- the Linux binary and tarball run on the Linux distributions with `glibc` 2.17 or later, e.g. CentOS / RHEL 7, Amazon Linux 2, Ubuntu 16.04, Debian 9 or later. They bring OpenSSL 3.5 with them, and take the CA certificates and the OpenSSL configuration from `/etc/pki/tls` of the system, if it has one
+- the `pipe-el6` binary and tarball for CentOS 6 / RHEL 6 are no longer provided
+- the NTLM proxy authentication is removed, with the NTLM proxy of the Windows build. `pipe configure` fails, if one of its options is set: `--proxy-ntlm`, `--proxy-ntlm-user`, `--proxy-ntlm-domain` or `--proxy-ntlm-pass`. If the saved configuration of an earlier version enables it, `pipe` prints a warning and uses the proxy without it
+- the `--codec` option of `pipe configure` is removed, as Python 3 always uses Unicode text. `pipe configure` fails, if it is set
+- the Linux binary still unpacks itself into `~/.pipe/tmp` on each start. If it cannot create this folder, e.g. when the home folder cannot be written, it now unpacks itself into the system temporary folder (`$TMPDIR`, `/tmp` by default)
+- the installation from the source tarball (**Operation System** → **Source** in **Settings** → **CLI**) requires Python 3.10 or later
+- `pipe` requires newer versions of several Python dependencies, as the earlier versions have published security advisories, e.g. `requests` 2.33.0, `cryptography` 50.0.0 and `PyJWT` 2.15.0 or later. The builds of `pipe` take the exact versions from `pipe-cli/constraints.txt`
+- the Google Cloud Storage transfers use only the public API of the Google Cloud Storage client library, so they work with its current versions
+
+On a deployment that is updated, not installed anew, **Settings** → **CLI** keeps the old installation hints, with the `pipe-el6` download URLs and the Python 2 requirement of the **Source** option, until an admin updates the **`ui.pipe.cli.install.template`** preference.  
+For more details see [here](../../manual/14_CLI/14.1._Install_and_setup_CLI.md#how-to-install-and-setup-pipe-cli).
 ## pipe-common requires Python 3.12
 
 `pipe-common` is the `pipeline` Python package of the platform. Every run installs it, and the platform scripts of a run use it, e.g. for the storage mounts, the data transfers, the cluster setup and the grid engine autoscaler. The platform services that run Python scripts install it as well.
@@ -923,7 +940,7 @@ Please note:
 
 [#4618](https://github.com/epam/cloud-pipeline/issues/4618)
 
-Previously, the image of the backup workers (`cp-bkp-worker-*`) was based on CentOS 7. The `pipe` CLI is built on Rocky Linux 8 with Python 3.12, and requires `glibc` 2.28 or later, while CentOS 7 has `glibc` 2.17. So a backup worker could not run `pipe`, and could not copy the backups to the storage.
+Previously, the image of the backup workers (`cp-bkp-worker-*`) was based on CentOS 7. The `pipe` CLI was built on Rocky Linux 8 with Python 3.12, and required `glibc` 2.28 or later, while CentOS 7 has `glibc` 2.17. So a backup worker could not run `pipe`, and could not copy the backups to the storage.
 In the current version, the backup worker image is based on Rocky Linux 9.8.
 
 ### The backup worker of the GitLab database always fails
