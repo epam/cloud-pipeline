@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,9 +25,24 @@ function get_pipe_binaries() {
   mv $_OSX_CLI_PATH/dist/dist-folder/pipe-osx*.tar.gz ${API_STATIC_PATH}/
 }
 
-source ~/venv2.7/bin/activate
-pip install PyYAML==3.12
-pip install mkdocs==1.0.4
+# Setup python3: the build runs "python setup.py sdist" for the Python packages and "mkdocs build" for the docs
+# in a virtual environment of the Python 3.12 distribution, which the runs install too
+CP_PYTHON3_DIST_URL="${CP_PYTHON3_DIST_URL:-https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/python/3/python3.12.tar.gz}"
+_PYTHON3_HOME=$(mktemp -d)
+if ! { wget -q "$CP_PYTHON3_DIST_URL" -O "$_PYTHON3_HOME/python3.12.tar.gz" && \
+       tar -zxf "$_PYTHON3_HOME/python3.12.tar.gz" -C "$_PYTHON3_HOME" && \
+       "$_PYTHON3_HOME/python3.12/bin/python3.12" -m venv "$_PYTHON3_HOME/venv"; }; then
+    echo "Failed to setup Python 3.12 from $CP_PYTHON3_DIST_URL"
+    exit 1
+fi
+source "$_PYTHON3_HOME/venv/bin/activate"
+# The node-gyp of npm 6 (Node 14), which builds the native npm modules, fails on Python 3.11 and later.
+# So npm gets the system's own python3, not the Python 3.12 on PATH
+if [ -x /usr/bin/python3 ]; then
+    export npm_config_python=/usr/bin/python3
+fi
+# A Python 3.12 virtual environment has no setuptools, which "setup.py sdist" needs
+pip install setuptools==81.0.0 mkdocs==1.6.1 || exit 1
 
 # Authenticate to have an increased pull limit
 # https://www.docker.com/increase-rate-limit
@@ -40,19 +55,12 @@ mkdir -p ${API_STATIC_PATH}
 
 get_pipe_binaries "-arm"
 
-_BUILD_DOCKER_IMAGE="lifescience/cloud-pipeline:python2.7-centos6" ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} -Pprofile=release pipe-cli:buildLinux --no-daemon -x :pipe-cli:test
-mv pipe-cli/dist/dist-file/pipe ${API_STATIC_PATH}/pipe-el6
-mv pipe-cli/dist/dist-folder/pipe.tar.gz ${API_STATIC_PATH}/pipe-el6.tar.gz
-
 ./gradlew distTar   -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} \
                     -Pprofile=release \
                     -x test \
                     -Pfast \
                     --no-daemon
 
-deactivate
-
-source ~/venv3.8/bin/activate
 pip install awscli
 
 if [ "$APPVEYOR_REPO_NAME" == "epam/cloud-pipeline" ]; then
