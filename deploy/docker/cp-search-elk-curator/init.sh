@@ -165,10 +165,22 @@ function elk_count() {
         && elk_curl "$1/_count" -f | jq -r '.count // empty' 2>/dev/null
 }
 
+# Prints the uuid of the index $1, and nothing if $1 is not an index (e.g. an alias) or cannot be read
+function elk_index_uuid() {
+    elk_curl "$1/_settings/index.uuid" -f | jq -r --arg i "$1" '.[$i].settings.index.uuid // empty' 2>/dev/null
+}
+
 # Prints the uuid of the plain index, if the name of the security log alias is an index, and nothing otherwise
 function security_log_index_uuid() {
-    elk_curl "$SECURITY_LOG_ALIAS/_settings/index.uuid" -f \
-        | jq -r --arg a "$SECURITY_LOG_ALIAS" '.[$a].settings.index.uuid // empty' 2>/dev/null
+    elk_index_uuid "$SECURITY_LOG_ALIAS"
+}
+
+# Checks that the name of the security log alias is still the plain index of the move alias $1, so that no move has
+# replaced it by the alias
+function is_security_log_move() {
+    local _uuid
+    _uuid="$(security_log_index_uuid)"
+    [ "$_uuid" ] && [ "$SECURITY_LOG_MOVE_ALIAS${_uuid,,}" == "$1" ]
 }
 
 # Prints the indices of the security log alias, the newest first: "<index> <true|false: is it the write index>"
@@ -196,8 +208,8 @@ function update_security_log_alias() {
 }
 
 # Creates a bootstrap index of the day, <alias>-<yyyy.MM.dd>-<n>, with the aliases of $1 (JSON), and sets
-# SECURITY_LOG_NEW_INDEX to its name. <n> is above the highest number of the day: the rollover of the write index fails
-# if the name of its next index is taken, e.g. by an index outside the alias
+# SECURITY_LOG_NEW_INDEX to its name and SECURITY_LOG_NEW_UUID to its uuid. <n> is above the highest number of the
+# day: the rollover of the write index fails if the name of its next index is taken, e.g. by an index outside the alias
 function create_security_log_index() {
     local _last _response
     _last="$(elk_curl "_cat/indices/${SECURITY_LOG_ALIAS}-$(date -u +%Y.%m.%d)-*?h=index" -f \
@@ -206,6 +218,7 @@ function create_security_log_index() {
                           -XPUT -d "{\"aliases\": $1}")"
     SECURITY_LOG_NEW_INDEX="$(jq -r '.index // empty' <<< "$_response" 2>/dev/null)"
     if [ "$SECURITY_LOG_NEW_INDEX" ]; then
+        SECURITY_LOG_NEW_UUID="$(elk_index_uuid "$SECURITY_LOG_NEW_INDEX")"
         return 0
     elif [ "$(jq -r '.error.type' <<< "$_response" 2>/dev/null)" == "invalid_alias_name_exception" ]; then
         msg "[WARN] Unable to create a security log index: a write has created the plain index $SECURITY_LOG_ALIAS"
@@ -238,6 +251,30 @@ function stop_security_log_copy() {
     fi
 }
 
+# Copies the plain index to the index $1, and prints the answer of the copy once it ends (the log lines go to stderr).
+# The copy runs as a task of the search engine, which is polled, so that no request lasts long: something in front of
+# the search engine (e.g. of a managed domain) may cut it
+function copy_security_log_index() {
+    local _task _status _polls=0
+    _task="$(elk_curl "_reindex?refresh=true&wait_for_completion=false" -XPOST \
+                 -d "{\"source\": {\"index\": \"$SECURITY_LOG_ALIAS\"}, \"dest\": {\"index\": \"$1\"}}" \
+             | jq -r '.task // empty' 2>/dev/null)"
+    [ "$_task" ] || return 1
+    while sleep 2; do
+        if ! _status="$(elk_curl "_tasks/$_task" -f)"; then
+            msg "[ERROR] Unable to check the copy to $1 ($_task)" >&2
+            return 1
+        elif [ "$(jq -r '.completed' <<< "$_status" 2>/dev/null)" == "true" ]; then
+            jq -c '.response // .error' <<< "$_status"
+            return 0
+        fi
+        _polls=$((_polls + 1))
+        if [ $((_polls % 30)) == 0 ]; then
+            msg "The copy to $1 runs: $(jq -r '.task.status | "\(.created) of \(.total)"' <<< "$_status") documents" >&2
+        fi
+    done
+}
+
 # Removes the copies that interrupted moves of the plain index left, e.g. when the container was stopped during the
 # copy. Such a copy has the move alias of the plain index ($1), and the plain index still has all its documents: the
 # move deletes the plain index in the same request that removes that alias from the copy. The copies of another plain
@@ -265,6 +302,12 @@ function check_security_log_copies() {
         if ! [[ "$_count" =~ ^[0-9]+$ && "$_copied" =~ ^[0-9]+$ ]] || [ "$_copied" -gt "$_count" ]; then
             msg "[ERROR] $_copy, the copy of an interrupted move, has ${_copied:-?} documents, and" \
                 "$SECURITY_LOG_ALIAS has ${_count:-?}: it is kept"
+            return 1
+        fi
+        # A move of another start of this script (e.g. a second pod during a rollout) may have replaced the plain index
+        # by the alias, with this copy as its write index, since the copies were listed
+        if ! is_security_log_move "$1"; then
+            msg "[WARN] $SECURITY_LOG_ALIAS has been changed by another start: $_copy is kept"
             return 1
         fi
         msg "[WARN] Removing $_copy, the copy of an interrupted move ($_copied of $_count documents)"
@@ -296,26 +339,29 @@ function unblock_security_log_index() {
 # and the alias replaces the plain index in the same request that deletes it. The writes are blocked during the copy,
 # so the security events sent meanwhile are rejected. If the move fails, the plain index takes the writes again.
 function repair_security_log_index() {
-    local _uuid _marker _index _response _count _copied _code
+    local _uuid _marker _index _copy_uuid _response _count _copied _code
     msg "[WARN] $SECURITY_LOG_ALIAS is an index, not an alias: its documents are moved to a new index with that alias"
     _uuid="$(security_log_index_uuid)"
     _marker="$SECURITY_LOG_MOVE_ALIAS${_uuid,,}"
     if [ -z "$_uuid" ] || ! check_security_log_copies "$_marker" \
-            || ! create_security_log_index "{\"$_marker\": {}}"; then
+            || ! create_security_log_index "{\"$_marker\": {}}" || [ -z "$SECURITY_LOG_NEW_UUID" ]; then
         msg "[ERROR] $SECURITY_LOG_ALIAS is left as it is, and the security logs are not rolled over"
         unblock_security_log_index "$_uuid"
         return 1
     fi
+    # Another start of this script (e.g. a second pod during a rollout) stops and removes this copy, as the copy of an
+    # interrupted move, and makes its own copy of the same name. So this start changes or removes its copy only while
+    # the copy has its uuid
     _index="$SECURITY_LOG_NEW_INDEX"
+    _copy_uuid="$SECURITY_LOG_NEW_UUID"
     # The documents written before the block are copied, and counted, only once a refresh makes them searchable
     if block_security_log_index true "$_uuid" && elk_curl "$SECURITY_LOG_ALIAS/_refresh" -f -XPOST > /dev/null; then
-        _response="$(elk_curl "_reindex?refresh=true" -XPOST \
-                              -d "{\"source\": {\"index\": \"$SECURITY_LOG_ALIAS\"}, \"dest\": {\"index\": \"$_index\"}}")"
+        _response="$(copy_security_log_index "$_index")"
         _count="$(elk_count "$SECURITY_LOG_ALIAS")"
         _copied="$(elk_count "$_index")"
         if jq -e '.timed_out == false and .failures == [] and .created == .total' <<< "$_response" > /dev/null 2>&1 \
                 && [[ "$_count" =~ ^[0-9]+$ ]] && [ "$_count" == "$_copied" ] \
-                && [ "$(security_log_index_uuid)" == "$_uuid" ] \
+                && [ "$(security_log_index_uuid)" == "$_uuid" ] && [ "$(elk_index_uuid "$_index")" == "$_copy_uuid" ] \
                 && update_security_log_alias "{\"remove_index\": {\"index\": \"$SECURITY_LOG_ALIAS\"}},
                     {\"add\": {\"index\": \"$_index\", \"alias\": \"$SECURITY_LOG_ALIAS\", \"is_write_index\": true}},
                     {\"remove\": {\"index\": \"$_index\", \"alias\": \"$_marker\"}}"; then
@@ -337,7 +383,12 @@ function repair_security_log_index() {
     if [ "$_code" != "404" ]; then
         msg "[ERROR] Unable to check the $SECURITY_LOG_ALIAS alias (HTTP $_code): the outcome of the move is unknown," \
             "and is checked at the next start"
-    elif ! stop_security_log_copy "$_index" || ! elk_curl "$_index" -f -XDELETE > /dev/null; then
+    elif [ "$(elk_index_uuid "$_index")" != "$_copy_uuid" ]; then
+        # The write block is left too: it belongs to the move of the other start now
+        msg "[WARN] $_index is not the copy of this start any more: another start moves $SECURITY_LOG_ALIAS"
+        return 1
+    elif ! stop_security_log_copy "$_index" || [ "$(elk_index_uuid "$_index")" != "$_copy_uuid" ] \
+            || ! elk_curl "$_index" -f -XDELETE > /dev/null; then
         msg "[ERROR] Unable to remove $_index: the next start removes it"
     fi
     unblock_security_log_index "$_uuid"
