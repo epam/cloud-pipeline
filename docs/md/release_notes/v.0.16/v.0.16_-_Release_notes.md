@@ -43,6 +43,7 @@
 - [The API service on Python 3.12 and Rocky Linux 9.8](#the-api-service-on-python-312-and-rocky-linux-98)
 - [Rocky Linux 9.8 for the platform services](#rocky-linux-98-for-the-platform-services)
 - [Python 3.12 for EDGE, WebDAV, FS Browser and the node reporter](#python-312-for-edge-webdav-fs-browser-and-the-node-reporter)
+- [Python 3.12 in the node images](#python-312-in-the-node-images)
 
 ***
 
@@ -869,6 +870,21 @@ Other parts of the platform:
 - **The Rocky Linux base tool** (`library/rockylinux`): the image no longer has Python 2, `get-pip` 2.7 and `setuptools` 44.1.1. It has the platform's Python 3.12 in `/usr/local/python3.12`, with `setuptools` 81.0.0, and `/usr/local/bin/python3` and `pip3` link to it. A run of the tool uses it if the run cannot download the Python 3.12 distribution.
 - **The environment sync tool** (`deploy/contents/sync/app/sync.sh`) runs on Python 3.12. If `CP_PYTHON_PATH` (by default `/usr/local/python3.12/bin/python3.12`) is not there, it installs the platform's Python 3.12 into `/usr/local/python3.12` from **`CP_PYTHON3_DISTRO_URL`**, instead of Miniconda2 into `/conda`. It installs `requests` and `urllib3` from the Python 3 package mirror.
 - **The build scripts of the package repositories** (`deploy/repos`) no longer build the Python 2 package mirror (`build-repo-pypi.sh` is removed), and the deb and rpm repositories no longer get Python 2 and `python-docutils`.
+## Python 3.12 in the node images
+
+The node images are the cloud images that the compute nodes start from. `deploy/infra/build-infra.sh` builds the AWS and Azure images, with the `install-common-node.sh` and `install-gpu-node.sh` scripts in `deploy/infra/aws` and `deploy/infra/az`. `deploy/infra/gcp` has such scripts for GCP, but `build-infra.sh` does not build GCP images.
+
+Previously, the AWS and GCP scripts installed Python 2 (`python`) and its `pip` (`get-pip.py` 2.7). The Azure scripts installed `python`.
+
+Now, these scripts no longer install Python 2 or its `pip`:
+
+- The AWS images (common and GPU) have the platform's Python 3.12 distribution in `/usr/local/python3.12`, from the `tools/python/3/python3.12.tar.gz` file of the public Cloud Pipeline bucket. This is the Python 3.12 that the commit and the pause of a run use on the node host, see [Runs on Python 3.12](#runs-on-python-312). In `/usr/bin`, `python3` and `pip3` are linked to it only if the base image has no `python3` of its own. The distribution is installed only if it runs (`import ssl` and `pip`). If it cannot be downloaded or does not run, the image is still built, without Python 3.12, and the install script logs an error.
+- The Azure and GCP images do not get Python 3.12.
+- If the machine that builds the images has no `aws`, `build-infra.sh` installs the AWS CLI with `python3` and `pip` from the packages of the OS. Where the OS does not allow `pip` to install into its Python (PEP 668, e.g. Ubuntu 24.04), this fails: install the AWS CLI on such a machine before the build.
+
+The Python 2 that the base image has stays. On Amazon Linux 2, `yum`, `cloud-init` and the AWS CLI v1 run on it, and the install script calls this AWS CLI to tag the instance when it is done. On CentOS 7, `yum` and the Azure VM agent run on it.
+
+Please note: only the images that are built anew change.
 
 ***
 

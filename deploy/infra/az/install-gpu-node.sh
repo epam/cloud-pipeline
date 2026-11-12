@@ -15,7 +15,6 @@
 
 # Install common
 yum install -y  nc \
-                python \
                 curl \
                 coreutils \
                 btrfs-progs \

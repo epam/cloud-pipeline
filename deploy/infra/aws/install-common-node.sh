@@ -30,12 +30,51 @@ fi
 
 # Install common
 yum install -y  nc \
-                python \
                 curl \
                 btrfs-progs
 
 yum install -y iproute-tc
-curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
+
+# Install the platform's Python 3.12 distribution into /usr/local/python3.12, the path that it is built for.
+# A failure is logged, and does not stop the build: the build waits for the user_data tag at the end of this script
+CP_PYTHON3_DISTRO_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/3/python3.12.tar.gz"
+function install_python3 {
+    local _python3_tmp_dir
+    echo "Installing Python 3.12 from $CP_PYTHON3_DISTRO_URL into /usr/local/python3.12"
+    # The distro is unpacked into a temporary folder, and moved in place only when it is complete and runs
+    _python3_tmp_dir="$(mktemp -d /usr/local/.cp-python3.XXXXXX)"
+    if [ -n "$_python3_tmp_dir" ] \
+            && { wget -q "$CP_PYTHON3_DISTRO_URL" -O "$_python3_tmp_dir/python3.tgz" \
+                 || curl -s -f -L "$CP_PYTHON3_DISTRO_URL" -o "$_python3_tmp_dir/python3.tgz"; } \
+            && tar -xzf "$_python3_tmp_dir/python3.tgz" -C "$_python3_tmp_dir" \
+            && "$_python3_tmp_dir/python3.12/bin/python3.12" -c 'import ssl' \
+            && "$_python3_tmp_dir/python3.12/bin/python3.12" -m pip --version; then
+        rm -rf /usr/local/python3.12
+        mv "$_python3_tmp_dir/python3.12" /usr/local/python3.12
+        # Only a distro that brings an openssl folder (the previous python3.12.0 build) installs /usr/local/openssl
+        if [ -d "$_python3_tmp_dir/openssl" ]; then
+            rm -rf /usr/local/openssl
+            mv "$_python3_tmp_dir/openssl" /usr/local/openssl
+        fi
+    else
+        echo "[WARN] Cannot download, unpack or run Python 3.12 from $CP_PYTHON3_DISTRO_URL"
+    fi
+    [ -n "$_python3_tmp_dir" ] && rm -rf "$_python3_tmp_dir"
+    if [ ! -x /usr/local/python3.12/bin/python3.12 ]; then
+        echo "[ERROR] Python 3.12 is not installed into /usr/local/python3.12"
+        return 1
+    fi
+    # python3 and pip3 are linked to it only if the host has no python3 of its own
+    if ! command -v python3 &>/dev/null; then
+        ln -s /usr/local/python3.12/bin/python3.12 /usr/bin/python3
+        if ! command -v pip3 &>/dev/null; then
+            ln -s /usr/local/python3.12/bin/pip3.12 /usr/bin/pip3
+        fi
+    else
+        echo "python3 is already available ($(command -v python3)), leaving python3 and pip3 untouched"
+    fi
+}
+install_python3
 
 # Install jq
 wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
