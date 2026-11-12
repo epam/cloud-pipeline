@@ -31,8 +31,10 @@ import {
 } from 'antd';
 import S3Storage, {MAX_FILE_SIZE_DESCRIPTION} from '../../models/s3-upload/s3-storage';
 import DataStorageGenerateUploadUrl from '../../models/dataStorage/DataStorageGenerateUploadUrl';
+import continuousFetch from '../../utils/continuous-fetch';
 import {
   hasArchives,
+  countArchives,
   uploadedArchivePaths,
   handleExtractArchives
 } from '../pipelines/browser/data-storage/utils/extract-archives';
@@ -43,6 +45,8 @@ const MAX_NFS_FILE_SIZE_MB = 500;
 // Shared by the confirmation and progress states, so a file's row is the same
 // height before and after the upload starts.
 const FILE_ROW_MARGIN_BOTTOM = 4;
+// The same interval the Storage tasks table polls on.
+const EXTRACTION_LIMIT_POLL_INTERVAL_MS = 5000;
 
 class UploadButton extends React.Component {
   static propTypes = {
@@ -78,7 +82,8 @@ class UploadButton extends React.Component {
     pendingConfirmation: false,
     extractAfterUpload: false,
     // `undefined` while the cap check has not answered, which is allowed.
-    extractionBlockedReason: undefined
+    extractionBlockedReason: undefined,
+    extractionSlotsRemaining: undefined
   };
 
   @observable s3Storage;
@@ -104,6 +109,7 @@ class UploadButton extends React.Component {
 
   componentWillUnmount () {
     this.unmounted = true;
+    this.stopExtractionLimitPolling();
     if (this.uploadTimeout) {
       clearTimeout(this.uploadTimeout);
       this.uploadTimeout = null;
@@ -213,6 +219,7 @@ class UploadButton extends React.Component {
     if (!this.state.uploadInfoClosable) {
       return;
     }
+    this.stopExtractionLimitPolling();
     const {
       uploadingFiles = []
     } = this.state;
@@ -224,7 +231,8 @@ class UploadButton extends React.Component {
       synchronousUploadingFiles: [],
       pendingConfirmation: false,
       extractAfterUpload: false,
-      extractionBlockedReason: undefined
+      extractionBlockedReason: undefined,
+      extractionSlotsRemaining: undefined
     }, async () => {
       if (this.props.onRefresh) {
         this.props.onRefresh(uploadingFiles.map(f => f.name));
@@ -258,8 +266,9 @@ class UploadButton extends React.Component {
         pendingConfirmation: true,
         uploadInfoClosable: true,
         uploadingFiles: [],
-        extractionBlockedReason: undefined
-      }, this.checkExtractionLimit);
+        extractionBlockedReason: undefined,
+        extractionSlotsRemaining: undefined
+      }, this.startExtractionLimitPolling);
       return;
     }
     startUpload();
@@ -270,20 +279,46 @@ class UploadButton extends React.Component {
    * alert in the pop-up rather than a toast. Optimistic while in flight and on
    * failure: the server enforces the quota itself.
    */
-  checkExtractionLimit = () => {
+  // Polled, not checked once: the user can wait in the open pop-up for one of
+  // their tasks to finish and then press "Upload and extract". Stopped when
+  // the pop-up closes, so nothing polls in the background.
+  startExtractionLimitPolling = () => {
     const {asyncTasks} = this.props;
     if (!asyncTasks || typeof asyncTasks.checkActiveTasksLimit !== 'function') {
       return;
     }
+    this.stopExtractionLimitPolling();
+    this.extractionLimitPoller = continuousFetch({
+      call: this.checkExtractionLimit,
+      intervalMS: EXTRACTION_LIMIT_POLL_INTERVAL_MS,
+      identifier: 'upload-confirmation-archive-task-limit'
+    });
+  };
+
+  stopExtractionLimitPolling = () => {
+    if (this.extractionLimitPoller) {
+      this.extractionLimitPoller.stop();
+      this.extractionLimitPoller = undefined;
+    }
+  };
+
+  checkExtractionLimit = () => {
+    const {asyncTasks} = this.props;
+    if (!asyncTasks || typeof asyncTasks.checkActiveTasksLimit !== 'function') {
+      return Promise.resolve();
+    }
     this.extractionLimitToken += 1;
     const token = this.extractionLimitToken;
-    Promise.resolve()
+    return Promise.resolve()
       .then(() => asyncTasks.checkActiveTasksLimit())
-      .then(({allowed, reason} = {}) => {
+      .then(({allowed, reason, remaining} = {}) => {
         if (this.unmounted || token !== this.extractionLimitToken) {
           return;
         }
-        this.setState({extractionBlockedReason: allowed ? undefined : reason});
+        this.setState({
+          extractionBlockedReason: allowed ? undefined : reason,
+          extractionSlotsRemaining: allowed ? remaining : 0
+        });
       })
       .catch((error) => {
         console.warn('Could not check the active archive-task limit', error);
@@ -294,16 +329,37 @@ class UploadButton extends React.Component {
     return !!this.state.extractionBlockedReason;
   }
 
+  // Set only where the allowance is known and short of what the selection
+  // costs - one task per archive. Below that, the batch fits and says nothing.
+  get extractionShortfallWarning () {
+    const {extractionSlotsRemaining} = this.state;
+    if (this.extractionBlocked || !Number.isFinite(extractionSlotsRemaining)) {
+      return undefined;
+    }
+    const archives = countArchives(this.state.synchronousUploadingFiles);
+    if (extractionSlotsRemaining <= 0 || archives <= extractionSlotsRemaining) {
+      return undefined;
+    }
+    const slots = extractionSlotsRemaining === 1
+      ? '1 more archive task'
+      : `${extractionSlotsRemaining} more archive tasks`;
+    return `${archives} archives selected, but you may start only ${slots} right now. ` +
+      `Extraction will be queued for ${extractionSlotsRemaining} of them; ` +
+      'upload the rest again once your current tasks finish.';
+  }
+
   /**
    * Cancels a paused batch. Nothing uploaded, so no `onRefresh`.
    */
   cancelConfirmation = () => {
+    this.stopExtractionLimitPolling();
     this.setState({
       uploadInfoVisible: false,
       uploadInfoClosable: false,
       pendingConfirmation: false,
       extractAfterUpload: false,
       extractionBlockedReason: undefined,
+      extractionSlotsRemaining: undefined,
       uploadingFiles: [],
       synchronousUploadingFiles: []
     });
@@ -316,6 +372,7 @@ class UploadButton extends React.Component {
    * @param {boolean} extractAfterUpload
    */
   confirmUpload = (extractAfterUpload) => () => {
+    this.stopExtractionLimitPolling();
     const startUpload = this.props.uploadToS3
       ? this.startUploadToS3
       : this.onUploadStatusChangedSynchronous;
@@ -355,7 +412,8 @@ class UploadButton extends React.Component {
           // uploaded.
           pendingConfirmation: false,
           extractAfterUpload: false,
-          extractionBlockedReason: undefined
+          extractionBlockedReason: undefined,
+          extractionSlotsRemaining: undefined
         });
         return;
       }
@@ -369,7 +427,8 @@ class UploadButton extends React.Component {
           synchronousUploadingFiles: [],
           pendingConfirmation: false,
           extractAfterUpload: false,
-          extractionBlockedReason: undefined
+          extractionBlockedReason: undefined,
+          extractionSlotsRemaining: undefined
         });
         return;
       }
@@ -560,7 +619,8 @@ class UploadButton extends React.Component {
           // See `onUploadStatusChangedSynchronous`.
           pendingConfirmation: false,
           extractAfterUpload: false,
-          extractionBlockedReason: undefined
+          extractionBlockedReason: undefined,
+          extractionSlotsRemaining: undefined
         });
         return;
       }
@@ -965,12 +1025,16 @@ class UploadButton extends React.Component {
           visible={this.state.uploadInfoVisible}>
           {
             // `info`, not `warning`: the selection is fine and Upload works.
-            this.state.pendingConfirmation && this.extractionBlocked && (
+            this.state.pendingConfirmation && (
+              this.state.extractionBlockedReason || this.extractionShortfallWarning
+            ) && (
               <Alert
                 type="info"
                 showIcon
                 style={{marginBottom: 8}}
-                message={this.state.extractionBlockedReason}
+                message={
+                  this.state.extractionBlockedReason || this.extractionShortfallWarning
+                }
               />
             )
           }

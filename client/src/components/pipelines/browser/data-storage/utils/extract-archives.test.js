@@ -162,18 +162,36 @@ describe('uploadedArchivePaths', () => {
 
 describe('extractionFolderOf', () => {
   test.each([
-    ['folder/archive.zip', 'folder/'],
-    ['a/b/archive.zip', 'a/b/'],
-    ['archive.zip', ''],
+    ['folder/archive.zip', 'folder/archive/'],
+    ['a/b/data.tar.gz', 'a/b/data/'],
+    ['archive.zip', 'archive/'],
+    ['report.tar.bz2', 'report/'],
+    ['my.data.tgz', 'my.data/'],
+    ['ARCHIVE.ZIP', 'ARCHIVE/'],
     ['', ''],
     [undefined, '']
   ])('%j extracts into %j', (path, expected) => {
     expect(extractionFolderOf(path)).toBe(expected);
   });
+
+  // The whole compound suffix goes, not just the shorter one it also ends with.
+  test('strips .tar.gz rather than only .gz', () => {
+    expect(extractionFolderOf('data.tar.gz')).toBe('data/');
+  });
+
+  // The server rejects a `.` or `..` segment, so such a name keeps the
+  // archive's own folder instead of producing a request it would refuse.
+  test.each([
+    ['f/...zip', 'f/'],
+    ['...zip', ''],
+    ['f/.zip', 'f/']
+  ])('%j falls back to %j', (path, expected) => {
+    expect(extractionFolderOf(path)).toBe(expected);
+  });
 });
 
 describe('handleExtractArchives', () => {
-  test('queues one task per archive, each into the archive\'s own folder', async () => {
+  test('queues one task per archive, each into a folder named after it', async () => {
     const startArchiveExtraction = fn().mockResolvedValue({id: 'task-1'});
     const messageApi = messageApiDouble();
 
@@ -185,8 +203,8 @@ describe('handleExtractArchives', () => {
     );
 
     expect(startArchiveExtraction.mock.calls).toEqual([
-      [7, 'data/a.zip', 'data/'],
-      [7, 'b.zip', '']
+      [7, 'data/a.zip', 'data/a/'],
+      [7, 'b.zip', 'b/']
     ]);
     expect(outcome).toEqual({queued: 2, total: 2, error: undefined});
   });

@@ -69,6 +69,17 @@ export function hasArchives (files) {
   return (files || []).some(file => file && isArchive(file.name));
 }
 
+/**
+ * How many archives are in the selection - one task each, so this is what the
+ * batch costs against the user's archive-task allowance.
+ *
+ * @param {{name: string}[]} files
+ * @returns {number}
+ */
+export function countArchives (files) {
+  return (files || []).filter(file => file && isArchive(file.name)).length;
+}
+
 // Both halves are needed: UploadButton's S3 path sets `done` and `status`,
 // its synchronous path only `status`.
 function succeeded (file) {
@@ -101,17 +112,35 @@ export function uploadedArchivePaths (uploadingFiles, path) {
   return [...new Set(paths)];
 }
 
+// The archive's name without its extension. Longest suffix first, so
+// `data.tar.gz` loses all of `.tar.gz` rather than only the `.gz` it also
+// ends with - the reason ARCHIVE_EXTENSIONS keeps the compound forms.
+function baseNameOf (fileName) {
+  const lower = `${fileName}`.toLowerCase();
+  const suffix = ARCHIVE_EXTENSIONS.find(extension => lower.endsWith(extension));
+  return suffix ? `${fileName}`.slice(0, -suffix.length) : `${fileName}`;
+}
+
 /**
- * The folder an uploaded archive sits in - where its contents are extracted.
- * The leaf is dropped, not the prefix the caller passed: the archive's own
- * path already carries it.
+ * Where an archive's contents go: a folder beside it, named after the archive
+ * itself - `data/files/a.tar.gz` extracts into `data/files/a/`.
+ *
+ * Falls back to the archive's own folder for a name that would not be a legal
+ * folder - the server rejects a `.` or `..` segment outright
+ * (`AsyncTaskParamsValidator.assertSafePath`).
  *
  * @param {string} archivePath
- * @returns {string} `''` for an archive at the storage root
+ * @returns {string} always ends with `/`, or is `''` for the storage root
  */
 export function extractionFolderOf (archivePath) {
-  const at = `${archivePath || ''}`.lastIndexOf('/');
-  return at < 0 ? '' : `${archivePath}`.slice(0, at + 1);
+  const path = `${archivePath || ''}`;
+  const at = path.lastIndexOf('/');
+  const prefix = at < 0 ? '' : path.slice(0, at + 1);
+  const baseName = baseNameOf(at < 0 ? path : path.slice(at + 1));
+  if (!baseName || baseName === '.' || baseName === '..') {
+    return prefix;
+  }
+  return `${prefix}${baseName}/`;
 }
 
 /**

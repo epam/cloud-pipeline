@@ -376,7 +376,7 @@ describe('UploadButton - queueing the extraction', () => {
         expect(startArchiveExtraction).toHaveBeenCalledTimes(1);
       }, {timeout: 5000});
       expect(startArchiveExtraction)
-        .toHaveBeenCalledWith('storage-1', 'folder/archive.zip', 'folder/');
+        .toHaveBeenCalledWith('storage-1', 'folder/archive.zip', 'folder/archive/');
 
       // The modal does not wait on the extraction call before closing - it
       // closes on the same 2 s timer an ordinary upload uses, and
@@ -505,8 +505,8 @@ describe('UploadButton - queueing the extraction', () => {
       // Two completions, two archives, and still exactly one task each - one
       // task per archive, since `sourcePath` is a single path server-side.
       expect(startArchiveExtraction.mock.calls).toEqual([
-        ['storage-1', 'folder/one.zip', 'folder/'],
-        ['storage-1', 'folder/two.zip', 'folder/']
+        ['storage-1', 'folder/one.zip', 'folder/one/'],
+        ['storage-1', 'folder/two.zip', 'folder/two/']
       ]);
     }
   );
@@ -558,7 +558,7 @@ describe('UploadButton - queueing the extraction', () => {
       // Only the archive that actually landed - the retryable file is not
       // an archive and did not succeed either way.
       expect(startArchiveExtraction)
-        .toHaveBeenCalledWith('storage-1', 'folder/one.zip', 'folder/');
+        .toHaveBeenCalledWith('storage-1', 'folder/one.zip', 'folder/one/');
 
       // A batch with a retryable failure never auto-closed before
       // extraction existed, and that must still hold: if a close timer had
@@ -624,7 +624,7 @@ describe('UploadButton - queueing the extraction', () => {
         expect(startArchiveExtraction).toHaveBeenCalledTimes(1);
       }, {timeout: 5000});
       expect(startArchiveExtraction)
-        .toHaveBeenCalledWith('storage-1', 'folder/landed.zip', 'folder/');
+        .toHaveBeenCalledWith('storage-1', 'folder/landed.zip', 'folder/landed/');
       expect(onRefresh).not.toHaveBeenCalled();
 
       // The retry succeeds: `retry.zip` is now done with no error and no
@@ -647,7 +647,7 @@ describe('UploadButton - queueing the extraction', () => {
       }, {timeout: 5000});
       // Only the archive that newly landed - `landed.zip` is not sent again.
       expect(startArchiveExtraction)
-        .toHaveBeenNthCalledWith(2, 'storage-1', 'folder/retry.zip', 'folder/');
+        .toHaveBeenNthCalledWith(2, 'storage-1', 'folder/retry.zip', 'folder/retry/');
 
       // A third completion with nothing new since the last one must not
       // queue either path again.
@@ -711,6 +711,8 @@ describe('UploadButton - the archive-task cap in the confirmation pop-up', () =>
   });
 
   const AT_THE_CAP = 'You already have 2 archive tasks in progress, and the limit is 2.';
+  // Mirrors UploadButton's own EXTRACTION_LIMIT_POLL_INTERVAL_MS.
+  const POLL_INTERVAL_MS = 5000;
 
   async function openConfirmation (asyncTasks) {
     useFakeTimers();
@@ -738,12 +740,81 @@ describe('UploadButton - the archive-task cap in the confirmation pop-up', () =>
   });
 
   test('below the cap, the button stays enabled and no alert is shown', async () => {
-    const checkActiveTasksLimit = fn().mockResolvedValue({allowed: true});
+    const checkActiveTasksLimit = fn().mockResolvedValue({allowed: true, remaining: 5});
     await openConfirmation(asyncTasksDouble(fn(), checkActiveTasksLimit));
 
     await waitFor(() => expect(checkActiveTasksLimit).toHaveBeenCalledTimes(1));
     expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
     expect(screen.queryByText(AT_THE_CAP)).not.toBeInTheDocument();
+  });
+
+  // One task per archive, so a selection can cost more than the allowance has
+  // left - said up front rather than left to two toasts afterwards.
+  test('fewer slots than archives warns up front, and still allows the batch', async () => {
+    useFakeTimers();
+    const {input} = renderUploadButton({
+      extractArchivesAvailable: true,
+      asyncTasks: asyncTasksDouble(fn(), fn().mockResolvedValue({allowed: true, remaining: 1}))
+    });
+    await selectFiles(input, [zipFile('a.zip'), zipFile('b.zip'), zipFile('c.zip')]);
+    await settleSelection();
+    useRealTimers();
+
+    await waitFor(() => {
+      expect(screen.getByText(/3 archives selected/)).toBeInTheDocument();
+    });
+    expect(screen.getByText(/only 1 more archive task/)).toBeInTheDocument();
+    // Not a refusal: one of the three can still be queued.
+    expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
+  });
+
+  test('enough slots for every archive says nothing', async () => {
+    useFakeTimers();
+    const {input} = renderUploadButton({
+      extractArchivesAvailable: true,
+      asyncTasks: asyncTasksDouble(fn(), fn().mockResolvedValue({allowed: true, remaining: 3}))
+    });
+    await selectFiles(input, [zipFile('a.zip'), zipFile('b.zip'), zipFile('c.zip')]);
+    await settleSelection();
+    useRealTimers();
+
+    await waitFor(() => expect(screen.getByText('a.zip')).toBeInTheDocument());
+    expect(screen.queryByText(/archives selected/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
+  });
+
+  // Only archives cost a task, so the other files in the batch do not count.
+  test('the count is of archives, not of every picked file', async () => {
+    useFakeTimers();
+    const {input} = renderUploadButton({
+      extractArchivesAvailable: true,
+      asyncTasks: asyncTasksDouble(fn(), fn().mockResolvedValue({allowed: true, remaining: 2}))
+    });
+    await selectFiles(input, [
+      zipFile('a.zip'), zipFile('b.zip'), zipFile('c.zip'),
+      textFile('notes.txt'), textFile('more.txt')
+    ]);
+    await settleSelection();
+    useRealTimers();
+
+    await waitFor(() => {
+      expect(screen.getByText(/3 archives selected/)).toBeInTheDocument();
+    });
+  });
+
+  // An unknown allowance is not a shortfall.
+  test('a check that reports no remaining count warns about nothing', async () => {
+    useFakeTimers();
+    const {input} = renderUploadButton({
+      extractArchivesAvailable: true,
+      asyncTasks: asyncTasksDouble(fn(), fn().mockResolvedValue({allowed: true}))
+    });
+    await selectFiles(input, [zipFile('a.zip'), zipFile('b.zip')]);
+    await settleSelection();
+    useRealTimers();
+
+    await waitFor(() => expect(screen.getByText('a.zip')).toBeInTheDocument());
+    expect(screen.queryByText(/archives selected/)).not.toBeInTheDocument();
   });
 
   // The server enforces the quota, so a check that cannot run must not refuse.
@@ -760,6 +831,41 @@ describe('UploadButton - the archive-task cap in the confirmation pop-up', () =>
 
     expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
   });
+
+  // The point of polling: the user waits in the open pop-up for one of their
+  // tasks to finish, and the button becomes usable without re-picking files.
+  test('the check is polled, so the button unblocks once a slot frees up', async () => {
+    let atTheCap = true;
+    const checkActiveTasksLimit = fn(() => Promise.resolve(
+      atTheCap ? {allowed: false, reason: AT_THE_CAP, remaining: 0} : {allowed: true, remaining: 1}
+    ));
+    await openConfirmation(asyncTasksDouble(fn(), checkActiveTasksLimit));
+
+    await waitFor(() => expect(screen.getByText(AT_THE_CAP)).toBeInTheDocument());
+    expect(screen.getByRole('button', {name: 'Upload and extract'})).toBeDisabled();
+
+    atTheCap = false;
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
+    }, {timeout: POLL_INTERVAL_MS * 3});
+    expect(screen.queryByText(AT_THE_CAP)).not.toBeInTheDocument();
+    expect(checkActiveTasksLimit.mock.calls.length).toBeGreaterThan(1);
+  }, 20000);
+
+  // Nothing may poll on behalf of a pop-up the user has closed.
+  test('polling stops when the pop-up is cancelled', async () => {
+    const checkActiveTasksLimit = fn().mockResolvedValue({allowed: true, remaining: 1});
+    await openConfirmation(asyncTasksDouble(fn(), checkActiveTasksLimit));
+
+    await waitFor(() => expect(checkActiveTasksLimit).toHaveBeenCalled());
+    await click(screen.getByRole('button', {name: 'Cancel'}));
+    const callsAtCancel = checkActiveTasksLimit.mock.calls.length;
+
+    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS * 2));
+
+    expect(checkActiveTasksLimit.mock.calls.length).toBe(callsAtCancel);
+  }, 20000);
 
   // So a blocked batch leaves no alert behind for the next one.
   test('Cancel clears the alert', async () => {

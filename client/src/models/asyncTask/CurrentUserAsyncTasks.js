@@ -417,10 +417,17 @@ class CurrentUserAsyncTasks {
    * failure of this request is not allowed to be the thing that stops a
    * legitimate download.
    *
-   * @returns {Promise<{allowed: boolean, reason: string|undefined}>}
+   * `remaining` is how many more tasks fit, for a caller queueing several at
+   * once. It is `undefined` wherever the check could not run, which is not the
+   * same as zero and must not be read as a refusal.
+   *
+   * @returns {Promise<{allowed: boolean, reason: string|undefined,
+   *   activeCount: number|undefined, limit: number|undefined,
+   *   remaining: number|undefined}>}
    */
   async checkActiveTasksLimit () {
     await preferences.fetchIfNeededOrWait();
+    const limit = this.maxUserTasks;
     let activeTasksCount;
     try {
       activeTasksCount = await this.fetchActiveTasksCount();
@@ -431,21 +438,30 @@ class CurrentUserAsyncTasks {
       );
       return {allowed: true};
     }
-    if (activeTasksCount >= this.maxUserTasks) {
+    if (!Number.isFinite(limit)) {
+      // No limit to compare against - the preference is missing or unreadable.
+      return {allowed: true, activeCount: activeTasksCount};
+    }
+    if (activeTasksCount >= limit) {
       return {
         allowed: false,
-        // The measured count, not the cap: the two are equal in the ordinary
-        // case, but an administrator lowering the preference leaves users
-        // above it, and telling someone with five downloads that they have
-        // three is worse than saying nothing.
-        // "archive tasks", not "downloads": `maxUserTasks` is one allowance
-        // covering every kind of archive task, extraction included.
+        activeCount: activeTasksCount,
+        limit,
+        remaining: 0,
+        // The measured count, not the cap: an administrator lowering the
+        // preference leaves users above it. "archive tasks", not "downloads":
+        // the allowance covers extraction too.
         reason: `You already have ${activeTasksCount} archive tasks in progress, ` +
-          `and the limit is ${this.maxUserTasks}. ` +
+          `and the limit is ${limit}. ` +
           'Wait for one to finish before starting another.'
       };
     }
-    return {allowed: true};
+    return {
+      allowed: true,
+      activeCount: activeTasksCount,
+      limit,
+      remaining: limit - activeTasksCount
+    };
   }
 
   /**
@@ -477,14 +493,11 @@ class CurrentUserAsyncTasks {
 
   /**
    * One UNPACK_ARCHIVE task, for one archive: `sourcePath` is a single path
-   * server-side (`UnpackArchiveParams`), so a batch of archives is a batch of
-   * tasks. The destination is the same storage and the folder the archive was
-   * uploaded into.
+   * server-side, so a batch of archives is a batch of tasks. The destination
+   * is the same storage and the folder the archive was uploaded into.
    *
-   * The task is deliberately not passed to `trackTask`: that drives the
-   * completion notification, whose finished-archive message offers a download
-   * link an extraction has no equivalent for. An extraction is followed in the
-   * Storage tasks table instead.
+   * Not passed to `trackTask`: that drives the completion notification, whose
+   * message offers a download link an extraction has no equivalent for.
    *
    * @param {string|number} storageId
    * @param {string} sourcePath the archive, with no trailing slash
@@ -503,7 +516,13 @@ class CurrentUserAsyncTasks {
       sourceStorageId: storageId,
       sourcePath,
       destinationStorageId: storageId,
-      destinationPath: destinationPath || ''
+      destinationPath: destinationPath || '',
+      // `overwrite` because the alternative is all-or-nothing: one collision
+      // refuses the whole task. `deleteSourceOnSuccess` because the user asked
+      // for the contents, not the archive; it runs last, so a failure leaves
+      // the archive in place.
+      overwrite: true,
+      deleteSourceOnSuccess: true
     });
     if (request.error) {
       throw new Error(request.error);

@@ -16,6 +16,10 @@
 | — | review fixes | done | opus · high | | findings 1, 3, 4, 5 and the nits; 6 left as designed |
 | docs-cases | UI test cases | done | opus · medium | 902764a8dd, #4719 | 4571_4 rewritten, 4571_7/8/9 added |
 | cap-in-modal | the cap check in the confirmation pop-up | done | opus · high | | at the cap, "Upload and extract" is disabled and an info Alert says why |
+| cap-polled | the check polls while the pop-up is open | done | opus · high | | 5s, `continuousFetch`, stopped on cancel/confirm/close/unmount |
+| cap-shortfall | the pop-up warns when the allowance covers only part of the batch | done | opus · medium | | `checkActiveTasksLimit` now carries activeCount/limit/remaining |
+| extract-options | `overwrite` and `deleteSourceOnSuccess` sent as `true` | done | opus · low | | the user's call |
+| extract-destination | each archive extracts into a folder named after it | done | opus · medium | | `data/a.tar.gz` -> `data/a/`; compound suffixes stripped whole |
 
 decision · the UNPACK_ARCHIVE worker in `storage-async-task-service` is out of scope — the user chose
 "GUI only, keep a doc note". The GUI queues real tasks that nothing executes, and the manual and the
@@ -52,3 +56,15 @@ note · the check is optimistic while in flight and on failure, like `archiveDow
 server enforces the quota, so a check that cannot run must not refuse the extraction.
 note · `componentWillUnmount` is new on UploadButton - the async check needs an unmounted guard, and
 the pending selection debounce is cleared there too.
+decision · `overwrite: true` and `deleteSourceOnSuccess: true`, the user's call. Overwriting avoids
+the all-or-nothing failure `overwrite: false` causes, and the archive is deleted because the user
+asked for its contents - server-side it runs last, so a failed extraction keeps the archive.
+decision · the destination is the archive's own name as a folder beside it, the user's call:
+`data/reports.tar.gz` extracts into `data/reports/`. The compound suffix is stripped whole, which is
+what ARCHIVE_EXTENSIONS's longest-first order is for.
+decision · the cap check polls on 5s while the pop-up is open, so the user can wait for a task to
+finish rather than re-picking the files. Stopped on cancel, confirm, close and unmount.
+note · a name whose stripped base would be `.` or `..` falls back to the archive's own folder;
+`assertSafePath` would refuse such a path outright.
+note · `checkActiveTasksLimit` now also returns `activeCount`, `limit` and `remaining`. `remaining`
+is `undefined` where the check could not run, which callers must not read as zero.

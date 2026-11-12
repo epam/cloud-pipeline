@@ -523,7 +523,12 @@ describe('checkActiveTasksLimit', () => {
     api.reply(FILTER_ROUTE, filterPage([{id: 1, status: 'RUNNING'}]));
     const store = newStore();
 
-    await expect(store.checkActiveTasksLimit()).resolves.toEqual({allowed: true});
+    await expect(store.checkActiveTasksLimit()).resolves.toEqual({
+      allowed: true,
+      activeCount: 1,
+      limit: 2,
+      remaining: 1
+    });
   });
 
   it('blocks, naming the cap, when the server reports it reached', async () => {
@@ -545,6 +550,57 @@ describe('checkActiveTasksLimit', () => {
   // A check that cannot run must not be the thing that stops a legitimate
   // download: the server enforces this quota itself
   // (AsyncTaskApiService.assertUserQuota).
+  // A caller queueing several tasks at once needs the headroom, not just a
+  // yes or no.
+  it('reports the count, the limit and the headroom when below the limit', async () => {
+    await setMaxUserTasks(5);
+    const api = stubApi();
+    stubWhoAmI(api);
+    api.reply(FILTER_ROUTE, filterPage([
+      {id: 1, status: 'RUNNING'},
+      {id: 2, status: 'PENDING'}
+    ]));
+    const store = newStore();
+
+    const result = await store.checkActiveTasksLimit();
+
+    expect(result.allowed).toBe(true);
+    expect(result.activeCount).toBe(2);
+    expect(result.limit).toBe(5);
+    expect(result.remaining).toBe(3);
+  });
+
+  it('reports no headroom at the limit', async () => {
+    await setMaxUserTasks(2);
+    const api = stubApi();
+    stubWhoAmI(api);
+    api.reply(FILTER_ROUTE, filterPage([
+      {id: 1, status: 'RUNNING'},
+      {id: 2, status: 'PENDING'}
+    ]));
+    const store = newStore();
+
+    const result = await store.checkActiveTasksLimit();
+
+    expect(result.allowed).toBe(false);
+    expect(result.remaining).toBe(0);
+    expect(result.limit).toBe(2);
+  });
+
+  // `undefined` headroom is "unknown", which a caller must not read as zero.
+  it('leaves the headroom unset when the count request fails', async () => {
+    await setMaxUserTasks(5);
+    const api = stubApi();
+    stubWhoAmI(api);
+    api.fail(FILTER_ROUTE, 'nope');
+    const store = newStore();
+
+    const result = await store.checkActiveTasksLimit();
+
+    expect(result.allowed).toBe(true);
+    expect(result.remaining).toBeUndefined();
+  });
+
   it('allows when the count request fails', async () => {
     await setMaxUserTasks(1);
     const api = stubApi();
@@ -575,7 +631,9 @@ describe('startArchiveExtraction', () => {
       sourceStorageId: 7,
       sourcePath: 'folder/data.zip',
       destinationStorageId: 7,
-      destinationPath: 'folder/'
+      destinationPath: 'folder/',
+      overwrite: true,
+      deleteSourceOnSuccess: true
     });
     expect(result).toEqual(createdTask);
   });
