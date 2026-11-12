@@ -6,12 +6,10 @@ set -e
 yum install -y epel-release
 yum install -y --downloadonly --downloaddir=/rpmcache \
     sudo \
-    python \
     git \
     curl \
     wget \
     fuse \
-    python-docutils \
     tzdata \
     acl \
     coreutils \

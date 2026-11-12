@@ -84,48 +84,34 @@ function prepare_environment {
     if ! check_installed "wget"; then
         yum install -q -y wget
     fi
-    if ! check_installed "python"; then
-        print_info "Installing Python2"
-        CP_CONDA_DISTRO_URL="${CP_CONDA_DISTRO_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz}"
-        print_info "Getting python distro from $CP_CONDA_DISTRO_URL"
-        wget -q "${CP_CONDA_DISTRO_URL}" -O "/tmp/conda.tgz" &> /dev/null
+    export CP_PYTHON_PATH="${CP_PYTHON_PATH:-/usr/local/python3.12/bin/python3.12}"
+    if [ ! -x "$CP_PYTHON_PATH" ]; then
+        print_info "Installing Python 3.12"
+        CP_PYTHON3_DISTRO_URL="${CP_PYTHON3_DISTRO_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/3/python3.12.tar.gz}"
+        print_info "Getting python distro from $CP_PYTHON3_DISTRO_URL"
+        wget -q "${CP_PYTHON3_DISTRO_URL}" -O "/tmp/python3.tgz" &> /dev/null
         if [ $? -ne 0 ]; then
             print_err "Can't download the python distro"
             return 1
         fi
-        tar -zxf "/tmp/conda.tgz" -C "/"
-        rm -f "/tmp/conda.tgz"
-        print_info "Python distro is installed into /conda"
-        echo "alias python=/conda/bin/python2" >> ~/.bashrc
-        source ~/.bashrc
-    elif [ -f /conda/bin/python2 ]; then
-        print_info "Conda is configured already"
-    else
-        print_info "Python is installed already, checking dependencies"
-        python -c "import requests;import urllib3" &> /dev/null
+        tar -zxf "/tmp/python3.tgz" -C "/usr/local"
+        rm -f "/tmp/python3.tgz"
+        print_info "Python distro is installed into /usr/local/python3.12"
+    fi
+    "$CP_PYTHON_PATH" -c "import requests;import urllib3" &> /dev/null
+    if [ $? -ne 0 ]; then
+        print_info "Not all dependencies are met, trying to add them"
+        local CP_REPO_PYPI3_BASE_URL_DEFAULT="${CP_REPO_PYPI3_BASE_URL_DEFAULT:-http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi3/simple}"
+        # The host of the mirror is trusted, unless CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT names another one
+        local CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT="${CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT:-$(echo "$CP_REPO_PYPI3_BASE_URL_DEFAULT" | sed -r 's|^.*://([^/:]*).*$|\1|')}"
+        local CP_PIP_PACKAGE_INDEX="--index-url $CP_REPO_PYPI3_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT"
+        "$CP_PYTHON_PATH" -m pip install $CP_PIP_PACKAGE_INDEX -q urllib3 requests &> /dev/null
         if [ $? -ne 0 ]; then
-            print_info "Not all dependencies are met, trying to add them"
-            pip --help
-            if [ $? -ne 0 ]; then
-                print_info "pip not found, proceed with the installation"
-                curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
-                pip --help
-                if [ $? -ne 0 ]; then
-                    print_err "Can't install pip, exiting"
-                    exit 1
-                fi
-            fi
-            local CP_REPO_PYPI_BASE_URL_DEFAULT="${CP_REPO_PYPI_BASE_URL_DEFAULT:-http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple}"
-            local CP_REPO_PYPI_TRUSTED_HOST_DEFAULT="${CP_REPO_PYPI_TRUSTED_HOST_DEFAULT:-cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com}"
-            local CP_PIP_PACKAGE_INDEX="--index-url $CP_REPO_PYPI_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI_TRUSTED_HOST_DEFAULT"
-            python -m pip install $CP_PIP_PACKAGE_INDEX -q urllib3 requests &> /dev/null
-            if [ $? -ne 0 ]; then
-                print_err "Can't install dependencies, exiting"
-                exit 1
-            fi
-        else
-            print_info "All required dependencies are installed"
+            print_err "Can't install dependencies, exiting"
+            exit 1
         fi
+    else
+        print_info "All required dependencies are installed"
     fi
     return 0
 }
@@ -155,7 +141,7 @@ fi
 
 if [ ! -z "$CP_SYNC_USERS" ] ; then
     print_ok "Start users synchronization from '$CP_ENV_SYNC_SRC_URL' to '$CP_ENV_SYNC_TARGET_URL'"
-    python sync_users.py $CP_ENV_SYNC_SRC_URL $CP_ENV_SYNC_SRC_TOKEN $CP_ENV_SYNC_TARGET_URL $CP_ENV_SYNC_TARGET_TOKEN
+    "$CP_PYTHON_PATH" sync_users.py $CP_ENV_SYNC_SRC_URL $CP_ENV_SYNC_SRC_TOKEN $CP_ENV_SYNC_TARGET_URL $CP_ENV_SYNC_TARGET_TOKEN
     if [ $? -ne 0 ]; then
         print_err "Errors during users sync"
     else
@@ -170,7 +156,7 @@ if [ ! -z "$CP_SYNC_TOOLS" ] ; then
         exit 1
     fi
     print_ok "Start tool synchronization from '$CP_ENV_SYNC_SRC_URL' to '$CP_ENV_SYNC_TARGET_URL'"
-    python sync_tools.py $CP_ENV_SYNC_SRC_URL $CP_ENV_SYNC_SRC_TOKEN $CP_ENV_SYNC_TARGET_URL $CP_ENV_SYNC_TARGET_TOKEN
+    "$CP_PYTHON_PATH" sync_tools.py $CP_ENV_SYNC_SRC_URL $CP_ENV_SYNC_SRC_TOKEN $CP_ENV_SYNC_TARGET_URL $CP_ENV_SYNC_TARGET_TOKEN
     if [ $? -ne 0 ]; then
         print_err "Errors during tools sync"
     else

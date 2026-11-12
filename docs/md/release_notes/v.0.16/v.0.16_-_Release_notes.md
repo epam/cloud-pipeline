@@ -42,6 +42,7 @@
 - [Runs on Python 3.12](#runs-on-python-312)
 - [The API service on Python 3.12 and Rocky Linux 9.8](#the-api-service-on-python-312-and-rocky-linux-98)
 - [Rocky Linux 9.8 for the platform services](#rocky-linux-98-for-the-platform-services)
+- [Python 3.12 for EDGE, WebDAV, FS Browser and the node reporter](#python-312-for-edge-webdav-fs-browser-and-the-node-reporter)
 
 ***
 
@@ -850,6 +851,24 @@ Other changes:
 
     So a server that a service connects to, for example an SMTP server, must have a certificate chain that meets these limits. The policy covers only TLS and certificate chains, so it does not apply to the 1024-bit JWT signing keys that the installer creates.
 - The test identity provider runs on Node.js 24, and it accepts SHA-1 signatures, because the API signs its SAML requests with RSA-SHA1.
+## Python 3.12 for EDGE, WebDAV, FS Browser and the node reporter
+
+These platform services now run their Python scripts on the platform's Python 3.12 distribution (`tools/python/3/python3.12.tar.gz` in the public Cloud Pipeline bucket), the Python that `pipe-common` requires. They ran on Python 2, or on an older Python 3. Their images moved to Rocky Linux 9.8.
+
+- **EDGE** (`cp-edge`, from Rocky Linux 8): the route sync (`sync-routes.py`) and the maintenance mode check (`maintenance.py`) run on Python 3.12, with `pykube-ng` 23.6.0 instead of `pykube` 0.15. As before, the route sync does not check the certificate of the Kubernetes API. The SSH web terminal (Node.js 20.17.0), the maintenance page and the Squid proxy stay as they are.
+- **WebDAV** (`cp-dav`, from CentOS 7): the NFS sync (`syncnfs.py`) and the NFS mount observer run on Python 3.12.
+    - The observer installs `pipe-common` with `setuptools` 81.0.0 from the Python 3 package mirror of the platform (`tools/python/pypi3/simple`). **`CP_REPO_PYPI3_BASE_URL_DEFAULT`** and **`CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT`** in the `cp-config-global` config map set another mirror. The host of the mirror URL is trusted, unless another one is set. The Python 2 mirror settings (`CP_REPO_PYPI_BASE_URL_DEFAULT`) no longer apply there.
+    - Azure blob storages are mounted with `blobfuse2` in its mode for the `blobfuse` 1 options (`blobfuse2 mountv1`): Rocky Linux 9 has no `blobfuse` 1.
+    - The Lustre client is the el8 build of version 2.10.8, as in the Rocky Linux tool images. It replaces the el7 build of version 2.12.5.  
+      Please note: AWS lists the Lustre 2.10 clients as not compatible with FSx for Lustre file systems of version 2.15. The image brings only the user-space tools (`mount.lustre`, `lfs`), the kernel module is the one of the node. A mount of an FSx for Lustre 2.15 file system from the WebDAV service is not tested with this client.
+- **Node reporter** (`cp-node-reporter`, from `python:3.9.14-slim`): Python 3.12, with `psutil` 7.2.2 (5.9.2 has no build for Python 3.12) and `cryptography` 50.0.1, the versions of `pipe-common`. `CP_PYTHON_PATH` and `CP_PYTHON2_PATH` point to it, for the `pipe_log` commands of the OOM reporter.
+- **FS Browser**: its executable is built with Python 3.12 on CentOS 7 (it was built with Python 3.6), so it runs on Linux with `glibc` 2.17 or later. It uses `Flask` 3.1.3, `Werkzeug` 3.1.9, `Flask-HTTPAuth` 4.8.1, `pygit2` 1.17.0 (`libgit2` 1.9.0), `flasgger` 0.9.7.1, `requests` 2.34.2 and `urllib3` 2.8.0. A folder download still skips the excluded files and folders, which Python 3.7 and later needed a fix for. The `fsbrowser` Python package requires Python 3.12, and has a version that `setuptools` accepts (PEP 440).
+
+Other parts of the platform:
+
+- **The Rocky Linux base tool** (`library/rockylinux`): the image no longer has Python 2, `get-pip` 2.7 and `setuptools` 44.1.1. It has the platform's Python 3.12 in `/usr/local/python3.12`, with `setuptools` 81.0.0, and `/usr/local/bin/python3` and `pip3` link to it. A run of the tool uses it if the run cannot download the Python 3.12 distribution.
+- **The environment sync tool** (`deploy/contents/sync/app/sync.sh`) runs on Python 3.12. If `CP_PYTHON_PATH` (by default `/usr/local/python3.12/bin/python3.12`) is not there, it installs the platform's Python 3.12 into `/usr/local/python3.12` from **`CP_PYTHON3_DISTRO_URL`**, instead of Miniconda2 into `/conda`. It installs `requests` and `urllib3` from the Python 3 package mirror.
+- **The build scripts of the package repositories** (`deploy/repos`) no longer build the Python 2 package mirror (`build-repo-pypi.sh` is removed), and the deb and rpm repositories no longer get Python 2 and `python-docutils`.
 
 ***
 
@@ -1114,7 +1133,7 @@ Now, the dependencies are updated: `express` 5.3.0, `engine.io` 6.6.11, `ws` 8.2
 ### The NFS mount observer of the WebDAV service does not start
 
 Previously, the NFS mount observer of the WebDAV service (`cp-dav`) never started, for two reasons. Its cron job did not get the environment of the service, so it looked for the observer script in a wrong folder. And the image did not have the `pipeline`, `psutil` and `watchdog` Python packages, which the observer imports. So the file changes made via WebDAV in the mounts that the observer watches - the `nfs4` and `lustre` mounts by default (`CP_CAP_NFS_OBSERVER_TARGET_FS_TYPES`) - were not recorded, and were not copied to the storage set by `CP_CAP_NFS_MNT_OBSERVER_TARGET_BUCKET`.
-Now, the cron job reads the environment of the service, and the service installs the `pipe-common` package with its dependencies at start, as a run does. By default, the packages come from the public mirror `http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple`. To use another mirror, set `CP_REPO_PYPI_BASE_URL_DEFAULT` and `CP_REPO_PYPI_TRUSTED_HOST_DEFAULT` in the `cp-config-global` config map. The cron job starts the observer within a minute after these installs, unless `CP_CAP_NFS_MNT_OBSERVER_DISABLED` is set, and only if the download of `pipe-common.tar.gz` and both `pip` installs succeed.
+Now, the cron job reads the environment of the service, and the service installs the `pipe-common` package with its dependencies at start, as a run does. By default, the packages come from the public Python 3 mirror `http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi3/simple` (see [Python 3.12 for EDGE, WebDAV, FS Browser and the node reporter](#python-312-for-edge-webdav-fs-browser-and-the-node-reporter)). To use another mirror, set `CP_REPO_PYPI3_BASE_URL_DEFAULT` and `CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT` in the `cp-config-global` config map. The cron job starts the observer within a minute after these installs, unless `CP_CAP_NFS_MNT_OBSERVER_DISABLED` is set, and only if the download of `pipe-common.tar.gz` and both `pip` installs succeed.
 ### `sge create` and `sge configure` fail in tools without `diff`
 
 [#4758](https://github.com/epam/cloud-pipeline/issues/4758)

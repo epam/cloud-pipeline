@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from base_api import API
+from api.base_api import API
 
 API_GET_ALL_USERS = 'users'
 API_CREATE_USER = 'user'

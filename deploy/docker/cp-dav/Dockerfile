@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,16 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM library/centos:7
-
-RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+FROM rockylinux/rockylinux:9.8
 
 # Setup httpd
-RUN yum update -y && \
-    yum install -y  gettext \
+# procps-ng provides the "sysctl" that init calls and the "pgrep" that nfs-watcher.sh calls
+RUN dnf update -y && \
+    dnf install -y  gettext \
                     wget \
                     expat-devel \
                     make \
@@ -30,7 +26,10 @@ RUN yum update -y && \
                     zlib-devel \
                     libcurl-devel \
                     libxml2-devel \
-                    openssl-devel
+                    openssl-devel \
+                    procps-ng && \
+    dnf clean all
+
 ARG APACHE_BUILD_DIR=/opt/httpd-build
 ARG APACHE_VERSION=2.4.41
 ARG APR_VERSION=1.7.0
@@ -42,7 +41,7 @@ ENV CFLAGS="-DBIG_SECURITY_HOLE -O2"
 COPY httpd/conf /tmp/
 COPY httpd/modules.shared ${APACHE_BUILD_DIR}/
 COPY httpd/modules.static ${APACHE_BUILD_DIR}/
-RUN rpm -Uvh https://packages.microsoft.com/config/rhel/7/packages-microsoft-prod.rpm
+RUN rpm -Uvh https://packages.microsoft.com/config/rhel/9/packages-microsoft-prod.rpm
 RUN modules_shared="$(echo $(cat ${APACHE_BUILD_DIR}/modules.shared))" && \
     modules_static="$(echo $(cat ${APACHE_BUILD_DIR}/modules.static))" && \
     mkdir -p ${APACHE_BUILD_DIR} && \
@@ -60,6 +59,9 @@ RUN modules_shared="$(echo $(cat ${APACHE_BUILD_DIR}/modules.shared))" && \
     mv apr-${APR_VERSION} ${APACHE_BUILD_DIR}/httpd-${APACHE_VERSION}/srclib/apr && \
     mv apr-util-${APR_UTIL_VERSION} ${APACHE_BUILD_DIR}/httpd-${APACHE_VERSION}/srclib/apr-util && \
     cd ${APACHE_BUILD_DIR}/httpd-${APACHE_VERSION} && \
+    # OpenSSL 3 removed ERR_GET_FUNC (its function codes are always 0): without this, mod_ssl.so keeps an
+    # undefined ERR_GET_FUNC symbol and httpd fails to load it
+    sed -i 's/ERR_GET_FUNC(ERR_peek_last_error())/0/' modules/ssl/ssl_engine_init.c && \
     ./configure --prefix=${APACHE_HOME} \
                 --with-included-apr \
                 --with-included-apr-util \
@@ -71,23 +73,42 @@ RUN modules_shared="$(echo $(cat ${APACHE_BUILD_DIR}/modules.shared))" && \
     rm -rf ${APACHE_BUILD_DIR}
 
 # Setup nfs sync
-RUN yum install -y cronie \
+# blobfuse (v1) has no el9 package, the Microsoft rhel/9 repo has only blobfuse2 (it pulls in fuse3):
+# syncmounts.sh mounts the Azure storages with its v1-compatible "blobfuse2 mountv1"
+RUN dnf install -y cronie \
                    nfs-utils \
                    cifs-utils \
-                   python blobfuse fuse
-ARG LUSTRE_VERSION="2.12.5-1.el7.x86_64"
+                   blobfuse2 fuse
+
+# Python 3.12 runs the sync scripts and the NFS mount watcher: the platform's Python 3.12 distribution
+# (python3.12.tar.gz of the public Cloud Pipeline bucket, self-contained CPython 3.12). The cron jobs run with the PATH
+# of crond (/usr/bin:/bin), so they call it by its full path. /usr/bin/python3 stays the system one, for dnf.
+# libxcrypt-compat provides the libcrypt.so.1 that its "crypt" module links
+ARG CP_PYTHON3_DIST_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/python/3/python3.12.tar.gz"
+RUN dnf install -y libxcrypt-compat && \
+    dnf clean all && \
+    wget -q $CP_PYTHON3_DIST_URL -O python3.tgz && \
+    tar -xzf python3.tgz -C /usr/local/ && \
+    rm -f python3.tgz && \
+    ln -sf /usr/local/python3.12/bin/python3.12 /usr/local/bin/python3 && \
+    ln -sf /usr/local/python3.12/bin/pip3.12 /usr/local/bin/pip3
+
+# Rocky Linux 9 has no el9 build of the Lustre client: the el8 build of version 2.10.8, as in the Rocky Linux tool images
+ARG LUSTRE_VERSION="2.10.8-2.el8.x86_64"
 ARG LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.tar.gz"
+# yum-utils provides package-cleanup
 RUN cd /tmp && \
-    wget -q https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-2.12.5-1.el7.x86_64.tar.gz -O lustre-client.tar.gz && \
+    dnf install -y yum-utils && \
+    wget -q $LUSTRE_CLIENT_URL -O lustre-client.tar.gz && \
     mkdir -p lustre-client && \
     tar -xzvf lustre-client.tar.gz -C lustre-client/ && \
     rpm -i --justdb --quiet --nodeps --force lustre-client/dependencies/*.rpm && \
-    yum install -y lustre-client/*.rpm && \
+    dnf install -y lustre-client/*.rpm && \
     package-cleanup --cleandupes -y && \
     rm -rf lustre-client*
 
-RUN curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python && \
-    pip install -I requests==2.21.0 && \
+# requests is the version of pipe-common
+RUN pip3 install --no-cache-dir -I requests==2.34.2 && \
     wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
     chmod +x /usr/bin/jq
 

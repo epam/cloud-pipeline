@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-python "$SYNC_HOME/nfs-roles-management/syncnfs.py" sync \
+"${CP_PYTHON_PATH:-/usr/local/python3.12/bin/python3.12}" "$SYNC_HOME/nfs-roles-management/syncnfs.py" sync \
                                 --api="$API" \
                                 --key="$API_TOKEN" \
                                 --users-root="$CP_DAV_SERVE_DIR" \

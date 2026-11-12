@@ -1,4 +1,4 @@
-# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ def create_flag_file(flag_file=DEFAULT_FLAG_FILE_PATH):
         try:
             os.makedirs(parent)
         except IOError as e:
-            do_log(e.message)
+            do_log(str(e))
             pass
     if not os.path.exists(flag_file):
         do_log("Creating the maintenance flag file")
@@ -131,7 +131,7 @@ def correct_nginx_conf(maintenance=False):
                 f.write(nginx_conf)
             check_output('nginx -s reload', shell=True)
     except IOError as e:
-        do_log(e.message)
+        do_log(str(e))
         pass
 
 def check_maintenance_mode(flag_file=DEFAULT_FLAG_FILE_PATH):
