@@ -15,11 +15,13 @@
 # Covers what scripts/pipeline-launch/launch.sh does for an OS family: the family of the /etc/os-release ID, the
 # Cloud Pipeline yum repository setup, the systemd capability check and the CP_CAP_EXTRA_PKG_RHEL install, on RHEL
 # (also the UBI images, ID "rhel") and the other OS. Runs the functions and the blocks of launch.sh with bash, with
-# the absolute /etc and /var paths replaced by temporary ones. curl, yum, rpm and yum-config-manager are replaced by
-# stubs first on PATH, which record their calls. Needs bash and GNU sed.
+# the absolute /etc and /var paths replaced by temporary ones. yum, rpm and yum-config-manager are replaced by stubs
+# first on PATH, which record their calls, and curl by one that records its calls and runs the real curl. The Cloud
+# Pipeline repository is a folder of the test, as a file:// URL. Needs bash, GNU sed and curl.
 
 import os
 import re
+import shutil
 import stat
 import subprocess
 
@@ -40,7 +42,8 @@ exit 1
 '''
 
 CLOUD_PIPELINE_REPO = '[cloud-pipeline]\nname=Cloud Pipeline\nbaseurl=https://dist.example/tools/repos/rocky/8.7\n'
-CURL_STUB = RECORDING_STUB + 'cat <<"EOR"\n%sEOR\n' % CLOUD_PIPELINE_REPO
+CURL_STUB = RECORDING_STUB + 'exec "$REAL_CURL" "$@"\n'
+YUM_CONFIG_SKIP_IF_UNAVAILABLE_CALL = 'yum-config-manager --save --setopt=*.skip_if_unavailable=true'
 
 # The repository file of the UBI 8 image, shortened
 UBI_REPO = '[ubi-8-baseos-rpms]\nname = Red Hat Universal Base Image 8 (RPMs) - BaseOS\n' \
@@ -102,7 +105,9 @@ def shell(tmpdir):
         _stub(stub_bin, name, RECORDING_STUB)
     _stub(stub_bin, 'rpm', RPM_STUB)
     _stub(stub_bin, 'curl', CURL_STUB)
+    real_curl = shutil.which('curl')
     root = tmpdir.mkdir('root')
+    repos = tmpdir.mkdir('repos')
     for directory in ('etc/yum.repos.d', 'var/log'):
         root.join(directory).ensure(dir=True)
     calls = tmpdir.join('calls')
@@ -110,7 +115,8 @@ def shell(tmpdir):
     def run(code, **env):
         run_env = {
             'PATH': str(stub_bin) + os.pathsep + os.environ['PATH'],
-            'CALLS': str(calls)
+            'CALLS': str(calls),
+            'REAL_CURL': real_curl or 'curl-is-not-installed'
         }
         run_env.update(env)
         code = SYSTEM_PATH.sub(lambda path: str(root) + path.group(0), code)
@@ -120,6 +126,8 @@ def shell(tmpdir):
         return proc.returncode, stdout.decode('utf-8'), stderr.decode('utf-8'), recorded
 
     run.root = root
+    run.repos = repos
+    run.real_curl = real_curl
     return run
 
 
@@ -145,38 +153,105 @@ def test_os_family_of_the_os_release_id(shell, os_release, expected):
     assert _define_distro(shell, os_release) == expected
 
 
-def _configure_package_manager(shell, cp_os, cp_ver):
+def _configure_package_manager(shell, cp_os, cp_ver, **env):
+    if not shell.real_curl:
+        pytest.skip('no curl')
     code = ''.join(_function_source(name) for name in PKG_MANAGER_FUNCTIONS) \
         + _check_installed_stub(cp_os, extra=('yum-config-manager',)) \
         + 'function configure_package_manager_pip { echo "PIP CONFIGURED"; }\n' \
         + _function_source('configure_package_manager') \
         + 'configure_package_manager\n'
-    return shell(code, CP_OS=cp_os, CP_VER=cp_ver, CP_REPO_ENABLED='true', GLOBAL_DISTRIBUTION_URL='https://dist.example/')
+    return shell(code, CP_OS=cp_os, CP_VER=cp_ver, CP_REPO_ENABLED='true',
+                 CP_REPO_BASE_URL_DEFAULT='file://' + str(shell.repos), **env)
+
+
+def _repo_url(shell, cp_os, cp_ver):
+    return 'file://%s/%s/%s/cloud-pipeline.repo' % (shell.repos, cp_os, cp_ver)
+
+
+def _publish_repo(shell, cp_os, cp_ver):
+    shell.repos.join(cp_os, cp_ver, 'cloud-pipeline.repo').write(CLOUD_PIPELINE_REPO, ensure=True)
+
+
+def _image_repos(shell):
+    # The repositories of a UBI based CUDA image
+    shell.root.join('etc', 'yum.repos.d', 'ubi.repo').write(UBI_REPO)
+    shell.root.join('etc', 'yum.repos.d', 'cuda.repo').write('[cuda]\nbaseurl=https://developer.download.nvidia.com\n')
 
 
 @pytest.mark.parametrize('cp_ver', ['8.10', '9.8'])
-def test_rhel_does_not_configure_the_cloud_pipeline_repo(shell, cp_ver):
-    # The repository has no rhel/<version> folder, so the run says that it keeps the repositories of the image
-    shell.root.join('etc', 'yum.repos.d', 'ubi.repo').write(UBI_REPO)
+def test_rhel_keeps_the_repositories_of_the_image_without_a_cloud_pipeline_repo_of_its_version(shell, cp_ver):
+    # The public repository has no rhel/<version> folder: the run checks it once, and says that it is not configured.
+    # The Rocky Linux folder of the same version is not used
+    _image_repos(shell)
+    _publish_repo(shell, 'rocky', cp_ver)
 
     exit_code, stdout, stderr, calls = _configure_package_manager(shell, 'rhel', cp_ver)
 
     assert exit_code == 0, stderr
-    assert '[INFO] The Cloud Pipeline repository has no packages for rhel %s, it is not configured. ' \
-           'The packages are installed from the repositories of the image' % cp_ver in stdout
+    assert '[INFO] The Cloud Pipeline repository has no packages for rhel %s (%s), it is not configured. ' \
+           'The packages are installed from the repositories of the image' \
+           % (cp_ver, _repo_url(shell, 'rhel', cp_ver)[:-len('/cloud-pipeline.repo')]) in stdout
     assert 'Failed to configure' not in stdout
-    assert calls == []
+    assert calls == ['curl -skf -o /dev/null --max-time 30 ' + _repo_url(shell, 'rhel', cp_ver)]
     assert not shell.root.join('etc', 'yum.repos.d', 'cloud-pipeline.repo').check()
     assert shell.root.join('etc', 'yum.repos.d', 'ubi.repo').read() == UBI_REPO
     assert 'PIP CONFIGURED' in stdout
 
 
-def test_rocky_configures_the_cloud_pipeline_repo(shell):
+def test_rhel_removes_the_nvidia_repo_without_a_cloud_pipeline_repo(shell):
+    # As CentOS and Rocky Linux do: the nvidia repositories make the run initialization fail
+    _image_repos(shell)
+
+    _configure_package_manager(shell, 'rhel', '9.8')
+
+    assert not shell.root.join('etc', 'yum.repos.d', 'cuda.repo').check()
+
+
+def test_rhel_does_not_skip_the_unavailable_repos_of_the_image_without_a_cloud_pipeline_repo(shell):
+    # skip_if_unavailable lets the other repositories fail where the Cloud Pipeline repository has the packages
+    _image_repos(shell)
+
+    exit_code, stdout, stderr, calls = _configure_package_manager(shell, 'rhel', '8.10')
+
+    assert YUM_CONFIG_SKIP_IF_UNAVAILABLE_CALL not in calls
+
+
+def test_rhel_configures_the_cloud_pipeline_repo_of_a_deployment_that_has_its_version(shell):
+    _image_repos(shell)
+    _publish_repo(shell, 'rhel', '8.10')
+
+    exit_code, stdout, stderr, calls = _configure_package_manager(shell, 'rhel', '8.10')
+
+    assert exit_code == 0, stderr
+    assert calls == ['curl -skf -o /dev/null --max-time 30 ' + _repo_url(shell, 'rhel', '8.10'),
+                     'curl -sk ' + _repo_url(shell, 'rhel', '8.10'),
+                     'yum --disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y -q',
+                     YUM_CONFIG_SKIP_IF_UNAVAILABLE_CALL]
+    assert shell.root.join('etc', 'yum.repos.d', 'cloud-pipeline.repo').read() == CLOUD_PIPELINE_REPO
+    assert not shell.root.join('etc', 'yum.repos.d', 'cuda.repo').check()
+    assert 'is not configured' not in stdout
+    assert 'Failed to configure' not in stdout
+
+
+@pytest.mark.parametrize('timeout_sec,expected', [('5', '5'), ('', '30'), ('0', '30'), ('ten', '30')])
+def test_the_rhel_repo_check_is_limited_by_cp_repo_access_timeout_sec(shell, timeout_sec, expected):
+    exit_code, stdout, stderr, calls = _configure_package_manager(shell, 'rhel', '9.8',
+                                                                  CP_REPO_ACCESS_TIMEOUT_SEC=timeout_sec)
+
+    assert exit_code == 0, stderr
+    assert calls == ['curl -skf -o /dev/null --max-time %s %s' % (expected, _repo_url(shell, 'rhel', '9.8'))]
+
+
+def test_rocky_configures_the_cloud_pipeline_repo_without_a_check(shell):
+    _publish_repo(shell, 'rocky', '8.7')
+
     exit_code, stdout, stderr, calls = _configure_package_manager(shell, 'rocky', '8.7')
 
     assert exit_code == 0, stderr
-    assert 'curl -sk https://dist.example/tools/repos/rocky/8.7/cloud-pipeline.repo' in calls
-    assert 'yum --disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y -q' in calls
+    assert calls == ['curl -sk ' + _repo_url(shell, 'rocky', '8.7'),
+                     'yum --disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y -q',
+                     YUM_CONFIG_SKIP_IF_UNAVAILABLE_CALL]
     assert shell.root.join('etc', 'yum.repos.d', 'cloud-pipeline.repo').read() == CLOUD_PIPELINE_REPO
     assert 'is not configured' not in stdout
 
@@ -220,7 +295,8 @@ def _install_extra_packages(shell, cp_os, cp_ver, installed=(), **env):
         + _function_source('check_package_installed') \
         + _function_source('get_install_command_by_current_distr') \
         + block
-    exit_code, stdout, stderr, calls = shell(code, CP_OS=cp_os, CP_VER=cp_ver, STUB_INSTALLED=' '.join(installed), **env)
+    exit_code, stdout, stderr, calls = shell(code, CP_OS=cp_os, CP_VER=cp_ver, STUB_INSTALLED=' '.join(installed),
+                                             **env)
     assert exit_code == 0, stderr
     return stdout.splitlines()
 
