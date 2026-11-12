@@ -106,6 +106,7 @@
     - [Rocky Linux 9, RHEL 9 and Amazon Linux 2023 runs: `curl-minimal` and `coreutils-single` stop the base packages install](#rocky-linux-9-rhel-9-and-amazon-linux-2023-runs-curl-minimal-and-coreutils-single-stop-the-base-packages-install)
     - [Filebeat of the API and TinyProxy services loads its own index template](#filebeat-of-the-api-and-tinyproxy-services-loads-its-own-index-template)
     - [Packer node images for Amazon Linux 2023: the commit and the pause run on Python 2, no `lvm2`, failed downloads are ignored](#packer-node-images-for-amazon-linux-2023-the-commit-and-the-pause-run-on-python-2-no-lvm2-failed-downloads-are-ignored)
+    - [Git synchronization: a new GitLab 9 user has to confirm the email](#git-synchronization-a-new-gitlab-9-user-has-to-confirm-the-email)
 
 ***
 
@@ -2327,3 +2328,8 @@ Now:
 - each download goes into a temporary folder first. A failed download, unpack or check of the result stops the build, so no image is created. `jq` is the package of Amazon Linux 2023, and the Nvidia files are removed after the install.
 
 `deploy/infra/aws/packer/README.md` now also lists the image contents and the IAM permissions that the build needs.
+
+### Git synchronization: a new GitLab 9 user has to confirm the email
+
+Previously, the Git synchronization service (`cp-git-sync`) created a GitLab user with the `skip_confirmation` parameter of the GitLab API v4, also when it called the API v3. The API v3 does not know this parameter. So on the API v3, a new user had to confirm the email. GitLab 9 uses the API v3: the installer leaves the **`git.gitlab.api.version`** preference at its default `v3` there. Also, if **`git.gitlab.api.version`** had no value, the synchronization called GitLab at a wrong path, e.g. `/api//users` or `/api/None/users`, and skipped the pipelines of that GitLab server.  
+Now, the synchronization creates a user with `confirm=no` on the API v3, and with `skip_confirmation` on the API v4, as before. If **`git.gitlab.api.version`** has no value, the synchronization calls the API v3, the default of the preference. See details in [12.10. Manage system-level settings](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#git).
