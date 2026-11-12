@@ -102,6 +102,9 @@ GLOBAL_DISTRIBUTION_URL="@GLOBAL_DISTRIBUTION_URL@"
 if [ ! "$GLOBAL_DISTRIBUTION_URL" ] || [[ "$GLOBAL_DISTRIBUTION_URL" == "@"*"@" ]]; then
   GLOBAL_DISTRIBUTION_URL="https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/"
 fi
+if [[ "$GLOBAL_DISTRIBUTION_URL" != */ ]]; then
+  GLOBAL_DISTRIBUTION_URL="${GLOBAL_DISTRIBUTION_URL}/"
+fi
 export GLOBAL_DISTRIBUTION_URL
 
 echo "> [$(date)] Download nvme"
@@ -116,7 +119,7 @@ echo "> [$(date)] custom_script_pre"
 echo "> [$(date)] Start docker install"
 _DOCKER_INSTALL_SH="@SYSTEM_DOCKER_INSTALL_SH@"
 if [ ! "$_DOCKER_INSTALL_SH" ] || [[ "$_DOCKER_INSTALL_SH" == "@"*"@" ]]; then
-  _DOCKER_INSTALL_SH="${GLOBAL_DISTRIBUTION_URL}/scripts/init_multicloud_install_docker.sh"
+  _DOCKER_INSTALL_SH="${GLOBAL_DISTRIBUTION_URL}tools/scripts/init_multicloud_install_docker.sh"
 fi
 wget $_WO "${_DOCKER_INSTALL_SH}" -O /tmp/init_multicloud_install_docker.sh
 if check_gpu_available; then

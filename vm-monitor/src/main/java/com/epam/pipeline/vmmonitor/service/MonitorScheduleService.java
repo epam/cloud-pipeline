@@ -56,6 +56,11 @@ public class MonitorScheduleService {
         monitor("PKI certificates", certificateMonitor);
     }
 
+    @Scheduled(cron = "${monitor.cert.changes.cron:0 * * ? * *}")
+    public void monitorCertChanges() {
+        monitor("new and changed PKI certificates", certificateMonitor::monitorChanges);
+    }
+
     @Scheduled(cron = "${monitor.k8s.deployment.cron}")
     public void monitorDeployments() {
         monitor("k8s deployments", deploymentMonitor);
