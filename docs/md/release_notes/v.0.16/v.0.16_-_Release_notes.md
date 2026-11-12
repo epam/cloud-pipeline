@@ -96,6 +96,8 @@
     - [`pipe storage cp` and `mv` fail with a file list on Windows and macOS](#pipe-storage-cp-and-mv-fail-with-a-file-list-on-windows-and-macos)
     - [The pipeline repository is not mounted in a run when `python` is not the Python of the platform](#the-pipeline-repository-is-not-mounted-in-a-run-when-python-is-not-the-python-of-the-platform)
     - [`pipe storage mount`: WebDAV mounts and extended attributes fail in the Windows and macOS builds](#pipe-storage-mount-webdav-mounts-and-extended-attributes-fail-in-the-windows-and-macos-builds)
+    - [Runs on Amazon Linux 2023 nodes get no "OOM Logs" task](#runs-on-amazon-linux-2023-nodes-get-no-oom-logs-task)
+    - [The notifier log names only the main recipient of an email](#the-notifier-log-names-only-the-main-recipient-of-an-email)
 
 ***
 
@@ -1257,3 +1259,27 @@ Previously, the Windows and macOS builds of the `pipe` CLI, which run on Python 
 
 In the Linux build, extended attributes with non-ASCII characters in their values failed in the same way.
 Now, the files in a storage mounted over WebDAV can be listed, created, written and truncated in the Python 3 builds too, and the extended attribute values are kept in the storage as UTF-8 text, in all builds.
+
+### Runs on Amazon Linux 2023 nodes get no "OOM Logs" task
+
+[#4828](https://github.com/epam/cloud-pipeline/issues/4828)
+
+When the kernel of a node kills a process for lack of memory, the node reporter (`cp-node-reporter`) finds the kill in the kernel log and adds its message to the **OOM Logs** task of the node's run. If `CP_OOM_TAG_RUNS` is `true` in the `cp-config-global` config map, it also tags the run (`PROC_OUT_OF_MEMORY` by default).  
+Previously, the node reporter could not read the kernel log on the nodes that run Amazon Linux 2023, or another Linux that sets `kernel.dmesg_restrict` to `1`. With this setting, reading the kernel log needs the `CAP_SYSLOG` capability, which the node reporter did not have. Its log (`/opt/node-reporter/logs/<node>/oom.log`) had `dmesg: read kernel buffer failed: Operation not permitted` at each check. So the runs on such nodes got no **OOM Logs** task and no tag, even when their processes were killed.  
+Now, the node reporter runs with the `CAP_SYSLOG` capability, and reports the kills on these nodes as on the other nodes. No other capability is added.  
+Please note: on the nodes with `kernel.dmesg_restrict` set to `1` that already run when the update is applied, the first check also reports the earlier kills that are still in the kernel log, including those of the previous runs on the node. They go to the node's current run, or, if the node has none, to the next run on it.
+### The notifier log names only the main recipient of an email
+
+Previously, the notifier (`cp-notifier`) logged only the main recipient (To) of each email, e.g. the owner of a run with **Keep owners informed**. Its log line did not name the subject of the email, or the users who get a copy of it as BCC, e.g. the **Informed users** and, with **Keep admins informed**, the admins. So the log did not show which email was sent, and to whom.
+Now, the log line of each email names its subject and all its recipients:
+
+```
+Email from message 123 with subject 'Job #14638 is now STOPPED' formed and will be send to: [owner@example.com], cc: [], bcc: [admin@example.com]
+```
+
+The `Message with id: <id> was successfully send` line with the same id shows that the mail server accepted the email. The notifier handles several messages at a time (`submit.threads`), so the lines of different emails can be mixed. The `notifier/smtp/README.md` file of the repository describes the notifier's log lines and where its log is.
+
+Please note:
+
+- the log now has the BCC addresses too, which an email hides from its other recipients. The To address was logged before. The log also has the subjects now, and a subject can name storages and data paths: e.g. the default `DATASTORAGE_LIFECYCLE_ACTION`, `DATASTORAGE_LIFECYCLE_RESTORE_ACTION` and `STORAGE_QUOTA_EXCEEDING` templates do, and a message sent with `POST /notification/message` can have any subject. So keep the notifier log as private as the email addresses of the users and the names of their data: it is in `/opt/notifier/logs` on the node of the notifier, and in `kubectl logs deploy/cp-notifier`
+- `cc` is always empty, as the notifier sends all copies as BCC
