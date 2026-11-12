@@ -100,6 +100,8 @@
     - [Region is being set incorrectly when trying to rerun pipeline](#region-is-being-set-incorrectly-when-trying-to-rerun-pipeline)
     - [`PAUSE` and `COMMIT` operations fail for the jobs with an autoscaled disk](#pause-and-commit-operations-fail-for-the-jobs-with-an-autoscaled-disk)
     - [Runs on Amazon Linux 2023 nodes get no "OOM Logs" task](#runs-on-amazon-linux-2023-nodes-get-no-oom-logs-task)
+    - [Rocky Linux 9, RHEL 9 and Amazon Linux 2023 runs: `curl-minimal` and `coreutils-single` stop the base packages install](#rocky-linux-9-rhel-9-and-amazon-linux-2023-runs-curl-minimal-and-coreutils-single-stop-the-base-packages-install)
+    - [Filebeat of the API and TinyProxy services loads its own index template](#filebeat-of-the-api-and-tinyproxy-services-loads-its-own-index-template)
 
 ***
 
@@ -2243,3 +2245,14 @@ Previously, the node reporter could not read the kernel log on the nodes that ru
 Now, the node reporter runs with the `CAP_SYSLOG` capability, and reports the kills on these nodes as on the other nodes. No other capability is added.  
 Also, the node reporter image now sets `CP_PYTHON_PATH`. Since the Python 3 support of `pipe-common`, its `pipe_log` and `pipe_tag` commands run Python from this variable, and without it they failed on every node: no kill got into the **OOM Logs** task, and no run was tagged.  
 Please note: on the nodes with `kernel.dmesg_restrict` set to `1` that already run when the update is applied, the first check also reports the earlier kills that are still in the kernel log, including those of the previous runs on the node. They go to the node's current run, or, if the node has none, to the next run on it.
+
+### Rocky Linux 9, RHEL 9 and Amazon Linux 2023 runs: `curl-minimal` and `coreutils-single` stop the base packages install
+
+Previously, at the start of a run, the launch script installed the base packages that the image did not have (`git`, `curl`, `wget`, `fuse`, `tzdata`, `acl` and `coreutils`) with one `yum` call. The images of Rocky Linux 9, Red Hat UBI 9 and Amazon Linux 2023 have the `curl-minimal` package instead of `curl`. `yum` cannot install `curl` next to it, so the whole call failed, and the run did not get `git`, `wget` and `fuse` either. On Amazon Linux 2023, the call also failed on `coreutils`, as the image has `coreutils-single`: the launch script skipped `coreutils` next to `coreutils-single` on Rocky Linux and RHEL only.  
+Now, on any RPM-based image, `curl` is not installed if the image has `curl-minimal`, and `coreutils` is not installed if the image has `coreutils-single`. This applies to `curl` and `coreutils` in `CP_CAP_EXTRA_PKG` and `CP_CAP_EXTRA_PKG_RHEL` too, and with `CP_IGNORE_INSTALLED_PACKAGES`. The run log gets an `[INFO]` line for each package that is skipped.  
+The launch script does not replace `curl-minimal`, and its `curl` supports the `file`, `ftp(s)` and `http(s)` protocols only. A tool that needs another protocol, e.g. `sftp`, `scp` or `ldap`, needs an image with the full `curl`.
+
+### Filebeat of the API and TinyProxy services loads its own index template
+
+Previously, the Filebeat configs of the API service (`cp-api-srv`) and of the TinyProxy service (`cp-tinyproxy`), for Elasticsearch and for OpenSearch, had a misspelled `setup.tempalte.enabled: false` setting. Filebeat ignored it. So, on start, it loaded its own index template `security_log_template`, for the `security_log*` indices, if the search cluster did not have a template of this name yet: e.g. on a new cluster, before the search service put the platform's templates. If Filebeat then created the `security_log` index, the index got the Filebeat field mappings. With OpenSearch, such an index rejected the security log events of the API and TinyProxy services: the Filebeat template maps `user` as an object, and the events have `user` as text.  
+Now, the setting is spelled `setup.template.enabled`, as in the Filebeat configs of the EDGE service, and Filebeat does not load a template. The security logs go to the `security_log` index as before.
