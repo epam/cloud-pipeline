@@ -157,15 +157,19 @@ public class SMTPNotificationManager implements NotificationManager {
             }
         }
 
-        LOGGER.info("Email from message {} formed and will be send to: {}",
-                message.getId(),
-                email.getToAddresses()
-                        .stream()
-                        .map(InternetAddress::getAddress)
-                        .collect(Collectors.toList())
-        );
+        LOGGER.info("Email from message {} with subject '{}' formed and will be send to: {}, cc: {}, bcc: {}",
+                message.getId(), email.getSubject(),
+                toAddresses(email.getToAddresses()),
+                toAddresses(email.getCcAddresses()),
+                toAddresses(email.getBccAddresses()));
 
         return Optional.of(email);
+    }
+
+    private static List<String> toAddresses(final List<InternetAddress> recipients) {
+        return recipients.stream()
+                .map(InternetAddress::getAddress)
+                .collect(Collectors.toList());
     }
 
     private String getTargetUserEmail(NotificationMessage message) {

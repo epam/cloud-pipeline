@@ -25,7 +25,7 @@ DIND_SETUP_TASK="SetupDinD"
 
 pipe_log_info "Started DIND setup" "$DIND_SETUP_TASK"
 
-if [ "$CP_OS" == "rocky" ]; then
+if [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
     _CP_CAP_DIND_VERSION_DEFAULT="20.10.24"
 else
     _CP_CAP_DIND_VERSION_DEFAULT="18.09.6"
@@ -75,7 +75,12 @@ else
 fi
 
 if [ $_DIND_DEP_INSTALL_RESULT -ne 0 ]; then
-    pipe_log_fail "Unable to install DIND dependencies, aborting" "$DIND_SETUP_TASK"
+    if [ "$CP_OS" == "rhel" ]; then
+        # The UBI images have no subscription, and their repositories have no e2fsprogs and xfsprogs
+        pipe_log_fail "Unable to install DIND dependencies, aborting. A RHEL image needs e2fsprogs and xfsprogs installed, or the RHEL repositories: the UBI repositories do not have them" "$DIND_SETUP_TASK"
+    else
+        pipe_log_fail "Unable to install DIND dependencies, aborting" "$DIND_SETUP_TASK"
+    fi
     exit 1
 fi
 
