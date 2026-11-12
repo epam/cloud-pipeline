@@ -755,7 +755,8 @@ Other platform scripts that are Python code:
 
 Other changes:
 
-- The Lustre client of the image is now the el8 build of version 2.10.8, as in the Rocky Linux tool images. It replaces the el7 build of version 2.12.5.
+- The Lustre client of the image is now the el8 build of version 2.10.8, as in the Rocky Linux tool images. It replaces the el7 build of version 2.12.5.  
+Please note: AWS lists the 2.10 Lustre clients as not compatible with FSx for Lustre file systems of version 2.15 ([Lustre file system and client kernel compatibility](https://docs.aws.amazon.com/fsx/latest/LustreGuide/lustre-client-matrix.html)). Only the user-space tools `mount.lustre` and `lfs` come from the image: the kernel module is the one of the node. Mounts of FSx for Lustre 2.15 file systems from the API service were not tested with this client.
 - The API follows the `DEFAULT` crypto policy of Rocky Linux 9. In TLS connections and certificate chains, it now rejects SHA-1 signatures, and RSA, DSA and DH keys shorter than 2048 bits (on CentOS 7, the limit was 1024 bits). So a server that the API connects to, e.g. GitLab, a docker registry or an LDAP server, must have a certificate that meets these limits. This does not apply to the 1024-bit JWT signing keys that the installer creates.  
 Java also rejects all DSA signatures and EC keys shorter than 256 bits. The API's own HTTPS certificate (`cp-api-srv-ssl.p12`) must meet these limits too. The `ssh` client that the API uses to commit and pause runs (OpenSSH 9.9) rejects RSA keys shorter than 2048 bits, so the key of the **`commit.deploy.key`** preference must have at least 2048 bits. `git` in the image (OpenSSL 3.5) has the same SHA-1 and 2048-bit limits.
 - `git` in the image works in a repository that belongs to another user in the folder of the mounted NFS storages (`/opt/api/file-systems`), as the `git` of CentOS 7 did. Since version 2.35.2, `git` refuses such a repository, and it still does so in other folders.
