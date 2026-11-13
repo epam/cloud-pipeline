@@ -409,15 +409,16 @@ public class OidcTokenExchangeManagerTest {
         assertThat(issuedClaims().isExchangeable()).isTrue();
     }
 
+    /**
+     * The exchange is traced through the audit line, which records the issuer, the subject and the
+     * client against this identifier.
+     */
     @Test
-    public void shouldRecordWhereTheTokenCameFrom() {
+    public void shouldGiveTheTokenAnIdentifierTheAuditCanBeFoundBy() {
         configure(specificUser(), subjectClaims().build());
 
         manager.exchange(SUBJECT_TOKEN);
 
-        assertThat(issuedClaims().getOriginIssuer()).isEqualTo(ISSUER_URL);
-        assertThat(issuedClaims().getOriginSubject()).isEqualTo(SUBJECT);
-        assertThat(issuedClaims().getOriginClient()).isEqualTo(CLIENT_ID);
         assertThat(issuedClaims().getJwtTokenId()).isNotBlank();
     }
 

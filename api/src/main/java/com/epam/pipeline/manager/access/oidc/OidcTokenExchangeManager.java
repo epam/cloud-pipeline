@@ -80,7 +80,7 @@ public class OidcTokenExchangeManager {
         checkNotBlocked(user, client);
 
         final long lifetime = resolveLifetime(verified, client, strategy);
-        final JwtTokenClaims claims = buildClaims(verified, client, strategy, user);
+        final JwtTokenClaims claims = buildClaims(strategy, user);
         final String token = jwtTokenGenerator.encodeToken(claims, lifetime);
 
         log.info("Exchanged a token of issuer {} (subject {}) through client {} for user {}, "
@@ -208,8 +208,7 @@ public class OidcTokenExchangeManager {
         return (expiry.getTime() - System.currentTimeMillis()) / MILLIS_IN_SECOND;
     }
 
-    private JwtTokenClaims buildClaims(final OidcVerifiedToken verified, final OidcClient client,
-                                       final OidcAssumeStrategy strategy, final PipelineUser user) {
+    private JwtTokenClaims buildClaims(final OidcAssumeStrategy strategy, final PipelineUser user) {
         final List<String> allRoles = roleNames(user);
         final List<String> roles = shape(allRoles, strategy);
         // groups are carried over as they are: they are how storage permissions are granted, and
@@ -228,9 +227,6 @@ public class OidcTokenExchangeManager {
                 .external(strategy.isExternal())
                 .authoritiesScoped(narrowed)
                 .exchangeable(strategy.isExchangeable())
-                .originIssuer(verified.getIssuer().getIssuer())
-                .originSubject(verified.getClaims().getSubject())
-                .originClient(client.getId())
                 .build();
     }
 
