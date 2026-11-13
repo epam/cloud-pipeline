@@ -353,6 +353,8 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
                     presetFile2.getName())
             // the four items and the ".." row, which has no checkbox
             .shouldContainNumberOfElements(5)
+            .ensureVisible(SELECTION_ACTIONS)
+            .openSelectionActions()
             .ensureVisible(REMOVE_ALL, CLEAR_SELECTION)
             .ensure(SELECT_ALL, not(visible));
     }
@@ -367,7 +369,7 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
             .clearSelection()
             .validateNoElementsAreSelected()
             .ensure(SELECT_ALL, visible)
-            .ensureNotVisible(REMOVE_ALL, CLEAR_SELECTION);
+            .ensureNotVisible(SELECTION_ACTIONS, REMOVE_ALL, CLEAR_SELECTION);
     }
 
     @Test(dependsOnMethods = {"createDataStorageAndValidate"})

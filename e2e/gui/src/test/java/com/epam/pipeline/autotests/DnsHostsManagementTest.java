@@ -124,6 +124,7 @@ public class DnsHostsManagementTest extends AbstractSeveralPipelineRunningTest
                     .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:20 sleep infinity && sleep infinity")
                     .clickAddBooleanParameter()
                     .setName(CP_CAP_AUTOSCALE_DNS_HOSTS)
+                    .setEnableParameter(true)
                     .close()
                     .doNotMountStoragesSelect(true)
                     .launchTool(this, nameWithoutGroup(tool));

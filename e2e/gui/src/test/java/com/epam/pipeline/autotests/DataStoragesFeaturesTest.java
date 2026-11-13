@@ -25,6 +25,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
 import static com.epam.pipeline.autotests.ao.Primitive.CLEAR_SELECTION;
@@ -87,8 +88,12 @@ public class DataStoragesFeaturesTest extends AbstractBfxPipelineTest implements
         library()
                 .selectStorage(storage)
                 .markCheckboxByName(fileName)
+                // The actions of the selection: a single one is a button, several are the items of the "Selection"
+                // dropdown. With signed URLs allowed, "Generate URL" would be one of several, so it is checked in the
+                // opened dropdown, or next to the single "Clear selection" button
+                .openSelectionActions()
                 .ensure(CLEAR_SELECTION, visible)
-                .ensure(GENERATE_URL, not(visible));
+                .ensure(GENERATE_URL, not(exist));
     }
 }
 

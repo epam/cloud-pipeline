@@ -897,6 +897,12 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                         return this;
                     }
 
+                    /**
+                     * Adds a runner in the "Share with users and groups" dialog. The dialog shows the limits of
+                     * the selected runner below the list, "Allow pipelines" and "Allow docker images": a new runner
+                     * has both checked with no pipeline and no docker image listed, i.e. it can run any of them
+                     * (runs/logs/forms/configure-run-as-permissions/index.js), so they are left as they are.
+                     */
                     public EditUserPopup configureRunAs(final String name, final boolean sshConnection) {
                         click(CONFIGURE);
                         new LogAO.ShareWith().addUserToShare(name, sshConnection);

@@ -58,7 +58,7 @@ import static org.testng.Assert.assertTrue;
  * exclusion only if:
  * <ul>
  *     <li>a storage has the attribute;</li>
- *     <li>one of them shows "Storage size" and has no sharing enabled: the billing service bills only storages with
+ *     <li>one of them shows "Standard size" and has no sharing enabled: the billing service bills only storages with
  *     indexed files, and never a shared one, so this one would be in the report without the attribute;</li>
  *     <li>every row of the report is a storage of the platform: the rows are what the storages are compared with;</li>
  *     <li>the report shows a storage without the attribute of the same type (S3, AZ, GS or NFS) as one of the
@@ -106,13 +106,13 @@ public class BillingStorageExclusionTest extends AbstractBfxPipelineTest impleme
             final boolean sized = showsStorageSize(storage);
             // The page shows a "Share" button for a storage with sharing enabled; the flag is read from the API
             final boolean shared = storage.path("shared").asBoolean(false);
-            System.out.printf("%s: %s, %s%n", describe(storage), sized ? "Storage size is shown" : "no Storage size",
+            System.out.printf("%s: %s, %s%n", describe(storage), sized ? "Standard size is shown" : "no Standard size",
                     shared ? "sharing enabled" : "no sharing");
             if (sized && !shared) {
                 billable.add(storage);
             }
         }
-        assertFalse(billable.isEmpty(), format("None of the storages with '%s' = '%s' shows \"Storage size\" and has "
+        assertFalse(billable.isEmpty(), format("None of the storages with '%s' = '%s' shows \"Standard size\" and has "
                 + "no sharing enabled: the billing service would not bill them without the attribute either",
                 EXCLUDE_KEY, EXCLUDE_VALUE));
 
@@ -162,7 +162,7 @@ public class BillingStorageExclusionTest extends AbstractBfxPipelineTest impleme
     }
 
     /**
-     * Opens the page of the storage and its attributes, and waits for "Storage size: ..." (the StorageSize component).
+     * Opens the page of the storage and its attributes, and waits for "Standard size: ..." (the StorageSize component).
      * Until the size has loaded, and if the storage has no indexed files, the attributes show only
      * "Request storage re-index" there. The page is reloaded: StorageSize keeps the size it shows until the size of
      * the next storage has loaded, so the page of a storage without indexed files, opened right after one with them,
@@ -177,7 +177,7 @@ public class BillingStorageExclusionTest extends AbstractBfxPipelineTest impleme
                 .validateHeader(storage.path("name").asText())
                 .showMetadata();
         try {
-            $(byXpath("//span[starts-with(normalize-space(.), 'Storage size:')]"))
+            $(byXpath("//span[starts-with(normalize-space(.), 'Standard size:')]"))
                     .should(appear, STORAGE_SIZE_TIMEOUT);
             return true;
         } catch (UIAssertionError e) {

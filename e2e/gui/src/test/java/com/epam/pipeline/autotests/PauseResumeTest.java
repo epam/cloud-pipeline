@@ -219,7 +219,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 .pausingLabelShouldAppear(getLastRunId())
                 .waitUntilResumeButtonAppear(getLastRunId())
                 .showLog(getLastRunId())
-                .ensure(runId(), matchText(String.format("Run #%s\\b", getLastRunId())))
+                .ensure(runId(), matchText(String.format("#%s\\b", getLastRunId())))
                 .ensure(STATUS, LogAO.Status.PAUSED.reached)
                 .waitForResumeButton()
                 // the SSH link is requested separately after the page loads, so wait before checking its absence

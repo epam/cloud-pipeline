@@ -20,10 +20,11 @@ import com.codeborne.selenide.SelenideElement;
 
 import java.util.Map;
 
+import static com.codeborne.selenide.Condition.cssClass;
+import static com.codeborne.selenide.Condition.exactText;
 import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
-import static com.codeborne.selenide.Selectors.byAttribute;
-import static com.codeborne.selenide.Selectors.byId;
+import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 
@@ -31,22 +32,34 @@ public class DetachedConfigurationParameterAO implements AccessObject<DetachedCo
 
     private final Map<Primitive, SelenideElement> elements;
     private final Configuration configuration;
+    private final SelenideElement nameText;
 
+    /**
+     * @param parameterIndex The key index of the parameter row, see {@link ParameterFieldAO#parameterByIndex(int)}.
+     */
     public DetachedConfigurationParameterAO(Configuration configuration, int parameterIndex) {
         this.configuration = configuration;
+        final ParameterFieldAO parameter = ParameterFieldAO.parameterByIndex(parameterIndex);
+        this.nameText = $(parameter.qualifier).find(byClassName(ParameterFieldAO.NAME_CLASS));
 
+        // A detached configuration shows a value in a combobox that offers the metadata fields
+        // (launch/form/parameters/parameter/inputs/metadata-auto-complete.jsx)
         this.elements = initialiseElements(
-                entry(PARAMETER_NAME, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))),
-                entry(REMOVE_PARAMETER, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))
-                        .closest(".launch-pipeline-form__form-item-row").closest(".launch-pipeline-form__form-item-row")
-                        .find(byId("remove-parameter-button"))),
-                entry(PARAMETER_VALUE, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))
-                        .closest(".launch-pipeline-form__form-item-row").closest(".launch-pipeline-form__form-item-row")
-                        .find(byAttribute("role", "combobox")).find("input"))
+                entry(PARAMETER_NAME, $(parameter.nameInput)),
+                entry(REMOVE_PARAMETER, $(parameter.qualifier).find(parameter.removeButton)),
+                entry(PARAMETER_VALUE, $(parameter.valueInput))
         );
     }
 
+    /**
+     * The name of a parameter is a text, and the name input after a click on it. In a configuration with
+     * a pipeline the names of the parameters can't be edited: they are a text only
+     * (launch/form/parameters/parameter/name-input/index.jsx).
+     */
     public DetachedConfigurationParameterAO setName(String name) {
+        if (nameText.exists()) {
+            nameText.click();
+        }
         setValue(PARAMETER_NAME, name).resetMouse();
         return this;
     }
@@ -67,8 +80,21 @@ public class DetachedConfigurationParameterAO implements AccessObject<DetachedCo
     }
 
     public DetachedConfigurationParameterAO validateParameter(String name, String value) {
-        ensure(PARAMETER_NAME, Condition.have(value(name)));
+        if (get(PARAMETER_NAME).exists()) {
+            ensure(PARAMETER_NAME, Condition.have(value(name)));
+        } else {
+            ensure(nameText, Condition.have(exactText(name)));
+        }
         ensure(PARAMETER_VALUE, Condition.have(value(value)));
+        return this;
+    }
+
+    /**
+     * Checks whether the name of the parameter can be edited: its name text is marked so.
+     */
+    public DetachedConfigurationParameterAO parameterNameIsEnable(boolean isEnable) {
+        ensure(nameText, cssClass(isEnable ? "arameter-name-input__editing-enabled"
+                : "arameter-name-input__editing-disabled"));
         return this;
     }
 

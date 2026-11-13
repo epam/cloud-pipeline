@@ -30,13 +30,12 @@ import java.util.stream.IntStream;
 
 import org.openqa.selenium.By;
 
+import static com.codeborne.selenide.CollectionCondition.size;
+import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.enabled;
-import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.text;
-import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
-import static com.codeborne.selenide.Selectors.byCssSelector;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
@@ -48,7 +47,6 @@ import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
 import static com.epam.pipeline.autotests.ao.Primitive.IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.NAME;
-import static com.epam.pipeline.autotests.ao.Primitive.PARAMETER_NAME;
 import static com.epam.pipeline.autotests.ao.Primitive.PIPELINE;
 import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.RUN;
@@ -115,10 +113,17 @@ public class Configuration implements AccessObject<Configuration> {
         return byId("exec.disk");
     }
 
+    /**
+     * The root entity type is a row of the parameters with the name text "Root entity type"
+     * (launch/form/parameters/parameter/root-entity-type-input.jsx).
+     */
     public static By rootEntityType() {
         return PipelineSelectors.Combiners.confine(
                 byClassName("ant-select-selection"),
-                byClassName("launch-pipeline-form__root-entity-type-container"),
+                byXpath(".//*[contains(concat(' ', normalize-space(@class), ' '), " +
+                        "' aunch-form-parameter__launch-form-parameter ') and " +
+                        ".//*[contains(concat(' ', normalize-space(@class), ' '), " +
+                        "' arameter-name-input__parameter-name ') and normalize-space(.) = 'Root entity type']]"),
                 "root entity type"
         );
     }
@@ -147,8 +152,14 @@ public class Configuration implements AccessObject<Configuration> {
         return byClassName("launch-pipeline-form__code-editor");
     }
 
+    /**
+     * The name of a parameter: a text, or an input while it is edited
+     * (launch/form/parameters/parameter/name-input/index.jsx).
+     */
     public static By parameterName() {
-        return byClassName("launch-pipeline-form__parameter-name");
+        return byXpath(".//*[contains(@class, 'launch-form-parameter-key-')]" +
+                "//*[contains(concat(' ', normalize-space(@class), ' '), ' arameter-name-input__parameter-name ') " +
+                "or contains(concat(' ', normalize-space(@class), ' '), ' arameter-name-input__parameter-name-input ')]");
     }
 
     public Configuration() {
@@ -253,15 +264,25 @@ public class Configuration implements AccessObject<Configuration> {
     }
 
     public Configuration ensureThereIsNoParameters() {
-        $(byCssSelector(".ant-select-lg.ant-select-combobox")).shouldNot(exist);
+        parametersOfParametersSection().shouldHave(size(0));
         return this;
     }
 
+    /**
+     * Checks the names of the parameters of the "Parameters" section, in their order.
+     */
     public Configuration validateParameters(final String... parameters) {
-        final ElementsCollection actualParameters = SelenideElements.of(parameterName());
+        final ElementsCollection actualParameters = parametersOfParametersSection();
         IntStream.range(0, parameters.length)
-                .forEach(i -> actualParameters.get(i).shouldHave(value(parameters[i])));
+                .forEach(i -> actualParameters.get(i).shouldHave(cssClass("launch-form-parameter-" + parameters[i])));
         return this;
+    }
+
+    /**
+     * The parameter rows of the "Parameters" section: the root entity type row is not a parameter, it has no key.
+     */
+    private ElementsCollection parametersOfParametersSection() {
+        return $(byId("launch-pipeline-parameters-panel")).$$(ParameterFieldAO.parameterRows());
     }
 
     public DetachedConfigurationParameterAO getParameterByIndex(int parameterIndex) {
@@ -269,14 +290,7 @@ public class Configuration implements AccessObject<Configuration> {
     }
 
     public Configuration addStringParameter(final String name, final String value) {
-        profile.clickAddStringParameter()
-                .setName(name)
-                .also(parameter -> parameter.get(PARAMETER_NAME)
-                        .closest(".ant-row")
-                        .closest(".ant-row")
-                        .find(byClassName("ant-select-search__field"))
-                        .setValue(value)
-                );
+        profile.addStringParameter(name, value);
         return this;
     }
 

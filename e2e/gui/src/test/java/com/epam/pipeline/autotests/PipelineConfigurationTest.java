@@ -30,6 +30,7 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
+import static com.epam.pipeline.autotests.ao.ParameterFieldAO.parameterByName;
 import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.Condition.attribute;
 import static com.codeborne.selenide.Condition.empty;
@@ -209,11 +210,11 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             .sleep(5, SECONDS)
             .refresh()
             .editConfiguration(anotherProfile, profile ->
-                profile.ensure(byValue(firstParameter), visible)
+                profile.ensure(parameterByName(firstParameter), visible)
                        .ensure(byValue(firstParameterValue), visible)
             )
             .editConfiguration(defaultProfile, profile ->
-                profile.ensure(byValue(secondParameter), visible)
+                profile.ensure(parameterByName(secondParameter), visible)
                        .ensure(byValue(secondParameterValue), visible)
             );
     }

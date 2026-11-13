@@ -125,10 +125,10 @@ public class Profile implements AccessObject<Profile> {
     }
 
     /**
-     * Adds a boolean parameter; the form gives it the value "true".
+     * Adds a boolean parameter and ticks it: the form adds a boolean parameter unticked.
      */
     public Profile addBooleanParameter(final String name) {
-        runForm.clickAddBooleanParameter().setName(name).close();
+        runForm.clickAddBooleanParameter().setName(name).setEnableParameter(true).close();
         return this;
     }
 

@@ -185,8 +185,10 @@ public class Utils {
         getWebDriver().navigate().refresh();
     }
 
-    private static final String TOP_LEVEL_RUN_ROWS = "tr.ant-table-row-level-0.run-table__run, "
-            + "tr.ant-table-row-level-0.cp-runs-table-service-url-run";
+    // In the runs table every row, a service URL one too, has the class "run" of run-table.css, and the cells have
+    // the "run-row-*" classes of columns/run-table-columns.css (client/src/components/runs/run-table/index.js,
+    // columns/*.js). The CSS module name of a lower-case file loses its first letter: "un-table__run".
+    private static final String TOP_LEVEL_RUN_ROWS = "tr.ant-table-row-level-0.un-table__run";
     // a run without a pipeline, e.g. a tool run, has the pipeline name "pipeline"
     private static final String NO_PIPELINE = "pipeline";
     private static final String RUN_ID_CLASS_PREFIX = "run-";
@@ -221,11 +223,11 @@ public class Utils {
 
     private static boolean isRunOf(final WebElement row, final String launchItemName) {
         // the Pipeline cell shows the version on its second line
-        final String pipeline = cellText(row, "run-table__run-row-pipeline").split("\n", 2)[0].trim();
+        final String pipeline = cellText(row, "un-table-columns__run-row-pipeline").split("\n", 2)[0].trim();
         if (pipeline.equals(launchItemName)) {
             return true;
         }
-        final String image = cellText(row, "run-table__run-row-docker-image");
+        final String image = cellText(row, "un-table-columns__run-row-docker-image");
         return (pipeline.isEmpty() || pipeline.equals(NO_PIPELINE))
                 && (image.equals(launchItemName) || image.startsWith(launchItemName + ":"));
     }
@@ -252,9 +254,9 @@ public class Utils {
         return findRunId(new By() {
             @Override
             public List<WebElement> findElements(final SearchContext context) {
-                return context.findElements(className("run-table__run")).stream()
+                return context.findElements(className("un-table__run")).stream()
                         .filter(element ->
-                                element.findElements(byClassName("run-table__run-row-docker-image")).stream()
+                                element.findElements(byClassName("un-table-columns__run-row-docker-image")).stream()
                                         .map(WebElement::getText)
                                         .anyMatch(pipelineName -> pipelineName.equals(toolSelfName)
                                                 || pipelineName.equals(toolSelfName + ":latest")
@@ -276,9 +278,9 @@ public class Utils {
         return findRunId(new By() {
             @Override
             public List<WebElement> findElements(final SearchContext context) {
-                return context.findElements(className("run-table__run")).stream()
+                return context.findElements(className("un-table__run")).stream()
                         .filter(element ->
-                                element.findElements(byClassName("run-table__run-row-docker-image")).stream()
+                                element.findElements(byClassName("un-table-columns__run-row-docker-image")).stream()
                                         .map(WebElement::getText)
                                         .anyMatch(pipelineName -> pipelineName.equals(toolSelfName)
                                                 || pipelineName.equals(nameWithTag)
@@ -295,7 +297,8 @@ public class Utils {
     }
 
     private static String findRunId(final By runRowQualifier) {
-        final SelenideElement element = $(runRowQualifier).should(exist).find(byClassName("run-table__run-row-name"));
+        final SelenideElement element = $(runRowQualifier).should(exist)
+                .find(byClassName("un-table-columns__run-row-name"));
         final String runName = element.text();
         return runNameToRunId(runName);
     }

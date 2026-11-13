@@ -525,8 +525,11 @@ public class RoleModelTest
                 .validateElementIsPresent(folderInBucket)
                 .validateElementIsPresent(tempFileName)
                 .validateElementsAreNotEditable()
-                .ensureVisible(EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH, SHOW_METADATA)
-                .ensureNotVisible(CREATE, UPLOAD);
+                .ensureVisible(EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH, ACTIONS)
+                .ensureNotVisible(CREATE, UPLOAD)
+                .click(ACTIONS)
+                .ensureVisible(SHOW_METADATA)
+                .click(ACTIONS);
         storage.selectFile(tempFileName).ensureVisible(DOWNLOAD);
     }
 
@@ -557,7 +560,10 @@ public class RoleModelTest
                 .validateElementIsPresent(folderInBucket)
                 .validateElementIsPresent(tempFileName)
                 .validateElementsAreEditable()
-                .ensureVisible(CREATE, UPLOAD, EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH, SHOW_METADATA);
+                .ensureVisible(CREATE, UPLOAD, EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH, ACTIONS)
+                .click(ACTIONS)
+                .ensureVisible(SHOW_METADATA)
+                .click(ACTIONS);
         storage.selectFile(tempFileName).ensureVisible(DOWNLOAD);
     }
 

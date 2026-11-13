@@ -40,7 +40,6 @@ import java.util.stream.Stream;
 import static com.codeborne.selenide.CollectionCondition.sizeGreaterThan;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Condition.visible;
-import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.open;
@@ -172,7 +171,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
         clusterMenu()
             .click(nodeLabel(runIdLabel), LogAO::new)
             .ensure(taskList(), visible)
-            .ensure(runId(), have(matchText(String.format("Run #%s\\b", getLastRunId()))))
+            .ensure(runId(), have(matchText(String.format("#%s\\b", getLastRunId()))))
             .ensure(pipelineLink(), have(textMatches(String.format("%s \\(draft-.{8}\\)", pipeline100))));
     }
 
@@ -201,7 +200,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
         new NodePage()
             .click(labelWithType("RUNID"), LogAO::new)
             .ensure(taskList(), visible)
-            .ensure(runId(), have(matchText(String.format("Run #%s\\b", getLastRunId()))));
+            .ensure(runId(), have(matchText(String.format("#%s\\b", getLastRunId()))));
     }
 
     @Test(priority = 1, dependsOnMethods = "activePipelineShouldBeOpenedFromNodePage")
@@ -213,7 +212,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
         runsMenu()
             .activeRuns()
             .showLog(runId)
-            .ensure(runId(), have(text(String.format("Run #%s", runId))))
+            .ensure(runId(), have(text(String.format("#%s", runId))))
             .ensure(pipelineLink(), have(textMatches(String.format("%s \\(draft-.{8}\\)", pipeline100))))
             .ensure(detailsWithLabel("Owner"), have(text(getUserNameByAccountLogin(C.LOGIN))))
             .waitForCompletion()
@@ -268,7 +267,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
     @TestCase("EPMCMBIBPC-310")
     public void timingsShouldBeValid() {
         onRunPage()
-            .click(byText("SHOW TIMINGS"))
+            .showTimings()
             .ensureAll(task(), contains(timeInfo("Scheduled"), timeInfo("Started"), timeInfo("Finished")));
     }
 

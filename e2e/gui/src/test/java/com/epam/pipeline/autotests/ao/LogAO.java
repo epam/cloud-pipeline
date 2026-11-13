@@ -18,7 +18,6 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.CollectionCondition;
 import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.Condition;
-import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.Utils;
@@ -55,6 +54,8 @@ public class LogAO implements AccessObject<LogAO> {
     public static final long COMPLETION_TIMEOUT = C.COMPLETION_TIMEOUT;
     private static final int FINISHED_RUN_TASK_RELOADS = 6;
     public static final long BUCKETS_MOUNTING_TIMEOUT = C.BUCKETS_MOUNTING_TIMEOUT;
+    // "Expand more" adds 500 lines to the log shown: 100 clicks show a log of 50000 lines
+    private static final int MAX_LOG_EXPANSIONS = 100;
 
     private static Condition completed = Condition.or("finished", Status.SUCCESS.reached, Status.STOPPED.reached, Status.FAILURE.reached);
     private static Condition running = Condition.or("running", Status.LOADING.reached, Status.WORKING.reached);
@@ -71,7 +72,9 @@ public class LogAO implements AccessObject<LogAO> {
             entry(ENDPOINT, $(withText("Endpoint")).closest("tr").find("a")),
             entry(INSTANCE, context().find(byXpath(".//*[.//*[text()[contains(.,'Instance')]] and contains(@class, 'ant-collapse')]"))),
             entry(PARAMETERS, context().find(byXpath(".//*[.//*[text()[contains(.,'Parameters')]] and contains(@class, 'ant-collapse')]"))),
-            entry(NESTED_RUNS, $(withText("Nested runs:")).closest("tr").find("a")),
+            // the first link of the row is "show cluster usage": the nested runs are the log__nested-run links
+            // (client/src/components/runs/logs/Log.js:1437-1451, 1471-1497)
+            entry(NESTED_RUNS, $(withText("Nested runs:")).closest("tr").find(".log__nested-run")),
             entry(SHARE_WITH, $(withText("Share with:")).closest("tr").find("a"))
     );
 
@@ -151,25 +154,39 @@ public class LogAO implements AccessObject<LogAO> {
         return this;
     }
 
+    /**
+     * All the lines of the log of the selected task. The task's log is shown in a console that is not a virtualized
+     * list: it renders every line it shows, each with its number and date, but only the last 500 lines of a long log
+     * (client/src/components/runs/run-task-logs/index.js:30,145-175,632-780). So the earlier lines are added with
+     * "Expand more" until the whole log is shown, and then all the lines are read.
+     */
     public Stream<String> logMessages() {
-        $(byClassName("log__logs-table")).shouldBe(visible);
-        SelenideElement checkbox = $(byClassName("log__logs-table-container"))
-                        .$(byClassName("log__scroll-to-last-check-box"))
-                        .$(byClassName("ant-checkbox"));
-        if (checkbox.exists()) {
-            checkbox.click();
+        final SelenideElement console = $(log()).shouldBe(visible);
+        // a spinner is shown instead of the lines while the log of the task is loaded
+        console.find(byClassName("un-task-logs__pending-container")).shouldNot(exist);
+        for (int expansion = 0; expansion < MAX_LOG_EXPANSIONS; expansion++) {
+            if (!expandLog()) {
+                break;
+            }
         }
-        Utils.scrollElementToPosition(".log__logs-table", 0);
-        Set<String> lines = new LinkedHashSet<>();
-        boolean keepScrolling = true;
-        int offset = 0;
-        while (keepScrolling) {
-            ElementsCollection messages = $(byClassName("log__logs-table")).findAll(byClassName("log__log-row"));
-            keepScrolling = lines.addAll(messages.texts());
-            offset += messages.stream().mapToInt(element -> element.getSize().getHeight()).sum();
-            Utils.scrollElementToPosition(".log__logs-table", offset);
+        // a line is its number, its date and its message, in spans with no space between them: the message only
+        return console.findAll(byCssSelector(".un-task-logs__console-line > span:last-child")).texts().stream();
+    }
+
+    /**
+     * Clicks "Expand more" of the log if the log shown is the last part of a long log: it adds 500 earlier lines
+     * (client/src/components/runs/run-task-logs/index.js:393-414,643-659).
+     *
+     * @return false if the whole log is shown already
+     */
+    private static boolean expandLog() {
+        final SelenideElement expandMore = $(log()).find(byXpath(
+                ".//*[contains(@class, 'un-task-logs__expand-more')]//a[normalize-space(.) = 'Expand more']"));
+        if (!expandMore.is(visible)) {
+            return false;
         }
-        return lines.stream();
+        expandMore.click();
+        return true;
     }
 
     public String getSshLink() {
@@ -201,14 +218,26 @@ public class LogAO implements AccessObject<LogAO> {
         return this;
     }
 
+    /**
+     * Pauses the run in its own dialog, not in a confirmation popup: its title is "Do you want to pause" and the name
+     * of the run, a pipeline as {@code <b>pipeline</b> (version)}, a tool as its image name, then "?"
+     * (client/src/components/runs/actions/pause-confirmation.js:158-166,215-228, run-display-name.js).
+     */
     public LogAO pause(final String pipelineName) {
         clickOnPauseButton();
-        new ConfirmationPopupAO<>(this)
-                .ensureTitleIs(
-                        format("Do you want to pause %s?", pipelineName))
+        ensure(byClassName("ause-confirmation__title"), visible,
+                matchText(runConfirmationTitle("pause", pipelineName)))
                 .sleep(1, SECONDS)
                 .click(button(PAUSE.name()));
         return this;
+    }
+
+    /**
+     * The title of the pause and resume dialogs of a run: the gap before the name of the run is a CSS margin, not a
+     * space, so the text has none. The version of a pipeline follows its name.
+     */
+    private static String runConfirmationTitle(final String action, final String runName) {
+        return format("Do you want to %s\\s*%s( \\(.+\\))?\\?", action, Pattern.quote(runName));
     }
 
     public LogAO clickOnStopButton() {
@@ -244,10 +273,15 @@ public class LogAO implements AccessObject<LogAO> {
         return this;
     }
 
+    /**
+     * Resumes the run in its own dialog, like {@link #pause(String)}: "Do you want to resume" and the name of the run
+     * (client/src/components/runs/actions/resume-confirmation.js:243-251,321-333). Its RESUME button is enabled once
+     * the node types of the dialog are loaded.
+     */
     public LogAO resume(final String pipelineName) {
         get(RESUME).shouldBe(visible).click();
-        new ConfirmationPopupAO<>(this)
-                .ensureTitleContains(format("Do you want to resume %s?", pipelineName))
+        ensure(byClassName("esume-confirmation__title"), visible,
+                matchText(runConfirmationTitle("resume", pipelineName)))
                 .sleep(2, SECONDS)
                 .click(button(RESUME.name()));
         return this;
@@ -309,7 +343,11 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public String getNestedRunID(int childNum) {
-        return $(withText("Nested runs:")).closest("tr").find(byXpath(format("td/a[%s]/b", childNum))).getText();
+        // the nested runs are links in a block of their own, under the "N nested runs - show cluster usage" line
+        // (client/src/components/runs/logs/Log.js:1471-1497)
+        return $(withText("Nested runs:")).closest("tr").find(byXpath(format(
+                "td/div[contains(@class, 'log__nested-runs')]/a[contains(@class, 'log__nested-run')][%s]/b", childNum)))
+                .getText();
     }
 
     public LogAO waitForNestedRunWorking(String childRunID) {
@@ -399,7 +437,20 @@ public class LogAO implements AccessObject<LogAO> {
 
     public LogAO clickTaskWithName(final String name) {
         return click(taskWithName(name))
-               .ensure(byXpath(".//div[contains(@class,'ReactVirtualized__Grid__innerScrollContainer')]/div[contains(@class,'log__log-row')]"), exist);
+               .ensure(byXpath(".//div[contains(@class,'cp-console-output')]/div[contains(@class,'un-task-logs__console-line')]"), exist);
+    }
+
+    /**
+     * Shows the timings of the tasks. The "SHOW TIMINGS" link is a clock icon above the task list that switches them
+     * on and off, and the task list has the class log__task-list-timings while they are shown
+     * (client/src/components/runs/logs/Log.js:1132-1139,1159-1164): so it is clicked only if they are hidden.
+     */
+    public LogAO showTimings() {
+        if (!$(byClassName("log__task-list-timings")).exists()) {
+            $(byClassName("log__timing-btn")).find(tagName("a")).shouldBe(visible).click();
+        }
+        $(byClassName("log__task-list-timings")).shouldBe(visible);
+        return this;
     }
 
     public LogAO clickMountBuckets() {
@@ -438,7 +489,7 @@ public class LogAO implements AccessObject<LogAO> {
         }
         $(byXpath(format(
                 ".//tr[.//td[contains(@class, 'log__task-parameter-name') " +
-                        "and contains(.//text(), '%s')]", name))).shouldNotBe(visible);
+                        "and contains(.//text(), '%s')]]", name))).shouldNotBe(visible);
         return this;
     }
 
@@ -461,8 +512,13 @@ public class LogAO implements AccessObject<LogAO> {
                 .shouldBe(cssClass("cp-runs-table-icon-green"), ofMillis(BUCKETS_MOUNTING_TIMEOUT));
     }
 
+    /**
+     * The run id of the title: "Run" and "#&lt;id&gt;" are separate elements, the gap between them is a CSS
+     * pseudo-element, so this element has the text "#&lt;id&gt;" (client/src/components/runs/logs/Log.js:1816-1832,
+     * client/src/components/runs/run-name/run-name.js:172-185, run-name.css:22-26).
+     */
     public static By runId() {
-        return byXpath(".//h1[contains(@class, 'log__run-title')]//*[contains(text(), 'Run #')]");
+        return byXpath(".//h1[contains(@class, 'log__run-title')]//*[contains(concat(' ', @class, ' '), ' cp-run-name ')]");
     }
 
     public static By pipelineLink() {
@@ -511,8 +567,11 @@ public class LogAO implements AccessObject<LogAO> {
         return new StorageContentAO();
     }
 
+    /**
+     * The console with the log of the selected task (client/src/components/runs/run-task-logs/index.js:632-640).
+     */
     public static By log() {
-        return byClassName("ReactVirtualized__List");
+        return byClassName("cp-console-output");
     }
 
     public LogAO logContainsMessage(Set<String> logMess, final String message) {
@@ -538,7 +597,8 @@ public class LogAO implements AccessObject<LogAO> {
 
     public static By logMessage(final String text) {
         Objects.requireNonNull(text);
-        final String messageClass = "log__log-row";
+        // a line of the console (client/src/components/runs/run-task-logs/index.js:740-779)
+        final String messageClass = "un-task-logs__console-line";
         // Quotes.escape makes an XPath string literal of any text: a message with double quotes (e.g.
         // > export CP_CAP_AUTOSCALE="true") inside a "..." literal would make the selector invalid
         final By messageQualifier = byXpath(format(
@@ -560,30 +620,18 @@ public class LogAO implements AccessObject<LogAO> {
         Objects.requireNonNull(text);
         return new Condition(format("contains message {%s}", text)) {
 
-            private static final String container = ".log__logs-table";
             private final By message = logMessage(text);
 
             @Override
             public boolean apply(Driver driver, final WebElement log) {
-                // the message locator is confined to the log list already: searched from the page, not inside the
-                // list (inside it, it would look for a list in the list and never match)
-                boolean seen = $(message).is(visible);
-                if (!seen) {
-                    // The list is virtualized: only the rows on screen exist, so it is scrolled through. With "Follow
-                    // log" on, a refresh of the log may bring it back to the bottom meanwhile: a row that was read on
-                    // the way counts as seen as well.
-                    final Set<String> lines = new LinkedHashSet<>();
-                    boolean keepScrolling = true;
-                    int offset = 0;
-                    Utils.scrollElementToPosition(container, 0);
-                    while (!seen && keepScrolling) {
-                        final ElementsCollection messages = $(container).findAll(byClassName("log__log-row"));
-                        seen = $(message).is(visible);
-                        keepScrolling = lines.addAll(messages.texts());
-                        offset += messages.stream().mapToInt(element -> element.getSize().getHeight()).sum();
-                        Utils.scrollElementToPosition(container, offset);
-                    }
-                    seen = seen || lines.stream().anyMatch(line -> line.contains(text));
+                // the message locator is confined to the log already: searched from the page, not inside the log
+                // (inside it, it would look for a log in the log and never match)
+                boolean seen = $(message).exists();
+                // The console is not a virtualized list: it renders every line it shows, also the lines scrolled out
+                // of it. But it shows only the last 500 lines of a long log, so the earlier lines are added with
+                // "Expand more" until the message is there or the whole log is shown.
+                for (int expansion = 0; !seen && expansion < MAX_LOG_EXPANSIONS && expandLog(); expansion++) {
+                    seen = $(message).exists();
                 }
                 return seen;
             }

@@ -25,12 +25,14 @@ import com.epam.pipeline.autotests.utils.SelenideElements;
 import com.epam.pipeline.autotests.utils.Utils;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchWindowException;
 
 import static com.codeborne.selenide.CollectionCondition.size;
+import static com.codeborne.selenide.CollectionCondition.sizeGreaterThan;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.*;
@@ -79,9 +81,10 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(DEFAULT_COMMAND, context().find(byText("Cmd template")).parent().parent().find(byClassName("CodeMirror-line"))),
             entry(SAVE, $(byId("save-pipeline-configuration-button"))),
             entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button"))),
-            entry(RUN_CAPABILITIES, context().find(byXpath(".//*[contains(text(), 'Run capabilities')]")).closest(".ant-row").find(by("role", "combobox"))),
+            // the run capabilities input opens a menu of an rc-dropdown (launch/form/utilities/run-capabilities.js)
+            entry(RUN_CAPABILITIES, context().find(byXpath(".//*[contains(text(), 'Run capabilities')]")).closest(".ant-row").find(className("cp-run-capabilities-input"))),
             entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input"))),
-            entry(FRIENDLY_URL, context().find(byId("advanced.prettyUrl"))),
+            entry(FRIENDLY_URL, context().find(byId("advanced.friendly_url"))),
             entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span"))),
             entry(LAUNCH_COMMANDS, context().find(byId("launch-command-button")))
     );
@@ -169,9 +172,23 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
     public PipelineRunFormAO selectRunCapability(final String optionQualifier) {
         get(RUN_CAPABILITIES).shouldBe(visible).click();
-        $(visible(byClassName("ant-select-dropdown"))).find(byText(optionQualifier))
+        $(visible(byClassName("rc-dropdown"))).find(byText(optionQualifier))
                 .shouldBe(visible).click();
         $(byText("Run capabilities")).click();
+        return this;
+    }
+
+    /**
+     * Selects a run capability as {@link AccessObject#selectValue(Primitive, By)} selects an option of a combobox:
+     * the run capabilities are a menu of an rc-dropdown, not of an ant-select-dropdown.
+     */
+    @Override
+    public PipelineRunFormAO selectValue(final Primitive combobox, final By optionQualifier) {
+        if (combobox != RUN_CAPABILITIES) {
+            return AccessObject.super.selectValue(combobox, optionQualifier);
+        }
+        get(RUN_CAPABILITIES).shouldBe(visible).click();
+        $(visible(byClassName("rc-dropdown"))).find(optionQualifier).shouldBe(visible).click();
         return this;
     }
 
@@ -190,8 +207,10 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                 .shouldBe(visible);
     }
 
+    // a selected capability is a tag with the capability name, the title of the name is the description
+    // (launch/form/utilities/capability.js)
     public PipelineRunFormAO checkTooltipText(String capability, String tooltip) {
-        $(byXpath(format("(//span[text()='%s'])", capability))).closest(".ant-select-selection__choice")
+        $(byXpath(format("(//span[text()='%s'])", capability)))
                 .shouldHave(attribute("title", tooltip));
         return this;
     }
@@ -202,12 +221,12 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO addOutputParameter(String name, String value) {
+        final List<Integer> indexesBefore = ParameterFieldAO.parameterIndexes();
         resetMouse();
         $(byId("add-parameter-dropdown-button")).shouldBe(visible).hover().click();
         $(byText("Output path parameter")).shouldBe(visible).click();
 
-        int paramIndex = $$(byClassName("launch-pipeline-form__parameter-name")).size();
-        final ParameterFieldAO parameter = ParameterFieldAO.parameterByOrder(paramIndex);
+        final ParameterFieldAO parameter = ParameterFieldAO.parameterByIndex(addedParameterIndex(indexesBefore));
         parameter
                 .setValue(parameter.nameInput, name)
                 .setValue(parameter.valueInput, value);
@@ -344,15 +363,15 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return this;
     }
 
+    /**
+     * The launch form shows the name of a configuration parameter as a text, and has no delete icon for a required
+     * parameter (launch/form/parameters/parameter/index.js).
+     */
     public PipelineRunFormAO validateThereIsParameterOfType(String name, String value, ParameterType type, boolean required) {
-        final String parameterNameClass = "launch-pipeline-form__parameter-name";
-        final SelenideElement nameElement = $(byXpath(format(
-            ".//input[contains(concat(' ', @class, ' '), ' %s ') and @value = '%s']",
-            parameterNameClass, name
-        )));
-        final String parameterNameId = nameElement.should(exist, required ? disabled : enabled).getAttribute("id");
-        final String parameterValueId = parameterNameId.replace("name", "value");
-        final SelenideElement valueElement = $(byId(parameterValueId)).should(exist, have(attribute("value", value)));
+        final RunParameterAO parameter = new RunParameterAO(this, ParameterFieldAO.parameterByName(name).index());
+        final SelenideElement valueElement = parameter.get(PARAMETER_VALUE)
+                .should(exist, have(attribute("value", value)));
+        parameter.get(REMOVE_PARAMETER).should(required ? not(exist) : visible);
 
         if (type == ParameterType.STRING) {
             valueElement.parent().shouldHave(cssClass("ant-form-item-control"));
@@ -400,11 +419,9 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
     /**
      * Adds the string parameter {@link #CREATE_NEW_NODE} with the value "true", so that the run gets a new node and
-     * the node's InitializeNode task. The form numbers an added parameter after the parameters of the configuration,
-     * which this page object's parameter counter doesn't count, so the next row must not exist yet.
+     * the node's InitializeNode task.
      */
     public PipelineRunFormAO createNewNode() {
-        $(byId(format("parameters.params.param_%d.name", parameterIndex + 1))).shouldNot(exist);
         return clickAddStringParameter()
                 .setName(CREATE_NEW_NODE)
                 .setValue("true")
@@ -412,12 +429,26 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     private RunParameterAO clickAddParameter(String parameterType) {
+        final List<Integer> indexesBefore = ParameterFieldAO.parameterIndexes();
         resetMouse();
         $(byId("add-parameter-dropdown-button")).shouldBe(visible).hover();
         $(byText(parameterType)).shouldBe(visible).click();
 
-        parameterIndex += 1;
+        parameterIndex = addedParameterIndex(indexesBefore);
         return new RunParameterAO(this, parameterIndex);
+    }
+
+    /**
+     * The form gives an added parameter the lowest key index it has free, so the added parameter is the row
+     * with a key index the form didn't have before.
+     */
+    private int addedParameterIndex(final List<Integer> indexesBefore) {
+        $$(ParameterFieldAO.parameterRows()).shouldHave(sizeGreaterThan(indexesBefore.size()));
+        return ParameterFieldAO.parameterIndexes()
+                .stream()
+                .filter(index -> !indexesBefore.contains(index))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No parameter has been added to the launch form"));
     }
 
     public SystemParameterPopupAO clickAddSystemParameter() {
@@ -434,16 +465,16 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return this;
     }
 
+    // the "Configure cluster" link is in the row below the disk field (launch/form/LaunchPipelineForm.js)
     public PipelineRunFormAO checkConfigureClusterLabel(String label) {
-        context().find(byXpath(".//div[@class='ant-row-flex ant-row-flex-end']/a"))
+        context().find(byXpath(".//div[contains(concat(' ', @class, ' '), " +
+                        "' launch-pipeline-form__form-item-container ')]/a"))
                 .shouldBe(visible).shouldHave(text(label));
         return this;
     }
 
     public PipelineRunFormAO inputSystemParameterValue(String parameter, String value) {
-        String inputFieldID = $(byXpath(format("//input[@value='%s']", parameter))).attr("id")
-                .replace(".name", ".value");
-        $(byXpath(format("//input[@id='%s']", inputFieldID))).shouldBe(enabled).setValue(value);
+        $(ParameterFieldAO.parameterByName(parameter).valueInput).shouldBe(enabled).setValue(value);
         return this;
     }
 
@@ -515,7 +546,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         private final Map<Primitive, SelenideElement> elements = initialiseElements(
                 entry(PARAMETER_NAME, context().$(byXpath(".//*[@placeholder='Parameter']"))),
                 entry(ADD, context().find(byId("system-parameters-browser-ok-button"))),
-                entry(CANCEL, context().find(byClassName("system-parameters-browser-cancel-button")))
+                entry(CANCEL, context().find(byId("system-parameters-browser-cancel-button")))
         );
 
         public SystemParameterPopupAO(PipelineRunFormAO parentAO) {

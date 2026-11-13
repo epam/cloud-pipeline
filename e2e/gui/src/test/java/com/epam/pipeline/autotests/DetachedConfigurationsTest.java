@@ -695,8 +695,8 @@ public class DetachedConfigurationsTest
                 ensureFilledParameters(configuration);
                 Stream.of(stringParameter, pathParameter, commonParameter, inputParameter, outputParameter,
                         booleanParameter)
-                        .forEach(name -> parameterRow(configuration, name)
-                                .ensure(PARAMETER_NAME, disabled, attribute("value", name)));
+                        // with a pipeline set, the name of a parameter is a text that cannot be edited
+                        .forEach(name -> parameterRow(configuration, name).parameterNameIsEnable(false));
             });
     }
 
@@ -744,8 +744,7 @@ public class DetachedConfigurationsTest
                     .ensure(PARAMETER_VALUE, attribute("value", pathParameterValue2));
                 saveAndRefreshSecondProfile(configuration);
                 ensureCustomProfileFields(configuration, stringParameterValue2, pathParameterValue2);
-                parameterRow(configuration, stringParameterName)
-                    .ensure(PARAMETER_NAME, disabled, attribute("value", stringParameterName));
+                parameterRow(configuration, stringParameterName).parameterNameIsEnable(false);
             });
     }
 
@@ -774,8 +773,8 @@ public class DetachedConfigurationsTest
     }
 
     private void ensureParameterValue(final Configuration configuration, final String name, final String value) {
+        // the row is found by the name of the parameter
         parameterRow(configuration, name)
-            .ensure(PARAMETER_NAME, attribute("value", name))
             .ensure(PARAMETER_VALUE, attribute("value", value));
     }
 

@@ -36,7 +36,8 @@ public class NotificationAO implements AccessObject<NotificationAO> {
         this.elements = initialiseElements(
                 entry(SEVERITY_ICON, context().find(byClassName("anticon"))),
                 entry(TITLE, context().find(byClassName("system-notification__title"))),
-                entry(BODY, context().find(byClassName("system-notification__body"))),
+                // the body is rendered by PreviewNotification as markdown
+                entry(BODY, context().find(byClassName("markdown"))),
                 entry(CLOSE, context().find(byId("notification-close-button"))),
                 entry(DATE, context().find(byClassName("system-notification__date")))
         );

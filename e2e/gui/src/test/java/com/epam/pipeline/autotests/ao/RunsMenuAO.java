@@ -143,7 +143,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public LogAO showLogForChildRun(String runId, int index) {
         sleep(1, SECONDS);
-        $$(byCssSelector("td.run-table__run-row-parent-run"))
+        $$(byCssSelector("td.un-table-columns__run-row-parent-run"))
                 .filter(text(runId))
                 .get(index)
                 .click();
@@ -247,7 +247,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     public RunsMenuAO assertLatestPipelineHasName(String pipelineName) {
         $("tbody")
                 .find("tr")
-                .find(byClassName("run-table__run-row-docker-image"))
+                .find(byClassName("un-table-columns__run-row-docker-image"))
                 .shouldHave(text(pipelineName));
         return this;
     }
@@ -263,7 +263,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     public RunsMenuAO validateOnlyMyPipelines() {
         $(byClassName("ant-table-tbody"))
                 .should(exist)
-                .findAll(byClassName("run-table__run-row-owner"))
+                .findAll(byClassName("un-table-columns__run-row-owner"))
                 .excludeWith(text(C.ANOTHER_LOGIN))
                 .shouldBe(empty);
         return this;
@@ -277,7 +277,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     public RunsMenuAO validateOnlyUsersPipelines(String username) {
         $(byClassName("ant-table-tbody"))
                 .should(exist)
-                .findAll(byClassName("run-table__run-row-owner"))
+                .findAll(byClassName("un-table-columns__run-row-owner"))
                 .excludeWith(text(username))
                 .shouldHave(size(1));
         return this;
@@ -339,21 +339,21 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO shouldContainRunsWithParentRun(int pipelinesNumber, String runId) {
-        $$(byCssSelector("td.run-table__run-row-parent-run"))
+        $$(byCssSelector("td.un-table-columns__run-row-parent-run"))
                 .filter(text(runId))
                 .shouldHave(sizeGreaterThanOrEqual(pipelinesNumber));
         return this;
     }
 
     public RunsMenuAO shouldContainExactlyRunsWithParentRun(final int pipelinesNumber, final String parentRunId) {
-        $$(byCssSelector("td.run-table__run-row-parent-run"))
+        $$(byCssSelector("td.un-table-columns__run-row-parent-run"))
                 .filter(exactText(parentRunId))
                 .shouldHave(size(pipelinesNumber));
         return this;
     }
 
     public RunsMenuAO childRunsShouldHaveStatus(final String parentRunId, final LogAO.Status status) {
-        $$(byCssSelector("td.run-table__run-row-parent-run"))
+        $$(byCssSelector("td.un-table-columns__run-row-parent-run"))
                 .filter(exactText(parentRunId))
                 .shouldHave(sizeGreaterThan(0))
                 .forEach(parentRunCell -> parentRunCell.closest("tr").shouldHave(status.reached));
@@ -363,7 +363,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     public RunsMenuAO runShouldHaveParentRun(final String runId, final String parentRunId) {
         $(byClassName("run-" + runId))
                 .shouldBe(visible)
-                .find(byCssSelector("td.run-table__run-row-parent-run"))
+                .find(byCssSelector("td.un-table-columns__run-row-parent-run"))
                 .shouldHave(exactText(parentRunId));
         return this;
     }
@@ -374,7 +374,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
      */
     public List<String> childRunIds(final String parentRunId) {
         final Pattern runRowClass = Pattern.compile("\\brun-(\\d+)\\b");
-        return $$(byCssSelector("td.run-table__run-row-parent-run"))
+        return $$(byCssSelector("td.un-table-columns__run-row-parent-run"))
                 .filter(exactText(parentRunId))
                 .shouldHave(sizeGreaterThan(0))
                 .stream()
@@ -456,13 +456,24 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return this;
     }
 
+    /**
+     * The pause and resume confirmations are modals of their own, not ant-confirm ones. The title is the question
+     * and the run name with a CSS margin, not a space, between them: a pipeline name with its version, or the image
+     * name of a tool without its group and tag (client/src/components/runs/actions/pause-confirmation.js,
+     * resume-confirmation.js, run-display-name.js). The confirm button stays disabled while the dialog loads its data:
+     * the layers and commit checks of the run to pause, the instance types of the run to resume.
+     */
     public RunsMenuAO pause(final String runId, final String pipelineName) {
         $("#run-" + runId + "-pause-button").shouldBe(visible).click();
-        new ConfirmationPopupAO<>(this)
-                .ensureTitleContains(format("Do you want to pause %s", pipelineName))
+        $(byClassName("ause-confirmation__body")).shouldBe(visible);
+        ensure(byClassName("ause-confirmation__title"), confirmationTitle("Do you want to pause", pipelineName))
                 .sleep(1, SECONDS)
                 .click(button("PAUSE"));
         return this;
+    }
+
+    private static Condition confirmationTitle(final String question, final String runName) {
+        return matchText(format("%s\\s*%s", Pattern.quote(question), Pattern.quote(runName)));
     }
 
     public RunsMenuAO waitUntilResumeButtonAppear(final String runId) {
@@ -472,8 +483,8 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO resume(final String runId, final String pipelineName) {
         $("#run-" + runId + "-resume-button").shouldBe(visible).click();
-        new ConfirmationPopupAO<>(this)
-                .ensureTitleContains(format("Do you want to resume %s", pipelineName))
+        $(byClassName("esume-confirmation__body")).shouldBe(visible);
+        ensure(byClassName("esume-confirmation__title"), confirmationTitle("Do you want to resume", pipelineName))
                 .sleep(1, SECONDS)
                 .click(button("RESUME"));
         return this;
@@ -517,12 +528,12 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         createdHeaderButton.find(byAttribute("title", "Filter menu")).click();
         switch (header) {
             case PIPELINE:
-                inputFilterValue(ip);
+                inputFilterValue("Filter pipelines", ip);
                 $(byXpath(format(".//span[.='%s']/preceding-sibling::span[@class='ant-checkbox']", ip)))
                         .click();
                 break;
             case DOCKER_IMAGE:
-                inputFilterValue(ip);
+                inputFilterValue("Filter docker images", ip);
                 $(byXpath(format(".//span[.='%s']", ip))).parent()
                         .$(byXpath("preceding-sibling::span[@class='ant-checkbox']")).click();
                 break;
@@ -541,21 +552,26 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return this;
     }
 
-    private void inputFilterValue(String value) {
-        $(byClassName("run-table__filter-popover-container"))
-                .$$("input").findBy(attribute("placeholder", "Filter"))
+    /**
+     * Every column filter has a popover of its own, and a closed one stays hidden in the page. The pipelines and the
+     * docker images filters list nothing until the search has 3 characters
+     * (client/src/components/runs/run-table/columns/column-pipeline.js, column-docker.js).
+     */
+    private void inputFilterValue(final String placeholder, final String value) {
+        $$(byClassName("un-table-columns__filter-popover-container")).findBy(visible)
+                .$$("input").findBy(attribute("placeholder", placeholder))
                 .setValue(value);
     }
 
     public enum HeaderColumn {
-        RUN("run-table__run-row-name"),
-        PARENT_RUN("run-table__run-row-parent-run"),
-        PIPELINE("run-table__run-row-pipeline"),
-        DOCKER_IMAGE("run-table__run-row-docker-image"),
-        STARTED("run-table__run-row-started"),
-        COMPLETED("run-table__run-row-completed"),
-        ELAPSED("run-table__run-row-elapsed-time"),
-        OWNER("run-table__run-row-owner");
+        RUN("un-table-columns__run-row-name"),
+        PARENT_RUN("un-table-columns__run-row-parent-run"),
+        PIPELINE("un-table-columns__run-row-pipeline"),
+        DOCKER_IMAGE("un-table-columns__run-row-docker-image"),
+        STARTED("un-table-columns__run-row-started"),
+        COMPLETED("un-table-columns__run-row-completed"),
+        ELAPSED("un-table-columns__run-row-elapsed-time"),
+        OWNER("un-table-columns__run-row-owner");
 
         private String cssClass;
 

@@ -75,18 +75,28 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
             entry(CREATE_FOLDER, context().find(byClassName("create-folder-button"))),
             entry(CREATE_FILE, context().find(byClassName("create-file-button"))),
             entry(ADDRESS_BAR, context().find(byClassName("ant-breadcrumb"))),
-            entry(CLEAR_SELECTION, context().find(byId("clear-selection-button"))),
-            entry(REMOVE_ALL, context().find(byId("remove-all-selected-button"))),
+            entry(CLEAR_SELECTION, context().find(selectionAction("clear"))),
+            entry(REMOVE_ALL, context().find(selectionAction("remove-all"))),
             entry(DESCRIPTION, context().find(byCssSelector(".browser__data-storage-info-container div:first-child"))),
             entry(NAVIGATION, context().find(byClassName("data-storage-navigation__path-components-container"))),
             entry(STORAGEPATH, context().find(byClassName("data-storage-navigation__breadcrumb-item"))),
             entry(HEADER, context().find(byClassName("browser__item-header"))),
-            entry(SHOW_METADATA, context().find(byId("show-metadata-button"))),
+            entry(SHOW_METADATA, context().find(byClassName("presentation-action-attributes"))),
             entry(PREV_PAGE, context().find(byId("prev-page-button"))),
             entry(NEXT_PAGE, context().find(byId("next-page-button"))),
-            entry(GENERATE_URL, context().find(byId("bulk-url-button"))),
-            entry(HIDE_METADATA, context().find(byId("hide-metadata-button")))
+            entry(GENERATE_URL, context().find(selectionAction("generate-url"))),
+            entry(SELECTION_ACTIONS, context().find(byId("selection-actions"))),
+            entry(ACTIONS, context().find(byId("presentation-actions")))
     );
+
+    /**
+     * An action of the selected items. The storage page shows a single action as a button with the id
+     * {@code selection-action-<key>}, and several in the "Selection" dropdown ({@code #selection-actions}), whose
+     * menu items have the class {@code selection-action-<key>} (rc-menu items drop their id).
+     */
+    private static By selectionAction(final String key) {
+        return byCssSelector(format("#selection-action-%1$s, .selection-action-%1$s", key));
+    }
 
     public static By browserItem(final String name) {
         final String browserItemClass = "ant-table-row";
@@ -374,12 +384,46 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
 
     public StorageContentAO selectPage() {
         click(SELECT_ALL);
-        get(CLEAR_SELECTION).shouldBe(exist);
+        $(byCssSelector("#selection-actions, #selection-action-clear")).shouldBe(visible);
         return this;
     }
 
     public StorageContentAO clearSelection() {
-        return click(CLEAR_SELECTION);
+        return openSelectionActions().click(CLEAR_SELECTION);
+    }
+
+    /**
+     * Opens the "Selection" dropdown of the selected items, if they have several actions. A single action is a
+     * button on the page, and nothing is opened then.
+     */
+    public StorageContentAO openSelectionActions() {
+        final SelenideElement menu = $(byClassName("selection-actions-menu"));
+        if (get(SELECTION_ACTIONS).isDisplayed() && !menu.isDisplayed()) {
+            click(SELECTION_ACTIONS);
+            menu.shouldBe(visible);
+        }
+        return this;
+    }
+
+    /**
+     * Opens the presentation dropdown ({@code #presentation-actions}) of the page: "Show attributes", "Show file
+     * versions" etc. are its items, and a ticked one has a check icon.
+     */
+    private SelenideElement openPresentationAction(final String key) {
+        final SelenideElement menu = $(byClassName("presentation-actions-menu"));
+        if (!menu.isDisplayed()) {
+            click(ACTIONS);
+            menu.shouldBe(visible);
+        }
+        return menu.find(byClassName("presentation-action-" + key)).shouldBe(visible);
+    }
+
+    private StorageContentAO closePresentationActions() {
+        if ($(byClassName("presentation-actions-menu")).isDisplayed()) {
+            click(ACTIONS);
+            $(byClassName("presentation-actions-menu")).shouldBe(hidden);
+        }
+        return this;
     }
 
     public StorageContentAO validateNoElementsAreSelected() {
@@ -496,17 +540,18 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         return this;
     }
 
+    /**
+     * Shows the attributes panel: the "Show attributes" item of the presentation dropdown, unless it is ticked
+     * already. The page renders the dropdown once the storage has loaded.
+     */
     public MetadataSectionAO showMetadata() {
-        int attempt = 0;
-        int maxAttempts = 3;
-        while (get(SHOW_METADATA).is(not(visible)) && attempt < maxAttempts) {
-            if (get(HIDE_METADATA).isDisplayed()) {
-                return new MetadataSectionAO(this);
-            }
-            sleep(1, SECONDS);
-            attempt++;
+        get(ACTIONS).shouldBe(visible);
+        final SelenideElement attributes = openPresentationAction("attributes");
+        if (attributes.find(byClassName("anticon-check")).exists()) {
+            closePresentationActions();
+        } else {
+            attributes.click();
         }
-        click(SHOW_METADATA);
         return new MetadataSectionAO(this);
     }
 
@@ -522,20 +567,23 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         return folders().stream().map(this::selectFolder);
     }
 
+    /**
+     * Ticks or unticks the "Show file versions" item of the presentation dropdown (shown for a versioned storage
+     * only).
+     */
     public StorageContentAO showFilesVersions(final boolean requiredState) {
         sleep(1, SECONDS);
-        final SelenideElement inputLabel =
-                $(byText("Show files versions")).closest(".ant-checkbox-wrapper");
-
-        if (inputLabel.find("input").isSelected() != requiredState) {
-            inputLabel.shouldBe(visible).click();
+        final SelenideElement versions = openPresentationAction("version");
+        if (versions.find(byClassName("anticon-check")).exists() != requiredState) {
+            versions.click();
+            return this;
         }
-        return this;
+        return closePresentationActions();
     }
 
     public StorageContentAO assertShowFilesVersionsIsChecked() {
-        $(byClassName("ant-checkbox-checked")).shouldBe(visible);
-        return this;
+        openPresentationAction("version").find(byClassName("anticon-check")).shouldBe(visible);
+        return closePresentationActions();
     }
 
     public StorageContentAO assertFilesHaveVersions() {
@@ -743,7 +791,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         }
 
         public StorageContentAO removeAllSelected() {
-            StorageContentAO.this.ensureVisible(CLEAR_SELECTION);
+            StorageContentAO.this.openSelectionActions().ensureVisible(CLEAR_SELECTION);
             StorageContentAO.this.click(REMOVE_ALL);
 
             $$(byClassName("ant-modal-content"))
@@ -757,7 +805,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         }
 
         public SelectedElementsAO clickOnRemoveAllSelectedButton() {
-            StorageContentAO.this.click(REMOVE_ALL);
+            StorageContentAO.this.openSelectionActions().click(REMOVE_ALL);
             return this;
         }
 
