@@ -22,6 +22,7 @@ import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.NodeRequests;
 import com.epam.pipeline.autotests.utils.PlatformApi;
 import com.epam.pipeline.autotests.utils.TestCase;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
@@ -50,6 +51,7 @@ import static java.lang.String.format;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.tagName;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -165,10 +167,16 @@ public class NodeUnavailableTest extends AbstractSeveralPipelineRunningTest impl
         System.out.printf("%s: the task %s logs: Node %s has been unavailable since %s%n", CASE, TASK, nodeId, since);
         runLog.shouldHaveRunningStatus();
         // The page loads the run, with its tags, apart from the log: it may show the tags of a few seconds before
-        final List<String> tags = waitForTags(runLog, t -> t.contains(TAG) && t.contains(since));
+        final List<String> tags = waitForTags(runLog, t -> t.contains(TAG));
         assertTrue(tags.contains(TAG), format("The Instance section of run %s has no tag %s: %s", runId, TAG, tags));
-        assertTrue(tags.contains(since), format("The Instance section of run %s has no date tag with the time of the "
-                + "log, %s: %s", runId, since, tags));
+        // Step 14: the GUI hides the date tag of a predefined tag such as this one (it shows only the duration in the
+        // pop-up of the tag), so the date tag is read through the API. Its value has the format of the log line
+        final JsonNode runTags = PlatformApi.get("run/" + runId).path("tags");
+        assertEquals(runTags.path(TAG).asText(), "true", format("The API tags of run %s have no %s=true: %s", runId,
+                TAG, runTags));
+        final String dateTag = TAG + preference(DATE_SUFFIX_PREFERENCE);
+        assertEquals(runTags.path(dateTag).asText(), since, format("The API tags of run %s have no date tag %s with "
+                + "the time of the log, %s: %s", runId, dateTag, since, runTags));
         final LocalDateTime sinceTime = LocalDateTime.parse(since, LOG_TIME);
         assertFalse(sinceTime.isBefore(requestedAt.minus(CLOCK_TOLERANCE)), format("The node of run %s is unavailable "
                 + "since %s, before its kubelet was stopped at %s UTC", runId, since, requestedAt));

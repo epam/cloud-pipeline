@@ -26,11 +26,13 @@ import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.Json;
 import com.epam.pipeline.autotests.utils.PipelinePermission;
+import com.epam.pipeline.autotests.utils.PlatformApi;
 import com.epam.pipeline.autotests.utils.TestCase;
 
 
 import com.epam.pipeline.autotests.utils.listener.Cloud;
 import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 import org.testng.annotations.AfterClass;
@@ -91,9 +93,11 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
     private static final int DEFAULT_TERMINATE_RUN_TIMEOUT = 1;
     private static final int TEST_TERMINATE_RUN_TIMEOUT = 2;
     private static final String UNMOUNTING_STARTED = "Unmounting all storage mounts";
-    private static final String CLEANUP_WORNING = "Will wait for %smin to let the run stop normally. " +
-            "Otherwise it will be terminated";
-    private static final String CLEANUP_FINISH_MESSAGE = "Run #%s is still running after %smin. Terminating a node.";
+    // launch.sh marks a run whose work has finished with the WORK_FINISHED tag and this line of CleanupEnvironment;
+    // the API stops it when it stays so for CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN (ResourceMonitoringManager)
+    private static final String WORK_FINISHED_MESSAGE = "Marking run as finished.";
+    private static final String WORK_FINISHED_TAG = "WORK_FINISHED";
+    private static final String EMERGENCY_TERM_ACTION = "launch.run.emergency.termination.action";
     private static final String CONSOLE = "Console";
     private static final String CLEANUP_ENVIRONMENT_TASK = "CleanupEnvironment";
     private static final String FILESYSTEM_AUTOSCALING = "FilesystemAutoscaling";
@@ -143,6 +147,10 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
     @Test(priority = 1)
     @TestCase(value = {"2736"})
     public void forcibleTerminateInstancesIfJobIsStuckInUmount() {
+        // The API stops a run stuck in its cleanup only with this preference set to STOP (DISABLED by default); it
+        // checks the runs every system.resource.monitoring.period (60 s by default)
+        assertEquals(PlatformApi.get("preferences/" + EMERGENCY_TERM_ACTION).path("value").asText(), "STOP",
+                format("The preference %s must be STOP", EMERGENCY_TERM_ACTION));
         logoutIfNeeded();
         loginAs(user);
         String stuckRunId = null;
@@ -176,12 +184,14 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                     .ensure(log(), containsMessages(UNMOUNTING_STARTED))
                     .waitForTask(CLEANUP_ENVIRONMENT_TASK)
                     .click(taskWithName(CLEANUP_ENVIRONMENT_TASK))
-                    .ensure(log(), containsMessages(format(CLEANUP_WORNING, valueOf(TEST_TERMINATE_RUN_TIMEOUT))))
-                    .sleep(TEST_TERMINATE_RUN_TIMEOUT, MINUTES)
+                    .ensure(log(), containsMessages(WORK_FINISHED_MESSAGE));
+            assertTrue(PlatformApi.get("run/" + getLastRunId()).path("tags").has(WORK_FINISHED_TAG),
+                    format("Run %s has no %s tag", getLastRunId(), WORK_FINISHED_TAG));
+            // The timeout, then up to one monitoring period of the API
+            new LogAO()
+                    .sleep(TEST_TERMINATE_RUN_TIMEOUT + 1, MINUTES)
                     .refresh()
-                    .shouldHaveStatus(STOPPED)
-                    .ensure(log(), containsMessages(format(CLEANUP_FINISH_MESSAGE,
-                            getLastRunId(), valueOf(TEST_TERMINATE_RUN_TIMEOUT))));
+                    .shouldHaveStatus(STOPPED);
         } finally {
             stopRunAsOwner(stuckRunId);
         }

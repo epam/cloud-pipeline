@@ -10,13 +10,25 @@
 
     <test name="PlatformPreferencesTest">
         <classes>
-            <class name="com.epam.pipeline.autotests.PlatformPreferencesTest"/>
+            <class name="com.epam.pipeline.autotests.PlatformPreferencesTest">
+                <methods>
+                    <!-- TC-PARAMETERS-3: nodeup.py of this line does not log the EBS volume type it requests, and neither the API nor the GUI shows the volume type -->
+                    <exclude name="checkConfigureClusterAwsEBSvolumeType"/>
+                </methods>
+            </class>
         </classes>
     </test>
 
     <test name="DataStoragesTest">
         <classes>
-            <class name="com.epam.pipeline.autotests.DataStoragesTest"/>
+            <class name="com.epam.pipeline.autotests.DataStoragesTest">
+                <methods>
+                    <!-- EPMCMBIBPC-474: the storage edit dialog of this line has no Long-Term Storage duration (lifecycle rules replace it) -->
+                    <exclude name="changeLtsDurationAndValidate"/>
+                    <!-- EPMCMBIBPC-473: the storage edit dialog of this line has no Short-Term Storage duration -->
+                    <exclude name="changeStsDurationAndValidate"/>
+                </methods>
+            </class>
         </classes>
     </test>
 
@@ -64,12 +76,7 @@
     
     <test name="RunToolsInSandBoxTest">
         <classes>
-            <class name="com.epam.pipeline.autotests.RunToolsInSandBoxTest">
-                <methods>
-                    <exclude name="validationOfDinDLaunchAndFunctionality"/>
-                    <exclude name="validationOfSingularityLaunchAndFunctionality"/>
-                </methods>
-            </class>
+            <class name="com.epam.pipeline.autotests.RunToolsInSandBoxTest"/>
         </classes>
     </test>
 
@@ -87,17 +94,7 @@
 
     <test name="GlobalSearchTest">
         <classes>
-            <class name="com.epam.pipeline.autotests.GlobalSearchTest">
-                <methods>
-                    <include name="folderSearch"/>
-                    <include name="folderSearchByEnterKey"/>
-                    <include name="identicalNamesSearch"/>
-                    <include name="issueSearch"/>
-                    <include name="negativeFolderSearch"/>
-                    <include name="searchAfterDeleting"/>
-                    <include name="searchResultCancel"/>
-                </methods>
-            </class>
+            <class name="com.epam.pipeline.autotests.GlobalSearchTest"/>
         </classes>
     </test>
 	
@@ -127,11 +124,7 @@
 
     <test name="LaunchLimitMountsTest">
         <classes>
-            <class name="com.epam.pipeline.autotests.LaunchLimitMountsTest">
-	        <methods>
-                    <include name="linkStorageWithTheirURLsAndNotOnlyWithTheirIDs"/>
-                </methods>
-	    </class>
+            <class name="com.epam.pipeline.autotests.LaunchLimitMountsTest"/>
         </classes>
     </test>
 
@@ -203,14 +196,7 @@
 
     <test name="LaunchClusterTest">
         <classes>
-            <class name="com.epam.pipeline.autotests.LaunchClusterTest">
-                <methods>
-                    <include name="autoScaledClusterWithDefaultChildNodesValidationTest"/>
-                    <include name="invalidValuesOnConfigureClusterPopUp"/>
-                    <include name="launchAutoScaledClusterTest"/>
-                    <include name="launchPipelineWithLaunchFlag"/>
-                </methods>
-            </class>
+            <class name="com.epam.pipeline.autotests.LaunchClusterTest"/>
         </classes>
     </test>
 
@@ -228,32 +214,13 @@
 
     <test name="ToolsParametersTest">
         <classes>
-           <class name="com.epam.pipeline.autotests.ToolsParametersTest">
-                <methods>
-                    <exclude name="customCapabilitiesImplementation"/>
-                    <exclude name="customCapabilitiesWithConfiguredJobParameters"/>
-                </methods>
-            </class>
+           <class name="com.epam.pipeline.autotests.ToolsParametersTest"/>
         </classes>
     </test>
 
     <test name="RoleModelTest">
         <classes>
-            <class name="com.epam.pipeline.autotests.RoleModelTest">
-                <methods>
-                    <exclude name="readOnlyUserIsNotAbleToEditFileInPipeline"/>
-                    <exclude name="checkFolderPermissionsForReadOnlyUserAndCheckInnerDeniedPipelinePermissions"/>
-                    <exclude name="editAndExecutePipeline"/>
-                    <exclude name="tryToNavigateToAnotherBucketByNavigationBar"/>
-                    <exclude name="checkBucketEditingByNonAdminUser"/>
-                    <exclude name="checkClusterNodesByNonAdminUser"/>
-                    <exclude name="checkPipelinePermissionsForGroup"/>
-                    <exclude name="setPipelinePermissionsAndCheckItForGroup"/>
-                    <exclude name="setToolPermissionsAndCheckItForGroup"/>
-                    <exclude name="validateSearchWithinEditUser"/>
-                    <exclude name="validateSearchForNoUser"/>
-                </methods>
-            </class>
+            <class name="com.epam.pipeline.autotests.RoleModelTest"/>
         </classes>
     </test>
 
@@ -296,7 +263,12 @@
 
     <test name="RunPipelineWithSeveralOutputParametersTest">
         <classes>
-            <class name="com.epam.pipeline.autotests.RunPipelineWithSeveralOutputParametersTest"/>
+            <class name="com.epam.pipeline.autotests.RunPipelineWithSeveralOutputParametersTest">
+                <methods>
+                    <!-- EPMCMBIBPC-935: the bucket browser of this line selects one folder for an output parameter -->
+                    <exclude name="runPipelineWithSeveralOutputParameters"/>
+                </methods>
+            </class>
         </classes>
     </test>
 
@@ -422,15 +394,7 @@
 
     <test name="ToolsTest">
         <classes>
-            <class name="com.epam.pipeline.autotests.ToolsTest">
-                <methods>
-                     <include name="toolExecutionParameters"/>
-                     <include name="toolDefaultCommandAddition"/>
-                     <include name="toolDefaultSettingsRun"/>
-                     <include name="toolCustomSettingsRun"/>
-                     <include name="toolCustomSettingsRunWithoutDefaults"/>
-                </methods>
-            </class>
+            <class name="com.epam.pipeline.autotests.ToolsTest"/>
         </classes>
     </test>
 
@@ -461,6 +425,96 @@
     <test name="NodeUnavailableTest">
         <classes>
             <class name="com.epam.pipeline.autotests.NodeUnavailableTest"/>
+        </classes>
+    </test>
+
+    <test name="StorageRulesTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.StorageRulesTest"/>
+        </classes>
+    </test>
+
+    <test name="NfsDataStorageTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.NfsDataStorageTest"/>
+        </classes>
+    </test>
+
+    <test name="DockerCommitTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.DockerCommitTest"/>
+        </classes>
+    </test>
+
+    <test name="PipelineDockerCommitTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.PipelineDockerCommitTest"/>
+        </classes>
+    </test>
+
+    <test name="RunPipelineWithOutputParameterTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.RunPipelineWithOutputParameterTest"/>
+        </classes>
+    </test>
+
+    <test name="Launch_InputDataValidationTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.Launch_InputDataValidationTest"/>
+        </classes>
+    </test>
+
+    <test name="SamplesMetadataTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.SamplesMetadataTest"/>
+        </classes>
+    </test>
+
+    <test name="VersionControlTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.VersionControlTest"/>
+        </classes>
+    </test>
+
+    <test name="AutopauseTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.AutopauseTest"/>
+        </classes>
+    </test>
+
+    <test name="Launch_OutputParameterTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.Launch_OutputParameterTest"/>
+        </classes>
+    </test>
+
+    <test name="Launch_JsonOutputFileTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.Launch_JsonOutputFileTest"/>
+        </classes>
+    </test>
+
+    <test name="PipelineFromTemplateTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.PipelineFromTemplateTest"/>
+        </classes>
+    </test>
+
+    <test name="ToolsScanTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.ToolsScanTest"/>
+        </classes>
+    </test>
+
+    <test name="RestrictionsOnInstancePriceTypeTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest"/>
+        </classes>
+    </test>
+
+    <test name="ParallelLoadTests" enabled="false">
+        <classes>
+            <class name="com.epam.pipeline.autotests.ParallelLoadTests"/>
         </classes>
     </test>
 

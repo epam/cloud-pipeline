@@ -541,7 +541,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
         sleep(1, SECONDS);
         get(combobox).shouldBe(visible).click();
         List<SelenideElement> lines = Selenide.$$(byClassName("ant-select-dropdown-menu-item")).stream()
-                .filter(row -> row.getAttribute("title").contains("m6i")).collect(Collectors.toList());
+                .filter(row -> row.getAttribute("title").contains(option)).collect(Collectors.toList());
         assertTrue(lines.size() > 0,
                 String.format("Option '%s' isn't contained in drop-down list", option));
         return (ELEMENT_TYPE) this;
