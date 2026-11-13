@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.notification;
 
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
 import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.test.creator.cluster.capacityreservation.CapacityReservationCreatorUtils;
 import org.junit.Test;
@@ -49,5 +50,37 @@ public class NotificationParameterManagerTest {
                 NotificationType.CAPACITY_RESERVATION_STATUS_CHANGED, reservation);
 
         assertThat(parameters.get("capacityBlockOfferingId")).isNull();
+    }
+
+    @Test
+    public void shouldReportExtensionAvailableForAnActiveCapacityBlock() {
+        final CapacityReservation reservation = CapacityReservationCreatorUtils.getCapacityBlockReservation(1L);
+        reservation.setStatus(CapacityReservationStatus.ACTIVE);
+
+        final Map<String, Object> parameters = parameterManager.build(
+                NotificationType.CAPACITY_RESERVATION_FINALIZING, reservation);
+
+        assertThat(parameters.get("extensionAvailable")).isEqualTo(true);
+    }
+
+    @Test
+    public void shouldReportExtensionNotAvailableForAFutureDatedReservation() {
+        final CapacityReservation reservation = CapacityReservationCreatorUtils.getReservation(1L);
+        reservation.setStatus(CapacityReservationStatus.ACTIVE);
+
+        final Map<String, Object> parameters = parameterManager.build(
+                NotificationType.CAPACITY_RESERVATION_FINALIZING, reservation);
+
+        assertThat(parameters.get("extensionAvailable")).isEqualTo(false);
+    }
+
+    @Test
+    public void shouldLeaveExtensionAvailabilityAbsentForOtherNotificationTypes() {
+        final CapacityReservation reservation = CapacityReservationCreatorUtils.getCapacityBlockReservation(1L);
+
+        final Map<String, Object> parameters = parameterManager.build(
+                NotificationType.CAPACITY_RESERVATION_STATUS_CHANGED, reservation);
+
+        assertThat(parameters).doesNotContainKey("extensionAvailable");
     }
 }

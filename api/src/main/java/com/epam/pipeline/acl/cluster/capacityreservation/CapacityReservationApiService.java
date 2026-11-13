@@ -17,9 +17,11 @@
 package com.epam.pipeline.acl.cluster.capacityreservation;
 
 import com.epam.pipeline.controller.vo.cluster.capacityreservation.CapacityBlockOfferingRequest;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockExtension;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockInstanceTypeInfo;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockOffering;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
+import com.epam.pipeline.manager.cluster.capacityreservation.CapacityBlockExtensionService;
 import com.epam.pipeline.manager.cluster.capacityreservation.CapacityBlockOfferingService;
 import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationService;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -43,6 +45,10 @@ import java.util.List;
  *   <li>{@link #listCapacityBlockOfferings} and {@link #listCapacityBlockInstanceTypes} - allowed for the same
  *       role that may create a reservation-backed pool. There is no pool yet, so there is nothing to check a
  *       permission against.</li>
+ *   <li>{@link #listExtensionOfferings(Long, Integer)} and {@link #requestExtension} - the owner of the
+ *       reservation being extended, or an administrator, the same bar as {@link #cancel(Long)}.</li>
+ *   <li>{@link #approveExtension(Long)} - administrators only, the same bar as {@link #approve(Long)}: an
+ *       extension is as much a non-refundable commitment as the purchase it extends.</li>
  * </ul>
  *
  * <p>A reservation is not created here. One exists only as part of the node pool it backs, so it is created with
@@ -56,6 +62,7 @@ public class CapacityReservationApiService {
 
     private final CapacityReservationService reservationService;
     private final CapacityBlockOfferingService offeringService;
+    private final CapacityBlockExtensionService extensionService;
     private final AuthManager authManager;
 
     public List<CapacityReservation> loadAll() {
@@ -87,5 +94,21 @@ public class CapacityReservationApiService {
     @PreAuthorize(AclExpressions.CAPACITY_BLOCK_OFFERING_READ)
     public List<CapacityBlockInstanceTypeInfo> listCapacityBlockInstanceTypes(final Long regionId) {
         return offeringService.listInstanceTypes(regionId);
+    }
+
+    @PreAuthorize(AclExpressions.CAPACITY_RESERVATION_ID_OWNER)
+    public List<CapacityBlockOffering> listExtensionOfferings(final Long id, final Integer durationHours) {
+        return extensionService.listOfferings(id, durationHours);
+    }
+
+    @PreAuthorize(AclExpressions.CAPACITY_RESERVATION_ID_OWNER)
+    public CapacityBlockExtension requestExtension(final Long id, final String extensionOfferingId,
+                                                     final Integer durationHours, final Long originId) {
+        return extensionService.requestExtension(id, extensionOfferingId, durationHours, originId);
+    }
+
+    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    public CapacityBlockExtension approveExtension(final Long extensionId) {
+        return extensionService.approve(extensionId);
     }
 }

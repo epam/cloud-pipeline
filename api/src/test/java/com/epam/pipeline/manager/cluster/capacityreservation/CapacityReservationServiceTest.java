@@ -20,11 +20,14 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.cluster.pool.CapacityReservationRequest;
 import com.epam.pipeline.dao.cluster.capacityreservation.CapacityReservationDao;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationMonitorSettings;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.test.creator.cluster.capacityreservation.CapacityReservationCreatorUtils;
@@ -40,6 +43,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -79,6 +83,9 @@ public class CapacityReservationServiceTest {
     @Mock
     private NodePoolManager poolManager;
 
+    @Mock
+    private PreferenceManager preferenceManager;
+
     @Captor
     private ArgumentCaptor<CapacityReservation> reservationCaptor;
 
@@ -94,7 +101,7 @@ public class CapacityReservationServiceTest {
         when(reservationDao.create(reservationCaptor.capture()))
                 .thenAnswer(invocation -> invocation.getArguments()[0]);
         service = new CapacityReservationService(reservationDao, approvalService, statusService, cloudFacade,
-                regionManager, mock(MessageHelper.class), mock(PreferenceManager.class), mock(AuthManager.class));
+                regionManager, mock(MessageHelper.class), preferenceManager, mock(AuthManager.class));
         ReflectionTestUtils.setField(service, "poolManager", poolManager);
     }
 
@@ -163,6 +170,30 @@ public class CapacityReservationServiceTest {
         final CapacityReservation created = service.create(request);
 
         verify(statusService).notifyCreated(created);
+    }
+
+    @Test
+    public void shouldExtendOnlyThePoolsEndDateWhenRecordingAnExtendedEndDate() {
+        final int finalizingLeadHours = 2;
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_CAPACITY_RESERVATION_MONITOR_SETTINGS))
+                .thenReturn(new CapacityReservationMonitorSettings(finalizingLeadHours));
+        final CapacityReservation reservation =
+                CapacityReservationCreatorUtils.getCapacityBlockReservation(NODE_POOL_ID);
+        final LocalDateTime extendedEndDate = reservation.getEndDate().plusDays(1);
+        reservation.setEndDate(extendedEndDate);
+        final NodePool pool = new NodePool();
+        final LocalDateTime untouchedStartDate = reservation.getStartDate().minusDays(1);
+        pool.setStartDate(untouchedStartDate);
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Consumer> poolChange = ArgumentCaptor.forClass(Consumer.class);
+        when(poolManager.applyReservationState(eq(NODE_POOL_ID), poolChange.capture())).thenReturn(pool);
+
+        service.recordExtendedEndDate(reservation);
+
+        verify(reservationDao).update(reservation);
+        poolChange.getValue().accept(pool);
+        assertThat(pool.getEndDate()).isEqualTo(extendedEndDate.minusHours(finalizingLeadHours));
+        assertThat(pool.getStartDate()).isEqualTo(untouchedStartDate);
     }
 
     @Test

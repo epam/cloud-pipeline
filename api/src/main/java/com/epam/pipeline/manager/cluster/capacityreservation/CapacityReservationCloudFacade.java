@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockOfferin
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
+import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityBlockExtension;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservation;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -152,6 +153,16 @@ public class CapacityReservationCloudFacade {
 
     public List<CapacityBlockInstanceTypeInfo> listCapacityBlockInstanceTypes(final AbstractCloudRegion region) {
         return serviceFor(region.getProvider()).listCapacityBlockInstanceTypes(region);
+    }
+
+    public List<CapacityBlockOffering> listCapacityBlockExtensionOfferings(final CapacityReservation reservation,
+                                                                            final int durationHours) {
+        return serviceFor(reservation).listCapacityBlockExtensionOfferings(reservation, durationHours);
+    }
+
+    public CloudCapacityBlockExtension purchaseCapacityBlockExtension(final CapacityReservation reservation,
+                                                                        final String extensionOfferingId) {
+        return serviceFor(reservation).purchaseCapacityBlockExtension(reservation, extensionOfferingId);
     }
 
     private CapacityReservationCloudService serviceFor(final CapacityReservation reservation) {

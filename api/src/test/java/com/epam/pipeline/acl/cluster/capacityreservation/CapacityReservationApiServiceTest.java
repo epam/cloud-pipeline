@@ -17,10 +17,12 @@
 package com.epam.pipeline.acl.cluster.capacityreservation;
 
 import com.epam.pipeline.controller.vo.cluster.capacityreservation.CapacityBlockOfferingRequest;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockExtension;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockInstanceTypeInfo;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockOffering;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.manager.cluster.capacityreservation.CapacityBlockExtensionService;
 import com.epam.pipeline.manager.cluster.capacityreservation.CapacityBlockOfferingService;
 import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationService;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
@@ -47,18 +49,25 @@ public class CapacityReservationApiServiceTest extends AbstractAclTest {
     private static final Long REGION_ID = 1L;
     private static final Long RESERVATION_ID = 5L;
     private static final Long POOL_ID = 7L;
+    private static final Long EXTENSION_ID = 11L;
+    private static final String EXTENSION_OFFERING_ID = "cbce-1";
+    private static final int DURATION_HOURS = 24;
     private static final String NOT_CANCELLABLE = "A purchased capacity block cannot be cancelled";
 
     private final List<CapacityBlockOffering> offerings = Collections.singletonList(
             CapacityBlockOffering.builder().offeringId("cbr-1").build());
     private final List<CapacityBlockInstanceTypeInfo> instanceTypes = Collections.singletonList(
             CapacityBlockInstanceTypeInfo.builder().instanceType("p5.48xlarge").build());
+    private final CapacityBlockExtension extension = CapacityBlockExtension.builder().id(EXTENSION_ID).build();
 
     @Autowired
     private CapacityReservationApiService capacityReservationApiService;
 
     @Autowired
     private CapacityBlockOfferingService mockCapacityBlockOfferingService;
+
+    @Autowired
+    private CapacityBlockExtensionService mockCapacityBlockExtensionService;
 
     @Autowired
     private CapacityReservationService mockCapacityReservationService;
@@ -166,5 +175,81 @@ public class CapacityReservationApiServiceTest extends AbstractAclTest {
 
         assertThrows(AccessDeniedException.class,
             () -> capacityReservationApiService.cancel(RESERVATION_ID));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldAllowTheOwnerToListExtensionOfferings() {
+        ownedReservation();
+        doReturn(offerings).when(mockCapacityBlockExtensionService)
+                .listOfferings(RESERVATION_ID, DURATION_HOURS);
+
+        assertThat(capacityReservationApiService.listExtensionOfferings(RESERVATION_ID, DURATION_HOURS))
+                .isEqualTo(offerings);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldDenyListingExtensionOfferingsForSomeoneElsesPool() {
+        ownedReservation();
+        mockUser("SOME_OTHER_USER");
+
+        assertThrows(AccessDeniedException.class,
+            () -> capacityReservationApiService.listExtensionOfferings(RESERVATION_ID, DURATION_HOURS));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldAllowTheOwnerToRequestAnExtension() {
+        ownedReservation();
+        doReturn(extension).when(mockCapacityBlockExtensionService)
+                .requestExtension(RESERVATION_ID, EXTENSION_OFFERING_ID, DURATION_HOURS, null);
+
+        assertThat(capacityReservationApiService.requestExtension(
+                RESERVATION_ID, EXTENSION_OFFERING_ID, DURATION_HOURS, null)).isEqualTo(extension);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldDenyRequestingAnExtensionForSomeoneElsesPool() {
+        ownedReservation();
+        mockUser("SOME_OTHER_USER");
+
+        assertThrows(AccessDeniedException.class,
+            () -> capacityReservationApiService.requestExtension(
+                    RESERVATION_ID, EXTENSION_OFFERING_ID, DURATION_HOURS, null));
+    }
+
+    @Test
+    @WithMockUser(roles = ADMIN_ROLE)
+    public void shouldApproveAnExtensionForAnAdministrator() {
+        doReturn(extension).when(mockCapacityBlockExtensionService).approve(EXTENSION_ID);
+
+        assertThat(capacityReservationApiService.approveExtension(EXTENSION_ID)).isEqualTo(extension);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldDenyApprovingAnExtensionForAnOrdinaryUser() {
+        assertThrows(AccessDeniedException.class,
+            () -> capacityReservationApiService.approveExtension(EXTENSION_ID));
+    }
+
+    @Test
+    @WithMockUser(roles = NODE_POOL_MANAGER_ROLE)
+    public void shouldDenyApprovingAnExtensionForANodePoolManager() {
+        assertThrows(AccessDeniedException.class,
+            () -> capacityReservationApiService.approveExtension(EXTENSION_ID));
+    }
+
+    private CapacityReservation ownedReservation() {
+        final CapacityReservation reservation = CapacityReservationCreatorUtils.getCapacityBlockReservation(POOL_ID);
+        reservation.setId(RESERVATION_ID);
+        final NodePool pool = NodePoolCreatorUtils.getPoolWithoutSchedule(POOL_ID);
+        pool.setOwner(OWNER_USER);
+        mockUser(OWNER_USER);
+        doReturn(reservation).when(mockCapacityReservationService).load(RESERVATION_ID);
+        doReturn(pool).when(mockNodePoolManager).load(POOL_ID);
+        return reservation;
     }
 }
