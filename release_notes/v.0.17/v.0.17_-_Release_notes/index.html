@@ -354,6 +354,8 @@
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#autoscaler-keeps-a-free-node-for-a-waiting-run-that-may-not-get-it">Autoscaler keeps a free node for a waiting run that may not get it</a>
     </li>
+    <li class="toctree-l3"><a class="reference internal" href="#rocky-linux-and-rhel-runs-nice-dcv-and-sge-fail-to-install-on-rocky-linux-9-and-systemd-is-set-up-when-it-is-not-requested">Rocky Linux and RHEL runs: NICE DCV and SGE fail to install on Rocky Linux 9, and systemd is set up when it is not requested</a>
+    </li>
         </ul>
     </li>
     </ul>
@@ -825,6 +827,7 @@
 <li><a href="#the-vm-monitor-does-not-check-the-open-files-on-amazon-linux-2023-nodes-and-other-hosts-with-systemd-240-or-later">The VM monitor does not check the open files on Amazon Linux 2023 nodes and other hosts with systemd 240 or later</a></li>
 <li><a href="#git-synchronization-a-new-gitlab-9-user-has-to-confirm-the-email">Git synchronization: a new GitLab 9 user has to confirm the email</a></li>
 <li><a href="#autoscaler-keeps-a-free-node-for-a-waiting-run-that-may-not-get-it">Autoscaler keeps a free node for a waiting run that may not get it</a></li>
+<li><a href="#rocky-linux-and-rhel-runs-nice-dcv-and-sge-fail-to-install-on-rocky-linux-9-and-systemd-is-set-up-when-it-is-not-requested">Rocky Linux and RHEL runs: NICE DCV and SGE fail to install on Rocky Linux 9, and systemd is set up when it is not requested</a></li>
 </ul>
 </li>
 </ul>
@@ -2599,6 +2602,20 @@ Now, the synchronization creates a user with <code>confirm=no</code> on the API 
 Now, the autoscaler keeps no free node for such a run. The node expires as any other free node.</p>
 <p>When the cluster has reached <code>cluster.max.size</code>, and <code>cluster.kill.not.matching.nodes</code> is <code>true</code>, the autoscaler scales down a free node that the waiting run does not take, to make room for a new node. Previously, it could pick a free node of a hot node pool or of a local cluster. Such a node has no run ID, so the autoscaler failed to scale it down, and the waiting run was not processed until the next check, where the same could happen again. Now, these nodes are not scaled down this way: the pools keep their nodes.</p>
 <p>Also, a run whose parameter list or tags are not set is handled as a run with none. Previously, the autoscaler failed on such a run with an error in the API log. With no parameter list, each check of the autoscaler stopped there, so no waiting run got a node, and no free node was scaled down. With no tags, a waiting run did not get the <code>NODE_PENDING</code> tag when the cluster was full.</p>
+<h3 id="rocky-linux-and-rhel-runs-nice-dcv-and-sge-fail-to-install-on-rocky-linux-9-and-systemd-is-set-up-when-it-is-not-requested">Rocky Linux and RHEL runs: NICE DCV and SGE fail to install on Rocky Linux 9, and systemd is set up when it is not requested</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/4859">#4859</a></p>
+<p>Previously, three steps of the run setup did not handle Rocky Linux 9, and one of them also affected the other Rocky Linux and RHEL runs:</p>
+<ul>
+<li><strong>NICE DCV</strong>: the setup chose the DCV build by a <code>7</code> anywhere in the OS version. A Rocky Linux 9 run got the el8 build (<code>nice-dcv-2021.2-11445-el8-x86_64</code>), and a version such as <code>8.7</code> or <code>9.7</code> got the el7 build. The setup also required the <code>libXvMC</code> and <code>mesa-libxatracker</code> packages, which Rocky Linux 9 does not have. So the install of the DCV prerequisites failed, and the <code>NiceDCVInitialization</code> task failed with "Cannot install system prerequisites for DCV".</li>
+<li><strong>SGE</strong>: the setup of the master and the workers installed <code>gridengine-debuginfo</code> and <code>gridengine-guiinst</code> too. The Cloud Pipeline repository for Rocky Linux 9.8 does not have them, so <code>yum</code> failed the whole install, and the SGE setup failed.</li>
+<li><strong>systemd</strong>: the launch script set up systemd for every Rocky Linux and RHEL run, also when neither <code>CP_CAP_SYSTEMD_CONTAINER</code> nor <code>CP_CAP_KUBE</code> was set, and when the image had no <code>systemctl</code>. It removed the systemd unit links of the image (e.g. <code>/etc/systemd/system/*.wants/*</code>) and started a <code>systemd</code> process that was not PID 1.</li>
+</ul>
+<p>Now:</p>
+<ul>
+<li>On the RPM-based images, NICE DCV takes the build of the major OS version: el7 for 7, el8 for 8, and <code>nice-dcv-2024.0-19030-el9-x86_64</code> for 9 and later. If the major version cannot be resolved, the el8 build is used, as before. The run log names the build. The new <code>CP_CAP_DCV_DISTRIBUTION</code> parameter names another build for these images, e.g. <code>nice-dcv-2024.0-19030-el9-x86_64</code>: the setup downloads <code>&lt;build&gt;.tgz</code> from the <code>tools/dcv</code> folder of the global distribution, or from <code>CP_CAP_DCV_DISTRO_URL</code>. <code>libXvMC</code> and <code>mesa-libxatracker</code> are installed where the repositories have them. Otherwise, the run log gets a warning, and the setup goes on. Ubuntu images get the same builds as before.</li>
+<li>SGE installs <code>gridengine</code>, <code>gridengine-devel</code>, <code>gridengine-drmaa4ruby</code>, <code>gridengine-execd</code>, <code>gridengine-qmaster</code> and <code>gridengine-qmon</code>. The <code>sge_setup_sbm_host</code> script, which added a run as an SGE submission host, is removed: nothing in the platform called it. The scripts of <code>pipe-common</code> are on the <code>PATH</code> of a run, so a user's own script that calls <code>sge_setup_sbm_host</code> now fails with "command not found".</li>
+<li>systemd is set up only when <code>CP_CAP_SYSTEMD_CONTAINER</code> or <code>CP_CAP_KUBE</code> is <code>true</code>, the image has <code>systemctl</code>, and the OS is CentOS, Rocky Linux or RHEL. The systemd setup used to install <code>procps</code> (<code>procps-ng</code>), which has <code>sysctl</code>. The NFS events observer, which raises the inotify limits with <code>sysctl</code>, now installs <code>procps</code> itself if the image has no <code>sysctl</code>.</li>
+</ul>
               
             </div>
           </div><footer>
