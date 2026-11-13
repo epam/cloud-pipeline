@@ -190,10 +190,14 @@ Pushing new versions of the images before a run is therefore enough: the tools d
 unregistered by hand. The images are not built or pushed by the run.
 
 Both images are built on `rockylinux/rockylinux:8.7`. The registry holds them as `tests/e2e-endpoints:latest`,
-`tests/e2e-endpoints:test` (the same image) and `tests/e2e-empty:latest`. The dist build of this repository builds no
-tool images (its dockers manifest is empty), so build them from these folders and push them to the platform registry
-under those names. The tests install packages in `tests/e2e-endpoints` with `yum`, and `stress` comes from EPEL, so
-that image also has `epel-release`.
+`tests/e2e-endpoints:test` (the same image) and `tests/e2e-empty:latest`. `deploy/docker/build-dockers.sh` builds them
+under those names when `DOCKERS_INCLUDE_TESTS=yes`; otherwise build them from these folders and push them to the
+platform registry. If the platform's TLS certificate is not signed by a public CA, pass its CA certificate URL as
+`--build-arg CP_CA_CERT_URL=<url>`. The tests install packages in `tests/e2e-endpoints` with `yum`, and `stress` comes
+from EPEL, so that image also has `epel-release`.
+
+The WDL and Luigi tests (`WDL*Test`, `Launch_ChangeLanguage*Test`) create pipelines from the `WDL` and `SHELL`
+templates of Create > Pipeline and check the editor, the graph and the language change; they launch no WDL run.
 
 ## Running the tests without the scripts
 

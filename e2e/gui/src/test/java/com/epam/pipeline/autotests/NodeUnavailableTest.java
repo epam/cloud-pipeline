@@ -157,7 +157,7 @@ public class NodeUnavailableTest extends AbstractSeveralPipelineRunningTest impl
         assertTrue(restore.matches("\\d+") && Long.parseLong(restore) < grace.getSeconds(), format("The node starts "
                 + "the kubelet again after '%s' s, which is not before the platform terminates it", restore));
 
-        // Step 10
+        // Steps 10-12
         final MatchResult unavailable = waitForTaskLine(runLog, runId, Pattern.compile(format(
                 "Node (?<node>%s) has been unavailable since (?<time>%s)", nodeRegex, LOG_TIME_REGEX)), MARK_TIMEOUT);
         final String nodeId = unavailable.group(1);
@@ -176,7 +176,7 @@ public class NodeUnavailableTest extends AbstractSeveralPipelineRunningTest impl
                 + "%s, more than %d min after its kubelet was stopped at %s UTC", runId, since,
                 MARK_DELAY_MAX.toMinutes(), stoppedAt));
 
-        // Steps 11-12: the node reports again, and the run still runs. After: the base class stops the run and
+        // Steps 15-17: the node reports again, and the run still runs. After: the base class stops the run and
         // terminates its node
         final NodeRequests.Response start = nodes.startKubelet(stoppedNode);
         assertTrue(start.ok, format("The kubelet of node %s of run %s is not started again: %s", stoppedNode, runId,
