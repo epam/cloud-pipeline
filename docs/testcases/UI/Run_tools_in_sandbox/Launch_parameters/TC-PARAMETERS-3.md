@@ -1,6 +1,8 @@
-# [MANUAL] Check the configure cluster aws ebs volume type for docker images
+# Check the configure cluster aws ebs volume type for docker images
 
 Test verifies that `cluster.aws.ebs.type` preference has value specified at deploy, and that the volumes of a new node get this type.
+
+On this line the e2e test automates steps 1-5. The run log does not show the volume type, so steps 6-15 are done by hand.
 
 **Prerequisites**:
 - Admin user
