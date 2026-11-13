@@ -2092,7 +2092,6 @@ export default class DataStorage extends React.Component {
   }
 
   get selectAllAvailable () {
-    // The selection flags exist only on `items`; `storage.pageElements` has none of them.
     return selectPageAvailable(this.items, this.fileIsSelected);
   }
 
