@@ -88,6 +88,10 @@ public class DockerAuthServiceTest {
         final UserContext context = service.verifyTokenForDocker(USER_NAME, TOKEN, REGISTRY_HOST);
 
         assertThat(context.getUsername()).isEqualTo(USER_NAME);
+        // the token carries ROLE_USER alone, and the context comes back with the stored user's
+        // roles. This is the limitation the manual page states, so it is pinned here: were a
+        // change to start honouring the token's roles, that page would have to change with it
+        assertThat(context.getRoles()).extracting(Role::getName).contains(ROLE_ADMIN);
     }
 
     private static JwtTokenClaims claims(final boolean authoritiesScoped) {

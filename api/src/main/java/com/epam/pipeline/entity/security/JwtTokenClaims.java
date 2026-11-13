@@ -56,9 +56,10 @@ public class JwtTokenClaims {
     private boolean external;
 
     /**
-     * Marks a token whose authorities were deliberately scoped down when it was issued: the roles
-     * and groups it carries are the whole of what its holder may do, and must not be replaced by
-     * whatever the user happens to hold in the database.
+     * Marks a token whose roles were deliberately scoped down when it was issued: the roles it
+     * carries are the whole of what its holder may do, and must not be replaced by whatever the
+     * user happens to hold in the database. Groups are never narrowed, and are refreshed from the
+     * stored user like any other token's.
      * <p>
      * Without it, a deployment that turns on {@code jwt.validate.token.user} would reload the
      * authorities on every request and hand back exactly the rights the token was issued to

@@ -114,7 +114,6 @@ public class JwtTokenGeneratorTest {
         assertThat(roundTrip(claims().exchangeable(false).build()).isExchangeable()).isFalse();
     }
 
-
     @Test
     public void shouldCarryTheNarrowedAuthoritiesThemselves() {
         final JwtTokenClaims read = roundTrip(claims()
