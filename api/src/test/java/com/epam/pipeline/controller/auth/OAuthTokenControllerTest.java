@@ -24,8 +24,8 @@ import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
@@ -54,7 +54,7 @@ public class OAuthTokenControllerTest extends AbstractControllerTest {
     private static final String INVALID_REQUEST = "invalid_request";
     private static final long EXPIRES_IN = 900L;
 
-    @MockBean
+    @Autowired
     private OidcTokenExchangeManager tokenExchangeManager;
 
     @Before
