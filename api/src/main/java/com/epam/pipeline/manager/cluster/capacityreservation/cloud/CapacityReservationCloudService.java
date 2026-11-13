@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.vo.cluster.capacityreservation.CapacityBlock
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockInstanceTypeInfo;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockOffering;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
+import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityBlockExtension;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservation;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -79,4 +80,10 @@ public interface CapacityReservationCloudService {
                                                             CapacityBlockOfferingRequest request);
 
     List<CapacityBlockInstanceTypeInfo> listCapacityBlockInstanceTypes(AbstractCloudRegion region);
+
+    List<CapacityBlockOffering> listCapacityBlockExtensionOfferings(CapacityReservation reservation,
+                                                                      int durationHours);
+
+    CloudCapacityBlockExtension purchaseCapacityBlockExtension(CapacityReservation reservation,
+                                                                 String extensionOfferingId);
 }

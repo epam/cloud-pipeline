@@ -847,6 +847,20 @@ public final class MessageConstants {
             "error.capacity.block.offering.start.date.required";
     public static final String ERROR_CAPACITY_BLOCK_RESOURCE_TYPE_NOT_SUPPORTED =
             "error.capacity.block.resource.type.not.supported";
+    public static final String ERROR_CAPACITY_BLOCK_EXTENSION_NOT_FOUND =
+            "error.capacity.block.extension.not.found";
+    public static final String ERROR_CAPACITY_BLOCK_EXTENSION_TYPE_NOT_SUPPORTED =
+            "error.capacity.block.extension.type.not.supported";
+    public static final String ERROR_CAPACITY_BLOCK_EXTENSION_NOT_ACTIVE =
+            "error.capacity.block.extension.not.active";
+    public static final String ERROR_CAPACITY_BLOCK_EXTENSION_DURATION_INVALID =
+            "error.capacity.block.extension.duration.invalid";
+    public static final String ERROR_CAPACITY_BLOCK_EXTENSION_ILLEGAL_TRANSITION =
+            "error.capacity.block.extension.illegal.transition";
+    public static final String ERROR_CAPACITY_BLOCK_EXTENSION_DURATION_REQUIRED =
+            "error.capacity.block.extension.duration.required";
+    public static final String ERROR_CAPACITY_BLOCK_EXTENSION_OFFERING_ID_REQUIRED =
+            "error.capacity.block.extension.offering.id.required";
     public static final String ERROR_NODE_POOL_MISSING_PRICE_TYPE = "error.node.pool.missing.price.type";
     public static final String ERROR_NODE_POOL_MISSING_REGION = "error.node.pool.missing.region";
     public static final String ERROR_NODE_POOL_MISSING_INSTANCE_TYPE = "error.node.pool.missing.instance.type";

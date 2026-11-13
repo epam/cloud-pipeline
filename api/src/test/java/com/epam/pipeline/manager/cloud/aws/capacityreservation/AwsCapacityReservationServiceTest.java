@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockOfferin
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockResourceType;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
+import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityBlockExtension;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservationState;
 import com.epam.pipeline.entity.region.AwsRegion;
@@ -109,11 +110,16 @@ public class AwsCapacityReservationServiceTest {
     private static final long GRANTED_COMMITMENT_DURATION = 864000L;
     private static final String QUOTE_ID = "crcq-0123456789abcdef0";
     private static final int HTTP_BAD_REQUEST = 400;
+    private static final String INVALID_PARAMETER_VALUE_ERROR_CODE = "InvalidParameterValue";
     private static final String NOT_FOUND_ERROR_CODE = "InvalidCapacityReservationId.NotFound";
     private static final String MALFORMED_ERROR_CODE = "InvalidCapacityReservationId.Malformed";
     private static final int HTTP_INTERNAL_ERROR = 500;
     private static final int HTTP_SERVICE_UNAVAILABLE = 503;
     private static final String OFFERING_ID = "cbr-0123456789abcdef0";
+    private static final String EXTENSION_OFFERING_ID = "cbce-0123456789abcdef0";
+    private static final String AWS_PAYMENT_SUCCEEDED = "payment-succeeded";
+    private static final String AWS_PAYMENT_PENDING = "payment-pending";
+    private static final String AWS_PAYMENT_FAILED = "payment-failed";
     private static final String UPFRONT_FEE = "123.45";
     private static final String CURRENCY_CODE = "USD";
     private static final int HOURS_PER_DAY = AwsCapacityReservationService.HOURS_PER_DAY;
@@ -123,6 +129,10 @@ public class AwsCapacityReservationServiceTest {
             AwsCapacityReservationService.MAX_CAPACITY_BLOCK_INSTANCE_COUNT;
     private static final int MAX_CAPACITY_BLOCK_START_DATE_LEAD_WEEKS =
             AwsCapacityReservationService.MAX_CAPACITY_BLOCK_START_DATE_LEAD_WEEKS;
+    private static final int MAX_EXTENSION_LEAD_DAYS = AwsCapacityReservationService.MAX_EXTENSION_LEAD_DAYS;
+    private static final int MIN_EXTENSION_LEAD_HOURS = AwsCapacityReservationService.MIN_EXTENSION_LEAD_HOURS;
+    private static final int TOO_LATE_MINUTES_TO_GO = 30;
+    private static final int EDGE_SLACK_SECONDS = 30;
     private static final int FIRST_SEVEN_DAY_STEP_DAYS = 21;
     private static final int MID_SEVEN_DAY_STEP_DAYS = 91;
     private static final int CAPACITY_BLOCK_VCPU = 192;
@@ -196,7 +206,7 @@ public class AwsCapacityReservationServiceTest {
 
     @Test
     public void shouldLeaveADefinitiveRefusalAsItIs() {
-        client.createFailure = ec2Error(HTTP_BAD_REQUEST, "InvalidParameterValue");
+        client.createFailure = ec2Error(HTTP_BAD_REQUEST, INVALID_PARAMETER_VALUE_ERROR_CODE);
 
         assertThatThrownBy(() -> service.createFutureDated(reservation()))
                 .isInstanceOf(Ec2Exception.class);
@@ -220,7 +230,7 @@ public class AwsCapacityReservationServiceTest {
 
     @Test
     public void shouldLeaveALookupRefusalAsItIs() {
-        client.describeFailure = ec2Error(HTTP_BAD_REQUEST, "InvalidParameterValue");
+        client.describeFailure = ec2Error(HTTP_BAD_REQUEST, INVALID_PARAMETER_VALUE_ERROR_CODE);
 
         assertThatThrownBy(() -> service.findByClientToken(reservation(), TOKEN))
                 .isInstanceOf(Ec2Exception.class);
@@ -301,7 +311,7 @@ public class AwsCapacityReservationServiceTest {
 
     @Test
     public void shouldLeaveADefinitivePurchaseRefusalAsItIs() {
-        client.purchaseFailure = ec2Error(HTTP_BAD_REQUEST, "InvalidParameterValue");
+        client.purchaseFailure = ec2Error(HTTP_BAD_REQUEST, INVALID_PARAMETER_VALUE_ERROR_CODE);
 
         assertThatThrownBy(() -> service.purchaseCapacityBlock(capacityBlockReservation()))
                 .isInstanceOf(Ec2Exception.class);
@@ -614,62 +624,6 @@ public class AwsCapacityReservationServiceTest {
     }
 
     @Test
-    public void shouldKeepAPaymentFailureDistinctFromARefusedConfiguration() {
-        assertThat(AwsCapacityReservationService.toState("payment-failed"))
-                .isEqualTo(CloudCapacityReservationState.PAYMENT_FAILED);
-        assertThat(AwsCapacityReservationService.toState("failed"))
-                .isEqualTo(CloudCapacityReservationState.FAILED);
-    }
-
-    @Test
-    public void shouldOnlySlideOnAStateAwsWillNotDeliver() {
-        assertThat(AwsCapacityReservationService.toState("unsupported"))
-                .isEqualTo(CloudCapacityReservationState.UNSUPPORTED);
-    }
-
-    @Test
-    public void shouldPollRatherThanSlideOnStatesThatMayStillBeDelivered() {
-        assertThat(AwsCapacityReservationService.toState("unavailable"))
-                .isEqualTo(CloudCapacityReservationState.PENDING);
-    }
-
-    @Test
-    public void shouldKeepLatenessDistinctFromPendingAndRefusal() {
-        assertThat(AwsCapacityReservationService.toState("delayed"))
-                .isEqualTo(CloudCapacityReservationState.DELAYED);
-    }
-
-    @Test
-    public void shouldMapTheStatesAwsDocuments() {
-        assertThat(AwsCapacityReservationService.toState(AWS_ACTIVE))
-                .isEqualTo(CloudCapacityReservationState.ACTIVE);
-        assertThat(AwsCapacityReservationService.toState(AWS_SCHEDULED))
-                .isEqualTo(CloudCapacityReservationState.SCHEDULED);
-        assertThat(AwsCapacityReservationService.toState("assessing"))
-                .isEqualTo(CloudCapacityReservationState.PENDING);
-        assertThat(AwsCapacityReservationService.toState("pending"))
-                .isEqualTo(CloudCapacityReservationState.PENDING);
-        assertThat(AwsCapacityReservationService.toState("failed"))
-                .isEqualTo(CloudCapacityReservationState.FAILED);
-        assertThat(AwsCapacityReservationService.toState("payment-failed"))
-                .isEqualTo(CloudCapacityReservationState.PAYMENT_FAILED);
-        assertThat(AwsCapacityReservationService.toState("cancelled"))
-                .isEqualTo(CloudCapacityReservationState.CANCELLED);
-        assertThat(AwsCapacityReservationService.toState("cancelling"))
-                .isEqualTo(CloudCapacityReservationState.CANCELLED);
-        assertThat(AwsCapacityReservationService.toState("expired"))
-                .isEqualTo(CloudCapacityReservationState.EXPIRED);
-    }
-
-    @Test
-    public void shouldTreatAnUnknownStateAsPending() {
-        assertThat(AwsCapacityReservationService.toState("something-new"))
-                .isEqualTo(CloudCapacityReservationState.PENDING);
-        assertThat(AwsCapacityReservationService.toState(null))
-                .isEqualTo(CloudCapacityReservationState.PENDING);
-    }
-
-    @Test
     public void shouldReadBackTheCommitmentAwsGranted() {
         client.described = Collections.singletonList(awsReservation(AWS_SCHEDULED, ZONE).toBuilder()
                 .commitmentInfo(CapacityReservationCommitmentInfo.builder()
@@ -695,6 +649,84 @@ public class AwsCapacityReservationServiceTest {
 
         client.described = Collections.singletonList(awsReservation("unsupported", ZONE));
         assertThat(service.describe(reservation()).getStateReason()).contains("unsupported");
+    }
+
+    @Test
+    public void shouldMapTheStatesAwsDocuments() {
+        assertThat(AwsCapacityReservationService.toState(AWS_ACTIVE)).isEqualTo(CloudCapacityReservationState.ACTIVE);
+        assertThat(AwsCapacityReservationService.toState(AWS_SCHEDULED))
+                .isEqualTo(CloudCapacityReservationState.SCHEDULED);
+        assertThat(AwsCapacityReservationService.toState("assessing"))
+                .isEqualTo(CloudCapacityReservationState.PENDING);
+        assertThat(AwsCapacityReservationService.toState("failed")).isEqualTo(CloudCapacityReservationState.FAILED);
+        assertThat(AwsCapacityReservationService.toState("cancelled"))
+                .isEqualTo(CloudCapacityReservationState.CANCELLED);
+        assertThat(AwsCapacityReservationService.toState("cancelling"))
+                .isEqualTo(CloudCapacityReservationState.CANCELLED);
+        assertThat(AwsCapacityReservationService.toState("expired")).isEqualTo(CloudCapacityReservationState.EXPIRED);
+    }
+
+    @Test
+    public void shouldTreatAPaymentSucceededExtensionAsActive() {
+        assertThat(AwsCapacityReservationService.toState(AWS_PAYMENT_SUCCEEDED))
+                .isEqualTo(CloudCapacityReservationState.ACTIVE);
+    }
+
+    @Test
+    public void shouldKeepAPaymentFailureDistinctFromARefusedConfiguration() {
+        assertThat(AwsCapacityReservationService.toState(AWS_PAYMENT_FAILED))
+                .isEqualTo(CloudCapacityReservationState.PAYMENT_FAILED);
+        assertThat(AwsCapacityReservationService.toState("failed")).isEqualTo(CloudCapacityReservationState.FAILED);
+    }
+
+    @Test
+    public void shouldPollRatherThanSlideOnStatesThatMayStillBeDelivered() {
+        assertThat(AwsCapacityReservationService.toState("unavailable"))
+                .isEqualTo(CloudCapacityReservationState.PENDING);
+        assertThat(AwsCapacityReservationService.toState(AWS_PAYMENT_PENDING))
+                .isEqualTo(CloudCapacityReservationState.PENDING);
+    }
+
+    @Test
+    public void shouldOnlySlideOnAStateAwsWillNotDeliver() {
+        assertThat(AwsCapacityReservationService.toState("unsupported"))
+                .isEqualTo(CloudCapacityReservationState.UNSUPPORTED);
+    }
+
+    @Test
+    public void shouldKeepLatenessDistinctFromPendingAndRefusal() {
+        assertThat(AwsCapacityReservationService.toState("delayed")).isEqualTo(CloudCapacityReservationState.DELAYED);
+    }
+
+    @Test
+    public void shouldTreatAnUnknownStateAsPending() {
+        assertThat(AwsCapacityReservationService.toState("something-new"))
+                .isEqualTo(CloudCapacityReservationState.PENDING);
+        assertThat(AwsCapacityReservationService.toState(null)).isEqualTo(CloudCapacityReservationState.PENDING);
+    }
+
+    @Test
+    public void shouldConvertLocalDateTimeToInstantInUtc() {
+        final LocalDateTime dateTime = DateUtils.nowUTC().plusDays(LEAD_DAYS).withNano(0);
+        assertThat(AwsCapacityReservationService.toInstant(dateTime)).isEqualTo(dateTime.toInstant(ZoneOffset.UTC));
+    }
+
+    @Test
+    public void shouldReturnNullForANullLocalDateTime() {
+        assertThat(AwsCapacityReservationService.toInstant(null)).isNull();
+    }
+
+    @Test
+    public void shouldConvertInstantToLocalDateTimeInUtc() {
+        final LocalDateTime dateTime = DateUtils.nowUTC().plusDays(LEAD_DAYS).withNano(0);
+        final Instant instant = dateTime.toInstant(ZoneOffset.UTC);
+
+        assertThat(AwsCapacityReservationService.toLocalDateTime(instant)).isEqualTo(dateTime);
+    }
+
+    @Test
+    public void shouldReturnNullForANullInstant() {
+        assertThat(AwsCapacityReservationService.toLocalDateTime(null)).isNull();
     }
 
     @Test
@@ -818,6 +850,14 @@ public class AwsCapacityReservationServiceTest {
     }
 
     @Test
+    public void shouldLeaveUpfrontFeeAmountNullWhenBlank() {
+        final software.amazon.awssdk.services.ec2.model.CapacityBlockOffering blankFee =
+                awsOffering(null).toBuilder().upfrontFee("").build();
+
+        assertThat(AwsCapacityReservationService.toCapacityBlockOffering(blankFee).getUpfrontFeeAmount()).isNull();
+    }
+
+    @Test
     public void shouldSendTheRequestedInstanceTypeCountAndWindow() {
         client.capacityBlockOfferings = Collections.singletonList(awsOffering(null));
         final LocalDateTime start = DateUtils.nowUTC().withNano(0);
@@ -915,6 +955,203 @@ public class AwsCapacityReservationServiceTest {
         client.instanceTypeInfos = Collections.emptyList();
 
         assertThat(service.listCapacityBlockInstanceTypes(region())).isEmpty();
+    }
+
+    @Test
+    public void shouldMapAnExtensionOfferingFromAws() {
+        final CapacityReservation reservation = extendableCapacityBlockReservation();
+        final int durationHours = ONE_DAY_STEP_MAX_DAYS * HOURS_PER_DAY;
+        client.capacityBlockExtensionOfferings = Collections.singletonList(awsExtensionOffering());
+
+        final List<CapacityBlockOffering> offerings =
+                service.listCapacityBlockExtensionOfferings(reservation, durationHours);
+
+        assertThat(offerings).hasSize(1);
+        final CapacityBlockOffering offering = offerings.get(0);
+        assertThat(offering.getOfferingId()).isEqualTo(EXTENSION_OFFERING_ID);
+        assertThat(offering.getInstanceType()).isEqualTo(reservation.getInstanceType());
+        assertThat(offering.getAvailabilityZone()).isEqualTo(ZONE);
+        assertThat(offering.getInstanceCount()).isEqualTo(INSTANCE_COUNT);
+        assertThat(offering.getCapacityDurationHours()).isEqualTo(durationHours);
+        assertThat(offering.getUpfrontFeeAmount()).isEqualTo(new BigDecimal(UPFRONT_FEE));
+        assertThat(offering.getUpfrontFeeCurrency()).isEqualTo(CURRENCY_CODE);
+    }
+
+    @Test
+    public void shouldSearchExtensionOfferingsByReservationAndDuration() {
+        final CapacityReservation reservation = extendableCapacityBlockReservation();
+        reservation.setCloudReservationId(CLOUD_ID);
+        final int durationHours = ONE_DAY_STEP_MAX_DAYS * HOURS_PER_DAY;
+        client.capacityBlockExtensionOfferings = Collections.singletonList(awsExtensionOffering());
+
+        service.listCapacityBlockExtensionOfferings(reservation, durationHours);
+
+        assertThat(client.capacityBlockExtensionOfferingsRequest.capacityReservationId()).isEqualTo(CLOUD_ID);
+        assertThat(client.capacityBlockExtensionOfferingsRequest.capacityBlockExtensionDurationHours())
+                .isEqualTo(durationHours);
+    }
+
+    @Test
+    public void shouldRejectAnExtensionOfferingsRequestWithAnInvalidDuration() {
+        final CapacityReservation reservation = extendableCapacityBlockReservation();
+
+        assertThatThrownBy(() -> service.listCapacityBlockExtensionOfferings(reservation, HOURS_PER_DAY + 1))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(client.capacityBlockExtensionOfferingsRequest).isNull();
+    }
+
+    @Test
+    public void shouldRejectAnExtensionOfferingsRequestMadeTooEarly() {
+        final CapacityReservation reservation = capacityBlockReservation();
+        reservation.setEndDate(DateUtils.nowUTC().plusDays(MAX_EXTENSION_LEAD_DAYS).plusHours(1));
+
+        assertThatThrownBy(() -> service.listCapacityBlockExtensionOfferings(
+                reservation, ONE_DAY_STEP_MAX_DAYS * HOURS_PER_DAY))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(client.capacityBlockExtensionOfferingsRequest).isNull();
+    }
+
+    @Test
+    public void shouldRejectAnExtensionOfferingsRequestMadeTooLate() {
+        final CapacityReservation reservation = capacityBlockReservation();
+        reservation.setEndDate(DateUtils.nowUTC().plusMinutes(TOO_LATE_MINUTES_TO_GO));
+
+        assertThatThrownBy(() -> service.listCapacityBlockExtensionOfferings(
+                reservation, ONE_DAY_STEP_MAX_DAYS * HOURS_PER_DAY))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(client.capacityBlockExtensionOfferingsRequest).isNull();
+    }
+
+    @Test
+    public void shouldAcceptAnExtensionOfferingsRequestAtTheMaximumLeadEdge() {
+        final CapacityReservation reservation = capacityBlockReservation();
+        reservation.setEndDate(DateUtils.nowUTC().plusDays(MAX_EXTENSION_LEAD_DAYS));
+        client.capacityBlockExtensionOfferings = Collections.singletonList(awsExtensionOffering());
+
+        service.listCapacityBlockExtensionOfferings(reservation, ONE_DAY_STEP_MAX_DAYS * HOURS_PER_DAY);
+    }
+
+    @Test
+    public void shouldAcceptAnExtensionOfferingsRequestAtTheMinimumLeadEdge() {
+        final CapacityReservation reservation = capacityBlockReservation();
+        // a few seconds of slack above the exact 1-hour boundary, so the time this test takes to run cannot
+        // itself push the request past the cutoff
+        reservation.setEndDate(DateUtils.nowUTC().plusHours(MIN_EXTENSION_LEAD_HOURS).plusSeconds(EDGE_SLACK_SECONDS));
+        client.capacityBlockExtensionOfferings = Collections.singletonList(awsExtensionOffering());
+
+        service.listCapacityBlockExtensionOfferings(reservation, ONE_DAY_STEP_MAX_DAYS * HOURS_PER_DAY);
+    }
+
+    @Test
+    public void shouldBuildAnExtensionPurchaseRequestForTheNamedOffering() {
+        final CapacityReservation reservation = extendableCapacityBlockReservation();
+        reservation.setCloudReservationId(CLOUD_ID);
+        client.purchasedExtensions = Collections.singletonList(awsPurchasedExtension(AWS_PAYMENT_SUCCEEDED));
+
+        service.purchaseCapacityBlockExtension(reservation, EXTENSION_OFFERING_ID);
+
+        assertThat(client.purchaseExtensionRequest.capacityBlockExtensionOfferingId())
+                .isEqualTo(EXTENSION_OFFERING_ID);
+        assertThat(client.purchaseExtensionRequest.capacityReservationId()).isEqualTo(CLOUD_ID);
+    }
+
+    @Test
+    public void shouldReturnWhatAwsHandsBackFromTheExtensionPurchase() {
+        final CapacityReservation reservation = extendableCapacityBlockReservation();
+        reservation.setCloudReservationId(CLOUD_ID);
+        client.purchasedExtensions = Collections.singletonList(awsPurchasedExtension(AWS_PAYMENT_SUCCEEDED));
+
+        final CloudCapacityBlockExtension purchased =
+                service.purchaseCapacityBlockExtension(reservation, EXTENSION_OFFERING_ID);
+
+        assertThat(purchased.getOfferingId()).isEqualTo(EXTENSION_OFFERING_ID);
+        assertThat(purchased.getState()).isEqualTo(CloudCapacityReservationState.ACTIVE);
+        assertThat(purchased.getStateReason()).isNull();
+    }
+
+    @Test
+    public void shouldReportAPaymentStillPendingAsPending() {
+        final CapacityReservation reservation = extendableCapacityBlockReservation();
+        client.purchasedExtensions = Collections.singletonList(awsPurchasedExtension(AWS_PAYMENT_PENDING));
+
+        final CloudCapacityBlockExtension purchased =
+                service.purchaseCapacityBlockExtension(reservation, EXTENSION_OFFERING_ID);
+
+        assertThat(purchased.getState()).isEqualTo(CloudCapacityReservationState.PENDING);
+    }
+
+    @Test
+    public void shouldReportAPaymentFailureAsPaymentFailed() {
+        final CapacityReservation reservation = extendableCapacityBlockReservation();
+        client.purchasedExtensions = Collections.singletonList(awsPurchasedExtension(AWS_PAYMENT_FAILED));
+
+        final CloudCapacityBlockExtension purchased =
+                service.purchaseCapacityBlockExtension(reservation, EXTENSION_OFFERING_ID);
+
+        assertThat(purchased.getState()).isEqualTo(CloudCapacityReservationState.PAYMENT_FAILED);
+        assertThat(purchased.getStateReason()).contains(AWS_PAYMENT_FAILED);
+    }
+
+    @Test
+    public void shouldReportAnExtensionPurchaseWithNoReplyAsUncertain() {
+        final CapacityReservation reservation = extendableCapacityBlockReservation();
+        client.purchaseExtensionFailure =
+                SdkClientException.create("Unable to execute HTTP request: Read timed out");
+
+        assertThatThrownBy(() -> service.purchaseCapacityBlockExtension(reservation, EXTENSION_OFFERING_ID))
+                .isInstanceOf(CapacityReservationSubmissionUncertainException.class)
+                .hasCauseInstanceOf(SdkClientException.class);
+    }
+
+    @Test
+    public void shouldReportExtensionPurchaseThrottlingAsUncertain() {
+        final CapacityReservation reservation = extendableCapacityBlockReservation();
+        client.purchaseExtensionFailure = ec2Error(HTTP_BAD_REQUEST, "RequestLimitExceeded");
+
+        assertThatThrownBy(() -> service.purchaseCapacityBlockExtension(reservation, EXTENSION_OFFERING_ID))
+                .isInstanceOf(CapacityReservationSubmissionUncertainException.class);
+    }
+
+    @Test
+    public void shouldLeaveADefinitiveExtensionPurchaseRefusalAsItIs() {
+        final CapacityReservation reservation = extendableCapacityBlockReservation();
+        client.purchaseExtensionFailure = ec2Error(HTTP_BAD_REQUEST, INVALID_PARAMETER_VALUE_ERROR_CODE);
+
+        assertThatThrownBy(() -> service.purchaseCapacityBlockExtension(reservation, EXTENSION_OFFERING_ID))
+                .isInstanceOf(Ec2Exception.class);
+    }
+
+    private CapacityReservation extendableCapacityBlockReservation() {
+        final CapacityReservation reservation = capacityBlockReservation();
+        reservation.setEndDate(DateUtils.nowUTC().plusDays(MAX_EXTENSION_LEAD_DAYS / 2));
+        return reservation;
+    }
+
+    private static software.amazon.awssdk.services.ec2.model.CapacityBlockExtensionOffering awsExtensionOffering() {
+        final LocalDateTime start = DateUtils.nowUTC().plusDays(LEAD_DAYS).withNano(0);
+        return software.amazon.awssdk.services.ec2.model.CapacityBlockExtensionOffering.builder()
+                .capacityBlockExtensionOfferingId(EXTENSION_OFFERING_ID)
+                .instanceType(CapacityReservationCreatorUtils.INSTANCE_TYPE)
+                .availabilityZone(ZONE)
+                .instanceCount(INSTANCE_COUNT)
+                .capacityBlockExtensionStartDate(start.toInstant(ZoneOffset.UTC))
+                .capacityBlockExtensionEndDate(start.plusDays(ONE_DAY_STEP_MAX_DAYS).toInstant(ZoneOffset.UTC))
+                .capacityBlockExtensionDurationHours(ONE_DAY_STEP_MAX_DAYS * HOURS_PER_DAY)
+                .upfrontFee(UPFRONT_FEE)
+                .currencyCode(CURRENCY_CODE)
+                .build();
+    }
+
+    private static software.amazon.awssdk.services.ec2.model.CapacityBlockExtension awsPurchasedExtension(
+            final String status) {
+        final LocalDateTime start = DateUtils.nowUTC().plusDays(LEAD_DAYS).withNano(0);
+        return software.amazon.awssdk.services.ec2.model.CapacityBlockExtension.builder()
+                .capacityReservationId(CLOUD_ID)
+                .capacityBlockExtensionOfferingId(EXTENSION_OFFERING_ID)
+                .capacityBlockExtensionStatus(status)
+                .capacityBlockExtensionStartDate(start.toInstant(ZoneOffset.UTC))
+                .capacityBlockExtensionEndDate(start.plusDays(ONE_DAY_STEP_MAX_DAYS).toInstant(ZoneOffset.UTC))
+                .build();
     }
 
     private static AwsRegion region() {
@@ -1051,6 +1288,15 @@ public class AwsCapacityReservationServiceTest {
         private PurchaseCapacityBlockRequest purchaseRequest;
         private software.amazon.awssdk.services.ec2.model.CapacityReservation purchased;
         private RuntimeException purchaseFailure;
+        private software.amazon.awssdk.services.ec2.model.DescribeCapacityBlockExtensionOfferingsRequest
+                capacityBlockExtensionOfferingsRequest;
+        private List<software.amazon.awssdk.services.ec2.model.CapacityBlockExtensionOffering>
+                capacityBlockExtensionOfferings = Collections.emptyList();
+        private software.amazon.awssdk.services.ec2.model.PurchaseCapacityBlockExtensionRequest
+                purchaseExtensionRequest;
+        private List<software.amazon.awssdk.services.ec2.model.CapacityBlockExtension> purchasedExtensions =
+                Collections.emptyList();
+        private RuntimeException purchaseExtensionFailure;
 
         @Override
         public String serviceName() {
@@ -1139,6 +1385,32 @@ public class AwsCapacityReservationServiceTest {
                 throw purchaseFailure;
             }
             return PurchaseCapacityBlockResponse.builder().capacityReservation(purchased).build();
+        }
+
+        @Override
+        public software.amazon.awssdk.services.ec2.model.DescribeCapacityBlockExtensionOfferingsResponse
+                describeCapacityBlockExtensionOfferings(
+                        final software.amazon.awssdk.services.ec2.model.DescribeCapacityBlockExtensionOfferingsRequest
+                                request) {
+            this.capacityBlockExtensionOfferingsRequest = request;
+            return software.amazon.awssdk.services.ec2.model.DescribeCapacityBlockExtensionOfferingsResponse
+                    .builder()
+                    .capacityBlockExtensionOfferings(capacityBlockExtensionOfferings)
+                    .build();
+        }
+
+        @Override
+        public software.amazon.awssdk.services.ec2.model.PurchaseCapacityBlockExtensionResponse
+                purchaseCapacityBlockExtension(
+                        final software.amazon.awssdk.services.ec2.model.PurchaseCapacityBlockExtensionRequest
+                                request) {
+            this.purchaseExtensionRequest = request;
+            if (purchaseExtensionFailure != null) {
+                throw purchaseExtensionFailure;
+            }
+            return software.amazon.awssdk.services.ec2.model.PurchaseCapacityBlockExtensionResponse.builder()
+                    .capacityBlockExtensions(purchasedExtensions)
+                    .build();
         }
     }
 }

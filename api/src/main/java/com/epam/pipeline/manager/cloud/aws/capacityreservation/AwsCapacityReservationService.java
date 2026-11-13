@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockResourc
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
+import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityBlockExtension;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservationState;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -53,6 +54,7 @@ import software.amazon.awssdk.services.ec2.model.CapacityReservationDeliveryPref
 import software.amazon.awssdk.services.ec2.model.CapacityReservationState;
 import software.amazon.awssdk.services.ec2.model.CreateCapacityReservationCancellationQuoteRequest;
 import software.amazon.awssdk.services.ec2.model.CreateCapacityReservationRequest;
+import software.amazon.awssdk.services.ec2.model.DescribeCapacityBlockExtensionOfferingsRequest;
 import software.amazon.awssdk.services.ec2.model.DescribeCapacityBlockOfferingsRequest;
 import software.amazon.awssdk.services.ec2.model.DescribeCapacityReservationsRequest;
 import software.amazon.awssdk.services.ec2.model.DescribeInstanceTypeOfferingsRequest;
@@ -65,6 +67,7 @@ import software.amazon.awssdk.services.ec2.model.InstanceTypeInfo;
 import software.amazon.awssdk.services.ec2.model.InstanceTypeOffering;
 import software.amazon.awssdk.services.ec2.model.LocationType;
 import software.amazon.awssdk.services.ec2.model.MemoryInfo;
+import software.amazon.awssdk.services.ec2.model.PurchaseCapacityBlockExtensionRequest;
 import software.amazon.awssdk.services.ec2.model.PurchaseCapacityBlockRequest;
 import software.amazon.awssdk.services.ec2.model.ResourceType;
 import software.amazon.awssdk.services.ec2.model.Tag;
@@ -155,6 +158,8 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
     static final int SEVEN_DAY_STEP_MAX_DAYS = 182;
     static final int MAX_CAPACITY_BLOCK_INSTANCE_COUNT = 64;
     static final int MAX_CAPACITY_BLOCK_START_DATE_LEAD_WEEKS = 8;
+    static final int MIN_EXTENSION_LEAD_HOURS = 1;
+    static final int MAX_EXTENSION_LEAD_DAYS = 57;
 
     private final CloudRegionManager regionManager;
     private final AWSV2EC2ClientProvider clientProvider;
@@ -425,7 +430,8 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
                 .instanceCount(request.getInstanceCount())
                 .capacityDurationHours(request.getCapacityDurationHours())
                 .startDateRange(toInstant(request.getStartDateRange()));
-        Optional.ofNullable(request.getEndDateRange()).ifPresent(end -> awsRequest.endDateRange(toInstant(end)));
+        Optional.ofNullable(request.getEndDateRange())
+                .ifPresent(end -> awsRequest.endDateRange(toInstant(end)));
         try (Ec2Client client = clientProvider.client((AwsRegion) region)) {
             return client.describeCapacityBlockOfferingsPaginator(awsRequest.build())
                     .capacityBlockOfferings().stream()
@@ -454,7 +460,62 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
         }
     }
 
-    private static CapacityBlockInstanceTypeInfo toCapacityBlockInstanceTypeInfo(final InstanceTypeInfo info) {
+    /**
+     * Searches AWS's current offerings to extend a capacity block already purchased. Nothing here is paid for or
+     * committed to - a browse failure is reported as it comes, not retried as uncertain the way
+     * {@link #purchaseCapacityBlockExtension} is.
+     */
+    @Override
+    public List<CapacityBlockOffering> listCapacityBlockExtensionOfferings(final CapacityReservation reservation,
+                                                                            final int durationHours) {
+        validateCapacityBlockDuration(durationHours);
+        validateExtensionLeadTime(reservation);
+        final AwsRegion region = region(reservation);
+        final DescribeCapacityBlockExtensionOfferingsRequest request = DescribeCapacityBlockExtensionOfferingsRequest
+                .builder()
+                .capacityReservationId(reservation.getCloudReservationId())
+                .capacityBlockExtensionDurationHours(durationHours)
+                .build();
+        log.debug("Searching capacity block extension offerings for capacity reservation {} ({}), extended by {}h",
+                reservation.getId(), reservation.getCloudReservationId(), durationHours);
+        try (Ec2Client client = clientProvider.client(region)) {
+            return client.describeCapacityBlockExtensionOfferingsPaginator(request)
+                    .capacityBlockExtensionOfferings().stream()
+                    .map(AwsCapacityReservationService::toCapacityBlockExtensionOffering)
+                    .collect(Collectors.toList());
+        }
+    }
+
+    /**
+     * Buys the exact extension offering named - no window to pick, since the offering already fixed it. Like
+     * {@link #purchaseCapacityBlock}, AWS gives this call no idempotency token of its own; unlike it, nothing in
+     * this pass retries an uncertain outcome by checking what AWS actually holds first - that is for a caller to
+     * add once it needs to.
+     */
+    @Override
+    public CloudCapacityBlockExtension purchaseCapacityBlockExtension(final CapacityReservation reservation,
+                                                                        final String extensionOfferingId) {
+        final AwsRegion region = region(reservation);
+        final PurchaseCapacityBlockExtensionRequest request = PurchaseCapacityBlockExtensionRequest.builder()
+                .capacityBlockExtensionOfferingId(extensionOfferingId)
+                .capacityReservationId(reservation.getCloudReservationId())
+                .build();
+        log.debug("Purchasing capacity block extension {} for capacity reservation {} ({})",
+                extensionOfferingId, reservation.getId(), reservation.getCloudReservationId());
+        return uncertainOnTransientFailure(reservation, () -> {
+            try (Ec2Client client = clientProvider.client(region)) {
+                return ListUtils.emptyIfNull(client.purchaseCapacityBlockExtension(request)
+                                .capacityBlockExtensions()).stream()
+                        .findFirst()
+                        .map(AwsCapacityReservationService::toCloudCapacityBlockExtension)
+                        .orElseThrow(() -> new IllegalStateException(String.format(
+                                "AWS reported no result for purchasing extension offering %s for capacity "
+                                        + "reservation %s", extensionOfferingId, reservation.getId())));
+            }
+        });
+    }
+
+    static CapacityBlockInstanceTypeInfo toCapacityBlockInstanceTypeInfo(final InstanceTypeInfo info) {
         final GpuDeviceInfo gpu = Optional.ofNullable(info.gpuInfo())
                 .map(gpuInfo -> gpuInfo.gpus().stream().findFirst().orElse(null))
                 .orElse(null);
@@ -465,6 +526,21 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
                 .gpuCount(gpu == null ? null : gpu.count())
                 .gpuDeviceName(gpu == null ? null : gpu.name())
                 .build();
+    }
+
+    /**
+     * AWS allows a capacity block extension to be requested from {@value #MIN_EXTENSION_LEAD_HOURS}h up to
+     * {@value #MAX_EXTENSION_LEAD_DAYS} days before the block's current expiry. Checked here, before a request is
+     * built, rather than left for AWS's own refusal to explain.
+     */
+    static void validateExtensionLeadTime(final CapacityReservation reservation) {
+        final LocalDateTime now = DateUtils.nowUTC();
+        Assert.isTrue(reservation.getEndDate() != null
+                && !now.isBefore(reservation.getEndDate().minusDays(MAX_EXTENSION_LEAD_DAYS))
+                && !now.isAfter(reservation.getEndDate().minusHours(MIN_EXTENSION_LEAD_HOURS)),
+                String.format("Capacity reservation %s can only be extended between %dh and %dd before it ends; "
+                        + "it ends at %s.", reservation.getId(), MIN_EXTENSION_LEAD_HOURS, MAX_EXTENSION_LEAD_DAYS,
+                        reservation.getEndDate()));
     }
 
     /**
@@ -510,7 +586,7 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
                         MAX_CAPACITY_BLOCK_START_DATE_LEAD_WEEKS, startDateRange));
     }
 
-    private static CapacityBlockOffering toCapacityBlockOffering(
+    static CapacityBlockOffering toCapacityBlockOffering(
             final software.amazon.awssdk.services.ec2.model.CapacityBlockOffering offering) {
         return CapacityBlockOffering.builder()
                 .offeringId(offering.capacityBlockOfferingId())
@@ -551,9 +627,9 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
     private static boolean isInsufficientCapacity(final SdkServiceException e) {
         return e instanceof AwsServiceException
                 && Optional.ofNullable(((AwsServiceException) e).awsErrorDetails())
-                        .map(AwsErrorDetails::errorCode)
-                        .filter(INSUFFICIENT_CAPACITY_ERROR_CODES::contains)
-                        .isPresent();
+                .map(AwsErrorDetails::errorCode)
+                .filter(INSUFFICIENT_CAPACITY_ERROR_CODES::contains)
+                .isPresent();
     }
 
     private static boolean isUnknownReservation(final AwsServiceException e) {
@@ -570,12 +646,18 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
                 reservation.getId(), cause.getMessage()), cause);
     }
 
+    /**
+     * The one AWS-state vocabulary mapping in this class, shared by {@link #toCloudReservation} and
+     * {@link #toCloudCapacityBlockExtension} alike, so a provider state is interpreted exactly the same way
+     * whichever call it came back from.
+     */
     static CloudCapacityReservationState toState(final String awsState) {
         if (awsState == null) {
             return CloudCapacityReservationState.PENDING;
         }
         switch (awsState.toLowerCase()) {
             case "active":
+            case "payment-succeeded":
                 return CloudCapacityReservationState.ACTIVE;
             case "scheduled":
                 return CloudCapacityReservationState.SCHEDULED;
@@ -604,7 +686,7 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
         }
     }
 
-    private static CloudCapacityReservation toCloudReservation(
+    static CloudCapacityReservation toCloudReservation(
             final software.amazon.awssdk.services.ec2.model.CapacityReservation reservation) {
         final String awsState = reservation.stateAsString();
         final CloudCapacityReservationState state = toState(awsState);
@@ -625,6 +707,39 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
                 .build();
     }
 
+    static CapacityBlockOffering toCapacityBlockExtensionOffering(
+            final software.amazon.awssdk.services.ec2.model.CapacityBlockExtensionOffering offering) {
+        return CapacityBlockOffering.builder()
+                .offeringId(offering.capacityBlockExtensionOfferingId())
+                .instanceType(offering.instanceType())
+                .availabilityZone(offering.availabilityZone())
+                .instanceCount(offering.instanceCount())
+                .startDate(toLocalDateTime(offering.capacityBlockExtensionStartDate()))
+                .endDate(toLocalDateTime(offering.capacityBlockExtensionEndDate()))
+                .capacityDurationHours(offering.capacityBlockExtensionDurationHours())
+                .upfrontFeeAmount(StringUtils.isBlank(offering.upfrontFee()) ? null : new BigDecimal(
+                        offering.upfrontFee()))
+                .upfrontFeeCurrency(offering.currencyCode())
+                .tenancy(offering.tenancyAsString())
+                .build();
+    }
+
+    static CloudCapacityBlockExtension toCloudCapacityBlockExtension(
+            final software.amazon.awssdk.services.ec2.model.CapacityBlockExtension extension) {
+        final String awsStatus = extension.capacityBlockExtensionStatusAsString();
+        final CloudCapacityReservationState state = toState(awsStatus);
+        return CloudCapacityBlockExtension.builder()
+                .offeringId(extension.capacityBlockExtensionOfferingId())
+                .state(state)
+                .stateReason(state == CloudCapacityReservationState.ACTIVE
+                        || state == CloudCapacityReservationState.PENDING
+                        ? null
+                        : String.format("AWS reported the extension as '%s'", awsStatus))
+                .startDate(toLocalDateTime(extension.capacityBlockExtensionStartDate()))
+                .endDate(toLocalDateTime(extension.capacityBlockExtensionEndDate()))
+                .build();
+    }
+
     private TagSpecification tags(final CapacityReservation reservation) {
         return TagSpecification.builder()
                 .resourceType(ResourceType.CAPACITY_RESERVATION)
@@ -635,11 +750,11 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
                 .build();
     }
 
-    private static Instant toInstant(final LocalDateTime dateTime) {
+    static Instant toInstant(final LocalDateTime dateTime) {
         return dateTime == null ? null : dateTime.toInstant(ZoneOffset.UTC);
     }
 
-    private static LocalDateTime toLocalDateTime(final Instant instant) {
+    static LocalDateTime toLocalDateTime(final Instant instant) {
         return instant == null ? null : LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
     }
 
