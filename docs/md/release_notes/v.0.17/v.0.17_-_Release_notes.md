@@ -76,6 +76,7 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [Data storage: "Select page" is enabled when no item on the page can be selected](#data-storage-select-page-is-enabled-when-no-item-on-the-page-can-be-selected)
     - [Users export: the names of the date columns depend on the API time zone](#users-export-the-names-of-the-date-columns-depend-on-the-api-time-zone)
     - [A committed image of a user with a large UID writes hundreds of GB to the disk](#a-committed-image-of-a-user-with-a-large-uid-writes-hundreds-of-gb-to-the-disk)
     - [Detached configuration: the old name stays in the Library after a rename](#detached-configuration-the-old-name-stays-in-the-library-after-a-rename)
@@ -2060,6 +2061,14 @@ For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#se
 ***
 
 ## Notable Bug fixes
+
+### Data storage: "Select page" is enabled when no item on the page can be selected
+
+[#4846](https://github.com/epam/cloud-pipeline/issues/4846)
+
+Previously, the **Select page** control of a data storage was enabled whenever the current page listed any item, even when none of those items had a checkbox - e.g. a page of folders in a storage the user may only read, or a sensitive storage with no download allowed. Clicking the control selected nothing, with no message.
+Now, **Select page** is disabled unless the page holds an item that can be selected and is not selected yet.
+See details in [8. Manage Data Storage](../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage.md#select-page).
 
 ### Users export: the names of the date columns depend on the API time zone
 
