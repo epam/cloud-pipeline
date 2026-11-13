@@ -232,10 +232,8 @@ public class JwtTokenGenerator {
         return tokenBuilder;
     }
 
-
     private Date toDate(LocalDateTime dateTime) {
         return Date.from(dateTime.atZone(ZoneId.systemDefault()).toInstant());
     }
-
 
 }

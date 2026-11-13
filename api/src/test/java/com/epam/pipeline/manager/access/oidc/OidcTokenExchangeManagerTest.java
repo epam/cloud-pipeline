@@ -244,7 +244,7 @@ public class OidcTokenExchangeManagerTest {
     }
 
     @Test
-    public void shouldGiveTheUsersWholeAuthoritySetWhenNothingIsShaped() {
+    public void shouldGiveTheUsersWholeRoleSetWhenNothingIsShaped() {
         configure(specificUser(), subjectClaims().build());
 
         manager.exchange(SUBJECT_TOKEN);

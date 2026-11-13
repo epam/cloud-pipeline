@@ -356,7 +356,7 @@ public class OidcIssuerValidatorTest {
     }
 
     @Test
-    public void shouldRejectAnAuthorityThatIsBothKeptAndDropped() {
+    public void shouldRejectARoleThatIsBothKeptAndDropped() {
         final OidcAssumeStrategy strategy = specificUser();
         strategy.setRolesToKeep(Arrays.asList(ROLE_USER, "READER"));
         strategy.setRolesToDrop(Collections.singletonList(ROLE_USER));
@@ -372,7 +372,7 @@ public class OidcIssuerValidatorTest {
     }
 
     @Test
-    public void shouldRejectEmptyAuthorityLists() {
+    public void shouldRejectEmptyRoleLists() {
         final OidcAssumeStrategy withEmptyKeep = specificUser();
         withEmptyKeep.setRolesToKeep(new ArrayList<>());
         assertThat(isValid(withStrategy(withEmptyKeep))).isFalse();

@@ -78,16 +78,16 @@ public class UserAccessServiceTest {
     }
 
     /**
-     * The restriction a narrowed token carries only holds if the authorities are not refreshed from
-     * the stored user on the next request.
+     * The restriction a narrowed token carries only holds if its roles are not refreshed from the
+     * stored user on the next request. Its groups are refreshed, because nothing narrowed them.
      */
     @Test
-    public void shouldKeepTheTokenAuthoritiesWhenTheyAreFinal() {
+    public void shouldKeepTheTokenRolesWhenTheyAreScoped() {
         storedUser(ROLE_ADMIN, ROLE_USER, READER);
 
         final UserContext context = service.getJwtUser(rawToken(), claims(true, ROLE_USER));
 
-        assertThat(authoritiesOf(context)).containsExactly(ROLE_USER);
+        assertThat(authoritiesOf(context)).containsExactlyInAnyOrder(ROLE_USER, GROUP);
     }
 
     /**
@@ -95,21 +95,37 @@ public class UserAccessServiceTest {
      * still takes effect — which is the reason a deployment turns this validation on at all.
      */
     @Test
-    public void shouldDropAnAuthorityThatHasBeenWithdrawnFromTheStoredUser() {
+    public void shouldDropARoleThatHasBeenWithdrawnFromTheStoredUser() {
         storedUser(ROLE_USER);
 
         final UserContext context = service.getJwtUser(rawToken(), claims(true, ROLE_USER, READER));
 
-        assertThat(authoritiesOf(context)).containsExactly(ROLE_USER);
+        assertThat(authoritiesOf(context)).containsExactlyInAnyOrder(ROLE_USER, GROUP);
     }
 
     @Test
-    public void shouldNotGrantAnAuthorityTheStoredUserDoesNotHold() {
+    public void shouldNotGrantARoleTheStoredUserDoesNotHold() {
         storedUser(ROLE_USER);
 
         final UserContext context = service.getJwtUser(rawToken(), claims(true, ROLE_ADMIN));
 
-        assertThat(authoritiesOf(context)).isEmpty();
+        assertThat(authoritiesOf(context)).containsExactly(GROUP);
+    }
+
+    /**
+     * Only roles are ever narrowed, so a group granted after the token was issued has to show up
+     * on the next request — pinning the group set to the moment of issue would hide it, and the
+     * permissions that come with it, for the rest of the token's life.
+     */
+    @Test
+    public void shouldPickUpAGroupGrantedAfterTheTokenWasIssued() {
+        final PipelineUser stored = storedUser(ROLE_USER);
+        stored.setGroups(Arrays.asList(GROUP, "LATE_GROUP"));
+
+        final UserContext context = service.getJwtUser(rawToken(),
+                claimsWithGroups(true, Collections.singletonList(GROUP), ROLE_USER));
+
+        assertThat(authoritiesOf(context)).containsExactlyInAnyOrder(ROLE_USER, GROUP, "LATE_GROUP");
     }
 
     @Test
