@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,6 +16,7 @@
 package com.epam.pipeline.manager.cluster.autoscale;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.utils.DateUtils;
@@ -55,6 +56,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -62,9 +64,11 @@ import org.mockito.quality.Strictness;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -100,6 +104,10 @@ public class AutoscaleManagerTest {
     private static final int POOL_WAIT_SEC = 300;
     private static final long MILLIS_IN_SECOND = 1000L;
     private static final String POOL_PENDING_TAG = "POOL_PENDING";
+    private static final String FREE_RUN_NODE_ID = "222";
+    private static final String FREE_POOL_NODE_ID = AutoscaleContants.NODE_POOL_PREFIX + "1";
+    private static final String FREE_LOCAL_NODE_ID = AutoscaleContants.NODE_LOCAL_PREFIX + "1";
+    private static final String NODE_PENDING_TAG = "NODE_PENDING";
 
     @Mock
     private PipelineRunManager pipelineRunManager;
@@ -553,6 +561,71 @@ public class AutoscaleManagerTest {
 
         verify(cloudFacade, times(PREFERENCE_RETRY_COUNT)).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
         verify(pipelineRunManager).updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
+    }
+
+    @Test
+    public void testFreePoolAndLocalNodesNotScaledDownWhenClusterIsFull() {
+        mockFullClusterWithFreeNodes(FREE_POOL_NODE_ID, FREE_LOCAL_NODE_ID);
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(cloudFacade, never()).scaleDownNode(any(Long.class));
+        verify(cloudFacade, never()).scaleUpNode(any(), any(), any(), any());
+        verify(pipelineRunManager).updateTags(eq(TEST_RUN_ID), any(TagsVO.class), eq(false));
+    }
+
+    @Test
+    public void testFreeRunNodeScaledDownNextToFreePoolNodeWhenClusterIsFull() {
+        mockFullClusterWithFreeNodes(FREE_POOL_NODE_ID, FREE_RUN_NODE_ID);
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(cloudFacade).scaleDownNode(Long.valueOf(FREE_RUN_NODE_ID));
+        verify(cloudFacade).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
+    }
+
+    @Test
+    public void testRunWithoutTagsGetsPendingTagWhenClusterIsFull() {
+        mockFullClusterWithFreeNodes();
+        testRun.setTags(null);
+
+        autoscaleManagerCore.runAutoscaling();
+
+        // TagsVO is a record, so the map is read through its accessor: `hasProperty` finds no bean getter
+        final ArgumentCaptor<TagsVO> tags = ArgumentCaptor.forClass(TagsVO.class);
+        verify(pipelineRunManager).updateTags(eq(TEST_RUN_ID), tags.capture(), eq(false));
+        assertThat(tags.getValue().tags(),
+                Matchers.hasEntry(NODE_PENDING_TAG, KubernetesConstants.TRUE_LABEL_VALUE));
+        verify(cloudFacade, never()).scaleUpNode(any(), any(), any(), any());
+    }
+
+    @Test
+    public void testRunWithoutParameterListGetsNode() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+        when(cloudFacade.scaleUpNode(any(), any(), any(), any())).thenReturn(new RunInstance());
+        testRun.setPipelineRunParameters(null);
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(cloudFacade).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
+    }
+
+    /**
+     * The given free nodes are ready, in this order, and the cluster has reached its maximum size.
+     * The pending run takes none of them.
+     */
+    private void mockFullClusterWithFreeNodes(final String... nodeIds) {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_KILL_NOT_MATCHING_NODES)).thenReturn(true);
+        when(kubernetesManager.getSchedulableNodesIds(kubernetesClient))
+                .thenReturn(new LinkedHashSet<>(Arrays.asList(nodeIds)));
+        for (final String nodeId : nodeIds) {
+            when(kubernetesManager.isNodeAvailable(kubernetesClient, nodeId)).thenReturn(true);
+        }
+        doReturn(new NodeList("", Collections.singletonList(new Node()), "", null))
+                .when(kubernetesManager).getAvailableNodes(any());
+        when(cloudFacade.scaleUpNode(any(), any(), any(), any())).thenReturn(new RunInstance());
+        testRun.setTags(new HashMap<>());
     }
 
     private void mockNodeUpRetryCountParameter(final String value) {

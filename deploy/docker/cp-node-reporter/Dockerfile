@@ -21,7 +21,10 @@ ENV CP_NODE_REPORTER_OOM_HOME="$CP_NODE_REPORTER_HOME/oom" \
     CP_NODE_REPORTER_STATS_HOME="$CP_NODE_REPORTER_HOME/stats" \
     CP_NODE_REPORTER_COMMON_HOME="$CP_NODE_REPORTER_HOME/common"
 
-ENV CP_PYTHON2_PATH=python
+# pipe_log and pipe_tag, which oom/reporter.sh calls, run Python as $CP_PYTHON_PATH. CP_PYTHON2_PATH is kept
+# for the pipe-common builds from before the Python 3 support, which used it
+ENV CP_PYTHON_PATH=python \
+    CP_PYTHON2_PATH=python
 
 RUN mkdir -p "$CP_NODE_REPORTER_HOME" \
              "$CP_NODE_REPORTER_OOM_HOME" \

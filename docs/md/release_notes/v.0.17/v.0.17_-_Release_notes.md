@@ -76,12 +76,15 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [Nextflow run view: some tasks stay `RUNNING` after the run finishes](#nextflow-run-view-some-tasks-stay-running-after-the-run-finishes)
+    - [GUI: library versions with security advisories](#gui-library-versions-with-security-advisories)
     - [Users export: the names of the date columns depend on the API time zone](#users-export-the-names-of-the-date-columns-depend-on-the-api-time-zone)
     - [A committed image of a user with a large UID writes hundreds of GB to the disk](#a-committed-image-of-a-user-with-a-large-uid-writes-hundreds-of-gb-to-the-disk)
     - [Detached configuration: the old name stays in the Library after a rename](#detached-configuration-the-old-name-stays-in-the-library-after-a-rename)
     - [NICE DCV setup reports a failure only after 30 minutes, with no reason](#nice-dcv-setup-reports-a-failure-only-after-30-minutes-with-no-reason)
     - [`sge create` and `sge configure` fail in tools without `diff`, and the extra SGE queues fail on Python 3](#sge-create-and-sge-configure-fail-in-tools-without-diff-and-the-extra-sge-queues-fail-on-python-3)
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
+    - [System logs: no security event is stored once the `security_log` alias has no write index](#system-logs-no-security-event-is-stored-once-the-security_log-alias-has-no-write-index)
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
     - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
     - [Storage files are not indexed when an object key is longer than 512 bytes](#storage-files-are-not-indexed-when-an-object-key-is-longer-than-512-bytes)
@@ -103,6 +106,13 @@
     - [Inner data storages navigation bar fails to navigate](#inner-data-storages-navigation-bar-fails-to-navigate)
     - [Region is being set incorrectly when trying to rerun pipeline](#region-is-being-set-incorrectly-when-trying-to-rerun-pipeline)
     - [`PAUSE` and `COMMIT` operations fail for the jobs with an autoscaled disk](#pause-and-commit-operations-fail-for-the-jobs-with-an-autoscaled-disk)
+    - [Runs on Amazon Linux 2023 nodes get no "OOM Logs" task](#runs-on-amazon-linux-2023-nodes-get-no-oom-logs-task)
+    - [Rocky Linux 9, RHEL 9 and Amazon Linux 2023 runs: `curl-minimal` and `coreutils-single` stop the base packages install](#rocky-linux-9-rhel-9-and-amazon-linux-2023-runs-curl-minimal-and-coreutils-single-stop-the-base-packages-install)
+    - [Filebeat of the API and TinyProxy services loads its own index template](#filebeat-of-the-api-and-tinyproxy-services-loads-its-own-index-template)
+    - [Packer node images for Amazon Linux 2023: the commit and the pause run on Python 2, no `lvm2`, failed downloads are ignored](#packer-node-images-for-amazon-linux-2023-the-commit-and-the-pause-run-on-python-2-no-lvm2-failed-downloads-are-ignored)
+    - [The VM monitor does not check the open files on Amazon Linux 2023 nodes and other hosts with systemd 240 or later](#the-vm-monitor-does-not-check-the-open-files-on-amazon-linux-2023-nodes-and-other-hosts-with-systemd-240-or-later)
+    - [Git synchronization: a new GitLab 9 user has to confirm the email](#git-synchronization-a-new-gitlab-9-user-has-to-confirm-the-email)
+    - [Autoscaler keeps a free node for a waiting run that may not get it](#autoscaler-keeps-a-free-node-for-a-waiting-run-that-may-not-get-it)
 
 ***
 
@@ -1896,7 +1906,7 @@ The WebDAV service (`cp-dav`) also moved from CentOS 7 to Rocky Linux 8 and got 
 
 ## Self-contained Python 3.12 distribution
 
-The runs, the node hosts and the platform images install the platform's Python 3.12 distribution, from `tools/python/3/python3.12.tar.gz` of the distribution bucket, into `/usr/local/python3.12` (the AWS node images into `/opt/python3.12`). It is now built from pinned sources by the `Build-Dependencies` workflow (`deploy/dependencies/python3/`), and it needs nothing from the tool image but `glibc` 2.17 or later:
+The runs, the node hosts and the platform images install the platform's Python 3.12 distribution, from `tools/python/3/python3.12.tar.gz` of the distribution bucket, into `/usr/local/python3.12`. It is now built from pinned sources by the `Build-Dependencies` workflow (`deploy/dependencies/python3/`), and it needs nothing from the tool image but `glibc` 2.17 or later:
 
 - CPython 3.12.16 with OpenSSL 3.5, instead of CPython 3.12.0 with OpenSSL 1.1.1, which has had no support since 2023.
 - Its modules carry their own libraries. So `ctypes` (and with it the NFS events observer of a run), `sqlite3`, `readline` and `curses` now work in the images that lack the `libffi.so.6`, `libsqlite3.so.0`, `libreadline.so.6` or `libncursesw.so.5` of the previous build, e.g. Rocky Linux 9, Ubuntu 20.04 and later, and Debian 11 and later.
@@ -2061,6 +2071,36 @@ For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#se
 
 ## Notable Bug fixes
 
+### Nextflow run view: some tasks stay `RUNNING` after the run finishes
+
+[#4785](https://github.com/epam/cloud-pipeline/issues/4785)
+
+Previously, the last task statuses of a Nextflow run were lost when the runtime data sync did not run - e.g. with `evalType` set to `WORKDIR` in the `NF_TASK` entry of the `launch.run.sync.runtime.data` preference. So some tasks stayed `RUNNING` in the **Nextflow** view of a finished run.
+Now, the last statuses are always sent when Nextflow finishes.
+
+### GUI: library versions with security advisories
+
+Previously, the GUI used library versions with published security advisories:
+
+- `ansi_up` 2, which renders the colors of the run logs: cross-site scripting
+- `jquery.terminal` 1.10, the terminal of the **Miew** viewer: cross-site scripting
+- `papaparse` 4, which parses the `CSV`/`TSV` files for their previews and editors: a regular expression denial of service
+- `highlight.js` 9, which highlights the code in Markdown and in the bash command views: a regular expression denial of service in some languages
+- `react-dev-utils` 7 and `@babel/core` 7.2, used to build the GUI: an OS command injection and an arbitrary file read
+
+Now, the GUI uses `ansi_up` 5.2, `jquery.terminal` 2.48, `papaparse` 5.7, `highlight.js` 10.7, `react-dev-utils` 11 and `@babel/core` 7.29. In the run logs:
+
+- the search (**Ctrl+F**) finds a text with `&`, `<` or `>` in it. Before, it found no such text, and a search for `amp`, `lt` or `gt` broke the display of those characters
+- a search for a text with `|` or `\` finds it. Before, such a search could freeze the page or fail
+- the color at the end of a log no longer goes over to the first lines of another log, or of the next update of the same log
+- the bold text is shown in bold. Before, it was shown in a brighter color
+- a hyperlink of the `OSC 8` escape code is shown as a link that opens in a new tab if it is an `http` or `https` one. Of any other hyperlink, only the text is shown
+- an escape code that is not complete at the end of a line, e.g. a hyperlink with no end, is shown as text, with the rest of the line
+
+See details in [11. Manage Runs](../../manual/11_Manage_Runs/11._Manage_Runs.md#console-output).
+
+Also, the GUI checks that the region of an AWS S3 storage is a valid part of a host name before it sends S3 requests there, as the advisory for the AWS SDK for JavaScript v2 recommends.
+
 ### Users export: the names of the date columns depend on the API time zone
 
 [#4739](https://github.com/epam/cloud-pipeline/issues/4739)
@@ -2129,6 +2169,27 @@ Also, a price list that can't be loaded no longer stops the billing service. The
 
 Previously, the installer created a backup worker for the GitLab database (`cp-bkp-worker-cp-gitlab-db`), but the worker image had no backup script for it. So every scheduled run of this worker failed with "Cannot find the backup script for cp-gitlab-db", and the administrators got a failure notification. The GitLab backup of the `cp-bkp-worker-cp-git` worker still included the database.
 In the current version, the worker dumps the GitLab database with `pg_dump`, and copies the dump to the backup storages, as it does for the other services. A failure of `pg_dump` fails the backup, so an empty dump does not replace the good ones.
+
+### System logs: no security event is stored once the `security_log` alias has no write index
+
+Previously, the search ELK curator service (`cp-search-elk-curator`), which sets up the indices of the security events of the **System logs** on start, only checked that something named `security_log` (`CP_SECURITY_LOGS_ELASTIC_PREFIX`) existed. The events are kept in daily indices behind the `security_log` alias, in Elasticsearch or in OpenSearch (`CP_SEARCH_ELK_TYPE`). Former versions of the search ELK service (`cp-search-elk`), which did this setup before, added a new index to that alias on each start. Once the alias pointed to two indices and none of them was the write index, every write of a security event and every daily rollover failed, so no security event was stored, and a restart did not repair it. Also, a security event written before the service had created the alias (e.g. by the API while the service started) created a plain `security_log` index instead. That index was never rolled over, so the cleanup deleted it with all its events once it was older than `CP_SECURITY_LOGS_ROLLOVER_DAYS` days, and the **System logs** did not show its events. And if the first index of the day, `security_log-<date>-000001`, already existed outside the alias, the alias was not created at all.
+Now, on each start, the service checks the alias, in Elasticsearch and in OpenSearch alike, and with the `CP_SEARCH_ELK_AUTH_SECRET` credentials, if they are set:
+
+- if neither the alias nor an index of that name exists, it creates an index of the day as the write index of the alias, e.g. `security_log-<date>-000001`. Indices of that day outside the alias are kept, and the new index takes the number after the highest of them, e.g. `security_log-<date>-000002`
+- if the alias has no write index, its newest index becomes the write index. The other indices stay in the alias with their events, and are deleted after `CP_SECURITY_LOGS_ROLLOVER_DAYS` days, as before
+- if the alias has a single index, with no write index flag, that index becomes its explicit write index
+- if the daily rollover of the write index stopped at an error, e.g. while the alias had no write index, the rollover is resumed. In OpenSearch, that is an index whose rollover failed after all its retries
+- if `security_log` is a plain index, its events are copied to a new index of the alias, with the number after the highest of the day. Once all of them are copied, the alias replaces the plain index, and the plain index is deleted, in one step. The writes are blocked during the copy, so the security events sent at that time are rejected and lost. If the copy fails, e.g. if a field of the plain index has another type, the copy is removed, the plain index keeps all its events and takes the writes again, and the service logs an `[ERROR]` line. The next start tries again
+- if a copy was interrupted, e.g. the service was stopped during the copy, the plain index still has all its events, and the unfinished copy and the write block of the plain index stay until the next start. Elasticsearch or OpenSearch may still run that copy. If the outcome of the copy cannot be checked, e.g. Elasticsearch or OpenSearch answers with an error, the write block is cleared, and the unfinished copy stays until the next start. The next start stops a copy that still runs, removes the unfinished copies of that plain index, of that day or of an earlier one, and copies the events again
+- if two starts of the service run at the same time, e.g. two pods during a rollout, only one of them moves the events: the later start stops and replaces the copy of the earlier one, and the earlier start then leaves the move to it
+- an unfinished copy of another plain index, e.g. of one that was deleted by hand, is kept outside the alias with a `[WARN]` line, as its events may be nowhere else. Its events are still shown in the **System logs**, and it is deleted after `CP_SECURITY_LOGS_ROLLOVER_DAYS` days, as the other indices
+
+Please note:
+
+- the security events that failed to be stored while the alias had no write index are not recovered
+- do not delete a write-blocked `security_log` index by hand: restart the search ELK curator service instead, and it moves the events
+- the moved events of a plain index are kept in the index of the day of the move. So the **System logs** show them only if the period of the filter reaches that day
+
 ### AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias
 
 [#4707](https://github.com/epam/cloud-pipeline/issues/4707)
@@ -2281,3 +2342,59 @@ Previously, `PAUSE` and `COMMIT` operations failed with the `NullPointerExceptio
 
 - In **Groups**/**Roles** membership view, the vertical scrollbar was shown even if there was a plenty of space below the list. Currently, the list size is increased to the pop up size.
 - At the **Billing reports** page, if the whole header menu didn't not fit the screen width - the "discounts" links overflew the regions selector. Currently, row breaks feature is implemeted for this page.
+
+### Runs on Amazon Linux 2023 nodes get no "OOM Logs" task
+
+[#4828](https://github.com/epam/cloud-pipeline/issues/4828)
+
+When the kernel of a node kills a process for lack of memory, the node reporter (`cp-node-reporter`) finds the kill in the kernel log and adds its message to the **OOM Logs** task of the node's run. If `CP_OOM_TAG_RUNS` is `true` in the `cp-config-global` config map, it also tags the run (`PROC_OUT_OF_MEMORY` by default).  
+Previously, the node reporter could not read the kernel log on the nodes that run Amazon Linux 2023, or another Linux that sets `kernel.dmesg_restrict` to `1`. With this setting, reading the kernel log needs the `CAP_SYSLOG` capability, which the node reporter did not have. Its log (`/opt/node-reporter/logs/<node>/oom.log`) had `dmesg: read kernel buffer failed: Operation not permitted` at each check. So the runs on such nodes got no **OOM Logs** task and no tag, even when their processes were killed.  
+Now, the node reporter runs with the `CAP_SYSLOG` capability, and reports the kills on these nodes as on the other nodes. No other capability is added.  
+Also, the node reporter image now sets `CP_PYTHON_PATH`. Since the Python 3 support of `pipe-common`, its `pipe_log` and `pipe_tag` commands run Python from this variable, and without it they failed on every node: no kill got into the **OOM Logs** task, and no run was tagged.  
+Please note: on the nodes with `kernel.dmesg_restrict` set to `1` that already run when the update is applied, the first check also reports the earlier kills that are still in the kernel log, including those of the previous runs on the node. They go to the node's current run, or, if the node has none, to the next run on it.
+
+### Rocky Linux 9, RHEL 9 and Amazon Linux 2023 runs: `curl-minimal` and `coreutils-single` stop the base packages install
+
+Previously, at the start of a run, the launch script installed the base packages that the image did not have (`git`, `curl`, `wget`, `fuse`, `tzdata`, `acl` and `coreutils`) with one `yum` call. The images of Rocky Linux 9, Red Hat UBI 9 and Amazon Linux 2023 have the `curl-minimal` package instead of `curl`. `yum` cannot install `curl` next to it, so the whole call failed, and the run did not get `git`, `wget` and `fuse` either. On Amazon Linux 2023, the call also failed on `coreutils`, as the image has `coreutils-single`: the launch script skipped `coreutils` next to `coreutils-single` on Rocky Linux and RHEL only.  
+Now, on any RPM-based image, `curl` is not installed if the image has `curl-minimal`, and `coreutils` is not installed if the image has `coreutils-single`. This applies to `curl` and `coreutils` in `CP_CAP_EXTRA_PKG` and `CP_CAP_EXTRA_PKG_RHEL` too, and with `CP_IGNORE_INSTALLED_PACKAGES`. The run log gets an `[INFO]` line for each package that is skipped.  
+The launch script does not replace `curl-minimal`, and its `curl` supports the `file`, `ftp(s)` and `http(s)` protocols only. A tool that needs another protocol, e.g. `sftp`, `scp` or `ldap`, needs an image with the full `curl`.
+
+### Filebeat of the API and TinyProxy services loads its own index template
+
+Previously, the Filebeat configs of the API service (`cp-api-srv`) and of the TinyProxy service (`cp-tinyproxy`), for Elasticsearch and for OpenSearch, had a misspelled `setup.tempalte.enabled: false` setting. Filebeat ignored it. So, on start, it loaded its own index template `security_log_template`, for the `security_log*` indices, if the search cluster did not have a template of this name yet: e.g. on a new cluster, before the search service put the platform's templates. If Filebeat then created the `security_log` index, the index got the Filebeat field mappings. With OpenSearch, such an index rejected the security log events of the API and TinyProxy services: the Filebeat template maps `user` as an object, and the events have `user` as text.  
+Now, the setting is spelled `setup.template.enabled`, as in the Filebeat configs of the EDGE service, and Filebeat does not load a template. The security logs go to the `security_log` index as before.
+
+### Packer node images for Amazon Linux 2023: the commit and the pause run on Python 2, no `lvm2`, failed downloads are ignored
+
+Previously, the `deploy/infra/aws/packer` scripts, which build the Amazon Linux 2023 images for the AWS nodes:
+
+- installed the platform's Python 3.12 into `/opt/python3.12`. The commit and the pause of a run look for it in `/usr/local/python3.12` on the node, and use Python 2 when it is not there. So on the nodes of these images, the commit and the pause ran on Python 2.
+- did not install `lvm2`. When a node has more than one unmounted disk, e.g. the larger `c5d`, `m5d` and `r5d` types, which have several local NVMe disks and get no EBS data volume, the user data joins them into one volume with `pvcreate`, `vgcreate` and `lvcreate`. Without `lvm2`, this failed, and `/ebs` stayed on the XFS root volume. With the default `btrfs` file system type, the user data still set the `btrfs` storage driver for Docker in `/ebs/docker`, so Docker could not start, and the node did not join the cluster. Only with `ext4` did the node start, with `/ebs` on the root volume.
+- went on after a failed download of `btrfs`, Python 2, Python 3.12 or `jq`, and created the image anyway: e.g. with an empty `/usr/bin/btrfs` and no `mkfs.btrfs`. Also, they replaced the `jq` package of the image with a downloaded `jq` 1.6, and left the Nvidia `rpm` packages in `/opt` of the `gpu` image.
+
+Now:
+
+- Python 3.12 is installed into `/usr/local/python3.12`, as in the other AWS node images, so the commit and the pause use it. Python 2 (Miniconda2) is still installed.
+- `lvm2` is installed.
+- each download goes into a temporary folder first. A failed download, unpack or check of the result stops the build, so no image is created. `jq` is the package of Amazon Linux 2023, and the Nvidia files are removed after the install.
+
+`deploy/infra/aws/packer/README.md` now also lists the image contents and the IAM permissions that the build needs.
+
+### The VM monitor does not check the open files on Amazon Linux 2023 nodes and other hosts with systemd 240 or later
+
+If `CP_VM_MONITOR_NODE_ENABLE` is `true`, the VM monitor service (`cp-vm-monitor`) checks the open files on the cluster nodes with the `cloud-pipeline/cp-node-monitor=true` label (`CP_VM_MONITOR_NODE_MONITORING_NODE_LABEL`). The platform does not set this label: an administrator sets it on the nodes to check. Every minute by default (`CP_VM_MONITOR_NODE_CRON`), the service gets the number of open files and their limit from the node reporter (`cp-node-reporter`) of each such node: for the whole host, and for the processes of `CP_NODE_REPORTER_STATS_PROCS_INCLUDE` (`dockerd`, `docker-containerd` and `containerd` by default). If a number is more than the threshold percent of its hard limit (`CP_VM_MONITOR_NODE_THRESHOLDS`, `{NOFILE:60}` by default), the service sends the "Nodes exceed thresholds" email. The percent is rounded down first: with the default threshold, the email starts at 61%.  
+Previously, the VM monitor read these numbers as 32-bit integers. For the whole host, the node reporter sends `fs.file-max` as the limit. systemd 240 and later set it to 9223372036854775807, e.g. on Amazon Linux 2023 and Rocky Linux 9. The VM monitor could not read the answer of such a node at all, and logged `Failed to resolve stats from <pod> for <node>.` at each check. So it checked no process of these nodes, and sent no email for them.  
+Now, the VM monitor reads these numbers as 64-bit integers, and checks these nodes as the other nodes.  
+Please note: with this limit, the percent of the whole host is always 0. So on these nodes, only the processes can exceed the threshold.
+### Git synchronization: a new GitLab 9 user has to confirm the email
+
+Previously, the Git synchronization service (`cp-git-sync`) created a GitLab user with the `skip_confirmation` parameter of the GitLab API v4, also when it called the API v3. The API v3 does not know this parameter. So on the API v3, a new user had to confirm the email. GitLab 9 uses the API v3: the installer leaves the **`git.gitlab.api.version`** preference at its default `v3` there. Also, if **`git.gitlab.api.version`** had no value, the synchronization called GitLab at a wrong path, e.g. `/api//users` or `/api/None/users`, and skipped the pipelines of that GitLab server.  
+Now, the synchronization creates a user with `confirm=no` on the API v3, and with `skip_confirmation` on the API v4, as before. If **`git.gitlab.api.version`** has no value, the synchronization calls the API v3, the default of the preference. See details in [12.10. Manage system-level settings](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#git).
+### Autoscaler keeps a free node for a waiting run that may not get it
+
+Previously, the autoscaler kept a free node in the cluster when the node matched the instance type, disk and other settings of a waiting run. It did so even for a run that could not get a free node: a run with the `CP_CREATE_NEW_NODE` or `CP_CAP_DEDICATED_INSTANCE` parameter set to `true`, a Windows run, a run whose image config in `cluster.networks.config` has an `IamInstanceProfile`, or any run while `cluster.disable.reassign` is `true`. When the cluster was above `cluster.max.size`, the run waited for room, and such a node stayed up, and was paid for, until another node left the cluster.  
+Now, the autoscaler keeps no free node for such a run. The node expires as any other free node.
+
+When the cluster has reached `cluster.max.size`, and `cluster.kill.not.matching.nodes` is `true`, the autoscaler scales down a free node that the waiting run does not take, to make room for a new node. Previously, it could pick a free node of a hot node pool or of a local cluster. Such a node has no run ID, so the autoscaler failed to scale it down, and the waiting run was not processed until the next check, where the same could happen again. Now, these nodes are not scaled down this way: the pools keep their nodes.
+
+Also, a run whose parameter list or tags are not set is handled as a run with none. Previously, the autoscaler failed on such a run with an error in the API log. With no parameter list, each check of the autoscaler stopped there, so no waiting run got a node, and no free node was scaled down. With no tags, a waiting run did not get the `NODE_PENDING` tag when the cluster was full.

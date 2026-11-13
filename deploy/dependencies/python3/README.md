@@ -1,8 +1,8 @@
 # Python 3.12 distribution
 
 Builds `python3.12.tar.gz`: the Python that the runs, the commit and pause scripts on the node hosts and the
-`cp-api-srv`, `cp-dav` and `cp-edge` images install into `/usr/local/python3.12`, and the AWS node images into
-`/opt/python3.12`. It unpacks to `python3.12/`, with `bin/python3.12` and `bin/pip3.12`.
+`cp-api-srv`, `cp-dav` and `cp-edge` images install into `/usr/local/python3.12`. It unpacks to `python3.12/`,
+with `bin/python3.12` and `bin/pip3.12`.
 
 It carries its own libraries, so its modules load in any tool image with `glibc` 2.17 or later (CentOS 7
 and later), whatever the image has installed:

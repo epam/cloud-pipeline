@@ -46,6 +46,8 @@ The following AMIs shall be white-listed for the AWS Account:
 * CPU-only: `ami-0383ffd4e3eea1784`
 * GPU/CUDA: `ami-0b1141f33ec5cf631`
 
+Amazon Linux 2023 images for the nodes can be built in the account instead, with the Packer templates in `deploy/infra/aws/packer` of the repository (see its `README.md`). Such an image needs the `init_multicloud_v1.15.4_al2023.sh` user data, which installs Docker and the kubelet when a node starts.
+
 ## VPC S3 Endpoint
 
 A new VPC endpoint shall be created for the S3 service. 

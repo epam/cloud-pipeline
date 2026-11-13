@@ -199,7 +199,7 @@ public class NodeMonitor implements Monitor {
                 .map(typeStats -> typeStats.get(type))
                 .map(NodeReporterStatsValue::getValue)
                 .filter(it -> it >= 0)
-                .map(Integer::doubleValue);
+                .map(Long::doubleValue);
     }
 
     private Optional<Double> getHardLimit(final NodeReporterProcessStats process, final NodeReporterStatsType type) {
@@ -208,7 +208,7 @@ public class NodeMonitor implements Monitor {
                 .map(typeStats -> typeStats.get(type))
                 .map(NodeReporterStatsLimit::getHardLimit)
                 .filter(it -> it > 0)
-                .map(Integer::doubleValue);
+                .map(Long::doubleValue);
     }
 
     private Optional<NodeThresholdEvent> toEvent(final NodeReporterProcessStats process,

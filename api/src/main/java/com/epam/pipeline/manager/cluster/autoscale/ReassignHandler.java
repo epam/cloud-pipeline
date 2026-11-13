@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -34,6 +34,8 @@ import com.epam.pipeline.manager.cluster.autoscale.filter.PoolFilterHandler;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunStatusManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.utils.CommonUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.extern.slf4j.Slf4j;
@@ -68,6 +70,7 @@ public class ReassignHandler {
     private final MetadataManager metadataManager;
     private final IAMProfileVerifier iamProfileVerifier;
     private final MessageHelper messageHelper;
+    private final PreferenceManager preferenceManager;
 
     public ReassignHandler(final AutoscalerService autoscalerService,
                            final CloudFacade cloudFacade,
@@ -76,7 +79,8 @@ public class ReassignHandler {
                            final MetadataManager metadataManager,
                            final IAMProfileVerifier iamProfileVerifier,
                            final RunStatusManager runStatusManager,
-                           final MessageHelper messageHelper) {
+                           final MessageHelper messageHelper,
+                           final PreferenceManager preferenceManager) {
         this.autoscalerService = autoscalerService;
         this.cloudFacade = cloudFacade;
         this.pipelineRunManager = pipelineRunManager;
@@ -85,6 +89,7 @@ public class ReassignHandler {
         this.iamProfileVerifier = iamProfileVerifier;
         this.runStatusManager = runStatusManager;
         this.messageHelper = messageHelper;
+        this.preferenceManager = preferenceManager;
     }
 
     public boolean tryReassignNode(final KubernetesClient client,
@@ -95,7 +100,7 @@ public class ReassignHandler {
                                    final InstanceRequest requiredInstance,
                                    final List<String> freeNodes) {
         final Optional<PipelineRun> pipelineRun = pipelineRunManager.findRun(longId);
-        if (!reassignAllowed(pipelineRun)) {
+        if (!pipelineRun.map(this::isReassignAllowed).orElse(true)) {
             log.debug("Reassign is not allowed for run '{}'", runId);
             return false;
         }
@@ -138,7 +143,7 @@ public class ReassignHandler {
      * falls through to a generic on-demand or spot node when this method cannot place it.
      */
     public Optional<Long> requiredPoolId(final PipelineRun run) {
-        return run.getPipelineRunParameters().stream()
+        return ListUtils.emptyIfNull(run.getPipelineRunParameters()).stream()
                 .filter(parameter -> Objects.equals(parameter.getName(), CP_CAP_POOL_ID))
                 .map(PipelineRunParameter::getValue)
                 .filter(StringUtils::isNotBlank)
@@ -197,7 +202,7 @@ public class ReassignHandler {
      */
     private Optional<NodePool> requiredPoolOf(final RunningInstance instance, final Optional<Long> requiredPoolId) {
         return Optional.ofNullable(instance.getPool())
-                .filter(pool -> requiredPoolId.map(pool.getId()::equals).orElse(false));
+                .filter(pool -> requiredPoolId.map(required -> required.equals(pool.getId())).orElse(false));
     }
 
     /**
@@ -216,7 +221,8 @@ public class ReassignHandler {
     }
 
     private boolean matchesRequiredPool(final Long poolId, final Optional<Long> requiredPoolId) {
-        return requiredPoolId.map(poolId::equals).orElse(true);
+        // the required id is the receiver: a pool without an id is not the pool a run named
+        return requiredPoolId.map(required -> required.equals(poolId)).orElse(true);
     }
 
     /**
@@ -343,26 +349,30 @@ public class ReassignHandler {
         return cloudFacade.reassignNode(Long.valueOf(previousNodeId), runId, tags);
     }
 
-    private boolean reassignAllowed(final Optional<PipelineRun> pipelineRun) {
-        final boolean isWindowsRun = pipelineRun
-            .filter(run -> KubernetesConstants.WINDOWS.equals(run.getPlatform()))
-            .isPresent();
-        final boolean requiresNewNode = pipelineRun
-            .flatMap(run -> run.getPipelineRunParameters().stream()
-                .filter(parameter -> Objects.equals(parameter.getName(), CP_CREATE_NEW_NODE)
-                                     && isValueTrue(parameter.getValue()))
-                .findAny())
-            .isPresent();
-        final boolean dedicatedNode = pipelineRun
-                .flatMap(run -> run.getPipelineRunParameters().stream()
-                        .filter(parameter -> Objects.equals(parameter.getName(), CP_CAP_DEDICATED_INSTANCE)
-                                && isValueTrue(parameter.getValue()))
-                        .findAny())
-                .isPresent();
-        final boolean isMatchRestrictedIam = pipelineRun
-                .filter(iamProfileVerifier::isImageRestricted)
-                .isPresent();
-        return !(isWindowsRun || requiresNewNode || dedicatedNode || isMatchRestrictedIam);
+    /**
+     * Checks whether a run may get a free node of an earlier run.
+     *
+     * @param run the run that waits for a node
+     * @return {@code false} if {@code cluster.disable.reassign} is {@code true}, if it is a Windows run,
+     * if it has {@code CP_CREATE_NEW_NODE} or {@code CP_CAP_DEDICATED_INSTANCE} set to {@code true},
+     * or if it matches an image config with an {@code IamInstanceProfile} in {@code cluster.networks.config}
+     */
+    public boolean isReassignAllowed(final PipelineRun run) {
+        return !isReassignDisabled()
+                && !KubernetesConstants.WINDOWS.equals(run.getPlatform())
+                && !hasTrueParameter(run, CP_CREATE_NEW_NODE)
+                && !hasTrueParameter(run, CP_CAP_DEDICATED_INSTANCE)
+                && !iamProfileVerifier.isImageRestricted(run);
+    }
+
+    private boolean isReassignDisabled() {
+        return BooleanUtils.isTrue(preferenceManager.getPreference(SystemPreferences.CLUSTER_DISABLE_REASSIGN));
+    }
+
+    private boolean hasTrueParameter(final PipelineRun run, final String name) {
+        return ListUtils.emptyIfNull(run.getPipelineRunParameters()).stream()
+                .anyMatch(parameter -> Objects.equals(parameter.getName(), name)
+                        && isValueTrue(parameter.getValue()));
     }
 
     private boolean isValueTrue(final String value) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -87,6 +87,7 @@ import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.CP_N
 import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE;
 import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODEUP_LIMIT_EXCEEDED_EXIT_CODE;
 import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODEUP_SPOT_FAILED_EXIT_CODE;
+import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODE_LOCAL_PREFIX;
 import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODE_POOL_PREFIX;
 
 @Service
@@ -386,6 +387,7 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
 
                     List<String> nonMatchingFreeNodes =
                             freeNodes.stream().filter(id -> !reassignedNodes.contains(id))
+                                    .filter(this::isRunNode)
                                     .collect(Collectors.toList());
 
                     if (!CollectionUtils.isEmpty(nonMatchingFreeNodes)) {
@@ -418,8 +420,17 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
             }
         }
 
+        /**
+         * A pool node or a local node is not a node of a run: it has no run ID to scale it down by.
+         * The pools keep their nodes, and the local nodes are never scaled down.
+         */
+        private boolean isRunNode(final String nodeId) {
+            return !nodeId.startsWith(NODE_POOL_PREFIX) && !nodeId.startsWith(NODE_LOCAL_PREFIX);
+        }
+
         private void labelPendingRun(final PipelineRun run) {
-            final Map<String, String> tags = MapUtils.emptyIfNull(run.getTags());
+            // a copy: for a run with null tags, emptyIfNull gives an immutable map
+            final Map<String, String> tags = new HashMap<>(MapUtils.emptyIfNull(run.getTags()));
             if (!tags.containsKey(NODE_PENDING_TAG)) {
                 tags.put(NODE_PENDING_TAG, KubernetesConstants.TRUE_LABEL_VALUE);
                 pipelineRunManager.updateTags(run.getId(), new TagsVO(tags), false);
@@ -427,7 +438,8 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
         }
 
         private void unLabelPendingRun(final PipelineRun run) {
-            final Map<String, String> tags = MapUtils.emptyIfNull(run.getTags());
+            // a copy: for a run with null tags, emptyIfNull gives an immutable map
+            final Map<String, String> tags = new HashMap<>(MapUtils.emptyIfNull(run.getTags()));
             final boolean hadNodePending = tags.remove(NODE_PENDING_TAG) != null;
             final boolean hadPoolPending = tags.remove(POOL_PENDING_TAG) != null;
             if (hadNodePending || hadPoolPending) {
@@ -624,7 +636,7 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
         }
 
         private Long getParameterValue(List<PipelineRunParameter> runParameters, String paramName, Long defaultValue) {
-            Optional<PipelineRunParameter> value = runParameters.stream()
+            Optional<PipelineRunParameter> value = ListUtils.emptyIfNull(runParameters).stream()
                     .filter(parameter -> parameter.getName().equals(paramName)).findAny();
             if (value.isPresent() && NumberUtils.isDigits(value.get().getValue())) {
                 return Long.parseLong(value.get().getValue());
