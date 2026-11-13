@@ -303,7 +303,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .ensure(CONTENT_PREVIEW, text("InitializeNode"))
                 .parent()
                 .moveToSearchResultItemWithText(pipelineWithRun(), LogAO::new)
-                .ensure(LogAO.runId(), text(String.format("#%s", testRunID)));
+                .ensure(LogAO.runId(), matchText(String.format("#%s\\b", testRunID)));
     }
 
     @Test(dependsOnMethods = {"searchForPipelineWithRuns"})

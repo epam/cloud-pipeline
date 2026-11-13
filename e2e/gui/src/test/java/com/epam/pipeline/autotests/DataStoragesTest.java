@@ -356,7 +356,8 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
             .ensureVisible(SELECTION_ACTIONS)
             .openSelectionActions()
             .ensureVisible(REMOVE_ALL, CLEAR_SELECTION)
-            .ensure(SELECT_ALL, not(visible));
+            // the page keeps the Select page button, disabled while the whole page is selected
+            .ensure(SELECT_ALL, disabled);
     }
 
     @Test(dependsOnMethods = "validateSelectPageButton")

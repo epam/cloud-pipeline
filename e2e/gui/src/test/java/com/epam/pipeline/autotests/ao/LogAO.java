@@ -483,13 +483,19 @@ public class LogAO implements AccessObject<LogAO> {
         throw new AssertionError("Valid parameter value is absent.");
     }
 
+    /**
+     * Checks that the run has no parameter with this name. The page shows the Parameters panel, when the run has
+     * parameters, with the other panels of the run info, so this waits for the Instance panel first. A collapsed panel
+     * that was never expanded renders no rows (rc-collapse), so the Parameters panel is expanded before the check.
+     */
     public LogAO ensureParameterIsNotPresent(String name) {
-        if (!get(PARAMETERS).exists()) {
-            return this;
+        get(INSTANCE).shouldBe(visible);
+        if (get(PARAMETERS).exists()) {
+            expandTab(PARAMETERS);
         }
         $(byXpath(format(
                 ".//tr[.//td[contains(@class, 'log__task-parameter-name') " +
-                        "and contains(.//text(), '%s')]]", name))).shouldNotBe(visible);
+                        "and contains(.//text(), '%s')]]", name))).shouldNot(exist);
         return this;
     }
 

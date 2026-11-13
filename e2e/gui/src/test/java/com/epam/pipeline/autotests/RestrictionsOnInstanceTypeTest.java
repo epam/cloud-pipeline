@@ -22,6 +22,7 @@ import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PlatformApi;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import com.epam.pipeline.autotests.utils.listener.ConditionalTestAnalyzer;
@@ -32,9 +33,9 @@ import org.testng.annotations.Test;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
@@ -45,7 +46,7 @@ public class RestrictionsOnInstanceTypeTest extends AbstractBfxPipelineTest
 
     // The drop-down lists of instance types show only the types that cluster.allowed.instance.types (and
     // cluster.allowed.instance.types.docker for a tool) allow: the family of the default instance type of the tests
-    // is shown, and a family that neither preference allows is not
+    // is shown, and a family of which the platform allows no type is not
     private static final List<String> CANDIDATE_FAMILIES =
             Arrays.asList("m6i", "c6i", "r6i", "m5", "c5", "r4", "t3", "t2", "m4", "c4");
     private final String instanceFamilyName = C.DEFAULT_INSTANCE_FAMILY_NAME;
@@ -96,18 +97,21 @@ public class RestrictionsOnInstanceTypeTest extends AbstractBfxPipelineTest
                .checkDropDownOptions(INSTANCE_TYPE, instanceFamilyName, instanceFamilyNameOld);
        }
 
+    /**
+     * A family of which the platform allows no instance type, neither for pipelines nor for tools: the API lists the
+     * instance types allowed for the admin (cluster/instance/allowed), and a family is allowed if one of them is of it.
+     */
     private static String notAllowedFamily() {
-        final List<Pattern> allowed = Stream.of("cluster.allowed.instance.types", "cluster.allowed.instance.types.docker")
-                .map(name -> PlatformApi.get("preferences/" + name).path("value").asText(""))
-                .flatMap(value -> Arrays.stream(value.split(",")))
-                .map(String::trim)
-                .filter(mask -> !mask.isEmpty())
-                .map(mask -> Pattern.compile(Pattern.quote(mask).replace("*", "\\E.*\\Q")))
+        final JsonNode allowed = PlatformApi.get("cluster/instance/allowed");
+        final List<String> types = Stream.of("cluster.allowed.instance.types", "cluster.allowed.instance.types.docker")
+                .flatMap(list -> StreamSupport.stream(allowed.path(list).spliterator(), false))
+                .map(type -> type.path("name").asText(""))
+                .filter(name -> !name.isEmpty())
                 .collect(Collectors.toList());
         return CANDIDATE_FAMILIES.stream()
-                .filter(family -> allowed.stream().noneMatch(mask -> mask.matcher(family + ".xlarge").matches()))
+                .filter(family -> types.stream().noneMatch(name -> name.startsWith(family + ".")))
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("The allowed instance types allow all of "
+                .orElseThrow(() -> new IllegalStateException("The platform allows instance types of all of "
                         + CANDIDATE_FAMILIES + ": no family to check the restriction with"));
     }
 }

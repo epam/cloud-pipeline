@@ -212,7 +212,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
         runsMenu()
             .activeRuns()
             .showLog(runId)
-            .ensure(runId(), have(text(String.format("#%s", runId))))
+            .ensure(runId(), have(matchText(String.format("#%s\\b", runId))))
             .ensure(pipelineLink(), have(textMatches(String.format("%s \\(draft-.{8}\\)", pipeline100))))
             .ensure(detailsWithLabel("Owner"), have(text(getUserNameByAccountLogin(C.LOGIN))))
             .waitForCompletion()
