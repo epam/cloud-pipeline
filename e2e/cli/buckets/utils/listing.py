@@ -144,11 +144,11 @@ class FileModel(object):
 
 def parse_pipe_listing(lines, show_details=True):
     if show_details:
-        return map(FileModel.parse_from_pipe_line, lines)
+        return list(map(FileModel.parse_from_pipe_line, lines))
     else:
         result = []
         for line in lines:
-            result.extend(map(FileModel.parse_from_pipe_short, line.split()))
+            result.extend(list(map(FileModel.parse_from_pipe_short, line.split())))
         return result
 
 

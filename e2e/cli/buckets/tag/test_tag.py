@@ -49,7 +49,7 @@ class TestTagging(object):
         except BaseException as e:
             if folder_id is not None:
                 manager.delete(folder_id)
-            raise RuntimeError(e.message)
+            raise RuntimeError(str(e))
 
     @classmethod
     def teardown_class(cls):
@@ -76,9 +76,9 @@ class TestTagging(object):
         try:
             self.assert_tag_commands(path)
         except AssertionError as e:
-            raise AssertionError(ERROR_MESSAGE + test_case, e.message)
+            raise AssertionError(ERROR_MESSAGE + test_case, str(e))
         except BaseException as e:
-            raise RuntimeError(ERROR_MESSAGE + test_case, e.message)
+            raise RuntimeError(ERROR_MESSAGE + test_case, str(e))
 
     """
           1. epam test case
@@ -94,9 +94,9 @@ class TestTagging(object):
         try:
             self.assert_tag_commands(path, token=self.owner_token)
         except AssertionError as e:
-            raise AssertionError(ERROR_MESSAGE + test_case, e.message)
+            raise AssertionError(ERROR_MESSAGE + test_case, str(e))
         except BaseException as e:
-            raise RuntimeError(ERROR_MESSAGE + test_case, e.message)
+            raise RuntimeError(ERROR_MESSAGE + test_case, str(e))
 
     """
         1. epam test case
@@ -114,9 +114,9 @@ class TestTagging(object):
         try:
             self.assert_tag_command_version(path)
         except AssertionError as e:
-             raise AssertionError(ERROR_MESSAGE + test_case, e.message)
+             raise AssertionError(ERROR_MESSAGE + test_case, str(e))
         except BaseException as e:
-            raise RuntimeError(ERROR_MESSAGE + test_case, e.message)
+            raise RuntimeError(ERROR_MESSAGE + test_case, str(e))
 
     """
         1. epam test case
@@ -134,9 +134,9 @@ class TestTagging(object):
         try:
             self.assert_tag_command_version(path, token=self.owner_token)
         except AssertionError as e:
-            raise AssertionError(ERROR_MESSAGE + test_case, e.message)
+            raise AssertionError(ERROR_MESSAGE + test_case, str(e))
         except BaseException as e:
-            raise RuntimeError(ERROR_MESSAGE + test_case, e.message)
+            raise RuntimeError(ERROR_MESSAGE + test_case, str(e))
 
     """
          1. path
@@ -159,9 +159,9 @@ class TestTagging(object):
             stderr = delete_storage_tags(path, [self.tag1[0]], expected_status=1)[1]
             assert_error_message_is_present(stderr, message)
         except AssertionError as e:
-            raise AssertionError(ERROR_MESSAGE + test_case, e.message)
+            raise AssertionError(ERROR_MESSAGE + test_case, str(e))
         except BaseException as e:
-            raise RuntimeError(ERROR_MESSAGE + test_case, e.message)
+            raise RuntimeError(ERROR_MESSAGE + test_case, str(e))
 
     def test_delete_non_existing_tag(self):
         test_case = "epmcmbibpc-1013"
@@ -176,9 +176,9 @@ class TestTagging(object):
             assert_tags_listing(self.bucket, path, [self.tag1])
             pipe_storage_rm(path, args=self.rm_arguments())
         except AssertionError as e:
-            raise AssertionError(ERROR_MESSAGE + test_case, e.message)
+            raise AssertionError(ERROR_MESSAGE + test_case, str(e))
         except BaseException as e:
-            raise RuntimeError(ERROR_MESSAGE + test_case, e.message)
+            raise RuntimeError(ERROR_MESSAGE + test_case, str(e))
 
     def test_set_wrong_format(self):
         test_case = "epmcmbibpc-1012"
@@ -189,9 +189,9 @@ class TestTagging(object):
             assert_error_message_is_present(stderr, 'Tags must be specified as KEY=VALUE pair')
             pipe_storage_rm(path, args=(self.rm_arguments()))
         except AssertionError as e:
-            raise AssertionError(ERROR_MESSAGE + test_case, e.message)
+            raise AssertionError(ERROR_MESSAGE + test_case, str(e))
         except BaseException as e:
-            raise RuntimeError(ERROR_MESSAGE + test_case, e.message)
+            raise RuntimeError(ERROR_MESSAGE + test_case, str(e))
 
     def assert_tag_command_version(self, path, token=None):
         pipe_storage_cp(self.test_file, path, force=True)

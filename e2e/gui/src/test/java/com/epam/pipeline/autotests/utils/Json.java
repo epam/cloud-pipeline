@@ -15,13 +15,17 @@
  */
 package com.epam.pipeline.autotests.utils;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
+import java.util.stream.StreamSupport;
 
 import static com.codeborne.selenide.Selenide.screenshot;
 
@@ -62,6 +66,34 @@ public interface Json {
             final ConfigurationProfile[] profiles = stringToProfiles(code);
             final ConfigurationProfile[] edited = action.apply(profiles);
             return profilesToString(edited);
+        };
+    }
+
+    /**
+     * Edits the "configuration" object of the profile with the given name and keeps every other key
+     * of the file as it is, including keys that {@link ConfigurationDetails} does not know.
+     */
+    static UnaryOperator<String> editingConfiguration(final String profileName,
+                                                      final Consumer<ObjectNode> action) {
+        return code -> {
+            final ObjectMapper mapper = new ObjectMapper();
+            try {
+                final JsonNode profiles = mapper.readTree(code);
+                final ObjectNode configuration = StreamSupport.stream(profiles.spliterator(), false)
+                        .filter(profile -> Objects.equals(profile.path("name").asText(), profileName))
+                        .findFirst()
+                        .map(profile -> (ObjectNode) profile.get("configuration"))
+                        .orElseThrow(() -> {
+                            screenshot(Json.class.getSimpleName().toLowerCase());
+                            return new NoSuchElementException(String.format(
+                                "Supposed configuration profile with name %s is not present.", profileName
+                            ));
+                        });
+                action.accept(configuration);
+                return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(profiles);
+            } catch (IOException exception) {
+                throw new RuntimeException(exception);
+            }
         };
     }
 }

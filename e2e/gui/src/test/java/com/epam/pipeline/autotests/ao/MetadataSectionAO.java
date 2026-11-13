@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,12 @@ import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import java.util.Arrays;
 import java.util.Map;
 
+import static com.codeborne.selenide.CollectionCondition.size;
+import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.enabled;
+import static com.codeborne.selenide.Condition.exactText;
+import static com.codeborne.selenide.Condition.have;
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
@@ -32,20 +37,28 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Primitive.VALUE_FIELD;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.time.Duration.ofMillis;
+import static org.openqa.selenium.By.className;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> {
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
             entry(ADD_KEY, $(byId("add-key-button"))),
             entry(REMOVE_ALL_KEYS, $(byId("remove-all-keys-button"))),
             entry(ENLARGE, $(PipelineSelectors.buttonByIconClass("anticon-arrows-alt"))),
-            entry(FILE_PREVIEW, $(byId("file-preview-container")).find("textarea"))
+            entry(FILE_PREVIEW, $(byId("file-preview-container")).find("textarea")),
+            entry(FILE_SYSTEM_ACCESS, $(byId("value-column-dav-mount")).$(byXpath(".//span"))),
+            entry(DISABLE, $(byClassName("equest-dav-access__disable-button"))),
+            entry(INFORMATION_ICON, $(byClassName("anticon-info-circle")))
     );
 
     private final String keyElementId = "key-column-%s";
     private final String valueElementId = "value-column-%s";
     private final String deleteButtonId = "delete-metadata-key-%s-button";
-    private final String keyFieldId = "metadata__key-row";
+    private final String keyFieldId = "cp-metadata-item-row";
 
     public MetadataSectionAO(AccessObject parentAO) {
         super(parentAO);
@@ -105,8 +118,15 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
         return this;
     }
 
+    public MetadataSectionAO assertKeyWithExactValueIsPresent(final String key, final String value) {
+        $(byId(String.format(keyElementId, key))).shouldBe(visible).shouldHave(exactText(key));
+        $(byId(String.format(valueElementId, key))).shouldBe(visible).shouldHave(exactText(value));
+        return this;
+    }
+
     public MetadataSectionAO assertNumberOfKeysIs(int expectedNumberOfKeys) {
-        $$(byClassName(keyFieldId)).shouldHaveSize(expectedNumberOfKeys);
+        $$(byClassName(keyFieldId)).filter(have(cssClass("key")))
+                .filter(not(have(cssClass("read-only")))).shouldHave(size(expectedNumberOfKeys));
         return this;
     }
 
@@ -115,13 +135,24 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
         return this;
     }
 
+    /**
+     * Checks that the content of the file preview is a part of the file only: it has less characters than the file.
+     */
+    public MetadataSectionAO assertFilePreviewIsShorterThan(final int length) {
+        final String preview = get(FILE_PREVIEW).shouldBe(visible).getValue();
+        assertNotNull(preview, "The file preview has no value");
+        assertTrue(preview.length() < length, String.format(
+                "The file preview has %d characters, expected less than %d", preview.length(), length));
+        return this;
+    }
+
     public MetadataSectionAO ensureMetadataSectionContainsText(String text) {
-        $(byCssSelector(".Pane.horizontal.Pane1")).shouldHave(text(text));
+        $(byId("pipelines-library-content")).shouldHave(text(text));
         return this;
     }
 
     public MetadataSectionAO ensureMetadataSectionNotContainText(String text) {
-        $(byCssSelector(".Pane.horizontal.Pane1")).shouldNotHave(text(text));
+        $(byId("pipelines-library-content")).shouldNotHave(text(text));
         return this;
     }
 
@@ -135,12 +166,24 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataKeyAO selectKey(final String key) {
-        final SelenideElement keyRow = $(byId(String.format(keyElementId, key))).closest(".metadata__key-row");
+        final SelenideElement keyRow = $(byId(String.format(keyElementId, key))).closest(".cp-metadata-item-row");
         return new MetadataKeyAO(
                 keyRow,
-                keyRow.find(byXpath("following-sibling::*[contains(@class, 'metadata__value-row')]")),
+                keyRow.find(byXpath("following-sibling::*[contains(@class, 'cp-metadata-item-row')]")),
                 this
         );
+    }
+
+    public MetadataSectionAO requestFileSystemAccess() {
+        click(FILE_SYSTEM_ACCESS);
+        return this;
+    }
+
+    public MetadataSectionAO disableFileSystemAccessIfNeeded() {
+        if (get(DISABLE).isDisplayed()) {
+            click(DISABLE);
+        }
+        return this;
     }
 
     @Override

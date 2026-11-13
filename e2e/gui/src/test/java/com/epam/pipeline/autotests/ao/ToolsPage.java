@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import static com.codeborne.selenide.CollectionCondition.size;
+import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
@@ -43,11 +45,11 @@ public class ToolsPage implements Page<ToolsPage> {
         final Entry registriesList = entry(REGISTRIES_LIST, $(PipelineSelectors.visible(byClassName("tools__navigation-dropdown-container"))));
         final Entry groupsList = entry(GROUPS_LIST, $(PipelineSelectors.visible(byClassName("tools__navigation-dropdown-container"))));
         final Entry metadata = entry(SHOW_METADATA, header.getElement().find(byId("show-metadata-button")));
-        final Entry settings = entry(SETTINGS, header.getElement().find(byClassName("tools__current-folder-actions")).find(byClassName("ant-dropdown-trigger")));
-        final Entry registrySettings = entry(REGISTRY_SETTINGS, $(PipelineSelectors.visible(byText("Registry"))).closest(".tools__actions-sub-menu"));
+        final Entry settings = entry(SETTINGS, header.getElement().find(byClassName("tools__current-folder-actions")).find(byClassName("anticon-setting")).closest(".ant-btn-sm"));
+        final Entry registrySettings = entry(REGISTRY_SETTINGS, $(PipelineSelectors.visible(byText("Registry"))).closest(".rc-menu-submenu"));
         final Entry createRegistry = entry(CREATE_REGISTRY, registrySettings.getElement().find(byText("Create")));
         final Entry editRegistry = entry(EDIT_REGISTRY, registrySettings.getElement().find(byText("Edit")));
-        final Entry groupSettings = entry(GROUP_SETTINGS, $(PipelineSelectors.visible(byText("Group"))).closest(".tools__actions-sub-menu"));
+        final Entry groupSettings = entry(GROUP_SETTINGS, $(PipelineSelectors.visible(byText("Group"))).closest(".rc-menu-submenu"));
         final Entry editGroup = entry(EDIT_GROUP, groupSettings.getElement().find(byText("Edit")));
         final Entry deleteGroup = entry(DELETE_GROUP, groupSettings.getElement().find(byText("Delete")));
         final Entry createGroup = entry(CREATE_GROUP, groupSettings.getElement().find(byText("Create")));
@@ -153,6 +155,8 @@ public class ToolsPage implements Page<ToolsPage> {
     }
 
     public ToolsPage ensureOnlyOneRegistryIsAvailable() {
+        // the registry selector has no drop-down list when only one registry is available
+        ensure(REGISTRY, cssClass("single-registry"));
         click(REGISTRY);
         sleep(1, SECONDS);
         $(byId("registries-dropdown")).shouldNotBe(visible);
@@ -160,7 +164,7 @@ public class ToolsPage implements Page<ToolsPage> {
     }
 
     public ToolsPage addRegistry(final Consumer<RegistryAdditionPopup> registry) {
-        hover(SETTINGS);
+        click(SETTINGS);
         hover(REGISTRY_SETTINGS);
         click(CREATE_REGISTRY);
         registry.accept(new RegistryAdditionPopup());
@@ -171,7 +175,7 @@ public class ToolsPage implements Page<ToolsPage> {
                                     final Consumer<ConfirmationPopupAO<RegistryEditionPopup>> registry
     ) {
         changeRegistryTo(registryName);
-        hover(SETTINGS);
+        click(SETTINGS);
         hover(REGISTRY_SETTINGS);
         click(EDIT_REGISTRY);
         registry.accept(new RegistryEditionPopup().deleteRegistry());
@@ -182,7 +186,7 @@ public class ToolsPage implements Page<ToolsPage> {
         $(".ant-select-selection__rendered").doubleClick();
         $(byClassName("ant-select-dropdown-menu"))
                 .findAll(".ant-select-dropdown-menu-item")
-                .shouldHaveSize(1);
+                .shouldHave(size(1));
         return this.ensureRegistryIsPresent(registryPath);
     }
 

@@ -49,9 +49,9 @@ class TestS3TaggingRolModel(object):
             set_storage_tags(path, [self.tag1])
             assert_tags_listing(self.bucket, path, [self.tag1], token=self.user_token)
         except AssertionError as e:
-            raise AssertionError(ERROR_MESSAGE + test_case, e.message)
+            raise AssertionError(ERROR_MESSAGE + test_case, str(e))
         except BaseException as e:
-            raise RuntimeError(ERROR_MESSAGE + test_case, e.message)
+            raise RuntimeError(ERROR_MESSAGE + test_case, str(e))
 
     def test_tag_updating(self):
         test_case = 'epmcmbibpc-991'
@@ -62,7 +62,7 @@ class TestS3TaggingRolModel(object):
             stderr = delete_storage_tags(path, [self.tag1[0]], token=self.user_token, expected_status=1)[1]
             assert_error_message_is_present(stderr, 'Access is denied')
         except AssertionError as e:
-            raise AssertionError(ERROR_MESSAGE + test_case, e.message)
+            raise AssertionError(ERROR_MESSAGE + test_case, str(e))
         except BaseException as e:
-            raise RuntimeError(ERROR_MESSAGE + test_case, e.message)
+            raise RuntimeError(ERROR_MESSAGE + test_case, str(e))
 

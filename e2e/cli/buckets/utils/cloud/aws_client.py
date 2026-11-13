@@ -123,7 +123,7 @@ class S3Client(CloudClient):
 
     @staticmethod
     def parse_aws_listing(lines):
-        return map(FileModel.parse_from_aws_line, lines)
+        return list(map(FileModel.parse_from_aws_line, lines))
 
     @staticmethod
     def s3_ls(source, args, expected_status=0):

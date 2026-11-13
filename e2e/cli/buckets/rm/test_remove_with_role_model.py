@@ -50,7 +50,7 @@ class TestRmWithRoleModel(object):
                                             .format(self.bucket_name, self.test_file))
             assert_files_skipped(self.bucket_name, self.test_file)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))
 
     @pytest.mark.run(order=2)
     def test_rm_file_with_read_permission(self):
@@ -61,7 +61,7 @@ class TestRmWithRoleModel(object):
             assert_error_message_is_present(error_text, 'Access is denied')
             assert_files_skipped(self.bucket_name, self.test_file)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))
 
     @pytest.mark.run(order=3)
     def test_rm_file_with_write_permission(self):
@@ -70,4 +70,4 @@ class TestRmWithRoleModel(object):
             pipe_storage_rm("cp://{}/{}".format(self.bucket_name, self.test_file), expected_status=0, token=self.token)
             assert_files_deleted(self.bucket_name, self.test_file)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))

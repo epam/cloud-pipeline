@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,16 @@ import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
+import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.DATE;
+import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.LABEL;
+import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.NAME;
 import static org.testng.Assert.assertEquals;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ClusterNodeTest extends AbstractAutoRemovingPipelineRunningTest {
+
+    private String nodeName;
 
     @AfterClass
     @Override
@@ -37,10 +44,12 @@ public class ClusterNodeTest extends AbstractAutoRemovingPipelineRunningTest {
             .createPipeline(Template.SHELL, getPipelineName())
             .firstVersion()
             .runPipeline()
+            .setPriceType(ON_DEMAND)
             .launch(this);
 
-        clusterMenu()
-            .waitForTheNode(getPipelineName(), getRunId());
+        nodeName = clusterMenu()
+            .waitForTheNode(getPipelineName(), getRunId())
+            .getNodeName(getRunId());
 
         runsMenu()
             .stopRun(getRunId());
@@ -137,6 +146,7 @@ public class ClusterNodeTest extends AbstractAutoRemovingPipelineRunningTest {
     public void shouldTerminateNode() {
         clusterMenu()
             .removeNode(getRunId())
-            .validateThereIsNoNode(getRunId());
+            .validateThereIsNoNode(getRunId())
+            .validateThereIsNoNodeWithName(nodeName);
     }
 }

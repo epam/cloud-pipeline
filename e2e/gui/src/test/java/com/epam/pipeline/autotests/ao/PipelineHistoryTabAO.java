@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
@@ -24,9 +25,14 @@ import org.openqa.selenium.WebElement;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.Condition.empty;
+import static com.codeborne.selenide.Condition.exactText;
 import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
@@ -72,13 +78,8 @@ public class PipelineHistoryTabAO extends AbstractPipelineTabAO<PipelineHistoryT
         return this;
     }
 
-    public PipelineRunFormAO rerun() {
-        click(RERUN);
-        return new PipelineRunFormAO(pipelineName);
-    }
-
     public PipelineHistoryTabAO recordsCountShouldBe(int size) {
-        rows().shouldHaveSize(size);
+        rows().shouldHave(size(size));
         return this;
     }
 
@@ -97,6 +98,33 @@ public class PipelineHistoryTabAO extends AbstractPipelineTabAO<PipelineHistoryT
         return shouldContainRun(pipelineName, runId, versionPattern, owner)
                 .ensure(COMPLETED_TIME, "true".equals(C.AUTH_TOKEN) ? inFormat() : inTime(maxElapsedTime))
                 .ensure(RERUN, visible);
+    }
+
+    /**
+     * Checks the parts of the first record that only a finished run has: the status icon of a successful run, the
+     * started time, the docker image (the client shows the last part of its path), and the elapsed time with the cost.
+     */
+    public PipelineHistoryTabAO shouldContainCompletedRunDetails(final String dockerImageName) {
+        return ensure(RUN_NAME, LogAO.Status.SUCCESS.reached)
+                .ensure(STARTED_TIME, inFormat())
+                .ensure(firstRowColumns().get(5), exactText(dockerImageName))
+                .ensure(firstRowColumns().get(8),
+                        matchText("\\d+\\.\\d{2} min"), matchText("Cost: \\d+\\.\\d{2}\\$"));
+    }
+
+    /**
+     * Checks that the table holds exactly one run of each given version, in any order. The tab header also prints
+     * the current version, so a page-wide text search would find that version even in an empty table.
+     */
+    public PipelineHistoryTabAO runVersionsShouldBe(final String... versions) {
+        rows().shouldHave(size(versions.length));
+        final List<String> actual = rows().stream()
+                .map(row -> row.findAll("td").get(4).text())
+                .map(pipelineAndVersion -> pipelineAndVersion.substring(pipelineAndVersion.lastIndexOf('\n') + 1))
+                .sorted()
+                .collect(Collectors.toList());
+        assertEquals(actual, Arrays.stream(versions).sorted().collect(Collectors.toList()));
+        return this;
     }
 
     public PipelineHistoryTabAO shouldContainRunWithVersion(String version) {
@@ -120,7 +148,7 @@ public class PipelineHistoryTabAO extends AbstractPipelineTabAO<PipelineHistoryT
     private Condition inTime(int maxElapsedTime) {
         return new Condition("shorter that given period of time") {
             @Override
-            public boolean apply(WebElement element) {
+            public boolean apply(Driver driver, WebElement element) {
                 Utils.assertTimePassed(element.getText(), maxElapsedTime);
                 return true;
             }
@@ -130,7 +158,7 @@ public class PipelineHistoryTabAO extends AbstractPipelineTabAO<PipelineHistoryT
     private Condition inFormat() {
         return new Condition("not in 'yyyy-MM-dd HH:mm:ss' format") {
             @Override
-            public boolean apply(WebElement element) {
+            public boolean apply(Driver driver, WebElement element) {
                 final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Utils.DATE_TIME_PATTERN);
                 final LocalDateTime dateTime = LocalDateTime.parse(element.getText(), formatter);
                 assertEquals(element.getText(), dateTime.format(formatter));

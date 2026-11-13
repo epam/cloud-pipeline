@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.LibraryFolderAO;
 import com.epam.pipeline.autotests.ao.MetadataSectionAO;
+import com.epam.pipeline.autotests.ao.PipelinesLibraryAO;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
@@ -25,6 +26,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_KEY;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE_ICON;
 import static com.epam.pipeline.autotests.ao.Primitive.REMOVE_ALL;
@@ -74,7 +76,7 @@ public class ObjectMetadataFolderTest extends AbstractBfxPipelineTest implements
         navigationMenu()
                 .library()
                 .clickOnFolder(folder)
-                .showMetadata()
+                .showAttributes()
                 .ensure(ADD_KEY, visible);
     }
 
@@ -84,8 +86,10 @@ public class ObjectMetadataFolderTest extends AbstractBfxPipelineTest implements
         openFolderMetadata()
                 .addKeyWithValue(key1, value1)
                 .selectKey(key1)
-                .ensure(DELETE_ICON, visible)
+                .assertKeyIs(key1)
                 .validateKeyBackgroundIsGrey()
+                .ensure(DELETE_ICON, visible)
+                .assertValueIs(value1)
                 .ensureVisible(REMOVE_ALL);
     }
 
@@ -94,9 +98,11 @@ public class ObjectMetadataFolderTest extends AbstractBfxPipelineTest implements
     public void updateKeyValidation() {
         folderMetadata()
                 .selectKeyByOrderNumber(1)
-                .changeKey(key2)
+                .editKey(key2)
+                .clickOnEmptySpace()
                 .assertKeyIs(key2)
-                .changeValue(value2)
+                .editValue(value2)
+                .clickOnEmptySpace()
                 .assertValueIs(value2);
     }
 
@@ -145,13 +151,14 @@ public class ObjectMetadataFolderTest extends AbstractBfxPipelineTest implements
                 .library()
                 .cd(folder)
                 .clickOnFolder(subfolder)
-                .showMetadata()
+                .showAttributes()
                 .addKeyWithValue(key1, value1)
                 .assertNumberOfKeysIs(1);
-        navigationMenu()
-                .library()
-                .clickOnFolder(folder)
-                .showMetadata()
+        $(PipelinesLibraryAO.browser).find(PipelinesLibraryAO.browserItem("..")).shouldBe(visible).click();
+        $(PipelinesLibraryAO.browser).find(PipelinesLibraryAO.browserItem(subfolder)).shouldBe(visible);
+        new LibraryFolderAO(folder)
+                .showAttributesIfHidden()
+                .ensure(ADD_KEY, visible)
                 .assertNumberOfKeysIs(0);
     }
 
@@ -180,6 +187,6 @@ public class ObjectMetadataFolderTest extends AbstractBfxPipelineTest implements
         return navigationMenu()
                 .library()
                 .clickOnFolder(folder)
-                .showMetadata();
+                .showAttributes();
     }
 }

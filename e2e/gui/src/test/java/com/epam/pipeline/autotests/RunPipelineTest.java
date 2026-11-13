@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,13 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.ElementsCollection;
+import com.epam.pipeline.autotests.ao.ClusterMenuAO;
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.NodePage;
+import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
+import com.epam.pipeline.autotests.ao.RunsMenuAO;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
@@ -28,31 +33,47 @@ import org.testng.annotations.Test;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Set;
 import java.util.stream.Stream;
 
+import static com.codeborne.selenide.CollectionCondition.sizeGreaterThan;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.open;
-import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.ClusterMenuAO.*;
 import static com.epam.pipeline.autotests.ao.LogAO.InstanceParameters.parameterWithName;
 import static com.epam.pipeline.autotests.ao.LogAO.*;
+import static com.epam.pipeline.autotests.ao.LogAO.Status.SUCCESS;
 import static com.epam.pipeline.autotests.ao.NodePage.*;
+import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
+import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
+import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
+import static com.epam.pipeline.autotests.ao.Primitive.LAUNCH_COMMANDS;
+import static com.epam.pipeline.autotests.ao.Primitive.PIPELINE;
+import static com.epam.pipeline.autotests.ao.Primitive.RUN;
+import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
 import static com.epam.pipeline.autotests.utils.Conditions.contains;
 import static com.epam.pipeline.autotests.utils.Conditions.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.*;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.resourceName;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.openqa.selenium.By.className;
+import static org.testng.Assert.assertTrue;
 
 public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implements Authorization {
+
+    private static final String PYTHON_CMD_TEMPLATE = "$CP_PYTHON_PATH $SCRIPTS_DIR/src/[main_file]";
     private String pipeline100 = resourceName("epmcmbibpc-100");
     private final String pipeline298 = resourceName("epmcmbibpc-298");
-    private final String pipeline299 = resourceName("epmcmbibpc-299");
     private final String pipeline303 = resourceName("epmcmbibpc-303");
     private final String pipeline314 = resourceName("epmcmbibpc-314");
     private final String pipeline306 = resourceName("epmcmbibpc-306");
@@ -65,7 +86,6 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
             .library()
             .removePipelineIfExists(pipeline100)
             .removePipelineIfExists(pipeline298)
-            .removePipelineIfExists(pipeline299)
             .removePipelineIfExists(pipeline303)
             .removePipelineIfExists(pipeline314)
             .removePipelineIfExists(pipeline306)
@@ -77,22 +97,24 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
     public void shouldCreatePipelineFromPythonTemplate() {
         library()
             .createPipeline(Template.PYTHON, pipeline298)
-            .ensure(pipelineWithName(pipeline298), visible);
+            .validatePipelineInTreeAndList(pipeline298);
     }
 
-    @Test
+    @Test(dependsOnMethods = "shouldCreatePipelineFromPythonTemplate")
     @TestCase("EPMCMBIBPC-299")
     public void pipelineRunFormShouldBeValid() {
         library()
-            .createPipeline(Template.SHELL, pipeline299)
-            .clickOnPipeline(pipeline299)
+            .clickOnPipeline(pipeline298)
             .firstVersion()
-            .runPipeline()
-            .ensure(byText(pipeline299), visible)
-            .ensure(byText("Estimated price per hour:"), visible)
+            .click(RUN);
+        // the form is opened without expanding its panels, so the default state of the panels is checked
+        new PipelineRunFormAO()
+            .ensure(LAUNCH_COMMANDS, appears)
+            .ensure(PIPELINE, visible, exactText(pipeline298))
+            .ensure(ESTIMATED_PRICE, visible)
             .ensure(button("Launch"), visible, enabled)
-            .ensure(collapsiblePanel("Exec environment"), visible, expandedTab)
-            .ensure(collapsiblePanel("Advanced"), visible, expandedTab)
+            .ensure(collapsiblePanel("Exec environment"), visible, collapsedTab)
+            .ensure(collapsiblePanel("Advanced"), visible, collapsedTab)
             .ensure(collapsiblePanel("Parameters"), visible, expandedTab)
             .ensure(button("Add parameter"), visible, enabled);
     }
@@ -104,9 +126,12 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
             .createPipeline(Template.PYTHON, pipeline306)
             .clickOnPipeline(pipeline306)
             .firstVersion()
-            .runPipeline()
-            .expandTab(collapsiblePanel("Advanced"))
-            .ensure(inputOf(fieldWithLabel("Cmd template")), have(value("python $SCRIPTS_DIR/src/[main_file]")));
+            .configurationTab()
+            .editConfiguration("default", profile ->
+                profile.expandTab(collapsiblePanel("Advanced"))
+                       .ensure(inputOf(fieldWithLabel("Cmd template")),
+                               have(attribute("value", PYTHON_CMD_TEMPLATE)))
+            );
     }
 
     /**
@@ -116,33 +141,70 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
     @Test(priority = 1)
     @TestCase("EPMCMBIBPC-100")
     public void shouldLaunchPipeline() {
-        library()
+        final RunsMenuAO runs = library()
             .createPipeline(Template.PYTHON, pipeline100)
-            .clickOnPipeline(pipeline100)
-            .firstVersion()
-            .runPipeline()
+            .runPipelineFromTable(pipeline100)
+            .expandTab(EXEC_ENVIRONMENT)
+            .expandTab(ADVANCED_PANEL)
             .setLaunchOptions("20", C.DEFAULT_INSTANCE, "")
-            .launch(this)
+            .setPriceType(ON_DEMAND)
+            .launch(this);
+        final String runId = getLastRunId();
+        runs
             .ensure(tabWithName("Active Runs"), visible, selectedTab)
-            .ensure(runWithId(getLastRunId()), visible);
+            .runShouldBeWaiting(runId)
+            .runCellShouldHave(runId, RunsMenuAO.HeaderColumn.RUN, text(String.format("%s-%s", pipeline100, runId)))
+            .runCellShouldHave(runId, RunsMenuAO.HeaderColumn.PIPELINE, text(pipeline100), matchText("draft-.{8}"))
+            .runCellShouldHave(runId, RunsMenuAO.HeaderColumn.STARTED,
+                    matchText("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}"));
     }
 
     @Test(priority = 1, dependsOnMethods = "shouldLaunchPipeline")
     @TestCase("EPMCMBIBPC-304")
     public void shouldContainCorrectNode() {
-        clusterMenu().waitForTheNode(getLastRunId());
+        clusterMenu().waitForTheNode(pipeline100, getLastRunId());
     }
 
     @Test(priority = 1, dependsOnMethods = "shouldContainCorrectNode")
-    @TestCase({"EPMCMBIBPC-281", "EPMCMBIBPC-302"})
+    @TestCase("EPMCMBIBPC-302")
     public void activePipelineShouldBeOpenedFromNodeInfo() {
         final String runIdLabel = String.format("RUN ID %s", getLastRunId());
         clusterMenu()
             .click(nodeLabel(runIdLabel), LogAO::new)
-            .ensure(taskList(), visible);
+            .ensure(taskList(), visible)
+            .ensure(runId(), have(matchText(String.format("Run #%s\\b", getLastRunId()))))
+            .ensure(pipelineLink(), have(textMatches(String.format("%s \\(draft-.{8}\\)", pipeline100))));
     }
 
     @Test(priority = 1, dependsOnMethods = "activePipelineShouldBeOpenedFromNodeInfo")
+    @TestCase("EPMCMBIBPC-301")
+    public void nodePageOfPipelineRunShouldBeValid() {
+        final String runId = getLastRunId();
+        final ClusterMenuAO cluster = clusterMenu();
+        final String nodeName = cluster.getNodeName(runId);
+        // the labels cell holds the RUN ID link to the run, so the node page is opened from the name cell
+        cluster
+            .click(nodeNameCellOfRun(runId), NodePage::new)
+            .ensure(buttonByIconClass("anticon-arrow-left"), visible, enabled)
+            .ensure(button("Refresh"), visible, enabled)
+            .ensure(mainInfo(), have(text(String.format("Node: %s", nodeName))))
+            .ensure(labelWithType("RUNID"), have(exactText(String.format("RUN ID %s", runId))))
+            .ensure(labelWithType("pipeline-info"), have(text(pipeline100)), have(text("(draft-")))
+            .ensure(tabWithName("General info"), visible)
+            .ensure(tabWithName("Jobs"), visible)
+            .ensure(tabWithName("Monitor"), visible);
+    }
+
+    @Test(priority = 1, dependsOnMethods = "nodePageOfPipelineRunShouldBeValid")
+    @TestCase("EPMCMBIBPC-281")
+    public void activePipelineShouldBeOpenedFromNodePage() {
+        new NodePage()
+            .click(labelWithType("RUNID"), LogAO::new)
+            .ensure(taskList(), visible)
+            .ensure(runId(), have(matchText(String.format("Run #%s\\b", getLastRunId()))));
+    }
+
+    @Test(priority = 1, dependsOnMethods = "activePipelineShouldBeOpenedFromNodePage")
     @TestCase("EPMCMBIBPC-305")
     public void pipelineLogPageShouldBeValid() {
         sleep(1, SECONDS);
@@ -169,7 +231,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
             .instanceParameters(
                 p -> p.ensure(parameterWithName("Node type"), have(text(C.DEFAULT_INSTANCE)))
                       .ensure(parameterWithName("Disk"), have(text("20 Gb")))
-                      .ensure(parameterWithName("Cmd template"), have(text("python $SCRIPTS_DIR/src/[main_file]")))
+                      .ensure(parameterWithName("Cmd template"), have(text(PYTHON_CMD_TEMPLATE)))
             );
     }
 
@@ -181,13 +243,25 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
                 "expectedRunLogPython.txt").toArray(String[]::new);
         final String[] mountDataTexts = prepareExpectedLogMessages(mountStorageTaskName, getLastRunId(),
                 "expectedRunLogMountDataStoragesTask.txt").toArray(String[]::new);
-        onRunPage()
-            .click(taskWithName("Task1"))
-            .ensure(log(), containsMessage("Running python pipeline"))
-            .click(taskWithName(mountStorageTaskName))
-            .ensure(log(), containsMessages(mountDataTexts))
-            .click(taskWithName(pipeline100))
-            .ensure(log(), containsMessages(texts));
+        Set<String> pipelineLog = onRunPage()
+                .click(taskWithName("Task1"))
+                .ensure(log(), containsMessage("Running python pipeline"))
+                .click(taskWithName(pipeline100))
+                .logMessages()
+                .collect(toSet());
+        Arrays.stream(texts)
+                .map(String::trim)
+                .filter(RunPipelineTest::isMeaningfulLogLine)
+                .forEach(t -> onRunPage().logContainsMessage(pipelineLog, t));
+        Set<String> mountMessages = onRunPage()
+                .click(taskWithName(mountStorageTaskName))
+                .ensure(STATUS, SUCCESS.reached)
+                .logMessages()
+                .collect(toSet());
+        Arrays.stream(mountDataTexts)
+                .map(String::trim)
+                .filter(RunPipelineTest::isMeaningfulLogLine)
+                .forEach(t -> onRunPage().logContainsMessage(mountMessages, t));
     }
 
     @Test(priority = 1, dependsOnMethods = "logShouldBeValid")
@@ -222,31 +296,44 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
             .clickOnPipeline(pipeline312)
             .firstVersion()
             .runPipeline()
+	    .setPriceType(ON_DEMAND)
             .launch(this)
             .showLog(getLastRunId())
-            .waitForCompletion();
+            .ensure(pipelineLink(), have(text(pipeline312)))
+            .waitForCompletion()
+            .ensure(STATUS, SUCCESS.reached);
 
         runsMenu()
             .activeRuns()
             .ensure(runWithId(getLastRunId()), not(exist))
             .completedRuns()
-            .ensure(runWithId(getLastRunId()), exist);
+            .ensure(runWithId(getLastRunId()), visible)
+            .validateStatus(getLastRunId(), SUCCESS);
     }
 
     @Test(priority = 2, dependsOnMethods = "runShouldNotAppearInActiveRuns")
     @TestCase({"EPMCMBIBPC-300", "EPMCMBIBPC-267"})
     public void clusterNodePageShouldBeValid() {
         clusterMenu()
-            .ensure(className("cluster__node-main-info"), visible, have(text("Cluster nodes")))
-            .ensure(button("Refresh"), visible, enabled)
-            .ensureAll(Combiners.select(not(master()), node(), "non-master node"), contains(button("TERMINATE")))
-            .ensureAll(Combiners.select(master(), node(), "master node"), not(contains(button("TERMINATE"))));
+            .ensure(className("cluster__node-main-info"), visible, have(text("Cluster nodes")),
+                    have(matchText("Cluster nodes \\(\\d+ nodes?(, \\d+ nodes? with associated RunId)?\\)")))
+            .ensure(button("Refresh"), visible, enabled);
+        $$(node()).shouldHave(sizeGreaterThan(0));
+        int nodesWithTerminateButton = checkNodes();
+        while ("false".equals($(className("ant-pagination-next")).getAttribute("aria-disabled"))) {
+            $(className("ant-pagination-next")).click();
+            nodesWithTerminateButton += checkNodes();
+        }
+        assertTrue(nodesWithTerminateButton > 0, "There is no node with a TERMINATE button");
     }
 
     @Test(priority = 2, dependsOnMethods = "runShouldNotAppearInActiveRuns")
-    @TestCase({"EPMCMBIBPC-280", "EPMCMBIBPC-301"})
+    @TestCase("EPMCMBIBPC-280")
     public void nodePageShouldBeValid() {
-        final By nonMasterNode = Combiners.select(not(master()), node(), "any non-master node");
+        final By nonMasterNode = Combiners.select(
+                and("node neither master nor windows", not(master()), not(windows())),
+                node(), "any non-master node");
+        refresh();
         clusterMenu()
             .click(nonMasterNode, NodePage::new)
             .ensure(button("Refresh"), visible, enabled)
@@ -278,7 +365,32 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
         }
     }
 
+    private static By nodeNameCellOfRun(final String runId) {
+        return By.xpath(String.format(
+            ".//*[contains(@class, 'cluster__table')]//tr[contains(@class, 'cluster-row') and " +
+                ".//*[normalize-space(text()) = 'RUN ID %s']]/td[contains(@class, 'cluster__cluster-node-row-name')]",
+            runId));
+    }
+
     private static LogAO onRunPage() {
         return new LogAO();
+    }
+
+    /**
+     * Checks the nodes of the current page of the cluster table and returns the number of nodes that are not master
+     * nodes, i.e. nodes with a TERMINATE button.
+     */
+    private int checkNodes() {
+        final ElementsCollection nodes = $$(node());
+        nodes.forEach(node -> node.should(node.is(master()) ?
+                not(contains(button("TERMINATE"))) : contains(button("TERMINATE"))));
+        return nodes.filter(not(master())).size();
+    }
+
+    /**
+     * An empty line or a line of dashes (a section separator) is contained in almost any log line.
+     */
+    private static boolean isMeaningfulLogLine(final String line) {
+        return !line.replace("-", "").trim().isEmpty();
     }
 }

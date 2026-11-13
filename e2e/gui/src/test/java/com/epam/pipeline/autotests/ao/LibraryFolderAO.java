@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.Utils;
+import org.openqa.selenium.By;
 
 import java.io.File;
 import java.util.Map;
@@ -25,6 +26,7 @@ import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_NEW_RULE;
@@ -40,6 +42,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.displayAttribu
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.showAttributes;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.showIssues;
+import static com.epam.pipeline.autotests.utils.Utils.clickAndResetClick;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.tagName;
 
@@ -49,7 +52,9 @@ public class LibraryFolderAO implements AccessObject<LibraryFolderAO> {
 
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
             entry(SETTINGS, $(byId("edit-folder-menu-button"))),
-            entry(EDIT_FOLDER, context().find(menuitem("ant-dropdown-menu-item", "Edit folder"))),
+            entry(EDIT_FOLDER, context().find(menuitem("rc-dropdown-menu-item", "Edit folder"))),
+            // the same menu item reads "Permissions" for a user who can't edit the folder
+            entry(PERMISSIONS, context().find(menuitem("rc-dropdown-menu-item", "Permissions"))),
             entry(UPLOAD_METADATA,$(byId("upload-button")))
     );
 
@@ -58,8 +63,16 @@ public class LibraryFolderAO implements AccessObject<LibraryFolderAO> {
     }
 
     public LibraryFolderEditPopupAO clickEditButton() {
-        hover(SETTINGS);
+        click(SETTINGS);
         click(EDIT_FOLDER);
+        return new LibraryFolderEditPopupAO(this);
+    }
+
+    /**
+     * Clicks the "Permissions" item of the open settings menu.
+     */
+    public LibraryFolderEditPopupAO clickPermissionsItem() {
+        click(PERMISSIONS);
         return new LibraryFolderEditPopupAO(this);
     }
 
@@ -79,38 +92,61 @@ public class LibraryFolderAO implements AccessObject<LibraryFolderAO> {
         return this;
     }
 
-    public MetadataSectionAO showMetadata() {
+    public MetadataSectionAO showAttributes() {
         sleep(1, SECONDS);
-        final SelenideElement displayButton = $(displayAttributes);
-        displayButton.shouldBe(visible).hover();
-        $(attributesMenu).should(appear);
-        performIf(showAttributes, visible,
-                page -> click(showAttributes),
-                page -> resetMouse()
-        );
+        showMetadata(showAttributes);
+        return new MetadataSectionAO(this);
+    }
+
+    /**
+     * Opens the attributes panel only if it is hidden. The "Attributes" menu item toggles the panel,
+     * and a folder with attributes opens the panel by itself. The menu item has no id in the page;
+     * it shows a check icon while the panel is shown.
+     */
+    public MetadataSectionAO showAttributesIfHidden() {
+        sleep(1, SECONDS);
+        click(displayAttributes);
+        ensure(attributesMenu, appears);
+        final SelenideElement attributesItem = $(showAttributes).shouldBe(visible).closest("li");
+        if (attributesItem.find(byClassName("anticon-check-circle")).isDisplayed()) {
+            resetMouse();
+        } else {
+            clickAndResetClick(attributesItem);
+        }
         return new MetadataSectionAO(this);
     }
 
     public IssueSectionAO showIssues() {
-        final SelenideElement displayButton = $(displayAttributes);
-        displayButton.shouldBe(visible).hover();
-        $(attributesMenu).should(appear);
-        performIf(showIssues, visible,
-                page -> click(showIssues),
-                page -> resetMouse()
-        );
+        showMetadata(showIssues);
         return new IssueSectionAO(this);
     }
 
+    private void showMetadata(final By item) {
+        click(displayAttributes);
+        ensure(attributesMenu, appears);
+        performIf(item, visible,
+                page -> clickAndResetClick(context().find(item)),
+                page -> resetMouse()
+        );
+    }
+
+    /**
+     * Checks the first version of a SHELL pipeline: no editing and no RUN on the DOCUMENTS (the tab a version opens
+     * with), CODE and STORAGE RULES tabs. Each tab's content is awaited first, so the absence checks don't pass on a
+     * page that is still loading.
+     */
     public LibraryFolderAO assertPipelineIsNotEditable(String pipelineName) {
         clickOnPipeline(pipelineName)
                 .firstVersion()
+                .tabShouldBeActive(DOCUMENTS_TAB)
+                .ensure(byClassName("pipeline-documents__docs-table"), visible)
+                .ensureNotVisible(DELETE, RENAME, UPLOAD, RUN)
                 .codeTab()
+                .shouldContainFile(Utils.getFileNameFromPipelineName(pipelineName, "sh"))
                 .ensureNotVisible(RENAME, DELETE, NEW_FILE, UPLOAD, RUN)
-                .documentsTab()
-                .ensureNotVisible(DELETE, RENAME, UPLOAD)
                 .storageRulesTab()
-                .ensureNotVisible(DELETE, ADD_NEW_RULE);
+                .ensure(byClassName("pipeline-storage-rules__table"), visible)
+                .ensureNotVisible(DELETE, ADD_NEW_RULE, RUN);
 
         $(byText(folderName)).shouldBe(visible).click();
         return this;
@@ -125,6 +161,7 @@ public class LibraryFolderAO implements AccessObject<LibraryFolderAO> {
         sleep(5, SECONDS);
         ensure(UPLOAD_METADATA, visible);
         $(byClassName("ant-upload-select")).find(tagName("input")).should(exist).uploadFile(file);
+        $(withText("Uploading files...")).should(disappear);
         return this;
     }
 
@@ -144,6 +181,21 @@ public class LibraryFolderAO implements AccessObject<LibraryFolderAO> {
             Utils.getPopupByTitle("Rename folder")
                     .find(byText("Permissions")).shouldBe(visible).click();
             return new PermissionTabAO(this);
+        }
+
+        public LibraryFolderEditPopupAO ensureInfoTabIsActive() {
+            final SelenideElement popup = Utils.getPopupByTitle("Rename folder");
+            popup.find(".ant-tabs-tab-active").shouldHave(exactText("Info"));
+            popup.findAll(".ant-tabs-tab").findBy(exactText("Permissions")).shouldBe(visible);
+            return this;
+        }
+
+        public LibraryFolderEditPopupAO ensureNameIsNotEditable(final String name) {
+            // value() matches a substring, the attribute check is exact
+            Utils.getPopupByTitle("Rename folder").find(byId("name"))
+                    .shouldBe(visible, disabled)
+                    .shouldHave(attribute("value", name));
+            return this;
         }
 
         @Override

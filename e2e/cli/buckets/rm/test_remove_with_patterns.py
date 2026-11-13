@@ -61,7 +61,7 @@ class TestRmWithPatterns(object):
             assert_files_skipped(self.bucket_name, *skipped_files)
             assert_files_deleted(self.bucket_name, *deleted_files)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))
 
     @pytest.mark.run(order=2)
     def test_rm_with_include(self):
@@ -78,7 +78,7 @@ class TestRmWithPatterns(object):
             assert_files_skipped(self.bucket_name, *skipped_files)
             assert_files_deleted(self.bucket_name, *deleted_files)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))
 
     @pytest.mark.run(order=3)
     def test_rm_with_both_patterns(self):
@@ -95,4 +95,4 @@ class TestRmWithPatterns(object):
             assert_files_skipped(self.bucket_name, *skipped_files)
             assert_files_deleted(self.bucket_name, *deleted_files)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -44,12 +45,16 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
+import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
@@ -57,7 +62,9 @@ import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
+import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import static java.lang.String.format;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
@@ -66,7 +73,12 @@ import static org.testng.Assert.assertTrue;
 public class Utils {
 
     public static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
+    public static final String DATE_PATTERN = "yyyy-MM-dd";
     public static final String ON_DEMAND = "On-demand";
+    public static final String PASTE_KEY = "v";
+    public static final String COPY_KEY = "a";
+    public static final String CHROME_BROWSER = "chrome";
+    public static final String BROWSER_SIZE = "1920x1080";
 
     public static void assertTimePassed(String dateAndTimeString, int maxSeconds) {
         LocalDateTime runDateTime = validateDateTimeString(dateAndTimeString);
@@ -109,7 +121,7 @@ public class Utils {
 
     public static void clickAndSendKeysWithSlashes(WebElement element, String text) {
         actions().moveToElement(element).click().perform();
-        sendKeysWithSlashes(text);
+        sendKeysWithSlashes(text.replace("\u200b", ""));
     }
 
     public static void clearTextField(final SelenideElement field) {
@@ -143,6 +155,15 @@ public class Utils {
         //////////////////////////////////////////////////////////////////////////
     }
 
+    public static void sendKeysWithControl(CharSequence ch) {
+        new Actions(getWebDriver())
+                .keyDown(Keys.CONTROL)
+                .sendKeys(ch)
+                .keyUp(Keys.CONTROL)
+                .build()
+                .perform();
+    }
+
     public static void sendKeysByChars(final SelenideElement field, final String text) {
         final char[] charArray = text.toCharArray();
         int charNumber = 0;
@@ -160,23 +181,69 @@ public class Utils {
         }
     }
 
-    public static String getPipelineRunId(final String pipelineName) {
-        return findRunId(new By() {
+    public static void refresh() {
+        getWebDriver().navigate().refresh();
+    }
+
+    private static final String TOP_LEVEL_RUN_ROWS = "tr.ant-table-row-level-0.run-table__run, "
+            + "tr.ant-table-row-level-0.cp-runs-table-service-url-run";
+    // a run without a pipeline, e.g. a tool run, has the pipeline name "pipeline"
+    private static final String NO_PIPELINE = "pipeline";
+    private static final String RUN_ID_CLASS_PREFIX = "run-";
+
+    /**
+     * Returns the id of the newest top-level run of a pipeline or of a tool in the runs table.
+     *
+     * @param launchItemName a pipeline name, or a tool name without the group and the tag,
+     *                       e.g. {@code endpoint-test}
+     */
+    public static String getPipelineRunId(final String launchItemName) {
+        final By newestRunRow = new By() {
             @Override
             public List<WebElement> findElements(final SearchContext context) {
-                return context.findElements(className("run-table__run")).stream()
-                        .filter(element ->
-                                element.findElements(byClassName("run-table__run-row-pipeline")).stream()
-                                        .map(WebElement::getText)
-                                        .anyMatch(pipelineName -> pipelineName.equals(pipelineName)))
-                        .collect(toList());
+                return context.findElements(By.cssSelector(TOP_LEVEL_RUN_ROWS)).stream()
+                        .filter(row -> isRunOf(row, launchItemName) && runIdOfRow(row) >= 0)
+                        .max(Comparator.comparingLong(Utils::runIdOfRow))
+                        .map(Collections::singletonList)
+                        .orElseGet(Collections::emptyList);
             }
 
             @Override
             public String toString() {
-                return (pipelineName);
+                return format("the newest run of '%s' in the runs table: a top-level row with the Pipeline '%<s', "
+                        + "or with no pipeline and the Docker image '%<s' or '%<s:<tag>'", launchItemName);
             }
-        });
+        };
+        // the client opens the runs page only after the launch request returns
+        final SelenideElement row = $(newestRunRow).shouldBe(exist, ofMillis(2L * C.DEFAULT_TIMEOUT));
+        return String.valueOf(runIdOfRow(row));
+    }
+
+    private static boolean isRunOf(final WebElement row, final String launchItemName) {
+        // the Pipeline cell shows the version on its second line
+        final String pipeline = cellText(row, "run-table__run-row-pipeline").split("\n", 2)[0].trim();
+        if (pipeline.equals(launchItemName)) {
+            return true;
+        }
+        final String image = cellText(row, "run-table__run-row-docker-image");
+        return (pipeline.isEmpty() || pipeline.equals(NO_PIPELINE))
+                && (image.equals(launchItemName) || image.startsWith(launchItemName + ":"));
+    }
+
+    private static String cellText(final WebElement row, final String cellClass) {
+        return row.findElements(byClassName(cellClass)).stream()
+                .findFirst()
+                .map(WebElement::getText)
+                .orElse("")
+                .trim();
+    }
+
+    private static long runIdOfRow(final WebElement row) {
+        return Arrays.stream(row.getAttribute("class").split("\\s+"))
+                .filter(cssClass -> cssClass.matches(RUN_ID_CLASS_PREFIX + "\\d+"))
+                .mapToLong(cssClass -> Long.parseLong(cssClass.substring(RUN_ID_CLASS_PREFIX.length())))
+                .findFirst()
+                .orElse(-1L);
     }
 
     public static String getToolRunId(final String toolName) {
@@ -306,7 +373,7 @@ public class Utils {
                                                    String repeatingString,
                                                    int totalNumberOfChars) {
 
-        byte[] content = repeatString("abc1", totalNumberOfChars / repeatingString.length()).getBytes();
+        byte[] content = repeatString(repeatingString, totalNumberOfChars / repeatingString.length()).getBytes();
         Path path = Paths.get(C.DOWNLOAD_FOLDER).resolve(name);
         try {
             Files.write(path, content);
@@ -380,18 +447,48 @@ public class Utils {
         return format("ui-tests-%s-%d", testCase, Utils.randomSuffix());
     }
 
-    public static void restartBrowser(final String address) {
-        Selenide.close();
-        Selenide.open(address);
-    }
-
     public static void assertStringContainsList(final String str, final String... subStrings) {
          Arrays.stream(subStrings).forEach(substr -> assertTrue(str.contains(substr),
                  format("'%s' doesn't exist in string", substr)));
     }
 
     public static String entityIDfromURL() {
-        String url = WebDriverRunner.getWebDriver().getCurrentUrl();
+        String url = getCurrentURL();
         return url.substring(url.lastIndexOf("/") + 1);
+    }
+
+    public static File getFile(String filename) {
+        try {
+            return Paths.get(ClassLoader.getSystemResource(filename).toURI()).toFile();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("Unable to get resource file");
+        }
+    }
+
+    public static String getCurrentURL() {
+        return getWebDriver().getCurrentUrl();
+    }
+
+    /**
+     * Clicks the element with the mouse, then clicks 50 px to the right of and below it (e.g. to leave the menu the
+     * element is in). The second click is relative to the element: a relative move starts where the last mouse
+     * action left the pointer, so relative clicks on their own add up from call to call and end outside the window
+     * (MoveTargetOutOfBoundsException, EPMCMBIBPC-871).
+     */
+    public static void clickAndResetClick(final SelenideElement element) {
+        Selenide.actions()
+                .moveToElement(element.shouldBe(visible, enabled))
+                .click()
+                .moveByOffset(50, 50)
+                .click()
+                .perform();
+    }
+
+    public static String readFile(final String filePath) {
+        try {
+            return String.join("\n", Files.readAllLines(Paths.get(filePath)));
+        } catch (IOException e) {
+            throw new RuntimeException(format("Unable to get file from path %s", filePath));
+        }
     }
 }

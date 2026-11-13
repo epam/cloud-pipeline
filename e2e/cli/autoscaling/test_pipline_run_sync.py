@@ -17,7 +17,7 @@ import logging
 import pytest
 
 from common_utils.entity_managers import PipelineManager
-from utils.pipeline_utils import *
+from .utils.pipeline_utils import *
 
 
 class TestPipelineRunSync(object):
@@ -48,4 +48,4 @@ class TestPipelineRunSync(object):
         except BaseException as e:
             logging.info("Case {} failed!".format(self.test_case))
             self.state.failure = True
-            pytest.fail("Test case {} failed.\n{}".format(self.test_case, e.message))
+            pytest.fail("Test case {} failed.\n{}".format(self.test_case, str(e)))

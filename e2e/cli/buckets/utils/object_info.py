@@ -31,7 +31,7 @@ class ObjectInfo(object):
             if provider in _object_infos:
                 return _object_infos[provider](*args)
             else:
-                raise RuntimeError('Provider must be one of %s' % _object_infos.keys())
+                raise RuntimeError('Provider must be one of %s' % list(_object_infos.keys()))
 
 
 class S3ObjectInfo(ObjectInfo):

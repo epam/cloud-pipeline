@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.PipelinesLibraryAO;
+import com.epam.pipeline.autotests.ao.StorageContentAO;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -32,14 +33,16 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.List;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selenide.$;
-import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.StorageContentAO.folderWithName;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Listeners(value = ConditionalTestAnalyzer.class)
@@ -47,33 +50,44 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
 
     private static final String STORAGE_PREFIX = StringUtils.isBlank(C.STORAGE_NAME_PREFIX) ? "" : C.STORAGE_NAME_PREFIX;
     private String storage = "epmcmbi-test-storage-" + Utils.randomSuffix();
+    private final String storageDescription = "epmcmbi test storage description " + Utils.randomSuffix();
     private final String deletableStorage = "epmcmbi-test-deletable-storage-" + Utils.randomSuffix();
+    private final String existingAlias = "epmcmbi-test-existing-alias-" + Utils.randomSuffix();
+    private final String cancelAlias = "epmcmbi-test-cancel-alias-" + Utils.randomSuffix();
     private final String editableStorage = "epmcmbi-test-editable-storage-" + Utils.randomSuffix();
     private final String tempAlias = "epmcmbi-test-temp-alias-" + Utils.randomSuffix();
 
     private final String refreshingTestStorage = "refreshing-test-storage-" + Utils.randomSuffix();
+    private final String folderDeletionStorage = "epmcmbi-test-del-folder-" + Utils.randomSuffix();
     private String presetStorage = "preset-test-storage" + Utils.randomSuffix();
 
     private final String folder = "epmcmbi-test-folder-" + Utils.randomSuffix();
     private final String folderTempName = "epmcmbi-test-folder-temp-name-" + Utils.randomSuffix();
     private final String subfolder = "epmcmbi-test-subfolder-" + Utils.randomSuffix();
-    private final String fileTempName = String.format("epmcmbi-file-temp-name-%d.file", Utils.randomSuffix());
-    private final String prefixStoragePath = String.format("%s://", C.STORAGE_PREFIX);
+    private final String fileInFolder = format("epmcmbi-test-file-in-folder-%d.file", Utils.randomSuffix());
+    private final String presetSubfolder1 = "subfolder-1-" + Utils.randomSuffix();
+    private final String presetSubfolder2 = "subfolder-2-" + Utils.randomSuffix();
+    private final String fileTempName = format("epmcmbi-file-temp-name-%d.file", Utils.randomSuffix());
+    private final String prefixStoragePath = format("%s://", C.STORAGE_PREFIX);
     private File file;
+    private File presetFile1;
+    private File presetFile2;
 
     @BeforeClass
     public void createPresetStorage() {
         file = Utils.createTempFile();
+        presetFile1 = Utils.createTempFile("1");
+        presetFile2 = Utils.createTempFile("2");
         navigateToLibrary()
             .createStorage(presetStorage)
             .selectStorage(presetStorage)
             .createFolder(folder)
             .uploadFile(file)
             .cd(folder)
-            .createFolder("subfolder-1-" + Utils.randomSuffix())
-            .createFolder("subfolder-2-" + Utils.randomSuffix())
-            .uploadFile(Utils.createTempFile("1"))
-            .uploadFile(Utils.createTempFile("2"));
+            .createFolder(presetSubfolder1)
+            .createFolder(presetSubfolder2)
+            .uploadFile(presetFile1)
+            .uploadFile(presetFile2);
     }
 
     @AfterClass(alwaysRun = true)
@@ -81,8 +95,8 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
         reloadPageAndWait();
         clickCanceButtonlIfItIsDisplayed();
 
-        Utils.removeStorages(this, storage, deletableStorage, editableStorage, tempAlias, refreshingTestStorage,
-                presetStorage);
+        Utils.removeStorages(this, storage, deletableStorage, existingAlias, editableStorage, tempAlias,
+                refreshingTestStorage, folderDeletionStorage, presetStorage);
     }
 
     @Test
@@ -94,13 +108,13 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
             .createStorage(refreshingTestStorage)
             .selectStorage(refreshingTestStorage)
             .inAnotherTab(library -> library.sleep(2, SECONDS).createFolder(folder).sleep(3, SECONDS))
-            .ensure(folderWithName(folder), not(exist).because(String.format(
+            .ensure(folderWithName(folder), not(exist).because(format(
                 "Folder with name %s is not supposed to appear until the page will be refreshed.", folder)
             ))
             .sleep(3, SECONDS)
             .clickRefreshButton()
             .sleep(1, SECONDS)
-            .ensure(folderWithName(folder), visible.because(String.format(
+            .ensure(folderWithName(folder), visible.because(format(
                 "Folder with name %s should appear after the page has been refreshed.", folder)
             ))
             .validateElementIsPresent(folder)
@@ -112,14 +126,16 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
     @TestCase(value = {"EPMCMBIBPC-448"})
     public void createDataStorageAndValidate() {
         navigateToLibrary()
-            .createStorage(storage)
-            .validateStorage(storage)
+            .createNewObjectStorage(storage, storageDescription)
+            .validateStorageInTree(storage)
             .validateStoragePictogram(storage)
             .selectStorage(storage)
             .createFolder(folder)
             .validateHeader(storage)
             .ensureVisible(REFRESH, EDIT_STORAGE, UPLOAD, CREATE, SELECT_ALL)
+            .validateDescription(storageDescription)
             .validateStoragePath()
+            .ensure(STORAGEPATH, text(format("%s%s%s", prefixStoragePath, STORAGE_PREFIX, storage)))
             .validateListOfFoldersIsDisplayed();
     }
 
@@ -128,7 +144,7 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
     public void createDataStorageWithNameThatAlreadyExists() {
         navigateToLibrary()
             .createStorage(storage)
-            .messageShouldAppear(String.format("'%s' already exist", storage));
+            .messageShouldAppear(format("'%s' already exist", storage));
         clickCanceButtonlIfItIsDisplayed();
         refresh();
     }
@@ -136,13 +152,16 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
     @Test(dependsOnMethods = {"createDataStorageAndValidate"})
     @TestCase(value = {"EPMCMBIBPC-1017"})
     public void clickCrossButtonInDataStorageDeletionDialog() {
-        navigateToLibrary()
-            .selectStorage(storage)
+        final StorageContentAO storageContent = navigateToLibrary()
+            .selectStorage(storage);
+        final List<String> treeBefore = new PipelinesLibraryAO().treeItemTitles();
+        storageContent
             .clickEditStorageButton()
             .clickDeleteStorageButton()
             .clickCrossButton()
             .cancel()
-            .validateStorage(storage);
+            .validateStorage(storage)
+            .validateTreeItemTitlesAre(treeBefore);
     }
 
     @Test(dependsOnMethods = {"createDataStorageAndValidate"})
@@ -151,8 +170,8 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
         navigateToLibrary()
             .selectStorage(storage)
             .createFolder(folder)
-            .messageShouldAppear(String.format("Storage path '%s/' for bucket '%s' already exists.", folder,
-                    String.format("%s%s", STORAGE_PREFIX, storage)));
+            .messageShouldAppear(format("Storage path '%s/' for bucket '%s' already exists.", folder,
+                    format("%s%s", STORAGE_PREFIX, storage)));
 
         refresh();
     }
@@ -198,7 +217,7 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
 
         navigateToLibrary()
             .selectStorage(storage)
-            .uploadFile(uploadedFile)
+            .uploadFileAndValidateUploadingPopup(uploadedFile)
             .validateElementIsPresent(uploadedFile.getName())
             .selectFile(uploadedFile.getName())
             .delete();
@@ -250,16 +269,22 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
             .renameTo(file.getName());
     }
 
-    @Test(dependsOnMethods = "createSubfolderInDataStorage")
+    @Test
     @TestCase(value = {"EPMCMBIBPC-459"})
     public void deleteFolder() {
+        final String folderToDelete = "folder-to-delete-" + Utils.randomSuffix();
         navigateToLibrary()
-            .selectStorage(storage)
-            .cd(folder)
-            .selectFolder(subfolder)
+            .createStorage(folderDeletionStorage)
+            .selectStorage(folderDeletionStorage)
+            .createFolder(folderToDelete)
+            .validateElementIsPresent(folderToDelete);
+
+        navigateToLibrary()
+            .selectStorage(folderDeletionStorage)
+            .selectFolder(folderToDelete)
             .delete()
-            .validateCurrentFolderIsEmpty()
-            .createFolder(subfolder);
+            .validateElementNotPresent(folderToDelete)
+            .validateCurrentFolderIsEmpty();
     }
 
     @Test(dependsOnMethods = "createSubfolderInDataStorage")
@@ -267,9 +292,17 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
     public void deleteFolderWithContent() {
         navigateToLibrary()
             .selectStorage(storage)
+            .cd(folder)
+            .createFileWithContent(fileInFolder, fileInFolder)
+            .validateElementIsPresent(fileInFolder)
+            .validateElementIsPresent(subfolder);
+
+        navigateToLibrary()
+            .selectStorage(storage)
             .selectFolder(folder)
             .delete()
             .validateElementNotPresent(folder)
+            .validateCurrentFolderIsEmpty()
             .createFolder(folder)
             .cd(folder)
             .createFolder(subfolder);
@@ -300,6 +333,7 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
 
         navigateToLibrary()
             .selectStorage(presetStorage)
+            .sleep(6, SECONDS)
             .uploadFile(newFile1)
             .uploadFile(newFile2)
             .selectElementsUsingCheckboxes(newFile1.getName(), newFile2.getName())
@@ -315,7 +349,10 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
             .selectStorage(presetStorage)
             .cd(folder)
             .selectPage()
-            .validateAllFilesAreSelected()
+            .elementsShouldBeSelected(presetSubfolder1, presetSubfolder2, presetFile1.getName(),
+                    presetFile2.getName())
+            // the four items and the ".." row, which has no checkbox
+            .shouldContainNumberOfElements(5)
             .ensureVisible(REMOVE_ALL, CLEAR_SELECTION)
             .ensure(SELECT_ALL, not(visible));
     }
@@ -352,7 +389,9 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
             .clickEditStorageButton()
             .setAlias(tempAlias)
             .clickSaveButton()
-            .validateStorage(tempAlias);
+            .validateStorageInTree(tempAlias);
+        new StorageContentAO()
+            .validateHeader(tempAlias);
         navigateToLibrary()
             .selectStorage(tempAlias)
             .clickEditStorageButton()
@@ -392,10 +431,11 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
         navigateToLibrary()
             .selectStorage(editableStorage)
             .clickEditStorageButton()
-            .setDurations("3","5")
+            .setDurations("3", "6")
             .clickSaveButton()
             .selectStorage(editableStorage)
-            .validateStsDuration("3");
+            .validateStsDuration("3")
+            .validateLtsDuration("6");
     }
 
     @Test
@@ -415,30 +455,34 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
     public void addExistingBucket() {
         navigateToLibrary()
             .clickOnCreateExistingStorageButton()
-            .setPath(String.format("%s%s", STORAGE_PREFIX, deletableStorage))
-            .setAlias(deletableStorage)
+            .setPath(format("%s%s", STORAGE_PREFIX, deletableStorage))
+            .setAlias(existingAlias)
             .clickCreateButton()
-            .validateStorage(deletableStorage);
+            .validateStorageInTree(existingAlias)
+            .selectStorage(existingAlias)
+            .validateHeader(existingAlias)
+            .ensure(STORAGEPATH, text(format("%s%s%s", prefixStoragePath, STORAGE_PREFIX, deletableStorage)))
+            .validateCurrentFolderIsEmpty();
     }
 
     @Test(dependsOnMethods = {"addExistingBucket"})
     @TestCase(value = {"EPMCMBIBPC-478"})
     public void tryToCreateDeletedBucket() {
         navigateToLibrary()
-            .selectStorage(deletableStorage)
+            .selectStorage(existingAlias)
             .clickEditStorageButton()
             .clickDeleteStorageButton()
             .clickDelete()
-            .validateStorageIsNotPresent(deletableStorage)
+            .validateStorageIsNotPresent(existingAlias)
             .sleep(30, SECONDS);
 
         navigateToLibrary()
             .clickOnCreateExistingStorageButton()
-            .setPath(String.format("%s%s", STORAGE_PREFIX, deletableStorage))
+            .setPath(format("%s%s", STORAGE_PREFIX, deletableStorage))
             .setAlias(deletableStorage)
             .clickCreateAndCancel()
-            .messageShouldAppear(String.format("Error: data storage with name: '%s' or path: '%s' was not found.",
-                    deletableStorage, String.format("%s%s", STORAGE_PREFIX, deletableStorage)))
+            .messageShouldAppear(format("Error: data storage with name: '%s' or path: '%s' was not found.",
+                    deletableStorage, format("%s%s", STORAGE_PREFIX, deletableStorage)))
             .validateStorageIsNotPresent(deletableStorage);
     }
 
@@ -483,68 +527,88 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
     @Test
     @TestCase(value = {"EPMCMBIBPC-484"})
     public void validateCancelButtonForDeleteFolderPopUp() {
-        navigateToLibrary()
+        final StorageContentAO storageContent = navigateToLibrary()
             .selectStorage(presetStorage)
+            .validateElementIsPresent(folder);
+        final List<String> contentBefore = storageContent.filesAndFolders();
+        storageContent
             .selectFolder(folder)
             .clickDeleteButton()
             .cancel()
-            .validateElementIsPresent(folder);
+            .validateElementIsPresent(folder)
+            .validateFilesAndFoldersAre(contentBefore);
     }
 
     @Test
     @TestCase(value = {"EPMCMBIBPC-485"})
     public void validateCancelButtonForDeleteFilePopUp() {
-        navigateToLibrary()
+        final StorageContentAO storageContent = navigateToLibrary()
             .selectStorage(presetStorage)
+            .validateElementIsPresent(file.getName());
+        final List<String> contentBefore = storageContent.filesAndFolders();
+        storageContent
             .selectFile(file.getName())
             .clickDeleteButton()
             .cancel()
-            .validateElementIsPresent(file.getName());
+            .validateElementIsPresent(file.getName())
+            .validateFilesAndFoldersAre(contentBefore);
     }
 
     @Test
     @TestCase(value = {"EPMCMBIBPC-486"})
     public void validateCancelButtonForCreateFolderPopUp() {
-        final String folderName = "aaaa";
-        navigateToLibrary()
+        final StorageContentAO storageContent = navigateToLibrary()
             .selectStorage(presetStorage)
+            .validateElementIsPresent(folder);
+        final List<String> contentBefore = storageContent.filesAndFolders();
+        storageContent
             .clickOnCreateFolderButton()
-            .typeInField(folderName)
             .cancel()
-            .validateElementNotPresent(folderName);
+            .validateFilesAndFoldersAre(contentBefore);
     }
 
     @Test
     @TestCase(value = {"EPMCMBIBPC-487"})
     public void validateCancelButtonForCreateBucketPopUp() {
         final String storageName = "abcdef";
-        navigateToLibrary()
-            .clickOnCreateStorageButton()
+        final PipelinesLibraryAO library = navigateToLibrary();
+        final List<String> treeBefore = library.treeItemTitles();
+        library
+            .clickOnCreateNewObjectStorageButton()
             .setPath(prefixStoragePath + storageName)
             .clickCancel()
-            .validateStorageIsNotPresent(storageName);
+            .validateStorageIsNotPresent(storageName)
+            .validateTreeItemTitlesAre(treeBefore);
     }
 
     @Test(dependsOnMethods = "createAndUnregisterBucket")
     @TestCase(value = {"EPMCMBIBPC-488"})
     public void validateCancelButtonForCreateExistingBucketPopUp() {
-        navigateToLibrary()
+        final PipelinesLibraryAO library = navigateToLibrary();
+        final List<String> treeBefore = library.treeItemTitles();
+        library
             .clickOnCreateExistingStorageButton()
-            .setPath(prefixStoragePath + deletableStorage)
+            .setPath(format("%s%s%s", prefixStoragePath, STORAGE_PREFIX, deletableStorage))
+            .setAlias(cancelAlias)
             .clickCancel()
-            .validateStorageIsNotPresent(deletableStorage);
+            .validateStorageIsNotPresent(deletableStorage)
+            .validateStorageIsNotPresent(cancelAlias)
+            .validateTreeItemTitlesAre(treeBefore);
     }
 
-    @Test
+    @Test(dependsOnMethods = {"createDataStorageAndValidate"})
     @TestCase(value = {"EPMCMBIBPC-489"})
     public void validateCancelButtonForDeleteBucketPopUp() {
-        navigateToLibrary()
-            .selectStorage(storage)
+        final StorageContentAO storageContent = navigateToLibrary()
+            .selectStorage(storage);
+        final List<String> treeBefore = new PipelinesLibraryAO().treeItemTitles();
+        storageContent
             .clickEditStorageButton()
             .clickDeleteStorageButton()
             .clickCancel()
             .clickCancel()
-            .validateStorage(storage);
+            .validateStorage(storage)
+            .validateTreeItemTitlesAre(treeBefore);
     }
 
     @Test(dependsOnMethods = {"createDataStorageAndValidate"})
@@ -552,20 +616,19 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
     public void validateCancelDeletingSeveralFolders() {
         final String folder1 = "folder1";
         final String folder2 = "folder2";
-        navigateToLibrary()
+        final StorageContentAO storageContent = navigateToLibrary()
             .selectStorage(storage)
             .createFolder(folder1)
             .createFolder(folder2)
+            .validateElementIsPresent(folder1)
+            .validateElementIsPresent(folder2);
+        final List<String> contentBefore = storageContent.filesAndFolders();
+        storageContent
             .selectElementsUsingCheckboxes(folder1, folder2)
             .clickOnRemoveAllSelectedButton()
             .clickCancelInRemoveAllSelectedDialog()
-            .validateElementIsPresent(folder1)
-            .validateElementIsPresent(folder2);
-
-        navigateToLibrary()
-            .selectStorage(storage)
-            .selectElementsUsingCheckboxes(folder1, folder2)
-            .removeAllSelected();
+            .validateFilesAndFoldersAre(contentBefore)
+            .removeAllSelectedElements();
     }
 
     private void assertFileSize(File file, int expectedFileSize) {

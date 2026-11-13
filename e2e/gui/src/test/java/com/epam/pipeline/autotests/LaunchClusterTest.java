@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,37 +17,52 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
+import com.epam.pipeline.autotests.ao.RunsMenuAO;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
+import com.epam.pipeline.autotests.utils.PipelinePermission;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 import static com.codeborne.selenide.Condition.appears;
+import static com.codeborne.selenide.Condition.attribute;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
+import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.$;
-import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
+import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
+import static com.epam.pipeline.autotests.ao.LogAO.containsMessage;
 import static com.epam.pipeline.autotests.ao.LogAO.containsMessages;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
+import static com.epam.pipeline.autotests.ao.Primitive.DEFAULT_CHILD_NODES;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
 import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.START_IDLE;
 import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
 import static com.epam.pipeline.autotests.ao.Primitive.TYPE;
+import static com.epam.pipeline.autotests.ao.Primitive.WORKING_NODES;
+import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
+import static com.epam.pipeline.autotests.utils.C.COMPLETION_TIMEOUT;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.lang.String.format;
+import static java.time.Duration.ofMillis;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest implements Authorization {
 
@@ -58,11 +73,14 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
     private final String testingTool = C.ANOTHER_TESTING_TOOL_NAME;
     private final String testingNode = C.ANOTHER_INSTANCE;
     private final String instanceFamilyName = C.DEFAULT_INSTANCE_FAMILY_NAME;
-    private final String gridEngineAutoscalingTask = "GridEngineAutoscaling";
+    private final String gridEngineAutoscalingTask = "SGEAutoscaling";
     private final String spotPrice = C.SPOT_PRICE_NAME;
     private final String onDemandPrice = ON_DEMAND;
     private final String mastersConfigPrice = "Master's config";
     private final String sleepCommand = "sleep";
+    private final String childNodesField = "Child nodes:";
+    private final String autoScaledUpToField = "Auto-scaled up to:";
+    private final String defaultChildNodesField = "Default child nodes:";
 
     @AfterMethod(alwaysRun = true)
     @Override
@@ -76,22 +94,11 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
         super.removeNode();
     }
 
-    @BeforeClass
-    public void setPreferences() {
-        loginAsAdminAndPerform(() ->
-                navigationMenu()
-                        .settings()
-                        .switchToPreferences()
-                        .switchToAutoscaling()
-                        .setScaleDownTimeout("30")
-                        .setScaleUpTimeout("30")
-                        .save()
-        );
-    }
-
     @BeforeMethod
     public void refreshPage() {
-        getWebDriver().navigate().refresh();
+        open(C.ROOT_ADDRESS);
+        logout();
+        loginAs(admin);
     }
 
     @Test
@@ -103,52 +110,79 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+		.setPriceType(onDemandPrice)
                 .enableClusterLaunch()
+                .ensureOpened()
                 .clusterSettingsForm(clusterSettingForm)
                 .setWorkingNodesCount("2")
                 .ok()
                 .launch(this)
                 .shouldContainRun(getPipelineName(), getRunId())
                 .openClusterRuns(getRunId())
-                .shouldContainRunsWithParentRun(2, getRunId())
+                .shouldContainExactlyRunsWithParentRun(2, getRunId())
                 .showLog(getRunId())
-                .waitForCompletion();
+                .waitForCompletion()
+                .ensure(STATUS, LogAO.Status.SUCCESS.reached);
 
         navigationMenu()
                 .runs()
                 .completedRuns()
                 .shouldContainRun(getPipelineName(), getRunId())
                 .openClusterRuns(getRunId())
-                .shouldContainRunsWithParentRun(2, getRunId());
+                .shouldContainExactlyRunsWithParentRun(2, getRunId())
+                .validateStatus(getRunId(), LogAO.Status.SUCCESS)
+                .childRunsShouldHaveStatus(getRunId(), LogAO.Status.SUCCESS);
     }
 
     @Test
     @TestCase({"EPMCMBIBPC-2618"})
     public void launchAutoScaledClusterTest() {
-        library()
-                .createPipeline(Template.SHELL, getPipelineName())
-                .clickOnPipeline(getPipelineName())
-                .firstVersion()
-                .runPipeline()
-                .setDefaultLaunchOptions()
-                .enableClusterLaunch()
-                .clusterSettingsForm(autoScaledSettingForm)
-                .setWorkingNodesCount("1")
-                .ok()
-                .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 1d && sleep infinity")
-                .launch(this)
-                .shouldContainRun(getPipelineName(), getRunId());
-        $(byClassName("run-" + getRunId()))
-                .find(byClassName("ant-table-row-expand-icon"))
-                .waitUntil(appears, C.COMPLETION_TIMEOUT);
-        navigationMenu()
-                .runs()
-                .activeRuns()
-                .shouldContainRun(getPipelineName(), getRunId())
-                .openClusterRuns(getRunId())
-                .shouldContainRunsWithParentRun(1, getRunId())
-                .stopRunIfPresent(String.valueOf(Integer.parseInt(getRunId())+1))
-                .stopRunIfPresent(getRunId());
+        String childRunId = null;
+        try {
+            library()
+                    .createPipeline(Template.SHELL, getPipelineName())
+                    .clickOnPipeline(getPipelineName())
+                    .firstVersion()
+                    .runPipeline()
+                    .setDefaultLaunchOptions()
+                    .setPriceType(onDemandPrice)
+                    .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 1d && sleep infinity")
+                    .enableClusterLaunch()
+                    .clusterSettingsForm(autoScaledSettingForm)
+                    .setWorkingNodesCount("1")
+                    .ok()
+                    .launch(this)
+                    .shouldContainRun(getPipelineName(), getRunId());
+            $(byClassName("run-" + getRunId()))
+                    .find(byClassName("ant-table-row-expand-icon"))
+                    .shouldBe(appears, ofMillis(C.COMPLETION_TIMEOUT));
+            final RunsMenuAO clusterRuns = navigationMenu()
+                    .runs()
+                    .activeRuns()
+                    .shouldContainRun(getPipelineName(), getRunId())
+                    .runShouldBeRunning(getRunId())
+                    .openClusterRuns(getRunId())
+                    .shouldContainExactlyRunsWithParentRun(1, getRunId());
+            childRunId = clusterRuns.childRunIds(getRunId()).get(0);
+            clusterRuns
+                    .runShouldBeRunning(childRunId)
+                    .showLog(getRunId())
+                    .waitForSshLink()
+                    .shareWithUser(user.login, false);
+            addAccountToPipelinePermissions(user, getPipelineName());
+            givePermissions(user, PipelinePermission.allow(READ, getPipelineName()));
+            logout();
+            loginAs(user)
+                    .runs()
+                    .viewAvailableActiveRuns()
+                    .openClusterRuns(getRunId())
+                    .stopAndTerminateShouldBeUnavailable(getRunId())
+                    .stopAndTerminateShouldBeUnavailable(childRunId);
+        } finally {
+            logoutIfNeeded();
+            loginAs(admin);
+            stopClusterRuns(getRunId(), childRunId);
+        }
     }
 
     @Test(priority = 1)
@@ -157,93 +191,111 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
         library()
                 .createPipeline(Template.SHELL, getPipelineName())
                 .clickOnPipeline(getPipelineName())
-                .firstVersion()
-                .runPipeline()
+                .runFirstVersion()
                 .setDefaultLaunchOptions()
                 .enableClusterLaunch()
                 .clusterSettingsForm(clusterSettingForm)
                 .setWorkingNodesCount("0")
-                .messageShouldAppear("Value should be greater than 0")
+                .fieldMessageShouldBe(childNodesField, "Value should be greater than 0")
                 .setWorkingNodesCount("-1")
-                .messageShouldAppear("Value should be greater than 0")
+                .ensure(WORKING_NODES, attribute("value", "-1"))
+                .fieldMessageShouldBe(childNodesField, "Value should be greater than 0")
                 .setWorkingNodesCount("asdf")
-                .messageShouldAppear("Enter positive number")
+                .fieldMessageShouldBe(childNodesField, "Enter positive number")
                 .clusterSettingsForm(autoScaledSettingForm)
                 .setWorkingNodesCount("0")
-                .messageShouldAppear("Value should be greater than 0")
+                .fieldMessageShouldBe(autoScaledUpToField, "Value should be greater than 0")
                 .setWorkingNodesCount("-1")
-                .messageShouldAppear("Value should be greater than 0")
+                .ensure(WORKING_NODES, attribute("value", "-1"))
+                .fieldMessageShouldBe(autoScaledUpToField, "Value should be greater than 0")
                 .setWorkingNodesCount("asdf")
-                .messageShouldAppear("Enter positive number")
+                .fieldMessageShouldBe(autoScaledUpToField, "Enter positive number")
                 .setDefaultChildNodes("3")
-                .messageShouldAppear("Max child nodes count should be greater than child nodes count")
-                .resetClusterChildNodes()
-                .setDefaultChildNodes("0")
-                .messageShouldAppear("Value should be greater than 0")
-                .resetClusterChildNodes()
-                .setDefaultChildNodes("-1")
-                .messageShouldAppear("Value should be greater than 0")
-                .resetClusterChildNodes()
-                .setDefaultChildNodes("asdf")
-                .messageShouldAppear("Enter positive number");
+                .fieldMessageShouldBe(defaultChildNodesField,
+                        "Max child nodes count should be greater than child nodes count")
+                .setDefaultChildNodesCount("0")
+                .fieldMessageShouldBe(defaultChildNodesField, "Value should be greater than 0")
+                .setDefaultChildNodesCount("-1")
+                .ensure(DEFAULT_CHILD_NODES, attribute("value", "-1"))
+                .fieldMessageShouldBe(defaultChildNodesField, "Value should be greater than 0")
+                .setDefaultChildNodesCount("asdf")
+                .fieldMessageShouldBe(defaultChildNodesField, "Enter positive number");
     }
 
     @Test
     @TestCase({"EPMCMBIBPC-2628"})
     public void autoScaledClusterWithDefaultChildNodesValidationTest() {
-        String childRunID1 = library()
-                .createPipeline(Template.SHELL, getPipelineName())
-                .clickOnPipeline(getPipelineName())
-                .firstVersion()
-                .runPipeline()
-                .setDefaultLaunchOptions()
-                .setPriceType(onDemandPrice)
-                .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 5m && sleep infinity")
-                .enableClusterLaunch()
-                .clusterSettingsForm(autoScaledSettingForm)
-                .setDefaultChildNodes("1")
-                .setWorkingNodesCount("2")
-                .ok()
-                .launch(this)
-                .shouldContainRun(getPipelineName(), getRunId())
-                .showLog(getRunId())
-                .waitForNestedRunsLink()
-                .getNestedRunID(1);
+        String childRunID1 = null;
+        String childRunID2 = null;
+        try {
+            LogAO logAO = library()
+                    .createPipeline(Template.SHELL, getPipelineName())
+                    .clickOnPipeline(getPipelineName())
+                    .firstVersion()
+                    .runPipeline()
+                    .setDefaultLaunchOptions()
+                    .setPriceType(onDemandPrice)
+                    // the second worker must come up while jobs still wait: without storage mounts it starts in ~6 min
+                    // (26 storages took ~5.5 min more), and the jobs of 10 min keep the queue busy beyond that
+                    .doNotMountStoragesSelect(true)
+                    .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 10m && sleep infinity")
+                    .enableClusterLaunch()
+                    .clusterSettingsForm(autoScaledSettingForm)
+                    .click(byText("Setup default child nodes count"))
+                    .setWorkingNodesCount("2")
+                    .setDefaultChildNodesCount("1")
+                    .ok()
+                    .launch(this)
+                    .shouldContainRun(getPipelineName(), getRunId())
+                    .showLog(getRunId())
+                    .waitForTask(gridEngineAutoscalingTask)
+                    .waitForSshLink();
+            childRunID1 = logAO
+                    .waitForNestedRunsLink()
+                    .getNestedRunID(1);
 
-        String childRunID2 = runsMenu()
-                .activeRuns()
-                .openClusterRuns(getRunId())
-                .shouldContainRunsWithParentRun(1, getRunId())
-                .shouldContainRun(getPipelineName(), childRunID1)
-                .showLog(getRunId())
-                .waitForTask(gridEngineAutoscalingTask)
-                .getNestedRunID(2);
+            runsMenu()
+                    .activeRuns()
+                    .openClusterRuns(getRunId())
+                    .shouldContainRunsWithParentRun(1, getRunId())
+                    .shouldContainRun(getPipelineName(), childRunID1)
+                    .runShouldHaveParentRun(childRunID1, getRunId())
+                    .showLog(getRunId())
+                    .click(taskWithName(gridEngineAutoscalingTask))
+                    .waitForLog(String.format("Additional worker pipeline-\\d+ \\(%s\\) has been scaled up.",
+                            C.DEFAULT_INSTANCE));
+            childRunID2 = new LogAO().getNestedRunID(2);
+            new LogAO()
+                    .ensure(log(), containsMessage(String.format("Additional worker pipeline-%s (%s) has been scaled up.",
+                            childRunID2, C.DEFAULT_INSTANCE)));
+            final String scaledDownMessage = String.format("Additional worker pipeline-%s has been scaled down.",
+                    childRunID2);
+            navigationMenu()
+                    .runs()
+                    .activeRuns()
+                    .openClusterRuns(getRunId())
+                    .shouldContainExactlyRunsWithParentRun(2, getRunId())
+                    .shouldContainRun("pipeline", childRunID2)
+                    .runShouldHaveParentRun(childRunID2, getRunId())
+                    .runShouldBeRunning(getRunId())
+                    .runShouldBeRunning(childRunID1)
+                    .runShouldBeRunning(childRunID2)
+                    .showLog(getRunId())
+                    .ensure(taskWithName(gridEngineAutoscalingTask), visible)
+                    .click(taskWithName(gridEngineAutoscalingTask))
+                    .waitForLog(scaledDownMessage)
+                    .ensure(log(), containsMessage(scaledDownMessage));
 
-        runsMenu()
-                .activeRuns()
-                .showLog(getRunId())
-                .click(taskWithName(gridEngineAutoscalingTask))
-                .waitForLog(String.format("Additional worker with host=%s and instance type=%s has been created.",
-                        String.format("pipeline-%s", childRunID2), C.DEFAULT_INSTANCE));
-        navigationMenu()
-                .runs()
-                .activeRuns()
-                .openClusterRuns(getRunId())
-                .shouldContainRunsWithParentRun(2, getRunId())
-                .shouldContainRun("pipeline", childRunID2)
-                .showLog(getRunId())
-                .ensure(taskWithName(gridEngineAutoscalingTask), visible)
-                .click(taskWithName(gridEngineAutoscalingTask))
-                .waitForLog(String.format("Additional worker with host=%s has been stopped.",
-                        String.format("pipeline-%s", childRunID2)));
-
-        navigationMenu()
-                .runs()
-                .activeRuns()
-                .openClusterRuns(getRunId())
-                .validateStatus(getRunId(), LogAO.Status.WORKING)
-                .validateStatus(childRunID1, LogAO.Status.WORKING)
-                .validateStatus(childRunID2, LogAO.Status.STOPPED);
+            navigationMenu()
+                    .runs()
+                    .activeRuns()
+                    .openClusterRuns(getRunId())
+                    .runShouldBeRunning(getRunId())
+                    .runShouldBeRunning(childRunID1)
+                    .validateStatus(childRunID2, LogAO.Status.STOPPED);
+        } finally {
+            stopClusterRuns(getRunId(), childRunID1, childRunID2);
+        }
     }
 
     @Test
@@ -255,6 +307,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .setPriceType(onDemandPrice)
                 .enableClusterLaunch()
                 .clusterSettingsForm(clusterSettingForm)
                 .clusterEnableCheckboxSelect("Enable GridEngine")
@@ -289,6 +342,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                         .execute("qstat")
                         .execute("qsub -b y -t 1:10 sleep 10m")
                         .assertOutputContains("Your job-array 1.1-10:1 (\"sleep\") has been submitted")
+                        .sleep(2, SECONDS)
                         .execute("qstat")
                         .assertOutputContains(String.format("main.q@%s", getPipelineName().toLowerCase()).substring(0, 30))
                         .close());
@@ -303,6 +357,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .setPriceType(onDemandPrice)
                 .enableClusterLaunch()
                 .clusterSettingsForm(clusterSettingForm)
                 .clusterEnableCheckboxSelect("Enable Slurm")
@@ -357,6 +412,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter("CP_CAP_SPARK", "true"), exist)
+                .waitForSshLink()
                 .waitForEndpointLink()
                 .click(taskWithName("SparkMasterSetup"))
                 .ensure(log(), containsMessages("Spark master is started"))
@@ -393,6 +449,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .launch(this)
                 .shouldContainRun(getPipelineName(), getRunId())
                 .showLog(getRunId())
+                .waitForSshLink()
                 .waitForNestedRunsLink()
                 .clickOnNestedRunLink()
                 .instanceParameters(instance ->
@@ -409,6 +466,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .setPriceType(onDemandPrice)
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .enableHybridClusterSelect()
@@ -434,25 +492,32 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                         "requested resources and therefore they will be rejected: 1 (150 cpu)"))
                 .ssh(shell -> shell
                         .execute("qsub -b y -pe local 50 sleep 5m")
+                        .sleep(20, SECONDS)
+                        .execute("qstat")
                         .close());
-        navigationMenu()
+        final String nestedRunID = navigationMenu()
                 .runs()
                 .activeRuns()
                 .showLog(getRunId())
+                .waitForSshLink()
                 .waitForNestedRunsLink()
+                .getNestedRunID(1);
+        new LogAO()
                 .clickOnNestedRunLink()
-                .ensure(STATUS, text(String.valueOf(Integer.parseInt(getRunId()) + 1)));
+                .ensure(STATUS, text(nestedRunID));
     }
 
     @Test
     @TestCase({"EPMCMBIBPC-3153"})
     public void hybridAutoScaledCluster() {
+        String[] runID = new String[2];
         String cpu = library()
                 .createPipeline(Template.SHELL, getPipelineName())
                 .clickOnPipeline(getPipelineName())
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .setPriceType(onDemandPrice)
                 .getCPU();
         onLaunchPage()
                 .enableClusterLaunch()
@@ -461,17 +526,18 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .ok()
                 .setCommand(String.format("qsub -b y -pe local %s sleep 15m && sleep infinity", Integer.parseInt(cpu) + 1))
                 .launch(this)
-                .shouldContainRun(getPipelineName(), getRunId())
-                .showLog(getRunId())
+                .shouldContainRun(runID[1] = getPipelineName(), runID[0] = getRunId())
+                .showLog(runID[0])
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter("CP_CAP_AUTOSCALE", "true"), exist)
                 .ensure(configurationParameter("CP_CAP_AUTOSCALE_WORKERS", "1"), exist)
                 .ensure(configurationParameter("CP_CAP_AUTOSCALE_HYBRID", "true"), exist)
                 .waitForSshLink()
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(runID[1], runID[0])
                         .execute("qhost")
                         .assertOutputContains("HOSTNAME", "global", String.format("%s-%s lx-amd64",
-                                getPipelineName().toLowerCase(), getRunId()))
+                                runID[1].toLowerCase(), runID[0]))
                         .sleep(20, SECONDS)
                         .execute("qstat")
                         .assertPageContains(sleepCommand, " 1 ")
@@ -481,12 +547,13 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
         String nestedRunID = navigationMenu()
                                 .runs()
                                 .activeRuns()
-                                .showLog(getRunId())
+                                .showLog(runID[0])
+                                .waitForSshLink()
                                 .waitForNestedRunsLink()
                                 .getNestedRunID(1);
         runsMenu()
                 .activeRuns()
-                .showLog(getRunId())
+                .showLog(runID[0])
                 .clickOnNestedRunLink()
                 .instanceParameters(instance ->
                         instance.ensure(TYPE, text(C.DEFAULT_INSTANCE.substring(0, C.DEFAULT_INSTANCE.indexOf("."))))
@@ -494,10 +561,10 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 )
                 .waitForSshLink()
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(runID[1], runID[0])
                         .execute("qhost")
                         .assertOutputContains("HOSTNAME", "global", String.format("%s-%s lx-amd64",
-                                getPipelineName().toLowerCase(), getRunId()), String.format("pipeline-%s",
-                                nestedRunID))
+                                runID[1].toLowerCase(), runID[0]), String.format("pipeline-%s", nestedRunID))
                         .sleep(20, SECONDS)
                         .execute("qstat")
                         .assertPageContains(sleepCommand, " r ")
@@ -515,6 +582,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .setPriceType(onDemandPrice)
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .enableHybridClusterSelect()
@@ -565,6 +633,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .instanceParameters(instance ->
                         instance.ensure(PRICE_TYPE, text(onDemandPrice)))
+                .waitForSshLink()
                 .waitForNestedRunsLink()
                 .clickOnNestedRunLink()
                 .instanceParameters(instance ->
@@ -592,6 +661,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .instanceParameters(instance ->
                         instance.ensure(PRICE_TYPE, text(spotPrice)))
+                .waitForSshLink()
                 .waitForNestedRunsLink()
                 .clickOnNestedRunLink()
                 .instanceParameters(instance ->
@@ -619,6 +689,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .instanceParameters(instance ->
                         instance.ensure(PRICE_TYPE, text(spotPrice)))
+                .waitForSshLink()
                 .waitForNestedRunsLink()
                 .clickOnNestedRunLink()
                 .instanceParameters(instance ->
@@ -627,5 +698,32 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
 
     private static PipelineRunFormAO onLaunchPage() {
         return new PipelineRunFormAO();
+    }
+
+    /**
+     * Stops the still running child runs of the cluster first and then the parent run.
+     * The rows of the child runs are shown only while the parent run is expanded.
+     */
+    private void stopClusterRuns(final String parentRunId, final String... childRunIds) {
+        if (parentRunId == null) {
+            return;
+        }
+        try {
+            final RunsMenuAO runs = navigationMenu()
+                    .runs()
+                    .activeRuns()
+                    .openClusterRuns(parentRunId);
+            Arrays.stream(childRunIds)
+                    .filter(Objects::nonNull)
+                    .filter(childRunId -> $("#run-" + childRunId + "-stop-button").is(visible))
+                    .forEach(runs::stopRun);
+        } catch (Throwable e) {
+            System.out.printf("Child runs of %s could not be stopped: %s%n", parentRunId, e.getMessage());
+        }
+        try {
+            runsMenu().stopRunIfPresent(parentRunId);
+        } catch (Throwable e) {
+            System.out.printf("Run %s could not be stopped: %s%n", parentRunId, e.getMessage());
+        }
     }
 }

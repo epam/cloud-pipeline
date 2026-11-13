@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,44 +52,49 @@ public class ObjectMetadataToolTest extends AbstractBfxPipelineTest implements N
                                         .addKeyWithValue(key1, value1)
                                         .ensure(REMOVE_ALL_KEYS, visible)
                                         .selectKey(key1)
-                                        .ensure(DELETE_ICON, visible)
+                                        .assertKeyIs(key1)
                                         .validateKeyBackgroundIsGrey()
+                                        .ensure(DELETE_ICON, visible)
+                                        .assertValueIs(value1)
                         )
                 );
     }
 
-    @Test(priority = 1)
+    @Test(priority = 1, dependsOnMethods = "addMetadataToToolValidation")
     @TestCase(value = {"EPMCMBIBPC-916"})
     public void checkMetadataForTool() {
         tools()
                 .performWithin(registry, defaultGroup, anotherTool, anotherTool ->
                         anotherTool.showMetadata(metadata ->
-                                metadata.assertKeyNotPresent(key1)
+                                metadata.ensure(ADD_KEY, visible)
+                                        .assertKeyNotPresent(key1)
                         )
                 );
     }
 
-    @Test(priority = 2)
+    @Test(priority = 2, dependsOnMethods = "addMetadataToToolValidation")
     @TestCase(value = {"EPMCMBIBPC-915"})
     public void listOfCasesForPipeline() {
         tools()
                 .performWithin(registry, defaultGroup, tool, tool ->
                         tool.showMetadata(metadata -> {
-                                    //EPMCMBIBPC-842
-                                    metadata.selectKeyByOrderNumber(1)
-                                            .changeKey(key2)
-                                            .assertKeyIs(key2)
-                                            .changeValue(value2)
-                                            .assertValueIs(value2);
                                     //EPMCMBIBPC-860
                                     metadata.addKeyWithValue(key3, value3)
                                             .addKeyWithValue(key4, value4)
                                             .addKeyWithValue(key5, value5)
-                                            .assertKeyWithValueIsPresent(key3, value3)
-                                            .assertKeyWithValueIsPresent(key4, value4)
-                                            .assertKeyWithValueIsPresent(key5, value5)
-                                            //EPMCMBIBPC-863
-                                            .deleteKey(key3)
+                                            .assertKeyWithExactValueIsPresent(key3, value3)
+                                            .assertKeyWithExactValueIsPresent(key4, value4)
+                                            .assertKeyWithExactValueIsPresent(key5, value5);
+                                    //EPMCMBIBPC-942
+                                    metadata.selectKeyByOrderNumber(1)
+                                            .editKey(key2)
+                                            .clickOnEmptySpace()
+                                            .assertKeyIs(key2)
+                                            .editValue(value2)
+                                            .clickOnEmptySpace()
+                                            .assertValueIs(value2);
+                                    //EPMCMBIBPC-863
+                                    metadata.deleteKey(key3)
                                             .cancel()
                                             .assertKeyIsPresent(key3)
                                             .deleteKey(key3)

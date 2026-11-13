@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,22 +35,27 @@ import static com.codeborne.selenide.CollectionCondition.sizeGreaterThanOrEqual;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.withText;
+import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.open;
-import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
 import static com.epam.pipeline.autotests.ao.Profile.execEnvironmentTab;
 import static com.epam.pipeline.autotests.ao.Profile.parametersTab;
+import static com.epam.pipeline.autotests.ao.LogAO.containsMessage;
+import static com.epam.pipeline.autotests.ao.LogAO.log;
+import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.ToolDescription.editButtonFor;
 import static com.epam.pipeline.autotests.ao.ToolGroup.tool;
 import static com.epam.pipeline.autotests.ao.ToolGroup.toolsNames;
 import static com.epam.pipeline.autotests.ao.ToolSettings.label;
 import static com.epam.pipeline.autotests.ao.ToolVersions.tags;
 import static com.epam.pipeline.autotests.ao.ToolVersions.tagsHave;
-import static com.epam.pipeline.autotests.utils.Conditions.valueContains;
+import static com.epam.pipeline.autotests.utils.Conditions.collapsedTab;
+import static com.epam.pipeline.autotests.utils.Conditions.textMatches;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -69,6 +74,8 @@ public class ToolsTest
     private final String instanceType = C.DEFAULT_INSTANCE;
     private final String defaultCommand = "/start.sh";
     private final String toolWithoutDefaultSettings = C.TOOL_WITHOUT_DEFAULT_SETTINGS;
+    // a finished tool run keeps its output in the task named after the default pipeline name of tool runs
+    private static final String RUN_OUTPUT_TASK = "pipeline";
 
     @BeforeClass
     @AfterClass(alwaysRun = true)
@@ -309,7 +316,8 @@ public class ToolsTest
                 .performWithin(defaultRegistry, defaultGroup, testingTool, tool ->
                         tool.settings()
                                 .setDefaultCommand(command)
-                                .performIf(SAVE, enabled, ToolSettings::save)
+                                .ensure(SAVE, enabled)
+                                .click(SAVE)
                                 .ensure(SAVE, disabled)
                 )
                 .performWithin(defaultRegistry, defaultGroup, testingTool, tool ->
@@ -323,8 +331,10 @@ public class ToolsTest
     public void toolDefaultSettingsRun() {
         tools().perform(defaultRegistry, defaultGroup, testingTool, runTool())
                 .showLog(getRunId())
+                .waitForTaskStatus("InitializeNode", LogAO.Status.SUCCESS)
                 .instanceParameters(parameters ->
-                        parameters.ensure(IMAGE, text(dockerImage))
+                        parameters.ensure(IP, visible, not(empty))
+                                .ensure(IMAGE, exactText(String.format("%s:latest", dockerImage)))
                                 .ensure(DEFAULT_COMMAND, text(command))
                                 .ensure(DISK, text(disk))
                                 .ensure(TYPE, text(instanceType))
@@ -340,17 +350,25 @@ public class ToolsTest
 
         tools()
                 .performWithin(defaultRegistry, defaultGroup, testingTool, setDefaultCommand(defaultCommand))
-                .perform(defaultRegistry, defaultGroup, testingTool, runToolWithCustomSettings())
-                .ensure(DOCKER_IMAGE, value(dockerImage))
+                .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettingsKeepingPanels)
+                .ensure(EXEC_ENVIRONMENT, visible, collapsedTab,
+                        text(testingTool + ":latest"), text(instanceType), text(disk + "Gb"))
+                .ensure(ADVANCED_PANEL, visible, collapsedTab, text(String.format("\"%s\"", defaultCommand)))
+                .ensure(PARAMETERS_PANEL, visible)
+                .expandTab(EXEC_ENVIRONMENT)
+                .expandTab(ADVANCED_PANEL)
+                .ensure(DOCKER_IMAGE, attribute("value", dockerImage + ":latest"))
                 .ensure(DEFAULT_COMMAND, text(defaultCommand))
                 .ensure(INSTANCE_TYPE, text(instanceType))
-                .ensure(DISK, value(disk))
+                .ensure(DISK, attribute("value", disk))
                 .setPriceType(priceType)
                 .setTimeOut(timeout)
                 .launchTool(this, Utils.nameWithoutGroup(testingTool))
                 .showLogForce(getRunId())
+                .shouldHaveRunningStatus()
                 .instanceParameters(parameters -> parameters.ensure(PRICE_TYPE, text(priceType)))
-                .waitFor(LogAO.Status.FAILURE);
+                .waitFor(LogAO.Status.FAILURE)
+                .also(this::ensureTimeoutWasElapsed);
     }
 
     @Test(dependsOnMethods = {"toolCustomSettingsRun"})
@@ -440,7 +458,7 @@ public class ToolsTest
                 .ensure(ESTIMATED_PRICE, not(visible))
                 .ensure(INFORMATION_ICON, not(visible))
                 .expandTabs(execEnvironmentTab, advancedTab, parametersTab)
-                .ensure(DOCKER_IMAGE, valueContains(image))
+                .ensure(DOCKER_IMAGE, attribute("value", image + ":latest"))
                 .ensure(DEFAULT_COMMAND, empty)
                 .ensure(INSTANCE_TYPE, text("Node type"))
                 .ensure(DISK, empty)
@@ -451,13 +469,15 @@ public class ToolsTest
                 .launchTool(this, Utils.nameWithoutGroup(toolWithoutDefaultSettings))
                 .log(getRunId(), log ->
                         log
+                                .shouldHaveRunningStatus()
                                 .instanceParameters(parameters ->
                                         parameters.ensure(DEFAULT_COMMAND, text("sleep infinity"))
                                                 .ensure(PRICE_TYPE, text(priceType))
                                                 .ensure(TYPE, text(PipelineRunFormAO.DEFAULT_TYPE))
-                                                .ensure(DISK, diskSize(PipelineRunFormAO.DEFAULT_DISK))
+                                                .ensure(DISK, textMatches(PipelineRunFormAO.DEFAULT_DISK + " ?Gb"))
                                 )
                                 .waitFor(LogAO.Status.FAILURE)
+                                .also(this::ensureTimeoutWasElapsed)
                 );
     }
 
@@ -486,6 +506,24 @@ public class ToolsTest
                 .ensureVisible(PARAMETER_NAME, PARAMETER_VALUE, REMOVE_PARAMETER);
     }
 
+    private void ensureTimeoutWasElapsed(final LogAO runPage) {
+        waitForTaskOfFinishedRun(runPage, RUN_OUTPUT_TASK)
+                .click(taskWithName(RUN_OUTPUT_TASK))
+                .ensure(log(), containsMessage("Timeout was elapsed"));
+    }
+
+    /**
+     * The run page stops refreshing its tasks when the run finishes, and the output task of a tool run is saved
+     * only after that, so the page is reloaded until the task is shown.
+     */
+    private LogAO waitForTaskOfFinishedRun(final LogAO runPage, final String task) {
+        for (int attempt = 0; attempt < 6 && !$(taskWithName(task)).exists(); attempt++) {
+            runPage.sleep(10, SECONDS);
+            runPage.refresh();
+        }
+        return runPage.waitForTask(task);
+    }
+
     private By message(final String text) {
         return withText(text);
     }
@@ -496,10 +534,6 @@ public class ToolsTest
 
     private Function<ToolDescription, RunsMenuAO> runTool() {
         return tool -> tool.run(this);
-    }
-
-    private Function<ToolDescription, PipelineRunFormAO> runToolWithCustomSettings() {
-        return ToolTab::runWithCustomSettings;
     }
 
     private Consumer<ToolGroup> deleteGroup(final String groupName) {

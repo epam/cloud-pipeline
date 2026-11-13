@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.*;
+import static com.epam.pipeline.autotests.ao.ToolVersions.hasOnPage;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -131,7 +132,7 @@ public class DockerCommitTest
     @TestCase({"EPMCMBIBPC-1350"})
     public void listOfGroupInRegistry() {
         logAO().commit(commit ->
-                commit.hover(GROUP).ensure(byText(group), visible)
+                commit.click(GROUP).ensure(byText(group), visible)
                         .cancel()
         );
     }
@@ -210,6 +211,7 @@ public class DockerCommitTest
                 .waitForCommitButton()
                 .commit(commit ->
                         commit.setRegistry(registry)
+                                .setGroup(group)
                                 .sleep(3, SECONDS)
                                 .setName(nameWithoutGroup(tool))
                                 .sleep(5, SECONDS)
@@ -232,6 +234,7 @@ public class DockerCommitTest
                 .waitForCommitButton()
                 .commit(commit ->
                         commit.setRegistry(registry)
+                                .setGroup(group)
                                 .sleep(3, SECONDS)
                                 .setName(nameWithoutGroup(tool))
                                 .sleep(5, SECONDS)
@@ -398,12 +401,6 @@ public class DockerCommitTest
 
     private Consumer<ToolGroup> deleteGroup(final String groupName) {
         return group -> group.deleteGroup(deletion -> deletion.ensureGroupNameIs(groupName).ok());
-    }
-
-    public boolean hasOnPage(String customTag) {
-        return $(byClassName("ant-table-tbody"))
-                .find(byXpath(String.format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", customTag)))
-                .exists();
     }
 
     private Consumer<ToolVersions> deleteVersion(String customTag) {

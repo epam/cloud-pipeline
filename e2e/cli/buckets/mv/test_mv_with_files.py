@@ -203,7 +203,7 @@ class TestMoveWithFiles(object):
                                     expected_status=1)[1]
             assert_error_message_is_present(error, 'Source {} doesn\'t exist'.format(os.path.abspath(path)))
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-677", e.message))
+            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-677", str(e)))
 
     test_case_move_from_not_existing_bucket = [
         ("cp://{}/{}".format("does-not-exist", test_file_1), os.path.abspath(test_file_1)),
@@ -219,7 +219,7 @@ class TestMoveWithFiles(object):
             assert_error_message_is_present(error, "Error: data storage with id: '{}/{}' was not found."
                                             .format("does-not-exist", self.test_file_1))
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-675", e.message))
+            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-675", str(e)))
 
     test_case_move_to_not_existing_bucket = [
         (os.path.abspath(source_dir + test_file_1), "cp://{}/{}".format("does-not-exist", test_file_1)),
@@ -236,7 +236,7 @@ class TestMoveWithFiles(object):
             assert_error_message_is_present(error, "Error: data storage with id: '{}/{}' was not found."
                                             .format("does-not-exist", self.test_file_1))
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-675", e.message))
+            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-675", str(e)))
 
     test_case_move_with_wrong_scheme = [
         ("s4://{}/{}".format(bucket_name, test_file_1), os.path.abspath(test_file_1)),
@@ -255,7 +255,7 @@ class TestMoveWithFiles(object):
             error = pipe_storage_mv(source, destination, force=True, expected_status=1)[1]
             assert_error_message_is_present(error, 'Error: Supported schemes for datastorage are: "cp", "s3", "az", "gs".')
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-679", e.message))
+            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-679", str(e)))
 
     test_case_move_with_local_paths = [
         (os.path.abspath(source_dir + test_file_1), os.path.abspath(output_folder + "EPMCMBIBPC-678-1.txt")),
@@ -270,7 +270,7 @@ class TestMoveWithFiles(object):
             assert_error_message_is_present(error, 'Error: Transferring files between the following storage types '
                                                    'LOCAL -> LOCAL is not supported.')
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-678", e.message))
+            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-678", str(e)))
 
     @pytest.mark.run(order=6)
     def test_download_data_with_similar_keys(self):
@@ -306,7 +306,7 @@ class TestMoveWithFiles(object):
         except BaseException as e:
             os.chdir(self.current_directory)
             clean_test_data(path_to_test_folder)
-            pytest.fail("Test case {} failed. {}".format(test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(test_case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_upload_data_with_similar_keys(self):
@@ -322,7 +322,7 @@ class TestMoveWithFiles(object):
             assert_files_deleted(None, source)
             assert not object_exists(self.bucket_name, os.path.join(self.upload_folder_case, self.test_file_1))
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(self.upload_folder_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.upload_folder_case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_upload_file_with_skip_existing_option_should_skip(self):
@@ -346,7 +346,7 @@ class TestMoveWithFiles(object):
                 "Expected %s\nActual %s".format(expected.last_modified, actual.last_modified)
             assert os.path.exists(source1)
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_upload_file_with_skip_existing_option_should_not_skip(self):
@@ -371,7 +371,7 @@ class TestMoveWithFiles(object):
                 "Last modified time of destination and source file must be different."
             assert not os.path.exists(source1)
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_download_file_with_skip_existing_option_should_skip(self):
@@ -397,7 +397,7 @@ class TestMoveWithFiles(object):
                 "Last modified time of destination and source file must be the same.\n" \
                 "Expected %s\nActual %s".format(expected.last_modified, actual.last_modified)
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_download_file_with_skip_existing_option_should_not_skip(self):
@@ -421,7 +421,7 @@ class TestMoveWithFiles(object):
             assert not expected.last_modified == actual.last_modified, \
                 "Last modified time of destination and source file must be different."
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_copy_between_buckets_file_with_skip_existing_option_should_skip(self):
@@ -446,7 +446,7 @@ class TestMoveWithFiles(object):
                 "Last modified time of destination and source file must be the same.\n" \
                 "Expected %s\nActual %s".format(expected.last_modified, actual.last_modified)
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_copy_between_buckets_file_with_skip_existing_option_should_not_skip(self):
@@ -469,7 +469,7 @@ class TestMoveWithFiles(object):
             assert not expected.last_modified == actual.last_modified, \
                 "Last modified time of destination and source file must be different."
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     def upload_file_to_bucket(self, source):
         if source.startswith("cp://") and not object_exists(self.bucket_name, self.source_dir + self.test_file_1):

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,24 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.utils.Conditions;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.Color;
 
 import java.util.Map;
 
-import static com.codeborne.selenide.Condition.text;
+import static com.codeborne.selenide.Condition.cssClass;
+import static com.codeborne.selenide.Condition.exactText;
+import static com.codeborne.selenide.Condition.have;
+import static com.codeborne.selenide.Condition.not;
+import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
+import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 
@@ -38,30 +46,31 @@ public class MetadataKeyAO extends PopupAO<MetadataKeyAO, MetadataSectionAO>{
         return By.id(String.format("value-column-%s", key));
     }
 
-    public static final Condition backgroundColorGrey = new Condition("backgroundColorGrey") {
-        @Override
-        public boolean apply(WebElement element) {
-            return element.getCssValue("background-color").equals("rgba(249, 249, 249, 1)");
-        }
-    };
+    /**
+     * The background of a key row in the light theme ("@element-selected-background-color").
+     */
+    public static final Condition backgroundColorGrey = Conditions.backgroundColor(Color.fromString("#f7f7f7"));
 
     public MetadataKeyAO(SelenideElement keyFieldElement, SelenideElement valueFieldElement, MetadataSectionAO parentAO) {
         super(parentAO);
         this.elements = initialiseElements(
                 entry(ADD, $(byId("add-metadata-item-button"))),
                 entry(KEY_FIELD, keyFieldElement),
-                entry(KEY_FIELD_INPUT, $(By.className("metadata__key-row-edit")).find(By.tagName("input"))),
+                entry(KEY_FIELD_INPUT, $(By.className("qa-metadata-item-key-input"))),
                 entry(VALUE_FIELD, valueFieldElement),
                 entry(VALUE_FIELD_INPUT, keyFieldElement.parent().find(By.className("ant-input"))),
-                entry(DELETE_ICON, keyFieldElement.parent().find(buttonByIconClass("anticon-delete"))),
+                entry(DELETE_ICON, keyFieldElement.find(buttonByIconClass("anticon-delete"))),
                 entry(REMOVE_ALL, $(byId("remove-all-keys-button")))
         );
     }
 
     public MetadataKeyAO(int numberOfKey, MetadataSectionAO parentAO) {
-        this($$(By.className("metadata__key-row")).get(numberOfKey),
-                $$(By.className("metadata__value-row")).get(numberOfKey),
-                parentAO);
+        this($$(By.className("cp-metadata-item-row"))
+                        .filter(have(cssClass("key"))).get(numberOfKey),
+             $$(By.className("cp-metadata-item-row"))
+                        .filter(have(cssClass("key"))).get(numberOfKey)
+                        .$(By.xpath("following-sibling::*[contains(@class, 'cp-metadata-item-row')]")),
+             parentAO);
     }
 
     public MetadataKeyAO validateKeyBackgroundIsGrey() {
@@ -76,6 +85,25 @@ public class MetadataKeyAO extends PopupAO<MetadataKeyAO, MetadataSectionAO>{
         return click(VALUE_FIELD).setValue(VALUE_FIELD_INPUT, value).enter(VALUE_FIELD_INPUT);
     }
 
+    public MetadataKeyAO editKey(final String key) {
+        return click(KEY_FIELD).setValue(KEY_FIELD_INPUT, key);
+    }
+
+    public MetadataKeyAO editValue(final String value) {
+        return click(VALUE_FIELD).setValue(VALUE_FIELD_INPUT, value);
+    }
+
+    /**
+     * Clicks the left padding of the attributes panel header: the cell has no click handler,
+     * so the click only moves the focus away and the edited field saves on blur.
+     * The center of the header is not used, because the "Add" and "Remove all" buttons may be there.
+     */
+    public MetadataKeyAO clickOnEmptySpace() {
+        final SelenideElement header = $(By.className("metadata__metadata-header")).shouldBe(visible);
+        actions().moveToElement(header, 2 - header.getSize().getWidth() / 2, 0).click().perform();
+        return this;
+    }
+
     public String getValue() {
         return get(VALUE_FIELD).text();
     }
@@ -85,17 +113,17 @@ public class MetadataKeyAO extends PopupAO<MetadataKeyAO, MetadataSectionAO>{
     }
 
     public MetadataKeyAO assertKeyIs(String key) {
-        return ensure(KEY_FIELD, text(key));
+        return ensure(KEY_FIELD, exactText(key));
     }
 
     public MetadataKeyAO assertValueIs(String value) {
-        return ensure(VALUE_FIELD, text(value));
+        return ensure(VALUE_FIELD, exactText(value));
     }
 
     public static Condition numberOfSamples(int number) {
         return new Condition("number of samples") {
             @Override
-            public boolean apply(WebElement element) {
+            public boolean apply(Driver driver, WebElement element) {
                 return element.findElements(By.tagName("div")).size() == number;
             }
         };

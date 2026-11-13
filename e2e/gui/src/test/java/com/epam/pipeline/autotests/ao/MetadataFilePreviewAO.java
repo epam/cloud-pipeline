@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,15 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
 
 import java.util.Map;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.Condition.enabled;
+import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
@@ -29,7 +32,9 @@ import static com.codeborne.selenide.Selectors.byCssSelector;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class MetadataFilePreviewAO extends PopupAO<MetadataFilePreviewAO, MetadataSectionAO>{
@@ -37,7 +42,7 @@ public class MetadataFilePreviewAO extends PopupAO<MetadataFilePreviewAO, Metada
             entry(EDIT, $(button("Edit"))),
             entry(CLOSE, $(button("Close"))),
             entry(SAVE, $(button("Save"))),
-            entry(VIEW_AS_TEXT, $(byClassName("data-storage-code-form__button ant-switch")))
+            entry(VIEW_AS_TEXT, $(byCssSelector(".data-storage-code-form__button.ant-switch")))
     );
 
     private final MetadataSectionAO parentAO;
@@ -49,6 +54,7 @@ public class MetadataFilePreviewAO extends PopupAO<MetadataFilePreviewAO, Metada
 
     public MetadataSectionAO close() {
         click(CLOSE);
+        $$(byClassName("ant-modal-content")).filterBy(visible).shouldHave(size(0));
         return parentAO;
     }
     public MetadataFilePreviewAO ensureHeaderContainsText(String text) {
@@ -71,7 +77,8 @@ public class MetadataFilePreviewAO extends PopupAO<MetadataFilePreviewAO, Metada
     }
 
     public StorageContentAO editFileWithText(String text) {
-        ensure(EDIT, enabled).click(EDIT);
+        get(EDIT).shouldBe(enabled, ofMillis(C.DEFAULT_TIMEOUT * 2L));
+        click(EDIT);
         sleep(3, SECONDS);
         Utils.clickAndSendKeysWithSlashes($(byClassName("CodeMirror-line")), text);
         ensure(SAVE, enabled).click(SAVE);

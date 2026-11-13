@@ -17,28 +17,28 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.ParameterType;
 import com.epam.pipeline.autotests.ao.Template;
-import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
-import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.Test;
+
+import static com.epam.pipeline.autotests.utils.Json.editingConfiguration;
 
 public class Launch_NonRequiredParameterTest extends AbstractAutoRemovingPipelineRunningTest {
 
-    private static final String CONFIG_JSON = "/nonRequiredParam.json";
-
     @Test
-    @TestCase(value = {"EPMCMBIBPC-366", "EPMCMBIBPC-364"})
+    @TestCase("EPMCMBIBPC-366")
     public void createPipelineAndValidate() {
         navigationMenu()
                 .createPipeline(Template.SHELL, getPipelineName())
                 .firstVersion()
                 .codeTab()
-                .clearAndFillPipelineFile(
-                        "config.json",
-                        Utils.readResourceFully(CONFIG_JSON)
-                                .replace("{{instance_type}}", C.DEFAULT_INSTANCE)
-                )
+                .clickOnFile("config.json")
+                .editFile(editingConfiguration("default", configuration -> configuration
+                        .with("parameters")
+                        .putObject("param")
+                        .put("value", "test_value")
+                        .put("required", "false")))
+                .saveAndCommitWithMessage("test: Add non-required parameter")
                 .runPipeline()
-                .validateThereIsParameterOfType("param", "value", ParameterType.STRING, false);
+                .validateThereIsParameterOfType("param", "test_value", ParameterType.STRING, false);
     }
 }

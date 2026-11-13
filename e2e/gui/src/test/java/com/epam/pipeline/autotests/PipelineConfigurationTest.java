@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,14 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.ao.AbstractPipelineTabAO;
+import com.epam.pipeline.autotests.ao.ConfirmationPopupAO;
 import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
+import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.PipelineConfigurationTabAO;
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
+import com.epam.pipeline.autotests.ao.Profile;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.ConfigurationProfile;
@@ -26,16 +30,25 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
+import static com.codeborne.selenide.CollectionCondition.size;
+import static com.codeborne.selenide.Condition.attribute;
+import static com.codeborne.selenide.Condition.empty;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.have;
+import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byValue;
+import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.open;
+import static com.codeborne.selenide.Selenide.webdriver;
+import static com.codeborne.selenide.WebDriverConditions.url;
+import static com.codeborne.selenide.WebDriverConditions.urlContaining;
 import static com.epam.pipeline.autotests.ao.LogAO.InstanceParameters.parameterWithName;
 import static com.epam.pipeline.autotests.ao.LogAO.logMessage;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
@@ -53,9 +66,13 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.fieldWithLabel
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.hintOf;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.menu;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.resourceName;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTest {
     private final String configurationFileName = "config.json";
@@ -66,7 +83,6 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
     private final String pipeline795 = resourceName("epmcmbibpc-795");
     private final String pipeline1241 = resourceName("epmcmbibpc-1241");
     private final String pipeline1256 = resourceName("epmcmbibpc-1256");
-    private final String pipeline1257 = resourceName("epmcmbibpc-1257");
     private final String pipeline1263 = resourceName("epmcmbibpc-1263");
     private final String pipeline1500 = resourceName("epmcmbibpc-1500");
     private final String spotPriceName = C.SPOT_PRICE_NAME;
@@ -80,7 +96,6 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
                 .removePipelineIfExists(pipeline795)
                 .removePipelineIfExists(pipeline1241)
                 .removePipelineIfExists(pipeline1256)
-                .removePipelineIfExists(pipeline1257)
                 .removePipelineIfExists(pipeline1263)
                 .removePipelineIfExists(pipeline1500);
     }
@@ -106,12 +121,11 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             .ensure(combobox("Price type"), have(selectedValue(onDemandPriceName)));
     }
 
-    @Test
+    @Test(dependsOnMethods = "changeInstancePriceTypeInConfigurationFile")
     @TestCase("EPMCMBIBPC-1257")
     public void changeInstancePriceTypeToSpotInConfigurationFile() {
         library()
-            .createPipeline(Template.SHELL, pipeline1257)
-            .clickOnPipeline(pipeline1257)
+            .clickOnPipeline(pipeline1256)
             .firstVersion()
             .onTab(PipelineCodeTabAO.class)
             .clickOnFile(configurationFileName)
@@ -130,13 +144,14 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
     @TestCase("EPMCMBIBPC-1263")
     public void validationOfDefaultPriceType() {
         library()
-            .createPipeline(pipeline1263)
+            .createPipeline(Template.SHELL, pipeline1263)
             .clickOnPipeline(pipeline1263)
             .firstVersion()
             .runPipeline()
             .expandTab(collapsiblePanel("Advanced"))
             .click(combobox("Price type"))
-            .ensure(menu(), contains(menuitem(spotPriceName), menuitem(onDemandPriceName)));
+            .ensure(menu(), contains(menuitem(spotPriceName), menuitem(onDemandPriceName)))
+            .also(priceTypeMenuHasItems(2));
     }
 
     @Test
@@ -147,14 +162,17 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             .clickOnPipeline(pipeline1241)
             .firstVersion()
             .runPipeline()
+            .createNewNode()
             .expandTab(collapsiblePanel("Advanced"))
             .click(combobox("Price type"))
             .ensure(menu(), contains(menuitem(spotPriceName), menuitem(onDemandPriceName)))
+            .also(priceTypeMenuHasItems(2))
             .click(combobox("Price type"))
             .selectValue(combobox("Price type"), menuitem(onDemandPriceName))
             .launch(this)
             .showLog(getLastRunId())
             .instanceParameters(p -> p.ensure(parameterWithName("Price type"), have(text(onDemandPriceName))))
+            .waitForTask("InitializeNode")
             .click(taskWithName("InitializeNode"))
             .ensure(logMessage("- IsSpot: False"), visible);
     }
@@ -170,27 +188,31 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
         final String secondParameterValue = "secondParameterValue";
 
         library()
-            .createPipeline(Template.SHELL, pipeline1500)
+            .resetMouse()
+            .clickCreatePipelineButton()
+            .setName(pipeline1500)
+            .ok()
+            .validatePopupClosed()
             .clickOnPipeline(pipeline1500)
             .firstVersion()
             .configurationTab()
             .createConfiguration(anotherProfile)
-            .editConfiguration(defaultProfile, profile -> {
+            .editConfiguration(anotherProfile, profile -> {
                 profile.clickAddStringParameter().setName(firstParameter).setValue(firstParameterValue);
                 profile.click(SAVE);
             })
             .sleep(5, SECONDS)
-            .editConfiguration(anotherProfile, profile -> {
-                profile.clickAddPathParameter().setName(secondParameter).setValue(secondParameterValue);
+            .editConfiguration(defaultProfile, profile -> {
+                profile.clickAddStringParameter().setName(secondParameter).setValue(secondParameterValue);
                 profile.click(SAVE);
             })
             .sleep(5, SECONDS)
             .refresh()
-            .editConfiguration(defaultProfile, profile ->
+            .editConfiguration(anotherProfile, profile ->
                 profile.ensure(byValue(firstParameter), visible)
                        .ensure(byValue(firstParameterValue), visible)
             )
-            .editConfiguration(anotherProfile, profile ->
+            .editConfiguration(defaultProfile, profile ->
                 profile.ensure(byValue(secondParameter), visible)
                        .ensure(byValue(secondParameterValue), visible)
             );
@@ -203,36 +225,49 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
     @Test(priority = 1)
     @TestCase("EPMCMBIBPC-795")
     public void checkConfigurationTabOnPipelineEditPage() {
-        navigationMenu()
-                .library()
-                .createPipeline(pipeline795)
+        library()
+                .resetMouse()
+                .clickCreatePipelineButton()
+                .setName(pipeline795)
+                .ok()
+                .validatePopupClosed()
                 .clickOnPipeline(pipeline795)
                 .draft()
                 .configurationTab()
                 .ensure(ADD_CONFIGURATION, visible, enabled)
                 .ensure(profileWithName(defaultConfigurationName), visible)
-                .editConfiguration(defaultConfigurationName, profile ->
-                        profile.ensure(SAVE, visible)
-                               .ensure(ESTIMATE_PRICE, visible)
-                               .ensure(INSTANCE, expandedTab)
-                               .ensure(EXEC_ENVIRONMENT, collapsedTab)
-                               .ensure(PARAMETERS, expandedTab)
-                               .ensure(ADD_PARAMETER, visible, enabled)
-                );
+                // the profile tabs are the only antd tabs of the configuration page
+                .ensureAll(byClassName("ant-tabs-tab"), size(1))
+                // the "default" profile is selected when the tab opens, so its sections show their initial state
+                .also(() -> new Profile()
+                        .ensure(NAME, visible, enabled, attribute("value", defaultConfigurationName))
+                        .ensure(SAVE, visible)
+                        // the label and the price value are in the same element
+                        .ensure(ESTIMATE_PRICE, visible, matchText("\\d+\\.\\d{2}"))
+                        .ensure(EXEC_ENVIRONMENT, collapsedTab)
+                        .ensure(ADVANCED_PANEL, collapsedTab)
+                        .ensure(PARAMETERS, expandedTab)
+                        .ensure(ADD_PARAMETER, visible, enabled));
     }
 
     @Test(priority = 1, dependsOnMethods = "checkConfigurationTabOnPipelineEditPage")
     @TestCase("EPMCMBIBPC-1517")
     public void priceTypeValidation() {
         onLaunchPage()
+                .ensure(collapsiblePanel("Advanced"), collapsedTab)
                 .expandTab(collapsiblePanel("Advanced"))
                 .ensure(combobox("Price type"), have(selectedValue(defaultPriceType)))
                 .ensure(hintOf(fieldWithLabel("Price type")), visible)
+                .ensure(TIMEOUT, visible)
                 .ensure(byText("Timeout (min)"), visible)
                 .ensure(hintOf(fieldWithLabel("Timeout (min)")), visible)
+                .ensure(LIMIT_MOUNTS, visible)
+                .ensure(hintOf(fieldWithLabel("Limit mounts")), visible)
                 .ensure(byText("Cmd template"), visible)
                 .ensure(START_IDLE, visible)
-                .ensure(hintOf(fieldWithLabel("Cmd template")), visible);
+                // the form item of the Cmd template has no hint of its own: the one in it belongs to "Start idle"
+                .ensure(hintOf(fieldWithLabel("Cmd template")), visible)
+                .ensure(ADD_SYSTEM_PARAMETER, visible);
     }
 
     @Test(priority = 2, dependsOnMethods = "checkConfigurationTabOnPipelineEditPage")
@@ -240,7 +275,8 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
     public void validationOfAddingNewConfigurationFeature() {
         onPipelinePage()
                 .onTab(PipelineConfigurationTabAO.class)
-                .createConfiguration(popup -> popup.clear(NAME).setValue(NAME, configurationName).ensure(TEMPLATE, visible).ok())
+                .createConfiguration(popup -> popup.clear(NAME).setValue(NAME, configurationName)
+                        .ensure(TEMPLATE, visible, not(empty)).ok())
                 .ensure(profileWithName(configurationName), exist, visible)
                 .onTab(PipelineCodeTabAO.class)
                 .clickOnFile(configurationFileName)
@@ -259,6 +295,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
                                .clear(NAME).setValue(NAME, "conf")
                                .clear(DISK).setValue(DISK, "23")
                                .clear(TIMEOUT).setValue(TIMEOUT, "2")
+                               .selectValue(INSTANCE_TYPE, C.DEFAULT_INSTANCE)
                                .sleep(2, SECONDS)
                                .click(SAVE)
                 )
@@ -267,9 +304,11 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
                 .sleep(5, SECONDS)
                 .onTab(PipelineCodeTabAO.class)
                 .clickOnFile(configurationFileName)
-                .shouldContainInCode("\"name\" : \"conf\"")
-                .shouldContainInCode("\"instance_disk\" : \"23\"")
-                .shouldContainInCode("\"timeout\" : 2")
+                .profileShouldHave("conf", profile -> {
+                    assertFalse(profile.byDefault, "Configuration 'conf' should not be the default one.");
+                    assertEquals(profile.configuration.instanceDisk, "23");
+                    assertEquals(profile.configuration.timeout, "2");
+                })
                 .close();
         configurationName = "conf";
     }
@@ -306,40 +345,49 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
     @TestCase("EPMCMBIBPC-800")
     public void launchPipelineThatHaveSeveralConfigurations() {
         onPipelinePage()
-                .runPipeline()
-                .chooseConfiguration(configurationName)
-                .ensure(DISK, value(defaultDisk))
-                .ensure(TIMEOUT, value("1"));
+                .runPipelineWithConfiguration(configurationName)
+                .ensure(DISK, attribute("value", defaultDisk))
+                .ensure(TIMEOUT, attribute("value", "1"));
     }
 
     @Test(priority = 6, dependsOnMethods = "launchPipelineThatHaveSeveralConfigurations")
     @TestCase("EPMCMBIBPC-803")
     public void launchAndCheckLaunchParametersInPipelineLogsPage() {
         onLaunchPage()
+		.setPriceType(onDemandPriceName)
                 .launch(this)
                 .showLog(getLastRunId())
                 .instanceParameters(instance ->
-                        instance.ensure(DISK, text(defaultDisk))
-                                .ensure(TYPE, text(C.DEFAULT_INSTANCE))
+                        instance.ensure(TYPE, text(C.DEFAULT_INSTANCE))
+                                .ensure(DISK, matchText("^" + defaultDisk + "\\s?Gb$"))
                 )
-                .waitForCompletion();
+                .waitFor(LogAO.Status.SUCCESS);
     }
 
     @Test(priority = 7, dependsOnMethods = "launchAndCheckLaunchParametersInPipelineLogsPage")
     @TestCase("EPMCMBIBPC-804")
     public void validationOfSettingAsDefaultBehavior() {
+        final String[] urlBeforeChange = new String[1];
         navigationMenu()
                 .library()
                 .clickOnPipeline(pipeline795)
                 .draft()
                 .configurationTab()
-                .editConfiguration(configurationName, profile -> profile.click(SET_AS_DEFAULT))
-                // Because the page refreshes
-                .sleep(5, SECONDS)
+                .editConfiguration(configurationName, profile -> {
+                    urlBeforeChange[0] = WebDriverRunner.url();
+                    profile.click(SET_AS_DEFAULT);
+                })
+                // the page is reloaded for the new version of the pipeline
+                .also(() -> webdriver().shouldNotHave(url(urlBeforeChange[0]))
+                        .shouldHave(urlContaining("/configuration")))
                 .createConfiguration(popup -> popup.ensure(TEMPLATE, text(configurationName)).cancel())
                 .onTab(PipelineCodeTabAO.class)
                 .clickOnFile(configurationFileName)
-                .shouldContainInCode("\"default\" : true")
+                .profileShouldHave(configurationName, profile ->
+                        assertTrue(profile.byDefault, String.format("%s should be the default profile.", configurationName)))
+                .profileShouldHave(defaultConfigurationName, profile ->
+                        assertFalse(profile.byDefault,
+                                String.format("%s should not be the default profile.", defaultConfigurationName)))
                 .close();
     }
 
@@ -355,15 +403,21 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
         final String deletionWasConfirmed = String.format(
                 "Configuration with name %s supposed to be deleted.", configurationName
         );
+        final String[] urlBeforeRemoval = new String[1];
         onPipelinePage()
                 .onTab(PipelineConfigurationTabAO.class)
-                .deleteConfiguration(configurationName, popup -> popup.cancel())
+                .deleteConfiguration(configurationName, ConfirmationPopupAO::cancel)
                 .ensure(profileWithName(configurationName), exist.because(deletionWasCancelled))
-                .deleteConfiguration(configurationName, popup -> popup.ensureTitleIs(expectedTitle).ok())
+                .deleteConfiguration(configurationName, popup -> {
+                    urlBeforeRemoval[0] = WebDriverRunner.url();
+                    popup.ensureTitleIs(expectedTitle).ok();
+                })
+                // the page is reloaded for the new version of the pipeline
+                .also(() -> webdriver().shouldNotHave(url(urlBeforeRemoval[0])))
                 .ensure(profileWithName(configurationName), not(exist).because(deletionWasConfirmed))
                 .onTab(PipelineCodeTabAO.class)
                 .clickOnFile(configurationFileName)
-                .ensure(byText(configurationName), not(visible))
+                .profileShouldNotExist(configurationName)
                 .close();
     }
 
@@ -375,7 +429,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
         return new PipelineRunFormAO();
     }
 
-    private String withActualRunId(final String message) {
-        return message.replaceAll("run_id", getLastRunId());
+    private static Runnable priceTypeMenuHasItems(final int count) {
+        return () -> $(visible(menu())).findAll(byClassName("ant-select-dropdown-menu-item")).shouldHave(size(count));
     }
 }

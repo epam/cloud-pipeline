@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.Map;
 import static com.codeborne.selenide.Condition.appears;
 import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.disappear;
+import static com.codeborne.selenide.Condition.empty;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.not;
@@ -40,7 +41,9 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.displayAttribu
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.showAttributes;
 import static com.epam.pipeline.autotests.utils.Utils.getPopupByTitle;
+import static com.epam.pipeline.autotests.utils.Utils.clickAndResetClick;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.time.Duration.ofMillis;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
 import static org.openqa.selenium.By.xpath;
@@ -53,7 +56,8 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
             entry(VERSION, $(byId("version"))),
             entry(FIRST_VERSION, $(byCssSelector(".ant-table-row .anticon-tag")).closest(".ant-table-row")),
             entry(SETTINGS, $(byId("edit-pipeline-menu-button"))),
-            entry(EDIT, context().find(menuitem("ant-dropdown-menu-item", " Edit")))
+            entry(EDIT, context().find(menuitem("rc-dropdown-menu-item", " Edit"))),
+            entry(GIT_REPOSITORY, $(byId("pipeline-repository-button")))
     );
     private final String pipelineName;
 
@@ -62,8 +66,23 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
     }
 
     public DocumentTabAO firstVersion() {
+	ensure(FIRST_VERSION, enabled);
         click(FIRST_VERSION);
+        sleep(1, SECONDS);
+	if(get(FIRST_VERSION).isDisplayed()) {
+            click(FIRST_VERSION);
+        }
         return new DocumentTabAO(pipelineName);
+    }
+
+    /**
+     * Clicks the RUN button in the row of the first version, without opening the version.
+     */
+    public PipelineRunFormAO runFirstVersion() {
+        ensure(FIRST_VERSION, enabled);
+        get(FIRST_VERSION).find(byCssSelector("button[id$='-run-button']")).shouldBe(visible).click();
+        sleep(1, SECONDS);
+        return new PipelineRunFormAO(pipelineName);
     }
 
     public DocumentTabAO v1() {
@@ -72,7 +91,12 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
     }
 
     public DocumentTabAO draft() {
+	$$(".ant-table-row").findBy(text("draft-")).shouldBe(enabled, ofMillis(3000));
         $$(".ant-table-row").findBy(text("draft-")).shouldBe(visible).click();
+        sleep(1, SECONDS);
+        if(get(FIRST_VERSION).isDisplayed()) {
+               click(FIRST_VERSION);
+           }
         return new DocumentTabAO(pipelineName);
     }
 
@@ -98,7 +122,7 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
     }
 
     public PipelineLibraryContentAO assertPipelineName(String name){
-        return ensure(xpath("//div[@class = 'browser__item-header']//span"), text(name));
+        return ensure(xpath(".//div[@class = 'browser__item-header']//span"), text(name));
     }
 
     public PipelineLibraryContentAO assertVersionNot(String version) {
@@ -107,6 +131,17 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
 
     public String getFirstVersionName(){
         return $(byCssSelector(".browser__tree-item-version")).text();
+    }
+
+    public String getGitRepositoryUrl() {
+        click(GIT_REPOSITORY);
+        final String repository = $(byClassName("git-repository-popover")).find(tagName("input"))
+                .shouldBe(visible)
+                .shouldNotBe(empty)
+                .getValue();
+        click(GIT_REPOSITORY);
+        $(byClassName("git-repository-popover")).shouldNotBe(visible);
+        return repository;
     }
 
     public PipelineLibraryContentAO assertReleaseButton() {
@@ -136,11 +171,16 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
         return this;
     }
 
+    public PipelineLibraryContentAO assertRunButtonIsNotDisplayed() {
+        $$(tagName("button")).find(text("Run")).shouldNotBe(visible);
+        return this;
+    }
+
     public MetadataSectionAO showMetadata() {
-        hover(displayAttributes);
+        click(displayAttributes);
         ensure(attributesMenu, appears);
         performIf(showAttributes, visible,
-                page -> click(showAttributes),
+                page -> clickAndResetClick(context().find(showAttributes)),
                 page -> resetMouse()
         );
         return new MetadataSectionAO(this);

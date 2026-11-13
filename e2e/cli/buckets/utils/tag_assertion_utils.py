@@ -43,7 +43,7 @@ def parse_tag_table(get_result):
     get_result.pop(0)  # skip header
     result_tags = {}
     for item in get_result:
-        splitted = filter(None, item.replace(" ", "").split("|"))
+        splitted = [_f for _f in item.replace(" ", "").split("|") if _f]
         if not str(splitted[0]).startswith("+"):
             result_tags[splitted[0]] = splitted[1]
     return result_tags

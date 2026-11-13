@@ -49,4 +49,8 @@ public class Checkbox {
     public void shouldNotBeChecked() {
         checkboxElement.should(exist).shouldNotBe(checked);
     }
+
+    public boolean isChecked() {
+        return checkboxElement.should(exist).is(checked);
+    }
 }

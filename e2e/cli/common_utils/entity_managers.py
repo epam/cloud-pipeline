@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from src.api.base import API
-from pipe_cli import create_data_storage
+from .pipe_cli import create_data_storage
 import json
 
 
@@ -151,14 +151,6 @@ class UtilsManager(API):
         if 'payload' in response_data and 'value' in response_data['payload']:
             return response_data['payload']['value']
         raise RuntimeError('Response is not valid while getting cloud pipeline {} preference'.format(preference))
-
-    @classmethod
-    def get_preference_or_none(cls, preference):
-        api = cls.instance()
-        response_data = api.call('preferences/' + preference, None)
-        if 'payload' in response_data and 'value' in response_data['payload']:
-            return response_data['payload']['value']
-        return None
 
     @classmethod
     def get_region(cls, region_id):

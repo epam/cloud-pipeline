@@ -15,6 +15,8 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
+import com.epam.pipeline.autotests.ao.RunParameterAO;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.FolderHandling;
@@ -108,17 +110,27 @@ public class LaunchParametersRoleModelTest
     @TestCase({"EPMCMBIBPC-931"})
     public void userShouldSeeOnlyElementsThatHeHasAccessTo() {
         logout();
-        loginAs(user)
+        final PipelineRunFormAO runForm = loginAs(user)
                 .library()
                 .clickOnPipeline(getPipelineName())
                 .firstVersion()
-                .runPipeline()
-                .clickAddOutputParameter()
-                .setName("parameter")
+                .runPipeline();
+        checkPathAdditionDialog(runForm.clickAddOutputParameter(), "output_parameter");
+        checkPathAdditionDialog(runForm.clickAddPathParameter(), "path_parameter");
+        checkPathAdditionDialog(runForm.clickAddInputParameter(), "input_parameter");
+        checkPathAdditionDialog(runForm.clickAddCommonParameter(), "common_parameter");
+    }
+
+    private void checkPathAdditionDialog(final RunParameterAO parameter, final String parameterName) {
+        parameter.setName(parameterName)
                 .openPathAdditionDialog()
                 .ensure(byText(folder), visible)
+                // the dialog keeps the tree expanded between openings
                 .performIf(switcher(folder).exists(), switcher -> switcher.openFolder(folder))
                 .ensure(byText(storage), visible)
-                .ensure(byText(securedFolder), not(visible));
+                .ensure(byText(securedFolder), not(visible))
+                .ensure(byText(securedStorage), not(visible))
+                .cancel()
+                .close();
     }
 }

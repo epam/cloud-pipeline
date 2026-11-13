@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,14 @@ import org.openqa.selenium.By;
 import java.nio.file.Path;
 import java.util.Map;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -35,10 +37,13 @@ public class DocumentTabAO extends AbstractPipelineTabAO<DocumentTabAO> {
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
             super.elements(),
             // Upload must be like that because of its input structure
-            entry(UPLOAD, $(byXpath("//*[contains(@class, 'ant-upload') and @role = 'button']"))),
+            entry(UPLOAD, $(byXpath(".//*[contains(@class, 'ant-upload') and @role = 'button']"))),
             entry(RENAME, $(button("Rename"))),
             entry(DELETE, $(button("Delete"))),
-            entry(DOWNLOAD, $(button("Download")))
+            entry(DOWNLOAD, $(button("Download"))),
+            entry(EDIT, $(button("EDIT"))),
+            entry(SAVE, $(button("SAVE"))),
+            entry(FILE_PREVIEW, $(byClassName("pipeline-documents__md-body")))
     );
 
     public DocumentTabAO(String pipelineName) {
@@ -52,8 +57,11 @@ public class DocumentTabAO extends AbstractPipelineTabAO<DocumentTabAO> {
     }
 
     public DocumentTabAO validateDocumentsNotEditable() {
-        return sleep(1, SECONDS)
+        // the EDIT button of a document is rendered together with its preview
+        return ensure(DOWNLOAD, visible)
+                .ensure(FILE_PREVIEW, visible)
                 .ensure(UPLOAD, not(exist))
+                .ensure(EDIT, not(exist))
                 .ensure(RENAME, not(exist))
                 .ensure(DELETE, not(exist));
     }
@@ -89,6 +97,22 @@ public class DocumentTabAO extends AbstractPipelineTabAO<DocumentTabAO> {
         return this;
     }
 
+    public DocumentTabAO documentsCountShouldBe(final int count) {
+        $$(byClassName("pipeline-documents__document-name")).shouldHave(size(count));
+        return this;
+    }
+
+    public String documentSource(final String name) {
+        $(fileWithName(name)).find(byClassName("pipeline-documents__document-name")).shouldBe(visible).click();
+        sleep(1, SECONDS);
+        $(byClassName("pipeline-documents__md-title")).shouldHave(exactText(name));
+        $(byClassName("pipeline-documents__markdown")).shouldBe(visible);
+        click(EDIT);
+        final String source = $(byXpath(".//textarea")).shouldBe(visible).getValue();
+        $(button("CANCEL")).shouldBe(visible).click();
+        return source;
+    }
+
     public DocumentTabAO upload(final Path path) {
         get(UPLOAD).shouldBe(visible).find(By.tagName("input")).uploadFile(path.toFile());
         return this;
@@ -96,7 +120,7 @@ public class DocumentTabAO extends AbstractPipelineTabAO<DocumentTabAO> {
 
     public static By fileWithName(final String filename) {
         return By.xpath(String.format(
-                "//tr[.//*[contains(@class, 'pipeline-documents__document-name') and text() = '%s']]",
+                ".//tr[.//*[contains(@class, 'pipeline-documents__document-name') and text() = '%s']]",
                 filename
         ));
     }
@@ -109,6 +133,21 @@ public class DocumentTabAO extends AbstractPipelineTabAO<DocumentTabAO> {
     public String getVersion() {
         String fullText = $(byClassName("browser__item-header")).text();
         return fullText.substring(fullText.lastIndexOf("-") + 1, fullText.lastIndexOf(")"));
+    }
+
+    public DocumentTabAO addStringToReadMeFile(String text) {
+        click(EDIT);
+        $(byXpath(".//textarea")).append(text);
+        return this;
+    }
+
+    public DocumentTabAO saveAndCommitWithMessage(String message) {
+        return openCommitDialog().typeInField(message).ok();
+    }
+
+    public CommitPopupAO<DocumentTabAO> openCommitDialog() {
+        click(SAVE);
+        return new CommitPopupAO<>(this);
     }
 
     public class DocumentRenamingPopupAO extends PopupWithStringFieldAO<DocumentRenamingPopupAO, DocumentTabAO> {

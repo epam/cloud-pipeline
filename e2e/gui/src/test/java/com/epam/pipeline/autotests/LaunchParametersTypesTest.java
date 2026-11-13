@@ -20,13 +20,13 @@ import com.epam.pipeline.autotests.mixins.StorageHandling;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
-import java.io.File;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.open;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class LaunchParametersTypesTest extends AbstractAutoRemovingPipelineRunningTest implements StorageHandling {
@@ -35,13 +35,12 @@ public class LaunchParametersTypesTest extends AbstractAutoRemovingPipelineRunni
     private final static String shellCreatedFile = "storage_rules_test.test";
     private final static String storage = "storage-" + Utils.randomSuffix();
     private final static String storageFolder = "folder-" + Utils.randomSuffix();
-    private final static File storageFile = Utils.createTempFile("file-" + Utils.randomSuffix());
 
     @BeforeClass
     public void initStorage() {
         createStorage(storage)
                 .createFolder(storageFolder)
-                .uploadFile(storageFile);
+                .ensure(byText(storageFolder), visible);
     }
 
     @AfterClass(alwaysRun = true)
@@ -61,8 +60,9 @@ public class LaunchParametersTypesTest extends AbstractAutoRemovingPipelineRunni
                         getPipelineName().toLowerCase() + ".sh",
                         Utils.readResourceFully(shellTemplate)
                 )
-                .sleep(2, SECONDS)
+                .sleep(10, SECONDS)
                 .runPipeline()
+		.setPriceType(ON_DEMAND)
                 .clickAddOutputParameter()
                 .setName("output_parameter")
                 .openPathAdditionDialog()
@@ -79,7 +79,7 @@ public class LaunchParametersTypesTest extends AbstractAutoRemovingPipelineRunni
                 .setName("input_parameter")
                 .openPathAdditionDialog()
                 .chooseStorage(storage)
-                .addToSelection(storageFile.getName())
+                .addToSelection(storageFolder)
                 .ok().close()
                 .clickAddCommonParameter()
                 .setName("common_parameter")

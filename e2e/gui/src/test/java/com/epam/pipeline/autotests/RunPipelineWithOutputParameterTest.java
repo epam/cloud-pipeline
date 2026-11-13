@@ -27,6 +27,7 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.open;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 
 public class RunPipelineWithOutputParameterTest extends AbstractAutoRemovingPipelineRunningTest implements StorageHandling {
 
@@ -67,6 +68,7 @@ public class RunPipelineWithOutputParameterTest extends AbstractAutoRemovingPipe
                 .addToSelection(storageFolder)
                 .ok()
                 .close()
+                .setPriceType(ON_DEMAND)
                 .launch(this)
                 .showLog(getRunId())
                 .waitForCompletion();

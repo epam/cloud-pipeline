@@ -209,7 +209,7 @@ class TestCopyWithFiles(object):
                                     expected_status=1)[1]
             assert_error_message_is_present(error, 'Source {} doesn\'t exist'.format(os.path.abspath(path)))
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-663", e.message))
+            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-663", str(e)))
 
     test_case_copy_from_empty_bucket = [
         ("cp://{}/{}".format(empty_bucket_name, test_file_1), os.path.abspath(test_file_1)),
@@ -224,7 +224,7 @@ class TestCopyWithFiles(object):
             error = pipe_storage_cp(source, destination, expected_status=1)[1]
             assert_error_message_is_present(error, 'Source {} doesn\'t exist'.format(source))
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-663", e.message))
+            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-663", str(e)))
 
     test_case_copy_from_not_existing_bucket = [
         ("cp://{}/{}".format("does-not-exist", test_file_1), os.path.abspath(test_file_1)),
@@ -240,7 +240,7 @@ class TestCopyWithFiles(object):
             assert_error_message_is_present(error, "Error: data storage with id: '{}/{}' was not found."
                                             .format("does-not-exist", self.test_file_1))
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-649", e.message))
+            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-649", str(e)))
 
     test_case_copy_to_not_existing_bucket = [
         (os.path.abspath(test_file_1), "cp://{}/{}".format("does-not-exist", test_file_1)),
@@ -257,7 +257,7 @@ class TestCopyWithFiles(object):
             assert_error_message_is_present(error, "Error: data storage with id: '{}/{}' was not found."
                                             .format("does-not-exist", self.test_file_1))
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-649", e.message))
+            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-649", str(e)))
 
     test_case_copy_with_wrong_scheme = [
         ("s4://{}/{}".format(bucket_name, test_file_1), os.path.abspath(test_file_1)),
@@ -276,7 +276,7 @@ class TestCopyWithFiles(object):
             error = pipe_storage_cp(source, destination, force=True, expected_status=1)[1]
             assert_error_message_is_present(error, 'Error: Supported schemes for datastorage are: "cp", "s3", "az", "gs".')
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-655", e.message))
+            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-655", str(e)))
 
     test_case_copy_with_local_paths = [
         (os.path.abspath(test_file_1), os.path.abspath(test_folder + "EPMCMBIBPC-655-file.txt")),
@@ -291,7 +291,7 @@ class TestCopyWithFiles(object):
             assert_error_message_is_present(error, 'Error: Transferring files between the following storage types '
                                                    'LOCAL -> LOCAL is not supported.')
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-664", e.message))
+            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-664", str(e)))
 
     @pytest.mark.run(order=5)
     def test_copy_with_similar_keys(self):
@@ -311,7 +311,7 @@ class TestCopyWithFiles(object):
             pipe_storage_rm(destination)
             assert not object_exists(self.bucket_name, file_name)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-1336", e.message))
+            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-1336", str(e)))
 
     @pytest.mark.run(order=5)
     def test_copy_with_tags(self):
@@ -329,7 +329,7 @@ class TestCopyWithFiles(object):
             pipe_storage_rm(destination)
             assert not object_exists(self.bucket_name, file_name)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(test_case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_download_data_with_similar_keys(self):
@@ -364,7 +364,7 @@ class TestCopyWithFiles(object):
         except BaseException as e:
             os.chdir(self.current_directory)
             clean_test_data(path_to_test_folder)
-            pytest.fail("Test case {} failed. {}".format(test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(test_case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_upload_files_with_similar_keys(self):
@@ -376,7 +376,7 @@ class TestCopyWithFiles(object):
             assert object_exists(self.bucket_name, os.path.join(case, "cp-files-test_file"))
             assert not object_exists(self.bucket_name, os.path.join(case, self.test_file_1))
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_upload_file_with_skip_existing_option_should_skip(self):
@@ -395,7 +395,7 @@ class TestCopyWithFiles(object):
                 "Last modified time of destination and source file must be the same.\n" \
                 "Expected %s\nActual %s".format(expected.last_modified, actual.last_modified)
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_upload_file_with_skip_existing_option_should_not_skip(self):
@@ -412,7 +412,7 @@ class TestCopyWithFiles(object):
             assert not expected.last_modified == actual.last_modified, \
                 "Last modified time of destination and source file must be different."
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_download_file_with_skip_existing_option_should_skip(self):
@@ -437,7 +437,7 @@ class TestCopyWithFiles(object):
                 "Last modified time of destination and source file must be the same.\n" \
                 "Expected %s\nActual %s".format(expected.last_modified, actual.last_modified)
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_download_file_with_skip_existing_option_should_not_skip(self):
@@ -460,7 +460,7 @@ class TestCopyWithFiles(object):
             assert not expected.last_modified == actual.last_modified, \
                 "Last modified time of destination and source file must be different."
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_copy_between_buckets_file_with_skip_existing_option_should_skip(self):
@@ -483,7 +483,7 @@ class TestCopyWithFiles(object):
                 "Last modified time of destination and source file must be the same.\n" \
                 "Expected %s\nActual %s".format(expected.last_modified, actual.last_modified)
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_copy_between_buckets_file_with_skip_existing_option_should_not_skip(self):
@@ -504,7 +504,7 @@ class TestCopyWithFiles(object):
             assert not expected.last_modified == actual.last_modified, \
                 "Last modified time of destination and source file must be different."
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     def assert_tags_error(self, source, destination, file_name, tags, error_message):
         error = pipe_storage_cp(source, destination, tags=tags, expected_status=1)[1]

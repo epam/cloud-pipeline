@@ -46,21 +46,21 @@ class TestLsWithRoleModel(object):
             assert_error_message_is_present(error_text, "data storage with id: '{}/{}' was not found"
                                             .format(self.bucket_name, self.resources_root))
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))
 
     @pytest.mark.run(order=2)
     def test_list_from_root(self):
         case = "EPMCMBIBPC-699"
         try:
             buckets = get_pipe_listing(None, show_details=False)
-            available_buckets = map(lambda bucket: filter(None, bucket.name.split(" ")[0]), buckets)
+            available_buckets = [bucket.name.split(" ")[0] for bucket in buckets]
             assert self.bucket_name in available_buckets, "Bucket {} must be listed.".format(self.bucket_name)
             set_storage_permission(self.user, self.bucket_name, deny='r')
             buckets = get_pipe_listing(None, show_details=False, token=self.token)
-            available_buckets = map(lambda bucket: filter(None, bucket.name.split(" ")[0]), buckets)
+            available_buckets = [bucket.name.split(" ")[0] for bucket in buckets]
             assert self.bucket_name not in available_buckets, "Bucket {} must be not listed.".format(self.bucket_name)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     @pytest.mark.run(order=3)
     def test_list_folder_with_permission(self):
@@ -70,7 +70,7 @@ class TestLsWithRoleModel(object):
                                      expected_status=0, token=self.token)[0]
             assert "".join(output), "Command output is empty"
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))
 
     @pytest.mark.run(order=4)
     def test_list_folder_with_write_permission(self):
@@ -81,4 +81,4 @@ class TestLsWithRoleModel(object):
             assert_error_message_is_present(error_text, "data storage with id: '{}/{}' was not found"
                                             .format(self.bucket_name, self.resources_root))
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))

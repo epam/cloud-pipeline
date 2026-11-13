@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import com.codeborne.selenide.CollectionCondition;
+import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
@@ -22,12 +24,12 @@ import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.Quotes;
 
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.codeborne.selenide.Condition.*;
@@ -39,8 +41,11 @@ import static com.codeborne.selenide.Selenide.switchTo;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.*;
 import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.tagName;
+import static org.openqa.selenium.By.className;
 import static org.testng.Assert.assertTrue;
 
 public class LogAO implements AccessObject<LogAO> {
@@ -48,6 +53,7 @@ public class LogAO implements AccessObject<LogAO> {
     public static final long COMMIT_BUTTON_APPEARING_TIMEOUT = C.COMMIT_APPEARING_TIMEOUT;
     public static final long COMMITTING_TIMEOUT = C.COMMITTING_TIMEOUT;
     public static final long COMPLETION_TIMEOUT = C.COMPLETION_TIMEOUT;
+    private static final int FINISHED_RUN_TASK_RELOADS = 6;
     public static final long BUCKETS_MOUNTING_TIMEOUT = C.BUCKETS_MOUNTING_TIMEOUT;
 
     private static Condition completed = Condition.or("finished", Status.SUCCESS.reached, Status.STOPPED.reached, Status.FAILURE.reached);
@@ -63,24 +69,24 @@ public class LogAO implements AccessObject<LogAO> {
             entry(STOP, $$(tagName("a")).findBy(exactText("STOP"))),
             entry(RERUN, $$(tagName("a")).findBy(exactText("RERUN"))),
             entry(ENDPOINT, $(withText("Endpoint")).closest("tr").find("a")),
-            entry(INSTANCE, context().find(byXpath("//*[.//*[text()[contains(.,'Instance')]] and contains(@class, 'ant-collapse')]"))),
-            entry(PARAMETERS, context().find(byXpath("//*[.//*[text()[contains(.,'Parameters')]] and contains(@class, 'ant-collapse')]"))),
+            entry(INSTANCE, context().find(byXpath(".//*[.//*[text()[contains(.,'Instance')]] and contains(@class, 'ant-collapse')]"))),
+            entry(PARAMETERS, context().find(byXpath(".//*[.//*[text()[contains(.,'Parameters')]] and contains(@class, 'ant-collapse')]"))),
             entry(NESTED_RUNS, $(withText("Nested runs:")).closest("tr").find("a")),
             entry(SHARE_WITH, $(withText("Share with:")).closest("tr").find("a"))
     );
 
     public LogAO waitForCompletion() {
-        get(STATUS).waitUntil(completed, COMPLETION_TIMEOUT);
+        get(STATUS).shouldBe(completed, ofMillis(COMPLETION_TIMEOUT));
         return this;
     }
 
     public LogAO waitFor(final Status expectedStatus) {
-        get(STATUS).waitUntil(expectedStatus.reached, COMPLETION_TIMEOUT);
+        get(STATUS).shouldBe(expectedStatus.reached, ofMillis(COMPLETION_TIMEOUT));
         return this;
     }
 
     public LogAO waitForSshLink() {
-        get(SSH_LINK).waitUntil(appears, SSH_LINK_APPEARING_TIMEOUT);
+        get(SSH_LINK).shouldBe(visible, ofMillis(SSH_LINK_APPEARING_TIMEOUT));
         return this;
     }
 
@@ -88,18 +94,55 @@ public class LogAO implements AccessObject<LogAO> {
         return ShellAO.open(getSshLink());
     }
 
+    // The SSH terminal opens in the same browser tab: if the shell actions fail, the terminal is left before the error
+    // is rethrown, so that the next tests of the class start in the platform UI (they failed with "element not found")
     public LogAO ssh(final Consumer<ShellAO> shell) {
-        shell.accept(clickOnSshLink());
+        final ShellAO shellAO = clickOnSshLink();
+        try {
+            shell.accept(shellAO);
+        } catch (RuntimeException | Error e) {
+            try {
+                shellAO.close();
+            } catch (RuntimeException | Error closeError) {
+                e.addSuppressed(closeError);
+            }
+            throw e;
+        }
+        return this;
+    }
+
+    /**
+     * Clicks the SSH link, which opens the terminal in a new browser tab, and switches into that tab.
+     * Fails if no new tab is opened.
+     */
+    public ShellAO clickSshLinkInNewTab() {
+        get(SSH_LINK).shouldBe(visible).click();
+        switchTo().window(1);
+        switchTo().frame(0);
+        return new ShellAO();
+    }
+
+    /**
+     * Performs the action in the terminal opened by a click on the SSH link, then closes that tab
+     * and returns to the run page.
+     */
+    public LogAO sshInNewTab(final Consumer<ShellAO> shell) {
+        final ShellAO terminal = clickSshLinkInNewTab();
+        try {
+            shell.accept(terminal);
+        } finally {
+            terminal.closeTab();
+        }
         return this;
     }
 
     public LogAO waitForCommitButton() {
-        get(COMMIT).waitUntil(visible, COMMIT_BUTTON_APPEARING_TIMEOUT);
+        get(COMMIT).shouldBe(visible, ofMillis(COMMIT_BUTTON_APPEARING_TIMEOUT));
         return this;
     }
 
     public LogAO shouldHaveStatus(Status status) {
-        get(STATUS).shouldHave(status.reached);
+        get(STATUS).shouldHave(status.reached, ofMillis(COMPLETION_TIMEOUT));
         return this;
     }
 
@@ -110,6 +153,12 @@ public class LogAO implements AccessObject<LogAO> {
 
     public Stream<String> logMessages() {
         $(byClassName("log__logs-table")).shouldBe(visible);
+        SelenideElement checkbox = $(byClassName("log__logs-table-container"))
+                        .$(byClassName("log__scroll-to-last-check-box"))
+                        .$(byClassName("ant-checkbox"));
+        if (checkbox.exists()) {
+            checkbox.click();
+        }
         Utils.scrollElementToPosition(".log__logs-table", 0);
         Set<String> lines = new LinkedHashSet<>();
         boolean keepScrolling = true;
@@ -138,12 +187,12 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO assertCommittingFinishedSuccessfully() {
-        return messageShouldAppear("COMMITTING")
+        return messageShouldAppear("COMMITTING", 600000)
                 .messageShouldAppear("COMMIT SUCCEEDED", COMMITTING_TIMEOUT);
     }
 
     public LogAO waitForPauseButton() {
-        get(PAUSE).waitUntil(visible, SSH_LINK_APPEARING_TIMEOUT);
+        get(PAUSE).shouldBe(visible, ofMillis(SSH_LINK_APPEARING_TIMEOUT));
         return this;
     }
 
@@ -191,7 +240,7 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO waitForResumeButton() {
-        get(RESUME).waitUntil(visible, SSH_LINK_APPEARING_TIMEOUT);
+        get(RESUME).shouldBe(visible, ofMillis(SSH_LINK_APPEARING_TIMEOUT));
         return this;
     }
 
@@ -209,7 +258,7 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO waitForEndpointLink() {
-        get(ENDPOINT).waitUntil(appears, SSH_LINK_APPEARING_TIMEOUT);
+        get(ENDPOINT).shouldBe(appears, ofMillis(SSH_LINK_APPEARING_TIMEOUT));
         return this;
     }
 
@@ -231,13 +280,26 @@ public class LogAO implements AccessObject<LogAO> {
         return get(ENDPOINT).shouldBe(visible).attr("href");
     }
 
+    public String getEndpointName() {
+        return get(ENDPOINT).shouldBe(visible).text();
+    }
+
     public String getEndpointLink(String link){
         return $(withText("Endpoint")).closest("tr").$(byXpath(format(".//a[.='%s']", link)))
                 .shouldBe(visible).attr("href");
     }
 
+    public LogAO checkEndpointLink(String endpoint, String link) {
+        return ensure(withText(endpoint), attribute("href", link));
+    }
+
     public LogAO waitForNestedRunsLink() {
-        get(NESTED_RUNS).waitUntil(appears, SSH_LINK_APPEARING_TIMEOUT);
+        long startTime = currentTimeMillis();
+        while(!get(NESTED_RUNS).exists() &&
+                (currentTimeMillis()-startTime) < SSH_LINK_APPEARING_TIMEOUT) {
+            ensure(STATUS, not(completed));
+            sleep(20, SECONDS);
+        }
         return this;
     }
 
@@ -250,9 +312,34 @@ public class LogAO implements AccessObject<LogAO> {
         return $(withText("Nested runs:")).closest("tr").find(byXpath(format("td/a[%s]/b", childNum))).getText();
     }
 
+    public LogAO waitForNestedRunWorking(String childRunID) {
+        $(byAttribute("href", format("#/run/%s", childRunID)))
+                .$(byXpath(".//i[contains(@class, 'anticon')]"))
+                .shouldBe(cssClass("anticon-play-circle-o"), ofMillis(COMPLETION_TIMEOUT));
+        return this;
+    } 
+
     public LogAO shareWithGroup(final String groupName) {
         click(SHARE_WITH);
         new ShareWith().addGroupToShare(groupName);
+        return this;
+    }
+
+    public LogAO shareWithUser(final String userName, boolean sshConnection) {
+        click(SHARE_WITH);
+        new ShareWith().addUserToShare(userName, sshConnection);
+        return this;
+    }
+
+    public LogAO setEnableSShConnection(final String name) {
+        click(SHARE_WITH);
+        new ShareWith().selectEnableSShConnection(name);
+        return this;
+    }
+
+    public LogAO removeShareUserGroup(final String name) {
+        click(SHARE_WITH);
+        new ShareWith().removeUserFromShare(name);
         return this;
     }
 
@@ -262,23 +349,45 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO validateException(final String exception) {
-        $(byClassName("ant-alert-error")).has(text(exception));
+        $(byClassName("ant-alert-error")).shouldHave(text(exception));
         return this;
     }
 
     public LogAO waitForLog(final String message) {
         for (int i = 0; i < 70; i++) {
             refresh();
-            if ($(log()).is(matchText(message))) {
+            sleep(10, SECONDS);
+            if ($(log()).shouldBe(visible).is(matchText(message))) {
                 break;
             }
-            sleep(20, SECONDS);
+            sleep(10, SECONDS);
         }
         return this;
     }
 
     public LogAO waitForTask(final String task) {
-        $(taskWithName(task)).waitUntil(visible, COMPLETION_TIMEOUT);
+        $(taskWithName(task)).shouldBe(visible, ofMillis(COMPLETION_TIMEOUT));
+        return this;
+    }
+
+    /**
+     * Waits for a task of a run that has already finished. The run's final status can come before the logs of its
+     * last task: the status of a run can be final a few seconds before the log of its pipeline task arrives, and the
+     * page of a finished run then did not show the task 30 s later (EPMCMBIBPC-396).
+     * So the page is reloaded, as a user reloads it, every 10 s until the task is shown, at most 6 times.
+     */
+    public LogAO waitForTaskOfFinishedRun(final String task) {
+        for (int reload = 0; reload < FINISHED_RUN_TASK_RELOADS && !$(taskWithName(task)).is(visible); reload++) {
+            sleep(10, SECONDS);
+            refresh();
+            get(STATUS).shouldBe(visible);
+        }
+        $(taskWithName(task)).shouldBe(visible);
+        return this;
+    }
+
+    public LogAO waitForTaskStatus(final String task, Status status) {
+        $(taskWithName(task)).shouldBe(status.reached, ofMillis(COMPLETION_TIMEOUT));
         return this;
     }
 
@@ -286,6 +395,11 @@ public class LogAO implements AccessObject<LogAO> {
         expandTab(INSTANCE);
         action.accept(new InstanceParameters());
         return this;
+    }
+
+    public LogAO clickTaskWithName(final String name) {
+        return click(taskWithName(name))
+               .ensure(byXpath(".//div[contains(@class,'ReactVirtualized__Grid__innerScrollContainer')]/div[contains(@class,'log__log-row')]"), exist);
     }
 
     public LogAO clickMountBuckets() {
@@ -318,6 +432,16 @@ public class LogAO implements AccessObject<LogAO> {
         throw new AssertionError("Valid parameter value is absent.");
     }
 
+    public LogAO ensureParameterIsNotPresent(String name) {
+        if (!get(PARAMETERS).exists()) {
+            return this;
+        }
+        $(byXpath(format(
+                ".//tr[.//td[contains(@class, 'log__task-parameter-name') " +
+                        "and contains(.//text(), '%s')]", name))).shouldNotBe(visible);
+        return this;
+    }
+
     /**
      * Selects entry of a parameters panel on a run page.
      *
@@ -333,8 +457,8 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public SelenideElement waitForMountBuckets() {
-        return $(byXpath("//*[contains(@class, 'ant-menu-item') and .//*[contains(., 'MountDataStorages')]]//*[contains(@class, 'anticon')]"))
-                .waitUntil(cssClass("status-icon__icon-green"), BUCKETS_MOUNTING_TIMEOUT);
+        return $(byXpath(".//*[contains(@class, 'ant-menu-item') and .//*[contains(., 'MountDataStorages')]]//*[contains(@class, 'anticon')]"))
+                .shouldBe(cssClass("cp-runs-table-icon-green"), ofMillis(BUCKETS_MOUNTING_TIMEOUT));
     }
 
     public static By runId() {
@@ -347,7 +471,7 @@ public class LogAO implements AccessObject<LogAO> {
 
     public static By detailsWithLabel(final String label) {
         Objects.requireNonNull(label);
-        return byXpath(format("//tr[.//th[normalize-space(text()) = '%s:']]//td", label));
+        return byXpath(format(".//tr[.//th[normalize-space(text()) = '%s:']]//td", label));
     }
 
     public static By taskList() {
@@ -367,15 +491,24 @@ public class LogAO implements AccessObject<LogAO> {
     public static By parameterWithName(final String name, final String value) {
         Objects.requireNonNull(name);
         return byXpath(format(
-                "//tr[.//td[contains(@class, 'log__task-parameter-name') and contains(.//text(), '%s')] and " +
+                ".//tr[.//td[contains(@class, 'log__task-parameter-name') and contains(.//text(), '%s')] and " +
                         ".//td[contains(., '%s')]]", name, value));
     }
 
     public LogAO checkMountLimitsParameter(String...storages) {
+        $(byText("CP_CAP_LIMIT_MOUNTS")).$(By.xpath("following::td"))
+                .findAll(tagName("a"))
+                .shouldHave(CollectionCondition.size(storages.length));
         Arrays.stream(storages)
                 .forEach(storage -> $(byText("CP_CAP_LIMIT_MOUNTS")).$(By.xpath("following::td"))
                         .shouldHave(text(storage)));
         return this;
+    }
+
+    public StorageContentAO openStorageFromLimitMountsParameter(String storage) {
+        $(byText("CP_CAP_LIMIT_MOUNTS")).$(By.xpath("following::td"))
+                .shouldHave(text(storage)).click();
+        return new StorageContentAO();
     }
 
     public static By log() {
@@ -406,9 +539,11 @@ public class LogAO implements AccessObject<LogAO> {
     public static By logMessage(final String text) {
         Objects.requireNonNull(text);
         final String messageClass = "log__log-row";
+        // Quotes.escape makes an XPath string literal of any text: a message with double quotes (e.g.
+        // > export CP_CAP_AUTOSCALE="true") inside a "..." literal would make the selector invalid
         final By messageQualifier = byXpath(format(
-                "//*[contains(concat(' ', @class, ' '), ' %s ') and .//*[contains(., \"%s\")]]",
-                messageClass, text
+                ".//*[contains(concat(' ', @class, ' '), ' %s ') and .//*[contains(., %s)]]",
+                messageClass, Quotes.escape(text)
         ));
         return Combiners.confine(messageQualifier, log(), format("log message with text {%s}", text));
     }
@@ -429,9 +564,14 @@ public class LogAO implements AccessObject<LogAO> {
             private final By message = logMessage(text);
 
             @Override
-            public boolean apply(final WebElement log) {
-                boolean seen = $(log).find(message).is(visible);
+            public boolean apply(Driver driver, final WebElement log) {
+                // the message locator is confined to the log list already: searched from the page, not inside the
+                // list (inside it, it would look for a list in the list and never match)
+                boolean seen = $(message).is(visible);
                 if (!seen) {
+                    // The list is virtualized: only the rows on screen exist, so it is scrolled through. With "Follow
+                    // log" on, a refresh of the log may bring it back to the bottom meanwhile: a row that was read on
+                    // the way counts as seen as well.
                     final Set<String> lines = new LinkedHashSet<>();
                     boolean keepScrolling = true;
                     int offset = 0;
@@ -443,6 +583,7 @@ public class LogAO implements AccessObject<LogAO> {
                         offset += messages.stream().mapToInt(element -> element.getSize().getHeight()).sum();
                         Utils.scrollElementToPosition(container, offset);
                     }
+                    seen = seen || lines.stream().anyMatch(line -> line.contains(text));
                 }
                 return seen;
             }
@@ -456,17 +597,19 @@ public class LogAO implements AccessObject<LogAO> {
             private final List<String> missingMessages = new ArrayList<>();
 
             @Override
-            public boolean apply(final WebElement logElement) {
+            public boolean apply(Driver driver, final WebElement logElement) {
+                // Selenide calls apply until it is true or the timeout ends: each call checks anew, a message
+                // missed by an earlier call (e.g. while the log was refreshed) must not stay missing
+                missingMessages.clear();
                 Arrays.stream(texts)
                         .map(String::trim)
-                        .filter(expectedText -> !containsMessage(expectedText).apply(logElement))
+                        .filter(expectedText -> !containsMessage(expectedText).apply(driver, logElement))
                         .forEach(missingMessages::add);
                 return missingMessages.isEmpty();
             }
 
-            @Override
             public String actualValue(final WebElement logElement) {
-                final String allMissingMessages = missingMessages.stream().collect(Collectors.joining("\n"));
+                final String allMissingMessages = String.join("\n", missingMessages);
                 return format("Following messages wasn't found in log:%n%s", allMissingMessages);
             }
         };
@@ -480,7 +623,8 @@ public class LogAO implements AccessObject<LogAO> {
                 entry(DEFAULT_COMMAND, context().find(parameterWithName("Cmd template"))),
                 entry(TIMEOUT, context().find(parameterWithName("Timeout"))),
                 entry(PRICE_TYPE, context().find(parameterWithName("Price type"))),
-                entry(IP, context().find(parameterWithName("IP")))
+                entry(IP, context().find(parameterWithName("IP"))),
+                entry(NODE_IMAGE, context().find(parameterWithName("Node image")))
         );
 
         public static By parameterWithName(final String name) {
@@ -509,10 +653,10 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public enum Status {
-        SUCCESS("status-icon__icon-green"),
-        FAILURE("status-icon__icon-red"),
-        STOPPED("status-icon__icon-yellow"),
-        WORKING("status-icon__icon-blue"),
+        SUCCESS("cp-runs-table-icon-green"),
+        FAILURE("cp-runs-table-icon-red"),
+        STOPPED("cp-runs-table-icon-yellow"),
+        WORKING("cp-runs-table-icon-blue"),
         LOADING("anticon-loading"),
         PAUSED("anticon-pause-circle-o");
 
@@ -521,14 +665,14 @@ public class LogAO implements AccessObject<LogAO> {
         Status(String iconClass) {
             this.reached = new Condition("status " + this.name()) {
                 @Override
-                public boolean apply(final WebElement element) {
-                    return $(element).find(byXpath(".//i[contains(@class, 'status-icon')]")).has(cssClass(iconClass));
+                public boolean apply(Driver driver, final WebElement element) {
+                    return $(element).find(byXpath(".//i[contains(@class, 'anticon')]"))
+                            .has(cssClass(iconClass));
                 }
 
-                @Override
-                public String actualValue(final WebElement element) {
+                public String actualValue(Driver driver, final WebElement element) {
                     return Arrays.stream(Status.values())
-                                 .filter(status -> status.reached.apply(element))
+                                 .filter(status -> status.reached.apply(driver, element))
                                  .findFirst()
                                  .map(Enum::toString)
                                  .orElse("UNKNOWN");
@@ -551,10 +695,42 @@ public class LogAO implements AccessObject<LogAO> {
 
         public void addGroupToShare(final String groupName) {
             click(ADD_GROUP);
-            setValue(context().find(byClassName("ant-select-search__field")), groupName).enter();
-            click(byXpath("//*[contains(@aria-labelledby, 'rcDialogTitle1') and " +
-                    ".//*[contains(@class, 'ant-modal-footer')]]//button[. =  'OK']"));
+            SelenideElement selectGroupPopup = Utils.getPopupByTitle("Select group");
+            setValue(selectGroupPopup.$(byClassName("ant-select-search__field")), groupName).enter();
+            selectGroupPopup.find(button("OK")).shouldBe(visible).click();
             click(OK);
+        }
+
+        public void addUserToShare(final String userName, boolean sshConnection) {
+            click(ADD_USER);
+            SelenideElement selectUserPopup = Utils.getPopupByTitle("Select user");
+	    setValue(selectUserPopup.$(byClassName("ant-select-search__field")), userName).enter();
+            selectUserPopup.find(button("OK")).shouldBe(visible).click();
+            if (sshConnection) {
+                checkEnableSShConnection(userName);
+            }
+            click(OK);
+        }
+
+        public void selectEnableSShConnection(final String name) {
+            checkEnableSShConnection(name);
+            click(OK);
+        }
+
+        public void checkEnableSShConnection(final String userName) {
+            $(byXpath(".//div[@class='ant-table-content']")).$$(byText(userName)).first().closest("td")
+                    .find(By.xpath("following-sibling::td[.='Enable SSH connection']")).parent().click();
+        }
+
+        public void removeUserFromShare(final String userName) {
+            context().$(byXpath(".//div[@class='ant-table-content']")).$$(byText(userName)).first().parent().parent()
+                    .parent().find("button").shouldBe(visible).click();
+            click(OK);
+        }
+
+        @Override
+        public SelenideElement context() {
+            return Utils.getPopupByTitle("Share with users and groups");
         }
 
         @Override

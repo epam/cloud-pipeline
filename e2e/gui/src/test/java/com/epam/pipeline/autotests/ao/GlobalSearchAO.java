@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,9 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import com.codeborne.selenide.CheckResult;
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
@@ -31,6 +33,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.CollectionCondition.sizeGreaterThanOrEqual;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.text;
@@ -69,19 +72,18 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
      */
     public static Condition disable = new Condition("be disable type") {
         @Override
-        public boolean apply(final WebElement element) {
-            return cssClass("earch__disabled").apply(element);
+        public CheckResult check(Driver driver, final WebElement element) {
+            return cssClass("disabled").check(driver, element);
         }
     };
 
     /**
-     * Checks that type button is selected
-     * @see WebElement#isSelected()
+     * Checks that a type button is selected: the client gives a selected type button the class "selected".
      */
     public static Condition selected = new Condition("selected") {
         @Override
-        public boolean apply(WebElement element) {
-            return cssClass("earch__active").apply(element);
+        public CheckResult check(Driver driver, final WebElement element) {
+            return cssClass("selected").check(driver, element);
         }
     };
 
@@ -136,7 +138,7 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
         }
         get(SEARCH_RESULT)
                 .findAll(".earch__search-result-item")
-                .shouldHaveSize(count)
+                .shouldHave(size(count))
                 .forEach(i -> i.shouldHave(text(itemName)));
         return this;
     }
@@ -184,6 +186,7 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
                 entry(INFO_TAB, context().find(byClassName("review__run-table"))),
                 entry(TAGS, context().find(byClassName("review__tags"))),
                 entry(PREVIEW_TAB, context().find(By.xpath(".//div[@class='review__content-preview'][2]"))),
+                entry(CONTENT_PREVIEW, context().find(byClassName("cp-search-content-preview"))),
                 entry(ATTRIBUTES, context().find(byClassName("review__attribute"))),
                 entry(TITLE_FIELD, context().find(byClassName("review__sub-title"))),
                 entry(SHORT_DESCRIPTION, context().find(byClassName("review__tool-description"))),
@@ -219,7 +222,7 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
         private Condition completedFieldCorrespondStatus() {
             return new Condition("completed field correspond Status") {
                 @Override
-                public boolean apply(final WebElement element) {
+                public boolean apply(Driver driver, final WebElement element) {
                     final String dateRegex = "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$";
                     return $(element).find(By.xpath("./td[1]")).has(completed)
                             ? $(element).find(By.xpath("./td[4]")).text().matches(dateRegex)

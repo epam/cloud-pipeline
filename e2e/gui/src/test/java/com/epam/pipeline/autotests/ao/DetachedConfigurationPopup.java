@@ -16,12 +16,16 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import java.util.Map;
 
+import static com.codeborne.selenide.Condition.disappear;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
+import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
+import static java.time.Duration.ofMillis;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 
 abstract public class DetachedConfigurationPopup extends PopupAO<DetachedConfigurationPopup, Configuration> {
@@ -47,6 +51,18 @@ abstract public class DetachedConfigurationPopup extends PopupAO<DetachedConfigu
 
     public DetachedConfigurationPopup setTemplate(final String template) {
         return selectValue(TEMPLATE, template);
+    }
+
+    /**
+     * Submits the form with Enter and waits until the page has stored the change: the popup is closed and the
+     * "Updating configuration ..." message of the request is gone. The page shows the new name before the request
+     * completes, and a folder opened meanwhile is loaded with the old name (it is not reloaded afterwards).
+     */
+    public Configuration enterAndWaitUntilSaved() {
+        enter();
+        context().should(disappear, ofMillis(C.DEFAULT_TIMEOUT));
+        $(withText("Updating configuration")).should(disappear, ofMillis(C.DEFAULT_TIMEOUT));
+        return parent();
     }
 
     @Override

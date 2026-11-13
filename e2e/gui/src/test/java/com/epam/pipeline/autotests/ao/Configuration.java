@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,10 +39,12 @@ import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byCssSelector;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD;
 import static com.epam.pipeline.autotests.ao.Primitive.DOCKER_IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.EDIT;
+import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
 import static com.epam.pipeline.autotests.ao.Primitive.IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.NAME;
@@ -137,6 +139,10 @@ public class Configuration implements AccessObject<Configuration> {
         return fieldWithLabel("Cmd template");
     }
 
+    public static By startIdleCheckbox() {
+        return byXpath(".//label[contains(@class, 'ant-checkbox-wrapper') and .//*[text() = 'Start idle']]");
+    }
+
     public static By template() {
         return byClassName("launch-pipeline-form__code-editor");
     }
@@ -160,6 +166,7 @@ public class Configuration implements AccessObject<Configuration> {
                 entry(RUN, context().find(byId("run-configuration-button"))),
                 entry(ADD, context().find(byId("add-configuration-button"))),
                 entry(ADD_PARAMETER, context().find(byId("add-parameter-button"))),
+                entry(ESTIMATED_PRICE, context().find(byText("Estimated price per hour:"))),
                 entry(DOCKER_IMAGE, context().find(inputOf(fieldWithLabel("Docker image"))))
         );
     }
@@ -186,7 +193,6 @@ public class Configuration implements AccessObject<Configuration> {
      */
     public RunsMenuAO runSelected(AbstractSeveralPipelineRunningTest test, String pipelineName) {
         click(RUN);
-        $(byText("Run selected")).shouldBe(visible).click();
         $(byClassName("ant-modal-body")).find(button("OK")).click();
         test.addRunId(Utils.getPipelineRunId(pipelineName));
         return new RunsMenuAO();
@@ -297,6 +303,15 @@ public class Configuration implements AccessObject<Configuration> {
         sleep(2, SECONDS);
         $(button("Yes")).shouldBe(visible).click();
         return this;
+    }
+
+    /**
+     * Discards the unsaved changes by clicking the "Library" root of the library tree,
+     * the parent folder of a configuration that lives at the library root.
+     */
+    public Configuration leaveToParentFolderWithoutSaving() {
+        new PipelinesLibraryAO().clickRoot();
+        return exitFromConfigurationWithoutSaved();
     }
 
     public Configuration saveIfNeeded() {

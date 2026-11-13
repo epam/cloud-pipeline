@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,18 @@
 package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Selenide;
+import com.codeborne.selenide.WebDriverRunner;
+import com.epam.pipeline.autotests.ao.AuthenticationPageAO;
 import com.epam.pipeline.autotests.ao.ShellAO;
+import com.epam.pipeline.autotests.ao.ToolPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import org.openqa.selenium.Cookie;
+import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -36,13 +41,21 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byClassName;
+import static com.codeborne.selenide.Selectors.byId;
+import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.Selenide.screenshot;
+import static com.epam.pipeline.autotests.ao.Primitive.CLI_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.CLOUD_REGIONS_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.EMAIL_NOTIFICATIONS_TAB;
+import static com.epam.pipeline.autotests.ao.Primitive.MY_PROFILE;
 import static com.epam.pipeline.autotests.ao.Primitive.PREFERENCES_TAB;
+import static com.epam.pipeline.autotests.ao.Primitive.SEARCH;
 import static com.epam.pipeline.autotests.ao.Primitive.SYSTEM_EVENTS_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.USER_MANAGEMENT_TAB;
+import static com.epam.pipeline.autotests.utils.Conditions.selectedMenuItem;
 import static com.epam.pipeline.autotests.utils.Utils.assertStringContainsList;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
@@ -61,6 +74,8 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     private final String toolEndpoint = testingTool.substring(testingTool.lastIndexOf("/") + 1);
     private static final String localFilePath = URI.create(C.DOWNLOAD_FOLDER + "/").resolve("export.csv")
             .toString();
+    private static final String INVALID_JWT = "e2e-invalid-token";
+    private boolean[] storageUserHomeAutoState;
 
     @BeforeClass
     public void initialLogout() {
@@ -78,14 +93,31 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     }
 
     @AfterClass(alwaysRun = true)
+    public void resetPreference() {
+        if (storageUserHomeAutoState == null) {
+            return;
+        }
+        navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .setCheckboxPreference("storage.user.home.auto",
+                        storageUserHomeAutoState[0], storageUserHomeAutoState[1])
+                .saveIfNeeded();
+    }
+
+    @AfterClass(alwaysRun = true)
     public void loginToDeleteEntities() {
         loginAs(admin);
+        library()
+                .removeStorageIfExists(format("%s-home", testUser));
     }
 
     @Test
     @TestCase(value = "EPMCMBIBPC-3014")
     public void authenticationInPlatform() {
         loginAs(admin);
+        open(C.ROOT_ADDRESS);
+        dashboardShouldAppear();
         navigationMenu()
                 .library();
     }
@@ -93,23 +125,51 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     @Test
     @TestCase(value = "EPMCMBIBPC-3015")
     public void failedAuthentication() {
-        Utils.restartBrowser(C.ROOT_ADDRESS);
-        final Account wrongAccount = new Account(C.LOGIN, format("123%s", C.PASSWORD));
-        loginAs(wrongAccount);
-        if ("true".equals(C.AUTH_TOKEN)) {
-            validateErrorPage(singletonList("type=Unauthorized, status=401"));
-            Selenide.clearBrowserCookies();
-            sleep(1, SECONDS);
+        if ("true".equalsIgnoreCase(C.AUTH_TOKEN)) {
+            if (impersonateMode()) {
+                Selenide.clearBrowserCookies();
+                Selenide.closeWindow();
+		changeSession(C.INVALID_TOKEN);
+                open(C.ROOT_ADDRESS);
+                // the navigation appears only after the user info is loaded, so its absence is checked after a delay
+                sleep(10, SECONDS);
+                checkFailedAuthentication();
+            } else {
+                setUpConfiguration();
+                open(C.ROOT_ADDRESS);
+                WebDriverRunner.getWebDriver().manage().addCookie(new Cookie("HttpAuthorization", INVALID_JWT));
+                open(C.ROOT_ADDRESS);
+                validateErrorPage(singletonList("type=Unauthorized, status=401"));
+                Selenide.clearBrowserCookies();
+                sleep(1, SECONDS);
+            }
         } else {
+            setUpConfiguration();
+            open(C.ROOT_ADDRESS);
+            new AuthenticationPageAO()
+                    .login(C.LOGIN)
+                    .password(format("123%s", C.PASSWORD))
+                    .signIn();
             validateErrorPage(singletonList("Incorrect user name or password"));
         }
-        loginAs(admin);
+        restartBrowser(C.ROOT_ADDRESS);
     }
 
     @Test
     @TestCase({"EPMCMBIBPC-3019"})
     public void addTheUser() {
         loginAs(admin);
+        if(!impersonateMode()) {
+            storageUserHomeAutoState = navigationMenu()
+                    .settings()
+                    .switchToPreferences()
+                    .getCheckboxPreferenceState("storage.user.home.auto");
+            navigationMenu()
+                    .settings()
+                    .switchToPreferences()
+                    .setCheckboxPreference("storage.user.home.auto", false, true)
+                    .saveIfNeeded();
+        }
         navigationMenu()
                 .settings()
                 .switchToUserManagement()
@@ -134,15 +194,27 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
                 .switchToUsers()
                 .checkUserExist(testUser)
                 .deleteUser(testUser)
+                .clear(SEARCH);
+        navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers()
+                .searchUser(testUser)
                 .checkUserTabIsEmpty();
     }
 
     @Test
     @TestCase({"EPMCMBIBPC-3017"})
     public void provideAdminRightsToTheUser() {
+        if (!impersonateMode() && "true".equals(C.AUTH_TOKEN)) {
+            // a JWT carries the roles of the moment it was issued, so a token can't show the role given here
+            throw new SkipException("EPMCMBIBPC-3017 needs e2e.ui.impersonate.auth=true or e2e.ui.auth.token=false");
+        }
         loginAs(user);
+        // the items every user has are awaited first, so the absence checks run on the rendered menu
         navigationMenu()
                 .settings()
+                .ensureVisible(CLI_TAB, MY_PROFILE)
                 .ensureNotVisible(SYSTEM_EVENTS_TAB, USER_MANAGEMENT_TAB,
                         EMAIL_NOTIFICATIONS_TAB, PREFERENCES_TAB, CLOUD_REGIONS_TAB);
         logout();
@@ -154,6 +226,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
                 .searchUserEntry(user.login)
                 .edit()
                 .addRoleOrGroup(roleAdmin)
+                .roleOrGroupShouldBeListed(roleAdmin)
                 .ok();
         logout();
         loginWithToken(C.ANOTHER_ADMIN_TOKEN);
@@ -188,6 +261,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     public void blockUnblockUser() {
         try {
             loginAs(user);
+            dashboardShouldAppear();
             tools()
                     .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
                     .setDefaultLaunchOptions()
@@ -205,8 +279,6 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
             logout();
             loginAs(user);
             validateWhileErrorPageMessage();
-            loginAs(user);
-            validateWhileErrorPageMessage();
         } finally {
             loginAs(admin);
             navigationMenu()
@@ -220,6 +292,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         }
         logout();
         loginAs(user);
+        dashboardShouldAppear();
         runsMenu()
                 .activeRuns()
                 .shouldContainRun("pipeline", getLastRunId())
@@ -230,6 +303,8 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     @TestCase({"EPMCMBIBPC-3168"})
     public void generateListOfUsers() throws IOException {
         loginAs(admin);
+        // with an old export.csv in place the browser would save the new file under another name
+        new File(localFilePath).delete();
         navigationMenu()
                 .settings()
                 .switchToUserManagement()
@@ -239,17 +314,25 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         List<String> readFileLines = Files.readAllLines(Paths.get(localFilePath));
 
         assertTrue(readFileLines.size() >= 2);
-        assertStringContainsList(readFileLines.get(0), "id", "userName", "registrationDate UTC",
-                "firstLoginDate UTC", "roles", "groups", "blocked", "defaultStorageId", "defaultStoragePath");
-        assertStringContainsList(readFileLines.toString(), format(",%s,", admin.login.toUpperCase()),
-                format(",%s,", user.login.toUpperCase()));
+        final List<String> header = Arrays.asList(readFileLines.get(0).split(","));
+        assertTrue(header.containsAll(Arrays.asList("id", "userName", "registrationDate UTC",
+                "firstLoginDate UTC", "roles", "groups", "blocked", "defaultStorageId", "defaultStoragePath")),
+                format("Unexpected header of the exported file: %s", header));
+        final int userNameIndex = header.indexOf("userName");
+        assertTrue(readFileLines.stream()
+                        .skip(1)
+                        .map(line -> line.split(",", -1))
+                        .anyMatch(cells -> cells.length > userNameIndex
+                                && cells[userNameIndex].equalsIgnoreCase(admin.login)),
+                format("There is no row with userName %s in the exported file", admin.login));
+        assertStringContainsList(readFileLines.toString(), format(",%s,", user.login.toUpperCase()));
     }
 
     @Test
     @TestCase(value = "EPMCMBIBPC-3169")
     public void checkAnonymousAccess() {
         if ("false".equals(C.AUTH_TOKEN)) {
-            return;
+            throw new SkipException("EPMCMBIBPC-3169 needs e2e.ui.auth.token=true for the anonymous user's token");
         }
         logoutIfNeeded();
         loginAs(admin);
@@ -259,11 +342,21 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
                 .show(getLastRunId())
                 .waitEndpoint()
                 .attr("href");
+        final String edgeUrl = endpoint.split(format("pipeline-%s-%s-0", getLastRunId(), C.VALID_ENDPOINT))[0];
         logout();
-        Utils.restartBrowser(endpoint);
-        new ShellAO().assertPageContains("type=Unauthorized, status=401").close();
-        open(C.ROOT_ADDRESS);
-        loginAs(admin);
+        if (impersonateMode()) {
+            // the edge rejects a valid token of a user who is neither the owner nor in the run's sharing
+            setAnonymousTokenInNewBrowser(edgeUrl);
+            sleep(2, SECONDS);
+            open(endpoint);
+            new ToolPageAO(endpoint).assertPageTitleIs("401 Authorization Required");
+            restartBrowser(C.ROOT_ADDRESS);
+        } else {
+            restartBrowser(endpoint);
+            new ShellAO().assertPageContains("type=Unauthorized, status=401").close();
+            open(C.ROOT_ADDRESS);
+            loginAs(admin);
+        }
         runsMenu()
                 .log(getLastRunId(), log -> log
                         .shareWithGroup("ROLE_ANONYMOUS_USER")
@@ -272,16 +365,41 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         sleep(1, MINUTES);
         logout();
         final Account anonymousAccount = new Account(C.ANONYMOUS_NAME, C.ANONYMOUS_TOKEN);
-        loginAs(anonymousAccount);
+        if (impersonateMode()) {
+            setAnonymousTokenInNewBrowser(edgeUrl);
+        } else {
+            loginAs(anonymousAccount);
+        }
         sleep(2, SECONDS);
         open(endpoint);
         screenshot("Endpoint_page");
         new ShellAO().assertPageContains(C.ANONYMOUS_NAME);
-        Utils.restartBrowser(C.ROOT_ADDRESS);
+        restartBrowser(C.ROOT_ADDRESS);
         loginAs(admin);
     }
 
+    @Test
+    @TestCase({"2144"})
+    public void allowToImpersonateAdministratorAsGeneralUser() {
+        logoutIfNeeded();
+        loginAs(admin);
+        impersonateAs(user.login);
+        dashboardShouldAppear();
+        $(byId("navigation-button-stop-impersonation")).shouldBe(visible);
+        checkUserName(user);
+        stopImpersonation();
+        dashboardShouldAppear();
+        checkUserName(admin);
+    }
+
     private void validateWhileErrorPageMessage() {
+        if (impersonateMode()) {
+            navigationMenu()
+                    .settings()
+                    .switchToMyProfile()
+                    .validateUserName(admin.login);
+            return;
+        }
         if ("true".equals(C.AUTH_TOKEN)) {
             validateErrorPage(singletonList("User is blocked!"));
             Selenide.clearBrowserCookies();
@@ -289,13 +407,28 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
             return;
         }
         validateErrorPage(Arrays.asList(
-                "Please contact",
-                format("%s support team", C.PLATFORM_NAME),
-                "to request the access",
+                "Please contact", "Support team", "to request the access",
                 format("login back to the %s", C.PLATFORM_NAME),
                 "if you already own an account")
         );
         loginBack();
+    }
+
+    /**
+     * Opens a new browser without the platform session and puts the anonymous user's token into the cookie that the
+     * edge reads. The edge clears this cookie when it rejects the token, so each check needs a new one.
+     */
+    private void setAnonymousTokenInNewBrowser(final String edgeUrl) {
+        Selenide.clearBrowserCookies();
+        Selenide.closeWindow();
+        setUpConfiguration();
+        open(edgeUrl);
+        WebDriverRunner.getWebDriver().manage().addCookie(new Cookie("bearer", C.ANONYMOUS_TOKEN));
+    }
+
+    private void dashboardShouldAppear() {
+        $(byId("navigation-button-home")).shouldBe(selectedMenuItem);
+        $(byClassName("home-page__global-container")).shouldBe(visible);
     }
 
     private void loginWithToken(final String token) {
@@ -305,5 +438,12 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         }
         final Account userWithToken = new Account(user.login, token);
         loginAs(userWithToken);
+    }
+
+    private void checkUserName(Account user) {
+        navigationMenu()
+                .settings()
+                .switchToMyProfile()
+                .validateUserName(user.login);
     }
 }

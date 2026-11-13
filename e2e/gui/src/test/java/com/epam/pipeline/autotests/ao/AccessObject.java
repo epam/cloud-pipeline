@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,13 @@ import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.utils.SelenideElements;
 import com.epam.pipeline.autotests.utils.Utils;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -34,11 +37,14 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.openqa.selenium.*;
+import org.openqa.selenium.interactions.Actions;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.Condition.appear;
-import static com.codeborne.selenide.Condition.appears;
+import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.not;
@@ -49,14 +55,18 @@ import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.actions;
+import static com.codeborne.selenide.Selenide.switchTo;
+import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import static com.epam.pipeline.autotests.utils.Conditions.collapsedTab;
 import static com.epam.pipeline.autotests.utils.Conditions.expandedTab;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.comboboxDropdown;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.globalContext;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toMap;
+import static org.testng.Assert.assertTrue;
 
 @SuppressWarnings("unchecked")
 public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
@@ -168,6 +178,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
 
     default ELEMENT_TYPE hover(Primitive primitive) {
         sleep(1, SECONDS);
+        get(primitive).shouldBe(enabled);
         get(primitive).shouldBe(visible).hover();
         sleep(1, SECONDS);
         return (ELEMENT_TYPE) this;
@@ -187,6 +198,11 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
 
     default ELEMENT_TYPE ensure(final By target, final By globalScope, final Condition... conditions) {
         $(globalScope).find(target).shouldHave(conditions);
+        return (ELEMENT_TYPE) this;
+    }
+
+     default ELEMENT_TYPE ensure(final SelenideElement element, final Condition... conditions) {
+        element.should(conditions);
         return (ELEMENT_TYPE) this;
     }
 
@@ -232,6 +248,11 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
         return (ELEMENT_TYPE) this;
     }
 
+    default ELEMENT_TYPE ensureDisable(final Primitive... elements) {
+        Arrays.stream(elements).forEach(el -> ensure(el, disabled));
+        return (ELEMENT_TYPE) this;
+    }
+
     default ELEMENT_TYPE ensureAll(final Condition condition, final Primitive... elements) {
         Arrays.stream(elements).forEach(el -> ensure(el, condition));
         return (ELEMENT_TYPE) this;
@@ -240,8 +261,12 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     default ELEMENT_TYPE expandTab(final By qualifier) {
         final SelenideElement selenideElement = $(qualifier);
         selenideElement.should(exist);
-        if (selenideElement.is(collapsedTab)) {
+        int attempt = 0;
+        int maxAttempts = 5;
+        while (selenideElement.is(collapsedTab) && attempt < maxAttempts) {
             selenideElement.click();
+            sleep(1, SECONDS);
+            attempt++;
         }
         selenideElement.shouldBe(expandedTab);
         return (ELEMENT_TYPE) this;
@@ -255,8 +280,12 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     default ELEMENT_TYPE expandTab(final Primitive element) {
         final SelenideElement selenideElement = get(element);
         selenideElement.should(exist);
-        if (selenideElement.is(collapsedTab)) {
+        int attempt = 0;
+        int maxAttempts = 5;
+        while (selenideElement.is(collapsedTab) && attempt < maxAttempts) {
             selenideElement.click();
+            sleep(1, SECONDS);
+            attempt++;
         }
         selenideElement.shouldBe(expandedTab);
         return (ELEMENT_TYPE) this;
@@ -273,7 +302,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     }
 
     default ELEMENT_TYPE refresh() {
-        Selenide.refresh();
+        Utils.refresh();
         return (ELEMENT_TYPE) this;
     }
 
@@ -404,7 +433,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     }
 
     default ELEMENT_TYPE messageShouldAppear(String message, long timeout) {
-        $(withText(message)).waitUntil(appears, timeout);
+        $(withText(message)).shouldBe(appear, ofMillis(timeout));
         return (ELEMENT_TYPE) this;
     }
 
@@ -500,9 +529,49 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
         return (ELEMENT_TYPE) this;
     }
 
+    default ELEMENT_TYPE checkValueIsNotInDropDown(final Primitive combobox, String...options) {
+        sleep(1, SECONDS);
+        get(combobox).shouldBe(visible).click();
+        ElementsCollection listDropDown = SelenideElements.of(byClassName("ant-select-dropdown-menu-item"));
+        Arrays.stream(options).forEach(option -> listDropDown.forEach(row -> row.shouldNotHave(text(option))));
+        return (ELEMENT_TYPE) this;
+    }
+
+    default ELEMENT_TYPE checkDropDownContainsValue(final Primitive combobox, final String option) {
+        sleep(1, SECONDS);
+        get(combobox).shouldBe(visible).click();
+        List<SelenideElement> lines = Selenide.$$(byClassName("ant-select-dropdown-menu-item")).stream()
+                .filter(row -> row.getAttribute("title").contains("m6i")).collect(Collectors.toList());
+        assertTrue(lines.size() > 0,
+                String.format("Option '%s' isn't contained in drop-down list", option));
+        return (ELEMENT_TYPE) this;
+    }
+
+    /**
+     * Opens the drop-down list of the {@code combobox} (if it is not open yet) and checks the options of the visible
+     * list only: the list is not empty, at least one option contains {@code presentOption}
+     * and no option contains {@code absentOption}. Closes the list afterwards.
+     */
+    default ELEMENT_TYPE checkDropDownOptions(final Primitive combobox,
+                                              final String presentOption,
+                                              final String absentOption) {
+        sleep(1, SECONDS);
+        final By visibleDropDown = visible(byClassName("ant-select-dropdown"));
+        if (!$(visibleDropDown).exists()) {
+            get(combobox).shouldBe(visible).click();
+        }
+        final ElementsCollection options = $(visibleDropDown).shouldBe(visible)
+                .findAll(byClassName("ant-select-dropdown-menu-item"));
+        options.shouldHave(CollectionCondition.sizeGreaterThan(0));
+        options.filterBy(text(presentOption)).shouldHave(CollectionCondition.sizeGreaterThan(0));
+        options.filterBy(text(absentOption)).shouldHave(size(0));
+        get(combobox).click();
+        return (ELEMENT_TYPE) this;
+    }
+
     default ELEMENT_TYPE checkDropDownCount(final Primitive combobox, final int count) {
         get(combobox).shouldBe(visible).click();
-        SelenideElements.of(byClassName("ant-select-dropdown-menu-item")).shouldHaveSize(count);
+        SelenideElements.of(byClassName("ant-select-dropdown-menu-item")).shouldHave(size(count));
         return (ELEMENT_TYPE) this;
     }
 
@@ -512,9 +581,29 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     }
 
     default ELEMENT_TYPE exitFromConfigurationWithoutSaved() {
+        sleep(2, SECONDS);
         new ConfirmationPopupAO<>(this)
                 .ensureTitleIs("You have unsaved changes. Continue?")
                 .ok();
+        return (ELEMENT_TYPE) this;
+    }
+
+    default void closeTab() {
+        List<String> tabs = new ArrayList<>(getWebDriver().getWindowHandles());
+        if (tabs.size() <= 1 ) {
+            return;
+        }
+        getWebDriver().close();
+        switchTo().window(tabs.get(0));
+    }
+
+    default ELEMENT_TYPE deleteExtraBrackets(SelenideElement selenideElement, int number) {
+        Actions action = actions().moveToElement(selenideElement);
+        sleep(500, MILLISECONDS);
+        for (int i = 0; i < number; i++) {
+            action.sendKeys(Keys.DELETE);
+        }
+        action.perform();
         return (ELEMENT_TYPE) this;
     }
 

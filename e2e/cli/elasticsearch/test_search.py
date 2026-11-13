@@ -17,12 +17,12 @@ import os
 import shutil
 import uuid
 from time import sleep
-from urlparse import urlparse
+from urllib.parse import urlparse
 
 import pytest
 
 from common_utils.pipe_cli import pipe_storage_cp
-from pipeline_api_provider import CloudPipelineApiProvider
+from .pipeline_api_provider import CloudPipelineApiProvider
 
 
 def create_test_folder(path):

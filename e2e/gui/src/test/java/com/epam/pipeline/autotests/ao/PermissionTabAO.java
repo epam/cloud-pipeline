@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.epam.pipeline.autotests.utils.*;
 
 import java.util.stream.Stream;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.*;
@@ -79,6 +80,24 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
         return this;
     }
 
+    /**
+     * Checks the delete button in the row of this user or group itself, not in the first row of the table.
+     */
+    public PermissionTabAO deleteButtonShouldBeShownFor(final String userOrGroup) {
+        getRowByExactName(userOrGroup).shouldBe(visible)
+                .find(tagName("button")).shouldBe(visible)
+                .find(byClassName("anticon-delete")).shouldBe(visible);
+        return this;
+    }
+
+    /**
+     * For a user who can't change the owner, the owner is plain text; admins and the owner get an input instead.
+     */
+    public PermissionTabAO ownerShouldBe(final String owner) {
+        $(byId("object-owner")).shouldHave(exactText(owner));
+        return this;
+    }
+
     private void clickOnInfoTabIfItIsVisible() {
         sleep(1, SECONDS);
         SelenideElement infoTab = $$(byText("Info")).findBy(visible);
@@ -115,12 +134,45 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
                 tab -> tab.delete(userOrGroup));
     }
 
+    public boolean rowExists(final String userOrGroup) {
+        for (int i = 0; i < 3; i++) {
+            if (getRowByExactName(userOrGroup).is(visible)) {
+                return true;
+            }
+            sleep(3, SECONDS);
+        }
+        return false;
+    }
+
+    public UserPermissionsTableAO showRowPermissions(final String userOrGroup) {
+        getRowByExactName(userOrGroup).shouldBe(visible).findAll("td").get(1).click();
+        return new UserPermissionsTableAO(this);
+    }
+
+    public PermissionTabAO deleteRowIfPresent(final String userOrGroup) {
+        if (rowExists(userOrGroup)) {
+            getRowByExactName(userOrGroup).find(tagName("button")).shouldBe(enabled).click();
+            getRowByExactName(userOrGroup).shouldNot(exist);
+        }
+        return this;
+    }
+
+    // a row shows a user by its lowercase name and a group by its name; exactText ignores the case
+    private static SelenideElement getRowByExactName(final String userOrGroup) {
+        return getTabTable().findAll(byClassName("ant-table-row")).findBy(exactText(userOrGroup));
+    }
+
     public PermissionTabAO delete(String usersGroup) {
         $$(byClassName("ant-table-tbody"))
                 .find(text(usersGroup))
                 .find(tagName("button"))
                 .click();
         return this;
+    }
+
+    public boolean checkPermissionExistence(String userOrGroup) {
+        sleep(1, SECONDS);
+        return getElementByNameInUpperCase(userOrGroup).is(visible);
     }
 
     @Override
@@ -169,7 +221,7 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
 
         public UserPermissionsTableAO validateAllCheckboxesAreListed() {
             Privilege.privilegesRows()
-                    .forEach(row -> row.findAll(byClassName("ant-checkbox-input")).shouldHaveSize(2));
+                    .forEach(row -> row.findAll(byClassName("ant-checkbox-input")).shouldHave(size(2)));
             return this;
         }
 

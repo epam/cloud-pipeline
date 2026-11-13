@@ -59,10 +59,10 @@ class TestPolicy(object):
             assert_policy(bucket_name, None, None, self.default_backup_duration)
         except AssertionError as e:
             delete_buckets(bucket_name)
-            raise AssertionError(ERROR_MESSAGE + test_case, e.message)
+            raise AssertionError(ERROR_MESSAGE + test_case, str(e))
         except BaseException as e:
             delete_buckets(bucket_name)
-            raise RuntimeError(ERROR_MESSAGE + test_case, e.message)
+            raise RuntimeError(ERROR_MESSAGE + test_case, str(e))
         delete_buckets(bucket_name)
 
     def test_update_policy_with_disabled_fields(self):
@@ -81,8 +81,8 @@ class TestPolicy(object):
             assert_policy(bucket_name, sts, lts, backup_duration)
         except AssertionError as e:
             delete_buckets(bucket_name)
-            raise AssertionError(ERROR_MESSAGE + test_case, e.message)
+            raise AssertionError(ERROR_MESSAGE + test_case, str(e))
         except BaseException as e:
             delete_buckets(bucket_name)
-            raise RuntimeError(ERROR_MESSAGE + test_case, e.message)
+            raise RuntimeError(ERROR_MESSAGE + test_case, str(e))
         delete_buckets(bucket_name)

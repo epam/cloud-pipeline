@@ -1,0 +1,9 @@
+// Downloads the Gradle distribution and all the dependencies of the tests into GRADLE_USER_HOME at image build time
+// Usage: ./gradlew --no-daemon -I gradle-warmup.gradle warmup
+allprojects {
+    task warmup {
+        doLast {
+            configurations.findAll { it.canBeResolved }.each { it.resolve() }
+        }
+    }
+}

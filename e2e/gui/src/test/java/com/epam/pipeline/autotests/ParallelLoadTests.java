@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,8 @@ import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.PrivilegeValue.ALLOW;
+import static com.epam.pipeline.autotests.utils.Utils.BROWSER_SIZE;
+import static com.epam.pipeline.autotests.utils.Utils.CHROME_BROWSER;
 import static java.lang.System.currentTimeMillis;
 import static java.lang.System.getProperty;
 import static java.lang.System.out;
@@ -82,7 +84,7 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
         loginAs(admin);
         Arrays.stream(userList)
             .forEach(this::addUser);
-        final String userRoleGroup = "ROLE_USER";
+        final String userRoleGroup = C.ROLE_USER;
         library()
                 .createFolder(PARALLEL_TEST_FOLDER)
                 .clickOnFolder(PARALLEL_TEST_FOLDER)
@@ -106,8 +108,8 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
     @BeforeMethod(alwaysRun = true)
     public void setUp() {
         Configuration.timeout = C.DEFAULT_TIMEOUT;
-        Configuration.browser = WebDriverRunner.CHROME;
-        Configuration.startMaximized = true;
+        Configuration.browser = CHROME_BROWSER;
+        Configuration.browserSize = BROWSER_SIZE;
         setProperty("webdriver.chrome.driver", "/usr/local/bin/chromedriver");
 
         open(C.ROOT_ADDRESS);
@@ -145,6 +147,7 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
             startTime = currentTimeMillis();
             tools()
                     .perform(C.DEFAULT_REGISTRY, C.DEFAULT_GROUP, C.TESTING_TOOL_NAME, ToolTab::runWithCustomSettings)
+                    .setTimeOut("3")
                     .launch(this)
                     .showLog(runId = getLastRunId())
                     .shouldHaveRunningStatus();

@@ -19,6 +19,7 @@ import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.utils.*;
 import org.testng.annotations.Test;
+import static com.codeborne.selenide.Condition.attribute;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.value;
@@ -33,10 +34,13 @@ import static com.epam.pipeline.autotests.utils.Json.transferringJsonToObject;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.collapsiblePanel;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.testng.Assert.assertNotEquals;
 
 public class Launch_InstanceConfigTest extends AbstractAutoRemovingPipelineRunningTest {
 
-    private final String dockerImage = String.format("%s/library/%s", C.DEFAULT_REGISTRY_IP, C.LUIGI_IMAGE);
+    // Not a substring of the SHELL template's library/centos:7, so the check proves the edited value is used
+    private final String dockerImage = String.format("%s/%s/%s",
+            C.DEFAULT_REGISTRY_IP, C.ANOTHER_GROUP, C.ANOTHER_TESTING_TOOL_NAME);
     private final String instanceType = C.DEFAULT_INSTANCE;
     private final String instanceDisk = "25";
 
@@ -50,6 +54,8 @@ public class Launch_InstanceConfigTest extends AbstractAutoRemovingPipelineRunni
                 .clickOnFile("config.json")
                 .editFile(transferringJsonToObject(profiles -> {
                     final ConfigurationProfile profile = selectProfileWithName("default", profiles);
+                    assertNotEquals(profile.configuration.instanceSize, instanceType, String.format(
+                            "The SHELL template already uses %s, so the instance type would not change", instanceType));
                     profile.configuration.instanceSize = instanceType;
                     profile.configuration.instanceDisk = instanceDisk;
                     profile.configuration.dockerImage = dockerImage;
@@ -73,7 +79,7 @@ public class Launch_InstanceConfigTest extends AbstractAutoRemovingPipelineRunni
     @TestCase("EPMCMBIBPC-369")
     public void validateDiskStorage() {
         new PipelineRunFormAO(getPipelineName())
-                .ensure(DISK, value(instanceDisk));
+                .ensure(DISK, attribute("value", instanceDisk));
     }
 
     @Test(dependsOnMethods = {"validateDiskStorage"})

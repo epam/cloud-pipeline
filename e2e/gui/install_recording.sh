@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,12 +23,6 @@ if [ "$_RECORDING" != "true" ]; then
     exit 0
 fi
 
-# Install screen recording tool vnc2flv
-export TMP=/tmp
-cd $TMP
-wget -N https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/e2e/vnc2flv-20100207.tar.gz -O vnc2flv-20100207.tar.gz
-tar -zxvf vnc2flv-20100207.tar.gz
-rm -f vnc2flv-20100207.tar.gz
-export RECORD=${TMP}/vnc2flv-20100207
-cd $RECORD
-python setup.py install
+# vnc2flv requires Python 2, which is not available on Rocky 9: ffmpeg (EPEL) grabs the X display instead (see run.sh)
+dnf install -y ffmpeg-free
+dnf clean all

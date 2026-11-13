@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,9 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.ElementsCollection;
+import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.SelenideElements;
@@ -27,9 +29,11 @@ import org.openqa.selenium.WebElement;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.CollectionCondition.texts;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.text;
@@ -37,15 +41,20 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byCssSelector;
 import static com.codeborne.selenide.Selectors.byId;
+import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
+import static com.epam.pipeline.autotests.ao.Primitive.ADD_INSTANCE;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.Combiners.confine;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static org.openqa.selenium.By.className;
-import static org.openqa.selenium.By.tagName;
 import static org.testng.Assert.assertTrue;
 
 public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
+    private final Map<Primitive, SelenideElement> elements = initialiseElements(
+            entry(ADD_INSTANCE, $(byId("metadata-actions-button")))
+    );
 
     public static final By hideMetadata = byId("hide-metadata-button");
     public static final By rows = byClassName("rt-tr-group");
@@ -71,7 +80,7 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
     }
 
     public MetadataSamplesAO ensureNumberOfRowsIs(int expectedNumberOfRows) {
-        SelenideElements.of(rows).shouldHaveSize(expectedNumberOfRows);
+        SelenideElements.of(rows).shouldHave(size(expectedNumberOfRows));
         return this;
     }
 
@@ -131,6 +140,43 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
         return this;
     }
 
+    public PipelinesLibraryAO returnToMetadata() {
+        click(byXpath(".//div//a[.='Metadata']"));
+        return new PipelinesLibraryAO();
+    }
+
+    public MetadataSamplesAO addInstance(String instanceID) {
+        click(ADD_INSTANCE);
+        click(byText("Add instance"));
+        setValue(context().find(byId("id")), instanceID);
+        click(byId("add-instance-form-create-button"));
+        return this;
+    }
+
+    public MetadataSamplesAO addInstanceWithValue(String metadata, String value) {
+        click(ADD_INSTANCE);
+        click(byText("Add instance"));
+        SelenideElement element = context().$(byId("add-instance-form"))
+                .$(byText(metadata)).parent().$(byXpath("following::input"));
+        setValue(element, value);
+        click(byId("add-instance-form-create-button"));
+        return this;
+    }
+
+    public MetadataSamplesAO cancelAddInstance() {
+        return click(byId("add-instance-form-cancel-button"));
+    }
+
+    public MetadataSamplesAO initializeSorting(String columnName) {
+        Selenide.actions().moveToElement($(columnHeader(columnName)), -10, 0).click().build().perform();
+        return this;
+    }
+
+    @Override
+    public Map<Primitive, SelenideElement> elements() {
+        return this.elements;
+    }
+
     public class SampleRow implements AccessObject<SampleRow> {
         private final SelenideElement particularRow;
 
@@ -176,7 +222,7 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
         }
 
         public void ensureCellContainsHyperlink() {
-            particularCell.shouldHave(hyperlink());
+            particularCell.find(byClassName("ant-row")).shouldHave(hyperlink());
         }
 
         public void ensureCellContains(String substring) {
@@ -188,7 +234,7 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
         }
 
         public MetadataSectionAO clickOnHyperlink() {
-            particularCell.find(tagName("a")).click();
+            particularCell.find(byXpath("./a")).click();
             return new MetadataSectionAO(this);
         }
 
@@ -199,8 +245,8 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
         public static Condition hyperlink(String text) {
             return new Condition("hyperlink") {
                 @Override
-                public boolean apply(final WebElement element) {
-                    return element.findElement(tagName("a")).isDisplayed()
+                public boolean apply(Driver driver, final WebElement element) {
+                    return element.findElement(By.tagName("a")).isDisplayed()
                             && element.findElement(withText(text)).isDisplayed();
                 }
             };

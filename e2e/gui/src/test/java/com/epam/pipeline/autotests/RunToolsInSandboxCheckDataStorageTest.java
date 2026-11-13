@@ -36,7 +36,7 @@ public class RunToolsInSandboxCheckDataStorageTest
     private final String defaultCommand = "/start.sh";
     private final String type = C.DEFAULT_INSTANCE;
     private final String disk = "15";
-    private final String price = C.DEFAULT_INSTANCE_PRICE_TYPE;
+    private final String price = C.DEFAULT_INSTANCE_PRICE_TYPE_TOOL;
     private final String registry = C.DEFAULT_REGISTRY;
     private final String tool = C.TESTING_TOOL_NAME;
     private final String group = C.DEFAULT_GROUP;
@@ -90,15 +90,7 @@ public class RunToolsInSandboxCheckDataStorageTest
         loginAs(user);
         final Set<String> log =
                 tools()
-                        .perform(registry, group, tool, tool ->
-                                tool.settings()
-                                        .addEndpoint(endpoint)
-                                        .setDefaultCommand(defaultCommand)
-                                        .save()
-                                        .runWithCustomSettings()
-                        )
-                        .setLaunchOptions(disk, type, null)
-                        .launchTool(this, Utils.nameWithoutGroup(tool))
+                        .perform(registry, group, tool, tool -> tool.run(this))
                         .showLog(getRunId())
                         .clickMountBuckets()
                         .logMessages().collect(toSet());
@@ -117,7 +109,6 @@ public class RunToolsInSandboxCheckDataStorageTest
                 tool.permissions().addNewUser(user.login).closeAll()
         );
         givePermissions(user,
-                ToolPermission.allow(WRITE, tool, registry, group),
                 ToolPermission.allow(EXECUTE, tool, registry, group)
         );
     }

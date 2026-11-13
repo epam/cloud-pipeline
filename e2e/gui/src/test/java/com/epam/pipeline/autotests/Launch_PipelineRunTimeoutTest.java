@@ -22,12 +22,23 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.Test;
 
+import static com.codeborne.selenide.Condition.attribute;
+import static com.codeborne.selenide.Condition.exist;
+import static com.codeborne.selenide.Condition.not;
+import static com.codeborne.selenide.Condition.text;
+import static com.epam.pipeline.autotests.ao.LogAO.containsMessage;
+import static com.epam.pipeline.autotests.ao.LogAO.log;
+import static com.epam.pipeline.autotests.ao.LogAO.pipelineLink;
+import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
+import static com.epam.pipeline.autotests.ao.Primitive.TIMEOUT;
+import static com.epam.pipeline.autotests.utils.Json.editingConfiguration;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Launch_PipelineRunTimeoutTest extends AbstractAutoRemovingPipelineRunningTest {
 
-    private static final String CONFIG_JSON = "/timeout.json";
     private static final String SLEEP_SHELL = "/sleep2m.sh";
+    private static final String TIMEOUT_MINUTES = "1";
 
     @Test
     @TestCase(value = {"EPMCMBIBPC-376"})
@@ -36,9 +47,16 @@ public class Launch_PipelineRunTimeoutTest extends AbstractAutoRemovingPipelineR
                 .createPipeline(Template.SHELL, getPipelineName())
                 .firstVersion()
                 .codeTab()
-                .clearAndFillPipelineFile("config.json", Utils.readResourceFully(CONFIG_JSON)
-                        .replace("{{instance_type}}", C.DEFAULT_INSTANCE))
-                .runPipeline();
+                .clickOnFile("config.json")
+                // the next test launches this configuration as it is, and the platform's default instance type
+                // may not be allowed, so the instance type is set too
+                .editFile(editingConfiguration("default", configuration -> configuration
+                        .put("timeout", Integer.parseInt(TIMEOUT_MINUTES))
+                        .put("instance_size", C.DEFAULT_INSTANCE)))
+                .saveAndCommitWithMessage("test: Change timeout")
+                .sleep(2, SECONDS)
+                .runPipeline()
+                .ensure(TIMEOUT, attribute("value", TIMEOUT_MINUTES));
     }
 
     @Test(dependsOnMethods = {"preparePipelineAndValidate"})
@@ -53,8 +71,14 @@ public class Launch_PipelineRunTimeoutTest extends AbstractAutoRemovingPipelineR
                 .clearAndFillPipelineFile(pipelineFileName, Utils.readResourceFully(SLEEP_SHELL))
                 .sleep(2, SECONDS)
                 .runPipeline()
+		.setPriceType(ON_DEMAND)
                 .launch(this)
                 .showLogForce(getRunId())
-                .waitFor(LogAO.Status.FAILURE);
+                .ensure(pipelineLink(), text(getPipelineName()))
+                .waitFor(LogAO.Status.FAILURE)
+                .waitForTaskOfFinishedRun(getPipelineName())
+                .click(taskWithName(getPipelineName()))
+                .ensure(log(), containsMessage("Timeout was elapsed"))
+                .ensure(taskWithName("Task1"), not(exist));
     }
 }

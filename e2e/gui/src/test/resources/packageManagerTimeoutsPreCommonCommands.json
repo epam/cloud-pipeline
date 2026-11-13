@@ -1,0 +1,18 @@
+{
+  "linux": {
+    "ubuntu": {
+      "default": {
+        "test_apt_hang_once": [
+          "[ -z \"$TEST_APT_HANG_ONCE\" ] || echo 'APT::Update::Pre-Invoke {\"test -f /tmp/test-apt-hung || { touch /tmp/test-apt-hung; sleep 1800; }\";};' > /etc/apt/apt.conf.d/00test-apt-hang-once"
+        ]
+      }
+    },
+    "rocky": {
+      "default": {
+        "test_yum_hang_once": [
+          "[ -z \"$TEST_YUM_HANG_ONCE\" ] || { mkdir -p /usr/local/sbin && printf \"#!/bin/bash\\n[ -f /tmp/test-yum-hung ] || { touch /tmp/test-yum-hung; sleep 1800; }\\nexec /usr/bin/yum \\\"\\$@\\\"\\n\" > /usr/local/sbin/yum && chmod +x /usr/local/sbin/yum && hash -r; }"
+        ]
+      }
+    }
+  }
+}

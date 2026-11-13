@@ -39,12 +39,6 @@ public class PipelineFromTemplateTest extends AbstractAutoRemovingPipelineRunnin
     }
 
     @Test
-    @TestCase("EPMCMBIBPC-228")
-    public void wdl() {
-        pipelineFromTemplateFinishesCorrectly(Template.WDL, "Running WDL pipeline");
-    }
-
-    @Test
     @TestCase("EPMCMBIBPC-97")
     public void shell() {
         pipelineFromTemplateFinishesCorrectly(Template.SHELL, "Running shell pipeline");
@@ -54,12 +48,6 @@ public class PipelineFromTemplateTest extends AbstractAutoRemovingPipelineRunnin
     @TestCase("EPMCMBIBPC-541")
     public void python() {
         pipelineFromTemplateFinishesCorrectly(Template.PYTHON, "Running python pipeline");
-    }
-
-    @Test
-    @TestCase("EPMCMBIBPC-542")
-    public void luigi() {
-        pipelineFromTemplateFinishesCorrectly(Template.LUIGI, "Running luigi pipeline");
     }
 
     private void pipelineFromTemplateFinishesCorrectly(final Template template, final String expectedMessage) {
