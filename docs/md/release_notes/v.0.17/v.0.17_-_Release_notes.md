@@ -68,6 +68,8 @@
 - [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
 - [Pinning a run to the Docker image digest](#pinning-a-run-to-the-docker-image-digest)
 - [Default version of a tool](#default-version-of-a-tool)
+- [NICE DCV desktop: no wallpaper, a keyboard layout switcher, Ubuntu 24.04](#nice-dcv-desktop-no-wallpaper-a-keyboard-layout-switcher-ubuntu-2404)
+- [Retries of a failed scratch Lustre file system](#retries-of-a-failed-scratch-lustre-file-system)
 
 ***
 
@@ -2018,6 +2020,43 @@ In **`v0.17`**, any version of a tool can be set as its default version. The def
 Users with the **WRITE** permission for a tool set and unset the default version at the **Versions** tab of the tool. Until a default version is set, and once it is unset or deleted, the `latest` version is used, as before. The default version can also be managed via the API: `POST /tool/{id}/defaultVersion?version=<version>` sets it, `DELETE /tool/{id}/defaultVersion` removes it, and the tool returns it as the `defaultVersion` field.
 
 For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#set-a-default-version).
+
+***
+
+## NICE DCV desktop: no wallpaper, a keyboard layout switcher, Ubuntu 24.04
+
+[#4861](https://github.com/epam/cloud-pipeline/issues/4861)
+
+Previously, the Xfce desktop of a NICE DCV session started with the default Xfce panel and wallpaper, and with one keyboard layout.
+
+In **`v0.17`**:
+
+- the desktop has no wallpaper: a solid color is used instead
+- the panel has a keyboard layout switcher, with the `us`, `fr` and `de` layouts. **Ctrl+Shift** switches them. The run parameters `CP_DCV_XKB_LAYOUTS` (e.g. `us,ru`), `CP_DCV_XKB_MODEL` (`pc105` by default) and `CP_DCV_XKB_TOGGLE` (an XKB option, `grp:ctrl_shift_toggle` by default) change them
+- the switcher needs the `xfce4-xkb-plugin` package. The session also sets the layouts with `setxkbmap` (the `setxkbmap` or `xorg-x11-xkb-utils` package in RPM-based images, `x11-xkb-utils` in Ubuntu images); without it, Xfce sets them on its own. When the DCV setup installs NICE DCV, it also installs these packages where the repositories have them, and logs a warning in the run log for each one it cannot install. Without `xfce4-xkb-plugin`, the session starts with one layout and no switcher
+- the desktop is set up this way also in the images that have NICE DCV installed already. There, the switcher is shown only if the image has `xfce4-xkb-plugin`
+
+NICE DCV is also supported in the Ubuntu 24.04 images: the setup installs the `nice-dcv-2024.0-19030-ubuntu2404-x86_64` build. Previously, on an Ubuntu version that has no DCV build, e.g. 24.04, the setup installed no DCV and ran `rm -rf *` in the folder above its working folder. Only then did it fail, when it configured DCV. Now, such a version fails the setup with "Unsupported Ubuntu version", before DCV is downloaded.
+
+***
+
+## Retries of a failed scratch Lustre file system
+
+[#4861](https://github.com/epam/cloud-pipeline/issues/4861)
+
+A cluster run with `CP_CAP_SHARE_FS_TYPE=lustre` creates an FSx for Lustre file system as its shared scratch space.  
+Previously, if the file system ended up `FAILED`, e.g. because the cloud provider was out of capacity, the run failed. If it turned `FAILED` while it was being created, the run waited for it for 20 minutes (`CP_CAP_LUSTRE_WAIT_ATTEMPTS`), and then tried to mount it anyway.
+
+Now, the master run deletes a `FAILED` file system, waits until it is gone, and creates it again:
+
+- `CP_CAP_LUSTRE_CREATE_RETRIES` is the number of attempts in all, the first one included (`3` by default, i.e. up to 2 more), and they are `CP_CAP_LUSTRE_CREATE_RETRY_SLEEP` seconds apart (`60` by default)
+- for a deletion, it waits up to `CP_CAP_LUSTRE_DELETE_WAIT_ATTEMPTS` checks, 5 seconds apart (`60` by default, i.e. 5 minutes)
+- an empty answer of the API is retried too, after the same pause, and a file system that is still being deleted from an earlier attempt is waited for
+- if the file system is not `AVAILABLE` after `CP_CAP_LUSTRE_WAIT_ATTEMPTS` checks, the run fails, and the mount is not tried
+
+The workers of the cluster do not create the file system. Previously, a worker failed at once only if the first answer of the API was `FAILED`. If the file system was being deleted, or turned `FAILED` later, the worker waited for 20 minutes and then tried to mount it. Now, a worker fails at once in all these cases.
+
+Please note: the workers wait for the master's `InitializeSharedFS` task for about 20 minutes (`CP_CLUSTER_WAIT_FOR_NODE_ATTEMPTS`, `120` checks, 10 seconds apart). One attempt of the master can take up to `CP_CAP_LUSTRE_WAIT_ATTEMPTS` × 5 seconds (20 minutes by default), plus the deletion wait and the pause. So if the master retries, its workers may fail with "Failed to attach to master node" before the file system is ready.
 
 ***
 
