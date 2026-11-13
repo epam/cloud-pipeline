@@ -37,8 +37,15 @@ test('opens on hover and shows the reason', async () => {
   });
 });
 
-// The whole point of the component: a hover target inside a disabled menu
-// item, where antd's own disabled styling must not swallow the mouse.
+// A disabled menu item gets `pointer-events: none`, which its children
+// inherit, so the hint has to opt back in or it never sees a hover. jsdom does
+// not apply that rule, so this asserts the style rather than the behaviour.
+test('re-enables pointer events, which a disabled menu item turns off', () => {
+  const {container} = render(<DisabledActionHint id="hint" reason={REASON} />);
+
+  expect(container.querySelector('#hint').style.pointerEvents).toBe('auto');
+});
+
 test('opens from inside a disabled menu item', async () => {
   const {container} = render(
     <Menu selectedKeys={[]}>

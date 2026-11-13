@@ -16,27 +16,27 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon, Popover} from 'antd';
+import {Icon, Tooltip} from 'antd';
 
-// antd puts a popover (1030) below a dropdown (1050), so one inside a menu
-// needs this override - the same number capability.js uses.
+// A tooltip is 1060 and a dropdown 1050, so this only just clears the menu.
+// Stated rather than inherited, since the margin is one step.
 const ABOVE_DROPDOWN = 1071;
 
 /**
  * The reason a disabled action is disabled, behind an info icon.
  *
- * Mounted on `document.body` rather than beside the icon, so the menu it sits
- * in cannot clip it or trap it in its own stacking context. The `<span>` gives
- * the hover a target of its own, and swallows the click so it does not reach
- * the menu.
+ * `pointerEvents` is the load-bearing line: a disabled menu item gets
+ * `pointer-events: none`, which its children inherit, so without this the
+ * tooltip never sees a hover. Mounted on `document.body` so the menu cannot
+ * clip it, and the click is swallowed so it does not reach the menu.
  */
 export default function DisabledActionHint ({id, reason}) {
   if (!reason) {
     return null;
   }
   return (
-    <Popover
-      content={<div style={{maxWidth: 300}}>{reason}</div>}
+    <Tooltip
+      title={<div style={{maxWidth: 300}}>{reason}</div>}
       trigger="hover"
       placement="left"
       getPopupContainer={() => document.body}
@@ -44,12 +44,12 @@ export default function DisabledActionHint ({id, reason}) {
     >
       <span
         id={id}
-        style={{marginLeft: 5, display: 'inline-flex'}}
+        style={{marginLeft: 5, display: 'inline-flex', pointerEvents: 'auto'}}
         onClick={(event) => event.stopPropagation()}
       >
         <Icon type="info-circle" />
       </span>
-    </Popover>
+    </Tooltip>
   );
 }
 

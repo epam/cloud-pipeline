@@ -40,10 +40,12 @@ note · the hint popover moved into `components/disabled-action-hint.js`, with i
 renders it inside a disabled `Menu.Item`. It mounts on `document.body`
 (`getPopupContainer`) so the menu can neither clip it nor trap it in its stacking context, keeps the
 `zIndex: 1071` override, and swallows the click so it does not reach the menu.
-note · the reported "popover did not open" is NOT reproducible in jsdom - a bare `<Icon>` trigger
-opens there too, so the ref theory was wrong. jsdom paints nothing, so neither z-index nor clipping
-is observable in it; both are what the body-mounted container and the override address. This one
-needs a browser to confirm.
+correction · the popover did not open because a disabled menu item carries `pointer-events: none`,
+which its children inherit - found by the user in the browser, after my own jsdom tests had cleared
+both the ref and the z-index theories. jsdom applies no such rule, so no test here could have caught
+it; the hint now sets `pointerEvents: 'auto'` and a test pins that style.
+decision · the hint is a Tooltip rather than a Popover, the user's call. A tooltip is 1060 against a
+dropdown's 1050, so it only just clears the menu - the explicit override stays.
 note · "Upload" is disabled alongside "Upload and extract" while the first check is in flight, as the
 user asked. Cancel stays live. A failing check releases both - the server enforces the quota.
 note · the existing confirmation tests clicked a button immediately after the debounce settled, which
