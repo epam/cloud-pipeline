@@ -64,6 +64,7 @@ import com.epam.pipeline.acl.metadata.MetadataApiService;
 import com.epam.pipeline.acl.metadata.MetadataEntityApiService;
 import com.epam.pipeline.acl.region.CloudRegionApiService;
 import com.epam.pipeline.manager.access.UnsecuredAccessService;
+import com.epam.pipeline.manager.access.oidc.OidcTokenExchangeManager;
 import com.epam.pipeline.manager.app.ApplicationInfoManager;
 import com.epam.pipeline.manager.cloudaccess.CloudAccessApiService;
 import com.epam.pipeline.manager.firecloud.FirecloudApiService;
@@ -334,4 +335,7 @@ public class ControllerTestBeans {
 
     @MockBean
     protected UnsecuredAccessService unsecuredAccessService;
+
+    @MockBean
+    protected OidcTokenExchangeManager oidcTokenExchangeManager;
 }

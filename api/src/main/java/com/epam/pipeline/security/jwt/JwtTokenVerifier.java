@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.security.jwt;
 
+import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_AUTHORITIES_SCOPED;
+import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_EXCHANGEABLE;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_GROUPS;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_ORG_UNIT_ID;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_ROLES;
@@ -73,6 +75,13 @@ public class JwtTokenVerifier {
                 .expiresAt(decodedToken.getExpiresAt().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime())
                 .external(!decodedToken.getClaim(CLAIM_EXTERNAL).isNull() &&
                           decodedToken.getClaim(CLAIM_EXTERNAL).asBoolean())
+                // Boolean.TRUE.equals rather than asBoolean(), which returns null for a claim that
+                // is present but not a boolean and would unbox into an error on every request
+                .authoritiesScoped(Boolean.TRUE.equals(
+                          decodedToken.getClaim(CLAIM_AUTHORITIES_SCOPED).asBoolean()))
+                // absent means exchangeable, so only an explicit false withholds it
+                .exchangeable(!Boolean.FALSE.equals(
+                          decodedToken.getClaim(CLAIM_EXCHANGEABLE).asBoolean()))
                 .build();
 
         return validateClaims(tokenClaims);

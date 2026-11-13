@@ -82,6 +82,7 @@ import com.epam.pipeline.manager.preference.AbstractSystemPreference.StringPrefe
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.EnumPreference;
 import com.epam.pipeline.entity.search.SearchTemplateExportConfig;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
+import com.epam.pipeline.security.oidc.OidcIssuer;
 import com.epam.pipeline.utils.CommonUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections4.ListUtils;
@@ -1421,6 +1422,21 @@ public class SystemPreferences {
             "system.access.code.monitor.delay", Constants.MILLISECONDS_IN_DAY, SYSTEM_GROUP, isGreaterThan(0));
     public static final BooleanPreference SYSTEM_ACCESS_CODE_MONITOR_ENABLED = new BooleanPreference(
             "system.access.code.monitor.enable", true, SYSTEM_GROUP, pass);
+    /**
+     * Identity providers whose access tokens may be exchanged for a platform token, and the callers
+     * trusted under each of them. An absent or empty value means the exchange is not configured.
+     */
+    public static final ObjectPreference<List<OidcIssuer>> SYSTEM_OIDC_TOKEN_EXCHANGE_ISSUERS =
+            new ObjectPreference<>("system.oidc.token.exchange.issuers", null,
+                    new TypeReference<List<OidcIssuer>>() {}, SYSTEM_GROUP,
+                    PreferenceValidators.isValidOidcTokenExchangeIssuers);
+    /**
+     * The longest life, in seconds, of a token issued by the exchange. An issuer or a client may
+     * ask for less; a larger value there is clamped to this one when the token is issued, rather
+     * than rejected when it is configured.
+     */
+    public static final IntPreference SYSTEM_OIDC_TOKEN_EXCHANGE_TOKEN_LIFETIME = new IntPreference(
+            "system.oidc.token.exchange.token.lifetime", 3600, SYSTEM_GROUP, isGreaterThan(0));
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
