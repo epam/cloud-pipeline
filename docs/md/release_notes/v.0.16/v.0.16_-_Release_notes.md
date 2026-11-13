@@ -47,6 +47,7 @@
 - [New and changed certificate files are checked between the daily scans](#new-and-changed-certificate-files-are-checked-between-the-daily-scans)
 - [Amazon Linux 2023 node images built with Packer](#amazon-linux-2023-node-images-built-with-packer)
 - [A run can ask for a new node](#a-run-can-ask-for-a-new-node)
+- [WDL and Luigi pipelines are no longer supported](#wdl-and-luigi-pipelines-are-no-longer-supported)
 
 ***
 
@@ -790,7 +791,7 @@ Now, the runs use Python 3.12 only, as `pipe-common` requires it (see [pipe-comm
 - The `CP_CAP_INSTALL_PRIVATE_DEPS` and `CP_CONDA_DISTRO_URL` parameters no longer have an effect. A run with `CP_CAP_INSTALL_PRIVATE_DEPS` set to `true` logs a warning about it.
 - When the platform's package repositories are used (`CP_REPO_ENABLED`), `pip` installs from the Python 3 package mirror. It is `CP_REPO_PYPI3_BASE_URL_DEFAULT` (and `CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT`), if set. Otherwise, if `GLOBAL_DISTRIBUTION_URL` is an S3 bucket URL of the `https://<bucket>.s3.<region>.amazonaws.com/` form, it is `tools/python/pypi3/simple` of the website endpoint of that bucket (`http://<bucket>.s3-website.<region>.amazonaws.com/`). For any other `GLOBAL_DISTRIBUTION_URL`, it is the public mirror, `http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi3/simple`. The new `CP_REPO_PYPI3_*` parameters replace `CP_REPO_PYPI_BASE_URL_DEFAULT` and `CP_REPO_PYPI_TRUSTED_HOST_DEFAULT`, which set the mirror of the Python 2 packages and no longer have an effect. A run where `CP_REPO_PYPI_BASE_URL_DEFAULT` is set, and `CP_REPO_PYPI3_BASE_URL_DEFAULT` is not, logs a warning about it.
 - The NICE DCV desktop installs Flask 3.1.3 and Flask-HTTPAuth 4.8.1, and the NoMachine desktop installs Flask 3.1.3, for this Python 3.12.
-- The **Python** and **Luigi** pipeline templates, and the data loader system pipeline, run their scripts with `$CP_PYTHON_PATH` instead of `python`. So do the demo pipelines.
+- The **Python** pipeline template, and the data loader system pipeline, run their scripts with `$CP_PYTHON_PATH` instead of `python`. So do the demo pipelines.
 - On CentOS 8 and Rocky Linux 8 and 9, the names of the packages that a run installs (e.g. from `CP_CAP_EXTRA_PKG`) are no longer changed from `python` to `python2`. E.g. `python3-devel` was installed as `python23-devel`, which does not exist.
 - A run with `CP_PIPELINE_CLI_BINARY_NAME` set to `pipe-el6` installs the `pipe` build of the `pipe` CLI, with a warning: the CentOS 6 build is no longer published. The `pipe` CLI needs `glibc` 2.17 or later.
 
@@ -945,6 +946,19 @@ Previously, a free node that matched a waiting run was kept in the cluster for t
 When the cluster has reached `cluster.max.size`, and `cluster.kill.not.matching.nodes` is `true`, every free node is treated as not matching for such a run: the autoscaler scales one of them down to make room for the new node. A free node of a node pool, or of a local cluster, is not scaled down this way. Previously, when such a node came first in the list of the free nodes, the autoscaler failed to scale it down, and the waiting run was not processed until the next check, where the same could happen again.
 
 For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#active-run-states).
+
+## WDL and Luigi pipelines are no longer supported
+
+Cloud Pipeline no longer has these parts of the WDL and Luigi pipelines:
+
+- the **WDL** and **Luigi** pipeline templates. **+ Create → Pipeline** no longer offers them
+- the sources of the `library/cromwell` and `library/luigi` tool images. `build-dockers.sh` already did not build them in this version
+- the `Mutect2-GATK` demo pipeline (`workflows/pipe-demo/ngs/mutect2-gatk`), a WDL pipeline that ran on `library/cromwell`. A new install with the demo pipelines (`CP_DEPLOY_DEMO`) no longer registers it
+
+An update of a deployment does not change the pipelines that were created from these templates, a registered `Mutect2-GATK` pipeline, or the `library/cromwell` and `library/luigi` tools that are already in its registry. A deployment that has its own pipeline templates (a folder `CP_PREF_TEMPLATES_DIRECTORY_EXT` that is not empty) keeps the templates of that folder.
+
+The code in the GUI and the API that supports these pipelines is still there. The **GRAPH** tab is still shown for a pipeline whose `config.json` sets `"language": "wdl"` or `"language": "luigi"`, and the **PipelineBuilder** still edits a WDL main file. The API still reads the graph of a Luigi pipeline, and the `pipeline` package still has its Luigi task classes (`pipeline.Pipeline`, `pipeline.HelperTask`). A WDL pipeline needs a `docker_image` that has Cromwell to run.  
+For more details see [here](../../manual/06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder.md).
 
 ***
 
