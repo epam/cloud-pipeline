@@ -85,16 +85,6 @@ public class DockerAuthService {
                 log.debug("Provided token expired ");
                 throw new DockerAuthorizationException(dockerRegistryHost);
             }
-            if (tokenClaims.isAuthoritiesScoped()) {
-                // Registry access is authorized by user name further down, which resolves the
-                // authorities from the stored user, so the narrower set this token carries cannot
-                // be applied here. Honouring the token would therefore mean granting the stored
-                // user's full rights, so it is refused instead. A deployment that wants a client
-                // to reach the registry issues it an unscoped token.
-                log.debug("Provided token is scoped, and registry authorization cannot apply "
-                        + "the restriction it carries.");
-                throw new DockerAuthorizationException(dockerRegistryHost);
-            }
         } catch (TokenVerificationException e) {
             log.debug(e.getMessage(), e);
             throw new DockerAuthorizationException(dockerRegistryHost);

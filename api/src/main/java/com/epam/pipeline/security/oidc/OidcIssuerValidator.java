@@ -194,9 +194,9 @@ public final class OidcIssuerValidator {
         return Objects.nonNull(strategy)
                 && Objects.nonNull(strategy.getType())
                 && isValidStrategyUser(strategy)
-                && isAbsentOrWithoutBlanks(strategy.getAuthoritiesToKeep())
-                && isAbsentOrWithoutBlanks(strategy.getAuthoritiesToDrop())
-                && haveNoOverlap(strategy.getAuthoritiesToKeep(), strategy.getAuthoritiesToDrop())
+                && isAbsentOrWithoutBlanks(strategy.getRolesToKeep())
+                && isAbsentOrWithoutBlanks(strategy.getRolesToDrop())
+                && haveNoOverlap(strategy.getRolesToKeep(), strategy.getRolesToDrop())
                 && isValidLifetime(strategy.getMaxTokenLifetime());
     }
 

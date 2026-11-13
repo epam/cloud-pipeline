@@ -211,17 +211,11 @@ public class OidcTokenExchangeManager {
     private JwtTokenClaims buildClaims(final OidcVerifiedToken verified, final OidcClient client,
                                        final OidcAssumeStrategy strategy, final PipelineUser user) {
         final List<String> allRoles = roleNames(user);
-        final List<String> allGroups = ListUtils.emptyIfNull(user.getGroups());
         final List<String> roles = shape(allRoles, strategy);
-        final List<String> groups = shape(allGroups, strategy);
-        final boolean narrowed = roles.size() < allRoles.size() || groups.size() < allGroups.size();
-        if (groups.size() < allGroups.size()) {
-            // said out loud because a keep list of roles alone removes every group, and the
-            // permissions a group carries then disappear with no other sign of it
-            log.info("Client {} removed {} of the {} groups of user {} from the issued token",
-                    client.getId(), allGroups.size() - groups.size(), allGroups.size(),
-                    user.getUserName());
-        }
+        // groups are carried over as they are: they are how storage permissions are granted, and
+        // narrowing them would take away access the user plainly has
+        final List<String> groups = ListUtils.emptyIfNull(user.getGroups());
+        final boolean narrowed = roles.size() < allRoles.size();
         return JwtTokenClaims.builder()
                 .jwtTokenId(UUID.randomUUID().toString())
                 // guarded the way UserContext.toClaims does it, so a user without an id yields a
@@ -241,16 +235,16 @@ public class OidcTokenExchangeManager {
     }
 
     /**
-     * Keeps only what the client allows out of what the user already holds, then removes what it
-     * drops. Both steps can only make the set smaller, so an authority the user does not hold is
-     * never granted by naming it in the configuration.
+     * Keeps only the roles the client allows out of the ones the user already holds, then removes
+     * the ones it drops. Both steps can only make the set smaller, so a role the user does not
+     * hold is never granted by naming it in the configuration.
      */
-    private List<String> shape(final Collection<String> authorities, final OidcAssumeStrategy strategy) {
-        final Set<String> kept = new HashSet<>(ListUtils.emptyIfNull(strategy.getAuthoritiesToKeep()));
-        final Set<String> dropped = new HashSet<>(ListUtils.emptyIfNull(strategy.getAuthoritiesToDrop()));
-        return authorities.stream()
-                .filter(authority -> kept.isEmpty() || kept.contains(authority))
-                .filter(authority -> !dropped.contains(authority))
+    private List<String> shape(final Collection<String> roles, final OidcAssumeStrategy strategy) {
+        final Set<String> kept = new HashSet<>(ListUtils.emptyIfNull(strategy.getRolesToKeep()));
+        final Set<String> dropped = new HashSet<>(ListUtils.emptyIfNull(strategy.getRolesToDrop()));
+        return roles.stream()
+                .filter(role -> kept.isEmpty() || kept.contains(role))
+                .filter(role -> !dropped.contains(role))
                 .collect(Collectors.toList());
     }
 
