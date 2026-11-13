@@ -29,14 +29,14 @@ import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecordFormat;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecordStatus;
 import com.epam.pipeline.entity.region.AwsRegion;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -58,7 +58,7 @@ public class Route53HelperTest {
     private final AmazonRoute53 client = mock(AmazonRoute53.class);
     private final Route53Helper helper = spy(new Route53Helper());
 
-    @Before
+    @BeforeEach
     public void setUp() {
         ReflectionTestUtils.setField(helper, "maxAttempts", MAX_ATTEMPTS);
         ReflectionTestUtils.setField(helper, "delayInSeconds", 0);

@@ -20,14 +20,14 @@ import com.epam.pipeline.entity.credits.PlatformUsageCreditsUserBalanceEntity;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface PlatformUsageCreditsUserBalanceRepository
-        extends PagingAndSortingRepository<PlatformUsageCreditsUserBalanceEntity, Long>,
+        extends JpaRepository<PlatformUsageCreditsUserBalanceEntity, Long>,
         JpaSpecificationExecutor<PlatformUsageCreditsUserBalanceEntity> {
 
     String BATCH_RESET = "INSERT INTO pipeline.usage_credits_user_balance (user_id, current_value, modified_date) "

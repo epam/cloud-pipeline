@@ -4,10 +4,9 @@ import com.epam.pipeline.entity.pipeline.run.EngineTaskStatus;
 import com.epam.pipeline.entity.pipeline.run.EngineType;
 import com.epam.pipeline.entity.run.EngineRunTaskGroupStatsEntity;
 import com.epam.pipeline.entity.run.EngineRunTaskStatsEntity;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -17,7 +16,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@RunWith(Parameterized.class)
 public class EngineRunTaskServiceTest {
 
     public static final Date NOW = new Date();
@@ -27,13 +25,6 @@ public class EngineRunTaskServiceTest {
     public static final String TASK_GROUP_2 = "TaskGroup2";
     public static final String TASK_GROUP_1 = "TaskGroup1";
 
-    public EngineRunTaskServiceTest(List<EngineRunTaskStatsEntity> testCase,
-                                    Map<String, EngineRunTaskGroupStatsEntity> expected) {
-        this.testCase = testCase;
-        this.expected = expected;
-    }
-
-    @Parameterized.Parameters
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
             // SUBMITTED without startDate works fine
@@ -138,17 +129,16 @@ public class EngineRunTaskServiceTest {
         });
     }
 
-    private final List<EngineRunTaskStatsEntity> testCase;
-    private final Map<String, EngineRunTaskGroupStatsEntity> expected;
-
-    @Test
-    public void calculateTaskGroupStatistic() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void calculateTaskGroupStatistic(final List<EngineRunTaskStatsEntity> testCase,
+                                            final Map<String, EngineRunTaskGroupStatsEntity> expected) {
         Map<String, EngineRunTaskGroupStatsEntity> actual = EngineRunTaskService.calculateTaskGroupStatistic(testCase);
-        Assert.assertEquals(actual.keySet(), expected.keySet());
+        Assertions.assertEquals(actual.keySet(), expected.keySet());
         actual.forEach((tgn, actualStats) -> {
             EngineRunTaskGroupStatsEntity expectedStats = expected.get(tgn);
-            Assert.assertEquals(actualStats.getStartDateTime(), expectedStats.getStartDateTime());
-            Assert.assertEquals(actualStats.getStatusCounts(), expectedStats.getStatusCounts());
+            Assertions.assertEquals(actualStats.getStartDateTime(), expectedStats.getStartDateTime());
+            Assertions.assertEquals(actualStats.getStatusCounts(), expectedStats.getStatusCounts());
         });
     }
 }

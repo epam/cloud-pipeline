@@ -18,10 +18,12 @@ package com.epam.pipeline.entity.git.gitreader;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 @Data
+@NoArgsConstructor
 public class GitReaderEntryIteratorListing<T> {
 
     @JsonProperty("listing")

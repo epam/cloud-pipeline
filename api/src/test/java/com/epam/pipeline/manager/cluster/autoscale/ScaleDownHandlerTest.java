@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cluster.autoscale;
 
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cluster.pool.InstanceRequest;
 import com.epam.pipeline.entity.cluster.pool.RunningInstance;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -28,6 +29,7 @@ import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
+import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import io.fabric8.kubernetes.api.model.Node;
@@ -36,15 +38,15 @@ import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodList;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.Optional;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -68,7 +70,7 @@ public class ScaleDownHandlerTest {
     private final IAMProfileVerifier iamProfileVerifier = mock(IAMProfileVerifier.class);
     private final ReassignHandler reassignHandler = new ReassignHandler(autoscalerService, cloudFacade,
             pipelineRunManager, Collections.emptyList(), mock(MetadataManager.class), iamProfileVerifier,
-            preferenceManager);
+            mock(RunStatusManager.class), mock(MessageHelper.class), preferenceManager);
 
     private final ScaleDownHandler scaleDownHandler = new ScaleDownHandler(autoscalerService, cloudFacade,
             pipelineRunManager, mock(RunLogManager.class), kubernetesManager, runCRUDService, preferenceManager,
@@ -79,7 +81,7 @@ public class ScaleDownHandlerTest {
     /**
      * A free run node matches the pending run and has expired, so it is kept only for the pending run.
      */
-    @Before
+    @BeforeEach
     public void setUp() {
         pendingRun = new PipelineRun();
         pendingRun.setId(PENDING_RUN_ID);

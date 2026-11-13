@@ -18,13 +18,14 @@ package com.epam.pipeline.manager.execution;
 
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import io.fabric8.kubernetes.api.model.Toleration;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class PodSpecMapperHelperTest {
 
@@ -40,21 +41,21 @@ public class PodSpecMapperHelperTest {
     public void tolerationLabelWithoutValueShouldBeMappedToTolerationWithExistsOperator() {
         final List<Toleration> tolerations = PodSpecMapperHelper
                 .buildTolerations(Collections.singletonMap(LABEL_KEY, EMPTY));
-        Assert.assertEquals(1, tolerations.size());
+        assertEquals(1, tolerations.size());
         final Toleration toleration = tolerations.get(0);
-        Assert.assertEquals(LABEL_KEY, toleration.getKey());
-        Assert.assertEquals(PodSpecMapperHelper.TOLERATION_OP_EXISTS, toleration.getOperator());
+        assertEquals(LABEL_KEY, toleration.getKey());
+        assertEquals(PodSpecMapperHelper.TOLERATION_OP_EXISTS, toleration.getOperator());
     }
 
     @Test
     public void tolerationLabelWithoutValueShouldBeMappedToTolerationWithEqualsOperator() {
         final List<Toleration> tolerations = PodSpecMapperHelper
                 .buildTolerations(Collections.singletonMap(LABEL_KEY, LABEL_VALUE));
-        Assert.assertEquals(1, tolerations.size());
+        assertEquals(1, tolerations.size());
         final Toleration toleration = tolerations.get(0);
-        Assert.assertEquals(LABEL_KEY, toleration.getKey());
-        Assert.assertEquals(LABEL_VALUE, toleration.getValue());
-        Assert.assertEquals(PodSpecMapperHelper.TOLERATION_OP_EQUAL, toleration.getOperator());
+        assertEquals(LABEL_KEY, toleration.getKey());
+        assertEquals(LABEL_VALUE, toleration.getValue());
+        assertEquals(PodSpecMapperHelper.TOLERATION_OP_EQUAL, toleration.getOperator());
     }
 
     @Test
@@ -66,32 +67,32 @@ public class PodSpecMapperHelperTest {
                         put(ANOTHER_LABEL_KEY, EMPTY);
                     }}
                 );
-        Assert.assertEquals(2, tolerations.size());
+        assertEquals(2, tolerations.size());
         Toleration toleration = tolerations.get(0);
-        Assert.assertEquals(LABEL_KEY, toleration.getKey());
-        Assert.assertEquals(LABEL_VALUE, toleration.getValue());
-        Assert.assertEquals(PodSpecMapperHelper.TOLERATION_OP_EQUAL, toleration.getOperator());
+        assertEquals(LABEL_KEY, toleration.getKey());
+        assertEquals(LABEL_VALUE, toleration.getValue());
+        assertEquals(PodSpecMapperHelper.TOLERATION_OP_EQUAL, toleration.getOperator());
 
         toleration = tolerations.get(1);
-        Assert.assertEquals(ANOTHER_LABEL_KEY, toleration.getKey());
-        Assert.assertEquals(PodSpecMapperHelper.TOLERATION_OP_EXISTS, toleration.getOperator());
+        assertEquals(ANOTHER_LABEL_KEY, toleration.getKey());
+        assertEquals(PodSpecMapperHelper.TOLERATION_OP_EXISTS, toleration.getOperator());
     }
 
     @Test
     public void shouldPinDockerImageToRunDigest() {
-        Assert.assertEquals(Optional.of(PINNED_IMAGE),
+        assertEquals(Optional.of(PINNED_IMAGE),
                 PodSpecMapperHelper.buildPinnedDockerImage(run(DIGEST), true));
     }
 
     @Test
     public void shouldNotPinDockerImageIfPinningIsNotAllowed() {
-        Assert.assertEquals(Optional.empty(), PodSpecMapperHelper.buildPinnedDockerImage(run(DIGEST), false));
+        assertEquals(Optional.empty(), PodSpecMapperHelper.buildPinnedDockerImage(run(DIGEST), false));
     }
 
     @Test
     public void shouldNotPinDockerImageOfRunWithoutDigest() {
-        Assert.assertEquals(Optional.empty(), PodSpecMapperHelper.buildPinnedDockerImage(run(null), true));
-        Assert.assertEquals(Optional.empty(), PodSpecMapperHelper.buildPinnedDockerImage(run(EMPTY), true));
+        assertEquals(Optional.empty(), PodSpecMapperHelper.buildPinnedDockerImage(run(null), true));
+        assertEquals(Optional.empty(), PodSpecMapperHelper.buildPinnedDockerImage(run(EMPTY), true));
     }
 
     private PipelineRun run(final String digest) {

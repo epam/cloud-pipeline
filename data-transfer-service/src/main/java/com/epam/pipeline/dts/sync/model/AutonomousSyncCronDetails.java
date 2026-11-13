@@ -17,7 +17,7 @@
 package com.epam.pipeline.dts.sync.model;
 
 import lombok.Value;
-import org.springframework.scheduling.support.CronSequenceGenerator;
+import org.springframework.scheduling.support.CronExpression;
 
 import java.util.Date;
 
@@ -25,12 +25,12 @@ import java.util.Date;
 public class AutonomousSyncCronDetails {
 
     String expression;
-    CronSequenceGenerator generator;
+    CronExpression generator;
     Date lastExecution;
 
     public AutonomousSyncCronDetails(final String expression, final Date lastExecution) {
         this.expression = expression;
-        this.generator = new CronSequenceGenerator(expression);
+        this.generator = CronExpression.parse(expression);
         this.lastExecution = lastExecution;
     }
 }

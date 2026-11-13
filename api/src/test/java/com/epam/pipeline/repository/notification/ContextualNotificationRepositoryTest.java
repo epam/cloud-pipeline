@@ -5,7 +5,7 @@ import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.test.repository.AbstractJpaTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,10 +17,10 @@ import java.util.Optional;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Transactional
 public class ContextualNotificationRepositoryTest extends AbstractJpaTest {
@@ -71,7 +71,7 @@ public class ContextualNotificationRepositoryTest extends AbstractJpaTest {
         final ContextualNotificationEntity notification = repository.save(new ContextualNotificationEntity(null,
                 TYPE, RECIPIENTS, TRIGGER_ID, TRIGGER_STATUSES, SUBJECT, BODY, CREATED));
 
-        final ContextualNotificationEntity loadedNotification = repository.findOne(notification.getId());
+        final ContextualNotificationEntity loadedNotification = repository.findById(notification.getId()).orElseThrow();
 
         assertNotNull(loadedNotification);
         assertNotNull(loadedNotification.getId());

@@ -74,8 +74,8 @@ public class CpuIdleRunMonitor extends AbstractIdleRunMonitor {
             return;
         }
 
-        final double idleLevel = conf.getThresholdPercent() / PERCENT;
-        final int idleGracePeriod = conf.getGracePeriodMinutes();
+        final double idleLevel = conf.thresholdPercent() / PERCENT;
+        final int idleGracePeriod = conf.gracePeriodMinutes();
         final Map<String, PipelineRun> notProlongedRuns = filterNotProlongedRuns(running, idleGracePeriod);
         final Map<String, Double> metrics = loadIdleMetrics(
                 ELKUsageMetric.CPU, notProlongedRuns.keySet(), idleGracePeriod
@@ -90,8 +90,8 @@ public class CpuIdleRunMonitor extends AbstractIdleRunMonitor {
             }
             final double usageRate = metric / MILLIS / instanceVCPU(run);
             if (Precision.compareTo(usageRate, idleLevel, ONE_THOUSANDTH) < 0) {
-                processIdleRun(run, getType(), usageRate, conf.getActionTimeoutMinutes(),
-                        conf.getAction(), runsToNotify, runsToUpdateTags);
+                processIdleRun(run, getType(), usageRate, conf.actionTimeoutMinutes(),
+                        conf.action(), runsToNotify, runsToUpdateTags);
             } else if (isIdleTagged(run, getType())) {
                 log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_NOT_IDLED,
                         run.getPodId(), getType().name(), usageRate));
@@ -99,7 +99,7 @@ public class CpuIdleRunMonitor extends AbstractIdleRunMonitor {
             }
         }
         notificationManager.notifyIdleRuns(runsToNotify, getType().getNotificationType(),
-                conf.getThresholdPercent());
+                conf.thresholdPercent());
         pipelineRunManager.updateRunsTags(runsToUpdateTags);
     }
 }

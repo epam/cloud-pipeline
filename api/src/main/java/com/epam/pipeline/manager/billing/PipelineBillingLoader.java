@@ -61,10 +61,10 @@ public class PipelineBillingLoader implements BillingLoader<PipelineBilling> {
     @Override
     public Stream<PipelineBilling> billings(final RestHighLevelClient elasticSearchClient,
                                             final BillingExportRequest request) {
-        final LocalDate from = request.getFrom();
-        final LocalDate to = request.getTo();
-        final Map<String, List<String>> filters = billingHelper.getFilters(request.getFilters());
-        final BillingDiscount discount = Optional.ofNullable(request.getDiscount()).orElseGet(BillingDiscount::empty);
+        final LocalDate from = request.from();
+        final LocalDate to = request.to();
+        final Map<String, List<String>> filters = billingHelper.getFilters(request.filters());
+        final BillingDiscount discount = Optional.ofNullable(request.discount()).orElseGet(BillingDiscount::empty);
         return billings(elasticSearchClient, from, to, filters, discount, getPageSize());
     }
 
@@ -124,9 +124,9 @@ public class PipelineBillingLoader implements BillingLoader<PipelineBilling> {
         return billingHelper.aggregateByMonth()
                 .subAggregation(billingHelper.aggregateUniqueRunsCount())
                 .subAggregation(billingHelper.aggregateRunUsageSum())
-                .subAggregation(billingHelper.aggregateCostSum(discount.getComputes()))
-                .subAggregation(billingHelper.aggregateDiskCostSum(discount.getComputes()))
-                .subAggregation(billingHelper.aggregateComputeCostSum(discount.getComputes()));
+                .subAggregation(billingHelper.aggregateCostSum(discount.computes()))
+                .subAggregation(billingHelper.aggregateDiskCostSum(discount.computes()))
+                .subAggregation(billingHelper.aggregateComputeCostSum(discount.computes()));
     }
 
     private Stream<PipelineBilling> billings(final SearchResponse response) {

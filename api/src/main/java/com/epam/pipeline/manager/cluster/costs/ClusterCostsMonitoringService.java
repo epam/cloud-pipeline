@@ -19,18 +19,17 @@ package com.epam.pipeline.manager.cluster.costs;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
-
-import javax.annotation.PostConstruct;
 
 @Service
 @RequiredArgsConstructor
-public class ClusterCostsMonitoringService extends AbstractSchedulingManager {
+public class ClusterCostsMonitoringService extends AbstractSchedulingManager implements InitializingBean {
 
     private final ClusterCostsMonitoringServiceCore core;
 
-    @PostConstruct
-    public void init() {
+    @Override
+    public void afterPropertiesSet() {
         scheduleFixedDelaySecured(core::monitor, SystemPreferences.SYSTEM_CLUSTER_PRICE_MONITOR_DELAY,
                 "ClusterPriceMonitor");
     }

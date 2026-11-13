@@ -40,7 +40,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.data.util.Pair;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
@@ -66,6 +66,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.epam.pipeline.dao.DaoHelper.POSTGRES_LIKE_CHARACTER;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class DataStorageDao extends NamedParameterJdbcDaoSupport {
 
@@ -123,7 +125,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         createDataStorageRoot(dataStorage.getRoot());
         final DataStorageRoot dataStorageRoot = loadDataStorageRoot(dataStorage.getRoot())
                 .orElseThrow(() -> new RuntimeException("Data storage root not found"));
-        dataStorage.setRootId(dataStorageRoot.getId());
+        dataStorage.setRootId(dataStorageRoot.id());
         dataStorage.setId(createDataStorageId());
         if (dataStorage.getCreatedDate() == null) {
             dataStorage.setCreatedDate(DateUtils.now());
@@ -371,87 +373,104 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         return getNamedParameterJdbcTemplate().query(loadDataStoragesByMountIdQuery,
                 params, DataStorageParameters.getRowMapper());
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(loadDataStoragesByNFSRootPath, "Required query loadDataStoragesByNFSRootPath is not set");
+        Assert.notNull(dataStorageSequence, "Required query dataStorageSequence is not set");
+        Assert.notNull(loadAllDataStoragesQuery, "Required query loadAllDataStoragesQuery is not set");
+        Assert.notNull(loadDataStorageByIdQuery, "Required query loadDataStorageByIdQuery is not set");
+        Assert.notNull(loadRootDataStoragesQuery, "Required query loadRootDataStoragesQuery is not set");
+        Assert.notNull(createDataStorageQuery, "Required query createDataStorageQuery is not set");
+        Assert.notNull(deleteDataStorageQuery, "Required query deleteDataStorageQuery is not set");
+        Assert.notNull(updateDataStorageQuery, "Required query updateDataStorageQuery is not set");
+        Assert.notNull(updateDataStorageMountStatusQuery,
+                "Required query updateDataStorageMountStatusQuery is not set");
+        Assert.notNull(loadDataStorageByNameQuery, "Required query loadDataStorageByNameQuery is not set");
+        Assert.notNull(loadDataStorageByNameAndParentIdQuery,
+                "Required query loadDataStorageByNameAndParentIdQuery is not set");
+        Assert.notNull(updateStorageLocksQuery, "Required query updateStorageLocksQuery is not set");
+        Assert.notNull(loadStorageCountQuery, "Required query loadStorageCountQuery is not set");
+        Assert.notNull(loadAllStoragesWithParentsQuery, "Required query loadAllStoragesWithParentsQuery is not set");
+        Assert.notNull(loadStorageWithParentsQuery, "Required query loadStorageWithParentsQuery is not set");
+        Assert.notNull(loadDataStorageByPrefixesQuery, "Required query loadDataStorageByPrefixesQuery is not set");
+        Assert.notNull(loadDataStoragesByIdsQuery, "Required query loadDataStoragesByIdsQuery is not set");
+        Assert.notNull(loadDataStoragesFileShareId, "Required query loadDataStoragesFileShareId is not set");
+        Assert.notNull(loadToolsToMountQuery, "Required query loadToolsToMountQuery is not set");
+        Assert.notNull(deleteToolsToMountQuery, "Required query deleteToolsToMountQuery is not set");
+        Assert.notNull(addToolVersionToMountQuery, "Required query addToolVersionToMountQuery is not set");
+        Assert.notNull(loadToolsToMountsForAllStoragesQuery,
+                "Required query loadToolsToMountsForAllStoragesQuery is not set");
+        Assert.notNull(loadToolsToMountByIdsQuery, "Required query loadToolsToMountByIdsQuery is not set");
+        Assert.notNull(loadDataStoragesByRootIdsQuery, "Required query loadDataStoragesByRootIdsQuery is not set");
+        Assert.notNull(loadDataStoragesByMountIdQuery, "Required query loadDataStoragesByMountIdQuery is not set");
+        Assert.notNull(loadDataStoragesByPathPrefixQuery,
+                "Required query loadDataStoragesByPathPrefixQuery is not set");
+    }
 
-    @Required
+
     public void setLoadDataStoragesByNFSRootPath(String loadDataStoragesByNFSRootPath) {
         this.loadDataStoragesByNFSRootPath = loadDataStoragesByNFSRootPath;
     }
 
-    @Required
     public void setLoadDataStoragesByPathPrefixQuery(String loadDataStoragesByPathPrefixQuery) {
         this.loadDataStoragesByPathPrefixQuery = loadDataStoragesByPathPrefixQuery;
     }
-    @Required
     public void setDataStorageSequence(String dataStorageSequence) {
         this.dataStorageSequence = dataStorageSequence;
     }
 
-    @Required
     public void setLoadAllDataStoragesQuery(String loadAllDataStoragesQuery) {
         this.loadAllDataStoragesQuery = loadAllDataStoragesQuery;
     }
 
-    @Required
     public void setLoadDataStorageByIdQuery(String loadDataStorageByIdQuery) {
         this.loadDataStorageByIdQuery = loadDataStorageByIdQuery;
     }
 
-    @Required
     public void setLoadRootDataStoragesQuery(String loadRootDataStoragesQuery) {
         this.loadRootDataStoragesQuery = loadRootDataStoragesQuery;
     }
 
-    @Required
     public void setCreateDataStorageQuery(String createDataStorageQuery) {
         this.createDataStorageQuery = createDataStorageQuery;
     }
 
-    @Required
     public void setDeleteDataStorageQuery(String deleteDataStorageQuery) {
         this.deleteDataStorageQuery = deleteDataStorageQuery;
     }
 
-    @Required
     public void setUpdateDataStorageQuery(String updateDataStorageQuery) {
         this.updateDataStorageQuery = updateDataStorageQuery;
     }
 
-    @Required
     public void setUpdateDataStorageMountStatusQuery(String updateDataStorageMountStatusQuery) {
         this.updateDataStorageMountStatusQuery = updateDataStorageMountStatusQuery;
     }
 
-    @Required
     public void setLoadDataStorageByNameQuery(String loadDataStorageByNameQuery) {
         this.loadDataStorageByNameQuery = loadDataStorageByNameQuery;
     }
 
-    @Required
     public void setLoadDataStorageByNameAndParentIdQuery(String loadDataStorageByNameAndParentIdQuery) {
         this.loadDataStorageByNameAndParentIdQuery = loadDataStorageByNameAndParentIdQuery;
     }
 
-    @Required
     public void setUpdateStorageLocksQuery(String updateStorageLocksQuery) {
         this.updateStorageLocksQuery = updateStorageLocksQuery;
     }
 
-    @Required
     public void setLoadStorageCountQuery(String loadStorageCountQuery) {
         this.loadStorageCountQuery = loadStorageCountQuery;
     }
 
-    @Required
     public void setLoadAllStoragesWithParentsQuery(String loadAllStoragesWithParentsQuery) {
         this.loadAllStoragesWithParentsQuery = loadAllStoragesWithParentsQuery;
     }
 
-    @Required
     public void setLoadStorageWithParentsQuery(String loadStorageWithParentsQuery) {
         this.loadStorageWithParentsQuery = loadStorageWithParentsQuery;
     }
 
-    @Required
     public void setLoadDataStorageByPrefixesQuery(String loadDataStorageByPrefixesQuery) {
         this.loadDataStorageByPrefixesQuery = loadDataStorageByPrefixesQuery;
     }
@@ -500,7 +519,6 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         this.loadDataStoragesByRootIdsQuery = loadDataStoragesByRootIdsQuery;
     }
 
-    @Required
     public void setLoadDataStoragesFilterQuery(final String loadDataStoragesFilterQuery) {
         this.loadDataStoragesFilterQuery = loadDataStoragesFilterQuery;
     }

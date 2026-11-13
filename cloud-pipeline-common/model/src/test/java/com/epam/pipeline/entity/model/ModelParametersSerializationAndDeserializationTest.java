@@ -19,8 +19,8 @@ package com.epam.pipeline.entity.model;
 import com.epam.pipeline.config.JsonMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.io.FileUtils;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -30,7 +30,7 @@ import java.util.Collections;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ModelParametersSerializationAndDeserializationTest {
 
@@ -84,9 +84,9 @@ public class ModelParametersSerializationAndDeserializationTest {
         ));
     }
 
-    @BeforeClass
-    public static void setUp() {
-        new JsonMapper().init();
+    @BeforeAll
+    public static void initJsonMapper() throws Exception {
+        new JsonMapper().afterPropertiesSet();
     }
 
     @Test

@@ -18,10 +18,12 @@ package com.epam.pipeline.entity.git;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 @Data
 @Builder
+@Jacksonized
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GitlabUser {
     private Long id;

@@ -4,8 +4,8 @@ import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.Charsets;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -82,7 +82,7 @@ public abstract class AbstractBillingWriterTest<B> {
             while (true) {
                 final String expectedLine = expectedBufferedReader.readLine();
                 final String actualLine = actualBufferedReader.readLine();
-                Assert.assertEquals(expectedLine, actualLine);
+                Assertions.assertEquals(expectedLine, actualLine);
                 if (expectedLine == null) {
                     break;
                 }

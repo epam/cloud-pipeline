@@ -18,9 +18,11 @@ package com.epam.pipeline.entity.run;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.extern.jackson.Jacksonized;
 
 @Getter
 @Builder
+@Jacksonized
 public class PipelineRunPerformanceMetric {
     private final PipelineRunPerformanceMetricsType type;
     private final double max;

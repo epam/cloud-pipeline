@@ -17,19 +17,20 @@
 package com.epam.pipeline.external.datastorage.controller;
 
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.fileupload2.core.FileItemInput;
+import org.apache.commons.fileupload2.core.FileUploadException;
+import org.apache.commons.fileupload2.jakarta.servlet6.JakartaServletFileUpload;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.tomcat.util.http.fileupload.FileItemIterator;
-import org.apache.tomcat.util.http.fileupload.FileItemStream;
-import org.apache.tomcat.util.http.fileupload.FileUploadException;
-import org.apache.tomcat.util.http.fileupload.servlet.ServletFileUpload;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -91,15 +92,21 @@ public abstract class AbstractRestController {
      * @throws FileUploadException
      */
     protected InputStream getMultipartStream(HttpServletRequest request) throws IOException, FileUploadException {
-        Assert.isTrue(ServletFileUpload.isMultipartContent(request), NOT_A_MULTIPART_REQUEST);
-        ServletFileUpload upload = new ServletFileUpload();
-        FileItemIterator iterator = upload.getItemIterator(request);
+        if (request instanceof MultipartHttpServletRequest multipartRequest) {
+            MultipartFile file = multipartRequest.getFileMap().values().stream()
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException(NO_FILES_MESSAGE));
+            return file.getInputStream();
+        }
+        Assert.isTrue(JakartaServletFileUpload.isMultipartContent(request), NOT_A_MULTIPART_REQUEST);
+        var upload = new JakartaServletFileUpload<>();
+        var iterator = upload.getItemIterator(request);
 
         Assert.isTrue(iterator.hasNext(), NO_FILES_MESSAGE);
         while (iterator.hasNext()) {
-            FileItemStream stream = iterator.next();
+            FileItemInput stream = iterator.next();
             if (!stream.isFormField()) {
-                return stream.openStream();
+                return stream.getInputStream();
             }
         }
 
@@ -109,19 +116,23 @@ public abstract class AbstractRestController {
     protected <T> List<T> processStreamingUpload(HttpServletRequest request,
                                                  BiFunction<InputStream, String, T> uploadMapper)
             throws IOException, FileUploadException {
-        Assert.isTrue(ServletFileUpload.isMultipartContent(request), NOT_A_MULTIPART_REQUEST);
+        if (request instanceof MultipartHttpServletRequest multipartRequest) {
+            List<MultipartFile> files = new ArrayList<>(multipartRequest.getFileMap().values());
+            return processStreamingUpload(files, uploadMapper);
+        }
+        Assert.isTrue(JakartaServletFileUpload.isMultipartContent(request), NOT_A_MULTIPART_REQUEST);
 
-        ServletFileUpload upload = new ServletFileUpload();
-        FileItemIterator iterator = upload.getItemIterator(request);
+        var upload = new JakartaServletFileUpload<>();
+        var iterator = upload.getItemIterator(request);
 
         Assert.isTrue(iterator.hasNext(), NO_FILES_MESSAGE);
         boolean found = false;
         List<T> uploadedResults = new ArrayList<>();
         while (iterator.hasNext()) {
-            FileItemStream stream = iterator.next();
+            FileItemInput stream = iterator.next();
             if (!stream.isFormField()) {
                 found = true;
-                try (InputStream dataStream = stream.openStream()) {
+                try (InputStream dataStream = stream.getInputStream()) {
                     uploadedResults.add(uploadMapper.apply(dataStream, stream.getName()));
                 }
             }
@@ -129,6 +140,22 @@ public abstract class AbstractRestController {
 
         Assert.isTrue(found, NO_FILES_MESSAGE);
 
+        return uploadedResults;
+    }
+
+    protected <T> List<T> processStreamingUpload(List<MultipartFile> files,
+                                                 BiFunction<InputStream, String, T> uploadMapper)
+            throws IOException {
+        Assert.isTrue(!files.isEmpty(), NO_FILES_MESSAGE);
+        List<T> uploadedResults = new ArrayList<>();
+        for (MultipartFile file : files) {
+            if (!file.isEmpty()) {
+                try (InputStream dataStream = file.getInputStream()) {
+                    uploadedResults.add(uploadMapper.apply(dataStream, file.getOriginalFilename()));
+                }
+            }
+        }
+        Assert.isTrue(!uploadedResults.isEmpty(), NO_FILES_MESSAGE);
         return uploadedResults;
     }
 
@@ -222,17 +249,12 @@ public abstract class AbstractRestController {
     }
 
     protected MediaType guessMediaType(String fileName) {
-        switch (FilenameUtils.getExtension(fileName)) {
-            case "gif":
-                return MediaType.IMAGE_GIF;
-            case "jpeg":
-                return MediaType.IMAGE_JPEG;
-            case "jpg":
-            case "png":
-                return MediaType.IMAGE_PNG;
-            default:
-                return MediaType.APPLICATION_OCTET_STREAM;
-        }
+        return switch (FilenameUtils.getExtension(fileName)) {
+            case "gif" -> MediaType.IMAGE_GIF;
+            case "jpeg" -> MediaType.IMAGE_JPEG;
+            case "jpg", "png" -> MediaType.IMAGE_PNG;
+            default -> MediaType.APPLICATION_OCTET_STREAM;
+        };
     }
 }
 

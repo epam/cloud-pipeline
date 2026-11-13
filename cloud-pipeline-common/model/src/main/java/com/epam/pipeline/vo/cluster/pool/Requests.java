@@ -17,8 +17,10 @@
 package com.epam.pipeline.vo.cluster.pool;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class Requests {
     private Long active;
     private Long pending;

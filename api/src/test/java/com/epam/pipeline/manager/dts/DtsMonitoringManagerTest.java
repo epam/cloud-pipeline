@@ -6,14 +6,14 @@ import com.epam.pipeline.entity.dts.DtsStatus;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collections;
 
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -33,8 +33,7 @@ public class DtsMonitoringManagerTest {
     private final DtsMonitoringManager manager = new DtsMonitoringManager(dtsRegistryManager, preferenceManager,
             messageHelper);
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         doReturn((int) OFFLINE_TIMEOUT.getSeconds())
                 .when(preferenceManager)
                 .getIntPreference(SystemPreferences.DTS_OFFLINE_TIMEOUT_SECONDS.getKey());

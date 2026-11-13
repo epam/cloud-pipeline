@@ -16,17 +16,19 @@
 
 package com.epam.pipeline.notifier.service.task;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collections;
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.internet.MimeMessage;
+import jakarta.mail.Message;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 
-import org.junit.Rule;
-import org.junit.Test;
+import com.icegreen.greenmail.util.GreenMail;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,7 +38,6 @@ import com.epam.pipeline.entity.notification.NotificationTemplate;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.notifier.AbstractSpringTest;
 import com.epam.pipeline.notifier.repository.UserRepository;
-import com.icegreen.greenmail.junit.GreenMailRule;
 import com.icegreen.greenmail.util.GreenMailUtil;
 import com.icegreen.greenmail.util.ServerSetupTest;
 
@@ -54,8 +55,18 @@ public class SMTPNotificationManagerTest extends AbstractSpringTest {
     private static final String EMAIL = "HetfieldJ@metallica.com";
     private static final String EMAIL_KEY = "email";
 
-    @Rule
-    public final GreenMailRule greenMail = new GreenMailRule(ServerSetupTest.SMTP);
+    private GreenMail greenMail;
+
+    @BeforeEach
+    void setUp() {
+        greenMail = new GreenMail(ServerSetupTest.SMTP);
+        greenMail.start();
+    }
+
+    @AfterEach
+    public void tearDown() {
+        greenMail.stop();
+    }
 
     @Autowired
     private SMTPNotificationManager smtpNotificationManager;

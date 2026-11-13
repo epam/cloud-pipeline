@@ -28,8 +28,8 @@ import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.user.RoleManager;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.springframework.http.HttpStatus;
@@ -42,18 +42,18 @@ import java.util.Collections;
 import java.util.Date;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 public class GitTokenRotationServiceCoreTest {
 
@@ -84,7 +84,7 @@ public class GitTokenRotationServiceCoreTest {
     private final GitTokenRotationServiceCore core = new GitTokenRotationServiceCore(
             preferenceManager, gitManager, notificationManager, roleManager);
 
-    @Before
+    @BeforeEach
     public void setUp() {
         doReturn(true).when(preferenceManager).getPreference(SystemPreferences.GIT_TOKEN_ROTATION_ENABLED);
         doReturn(HOST).when(preferenceManager).getPreference(SystemPreferences.GIT_HOST);
@@ -100,7 +100,7 @@ public class GitTokenRotationServiceCoreTest {
         doReturn(newClient).when(gitManager).getGitlabClient(HOST, NEW_TOKEN, GIT_USER_ID, USER_NAME);
         doReturn(GitToken.builder().id(NEW_TOKEN_ID).token(NEW_TOKEN).build()).when(oldClient)
                 .issueImpersonationToken(anyString(), anyLong(), any(LocalDate.class),
-                        anyListOf(String.class));
+                        anyList());
         final ExtendedRole admins = new ExtendedRole();
         admins.setUsers(Arrays.asList(user(ADMIN_1), user(ADMIN_2)));
         doReturn(admins).when(roleManager).loadRoleWithUsers(DefaultRoles.ROLE_ADMIN.getId());
@@ -115,7 +115,7 @@ public class GitTokenRotationServiceCoreTest {
         final InOrder order = inOrder(oldClient, preferenceManager, newClient);
         order.verify(oldClient).issueImpersonationToken(TOKEN_NAME, GIT_USER_ID, todayUtc().plusDays(LIFETIME),
                 Collections.singletonList(API_SCOPE));
-        order.verify(preferenceManager).update(anyListOf(Preference.class));
+        order.verify(preferenceManager).update(anyList());
         order.verify(newClient).revokeImpersonationToken(GIT_USER_ID, OLD_TOKEN_ID);
         assertThat(tokenPreference.getValue()).isEqualTo(NEW_TOKEN);
         verify(oldClient, never()).revokeImpersonationToken(anyLong(), anyLong());
@@ -128,7 +128,7 @@ public class GitTokenRotationServiceCoreTest {
 
         core.rotate();
 
-        verify(preferenceManager).update(anyListOf(Preference.class));
+        verify(preferenceManager).update(anyList());
         verify(newClient).revokeImpersonationToken(GIT_USER_ID, OLD_TOKEN_ID);
     }
 
@@ -141,7 +141,7 @@ public class GitTokenRotationServiceCoreTest {
         core.rotate();
 
         verify(oldClient).issueImpersonationToken(eq(TOKEN_NAME), eq(GIT_USER_ID), any(LocalDate.class),
-                anyListOf(String.class));
+                anyList());
     }
 
     @Test
@@ -180,11 +180,11 @@ public class GitTokenRotationServiceCoreTest {
     public void shouldRevokeAndNotStoreIssuedTokenWithoutValue() {
         doReturn(currentToken(1)).when(oldClient).getCurrentToken();
         doReturn(GitToken.builder().id(NEW_TOKEN_ID).build()).when(oldClient)
-                .issueImpersonationToken(anyString(), anyLong(), any(LocalDate.class), anyListOf(String.class));
+                .issueImpersonationToken(anyString(), anyLong(), any(LocalDate.class), anyList());
 
         core.rotate();
 
-        verify(preferenceManager, never()).update(anyListOf(Preference.class));
+        verify(preferenceManager, never()).update(anyList());
         verify(oldClient).revokeImpersonationToken(GIT_USER_ID, NEW_TOKEN_ID);
         verify(oldClient, never()).revokeImpersonationToken(GIT_USER_ID, OLD_TOKEN_ID);
         assertThat(tokenPreference.getValue()).isEqualTo(OLD_TOKEN);
@@ -219,8 +219,8 @@ public class GitTokenRotationServiceCoreTest {
 
         core.rotate();
 
-        verifyZeroInteractions(gitManager, notificationManager);
-        verify(preferenceManager, never()).update(anyListOf(Preference.class));
+        verifyNoInteractions(gitManager, notificationManager);
+        verify(preferenceManager, never()).update(anyList());
     }
 
     @Test
@@ -229,8 +229,8 @@ public class GitTokenRotationServiceCoreTest {
 
         core.rotate();
 
-        verifyZeroInteractions(gitManager, notificationManager);
-        verify(preferenceManager, never()).update(anyListOf(Preference.class));
+        verifyNoInteractions(gitManager, notificationManager);
+        verify(preferenceManager, never()).update(anyList());
     }
 
     @Test
@@ -260,11 +260,11 @@ public class GitTokenRotationServiceCoreTest {
         doReturn(currentToken(1)).when(oldClient).getCurrentToken();
         doThrow(new GitClientException("400 Bad Request")).when(oldClient)
                 .issueImpersonationToken(anyString(), anyLong(), any(LocalDate.class),
-                        anyListOf(String.class));
+                        anyList());
 
         core.rotate();
 
-        verify(preferenceManager, never()).update(anyListOf(Preference.class));
+        verify(preferenceManager, never()).update(anyList());
         verify(oldClient, never()).revokeImpersonationToken(anyLong(), anyLong());
         verify(newClient, never()).revokeImpersonationToken(anyLong(), anyLong());
         assertThat(tokenPreference.getValue()).isEqualTo(OLD_TOKEN);
@@ -275,7 +275,7 @@ public class GitTokenRotationServiceCoreTest {
     public void shouldRevokeNewTokenAndKeepOldIfStoreFails() {
         doReturn(currentToken(1)).when(oldClient).getCurrentToken();
         doThrow(new IllegalArgumentException("invalid")).when(preferenceManager)
-                .update(anyListOf(Preference.class));
+                .update(anyList());
 
         core.rotate();
 
@@ -292,7 +292,7 @@ public class GitTokenRotationServiceCoreTest {
 
         core.rotate();
 
-        verify(preferenceManager).update(anyListOf(Preference.class));
+        verify(preferenceManager).update(anyList());
         assertThat(tokenPreference.getValue()).isEqualTo(NEW_TOKEN);
         assertAdminsNotified();
     }
@@ -309,8 +309,8 @@ public class GitTokenRotationServiceCoreTest {
 
     private void assertNotRotated() {
         verify(oldClient, never()).issueImpersonationToken(anyString(), anyLong(), any(LocalDate.class),
-                anyListOf(String.class));
-        verify(preferenceManager, never()).update(anyListOf(Preference.class));
+                anyList());
+        verify(preferenceManager, never()).update(anyList());
         verify(oldClient, never()).revokeImpersonationToken(anyLong(), anyLong());
         verify(newClient, never()).revokeImpersonationToken(anyLong(), anyLong());
         assertThat(tokenPreference.getValue()).isEqualTo(OLD_TOKEN);

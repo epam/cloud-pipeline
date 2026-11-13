@@ -16,7 +16,9 @@
 package com.epam.pipeline.entity.cluster.pool.filter;
 
 import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.PoolInstanceFilter;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -26,6 +28,14 @@ import java.util.List;
 public class PoolFilter {
     private final PoolFilterOperator operator;
     private final List<PoolInstanceFilter> filters;
+
+    @JsonCreator
+    public PoolFilter(
+            @JsonProperty("operator") final PoolFilterOperator operator,
+            @JsonProperty("filters") final List<PoolInstanceFilter> filters) {
+        this.operator = operator;
+        this.filters = filters;
+    }
 
     @JsonIgnore
     public boolean isEmpty() {

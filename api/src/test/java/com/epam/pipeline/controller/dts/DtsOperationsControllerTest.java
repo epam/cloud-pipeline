@@ -22,7 +22,7 @@ import com.epam.pipeline.entity.dts.DtsSubmission;
 import com.epam.pipeline.acl.dts.DtsOperationsApiService;
 import com.epam.pipeline.test.creator.dts.DtsCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -40,8 +40,8 @@ public class DtsOperationsControllerTest extends AbstractControllerTest {
 
     private static final String DTS_URL = SERVLET_PATH + "/dts";
     private static final String LIST_URL = DTS_URL + "/list/%d";
-    private static final String SUBMISSION_URL = DTS_URL + "/%d/submission/";
-    private static final String CLUSTER_URL = DTS_URL + "/%d/cluster/";
+    private static final String SUBMISSION_URL = DTS_URL + "/%d/submission";
+    private static final String CLUSTER_URL = DTS_URL + "/%d/cluster";
 
     private static final String PATH = "path";
     private static final String PAGE_SIZE = "pageSize";

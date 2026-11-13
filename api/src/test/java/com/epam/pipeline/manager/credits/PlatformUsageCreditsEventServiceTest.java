@@ -32,8 +32,8 @@ import com.epam.pipeline.mapper.credits.PlatformUsageCreditsEventMapper;
 import com.epam.pipeline.repository.credits.PlatformUsageCreditsEventRepository;
 import com.opencsv.CSVReader;
 import lombok.SneakyThrows;
-import org.junit.Test;
-import org.junit.Before;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
@@ -53,10 +53,10 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyCollectionOf;
-import static org.mockito.Matchers.anyListOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -89,7 +89,7 @@ public class PlatformUsageCreditsEventServiceTest {
             new PlatformUsageCreditsEventService(repository, mapper, authManager, permissionHelper,
                     userManager, messageHelper, userBalanceService);
 
-    @Before
+    @BeforeEach
     public void setUp() {
         doAnswer(invocation -> invocation.getArguments()[0])
                 .when(userBalanceService).updateByEvent(any(PlatformUsageCreditsUpdateEvent.class));
@@ -97,25 +97,25 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void processFiltersOutZeroValueRequests() {
-        doReturn(Collections.<String>emptySet()).when(repository).findExistingIds(anyCollectionOf(String.class));
+        doReturn(Collections.<String>emptySet()).when(repository).findExistingIds(anyCollection());
 
         service.process(Collections.singletonList(event(USER_ID_1, 0)));
 
-        verify(repository, never()).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
+        verify(repository, never()).saveAll(anyList());
     }
 
     @Test
     public void processSavesNonZeroRequestsAsEntities() {
-        doReturn(Collections.<String>emptySet()).when(repository).findExistingIds(anyCollectionOf(String.class));
+        doReturn(Collections.<String>emptySet()).when(repository).findExistingIds(anyCollection());
         doReturn(Collections.singletonList(entity(USER_ID_1, VALUE)))
-                .when(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
+                .when(repository).saveAll(anyList());
 
         final List<PlatformUsageCreditsUpdateEvent> result =
                 service.process(Collections.singletonList(event(USER_ID_1, VALUE)));
 
         final ArgumentCaptor<List<PlatformUsageCreditsUpdateEventEntity>> captor =
                 ArgumentCaptor.forClass((Class) List.class);
-        verify(repository).save(captor.capture());
+        verify(repository).saveAll(captor.capture());
         assertThat(captor.getValue()).hasSize(1);
         assertThat(captor.getValue().get(0).getUserId()).isEqualTo(USER_ID_1);
         assertThat(captor.getValue().get(0).getValue()).isEqualTo(VALUE);
@@ -126,39 +126,39 @@ public class PlatformUsageCreditsEventServiceTest {
     @Test
     public void processSkipsDuplicateEventById() {
         final String id = UUID.randomUUID().toString();
-        doReturn(Collections.singleton(id)).when(repository).findExistingIds(anyCollectionOf(String.class));
+        doReturn(Collections.singleton(id)).when(repository).findExistingIds(anyCollection());
 
         final List<PlatformUsageCreditsUpdateEvent> result =
                 service.process(Collections.singletonList(eventWithId(USER_ID_1, VALUE, id)));
 
-        verify(repository, never()).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
+        verify(repository, never()).saveAll(anyList());
         assertThat(result).isEmpty();
     }
 
     @Test
     public void processAllowsNewEventById() {
-        doReturn(Collections.<String>emptySet()).when(repository).findExistingIds(anyCollectionOf(String.class));
+        doReturn(Collections.<String>emptySet()).when(repository).findExistingIds(anyCollection());
         doReturn(Collections.singletonList(entity(USER_ID_1, VALUE)))
-                .when(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
+                .when(repository).saveAll(anyList());
 
         service.process(Collections.singletonList(event(USER_ID_1, VALUE)));
 
-        verify(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
+        verify(repository).saveAll(anyList());
     }
 
     @Test
     public void processPreservesCreatedDateWhenPresent() {
         final PlatformUsageCreditsUpdateEvent ev = event(USER_ID_1, VALUE);
         ev.setCreatedDate(DATE);
-        doReturn(Collections.<String>emptySet()).when(repository).findExistingIds(anyCollectionOf(String.class));
+        doReturn(Collections.<String>emptySet()).when(repository).findExistingIds(anyCollection());
         doReturn(Collections.singletonList(entity(USER_ID_1, VALUE)))
-                .when(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
+                .when(repository).saveAll(anyList());
 
         service.process(Collections.singletonList(ev));
 
         final ArgumentCaptor<List<PlatformUsageCreditsUpdateEventEntity>> captor =
                 ArgumentCaptor.forClass((Class) List.class);
-        verify(repository).save(captor.capture());
+        verify(repository).saveAll(captor.capture());
         assertThat(captor.getValue().get(0).getCreatedDate()).isEqualTo(DATE);
     }
 
@@ -167,11 +167,11 @@ public class PlatformUsageCreditsEventServiceTest {
         final PlatformUsageCreditsUpdateEvent ev = event(USER_ID_1, VALUE);
         assertThat(ev.getId()).isNull();
         doReturn(Collections.singletonList(entity(USER_ID_1, VALUE)))
-                .when(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
+                .when(repository).saveAll(anyList());
 
         service.process(Collections.singletonList(ev));
 
-        verify(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
+        verify(repository).saveAll(anyList());
     }
 
     // filter
@@ -213,10 +213,12 @@ public class PlatformUsageCreditsEventServiceTest {
         doReturn(user(USER_ID_1)).when(userManager).loadUserByName(USERNAME);
         doReturn(ERROR_MESSAGE).when(messageHelper).getMessage(any(String.class), any(Object[].class));
 
-        assertThatThrownBy(() -> service.filter(PlatformUsageCreditsEventFilterVO.builder()
-                .userIds(Collections.singletonList(USER_ID_2))
-                .page(1).pageSize(10).build()))
-                .isInstanceOf(AccessDeniedException.class);
+        assertThrows(
+                AccessDeniedException.class,
+                () -> service.filter(PlatformUsageCreditsEventFilterVO.builder()
+                        .userIds(Collections.singletonList(USER_ID_2))
+                        .page(1).pageSize(10).build())
+        );
     }
 
     @Test
@@ -252,14 +254,15 @@ public class PlatformUsageCreditsEventServiceTest {
         verify(repository).findAll(any(Specification.class), any(Pageable.class));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void filterRejectsWithoutEntityLinkCombinedWithEntities() {
         doReturn(true).when(authManager).isAdmin();
 
-        service.filter(PlatformUsageCreditsEventFilterVO.builder()
-                .entities(Collections.singletonList(new SecuredEntityVO()))
-                .withoutEntityLink(true)
-                .page(1).pageSize(10).build());
+        assertThrows(IllegalArgumentException.class,
+            () -> service.filter(PlatformUsageCreditsEventFilterVO.builder()
+                    .entities(Collections.singletonList(new SecuredEntityVO()))
+                    .withoutEntityLink(true)
+                    .page(1).pageSize(10).build()));
     }
 
     @Test
@@ -281,7 +284,7 @@ public class PlatformUsageCreditsEventServiceTest {
     public void resetWithNullUserIdsLoadsAllUsers() {
         doReturn(Collections.singletonList(user(USER_ID_1))).when(userManager).loadAllUsers();
         doReturn(Collections.singletonList(entity(USER_ID_1, VALUE)))
-                .when(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
+                .when(repository).saveAll(anyList());
 
         service.reset(PlatformUsageCreditsResetRequest.builder().value(VALUE).build());
 
@@ -292,14 +295,14 @@ public class PlatformUsageCreditsEventServiceTest {
     public void resetWithEmptyUserIdsLoadsAllUsers() {
         doReturn(Arrays.asList(user(USER_ID_1), user(USER_ID_2))).when(userManager).loadAllUsers();
         doReturn(Arrays.asList(entity(USER_ID_1, VALUE), entity(USER_ID_2, VALUE)))
-                .when(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
+                .when(repository).saveAll(anyList());
 
         service.reset(PlatformUsageCreditsResetRequest.builder()
                 .userIds(Collections.emptyList()).value(VALUE).build());
 
         final ArgumentCaptor<List<PlatformUsageCreditsUpdateEventEntity>> captor =
                 ArgumentCaptor.forClass((Class) List.class);
-        verify(repository).save(captor.capture());
+        verify(repository).saveAll(captor.capture());
         assertThat(captor.getValue()).extracting("userId")
                 .containsExactlyInAnyOrder(USER_ID_1, USER_ID_2);
     }
@@ -310,13 +313,13 @@ public class PlatformUsageCreditsEventServiceTest {
         doReturn(Collections.singletonList(user(USER_ID_1)))
                 .when(userManager).loadUsersById(userIds);
         doReturn(Collections.singletonList(entity(USER_ID_1, VALUE)))
-                .when(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
+                .when(repository).saveAll(anyList());
 
         service.reset(PlatformUsageCreditsResetRequest.builder().userIds(userIds).value(VALUE).build());
 
         final ArgumentCaptor<List<PlatformUsageCreditsUpdateEventEntity>> captor =
                 ArgumentCaptor.forClass((Class) List.class);
-        verify(repository).save(captor.capture());
+        verify(repository).saveAll(captor.capture());
         assertThat(captor.getValue()).extracting("userId")
                 .containsOnly(USER_ID_1);
     }
@@ -325,13 +328,13 @@ public class PlatformUsageCreditsEventServiceTest {
     public void resetGeneratesOneResetEventPerUser() {
         doReturn(Arrays.asList(user(USER_ID_1), user(USER_ID_2))).when(userManager).loadAllUsers();
         doReturn(Arrays.asList(entity(USER_ID_1, VALUE), entity(USER_ID_2, VALUE)))
-                .when(repository).save(anyListOf(PlatformUsageCreditsUpdateEventEntity.class));
+                .when(repository).saveAll(anyList());
 
         service.reset(PlatformUsageCreditsResetRequest.builder().value(VALUE).build());
 
         final ArgumentCaptor<List<PlatformUsageCreditsUpdateEventEntity>> captor =
                 ArgumentCaptor.forClass((Class) List.class);
-        verify(repository).save(captor.capture());
+        verify(repository).saveAll(captor.capture());
         final List<PlatformUsageCreditsUpdateEventEntity> saved = captor.getValue();
         assertThat(saved).hasSize(2);
         assertThat(saved).extracting("incidentType")

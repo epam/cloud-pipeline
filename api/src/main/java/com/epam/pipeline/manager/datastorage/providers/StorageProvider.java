@@ -75,6 +75,12 @@ public interface StorageProvider<T extends AbstractDataStorage> {
     DataStorageDownloadFileUrl generateDownloadURL(T dataStorage, String path, String version,
                                                    ContentDisposition contentDisposition);
 
+    default DataStorageDownloadFileUrl generateDownloadURL(T dataStorage, String path, String version,
+                                                           ContentDisposition contentDisposition,
+                                                           String fileName) {
+        return generateDownloadURL(dataStorage, path, version, contentDisposition);
+    }
+
     DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(T dataStorage, String path);
 
     DataStorageDownloadFileUrl generateUrl(T dataStorage, String path, List<String> permissions, Duration duration);

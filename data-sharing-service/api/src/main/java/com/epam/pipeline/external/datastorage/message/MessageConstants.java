@@ -302,9 +302,6 @@ public final class MessageConstants {
     public static final String ERROR_PREFERENCE_VALUE_INVALID = "error.preference.value.invalid";
     public static final String ERROR_PREFERENCE_REQUIREMENTS_NOT_MET = "error.preference.requirements.not.met";
 
-    //Google and Firecloud
-    public static final String ERROR_GOOGLE_CREDENTIALS = "error.google.credentials";
-
     private MessageConstants() {
         // no-op
     }

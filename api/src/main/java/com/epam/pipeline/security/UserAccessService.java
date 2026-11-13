@@ -134,7 +134,7 @@ public class UserAccessService {
                 .collect(Collectors.toList());
         final boolean isValidGroupList = ListUtils.emptyIfNull(userManager.loadGroupBlockingStatus(groups))
                 .stream()
-                .noneMatch(GroupStatus::isBlocked);
+                .noneMatch(GroupStatus::blocked);
         if (!isValidGroupList) {
             log.info("Authentication failed! User {} is blocked due to one of his groups is blocked!",
                     user.getUserName());

@@ -33,6 +33,11 @@ const MAINTENANCE_MODE_DISCLAIMER = 'Platform is in a maintenance mode, operatio
 // (SystemPreferences.CLUSTER_NODEUP_RETRY_COUNT)
 export const DEFAULT_NODE_UP_RETRY_COUNT = 5;
 
+// fallback when "system.async.tasks.config" (or its "maxUserTasks" key) is absent;
+// mirrors the api's own default for `system.async.tasks.config`
+// (SystemPreferences.SYSTEM_ASYNC_TASKS_CONFIG)
+export const DEFAULT_ASYNC_TASKS_MAX_USER_TASKS = 3;
+
 const SYSTEM_CAPABILITY_PARAMETER_TO_DISPLAY = Object.entries(RUN_CAPABILITIES_PARAMETERS)
   .reduce((acc, [name, parameter]) => ({
     ...acc,
@@ -227,6 +232,35 @@ class PreferencesLoad extends Remote {
   @computed
   get storageAllowSignedUrls () {
     return `${this.getPreferenceValue('storage.allow.signed.urls')}` !== 'false';
+  }
+
+  // The preference nests a section per asynchronous task type under `tasks` -
+  // `storageDownloadAsArchive` and `storageUnpackArchive` - with the values shared by the whole
+  // service on top. `maxUserTasks` is one of those shared ones, deliberately: it is a single budget
+  // across every type, so it is read from the top level here and a copy inside `tasks` or a section
+  // is ignored rather than merged.
+  @computed
+  get asyncTasksConfig () {
+    const value = this.getPreferenceValue('system.async.tasks.config');
+    let config = {};
+    if (value) {
+      try {
+        const parsed = JSON.parse(value);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          config = parsed;
+        }
+      } catch (e) {
+        console.warn('Error parsing "system.async.tasks.config" preference:', e.message);
+      }
+    }
+    const {maxUserTasks} = config;
+    const parsedMaxUserTasks = Number(maxUserTasks);
+    return {
+      ...config,
+      maxUserTasks: Number.isFinite(parsedMaxUserTasks) && parsedMaxUserTasks > 0
+        ? parsedMaxUserTasks
+        : DEFAULT_ASYNC_TASKS_MAX_USER_TASKS
+    };
   }
 
   @computed
@@ -1156,19 +1190,6 @@ class PreferencesLoad extends Remote {
       }
     }
     return {};
-  }
-
-  @computed
-  get launchReservationParameters () {
-    const value = this.getPreferenceValue('launch.reservation.parameters');
-    if (value) {
-      try {
-        return JSON.parse(value);
-      } catch (e) {
-        console.warn('Error parsing "launch.reservation.parameters" preference:', e.message);
-      }
-    }
-    return undefined;
   }
 
   @computed

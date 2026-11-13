@@ -18,9 +18,11 @@ package com.epam.pipeline.entity.cluster;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.extern.jackson.Jacksonized;
 
 @Builder
 @Getter
+@Jacksonized
 public class InstanceImage {
 
     public static final InstanceImage EMPTY = InstanceImage.builder().build();

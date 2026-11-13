@@ -25,8 +25,8 @@ import com.epam.pipeline.exception.ToolExecutionDeniedException;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.security.AuthManager;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -64,9 +64,9 @@ public class ToolSecurityPolicyAspectTest {
     private final PipelineStart runVO = new PipelineStart();
     private final Tool tool = new Tool();
 
-    @Before
+    @BeforeEach
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
+        MockitoAnnotations.openMocks(this);
         final PipelineConfiguration configuration = new PipelineConfiguration();
         configuration.setDockerImage(IMAGE);
         doReturn(configuration).when(configurationManager).getPipelineConfiguration(runVO);

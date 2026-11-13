@@ -21,6 +21,9 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsMode;
+import com.epam.pipeline.entity.async.AsyncTasksConfig;
+import com.epam.pipeline.entity.async.StorageDownloadArchiveTaskConfig;
+import com.epam.pipeline.entity.async.StorageUnpackArchiveTaskConfig;
 import com.epam.pipeline.entity.cloudaccess.CloudAccessManagementConfig;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
@@ -28,6 +31,9 @@ import com.epam.pipeline.entity.cluster.DockerMount;
 import com.epam.pipeline.entity.cluster.EnvVarsSettings;
 import com.epam.pipeline.entity.cluster.LaunchCapability;
 import com.epam.pipeline.entity.cluster.PriceType;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationMonitorSettings;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationPolicy;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
@@ -116,6 +122,7 @@ import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOr
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidLocalPath;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidCapacityReservationMonitorSettings;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidInstanceTags;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidMapOfLaunchCommands;
@@ -139,7 +146,6 @@ public class SystemPreferences {
     private static final String UI_GROUP = "User Interface";
     private static final String BASE_URLS_GROUP = "Base URLs";
     private static final String MISC_GROUP = "Miscellaneous";
-    private static final String FIRECLOUD_GROUP = "FireCloud";
     private static final String DATA_SHARING_GROUP = "Data sharing";
     private static final String SYSTEM_GROUP = "System"; // important stuff, related to system as a whole
     private static final String SEARCH_GROUP = "Search";
@@ -198,7 +204,7 @@ public class SystemPreferences {
         new ObjectPreference<>("storage.tag.restricted.access.exclude.keys",
         ListUtils.unmodifiableList(Arrays.asList("CP_SOURCE", "CP_OWNER", "CP_RUN_ID", "CP_JOB_ID",
                 "CP_JOB_NAME", "CP_JOB_VERSION", "CP_JOB_CONFIGURATION", "CP_DOCKER_IMAGE", "CP_CALC_CONFIG")),
-        new TypeReference<List<String>>() {}, DATA_STORAGE_GROUP,
+            new TypeReference<List<String>>() {}, DATA_STORAGE_GROUP,
         isNullOrValidJson(new TypeReference<List<String>>() {}));
     public static final BooleanPreference DATA_STORAGE_MGMT_RESTRICTED_ACCESS_ENABLED = new BooleanPreference(
         "storage.mgmt.restricted.access", false, DATA_STORAGE_GROUP, pass);
@@ -655,6 +661,40 @@ public class SystemPreferences {
     public static final ObjectPreference<CloudRegionsConfiguration> CLUSTER_NETWORKS_CONFIG =
         new ObjectPreference<>("cluster.networks.config", null, new TypeReference<CloudRegionsConfiguration>() {},
                                CLUSTER_GROUP, isNullOrValidJson(new TypeReference<CloudRegionsConfiguration>() {}));
+
+    public static final StringPreference CLUSTER_CAPACITY_RESERVATION_MONITOR_CRON = new StringPreference(
+            "cluster.capacity.reservation.monitor.cron", "0 * * * * ?", CLUSTER_GROUP, isNotBlank);
+
+    public static final ObjectPreference<List<CapacityReservationPolicy>> CLUSTER_CAPACITY_RESERVATION_POLICIES =
+            new ObjectPreference<>("cluster.capacity.reservation.policies", Collections.emptyList(),
+                                   new TypeReference<List<CapacityReservationPolicy>>() {}, CLUSTER_GROUP,
+                                   isNullOrValidJson(new TypeReference<List<CapacityReservationPolicy>>() {}), true);
+
+    /**
+     * The instance types the platform may reserve capacity for, per {@link CapacityReservationType}. The value
+     * is a comma-separated list of {@link org.springframework.util.AntPathMatcher} patterns for the instance
+     * type name, in the same format as {@link #CLUSTER_ALLOWED_INSTANCE_TYPES}. A reservation type with no entry
+     * has no restriction.
+     */
+    public static final ObjectPreference<Map<CapacityReservationType, String>>
+            CLUSTER_CAPACITY_RESERVATION_INSTANCE_FAMILIES = new ObjectPreference<>(
+                    "cluster.capacity.reservation.instance.families",
+                    Collections.singletonMap(CapacityReservationType.FUTURE_DATED, "c*,m*,r*,i*,t*,g*"),
+                    new TypeReference<Map<CapacityReservationType, String>>() {}, CLUSTER_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<CapacityReservationType, String>>() {}));
+
+    public static final ObjectPreference<CapacityReservationMonitorSettings>
+            CLUSTER_CAPACITY_RESERVATION_MONITOR_SETTINGS = new ObjectPreference<>(
+                    "cluster.capacity.reservation.monitor.settings",
+                    new CapacityReservationMonitorSettings(1),
+                    new TypeReference<CapacityReservationMonitorSettings>() {}, CLUSTER_GROUP,
+                    isValidCapacityReservationMonitorSettings, true);
+    /**
+     * How long, in seconds, the autoscaler waits for a run bound with CP_CAP_POOL_ID while its pool is taken by
+     * another run. {@code 0} means wait without a limit. Default: 86400 (24 hours).
+     */
+    public static final IntPreference CLUSTER_OCCUPIED_NODE_POOL_WAIT_SEC = new IntPreference(
+            "cluster.occupied.node.pool.wait.sec", 86400, CLUSTER_GROUP, isGreaterThanOrEquals(0));
     public static final IntPreference CLUSTER_REASSIGN_DISK_DELTA = new IntPreference("cluster.reassign.disk.delta",
             100, CLUSTER_GROUP, isGreaterThanOrEquals(0));
     public static final IntPreference CLUSTER_LOST_RUN_ATTEMPTS = new IntPreference("cluster.lost.run.attempts",
@@ -1190,6 +1230,36 @@ public class SystemPreferences {
 
     // SYSTEM_GROUP
     /**
+     * Everything tunable about the asynchronous tasks the platform runs outside a request: the quota
+     * shared by every task type, the stuck-task threshold, and a section per task type under
+     * {@code tasks}. Read by the api and by the executor services that drain the queue.
+     */
+    public static final ObjectPreference<AsyncTasksConfig> SYSTEM_ASYNC_TASKS_CONFIG =
+        new ObjectPreference<>(
+            "system.async.tasks.config",
+            AsyncTasksConfig.builder()
+                .maxUserTasks(AsyncTasksConfig.DEFAULT_MAX_USER_TASKS)
+                .stuckTasksThresholdMinutes(360)
+                .tasks(AsyncTasksConfig.Tasks.builder()
+                    .storageDownloadAsArchive(StorageDownloadArchiveTaskConfig.builder()
+                        .destinationPrefix("archives/")
+                        .maxSizeBytes(107374182400L)
+                        .maxFilesCount(100000)
+                        .ttlDays(7)
+                        .workerMaxRunningMinutes(240)
+                        .build())
+                    .storageUnpackArchive(StorageUnpackArchiveTaskConfig.builder()
+                        .maxArchiveSizeBytes(53687091200L)
+                        .maxSizeBytes(214748364800L)
+                        .maxFilesCount(100000)
+                        .workerMaxRunningMinutes(240)
+                        .build())
+                    .build())
+                .build(),
+            new TypeReference<AsyncTasksConfig>() {},
+            SYSTEM_GROUP,
+            isNullOrValidJson(new TypeReference<AsyncTasksConfig>() {}));
+    /**
      * A list of endpoint IDs of external services. Those are services, that need to get Pipeline's JWT token
      */
     public static final ObjectPreference<List<ExternalServiceEndpoint>> SYSTEM_EXTERNAL_SERVICES_ENDPOINTS =
@@ -1243,7 +1313,7 @@ public class SystemPreferences {
     public static final ObjectPreference<List<IdleMonitoringConfig>> SYSTEM_IDLE_MONITORING_CONFIG =
             new ObjectPreference<>(
                     "system.idle.monitoring.config",
-                    Arrays.asList(
+                    List.of(
                         new IdleMonitoringConfig(
                                 IdleMonitoringType.CPU,
                                 true, 10.0, 30, 30, IdleRunAction.NOTIFY
@@ -1257,7 +1327,7 @@ public class SystemPreferences {
                                 true, null, null, 30, IdleRunAction.NOTIFY
                         )
                     ),
-                    new TypeReference<List<IdleMonitoringConfig>>() {}, SYSTEM_GROUP,
+                    new TypeReference<>() {}, SYSTEM_GROUP,
                     PreferenceValidators.isValidIdleMonitoringConfig);
 
     /**
@@ -1421,31 +1491,6 @@ public class SystemPreferences {
             "system.access.code.monitor.delay", Constants.MILLISECONDS_IN_DAY, SYSTEM_GROUP, isGreaterThan(0));
     public static final BooleanPreference SYSTEM_ACCESS_CODE_MONITOR_ENABLED = new BooleanPreference(
             "system.access.code.monitor.enable", true, SYSTEM_GROUP, pass);
-
-    // FireCloud Integration
-    public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
-        "firecloud.api.scopes", null, new TypeReference<List<String>>() {}, FIRECLOUD_GROUP,
-        isNullOrValidJson(new TypeReference<List<String>>() {}));
-    public static final StringPreference FIRECLOUD_BASE_URL = new StringPreference("firecloud.base.url",
-            "https://api.firecloud.org/api/", FIRECLOUD_GROUP, PreferenceValidators.isValidUrl);
-    public static final BooleanPreference FIRECLOUD_ENABLE_USER_AUTH = new BooleanPreference(
-            "firecloud.enable.user.auth", false, FIRECLOUD_GROUP, pass);
-    public static final StringPreference GOOGLE_REDIRECT_URL = new StringPreference("google.redirect.url",
-            null, FIRECLOUD_GROUP, PreferenceValidators.isEmptyOrValidUrlSyntax);
-    public static final StringPreference GOOGLE_CLIENT_SETTINGS = new StringPreference("google.client.settings",
-            null, FIRECLOUD_GROUP, PreferenceValidators.isEmptyOrFileExist);
-    public static final StringPreference GOOGLE_CLIENT_ID = new StringPreference("google.client.id",
-            null, FIRECLOUD_GROUP, pass);
-    public static final StringPreference FIRECLOUD_LAUNCHER_TOOL = new StringPreference("firecloud.launcher.tool",
-            null, FIRECLOUD_GROUP, null);
-    public static final StringPreference FIRECLOUD_LAUNCHER_CMD = new StringPreference("firecloud.launcher.cmd",
-            null, FIRECLOUD_GROUP, isNotBlank);
-    public static final StringPreference FIRECLOUD_BILLING_PROJECT = new StringPreference("firecloud.billing.project",
-            null, FIRECLOUD_GROUP, isNotBlank);
-    public static final StringPreference FIRECLOUD_INSTANCE_TYPE = new StringPreference("firecloud.instance.type",
-            "m4.xlarge", FIRECLOUD_GROUP, pass);
-    public static final IntPreference FIRECLOUD_INSTANCE_DISK = new IntPreference("firecloud.instance.disk",
-            50, FIRECLOUD_GROUP, isGreaterThan(0));
 
     // Misc
     public static final IntPreference MISC_MAX_TOOL_ICON_SIZE_KB = new IntPreference("misc.max.tool.icon.size.kb", 50,
@@ -1817,7 +1862,6 @@ public class SystemPreferences {
         this.dataStorageManager = dataStorageManager;
 
         LAUNCH_DOCKER_IMAGE.setValidator(isValidToolOrImage);
-        FIRECLOUD_LAUNCHER_TOOL.setValidator(isValidToolOrImage);
         DATA_STORAGE_SYSTEM_DATA_STORAGE_NAME.setValidator(isValidDataStorageName);
 
         GIT_HOST.setValidator(isGitGroupValid);

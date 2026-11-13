@@ -19,10 +19,12 @@ package com.epam.pipeline.entity.datastorage.omics;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.extern.jackson.Jacksonized;
 
 @Getter
 @Builder
 @AllArgsConstructor
+@Jacksonized
 public class AWSOmicsFileImportInfo {
     private final AWSOmicsSourceFiles sourceFiles;
     private final AWSOmicsFileType sourceFileType;

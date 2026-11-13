@@ -34,5 +34,13 @@ public class RunStatus {
     private TaskStatus status;
     private String reason;
     private LocalDateTime timestamp;
+    private RunStatusInfo runStatusInfo;
 
+    public RunStatus(Long runId, TaskStatus status, String reason, LocalDateTime timestamp) {
+        this.runId = runId;
+        this.status = status;
+        this.reason = reason;
+        this.timestamp = timestamp;
+        this.runStatusInfo = null;
+    }
 }

@@ -1,0 +1,51 @@
+/*
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.epam.pipeline.utils.condition.evaluation;
+
+
+import com.epam.pipeline.utils.condition.ConditionOperator;
+import com.epam.pipeline.utils.condition.FieldType;
+import com.epam.pipeline.utils.condition.field.SubjectEntityField;
+
+/**
+ * Evaluates {@link FieldType#NUMERIC} leaf nodes using standard double-precision arithmetic.
+ * Supports all six comparison operators: {@code =}, {@code !=}, {@code >}, {@code >=},
+ * {@code <}, {@code <=}.
+ *
+ * @param <T> the subject type being evaluated
+ */
+public class NumericFieldEvaluationStrategy<T> extends AbstractLeafEvaluationStrategy<T> {
+
+    public NumericFieldEvaluationStrategy(final SubjectEntityField<T> field) {
+        super(field);
+    }
+
+    @Override
+    protected boolean doEvaluate(final ConditionOperator op, final String subjectValue, final String expressionValue) {
+        final double a = Double.parseDouble(subjectValue);
+        final double e = Double.parseDouble(expressionValue);
+        switch (op) {
+            case EQUALS:            return a == e;
+            case NOT_EQUALS:        return a != e;
+            case GREATER:           return a > e;
+            case GREATER_OR_EQUALS: return a >= e;
+            case LESS:              return a < e;
+            case LESS_OR_EQUALS:    return a <= e;
+            default: throw new IllegalArgumentException("Unexpected operator: " + op);
+        }
+    }
+}

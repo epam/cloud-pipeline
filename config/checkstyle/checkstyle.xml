@@ -7,9 +7,16 @@
 <module name="Checker">
     <property name="severity" value="error"/>
     <module name="SuppressWarningsFilter"/>
-    <module name="SuppressionCommentFilter"/>
+    <module name="LineLength">
+        <property name="max" value="120"/>
+        <property name="tabWidth" value="4"/>
+    </module>
+    <module name="ParameterNumber">
+        <property name="severity" value="ignore"/>
+        <metadata name="net.sf.eclipsecs.core.lastEnabledSeverity" value="inherit"/>
+    </module>
     <module name="TreeWalker">
-        <module name="FileContentsHolder"/>
+        <module name="SuppressionCommentFilter"/>
         <module name="SuppressWarningsHolder"/>
         <property name="tabWidth" value="4"/>
         <module name="ConstantName">
@@ -32,16 +39,8 @@
         <!--<module name="IllegalImport"/>-->
         <module name="RedundantImport"/>
         <module name="UnusedImports"/>
-        <module name="LineLength">
-            <property name="max" value="120"/>
-            <property name="tabWidth" value="4"/>
-        </module>
         <module name="MethodLength">
             <property name="max" value="150"/>
-        </module>
-        <module name="ParameterNumber">
-            <property name="severity" value="ignore"/>
-            <metadata name="net.sf.eclipsecs.core.lastEnabledSeverity" value="inherit"/>
         </module>
         <module name="EmptyForIteratorPad"/>
         <module name="MethodParamPad"/>
@@ -67,9 +66,7 @@
             <property name="allowInSwitchCase" value="true"/>
         </module>
         <module name="EmptyBlock"/>
-        <module name="LeftCurly">
-            <property name="maxLineLength" value="120"/>
-        </module>
+        <module name="LeftCurly"/>
         <module name="NeedBraces"/>
         <module name="RightCurly"/>
         <module name="AvoidInlineConditionals">
@@ -119,7 +116,6 @@
             <property name="max" value="20"/>
         </module>
     </module>
-    <module name="SuppressionCommentFilter"/>
     <module name="NewlineAtEndOfFile">
         <property name="severity" value="ignore"/>
     </module>

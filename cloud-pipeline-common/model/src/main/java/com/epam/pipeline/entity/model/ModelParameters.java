@@ -19,6 +19,7 @@ package com.epam.pipeline.entity.model;
 import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 /**
@@ -29,6 +30,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 @Builder
+@Jacksonized
 public class ModelParameters {
 
     public static final String DEFAULT_STEP = "main";

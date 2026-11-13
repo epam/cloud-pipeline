@@ -4,8 +4,8 @@ import com.epam.pipeline.utils.condition.ConditionExpression;
 import com.epam.pipeline.utils.condition.ConditionType;
 import com.epam.pipeline.utils.condition.FieldType;
 import com.epam.pipeline.utils.condition.field.SubjectEntityField;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -16,8 +16,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class UserAuthoritiesFieldEvaluationStrategyTest {
 
@@ -29,7 +30,7 @@ public class UserAuthoritiesFieldEvaluationStrategyTest {
     private Map<String, Set<String>> authoritiesStore;
     private UserAuthoritiesFieldEvaluationStrategy<String> strategy;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         authoritiesStore = new HashMap<>();
         strategy = new UserAuthoritiesFieldEvaluationStrategy<>(
@@ -95,14 +96,16 @@ public class UserAuthoritiesFieldEvaluationStrategyTest {
         assertFalse(strategyWithNullResolver.evaluate(leaf("=", TEAM_A), ALICE, NOW));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldThrowForUnsupportedOperator() {
-        strategy.evaluate(leaf(">", TEAM_A), ALICE, NOW);
+        assertThrows(IllegalArgumentException.class,
+                () -> strategy.evaluate(leaf(">", TEAM_A), ALICE, NOW));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldThrowForUnknownOperatorSymbol() {
-        strategy.evaluate(leaf("<>", TEAM_A), ALICE, NOW);
+        assertThrows(IllegalArgumentException.class,
+                () -> strategy.evaluate(leaf("<>", TEAM_A), ALICE, NOW));
     }
 
     private static ConditionExpression leaf(final String operand, final String value) {

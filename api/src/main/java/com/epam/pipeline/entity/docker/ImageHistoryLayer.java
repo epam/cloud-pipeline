@@ -17,8 +17,10 @@
 package com.epam.pipeline.entity.docker;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class ImageHistoryLayer {
 
     private String command;

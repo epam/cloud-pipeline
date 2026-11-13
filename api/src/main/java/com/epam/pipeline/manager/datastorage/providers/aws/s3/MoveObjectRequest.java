@@ -17,19 +17,8 @@
 package com.epam.pipeline.manager.datastorage.providers.aws.s3;
 
 import com.amazonaws.services.s3.model.CopyObjectRequest;
-import lombok.Value;
 
-@Value
-public class MoveObjectRequest {
-    private final String sourcePath;
-    private final String version;
-    private final String destinationPath;
-
-    public MoveObjectRequest(final String sourcePath, final String version, final String destinationPath) {
-        this.sourcePath = sourcePath;
-        this.version = version;
-        this.destinationPath = destinationPath;
-    }
+public record MoveObjectRequest(String sourcePath, String version, String destinationPath) {
 
     public MoveObjectRequest(final String sourcePath, final String destinationPath) {
         this(sourcePath, null, destinationPath);

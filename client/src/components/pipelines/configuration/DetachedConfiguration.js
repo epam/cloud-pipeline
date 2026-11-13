@@ -427,30 +427,6 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
     return false;
   };
 
-  @computed
-  get selectedFireCloudMethod () {
-    if (this.selectedConfiguration) {
-      const configuration = this.selectedConfiguration;
-      if (configuration &&
-        configuration.methodName &&
-        configuration.methodSnapshot) {
-        const nameParts = configuration.methodName.split('/');
-        const configurationNameParts = configuration.methodConfigurationName
-          ? configuration.methodConfigurationName.split('/') : [];
-        return {
-          namespace: nameParts[0],
-          name: nameParts[1],
-          snapshot: configuration.methodSnapshot,
-          configuration: configurationNameParts.pop(),
-          configurationSnapshot: configuration.methodConfigurationSnapshot,
-          methodInputs: (configuration.methodInputs || []).map(i => i),
-          methodOutputs: (configuration.methodOutputs || []).map(o => o)
-        };
-      }
-    }
-    return undefined;
-  }
-
   getPipelines = () => {
     if (!this.props.pipelines.loaded || this.props.pipelines.error || !this.props.pipelines.value) {
       return [];
@@ -947,7 +923,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
       this.setState(st, () => resolve());
     });
     try {
-      if (opts && !opts.isFireCloud) {
+      if (opts) {
         const {pipeline, version, configuration} = opts;
         const request = new PipelineConfigurations(pipeline.id, version);
         await request.fetch();
@@ -1107,7 +1083,6 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
               isDetachedConfiguration
               configurationId={this.props.configurationId}
               selectedPipelineParametersIsLoading={this.state.selectedPipelineParametersIsLoading}
-              fireCloudMethod={this.selectedFireCloudMethod}
               onModified={this.onConfigurationModified}
             />
           </Row>

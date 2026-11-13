@@ -18,11 +18,13 @@ package com.epam.pipeline.entity.git.gitreader;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * Represents git object and its last commit
  */
 @Data
+@NoArgsConstructor
 public class GitReaderRepositoryLogEntry {
 
     @JsonProperty("commit")

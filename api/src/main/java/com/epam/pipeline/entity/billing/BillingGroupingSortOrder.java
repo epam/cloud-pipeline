@@ -17,16 +17,12 @@
 package com.epam.pipeline.entity.billing;
 
 import com.epam.pipeline.manager.billing.BillingUtils;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 
-@Getter
-@RequiredArgsConstructor
-@EqualsAndHashCode
-public class BillingGroupingSortOrder {
+public record BillingGroupingSortOrder(BillingGroupingSortMetric metric,
+                                       BillingGroupingOrderAggregate aggregate,
+                                       boolean desc) {
 
     public static final BillingGroupingSortOrder DEFAULT_SORT_ORDER = new BillingGroupingSortOrder(
             BillingGroupingSortMetric.COST,
@@ -38,38 +34,26 @@ public class BillingGroupingSortOrder {
         COST, USAGE, USAGE_RUNS, COUNT_RUNS
     }
 
-    private final BillingGroupingSortMetric metric;
-    private final BillingGroupingOrderAggregate aggregate;
-    private final boolean desc;
-
     public String getAggregateToOrderBy() {
-        switch (metric) {
-            case COST:
-                return aggregate.getCostField();
-            case USAGE:
-            case USAGE_RUNS:
-                return aggregate.getUsageField();
-            case COUNT_RUNS:
-                return aggregate.getCountField();
-            default:
-                return BillingGroupingOrderAggregate.DEFAULT.getCostField();
-        }
+        return switch (metric) {
+            case COST -> aggregate.getCostField();
+            case USAGE, USAGE_RUNS -> aggregate.getUsageField();
+            case COUNT_RUNS -> aggregate.getCountField();
+            default -> BillingGroupingOrderAggregate.DEFAULT.getCostField();
+        };
 
     }
 
     public AggregationBuilder getAggregation() {
         final String aggregateField = getAggregateToOrderBy();
-        switch (metric) {
-            case USAGE:
-                return AggregationBuilders.avg(aggregateField + BillingUtils.SORT_AGG_POSTFIX)
-                        .field(aggregateField);
-            case COUNT_RUNS:
-                return AggregationBuilders.count(aggregateField + BillingUtils.SORT_AGG_POSTFIX)
-                        .field(aggregateField);
-            default:
-                return AggregationBuilders.sum(aggregateField + BillingUtils.SORT_AGG_POSTFIX)
-                        .field(aggregateField);
-        }
+        return switch (metric) {
+            case USAGE -> AggregationBuilders.avg(aggregateField + BillingUtils.SORT_AGG_POSTFIX)
+                    .field(aggregateField);
+            case COUNT_RUNS -> AggregationBuilders.count(aggregateField + BillingUtils.SORT_AGG_POSTFIX)
+                    .field(aggregateField);
+            default -> AggregationBuilders.sum(aggregateField + BillingUtils.SORT_AGG_POSTFIX)
+                    .field(aggregateField);
+        };
     }
 }
 

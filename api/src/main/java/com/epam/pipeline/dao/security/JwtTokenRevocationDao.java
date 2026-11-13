@@ -18,7 +18,6 @@ package com.epam.pipeline.dao.security;
 
 import com.epam.pipeline.app.CacheConfiguration;
 import com.epam.pipeline.entity.utils.DateUtils;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -65,12 +64,11 @@ public class JwtTokenRevocationDao extends NamedParameterJdbcDaoSupport {
         REVOKED_AT
     }
 
-    @Required
     public void setUpsertRevocationQuery(final String upsertRevocationQuery) {
         this.upsertRevocationQuery = upsertRevocationQuery;
     }
 
-    @Required
+
     public void setExistsByJtiQuery(final String existsByJtiQuery) {
         this.existsByJtiQuery = existsByJtiQuery;
     }

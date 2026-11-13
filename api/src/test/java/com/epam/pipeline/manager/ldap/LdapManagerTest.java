@@ -12,8 +12,8 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import org.apache.commons.collections4.CollectionUtils;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.ldap.TimeLimitExceededException;
 import org.springframework.ldap.core.AttributesMapper;
 import org.springframework.ldap.core.LdapTemplate;
@@ -27,9 +27,9 @@ import java.util.function.Predicate;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -55,8 +55,7 @@ public class LdapManagerTest {
     private final LdapManager ldapManager = new LdapManager(ldapTemplateProvider, ldapEntityMapper, preferenceManager,
             messageHelper);
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         mockLdapTemplate();
         mockEmptyPreferences();
         mockPreference(SystemPreferences.LDAP_RESPONSE_SIZE, COUNT_LIMIT);
