@@ -223,7 +223,6 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**2233_3**](Data_storages/2233/2233_3.md) | Check Disable link | :white_check_mark: |
 | [**2233_4**](Data_storages/2233/2233_4.md) | Check "Remove all" button | :white_check_mark: |
 | [**2233_5**](Data_storages/2233/2233_5.md) | Check help tooltip | :white_check_mark: |
-| [**4570_1**](Data_storages/4570/4570_1.md) | [Negative] Validate the Archive name field in the Download archive pop-up |  |
 | [**4570_2**](Data_storages/4570/4570_2.md) | Download archive pop-up blocks its controls while queuing and closes only once the archive is queued |  |
 | [**4570_3**](Data_storages/4570/4570_3.md) | [Negative] Download archive pop-up stays open when the per-user download cap is hit on confirm |  |
 | [**4570_7**](Data_storages/4570/4570_7.md) | Downloads window: the Status filter's select-all box and "Reset to defaults" |  |
