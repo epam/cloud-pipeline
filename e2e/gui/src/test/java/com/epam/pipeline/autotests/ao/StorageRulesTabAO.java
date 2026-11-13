@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,14 @@ import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.Utils;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.CollectionCondition.texts;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
@@ -42,11 +44,9 @@ public class StorageRulesTabAO extends AbstractPipelineTabAO<StorageRulesTabAO> 
             entry(DELETE, $$(tagName("a")).findBy(text("Delete"))),
             entry(ADD_NEW_RULE, $$(tagName("button")).findBy(text("Add new rule")))
     );
-    private final String pipelineName;
 
     public StorageRulesTabAO(String pipelineName) {
         super(pipelineName);
-        this.pipelineName = pipelineName;
     }
 
     @Override
@@ -64,7 +64,7 @@ public class StorageRulesTabAO extends AbstractPipelineTabAO<StorageRulesTabAO> 
 
     public StorageRulesTabAO addNewStorageRule(String fileMaskString) {
         return openAddNewStorageDialog()
-                .pipelineNameShouldBe(pipelineName)
+                .pipelineNameShouldBe(this.getPipelineName())
                 .setFileMask(fileMaskString)
                 .enableMoveToSTS()
                 .ok();
@@ -117,11 +117,8 @@ public class StorageRulesTabAO extends AbstractPipelineTabAO<StorageRulesTabAO> 
 
     private Consumer<ElementsCollection> validateMoveToShortTermStorageFlag() {
         return columns -> columns.get(2).find("input")
-                .shouldHave(
-                        attribute("type", "checkbox"),
-                        attribute("value", "on")
-                )
-                .shouldBe(disabled);
+                .shouldHave(attribute("type", "checkbox"))
+                .shouldBe(checked, disabled);
     }
 
     private Consumer<ElementsCollection> validateMaskEqualsTo(String mask) {
@@ -133,8 +130,16 @@ public class StorageRulesTabAO extends AbstractPipelineTabAO<StorageRulesTabAO> 
     }
 
     public StorageRulesTabAO rulesCountShouldBe(int size) {
-        $(byClassName("ant-table-tbody")).findAll("tr").shouldHaveSize(size);
+        $(byClassName("ant-table-tbody")).findAll("tr").shouldHave(size(size));
         return this;
+    }
+
+    public LocalDateTime ruleCreatedDate(final String mask) {
+        final String createdDate = $(byXpath(String.format(
+                ".//tbody[contains(@class, 'ant-table-tbody')]/tr[./td[1][normalize-space(.) = '%s']]", mask)))
+                .shouldBe(visible)
+                .findAll("td").get(1).text();
+        return Utils.validateDateTimeString(createdDate);
     }
 
     @Override
@@ -156,6 +161,13 @@ public class StorageRulesTabAO extends AbstractPipelineTabAO<StorageRulesTabAO> 
 
         public RuleAdditionPopupAO pipelineNameShouldBe(String pipelineName) {
             $(byAttribute("title", pipelineName)).shouldHave(text(pipelineName));
+            return this;
+        }
+
+        public RuleAdditionPopupAO pipelineFieldShouldBeDisabled(final String pipelineName) {
+            Utils.getPopupByTitle("Create new rule").shouldBe(visible)
+                    .find(byAttribute("title", pipelineName)).shouldHave(text(pipelineName))
+                    .closest(".ant-select").shouldHave(cssClass("ant-select-disabled"));
             return this;
         }
 

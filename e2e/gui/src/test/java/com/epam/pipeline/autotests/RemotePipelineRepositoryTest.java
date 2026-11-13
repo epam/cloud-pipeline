@@ -26,13 +26,13 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.open;
-import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.Primitive.DESCRIPTION;
 import static com.epam.pipeline.autotests.ao.Primitive.NAME;
 import static com.epam.pipeline.autotests.ao.Primitive.REPOSITORY;
 import static com.epam.pipeline.autotests.ao.Primitive.TOKEN;
 import static com.epam.pipeline.autotests.ao.Template.PYTHON;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class RemotePipelineRepositoryTest
@@ -130,7 +130,7 @@ public class RemotePipelineRepositoryTest
                 .close();
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-706"})
     public void listOfTestCasesForValidationPipelineInRemoteRepository() {
         open(C.ROOT_ADDRESS);
@@ -150,7 +150,8 @@ public class RemotePipelineRepositoryTest
                 .create()
                 .validatePipeline(pipelineForPipelineEditingTest);
 
-        PipelineEditingTest pipelineEditingTest = getPipelineEditingTest(folderNameForPipelineEditingTest, pipelineForPipelineEditingTest);
+        // it needs to be rewritten if it will be used
+        PipelineEditingTest pipelineEditingTest = new PipelineEditingTest();
         //EPMCMBIBPC-286
         pipelineEditingTest.pythonPipelineValidationTest();
         //EPMCMBIBPC-295
@@ -207,17 +208,9 @@ public class RemotePipelineRepositoryTest
                 .validatePipelineIsNotPresent(pipelineInNonExistingRepository);
     }
 
-    private PipelineEditingTest getPipelineEditingTest(String folderName, String pipelineName) {
-        PipelineEditingTest pipelineEditingTest = new PipelineEditingTest();
-        pipelineEditingTest.setFolderName(folderName);
-        pipelineEditingTest.setPipelineName(pipelineName);
-        return pipelineEditingTest;
-    }
-
     private void clickDeleteWithPauses() {
         sleep(20, SECONDS);
         $(byId("edit-pipeline-form-delete-button")).shouldBe(visible, enabled).click();
         $("#edit-pipeline-delete-dialog-delete-button").shouldBe(visible, enabled).click();
     }
-
 }

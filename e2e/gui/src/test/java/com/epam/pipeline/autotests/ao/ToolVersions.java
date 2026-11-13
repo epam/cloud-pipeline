@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,12 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest;
+import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
@@ -49,18 +51,27 @@ import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
+import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
+import static com.codeborne.selenide.WebDriverRunner.driver;
 import static com.epam.pipeline.autotests.ao.Primitive.ARROW;
+import static com.epam.pipeline.autotests.ao.Primitive.DEFAULT_COMMAND;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
+import static com.epam.pipeline.autotests.ao.Primitive.DISK;
+import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
+import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.RUN;
 import static com.epam.pipeline.autotests.ao.Primitive.VERSIONS;
+import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
+import static com.epam.pipeline.autotests.utils.C.COMMITTING_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.Conditions.backgroundColor;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.deleteButton;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.time.Duration.ofMillis;
 import static java.util.stream.Collectors.toList;
 
 public class ToolVersions extends ToolTab<ToolVersions> {
@@ -77,7 +88,7 @@ public class ToolVersions extends ToolTab<ToolVersions> {
 
     private final Condition tableIsEmpty = new Condition("table is empty") {
         @Override
-        public boolean apply(final WebElement ignored) {
+        public boolean apply(Driver driver, final WebElement ignored) {
             return $(byClassName("ant-table-placeholder")).is(visible);
         }
     };
@@ -95,7 +106,7 @@ public class ToolVersions extends ToolTab<ToolVersions> {
             public List<WebElement> findElements(final SearchContext context) {
                 return $(".ant-table-body")
                         .findAll(".ant-table-row").stream()
-                        .filter(element -> text(component).apply(element))
+                        .filter(element -> element.has(text(component)))
                         .collect(toList());
             }
         };
@@ -121,7 +132,7 @@ public class ToolVersions extends ToolTab<ToolVersions> {
     public static Consumer<ToolVersions> tagsHave(final Primitive... primitives) {
         final Condition containsAllPrimitives = new Condition("Element contains all primitives ") {
             @Override
-            public boolean apply(final WebElement element) {
+            public boolean apply(Driver driver, final WebElement element) {
                 return Arrays.stream(primitives).allMatch(existsFor(element));
             }
 
@@ -139,7 +150,7 @@ public class ToolVersions extends ToolTab<ToolVersions> {
             public List<WebElement> findElements(final SearchContext context) {
                 return $(".ant-tabs")
                         .findAll(".ant-tabs-tab").stream()
-                        .filter(element -> text(tab).apply(element))
+                        .filter(element -> element.has(text(tab)))
                         .collect(toList());
             }
         };
@@ -151,7 +162,7 @@ public class ToolVersions extends ToolTab<ToolVersions> {
             public List<WebElement> findElements(final SearchContext context) {
                 return $(".ant-table-body")
                         .findAll(".ant-table-row").stream()
-                        .filter(element -> text(version).apply(element))
+                        .filter(element ->  element.has(text(version)))
                         .collect(toList());
             }
         };
@@ -191,6 +202,12 @@ public class ToolVersions extends ToolTab<ToolVersions> {
                 .messageShouldAppear(String.format("Are you sure you want to delete version '%s'?", customTag))
                 .delete();
         return this;
+    }
+
+    public static boolean hasOnPage(String customTag) {
+        return $(byClassName("ant-table-tbody"))
+                .find(byXpath(String.format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", customTag)))
+                .exists();
     }
 
     public PipelineRunFormAO runVersion(final String version) {
@@ -286,7 +303,7 @@ public class ToolVersions extends ToolTab<ToolVersions> {
     public ToolVersions validateScanningProcess(final String version) {
         $(toolVersion(version)).find(byClassName("anticon-loading")).should(exist);
         $(toolVersion(version)).find(byText("SCANNING")).should(visible);
-        $(toolVersion(version)).find(scan).waitUntil(visible, 120000);
+        $(toolVersion(version)).find(scan).shouldBe(visible, ofMillis(120000));
         return this;
     }
 
@@ -306,7 +323,7 @@ public class ToolVersions extends ToolTab<ToolVersions> {
         scanComponent.find(byClassName("ant-table-row-expand-icon")).click();
         final ElementsCollection advisors = $$(".tool-scanning-info__vulnerability-row").filterBy(visible);
         advisors.forEach(a -> {
-            a.find("a").shouldHave(attribute("href")).shouldHave(text("RHSA-"));
+            a.find("a").shouldHave(attribute("href")).shouldHave(text("CVE-"));
             a.shouldHave(Condition.or("severity",
                     text(severity[0]), text(severity[1]), text(severity[2]), text(severity[3]), text(severity[4])));
         });
@@ -348,5 +365,62 @@ public class ToolVersions extends ToolTab<ToolVersions> {
         $(toolVersion(version)).find(button("Remove from white list")).should(visible);
         $(toolVersion(version)).find(button("Add to white list")).should(hidden);
         return this;
+    }
+
+    public VersionSettingsAO versionSettings() {
+        click(versionTab("SETTINGS"));
+        return new VersionSettingsAO();
+    }
+
+    public class VersionSettingsAO implements AccessObject<VersionSettingsAO> {
+        public final Map<Primitive, SelenideElement> elements = initialiseElements(
+                entry(DISK, context().find(byId("disk"))),
+                entry(INSTANCE_TYPE, context().find(byText("Instance type")).closest(".ant-row")
+                        .find(byClassName("ant-select-selection__rendered"))),
+                entry(PRICE_TYPE, context().find(byText("Price type")).closest(".ant-row")
+                        .find(byClassName("ant-select-selection__rendered"))),
+                entry(DEFAULT_COMMAND, context().find(byText("Cmd template:")).closest(".ant-row")
+                        .find(byClassName("tools__code-editor"))),
+                entry(SAVE, context().find(button("SAVE")))
+        );
+
+        public VersionSettingsAO setInstanceType(final String instanceType) {
+            click(INSTANCE_TYPE);
+            $(PipelineSelectors.visible(byClassName("ant-select-dropdown-menu"))).find(withText(instanceType))
+                    .shouldBe(visible).click();
+            return this;
+        }
+
+        public VersionSettingsAO setPriceType(final String priceType) {
+            click(PRICE_TYPE);
+            $(PipelineSelectors.visible(byClassName("ant-select-dropdown-menu")))
+                    .find(withText(priceType))
+                    .shouldBe(visible)
+                    .click();
+            return this;
+        }
+
+        public VersionSettingsAO setDisk(final String disk) {
+            return setValue(DISK, disk);
+        }
+
+        public VersionSettingsAO setDefaultCommand(final String command) {
+            SelenideElement defaultCommand = get(DEFAULT_COMMAND);
+            Utils.clearTextField(defaultCommand);
+            Utils.clickAndSendKeysWithSlashes(defaultCommand, command);
+            return this;
+        }
+
+        public VersionSettingsAO saveIfNeeded() {
+            if(get(SAVE).isEnabled()) {
+                click(SAVE);
+            }
+            return this;
+        }
+
+        @Override
+        public Map<Primitive, SelenideElement> elements() {
+            return elements;
+        }
     }
 }

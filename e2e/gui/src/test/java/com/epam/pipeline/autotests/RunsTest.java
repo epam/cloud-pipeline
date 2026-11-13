@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+
 import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.CollectionCondition.sizeGreaterThanOrEqual;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.STOPPED;
@@ -35,6 +37,7 @@ import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.PrivilegeValue.ALLOW;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -85,7 +88,9 @@ public class RunsTest extends AbstractSeveralPipelineRunningTest implements Auth
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .runPipeline()
-                .launch(this)
+		.setPriceType(ON_DEMAND)
+		.launch(this)
+                .shouldContainRun(pipeline, getLastRunId())
                 .showLog(pipelineRunID = getLastRunId())
                 .waitForCompletion();
         tools()
@@ -104,8 +109,8 @@ public class RunsTest extends AbstractSeveralPipelineRunningTest implements Auth
                 .completedRuns()
                 .validateColumnName("Run", "Parent run", "Pipeline", "Docker image",
                         "Started", "Completed", "Elapsed", "Owner")
-                .validateAllRunsHaveButton("RERUN")
                 .validateAllRunsHaveButton("Log")
+                .validateRunsHaveButton(Arrays.asList(pipelineRunID, firstToolRunID, secondToolRunID), "RERUN")
                 .validateAllRunsHaveCost()
                 .validateRowsCount(sizeGreaterThanOrEqual(3));
     }
@@ -141,5 +146,25 @@ public class RunsTest extends AbstractSeveralPipelineRunningTest implements Auth
                 .assertLatestPipelineHasRunID(secondToolRunID)
                 .validateStatus(secondToolRunID, STOPPED)
                 .validatePipelineOwner(secondToolRunID, user.login.toLowerCase());
+    }
+
+    @Test(priority = 1)
+    @TestCase("3974")
+    public void launchToolInstanceWithUbuntu() {
+        logout();
+        loginAs(admin);
+        tools()
+                .perform(registry, anotherGroup, format("%s/ubuntu", anotherGroup), ToolTab::runWithCustomSettings)
+                .setDefaultLaunchOptions()
+                .launchTool(this, "ubuntu")
+                .showLog(getLastRunId())
+                .waitForSshLink()
+                // Any Ubuntu release: the case needs a launch and an SSH session of an Ubuntu tool, whichever
+                // release library/ubuntu:latest of the deployment is
+                .sshInNewTab(shell -> shell
+                        .waitUntilTextAppears(getLastRunId())
+                        .assertOutputContains("Welcome to Ubuntu ",
+                                "The programs included with the Ubuntu system are free software"));
+
     }
 }

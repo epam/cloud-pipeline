@@ -21,13 +21,43 @@ import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.util.stream.Stream;
+
+import static com.epam.pipeline.autotests.utils.Json.editingConfiguration;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Launch_DifferentTypesParametersValidationTest extends AbstractAutoRemovingPipelineRunningTest {
 
-    private static final String CONFIG_JSON = "/differentTypes.json";
+    private static final String PATH = "path";
+    private static final String INPUT = "input";
+    private static final String OUTPUT = "output";
+    private static final String COMMON = "common";
+
+    private final String storage = "epmcmbi-test-storage-367-" + Utils.randomSuffix();
+
+    @BeforeClass
+    public void createStorageWithFolders() {
+        navigationMenu()
+            .library()
+            .createStorage(storage)
+            .selectStorage(storage)
+            .createFolder(PATH)
+            .createFolder(INPUT)
+            .createFolder(OUTPUT)
+            .createFolder(COMMON);
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void removeStorage() {
+        navigationMenu()
+            .library()
+            .removeStorageIfExists(storage);
+    }
 
     @Test
     @TestCase("EPMCMBIBPC-367")
@@ -36,24 +66,30 @@ public class Launch_DifferentTypesParametersValidationTest extends AbstractAutoR
             .createPipeline(Template.SHELL, getPipelineName())
             .firstVersion()
             .codeTab()
-            .clearAndFillPipelineFile("config.json", Utils.readResourceFully(CONFIG_JSON)
-                    .replace("{{storage_type}}", C.STORAGE_PREFIX)
-                    .replace("{{instance_type}}", C.DEFAULT_INSTANCE));
+            .clickOnFile("config.json")
+            .editFile(editingConfiguration("default", configuration -> {
+                final ObjectNode parameters = configuration.with("parameters");
+                Stream.of(PATH, INPUT, OUTPUT, COMMON).forEach(type -> parameters.putObject(type)
+                        .put("type", type)
+                        .put("value", folderPath(type))
+                        .put("required", false));
+            }))
+            .saveAndCommitWithMessage("test: Add path, input, output and common parameters");
     }
 
-    @Test
+    @Test(dependsOnMethods = {"preparePipeline"})
     @TestCase("EPMCMBIBPC-367")
     public void validateParameters() {
         new PipelineCodeTabAO(getPipelineName())
             .sleep(2, SECONDS)
             .runPipeline()
-            .validateThereIsParameterOfType("output", String.format("%s://unexist-bucket/out", C.STORAGE_PREFIX),
-                    ParameterType.OUTPUT, false)
-            .validateThereIsParameterOfType("input", String.format("%s://unexist-bucket/in", C.STORAGE_PREFIX),
-                    ParameterType.INPUT, false)
-            .validateThereIsParameterOfType("common",
-                    String.format("%s://unexist-bucket/common", C.STORAGE_PREFIX), ParameterType.COMMON, false)
-            .validateThereIsParameterOfType("path", String.format("%s://unexist-bucket/path", C.STORAGE_PREFIX),
-                    ParameterType.PATH, false);
+            .validateThereIsParameterOfType(OUTPUT, folderPath(OUTPUT), ParameterType.OUTPUT, false)
+            .validateThereIsParameterOfType(INPUT, folderPath(INPUT), ParameterType.INPUT, false)
+            .validateThereIsParameterOfType(COMMON, folderPath(COMMON), ParameterType.COMMON, false)
+            .validateThereIsParameterOfType(PATH, folderPath(PATH), ParameterType.PATH, false);
+    }
+
+    private String folderPath(final String folder) {
+        return String.format("%s://%s/%s", C.STORAGE_PREFIX, storage, folder);
     }
 }

@@ -19,8 +19,9 @@ import com.codeborne.selenide.SelenideElement;
 
 import java.util.Map;
 
+import static com.codeborne.selenide.Condition.cssClass;
+import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
-import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 
@@ -30,24 +31,34 @@ public class RunParameterAO
 
     private final Map<Primitive, SelenideElement> elements;
     private final PipelineRunFormAO pipelineRunFormAO;
+    private final SelenideElement nameText;
 
+    /**
+     * @param parameterIndex The key index of the parameter row, see {@link ParameterFieldAO#parameterByIndex(int)}.
+     */
     public RunParameterAO(PipelineRunFormAO pipelineRunFormAO, int parameterIndex) {
-        super(parameterByOrder(parameterIndex));
+        super(parameterByIndex(parameterIndex));
         this.pipelineRunFormAO = pipelineRunFormAO;
+        final SelenideElement parameter = $(qualifier);
+        this.nameText = parameter.find(byClassName(NAME_CLASS));
 
         this.elements = initialiseElements(
-                entry(PARAMETER_NAME, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))),
-                entry(PARAMETER_PATH, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))
-                        .closest(".launch-pipeline-form__form-item-row").closest(".launch-pipeline-form__form-item-row")
-                        .find(byClassName("launch-pipeline-form__path-type"))),
-                entry(REMOVE_PARAMETER, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))
-                        .closest(".launch-pipeline-form__form-item-row").closest(".launch-pipeline-form__form-item-row")
-                        .find(byId("remove-parameter-button"))),
-                entry(PARAMETER_VALUE, $(byId(String.format("parameters.params.param_%d.value", parameterIndex))))
+                entry(PARAMETER_NAME, $(nameInput)),
+                // the addon of the path input, launch/form/parameters/parameter/inputs/path-parameter-input.jsx
+                entry(PARAMETER_PATH, parameter.find(
+                        byClassName("aunch-form-parameter-input__launch-parameter-path-input-addon"))),
+                entry(REMOVE_PARAMETER, parameter.find(byClassName("dynamic-delete-button"))),
+                entry(PARAMETER_VALUE, $(valueInput))
         );
     }
 
+    /**
+     * A configuration form shows the name of a parameter as a text, and the name input after a click on it.
+     */
     public RunParameterAO setName(String name) {
+        if (nameText.exists()) {
+            nameText.click();
+        }
         return (RunParameterAO) setValue(this.nameInput, name);
     }
 
@@ -58,6 +69,18 @@ public class RunParameterAO
     public PathAdditionDialogAO openPathAdditionDialog() {
         click(PARAMETER_PATH);
         return new PathAdditionDialogAO(this);
+    }
+
+    /**
+     * The value of a boolean parameter is the "Enabled" check box, and an added boolean parameter has it unchecked
+     * (launch/form/parameters/parameter/inputs/bool-parameter-input.jsx).
+     */
+    public RunParameterAO setEnableParameter(boolean isEnabled) {
+        final SelenideElement checkbox = $(qualifier).find(byClassName("ant-checkbox"));
+        if (checkbox.shouldBe(visible).has(cssClass("ant-checkbox-checked")) != isEnabled) {
+            checkbox.click();
+        }
+        return this;
     }
 
     public PipelineRunFormAO close() {

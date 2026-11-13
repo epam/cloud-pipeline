@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,19 +22,30 @@ import com.epam.pipeline.autotests.ao.AuthenticationPageAO;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.openqa.selenium.Cookie;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.io.TemporaryFilesystem;
 import org.testng.ITest;
 import org.testng.ITestResult;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 
 import java.awt.*;
+import java.io.File;
 import java.lang.reflect.Method;
 
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.closeWebDriver;
+import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
+import static com.epam.pipeline.autotests.utils.Utils.BROWSER_SIZE;
+import static com.epam.pipeline.autotests.utils.Utils.CHROME_BROWSER;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public abstract class AbstractBfxPipelineTest implements ITest {
@@ -43,38 +54,29 @@ public abstract class AbstractBfxPipelineTest implements ITest {
 
     @BeforeClass
     public void setUp() {
-        Configuration.timeout = C.DEFAULT_TIMEOUT;
-        Configuration.browser = WebDriverRunner.CHROME;
-        Configuration.startMaximized = true;
-        System.setProperty("webdriver.chrome.driver", "/usr/local/bin/chromedriver");
-
-        if ("true".equals(C.AUTH_TOKEN)) {
-            Selenide.open(C.ROOT_ADDRESS);
-            Cookie cookie = new Cookie("HttpAuthorization", C.PASSWORD);
-            WebDriverRunner.getWebDriver().manage().addCookie(cookie);
-        }
-        Selenide.open(C.ROOT_ADDRESS);
-
-        Robot robot;
-        try {
-            robot = new Robot();
-        } catch (AWTException e) {
-            throw new RuntimeException("Something wrong with robot", e);
-        }
-        robot.keyPress(122);
-        robot.keyRelease(122);
-
-        if ("false".equals(C.AUTH_TOKEN)) {
-            new AuthenticationPageAO()
-                    .login(C.LOGIN)
-                    .password(C.PASSWORD)
-                    .signIn();
-        }
-        sleep(3, SECONDS);
+        setUpConfiguration();
+        login(C.ROOT_ADDRESS);
 
         //reset mouse
         $(byId("navigation-button-logo")).shouldBe(visible).click();
         sleep(3, SECONDS);
+    }
+
+    public void setUpConfiguration() {
+        Configuration.browser = CHROME_BROWSER;
+        Configuration.browserSize = BROWSER_SIZE;
+        Configuration.timeout = DEFAULT_TIMEOUT;
+        System.setProperty("webdriver.chrome.driver", "/usr/local/bin/chromedriver");
+        ChromeOptions options = new ChromeOptions();
+        options.setBinary("/usr/local/bin/chrome");
+
+        options.addArguments("--no-sandbox");
+        options.addArguments("--disable-dev-shm-usage");
+        options.addArguments("--disable-gpu");
+        options.addArguments("--ignore-certificate-errors");
+
+        WebDriver driver = new ChromeDriver(options);
+        WebDriverRunner.setWebDriver(driver);
     }
 
     @BeforeMethod(alwaysRun = true)
@@ -89,6 +91,24 @@ public abstract class AbstractBfxPipelineTest implements ITest {
         }
     }
 
+    public void restartBrowser(final String address) {
+        closeWebDriver();
+        setUpConfiguration();
+        login(address);
+    }
+
+    public void changeSession(final String sessionPath) {
+        final String address = C.ROOT_ADDRESS;
+        final String suffixPathToNotRedirect = "restapi";
+        final String URI = address.endsWith("/")
+                ? address + suffixPathToNotRedirect
+                : address + "/" + suffixPathToNotRedirect;
+        setUpConfiguration();
+        Selenide.open(URI);
+        Cookie cookie = new Cookie("SESSION", sessionPath, "/pipeline/");
+        WebDriverRunner.getWebDriver().manage().addCookie(cookie);
+    }
+   
     @Override
     public String getTestName() {
         return this.methodName;
@@ -114,6 +134,13 @@ public abstract class AbstractBfxPipelineTest implements ITest {
         );
     }
 
+    @AfterClass(alwaysRun=true)
+    public static void tearDownAfterClass() {
+        final TemporaryFilesystem tempFS = TemporaryFilesystem.getDefaultTmpFS();
+        tempFS.deleteTemporaryFiles();
+        getWebDriver().quit();
+    }
+
     private String getStatus(final int numericStatus) {
         String status;
         switch (numericStatus) {
@@ -129,4 +156,42 @@ public abstract class AbstractBfxPipelineTest implements ITest {
         }
         return status;
     }
+
+    private void login(final String address) {
+	WebDriverRunner.getWebDriver().manage().deleteAllCookies();
+	if ("true".equals(C.AUTH_TOKEN)) {
+            if ("true".equalsIgnoreCase(C.IMPERSONATE_AUTH)) {
+                final String suffixPathToNotRedirect = "restapi";
+                final String URI = address.endsWith("/")
+                        ? address + suffixPathToNotRedirect
+                        : address + "/" + suffixPathToNotRedirect;
+                Selenide.open(URI);
+                Cookie cookie = new Cookie("SESSION", C.PASSWORD, "/pipeline/");
+                WebDriverRunner.getWebDriver().manage().addCookie(cookie);
+            } else {
+                Selenide.open(address);
+                Cookie cookie = new Cookie("HttpAuthorization", C.PASSWORD);
+                WebDriverRunner.getWebDriver().manage().addCookie(cookie);
+            }
+        }
+        Selenide.open(address);
+
+        Robot robot;
+        try {
+            robot = new Robot();
+        } catch (AWTException e) {
+            throw new RuntimeException("Something wrong with robot", e);
+        }
+        robot.keyPress(122);
+        robot.keyRelease(122);
+
+        if ("false".equals(C.AUTH_TOKEN)) {
+            new AuthenticationPageAO()
+                    .login(C.LOGIN)
+                    .password(C.PASSWORD)
+                    .signIn();
+        }
+        sleep(3, SECONDS);
+    }
 }
+

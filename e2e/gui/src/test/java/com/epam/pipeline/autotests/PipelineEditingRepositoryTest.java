@@ -21,12 +21,17 @@ import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import java.util.List;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import static com.codeborne.selenide.Condition.disappear;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
+import static com.epam.pipeline.autotests.ao.Primitive.REPOSITORY;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.modalWithTitle;
+import static org.testng.Assert.assertEquals;
 
 public class PipelineEditingRepositoryTest extends AbstractBfxPipelineTest implements Navigation {
 
@@ -35,15 +40,18 @@ public class PipelineEditingRepositoryTest extends AbstractBfxPipelineTest imple
     private final String anotherPipelineName = "pipeline-editing-repository-test-pipeline-" + Utils.randomSuffix();
 
     private String repository;
+    private List<String> originalFiles;
 
     @BeforeClass
     public void createPipeline() {
-        library()
+        originalFiles = library()
                 .createPipeline(Template.SHELL, pipelineName)
                 .clickOnPipeline(pipelineName)
                 .draft()
                 .codeTab()
-                .createFile(fileName);
+                .createFile(fileName)
+                .shouldContainFile(fileName)
+                .fileNames();
         library().clickOnPipeline(pipelineName).refresh();
     }
 
@@ -61,7 +69,9 @@ public class PipelineEditingRepositoryTest extends AbstractBfxPipelineTest imple
                 .clickOnPipeline(pipelineName)
                 .clickEditButton()
                 .openRepositorySettings()
-                .close();
+                .ensure(REPOSITORY, visible)
+                .close()
+                .ensure(modalWithTitle("Edit pipeline info"), disappear);
 
         pipelinesLibraryContent()
                 .validatePipeline(pipelineName);
@@ -70,14 +80,11 @@ public class PipelineEditingRepositoryTest extends AbstractBfxPipelineTest imple
     @Test(dependsOnMethods = "validateClosingPipelineEditPopupWithRepositorySettingsOpened")
     @TestCase({"EPMCMBIBPC-707"})
     public void pipelineUnregisteringShouldRemoveItFromLibrary() {
-        repository =
-                library()
-                        .clickOnPipeline(pipelineName)
-                        .clickEditButton()
-                        .openRepositorySettings()
-                        .getRepository();
+        final PipelineLibraryContentAO pipeline = library()
+                .clickOnPipeline(pipelineName);
+        repository = pipeline.getGitRepositoryUrl();
 
-        pipelineEditForm()
+        pipeline.clickEditButton()
                 .delete()
                 .unregister()
                 .ensure(byText(pipelineName), not(visible));
@@ -93,18 +100,16 @@ public class PipelineEditingRepositoryTest extends AbstractBfxPipelineTest imple
                 .setRepository(repository)
                 .create();
 
-        pipelinesLibraryContent()
+        final List<String> files = pipelinesLibraryContent()
                 .clickOnPipeline(anotherPipelineName)
                 .draft()
                 .codeTab()
-                .shouldContainElement(fileName);
+                .shouldContainFile(fileName)
+                .fileNames();
+        assertEquals(files, originalFiles);
     }
 
     private PipelinesLibraryAO pipelinesLibraryContent() {
         return new PipelinesLibraryAO();
-    }
-
-    private PipelineLibraryContentAO.PipelineEditPopupAO pipelineEditForm() {
-        return new PipelineLibraryContentAO(pipelineName).new PipelineEditPopupAO();
     }
 }

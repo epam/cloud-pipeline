@@ -12,18 +12,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM library/centos:7.7.1908
+ARG BASE_IMAGE=rockylinux/rockylinux:8.7
+FROM ${BASE_IMAGE}
 
-RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+# CP_CA_CERT_URL (optional): the URL of the platform's CA certificate, e.g. https://<platform>/pipeline/ca.pem, if
+# the platform's TLS certificate is not signed by a public CA. It is trusted in the image
+ARG CP_CA_CERT_URL=""
+RUN if [ "$CP_CA_CERT_URL" ]; then \
+        curl -sfk "$CP_CA_CERT_URL" > /etc/pki/ca-trust/source/anchors/cp-ca.pem && \
+        update-ca-trust extract; \
+    fi && \
+    ln -s /etc/ssl/certs/ca-bundle.crt /etc/cp-certs.pem
+ENV REQUESTS_CA_BUNDLE=/etc/cp-certs.pem
 
-RUN yum install -y epel-release && \
-    yum install -y wget \
-                   curl \
-                   python \
-                   git
-
-RUN curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
+RUN yum install -y curl \
+                   wget \
+                   bzip2 \
+                   gcc \
+                   zlib-devel \
+                   bzip2-devel \
+                   xz-devel \
+                   make \
+                   ncurses-devel \
+                   unzip \
+                   git \
+                   python3 \
+                   fuse \
+                   tzdata \
+                   acl \
+                   openssh-server \
+                   yum-utils \
+                   procps-ng \
+                   findutils && \
+    yum install -y --allowerasing coreutils && \
+    yum clean all
 

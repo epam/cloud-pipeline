@@ -14,7 +14,7 @@
 
 import pytest
 
-from assertion_utils import *
+from .assertion_utils import *
 from common_utils.entity_managers import EntityManager
 from common_utils.pipe_cli import *
 
@@ -53,10 +53,10 @@ class TestMetadataOperations(object):
             crud_metadata(entity_class, entity_identifier)
         except AssertionError as e:
             manager.delete(object_id)
-            raise AssertionError(ERROR_MESSAGE + test_case + ":" + e.message)
+            raise AssertionError(ERROR_MESSAGE + test_case + ":" + str(e))
         except BaseException as e:
             manager.delete(object_id)
-            raise RuntimeError(ERROR_MESSAGE + test_case + ":" + e.message)
+            raise RuntimeError(ERROR_MESSAGE + test_case + ":" + str(e))
         manager.delete(object_id)
 
     """
@@ -93,10 +93,10 @@ class TestMetadataOperations(object):
             assert_tags(entity_class, entity_identifier, expected_tags, self.token)
         except AssertionError as e:
             manager.delete(object_id)
-            raise AssertionError(ERROR_MESSAGE + test_case + ":" + e.message)
+            raise AssertionError(ERROR_MESSAGE + test_case + ":" + str(e))
         except BaseException as e:
             manager.delete(object_id)
-            raise RuntimeError(ERROR_MESSAGE + test_case + ":" + e.message)
+            raise RuntimeError(ERROR_MESSAGE + test_case + ":" + str(e))
         manager.delete(object_id)
 
     test_case_for_non_existing_object = [PIPELINE, FOLDER, DATA_STORAGE]
@@ -120,9 +120,9 @@ class TestMetadataOperations(object):
                                             args=convert_list_to_input_keys(tags_to_set))
             assert "id: '{}' was not found.".format(entity_identifier) in delete_result[1][0]
         except AssertionError as e:
-            raise AssertionError(ERROR_MESSAGE + test_case + ":" + e.message)
+            raise AssertionError(ERROR_MESSAGE + test_case + ":" + str(e))
         except BaseException as e:
-            raise RuntimeError(ERROR_MESSAGE + test_case + ":" + e.message)
+            raise RuntimeError(ERROR_MESSAGE + test_case + ":" + str(e))
 
     """
             1. epam test case
@@ -161,10 +161,10 @@ class TestMetadataOperations(object):
             assert "Error: Class '{}' does not exist.".format(non_existing) == delete_result[1][0]
         except AssertionError as e:
             manager.delete(object_id)
-            raise AssertionError(ERROR_MESSAGE + test_case + ":" + e.message)
+            raise AssertionError(ERROR_MESSAGE + test_case + ":" + str(e))
         except BaseException as e:
             manager.delete(object_id)
-            raise RuntimeError(ERROR_MESSAGE + test_case + ":" + e.message)
+            raise RuntimeError(ERROR_MESSAGE + test_case + ":" + str(e))
         manager.delete(object_id)
 
     """
@@ -192,10 +192,10 @@ class TestMetadataOperations(object):
             assert "Error: Tags must be specified as KEY=VALUE pair." == set_result[1][0]
         except AssertionError as e:
             manager.delete(object_id)
-            raise AssertionError(ERROR_MESSAGE + test_case + ":" + e.message)
+            raise AssertionError(ERROR_MESSAGE + test_case + ":" + str(e))
         except BaseException as e:
             manager.delete(object_id)
-            raise RuntimeError(ERROR_MESSAGE + test_case + ":" + e.message)
+            raise RuntimeError(ERROR_MESSAGE + test_case + ":" + str(e))
         manager.delete(object_id)
 
     """
@@ -230,10 +230,10 @@ class TestMetadataOperations(object):
             assert "not found.".format(entity_identifier, entity_class) in delete_result[1][0]
         except AssertionError as e:
             manager.delete(object_id)
-            raise AssertionError(ERROR_MESSAGE + test_case + ":" + e.message)
+            raise AssertionError(ERROR_MESSAGE + test_case + ":" + str(e))
         except BaseException as e:
             manager.delete(object_id)
-            raise RuntimeError(ERROR_MESSAGE + test_case + ":" + e.message)
+            raise RuntimeError(ERROR_MESSAGE + test_case + ":" + str(e))
         manager.delete(object_id)
 
     """
@@ -269,8 +269,8 @@ class TestMetadataOperations(object):
             assert result_tags == tags_to_set
         except AssertionError as e:
             manager.delete(object_id)
-            raise AssertionError(ERROR_MESSAGE + test_case + ":" + e.message)
+            raise AssertionError(ERROR_MESSAGE + test_case + ":" + str(e))
         except BaseException as e:
             manager.delete(object_id)
-            raise RuntimeError(ERROR_MESSAGE + test_case + ":" + e.message)
+            raise RuntimeError(ERROR_MESSAGE + test_case + ":" + str(e))
         manager.delete(object_id)

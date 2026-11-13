@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import static com.codeborne.selenide.Condition.appears;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.$;
@@ -45,7 +46,7 @@ public abstract class ToolTab<TAB extends ToolTab<TAB>> implements AccessObject<
         this.toolGroup = toolGroup;
         final SelenideElement toolsActions = $(byClassName("tools__tool-actions"));
         final SelenideElement toolMenu = $(byClassName("tools__tool-menu"));
-        final SelenideElement settingMenu = $(PipelineSelectors.visible(byClassName("ant-dropdown-menu")));
+        final SelenideElement settingMenu = $(PipelineSelectors.visible(byClassName("rc-dropdown-menu")));
         this.elements = initialiseElements(
                 entry(RUN, toolsActions.find(PipelineSelectors.button("Run"))),
                 entry(RUN_DROPDOWN, toolsActions.find(byId("run-latest-menu-button"))),
@@ -77,11 +78,35 @@ public abstract class ToolTab<TAB extends ToolTab<TAB>> implements AccessObject<
         return new RunsMenuAO();
     }
 
+    /**
+     * Launches the tool with default settings, as {@link #run(AbstractSeveralPipelineRunningTest)} does, but on an
+     * on-demand instance: when the launch defaults to a spot instance, the confirmation shows the button
+     * "Set ON-DEMAND price type", and it is clicked.
+     */
+    public RunsMenuAO runOnDemand(final AbstractSeveralPipelineRunningTest test) {
+        sleep(2, SECONDS);
+        click(RUN);
+        final ConfirmationPopupAO<RunsMenuAO> confirmation = new ConfirmationPopupAO<>(new RunsMenuAO())
+                .ensureTitleContains("Are you sure you want to launch tool.*with default settings?")
+                .ensure(byClassName("ob-estimated-price-info__info"), visible);
+        // The label is made of several text nodes ("Set ", the price type, " price type")
+        final SelenideElement onDemand = $(byXpath(
+                "//button[contains(normalize-space(.), 'Set ON-DEMAND price type')]"));
+        if (onDemand.is(visible)) {
+            onDemand.click();
+            $(byXpath("//b[contains(normalize-space(.), 'using a ON-DEMAND instance')]")).shouldBe(visible);
+        }
+        confirmation.ok();
+        test.addRunId(Utils.getToolRunId(toolName));
+        return new RunsMenuAO();
+    }
+
     private RunsMenuAO runToolWithDefaultSettings() {
         sleep(2, SECONDS);
         click(RUN);
         return new ConfirmationPopupAO<>(new RunsMenuAO())
                 .ensureTitleContains("Are you sure you want to launch tool.*with default settings?")
+                .ensure(byClassName("ob-estimated-price-info__info"), visible)
                 .ok();
     }
 
@@ -93,6 +118,20 @@ public abstract class ToolTab<TAB extends ToolTab<TAB>> implements AccessObject<
                 .ok();
         }
         return new PipelineRunFormAO(Utils.nameWithoutGroup(toolName));
+    }
+
+    /**
+     * Opens the launch form of "Custom settings" as {@link #runWithCustomSettings()} does, but leaves its sections
+     * collapsed or expanded as the form shows them, so that the collapsed sections can be checked.
+     */
+    public PipelineRunFormAO runWithCustomSettingsKeepingPanels() {
+        clickRun();
+        if ($$(className("ant-confirm-body")).findBy(visible).isDisplayed()) {
+            new ConfirmationPopupAO<>(new PipelineRunFormAO())
+                .ensureTitleContains(".* Run anyway?")
+                .ok();
+        }
+        return new PipelineRunFormAO().ensure(LAUNCH_COMMANDS, appears);
     }
 
     public PipelineRunFormAO runUnscannedTool(final String message) {

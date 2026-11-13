@@ -71,7 +71,7 @@ class TestLsSingleFile(object):
                                               recursive=recursive)
             compare_listing(actual_listing, expected_listing, 1, show_details=show_details)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))
 
     @pytest.mark.run()
     def test_last_modification_date_listing(self):
@@ -82,4 +82,4 @@ class TestLsSingleFile(object):
             expected_file.last_modified = get_modification_date(listing_path)
             compare_listing(actual_listing, [expected_file], 1, show_details=True, check_last_modified=True)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))

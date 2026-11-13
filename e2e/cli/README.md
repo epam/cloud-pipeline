@@ -53,9 +53,13 @@ $WORKSPACE - path to Cloud Pipeline project source code
 $CP_TEST_REGION_ID - the created Cloud Pipeline region ID
 ```
 
+The tests run on Python 3. The `buckets` tests do not import yet, for any provider:
+`buckets/utils/object_info.py` and `buckets/utils/cloud/azure_client.py` still use `BlockBlobService`, the API of
+azure-storage-blob 1.x, and pipe-cli installs azure-storage-blob 12, which removed it.
+
 Launch command examples:
 ```
-$RUN_TESTS_CMD="pytest --html=/home/results/report.html -s -vv --tx 4*popen//python=python2.7 --dist=loadscope /home/cloud-pipeline/e2e/cli/buckets"
+$RUN_TESTS_CMD="pytest --html=/home/results/report.html -s -vv --tx 4*popen//python=python3 --dist=loadscope /home/cloud-pipeline/e2e/cli/buckets"
 $RUN_METADATA_TESTS_CMD="pytest --html=/home/results/metadata-report.html -s -vv /home/cloud-pipeline/e2e/cli/tag"
 ```
 
@@ -83,7 +87,7 @@ docker run --rm --env API=$API \
 -v $AWS_CREDS_PATH:/root/.aws \
 -v $WORKSPACE/results:/home/results \
 -v $WORKSPACE/e2e/cli/run_tests.sh:/home/run_tests.sh \
-python:2.7-stretch bash -c /home/run_tests.sh
+python:3.12 bash -c /home/run_tests.sh
 ```
 
 #### Azure
@@ -111,7 +115,7 @@ docker run --rm --env API=$API \
 --env AZURE_ACCOUNT_KEY=$AZURE_ACCOUNT_KEY \
 -v $WORKSPACE/results:/home/results \
 -v $WORKSPACE/e2e/cli/run_tests.sh:/home/run_tests.sh \
-python:2.7-stretch bash -c /home/run_tests.sh
+python:3.12 bash -c /home/run_tests.sh
 ```
 
 #### Google
@@ -139,5 +143,5 @@ docker run --rm --env API=$API \
 -v $GOOGLE_APPLICATION_CREDENTIALS:/root/gcp-creds.json \
 -v $WORKSPACE/results:/home/results \
 -v $WORKSPACE/e2e/cli/run_tests.sh:/home/run_tests.sh \
-python:2.7-stretch bash -c /home/run_tests.sh
+python:3.12 bash -c /home/run_tests.sh
 ```

@@ -21,12 +21,15 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.Test;
 
+import static com.epam.pipeline.autotests.utils.Json.editingConfiguration;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Launch_VersionReleaseTest extends AbstractAutoRemovingPipelineRunningTest {
 
     public final String NEW_VERSION = "1.1.1-" + getPipelineName();
     public static final String JSON_CONTENT = "invalid json";
+    private static final String VALID_JSON_PARAMETER = "valid_json_param";
+    private static final String VALID_JSON_VALUE = "valid_json_value";
 
     @Test
     @TestCase(value = {"EPMCMBIBPC-380"})
@@ -41,6 +44,34 @@ public class Launch_VersionReleaseTest extends AbstractAutoRemovingPipelineRunni
     }
 
     @Test(dependsOnMethods = {"shouldReleaseNewVersion"})
+    @TestCase(value = {"EPMCMBIBPC-383"})
+    public void shouldCreateNewVersionAfterCommit() {
+        navigationMenu()
+                .library()
+                .clickOnPipeline(getPipelineName())
+                .version(NEW_VERSION)
+                .codeTab()
+                .clickOnFile("config.json")
+                .editFile(editingConfiguration("default", configuration -> configuration
+                        .with("parameters")
+                        .putObject(VALID_JSON_PARAMETER)
+                        .put("value", VALID_JSON_VALUE)))
+                .saveAndCommitWithMessage("test: Add a parameter to config.json of the released version")
+                .sleep(2, SECONDS);
+
+        navigationMenu()
+                .library()
+                .clickOnPipeline(getPipelineName())
+                .assertVersionNot(NEW_VERSION)
+                .assertReleaseButton()
+                .firstVersion()
+                .codeTab()
+                .clickOnFile("config.json")
+                .shouldContainInCode(VALID_JSON_PARAMETER + "\n" + VALID_JSON_VALUE)
+                .close();
+    }
+
+    @Test(dependsOnMethods = {"shouldCreateNewVersionAfterCommit"})
     @TestCase(value = {"EPMCMBIBPC-378"})
     public void exceptionShouldBeHandledWhenInvalidJson() {
         new PipelineCodeTabAO(getPipelineName())
@@ -51,26 +82,8 @@ public class Launch_VersionReleaseTest extends AbstractAutoRemovingPipelineRunni
     }
 
     @Test(dependsOnMethods = {"exceptionShouldBeHandledWhenInvalidJson"})
-    @TestCase(value = {"EPMCMBIBPC-383"})
-    public void shouldCreateNewVersionAfterCommit() {
-        navigationMenu()
-                .library()
-                .clickOnPipeline(getPipelineName())
-                .assertVersionNot(NEW_VERSION)
-                .assertReleaseButton()
-                .firstVersion()
-                .codeTab()
-                .clickOnFile("config.json")
-                .shouldContainInCode(JSON_CONTENT)
-                .close();
-    }
-
-    @Test(dependsOnMethods = {"shouldCreateNewVersionAfterCommit"})
     @TestCase(value = {"EPMCMBIBPC-384"})
     public void shouldNotBeAbleToEditReleasedVersionAfterCommit() {
-        new PipelineCodeTabAO(getPipelineName())
-                .clearAndFillPipelineFile("config.json", JSON_CONTENT + " some salt");
-
         navigationMenu()
                 .library()
                 .clickOnPipeline(getPipelineName())

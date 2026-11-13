@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,11 +27,14 @@ import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.visible;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ObjectMetadataPipelineTest extends AbstractBfxPipelineTest implements Navigation {
 
     private final String folderWithPipeline = "object-metadata-test-folder-with-pipeline-" + Utils.randomSuffix();
     private final String pipelineName = "object-metadata-test-pipeline-" + Utils.randomSuffix();
+    private final String emptyKeyErrorMessage = "Enter key";
+    private final String emptyValueErrorMessage = "Enter value";
 
     private final String key1 = "1";
     private final String value1 = "2";
@@ -76,8 +79,31 @@ public class ObjectMetadataPipelineTest extends AbstractBfxPipelineTest implemen
                 .addKeyWithValue(key1, value1)
                 .ensure(REMOVE_ALL_KEYS, visible)
                 .selectKey(key1)
+                .assertKeyIs(key1)
+                .validateKeyBackgroundIsGrey()
                 .ensure(DELETE_ICON, visible)
-                .validateKeyBackgroundIsGrey();
+                .assertValueIs(value1);
+    }
+
+    /**
+     * Runs before {@link #addMetadataToPipelineValidation()}: the pipeline has no attributes yet, so its attributes panel
+     * is closed when the page opens (the "Attributes" item toggles it), and the key of the third check does not exist
+     * (a duplicate key is reported before an empty value).
+     */
+    @Test(priority = -1)
+    @TestCase(value = {"EPMCMBIBPC-1193"})
+    public void addWrongKeyValueMetadataToPipeline() {
+        openPipelineMetadata()
+                .addKeyWithValue("", "")
+                .messageShouldAppear(emptyKeyErrorMessage)
+                .sleep(5, SECONDS);
+        openPipelineMetadata()
+                .addKeyWithValue("", value1)
+                .messageShouldAppear(emptyKeyErrorMessage);
+        openPipelineMetadata()
+                .sleep(5, SECONDS)
+                .addKeyWithValue(key1, "")
+                .messageShouldAppear(emptyValueErrorMessage);
     }
 
     @Test(dependsOnMethods = "addMetadataToPipelineValidation")
@@ -86,32 +112,34 @@ public class ObjectMetadataPipelineTest extends AbstractBfxPipelineTest implemen
     navigationMenu()
                 .library()
                 .clickOnFolder(folderWithPipeline)
-                .showMetadata()
+                .showAttributes()
                 .assertNumberOfKeysIs(0);
     }
 
     @Test(dependsOnMethods = "checkMetadataForPipelineInFolder")
     @TestCase(value = {"EPMCMBIBPC-867"})
     public void listOfCasesForPipeline() {
-        //EPMCMBIBPC-842
         navigationMenu()
                 .library()
                 .clickOnFolder(folderWithPipeline)
                 .clickOnPipeline(pipelineName);
-        pipelineMetadata()
-                .selectKeyByOrderNumber(1)
-                .changeKey(key2)
-                .assertKeyIs(key2)
-                .changeValue(value2)
-                .assertValueIs(value2);
         //EPMCMBIBPC-860
         pipelineMetadata()
                 .addKeyWithValue(key3, value3)
                 .addKeyWithValue(key4, value4)
                 .addKeyWithValue(key5, value5)
-                .assertKeyWithValueIsPresent(key3, value3)
-                .assertKeyWithValueIsPresent(key4, value4)
-                .assertKeyWithValueIsPresent(key5, value5);
+                .assertKeyWithExactValueIsPresent(key3, value3)
+                .assertKeyWithExactValueIsPresent(key4, value4)
+                .assertKeyWithExactValueIsPresent(key5, value5);
+        //EPMCMBIBPC-942
+        pipelineMetadata()
+                .selectKeyByOrderNumber(1)
+                .editKey(key2)
+                .clickOnEmptySpace()
+                .assertKeyIs(key2)
+                .editValue(value2)
+                .clickOnEmptySpace()
+                .assertValueIs(value2);
         //EPMCMBIBPC-863
         pipelineMetadata()
                 .deleteKey(key3)
@@ -134,5 +162,13 @@ public class ObjectMetadataPipelineTest extends AbstractBfxPipelineTest implemen
 
     private MetadataSectionAO pipelineMetadata() {
         return new MetadataSectionAO(new PipelineLibraryContentAO(pipelineName));
+    }
+
+    private MetadataSectionAO openPipelineMetadata() {
+        return navigationMenu()
+                .library()
+                .clickOnFolder(folderWithPipeline)
+                .clickOnPipeline(pipelineName)
+                .showMetadata();
     }
 }

@@ -54,7 +54,7 @@ class TestMkdirMvtodir(object):
             pipe_output = get_pipe_listing(self.path_to_bucket)
             assert len(pipe_output) == 0
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-1018:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-1018:" + "\n" + str(e))
 
     def test_mkdir(self):
         destination = 'cp://{}/{}'.format(self.bucket, self.test_folder)
@@ -71,7 +71,7 @@ class TestMkdirMvtodir(object):
             aws_output = [d('MKDIR-TEST-FOLDER/'), d('mkdir-test-folder/')]
             compare_listing(pipe_output, aws_output, 2)
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-1015:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-1015:" + "\n" + str(e))
 
     def test_mvtodir_with_path(self):
         test_case = "epmcmbibpc-1020"
@@ -92,7 +92,7 @@ class TestMkdirMvtodir(object):
             assert folder_id_2 == parent_id
         except BaseException as e:
             self.cleanup(data_storage_id, root_folder_id, folder_id_1, folder_id_2)
-            pytest.fail(ERROR_MESSAGE + test_case + ":\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + test_case + ":\n" + str(e))
         self.cleanup(data_storage_id, root_folder_id, folder_id_1, folder_id_2)
 
     @staticmethod
@@ -110,7 +110,7 @@ class TestMkdirMvtodir(object):
             pipe_output = pipe_storage_mvtodir(self.bucket, directory=folder_name, expected_status=1)[1]
             assert pipe_output[0] == "Directory with name {} does not exist!".format(folder_name)
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + self.negative_test_case + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + self.negative_test_case + "\n" + str(e))
 
     def test_move_nonexistent_data_storage(self):
         data_storage_name = "nonexistent-data-storage"
@@ -122,7 +122,7 @@ class TestMkdirMvtodir(object):
             assert pipe_output[0] == "Error: Datastorage with name {} does not exist!".format(data_storage_name)
         except BaseException as e:
             folder_manager.delete(folder_id)
-            pytest.fail(ERROR_MESSAGE + self.negative_test_case + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + self.negative_test_case + "\n" + str(e))
         folder_manager.delete(folder_id)
 
     def test_move_nonexistent_data_storage_to_nonexistent_folder(self):
@@ -132,4 +132,4 @@ class TestMkdirMvtodir(object):
             pipe_output = pipe_storage_mvtodir(data_storage_name, directory=folder_name, expected_status=1)[1]
             assert pipe_output[0] == "Directory with name {} does not exist!".format(folder_name)
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + self.negative_test_case + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + self.negative_test_case + "\n" + str(e))

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,11 +37,15 @@ import static com.codeborne.selenide.Selectors.byCssSelector;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byValue;
+import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
+import static com.epam.pipeline.autotests.ao.Primitive.CONFIGURE;
 import static com.epam.pipeline.autotests.ao.Primitive.DEFAULT_COMMAND;
 import static com.epam.pipeline.autotests.ao.Primitive.DESCRIPTION;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
+import static com.epam.pipeline.autotests.ao.Primitive.DO_NOT_MOUNT_STORAGES;
+import static com.epam.pipeline.autotests.ao.Primitive.LIMIT_MOUNTS;
 import static com.epam.pipeline.autotests.ao.Primitive.PORT;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
@@ -53,10 +57,14 @@ import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.SENSITIVE_STORAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.SETTINGS;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.tagName;
+import static java.time.Duration.ofMillis;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.toList;
 
 public class ToolSettings extends ToolTab<ToolSettings> {
 
@@ -82,7 +90,10 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                         .find(byClassName("ant-select-selection__rendered"))),
                 entry(SAVE, context().find(button("SAVE"))),
                 entry(SENSITIVE_STORAGE, context().$(byText("Allow sensitive storages"))
-                        .parent().find(By.xpath("following-sibling::div//span")))
+                        .parent().find(By.xpath("following-sibling::div//span"))),
+                entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span"))),
+                entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input"))),
+                entry(CONFIGURE, context().find(byClassName("ant-dropdown-trigger")))
         );
     }
 
@@ -99,12 +110,54 @@ public class ToolSettings extends ToolTab<ToolSettings> {
         return this;
     }
 
-    /**
-     * Use {@link AccessObject#performWhile(Primitive, Condition, Consumer)} for such operations.
-     */
-    @Deprecated
+    public ToolSettings addEndpoint(String endpointName, String port) {
+        click(NEW_ENDPOINT);
+        int endpointNum = $(byClassName("ant-form-item-control"))
+                .$$(withText("Port:")).size();
+        SelenideElement endpoint = $(byClassName("ant-form-item-control"))
+                        .$$(withText("Port:")).get(endpointNum-1);
+        endpoint.closest(".ant-row-flex-top")
+            .find(byClassName("ant-input")).should(appear).setValue(port);
+        endpoint.closest(".ant-row-flex-top")
+                .find(byText("Name:")).parent()
+                .$(byClassName("ant-input"))
+                .should(appear).setValue(endpointName);
+        return this;
+    }
+
+    public ToolSettings changeEndpointPort(final String port) {
+        get(PORT).find(byClassName("ant-input")).should(appear).setValue(port);
+        return this;
+    }
+
+    public ToolSettings changeEndpointName(final String name) {
+        $(byText("Name:")).parent()
+                .$(byClassName("ant-input"))
+                .should(appear)
+                .setValue(name);
+        return this;
+    }
+    
     public ToolSettings removeEndpoint(final String endpoint) {
-        get(PORT).find(byValue(endpoint)).closest("tr").find(button(endpoint)).shouldBe(visible).click();
+        $(byClassName("ant-form-item-control")).find(byValue(endpoint))
+                .closest(".ant-row-flex-top").find(button("Delete")).shouldBe(visible).click();
+        return this;
+    }
+
+    public ToolSettings configureEndpoint(final String configuration) {
+        click(CONFIGURE);
+        $(PipelineSelectors.visible(byClassName("ant-dropdown-menu-root"))).find(withText(configuration))
+                .shouldBe(visible).click();
+        return this;
+    }
+
+    public ToolSettings untickConfigureEndpoint(final String configuration) {
+        click(CONFIGURE);
+        SelenideElement option = $(PipelineSelectors.visible(byClassName("ant-dropdown-menu-root"))).find(withText(configuration))
+                .shouldBe(visible);
+        if(option.parent().$x("./i[@class='anticon anticon-check']").exists()) {
+            option.click();
+        }
         return this;
     }
 
@@ -128,14 +181,22 @@ public class ToolSettings extends ToolTab<ToolSettings> {
 
     public ToolSettings disableAllowSensitiveStorage() {
         if (get(SENSITIVE_STORAGE).has(cssClass("ant-checkbox-checked"))) {
-            get(SENSITIVE_STORAGE).click();
+            click(SENSITIVE_STORAGE);
         }
         return this;
     }
 
     public ToolSettings enableAllowSensitiveStorage() {
         if (!get(SENSITIVE_STORAGE).has(cssClass("ant-checkbox-checked"))) {
-            get(SENSITIVE_STORAGE).click();
+            click(SENSITIVE_STORAGE);
+        }
+        return this;
+    }
+
+    public ToolSettings doNotMountStoragesSelect (boolean isSelected) {
+        if ((!get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && isSelected) ||
+                (get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && !isSelected)) {
+            click(DO_NOT_MOUNT_STORAGES);
         }
         return this;
     }
@@ -175,9 +236,9 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     }
 
     private ToolSettings validateDefaultCommand(final Condition condition) {
-        get(DEFAULT_COMMAND).find(byClassName("CodeMirror-code"))
-                .find(byAttribute("style", "padding-right: 0.1px;"))
-                .getText();
+        // the editor shows a line number beside each line inside CodeMirror-code, so the command is read
+        // from its first code line
+        get(DEFAULT_COMMAND).find(byCssSelector(".CodeMirror-code .CodeMirror-line")).should(condition);
         return this;
     }
 
@@ -189,12 +250,6 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                 break;
             case DEFAULT_COMMAND:
                 Arrays.stream(conditions).forEach(this::validateDefaultCommand);
-                break;
-            case INSTANCE_TYPE:
-                get(INSTANCE_TYPE).getText();
-                break;
-            case PRICE_TYPE:
-                get(PRICE_TYPE).find(byClassName("ant-select-selection-selected-value")).getText();
                 break;
             default:
                 super.ensure(primitive, conditions);
@@ -221,5 +276,10 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                         .collect(toList());
             }
         };
+    }
+
+    public SelectLimitMountsPopupAO<ToolSettings> selectDataStoragesToLimitMounts() {
+        click(LIMIT_MOUNTS);
+        return  new SelectLimitMountsPopupAO<>(this).sleep(2, SECONDS);
     }
 }

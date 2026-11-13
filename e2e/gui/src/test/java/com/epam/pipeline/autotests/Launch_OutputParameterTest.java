@@ -26,6 +26,7 @@ import org.testng.annotations.Test;
 import java.util.List;
 
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 
@@ -64,6 +65,7 @@ public class Launch_OutputParameterTest extends AbstractAutoRemovingPipelineRunn
                 getPipelineName());
         new PipelineCodeTabAO(getPipelineName())
             .runPipeline()
+            .setPriceType(ON_DEMAND)
             .addOutputParameter("output", pathToFile)
             .waitUntilLaunchButtonAppear()
             .launchAndWaitUntilFinished(this);

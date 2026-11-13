@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,6 +81,7 @@ public class CommitPopup extends PopupAO<CommitPopup, ConfirmationPopupAO<LogAO>
     }
 
     public CommitPopup setVersion(final String toolVersion) {
+        sleep(3, SECONDS);
         setValue(VERSION, toolVersion);
         click(IMAGE_NAME);
         return this;
@@ -89,7 +90,7 @@ public class CommitPopup extends PopupAO<CommitPopup, ConfirmationPopupAO<LogAO>
     public CommitPopup setName(final String name) {
         Utils.clearTextField(get(IMAGE_NAME));
         sleep(3, SECONDS);
-        Utils.sendKeysByChars(get(IMAGE_NAME), name);
+        Utils.clickAndSendKeysWithSlashes(get(IMAGE_NAME), name);
         return this;
     }
 

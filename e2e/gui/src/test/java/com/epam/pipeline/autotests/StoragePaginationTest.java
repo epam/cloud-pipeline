@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.codeborne.selenide.ex.ElementShould;
 import com.epam.pipeline.autotests.ao.StorageContentAO;
 import com.epam.pipeline.autotests.mixins.StorageHandling;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -36,6 +37,7 @@ import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.epam.pipeline.autotests.ao.Primitive.NEXT_PAGE;
+import static com.epam.pipeline.autotests.ao.Primitive.PREV_PAGE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 
@@ -79,6 +81,7 @@ public class StoragePaginationTest extends AbstractBfxPipelineTest
         storageContent()
                 .validateFoldersOrderIsAlphabetical()
                 .nextPage()
+                .shouldContainNumberOfElements(secondPageFolders.length)
                 .also(pageContains(secondPageFolders))
                 .selectPage()
                 .elementsShouldBeSelected(secondPageFolders)
@@ -86,6 +89,9 @@ public class StoragePaginationTest extends AbstractBfxPipelineTest
                 .shouldContainNumberOfElements(pageSize)
                 .validateNoElementsAreSelected()
                 .nextPage()
+                .sleep(5, SECONDS)
+                .shouldContainNumberOfElements(secondPageFolders.length)
+                .also(pageContains(secondPageFolders))
                 .elementsShouldBeSelected(secondPageFolders);
     }
 
@@ -104,18 +110,23 @@ public class StoragePaginationTest extends AbstractBfxPipelineTest
                 .map(suffix -> Utils.createTempFile("%s", suffix))
                 .forEach(file -> uploadFileAndValidateItsAppearanceOnFirstPage(firstPageFiles, file));
 
+        // "Select page" only once the list the last upload reloads has loaded, a click while it loads is lost
         storageContent()
+                .waitForUploadToFinish()
                 .ensure(NEXT_PAGE, enabled.because(nextPageAppearingReason))
                 .sleep(1, SECONDS)
                 .selectPage()
                 .sleep(2, SECONDS)
                 .removeAllSelectedElements()
+                // the removal reloads the list and then clears the selection: the first file is gone once both are done
+                .validateElementNotPresent(firstPageFiles.get(0))
                 .selectPage()
                 .sleep(1, SECONDS)
                 .removeAllSelectedElements()
                 .showFilesVersions(true)
                 .ensure(NEXT_PAGE, enabled.because(nextPageAppearingReason))
                 .nextPage()
+                .ensure(PREV_PAGE, enabled)
                 .also(pageContains(secondPageFiles));
     }
 
@@ -127,7 +138,14 @@ public class StoragePaginationTest extends AbstractBfxPipelineTest
     }
 
     private void createFolderAndValidateItsAppearanceOnFirstPage(final List<String> firstPageFolders, final String folderName) {
-        storageContent().createFolder(folderName);
+        try {
+            storageContent().createFolder(folderName);
+        } catch (ElementShould e) {
+            if (storageContent().elementRow(folderName).isDisplayed()) {
+                throw new RuntimeException(e);
+            }
+            storageContent().createFolder(folderName);
+        }
 
         if (firstPageFolders.contains(folderName)) {
             storageContent().validateElementIsPresent(folderName);

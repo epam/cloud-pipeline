@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,22 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.NotificationAO;
 import com.epam.pipeline.autotests.ao.Primitive;
+import com.epam.pipeline.autotests.ao.SettingsPageAO.SystemEventsAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 import static com.epam.pipeline.autotests.ao.Primitive.ADD;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.REFRESH;
-
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.*;
 import static com.codeborne.selenide.Condition.*;
@@ -35,36 +41,44 @@ import static java.lang.String.format;
 
 public class NotificationsTest extends AbstractBfxPipelineTest implements Authorization {
 
-    private final String infoNotification = "info_notification";
+    // the GUI fetches the active notifications once a minute
+    private static final long ACTIVE_NOTIFICATIONS_POLL_MILLIS = 65_000;
+
+    private final String currentDate = LocalDate.now().toString();
+    // scripts/generate-config.sh leaves notifications with these titles (<prefix>-<yyyy-mm-dd>) out of the
+    // environment's own (e2e.ui.environment.notifications): keep the prefixes there in line with these
+    private final String infoNotification = format("info_notification-%s", currentDate);
     private final String infoNotificationBodyText = "info_notification_body_text";
-    private final String infoEditedTitle = "info_edited";
+    private final String infoEditedTitle = format("info_edited-%s", currentDate);
     private final String infoEditedBodyText = "info_edited_body_text";
-    private final String warningNotification = "warning_notification";
+    private final String warningNotification = format("warning_notification-%s", currentDate);
     private final String warningNotificationBodyText = "warning_notification_body_text";
-    private final String warningActiveNotification = "warning_active";
+    private final String warningActiveNotification = format("warning_active-%s", currentDate);
     private final String warningActiveNotificationBodyText = "warning_active_body_text";
-    private final String criticalNotification = "critical_notification";
+    private final String criticalNotification = format("critical_notification-%s", currentDate);
     private final String criticalNotificationBodyText = "critical_notification_body_text";
     private final String deletionMessageFormat = "Are you sure you want to delete notification '%s'?";
+    private final List<String> testNotifications = Arrays.asList(infoNotification, infoEditedTitle,
+            warningNotification, warningActiveNotification, criticalNotification);
 
-    @BeforeClass
     @AfterClass(alwaysRun = true)
     public void cleanUp() {
         open(C.ROOT_ADDRESS);
         navigationMenu()
                 .settings()
                 .switchToSystemEvents()
-                .deleteAllEntries();
+                .deleteTestEntries(testNotifications);
     }
-
 
     @Test(dependsOnMethods = "validateRoleModelForNotifications")
     @TestCase(value = {"EPMCMBIBPC-1205"})
     public void validateSystemEventsMenu() {
+        // No notifications other than the environment's own (e.g. a disclaimer), which the config generation
+        // lists without the titles this class gives its notifications; with none, the table shows "No data"
         loginAs(admin)
                 .settings()
                 .switchToSystemEvents()
-                .ensureTableHasText("No data")
+                .ensureTableHasOnlyEntries(C.ENVIRONMENT_NOTIFICATIONS)
                 .ensureVisible(REFRESH, ADD);
     }
 
@@ -78,21 +92,45 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
     @TestCase(value = {"EPMCMBIBPC-1224"})
     public void validateCreateActiveWarningNotification() {
         Primitive severity = WARNING;
+        boolean removed = false;
 
-        navigationMenu()
-                .settings()
-                .switchToSystemEvents()
-                .add()
-                .setTitle(warningActiveNotification)
-                .setBody(warningActiveNotificationBodyText)
-                .clickCombobox()
-                .selectSeverity(severity)
-                .setActive()
-                .create();
-
-        refresh();
-        validateActiveNotification(warningActiveNotification, warningActiveNotificationBodyText, severity);
-        closeNotification(warningActiveNotification);
+        // an active notification is shown to every user of the platform, so it is deactivated and deleted
+        // right after the checks, and also when a check fails
+        try {
+            navigationMenu()
+                    .settings()
+                    .switchToSystemEvents()
+                    .add()
+                    .setTitle(warningActiveNotification)
+                    .setBody(warningActiveNotificationBodyText)
+                    .clickCombobox()
+                    .selectSeverity(severity)
+                    .selectActive()
+                    .create()
+                    .searchForTableEntry(warningActiveNotification)
+                    .ensureSeverityIconIs(severity.name());
+            refresh();
+            validateActiveNotification(warningActiveNotification, warningActiveNotificationBodyText, severity);
+            closeNotification(warningActiveNotification);
+            changeStateOf(warningActiveNotification);
+            navigationMenu()
+                    .settings()
+                    .switchToSystemEvents()
+                    .searchForTableEntry(warningActiveNotification)
+                    .ensure(STATE, not(cssClass("ant-checkbox-checked")))
+                    .delete()
+                    .ensureTitleIs(format(deletionMessageFormat, warningActiveNotification))
+                    .ok()
+                    .ensureTableHasNoText(warningActiveNotification);
+            removed = true;
+        } finally {
+            if (!removed) {
+                navigationMenu()
+                        .settings()
+                        .switchToSystemEvents()
+                        .deleteTestEntries(Collections.singletonList(warningActiveNotification));
+            }
+        }
     }
 
     @Test(dependsOnMethods = {"validateCreateInactiveInfoNotification"})
@@ -109,9 +147,12 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .close();
     }
 
-    @Test(dependsOnMethods = {"validateCreateInactiveInfoNotification"})
+    @Test(dependsOnMethods = {"validateCreateInactiveInfoNotification"}, enabled = false)
     @TestCase(value = {"EPMCMBIBPC-1209"})
     public void validateActivateNotification() {
+        if (impersonateMode()) {
+            return;
+        }
         changeStateOf(infoNotification);
 
         refresh();
@@ -131,9 +172,12 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
         createAndValidateNotificationEntry(CRITICAL, criticalNotification, criticalNotificationBodyText);
     }
 
-    @Test(dependsOnMethods = {"validateCreateInactiveNotificationsWithDifferentSeverity"})
+    @Test(dependsOnMethods = {"validateCreateInactiveNotificationsWithDifferentSeverity"}, enabled = false)
     @TestCase(value = {"EPMCMBIBPC-1213"})
     public void validateDisplaySeveralActiveNotifications() {
+        if (impersonateMode()) {
+            return;
+        }
         changeStateOf(infoNotification);
         changeStateOf(warningNotification);
         changeStateOf(criticalNotification);
@@ -148,7 +192,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
         closeNotification(criticalNotification);
     }
 
-    @Test(dependsOnMethods = {"validateDisplaySeveralActiveNotifications"})
+    @Test(dependsOnMethods = {"validateExpandNotification"})
     @TestCase(value = {"EPMCMBIBPC-1219"})
     public void validateEditActiveNotification() {
         navigationMenu()
@@ -158,15 +202,25 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .edit()
                 .titleTo(infoEditedTitle)
                 .bodyTo(infoEditedBodyText)
-                .save();
+                .save()
+                .searchForTableEntry(infoEditedTitle)
+                .ensureVisible(EXPAND, SEVERITY_ICON, TITLE, DATE, STATE, ACTIVE_LABEL, EDIT, DELETE)
+                .click(EXPAND)
+                .ensureBodyHasText(infoEditedBodyText);
+        if (impersonateMode()) {
+            return;
+        }
         refresh();
         validateActiveNotification(infoEditedTitle, infoEditedBodyText, INFO);
         closeNotification(infoEditedTitle);
     }
 
-    @Test(dependsOnMethods = {"validateDisplaySeveralActiveNotifications"})
+    @Test(dependsOnMethods = {"validateDisplaySeveralActiveNotifications"}, enabled = false)
     @TestCase(value = {"EPMCMBIBPC-1220"})
     public void validateDeleteActiveNotification() {
+        if (impersonateMode()) {
+            return;
+        }
         navigationMenu()
                 .settings()
                 .switchToSystemEvents()
@@ -189,17 +243,37 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
         validateActiveNotification(criticalNotification, criticalNotificationBodyText, CRITICAL);
     }
 
-    @Test(dependsOnMethods = {"validateDeleteActiveNotification"})
+    @Test(dependsOnMethods = {"validateCreateInactiveNotificationsWithDifferentSeverity",
+            "validateEditActiveNotification"})
     @TestCase(value = {"EPMCMBIBPC-1217"})
     public void validateSeveralInactiveNotifications() {
-        changeStateOf(infoEditedTitle);
-        changeStateOf(warningActiveNotification);
-        changeStateOf(criticalNotification);
+        final List<String> groupNotifications = Arrays.asList(infoEditedTitle, warningNotification,
+                criticalNotification);
+        boolean deactivated = false;
 
-        refresh();
-        ensureNotificationIsAbsent(infoEditedTitle);
-        ensureNotificationIsAbsent(warningActiveNotification);
-        ensureNotificationIsAbsent(criticalNotification);
+        // an active notification is shown to every user of the platform, so it is deactivated
+        // also when a check fails
+        try {
+            systemEvents()
+                    .searchForTableEntry(warningNotification)
+                    .activate();
+            refresh();
+            validateActiveNotification(warningNotification, warningNotificationBodyText, WARNING);
+            groupNotifications.forEach(title -> systemEvents()
+                    .searchForTableEntry(title)
+                    .deactivate());
+            deactivated = true;
+            systemEvents().click(REFRESH);
+            // without a page reload the banners change only when the GUI polls the active notifications
+            sleep(ACTIVE_NOTIFICATIONS_POLL_MILLIS);
+            groupNotifications.forEach(this::ensureNotificationIsAbsent);
+        } finally {
+            if (!deactivated) {
+                systemEvents()
+                        .searchForTableEntry(warningNotification)
+                        .deactivate();
+            }
+        }
     }
 
     @Test(dependsOnMethods = {"validateSeveralInactiveNotifications"})
@@ -251,7 +325,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .ensureVisible(TITLE, TITLE_FIELD,
                         BODY, BODY_FIELD,
                         SEVERITY, SEVERITY_COMBOBOX,
-                        STATE, ACTIVE_LABEL,
+                        STATE, STATE_CHECKBOX, ACTIVE_LABEL,
                         CREATE, CANCEL)
                 .ensureFieldMarkedAsRequired(TITLE)
                 .ensureSeverityIs(capitalCase(INFO))
@@ -264,6 +338,8 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .searchForTableEntry(titleText)
                 .ensureVisible(EXPAND, SEVERITY_ICON, TITLE, DATE, STATE, ACTIVE_LABEL, EDIT, DELETE)
                 .ensureSeverityIconIs(severity.name().toLowerCase())
+                .ensure(STATE, not(cssClass("ant-checkbox-checked")))
+                .ensureCreatedDateIsCurrent(300)
                 .close();
     }
 
@@ -275,8 +351,14 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
     }
 
     private void ensureNotificationIsAbsent(String title) {
-        $(byXpath(format("//*[contains(@class, 'system-notification__container') and contains(., '%s')]", title)))
+        $(byXpath(format(".//*[contains(@class, 'system-notification__container') and contains(., '%s')]", title)))
                 .shouldNotBe(visible);
+    }
+
+    private SystemEventsAO systemEvents() {
+        return navigationMenu()
+                .settings()
+                .switchToSystemEvents();
     }
 
     private void changeStateOf(String title) {
@@ -289,7 +371,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
     }
 
     private String capitalCase(Primitive severity) {
-        return severity.name().substring(0,1) + severity.name().substring(1).toLowerCase();
+        return severity.name().charAt(0) + severity.name().substring(1).toLowerCase();
     }
 
     private void closeNotification(final String notificationName) {

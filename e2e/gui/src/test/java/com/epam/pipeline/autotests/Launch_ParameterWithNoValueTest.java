@@ -17,16 +17,13 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.ParameterType;
 import com.epam.pipeline.autotests.ao.Template;
-import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
-import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.Test;
 
+import static com.epam.pipeline.autotests.utils.Json.editingConfiguration;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Launch_ParameterWithNoValueTest extends AbstractAutoRemovingPipelineRunningTest {
-
-    private static final String CONFIG_JSON = "/noValue.json";
 
     @Test
     @TestCase("EPMCMBIBPC-371")
@@ -35,11 +32,12 @@ public class Launch_ParameterWithNoValueTest extends AbstractAutoRemovingPipelin
                 .createPipeline(Template.SHELL, getPipelineName())
                 .firstVersion()
                 .codeTab()
-                .clearAndFillPipelineFile(
-                        "config.json",
-                        Utils.readResourceFully(CONFIG_JSON)
-                        .replace("{{instance_type}}", C.DEFAULT_INSTANCE)
-                )
+                .clickOnFile("config.json")
+                .editFile(editingConfiguration("default", configuration -> configuration
+                        .with("parameters")
+                        .putObject("param")
+                        .put("required", "false")))
+                .saveAndCommitWithMessage("test: Add parameter without value")
                 .sleep(2, SECONDS)
                 .runPipeline()
                 .validateThereIsParameterOfType("param", "", ParameterType.STRING, false);

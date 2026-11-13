@@ -19,6 +19,7 @@ import com.epam.pipeline.autotests.ao.ParameterType;
 import com.epam.pipeline.autotests.ao.StorageRulesTabAO;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.utils.*;
+import com.epam.pipeline.autotests.utils.C;
 
 import java.util.List;
 import org.testng.annotations.AfterClass;
@@ -34,6 +35,7 @@ public class StorageRulesTest extends AbstractAutoRemovingPipelineRunningTest {
     private static final String STORAGE_RULES_FOLDER = "storage_rules_folder";
     private static final String FILE_TO_STORE_NAME = "storage_rules_test.test";
     private static final String LAUNCH_SCRIPT = "/saveFilesScript.sh";
+    private final String priceType = C.DEFAULT_INSTANCE_PRICE_TYPE;
     private final String storage = "epmcmbi-test-storage-363-" + Utils.randomSuffix();
 
     @AfterClass(alwaysRun = true)
@@ -81,6 +83,7 @@ public class StorageRulesTest extends AbstractAutoRemovingPipelineRunningTest {
                 getPipelineName());
         new StorageRulesTabAO(getPipelineName())
                 .runPipeline()
+                .setPriceType(priceType)
                 .validateThereIsParameterOfType("result", pathToFile, ParameterType.OUTPUT,true)
                 .waitUntilLaunchButtonAppear()
                 .launchAndWaitUntilFinished(this);

@@ -15,7 +15,7 @@ def get_client():
     if provider in _clients:
         return _clients[provider]()
     else:
-        raise RuntimeError('Provider must be one of %s' % _clients.keys())
+        raise RuntimeError('Provider must be one of %s' % list(_clients.keys()))
 
 
 def object_exists(bucket_name, key):

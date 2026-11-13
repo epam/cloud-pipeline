@@ -32,11 +32,12 @@ public class NotificationAO implements AccessObject<NotificationAO> {
     private final Map<Primitive, SelenideElement> elements;
 
     public NotificationAO(String title) {
-        this.context = $(byXpath(String.format("//*[contains(@class, 'system-notification__container') and contains(., '%s')]", title))).shouldBe(visible);
+        this.context = $(byXpath(String.format(".//*[contains(@class, 'system-notification__container') and contains(., '%s')]", title))).shouldBe(visible);
         this.elements = initialiseElements(
                 entry(SEVERITY_ICON, context().find(byClassName("anticon"))),
                 entry(TITLE, context().find(byClassName("system-notification__title"))),
-                entry(BODY, context().find(byClassName("system-notification__body"))),
+                // the body is rendered by PreviewNotification as markdown
+                entry(BODY, context().find(byClassName("markdown"))),
                 entry(CLOSE, context().find(byId("notification-close-button"))),
                 entry(DATE, context().find(byClassName("system-notification__date")))
         );
@@ -62,8 +63,12 @@ public class NotificationAO implements AccessObject<NotificationAO> {
         return this;
     }
 
+    /**
+     * The severity icon of the banner (its first icon, before the close one) has the theme class of the severity,
+     * cp-setting-info/warning/critical (client/src/components/main/notification/SystemNotification.js).
+     */
     public NotificationAO ensureSeverityIs(String severity) {
-        ensure(SEVERITY_ICON, cssClass(String.format("system-notification__%s", severity.toLowerCase())));
+        ensure(SEVERITY_ICON, cssClass(String.format("cp-setting-%s", severity.toLowerCase())));
         return this;
     }
 

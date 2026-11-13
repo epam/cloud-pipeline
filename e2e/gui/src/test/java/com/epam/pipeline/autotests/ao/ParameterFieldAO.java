@@ -21,6 +21,9 @@ import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.codeborne.selenide.Selectors.byClassName;
@@ -28,13 +31,31 @@ import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.Combiners.confine;
+import static java.lang.String.format;
 
+/**
+ * A parameter row of the launch and configuration forms
+ * (client/src/components/pipelines/launch/form/parameters/parameter/index.js). The row has the classes
+ * {@code launch-form-parameter-<name>} and {@code launch-form-parameter-key-parameter_<index>}; the form gives
+ * a parameter the lowest key index it has free, starting from 0 (form/utilities/parameter-utilities.js,
+ * generateKey). The name is a text, and an input only while it is edited (parameter/name-input/index.jsx);
+ * the value is the input of the row's form item.
+ */
 public class ParameterFieldAO extends By implements AccessObject<ParameterFieldAO> {
     /**
      * The parameter that never appears to present.
      */
     public static final ParameterFieldAO nonExistentParameter =
             parameter("NONEXISTENT PARAMETER NAME", "NONEXISTENT PARAMETER VALUE");
+
+    /**
+     * The name text of a parameter row: parameter-name-input.css is a lower-case file name, so its CSS module
+     * classes lose their first letter.
+     */
+    static final String NAME_CLASS = "arameter-name-input__parameter-name";
+    static final String NAME_INPUT_CLASS = "arameter-name-input__parameter-name-input";
+    private static final String KEY_CLASS_PREFIX = "launch-form-parameter-key-";
+    private static final Pattern KEY_INDEX = Pattern.compile(KEY_CLASS_PREFIX + "parameter_(\\d+)");
 
     public final By qualifier;
     public final By nameInput;
@@ -44,8 +65,8 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
     protected ParameterFieldAO(final By qualifier) {
         this(
                 qualifier,
-                confine(inputByIdSuffix("name"), qualifier),
-                confine(inputByIdSuffix("value"), qualifier),
+                confine(byXpath(format(".//input[%s]", hasClass(NAME_INPUT_CLASS))), qualifier),
+                confine(byXpath(format(".//*[%s]//input", hasClass("ant-form-item-control"))), qualifier),
                 byClassName("dynamic-delete-button")
         );
     }
@@ -61,38 +82,21 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
      * Streams all visible parameters.
      */
     public static Stream<ParameterFieldAO> parameters() {
-        final String prefix = "param_";
-        final By parameterField = inputByIdSuffix("key");
-        return $$(parameterField)
+        return parameterIndexes()
                 .stream()
-                .map(SelenideElement::val)
-                .map(key -> key.replace(prefix, ""))
-                .map(Integer::valueOf)
                 .map(ParameterFieldAO::parameterByIndex);
     }
 
     public static ParameterFieldAO parameter(final String name, final String value) {
-        final String controlClass = "ant-form-item-control";
-        final String nameAsAChild = String.format(".//input[@placeholder = 'Name' and @value = '%s']", name);
-        final String valueAsAChild = String.format(".//input[@value = '%s']", value);
-        final By parameterField = byXpath(String.format(
-                ".//*[contains(concat(' ', @class, ' '), ' %s ') and %s and %s]",
-                controlClass, nameAsAChild, valueAsAChild
-        ));
-        return new ParameterFieldAO(parameterField);
+        return new ParameterFieldAO(parameterRow(format("%s and .//input[@value = '%s']", nameClass(name), value)));
     }
 
     /**
-     * @param index The numerical part of {@code id} attribute of the field you search.
+     * @param index The numerical part of the key class {@code launch-form-parameter-key-parameter_<index>}
+     *              of the parameter row you search.
      */
     public static ParameterFieldAO parameterByIndex(final int index) {
-        final String controlClass = "ant-form-item-control";
-        final String templateId = parameterId("key", index);
-        final By parameterField = byXpath(String.format(
-                ".//*[contains(concat(' ', @class, ' '), ' %s ') and .//@id = '%s']",
-                controlClass, templateId
-        ));
-        return new ParameterFieldAO(parameterField);
+        return new ParameterFieldAO(parameterRow(hasClass(format("%sparameter_%d", KEY_CLASS_PREFIX, index))));
     }
 
     /**
@@ -109,30 +113,21 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
      * @param name Value of the parameter's name.
      */
     public static ParameterFieldAO parameterByName(final String name) {
-        final String controlClass = "ant-form-item-control";
-        final By parameterField = byXpath(String.format(
-                ".//*[contains(concat(' ', @class, ' '), ' %s ') and .//input[@placeholder = 'Name' and @value = '%s']]",
-                controlClass, name
-        ));
-        return new ParameterFieldAO(parameterField);
+        return new ParameterFieldAO(parameterRow(nameClass(name)));
     }
 
     /**
      * @param value Value of the parameter.
      */
     public static ParameterFieldAO parameterByValue(final String value) {
-        final String controlClass = "ant-form-item-control";
-        final By parameterField = byXpath(String.format(
-                ".//*[contains(concat(' ', @class, ' '), ' %s ') and .//input[@value = '%s']]",
-                controlClass, value
-        ));
-        return new ParameterFieldAO(parameterField);
+        return new ParameterFieldAO(parameterRow(format(
+                "contains(@class, '%s') and .//*[%s]//input[@value = '%s']",
+                KEY_CLASS_PREFIX, hasClass("ant-form-item-control"), value
+        )));
     }
 
     public int index() {
-        final String key = context().find(inputByIdSuffix("key")).val();
-        final String index = key.replace("param_", "");
-        return Integer.valueOf(index);
+        return keyIndex(context().getAttribute("class"));
     }
 
     @Override
@@ -159,27 +154,44 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
     }
 
     /**
-     * Produces parameter input id by its {@code index} and {@code entry}.
-     *
-     * @param entry Entry is all the part after the last dot in the id attribute of an input.
-     * @param index Index is a digit part of
+     * All the parameter rows of the page.
      */
-    private static String parameterId(final String entry, final int index) {
-        final String idTemplate = "parameters.params.param_%d.%s";
-        return String.format(idTemplate, index, entry);
+    static By parameterRows() {
+        return byXpath(format(".//*[contains(@class, '%s')]", KEY_CLASS_PREFIX));
     }
 
     /**
-     * This XPath is a simple ends-with function, but the original function is not supported by chrome.
-     *
-     * @param suffix The last part of an id.
-     * @return Qualifier of input which id ends with given {@code suffix}.
+     * The key indexes of all the parameter rows of the page, in the order of the rows.
      */
-    private static By inputByIdSuffix(final String suffix) {
-        final String inputThatHasIdWithSuffix = String.format(
-                ".//input[substring(@id, string-length(@id) - string-length('%s') + 1) = '%s']",
-                suffix, suffix
-        );
-        return byXpath(inputThatHasIdWithSuffix);
+    static List<Integer> parameterIndexes() {
+        return $$(parameterRows())
+                .stream()
+                .map(row -> row.getAttribute("class"))
+                .map(ParameterFieldAO::keyIndex)
+                .collect(Collectors.toList());
+    }
+
+    private static int keyIndex(final String classes) {
+        final Matcher key = KEY_INDEX.matcher(classes);
+        if (!key.find()) {
+            throw new IllegalStateException(format("The parameter row with classes '%s' has no key class", classes));
+        }
+        return Integer.parseInt(key.group(1));
+    }
+
+    /**
+     * The row matches also itself, so that a parameter row can be checked for in the context of the same row,
+     * e.g. {@code parameter.ensure(parameterByName(name), exist)} on a {@link RunParameterAO}.
+     */
+    private static By parameterRow(final String condition) {
+        return byXpath(format("./descendant-or-self::*[%s]", condition));
+    }
+
+    private static String nameClass(final String name) {
+        return hasClass("launch-form-parameter-" + name);
+    }
+
+    private static String hasClass(final String className) {
+        return format("contains(concat(' ', normalize-space(@class), ' '), ' %s ')", className);
     }
 }

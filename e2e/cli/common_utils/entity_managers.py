@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from src.api.base import API
-from pipe_cli import create_data_storage
+from .pipe_cli import create_data_storage
 import json
 
 

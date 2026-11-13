@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,23 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
 import java.lang.reflect.Constructor;
 import java.util.Map;
 import java.util.Objects;
 import static com.codeborne.selenide.Condition.attribute;
+import static com.codeborne.selenide.Condition.cssClass;
+import static com.codeborne.selenide.Condition.exist;
+import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exactText;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
+import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CODE_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.COMMIT;
@@ -59,6 +65,10 @@ public abstract class AbstractPipelineTabAO<TAB_AO extends AbstractPipelineTabAO
         this.pipelineName = pipelineName;
     }
 
+    public String getPipelineName() {
+        return pipelineName;
+    }
+
     public <TAB_AO extends AbstractPipelineTabAO> TAB_AO onTab(final Class<TAB_AO> tabClass) {
         Objects.requireNonNull(tabClass);
         try {
@@ -83,10 +93,6 @@ public abstract class AbstractPipelineTabAO<TAB_AO extends AbstractPipelineTabAO
         return onTab(PipelineConfigurationTabAO.class);
     }
 
-    public PipelineGraphTabAO graphTab() {
-        return onTab(PipelineGraphTabAO.class);
-    }
-
     public PipelineHistoryTabAO historyTab() {
         return onTab(PipelineHistoryTabAO.class);
     }
@@ -96,7 +102,8 @@ public abstract class AbstractPipelineTabAO<TAB_AO extends AbstractPipelineTabAO
     }
 
     protected void changeTabTo(Primitive tab) {
-        sleep(2, SECONDS).click(tab).tabShouldBeActive(tab);
+        sleep(2, SECONDS).get(tab).shouldBe(enabled);
+        click(tab).tabShouldBeActive(tab);
     }
 
     protected abstract TAB_AO open();
@@ -105,9 +112,32 @@ public abstract class AbstractPipelineTabAO<TAB_AO extends AbstractPipelineTabAO
         return ensure(primitive, visible, attribute("aria-selected", "true"));
     }
 
+    /**
+     * The pipeline name in the page header shows the rename (pencil) icon only to a user who may edit the pipeline;
+     * for other users the icon is in the page, hidden.
+     */
+    @SuppressWarnings("unchecked")
+    public TAB_AO ensurePipelineNameIsNotEditable() {
+        final SelenideElement name = $$(byClassName("editable-field__editable-mode"))
+                .findBy(text(pipelineName))
+                .shouldBe(visible);
+        name.shouldNotHave(cssClass("cp-library-breadcrumbs-editable-field"));
+        name.find(byClassName("editable-field__editable-field-icon")).should(exist).shouldNotBe(visible);
+        return (TAB_AO) this;
+    }
+
     public PipelineRunFormAO runPipeline() {
         sleep(2, SECONDS);
         click(RUN);
+        sleep(1, SECONDS);
+        return new PipelineRunFormAO(pipelineName);
+    }
+
+    public PipelineRunFormAO runPipelineWithConfiguration(final String configurationName) {
+        sleep(2, SECONDS);
+        $(byId("run-dropdown-button")).shouldBe(visible).hover();
+        $(PipelineSelectors.visible(byClassName("rc-dropdown-menu"))).find(byText(configurationName))
+                .shouldBe(visible).click();
         sleep(1, SECONDS);
         return new PipelineRunFormAO(pipelineName);
     }

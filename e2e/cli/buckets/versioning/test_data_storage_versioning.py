@@ -77,7 +77,7 @@ class TestDataStorageVersioning(object):
             ]
             compare_listing(actual_output, expected_output, 2)
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-877:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-877:" + "\n" + str(e))
 
     def test_restore_marked_for_deletion_file(self):
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
@@ -100,7 +100,7 @@ class TestDataStorageVersioning(object):
             ]
             compare_listing(actual_output, expected_output, 1)
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-881:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-881:" + "\n" + str(e))
 
     def test_object_versions(self):
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
@@ -120,7 +120,7 @@ class TestDataStorageVersioning(object):
             ]
             compare_listing(actual_output, expected_output, 2)
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-882:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-882:" + "\n" + str(e))
 
     def test_restore_specific_version(self):
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
@@ -145,7 +145,7 @@ class TestDataStorageVersioning(object):
             ]
             compare_listing(actual_output, expected_output, 1)
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-883:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-883:" + "\n" + str(e))
 
     def test_object_hard_deletion(self):
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
@@ -157,7 +157,7 @@ class TestDataStorageVersioning(object):
             expected_output = []
             compare_listing(actual_output, expected_output, 0)
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-884:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-884:" + "\n" + str(e))
 
     def test_marked_object_hard_deletion(self):
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
@@ -177,7 +177,7 @@ class TestDataStorageVersioning(object):
             expected_output = []
             compare_listing(actual_output, expected_output, 0)
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-993:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-993:" + "\n" + str(e))
 
     def test_mark_for_deletion_non_empty_folder(self):
         destination_1 = 'cp://{}/{}/{}'.format(self.bucket, self.test_folder_1, self.test_file_1)
@@ -207,7 +207,7 @@ class TestDataStorageVersioning(object):
             ]
             compare_listing(actual_output, expected_output, 2, sort=False)
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-885-886:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-885-886:" + "\n" + str(e))
 
     def test_hard_deletion_non_empty_folder(self):
         destination_1 = 'cp://{}/{}/{}/{}'.format(self.bucket, self.test_folder_1, self.test_folder_2, self.test_file_1)
@@ -225,7 +225,7 @@ class TestDataStorageVersioning(object):
             expected_output = []
             compare_listing(actual_output, expected_output, 0)
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-887:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-887:" + "\n" + str(e))
 
     def test_hard_deletion_marked_non_empty_folder(self):
         destination_1 = 'cp://{}/{}/{}/{}'.format(self.bucket, self.test_folder_1, self.test_folder_2, self.test_file_1)
@@ -259,7 +259,7 @@ class TestDataStorageVersioning(object):
             expected_output = []
             compare_listing(actual_output, expected_output, 0)
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-998:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-998:" + "\n" + str(e))
 
     def test_mark_for_delete_non_existing_file(self):
         destination = 'cp://{}/{}'.format(self.bucket, TestFiles.NOT_EXISTS_FILE)
@@ -267,7 +267,7 @@ class TestDataStorageVersioning(object):
             error_message = pipe_storage_rm(destination, recursive=True, expected_status=1)[1]
             assert 'Storage path "{}" was not found'.format(destination) in error_message[0]
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-945:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-945:" + "\n" + str(e))
 
     def test_hard_delete_non_existing_file(self):
         destination = 'cp://{}/{}'.format(self.bucket, TestFiles.NOT_EXISTS_FILE)
@@ -275,7 +275,7 @@ class TestDataStorageVersioning(object):
             error_message = pipe_storage_rm(destination, recursive=True, expected_status=1, args=['--hard-delete'])[1]
             assert 'Storage path "{}" was not found'.format(destination) in error_message[0]
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-946:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-946:" + "\n" + str(e))
 
     def test_restore_non_existing_version(self):
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
@@ -286,7 +286,7 @@ class TestDataStorageVersioning(object):
             error_message = pipe_storage_restore(destination, expected_status=1, version=not_existing_version)[1]
             assert 'Error: Version "{}" doesn\'t exist.'.format(not_existing_version) in error_message[0]
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-947:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-947:" + "\n" + str(e))
 
     def test_restore_not_removed_object(self):
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
@@ -296,7 +296,7 @@ class TestDataStorageVersioning(object):
             assert 'Error: Latest file version is not deleted. Please specify "--version" parameter.'\
                    in error_message[0]
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-948:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-948:" + "\n" + str(e))
 
     def test_restore_latest_version(self):
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
@@ -309,7 +309,7 @@ class TestDataStorageVersioning(object):
             assert 'Version "{}" is already the latest version'.format(version_id)\
                    in error_message[0]
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-949:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-949:" + "\n" + str(e))
 
     def test_role_model_marked_object_deletion(self):
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
@@ -323,7 +323,7 @@ class TestDataStorageVersioning(object):
             pipe_output = pipe_storage_ls(self.path_to_bucket, expected_status=1, token=self.token, versioning=True)[1]
             assert "Access is denied" in pipe_output[0]
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-889:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-889:" + "\n" + str(e))
 
     def test_role_model_object_versions(self):
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
@@ -340,7 +340,7 @@ class TestDataStorageVersioning(object):
             actual_output = pipe_storage_ls(self.path_to_bucket, expected_status=1, token=self.token, versioning=True)[1]
             assert "Access is denied" in actual_output[0]
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-891:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-891:" + "\n" + str(e))
 
     def test_role_model_restore_latest_version(self):
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
@@ -354,7 +354,7 @@ class TestDataStorageVersioning(object):
             pipe_output = pipe_storage_restore(self.path_to_bucket, expected_status=1, token=self.token)[1]
             assert "Access is denied" in pipe_output[0]
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-894:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-894:" + "\n" + str(e))
 
     def test_role_model_object_hard_deletion(self):
         destination = 'cp://{}/{}'.format(self.bucket, self.test_file_1)
@@ -365,7 +365,7 @@ class TestDataStorageVersioning(object):
             pipe_output = pipe_storage_rm(destination, args=['--hard-delete'], token=self.token, expected_status=1)[1]
             assert "Access is denied" in pipe_output[0]
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-892:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-892:" + "\n" + str(e))
 
     def test_role_model_restore_marked_for_deletion_non_empty_folder(self):
         destination_1 = 'cp://{}/{}/{}/{}'.format(self.bucket, self.test_folder_1, self.test_folder_2, self.test_file_1)
@@ -382,7 +382,7 @@ class TestDataStorageVersioning(object):
             pipe_output = pipe_storage_restore(self.path_to_bucket, expected_status=1, token=self.token)[1]
             assert "Access is denied" in pipe_output[0]
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-893:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-893:" + "\n" + str(e))
 
     def test_role_model_hard_deletion_marked_non_empty_folder(self):
         destination_1 = 'cp://{}/{}/{}/{}'.format(self.bucket, self.test_folder_1, self.test_folder_2, self.test_file_1)
@@ -396,7 +396,7 @@ class TestDataStorageVersioning(object):
                                           token=self.token, expected_status=1, args=['--hard-delete'])[1]
             assert "Access is denied" in pipe_output[0]
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-895:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-895:" + "\n" + str(e))
 
     def test_ls_with_paging(self):
         try:
@@ -424,7 +424,7 @@ class TestDataStorageVersioning(object):
                                                                   paging=str(3)))
             assert len(pipe_output) == 3
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-1024:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-1024:" + "\n" + str(e))
 
     def test_copy_with_similar_keys(self):
         try:
@@ -441,7 +441,7 @@ class TestDataStorageVersioning(object):
             pipe_storage_rm(destination)
             assert not object_exists(self.bucket, self.test_file_1)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-1337", e.message))
+            pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-1337", str(e)))
 
     def test_rm_files_with_common_keys(self):
         try:
@@ -453,7 +453,7 @@ class TestDataStorageVersioning(object):
             pipe_output = get_pipe_listing(self.path_to_bucket)
             assert len(pipe_output) == 1
         except BaseException as e:
-            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-1283:" + "\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + "epmcmbibpc-1283:" + "\n" + str(e))
 
     def test_list_version(self):
         destination = "cp://{}/{}".format(self.bucket, self.test_file_1)
@@ -471,7 +471,7 @@ class TestDataStorageVersioning(object):
                 expected_file.version_id = expected_versions[index]
             compare_listing(actual_output, expected_files, 2, show_details=True, check_version=True, sort=False)
         except AssertionError as e:
-            pytest.fail(ERROR_MESSAGE + ":\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + ":\n" + str(e))
 
     def test_list_deleted_version(self):
         destination = "cp://{}/{}".format(self.bucket, self.test_file_1)
@@ -489,4 +489,4 @@ class TestDataStorageVersioning(object):
                 expected_file.version_id = expected_versions[index]
             compare_listing(actual_output, expected_files, 2, show_details=True, check_version=True)
         except AssertionError as e:
-            pytest.fail(ERROR_MESSAGE + ":\n" + e.message)
+            pytest.fail(ERROR_MESSAGE + ":\n" + str(e))

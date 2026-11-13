@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,23 +30,23 @@ import java.util.stream.IntStream;
 
 import org.openqa.selenium.By;
 
+import static com.codeborne.selenide.CollectionCondition.size;
+import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.enabled;
-import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.text;
-import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
-import static com.codeborne.selenide.Selectors.byCssSelector;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD;
 import static com.epam.pipeline.autotests.ao.Primitive.DOCKER_IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.EDIT;
+import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
 import static com.epam.pipeline.autotests.ao.Primitive.IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.NAME;
-import static com.epam.pipeline.autotests.ao.Primitive.PARAMETER_NAME;
 import static com.epam.pipeline.autotests.ao.Primitive.PIPELINE;
 import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.RUN;
@@ -113,10 +113,17 @@ public class Configuration implements AccessObject<Configuration> {
         return byId("exec.disk");
     }
 
+    /**
+     * The root entity type is a row of the parameters with the name text "Root entity type"
+     * (launch/form/parameters/parameter/root-entity-type-input.jsx).
+     */
     public static By rootEntityType() {
         return PipelineSelectors.Combiners.confine(
                 byClassName("ant-select-selection"),
-                byClassName("launch-pipeline-form__root-entity-type-container"),
+                byXpath(".//*[contains(concat(' ', normalize-space(@class), ' '), " +
+                        "' aunch-form-parameter__launch-form-parameter ') and " +
+                        ".//*[contains(concat(' ', normalize-space(@class), ' '), " +
+                        "' arameter-name-input__parameter-name ') and normalize-space(.) = 'Root entity type']]"),
                 "root entity type"
         );
     }
@@ -137,12 +144,22 @@ public class Configuration implements AccessObject<Configuration> {
         return fieldWithLabel("Cmd template");
     }
 
+    public static By startIdleCheckbox() {
+        return byXpath(".//label[contains(@class, 'ant-checkbox-wrapper') and .//*[text() = 'Start idle']]");
+    }
+
     public static By template() {
         return byClassName("launch-pipeline-form__code-editor");
     }
 
+    /**
+     * The name of a parameter: a text, or an input while it is edited
+     * (launch/form/parameters/parameter/name-input/index.jsx).
+     */
     public static By parameterName() {
-        return byClassName("launch-pipeline-form__parameter-name");
+        return byXpath(".//*[contains(@class, 'launch-form-parameter-key-')]" +
+                "//*[contains(concat(' ', normalize-space(@class), ' '), ' arameter-name-input__parameter-name ') " +
+                "or contains(concat(' ', normalize-space(@class), ' '), ' arameter-name-input__parameter-name-input ')]");
     }
 
     public Configuration() {
@@ -160,6 +177,7 @@ public class Configuration implements AccessObject<Configuration> {
                 entry(RUN, context().find(byId("run-configuration-button"))),
                 entry(ADD, context().find(byId("add-configuration-button"))),
                 entry(ADD_PARAMETER, context().find(byId("add-parameter-button"))),
+                entry(ESTIMATED_PRICE, context().find(byText("Estimated price per hour:"))),
                 entry(DOCKER_IMAGE, context().find(inputOf(fieldWithLabel("Docker image"))))
         );
     }
@@ -186,7 +204,6 @@ public class Configuration implements AccessObject<Configuration> {
      */
     public RunsMenuAO runSelected(AbstractSeveralPipelineRunningTest test, String pipelineName) {
         click(RUN);
-        $(byText("Run selected")).shouldBe(visible).click();
         $(byClassName("ant-modal-body")).find(button("OK")).click();
         test.addRunId(Utils.getPipelineRunId(pipelineName));
         return new RunsMenuAO();
@@ -247,15 +264,25 @@ public class Configuration implements AccessObject<Configuration> {
     }
 
     public Configuration ensureThereIsNoParameters() {
-        $(byCssSelector(".ant-select-lg.ant-select-combobox")).shouldNot(exist);
+        parametersOfParametersSection().shouldHave(size(0));
         return this;
     }
 
+    /**
+     * Checks the names of the parameters of the "Parameters" section, in their order.
+     */
     public Configuration validateParameters(final String... parameters) {
-        final ElementsCollection actualParameters = SelenideElements.of(parameterName());
+        final ElementsCollection actualParameters = parametersOfParametersSection();
         IntStream.range(0, parameters.length)
-                .forEach(i -> actualParameters.get(i).shouldHave(value(parameters[i])));
+                .forEach(i -> actualParameters.get(i).shouldHave(cssClass("launch-form-parameter-" + parameters[i])));
         return this;
+    }
+
+    /**
+     * The parameter rows of the "Parameters" section: the root entity type row is not a parameter, it has no key.
+     */
+    private ElementsCollection parametersOfParametersSection() {
+        return $(byId("launch-pipeline-parameters-panel")).$$(ParameterFieldAO.parameterRows());
     }
 
     public DetachedConfigurationParameterAO getParameterByIndex(int parameterIndex) {
@@ -263,14 +290,7 @@ public class Configuration implements AccessObject<Configuration> {
     }
 
     public Configuration addStringParameter(final String name, final String value) {
-        profile.clickAddStringParameter()
-                .setName(name)
-                .also(parameter -> parameter.get(PARAMETER_NAME)
-                        .closest(".ant-row")
-                        .closest(".ant-row")
-                        .find(byClassName("ant-select-search__field"))
-                        .setValue(value)
-                );
+        profile.addStringParameter(name, value);
         return this;
     }
 
@@ -297,6 +317,15 @@ public class Configuration implements AccessObject<Configuration> {
         sleep(2, SECONDS);
         $(button("Yes")).shouldBe(visible).click();
         return this;
+    }
+
+    /**
+     * Discards the unsaved changes by clicking the "Library" root of the library tree,
+     * the parent folder of a configuration that lives at the library root.
+     */
+    public Configuration leaveToParentFolderWithoutSaving() {
+        new PipelinesLibraryAO().clickRoot();
+        return exitFromConfigurationWithoutSaved();
     }
 
     public Configuration saveIfNeeded() {

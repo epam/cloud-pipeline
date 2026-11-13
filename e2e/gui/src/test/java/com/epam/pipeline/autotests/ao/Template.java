@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,6 @@ public enum Template {
     DEFAULT("DEFAULT"),
     PYTHON("PYTHON"),
     SHELL("SHELL"),
-    WDL("WDL"),
-    LUIGI("LUIGI"),
     SAMPLE_SHEET_BATCH("SAMPLE_SHEET_BATCH"),
     FOLDER_BATCH("FOLDER_BATCH");
 
@@ -38,7 +36,7 @@ public enum Template {
     }
 
     public CreatePipelinePopupAO clickOnTemplate() {
-        new PipelinesLibraryAO().resetMouse().hover(CREATE).hover(CREATE_PIPELINE);
+        new PipelinesLibraryAO().resetMouse().click(CREATE).hover(CREATE_PIPELINE);
         $(byText(text)).shouldBe(visible).click();
         return new CreatePipelinePopupAO();
     }

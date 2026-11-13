@@ -53,5 +53,5 @@ def parse_date_parameter(date_string):
             pass
     if error:
         raise RuntimeError(error)
-    date_with_time_zone = tzlocal.get_localzone().localize(date, is_dst=None)
-    return date_with_time_zone.astimezone(pytz.utc).strftime('%Y-%m-%d %H:%M:%S.%f')
+    # astimezone() reads a naive date as the local time
+    return date.astimezone(pytz.utc).strftime('%Y-%m-%d %H:%M:%S.%f')

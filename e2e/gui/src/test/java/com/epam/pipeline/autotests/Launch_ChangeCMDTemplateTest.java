@@ -16,17 +16,16 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.Template;
-import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
-import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.Test;
-import static com.codeborne.selenide.Condition.text;
+import static com.codeborne.selenide.Condition.exactText;
 import static com.epam.pipeline.autotests.ao.Primitive.DEFAULT_COMMAND;
+import static com.epam.pipeline.autotests.utils.Json.editingConfiguration;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Launch_ChangeCMDTemplateTest extends AbstractAutoRemovingPipelineRunningTest {
 
-    private static final String CONFIG_JSON = "/changeCMDTemplate.json";
+    private static final String CMD_TEMPLATE = "cmd_template";
 
     @Test
     @TestCase(value = {"EPMCMBIBPC-377"})
@@ -35,13 +34,12 @@ public class Launch_ChangeCMDTemplateTest extends AbstractAutoRemovingPipelineRu
                 .createPipeline(Template.SHELL, getPipelineName())
                 .firstVersion()
                 .codeTab()
-                .clearAndFillPipelineFile(
-                        "config.json",
-                        Utils.readResourceFully(CONFIG_JSON)
-                        .replace("{{instance_type}}", C.DEFAULT_INSTANCE)
-                )
+                .clickOnFile("config.json")
+                .editFile(editingConfiguration("default", configuration ->
+                        configuration.put("cmd_template", CMD_TEMPLATE)))
+                .saveAndCommitWithMessage("test: Change cmd_template")
                 .sleep(2, SECONDS)
                 .runPipeline()
-                .ensure(DEFAULT_COMMAND, text("cmd_template"));
+                .ensure(DEFAULT_COMMAND, exactText(CMD_TEMPLATE));
     }
 }

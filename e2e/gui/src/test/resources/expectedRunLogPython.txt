@@ -64,7 +64,7 @@ Executing task
 -
 CWD is now at /runs/{main_file_name}-{pipeline_id}/analysis
 Command text:
-python $SCRIPTS_DIR/src/{main_file_name_without_dash}.py
+$CP_PYTHON_PATH $SCRIPTS_DIR/src/{main_file_name_without_dash}.py
 Running python pipeline
 ------
 Finalizing execution

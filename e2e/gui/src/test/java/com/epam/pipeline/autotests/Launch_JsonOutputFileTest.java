@@ -25,6 +25,7 @@ import org.testng.annotations.Test;
 import static com.epam.pipeline.autotests.utils.Json.selectProfileWithName;
 import static com.epam.pipeline.autotests.utils.Json.transferringJsonToObject;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 
 public class Launch_JsonOutputFileTest extends AbstractAutoRemovingPipelineRunningTest {
 
@@ -75,6 +76,7 @@ public class Launch_JsonOutputFileTest extends AbstractAutoRemovingPipelineRunni
             }))
             .saveAndCommitWithMessage("test: Add required output parameter named result")
             .runPipeline()
+            .setPriceType(ON_DEMAND)
             .validateThereIsParameterOfType(parameterName, pathToFile, ParameterType.OUTPUT, true)
             .waitUntilLaunchButtonAppear()
             .launchAndWaitUntilFinished(this);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
-import com.epam.pipeline.autotests.utils.C;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import static com.codeborne.selenide.Condition.appear;
@@ -30,11 +27,14 @@ import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
-import static com.codeborne.selenide.Selenide.switchTo;
+import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.title;
-import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import static com.epam.pipeline.autotests.ao.Primitive.TITLE;
+import static com.epam.pipeline.autotests.utils.Utils.getCurrentURL;
+import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.testng.Assert.assertTrue;
 
 public class ToolPageAO implements AccessObject<ToolPageAO> {
 
@@ -63,6 +63,18 @@ public class ToolPageAO implements AccessObject<ToolPageAO> {
         return this;
     }
 
+    public ToolPageAO assertIndexContains(String text, boolean isContain) {
+        int attempt = 0;
+        int maxAttempts = 10;
+        while (!$$(byXpath(".//li")).texts().contains(format("%s/", text)) == isContain
+                && attempt < maxAttempts) {
+            sleep(5, SECONDS);
+            refresh();
+            attempt += 1;
+        }
+        return this;
+    }
+
     public ToolPageAO validateEndpointPage(final String owner) {
         $(byId("owner")).should(appear).shouldHave(text(owner));
         return this;
@@ -74,7 +86,13 @@ public class ToolPageAO implements AccessObject<ToolPageAO> {
     }
 
     public ToolPageAO validationPageHeader(String header) {
-        $(byXpath("//h3")).shouldHave(text(header));
+        $(byXpath(".//h3")).shouldHave(text(header));
+        return this;
+    }
+
+    public ToolPageAO assertURLEndsWith(String str) {
+        assertTrue(getCurrentURL().endsWith(str + "/"),
+                format("Link from the address bar doesn't end by the '%s'", str));
         return this;
     }
 
@@ -85,11 +103,5 @@ public class ToolPageAO implements AccessObject<ToolPageAO> {
 
     public String getEndpoint() {
         return endpoint;
-    }
-
-    public void closeTab() {
-        List<String> tabs = new ArrayList<>(getWebDriver().getWindowHandles());
-        getWebDriver().close();
-        switchTo().window(tabs.get(0));
     }
 }

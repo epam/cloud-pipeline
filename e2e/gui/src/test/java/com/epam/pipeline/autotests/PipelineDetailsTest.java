@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.DocumentTabAO;
 import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
-import com.epam.pipeline.autotests.ao.PipelineGraphTabAO;
 import com.epam.pipeline.autotests.ao.PipelineHistoryTabAO;
+import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
 import com.epam.pipeline.autotests.ao.StorageRulesTabAO;
 import com.epam.pipeline.autotests.ao.StorageRulesTabAO.RuleAdditionPopupAO;
 import com.epam.pipeline.autotests.ao.Template;
@@ -26,34 +26,32 @@ import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import java.io.File;
-import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import static com.codeborne.selenide.Condition.empty;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.epam.pipeline.autotests.ao.DocumentTabAO.fileWithName;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.LOADING;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_NEW_RULE;
-import static com.epam.pipeline.autotests.ao.Primitive.CANVAS;
-import static com.epam.pipeline.autotests.ao.Primitive.CODE_TAB;
-import static com.epam.pipeline.autotests.ao.Primitive.CONFIGURATION_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
-import static com.epam.pipeline.autotests.ao.Primitive.DOCUMENTS_TAB;
+import static com.epam.pipeline.autotests.ao.Primitive.DOCKER_IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.DOWNLOAD;
-import static com.epam.pipeline.autotests.ao.Primitive.GRAPH_TAB;
-import static com.epam.pipeline.autotests.ao.Primitive.HISTORY_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.RENAME;
-import static com.epam.pipeline.autotests.ao.Primitive.STORAGE_RULES_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.UPLOAD;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -70,6 +68,9 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
     private final String draftPipelineName = "shellpipe-draft-test" + Utils.randomSuffix();
     private final String pipelineFolder = FOLDER_PREFIX + pipelineName;
     private final String pipelineFile = FILE_PREFIX + pipelineName;
+    // The GUI shows dates of the API server's clock, which may differ a little from this machine's clock
+    private static final Duration CLOCK_TOLERANCE = Duration.ofMinutes(2);
+    private LocalDateTime pipelineCreatedAt;
 
     @AfterClass(alwaysRun = true)
     public void deleteDownloaded() {
@@ -82,23 +83,19 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
                 .removePipelineIfExists(draftPipelineName);
     }
 
-    @Test(priority = 0)
-    @TestCase(value = {"EPMCMBIBPC-343"})
-    public void luigiPipelineTabsShouldBeValid() {
-        navigationMenu()
-                .library()
-                .createPipeline(Template.LUIGI, pipelineName)
+    @BeforeClass
+    public void createPipeline() {
+        pipelineCreatedAt = LocalDateTime.now();
+        library().createPipeline(Template.SHELL, pipelineName);
+    }
+
+    @Test
+    @TestCase(value = {"EPMCMBIBPC-339"})
+    public void shouldCreateFolderInPipeline() {
+        library()
                 .clickOnPipeline(pipelineName)
                 .firstVersion()
                 .codeTab()
-                .ensureVisible(CODE_TAB, CONFIGURATION_TAB, GRAPH_TAB, DOCUMENTS_TAB, HISTORY_TAB, STORAGE_RULES_TAB)
-                .tabShouldBeActive(CODE_TAB);
-    }
-
-    @Test(dependsOnMethods = {"luigiPipelineTabsShouldBeValid"})
-    @TestCase(value = {"EPMCMBIBPC-339"})
-    public void shouldCreateFolderInPipeline() {
-        codeTab()
                 .createFolder(pipelineFolder)
                 .shouldContainElement(pipelineFolder);
     }
@@ -113,20 +110,13 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
     }
 
     @Test(dependsOnMethods = {"shouldCreateFileInSubfolder"})
-    @TestCase(value = {"EPMCMBIBPC-344"})
-    public void luigiGraphTabShouldBeValid() {
-        codeTab()
-                .graphTab()
-                .ensure(CANVAS, exist);
-    }
-
-    @Test(dependsOnMethods = {"luigiGraphTabShouldBeValid"})
     @TestCase(value = {"EPMCMBIBPC-345"})
     public void documentTabShouldBeValid() {
-        graphTab()
+        codeTab()
                 .documentsTab()
                 .ensure(UPLOAD, visible, enabled)
-                .ensure(byText("README.md"), visible)
+                .ensure(fileWithName("README.md"), visible)
+                .documentsCountShouldBe(1)
                 .ensureVisible(DELETE, RENAME, DOWNLOAD);
     }
 
@@ -135,20 +125,22 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
     public void documentShouldBeRenamed() {
         documentsTab()
                 .renameFile(RENAMED_FILE_NAME)
-                .ensure(byText(RENAMED_FILE_NAME), visible);
+                .ensure(fileWithName(RENAMED_FILE_NAME), visible)
+                .ensure(fileWithName("README.md"), not(exist))
+                .documentsCountShouldBe(1);
     }
 
     @Test(dependsOnMethods = {"documentShouldBeRenamed"})
     @TestCase(value = {"EPMCMBIBPC-347"})
-    public void shouldDownloadCorrectDocumentFile() throws IOException {
+    public void shouldDownloadCorrectDocumentFile() {
+        final String documentSource = documentsTab()
+                .documentSource(RENAMED_FILE_NAME);
         documentsTab()
                 .download()
                 .sleep(6, SECONDS);
 
-        List<String> readMeLines = Files.readAllLines(Paths.get(localFilePath));
-
-        assertEquals(readMeLines.size(), 11);
-        assertEquals(readMeLines.get(0), "# Job definition");
+        assertEquals(Utils.readFile(localFilePath).replaceAll("\\n+$", ""),
+                documentSource.replaceAll("\\n+$", ""));
     }
 
     @Test(dependsOnMethods = {"shouldDownloadCorrectDocumentFile"})
@@ -156,7 +148,8 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
     public void shouldDeleteDocumentFile() {
         documentsTab()
                 .delete()
-                .shouldContainNoDocuments();
+                .shouldContainNoDocuments()
+                .ensure(UPLOAD, visible);
     }
 
     @Test(dependsOnMethods = {"shouldDeleteDocumentFile"})
@@ -180,9 +173,11 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
     @Test(dependsOnMethods = {"shouldHaveEmptyHistory"})
     @TestCase(value = {"EPMCMBIBPC-350"})
     public void shouldHaveHistoryEntry() {
-        historyTab()
+        final PipelineRunFormAO runForm = historyTab()
                 .runPipeline()
-                .launch(this);
+                .setPriceType(ON_DEMAND);
+        final String dockerImage = runForm.get(DOCKER_IMAGE).shouldBe(visible).shouldNotBe(empty).getValue();
+        runForm.launch(this);
 
         navigateToPipelineHistory()
                 .recordsCountShouldBe(1)
@@ -197,30 +192,41 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
 
         navigateToPipelineHistory()
                 .shouldContainStoppedRun(pipelineName, getLastRunId(), "draft-.{8}", 200,
-                        getUserNameByAccountLogin(C.LOGIN));
+                        getUserNameByAccountLogin(C.LOGIN))
+                .shouldContainCompletedRunDetails(dockerImage.substring(dockerImage.lastIndexOf('/') + 1));
     }
 
     @Test(dependsOnMethods = {"shouldHaveHistoryEntry"})
     @TestCase(value = {"EPMCMBIBPC-353"})
     public void storageRulesTabShouldBeValid() {
-        historyTab()
+        final LocalDateTime createdDate = historyTab()
                 .storageRulesTab()
                 .ensure(ADD_NEW_RULE, visible, enabled)
                 .shouldContainRulesTable()
                 .rulesCountShouldBe(1)
-                .shouldContainRule(0, "*");
+                .shouldContainRule(0, "*")
+                .ruleCreatedDate("*");
+
+        assertCreatedBetween(createdDate, pipelineCreatedAt);
     }
 
     @Test(dependsOnMethods = {"storageRulesTabShouldBeValid"})
     @TestCase(value = {"EPMCMBIBPC-354"})
     public void shouldCreateStorageRule() {
+        final LocalDateTime ruleCreationStart = LocalDateTime.now();
         List<String> rules =
                 storageRulesTab()
-                        .addNewStorageRule(FILE_MASK_STRING)
+                        .openAddNewStorageDialog()
+                        .pipelineFieldShouldBeDisabled(pipelineName)
+                        .setFileMask(FILE_MASK_STRING)
+                        .enableMoveToSTS()
+                        .ok()
                         .sleep(2, SECONDS)
+                        .rulesCountShouldBe(2)
                         .rules();
 
         assertTrue(rules.contains(FILE_MASK_STRING));
+        assertCreatedBetween(storageRulesTab().ruleCreatedDate(FILE_MASK_STRING), ruleCreationStart);
     }
 
     @Test(dependsOnMethods = {"shouldCreateStorageRule"})
@@ -229,6 +235,7 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
         storageRulesTab()
                 .addNewStorageRule("*")
                 .messageShouldAppear("Your operation has been aborted due to SQL error.");
+        Utils.getPopupByTitle("Create new rule").shouldBe(visible);
 
         addRulePopupAO()
                 .cancel();
@@ -263,7 +270,11 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
                 .clickOnPipeline(draftPipelineName)
                 .releaseFirstVersion(releaseVersion);
 
-        runPipeline(draftPipelineName, this);
+        library()
+                .clickOnPipeline(draftPipelineName)
+                .sleep(2, SECONDS)
+                .runFirstVersion()
+                .launch(this);
         runsMenu()
                 .stopRun(getLastRunId());
 
@@ -271,11 +282,11 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
                 .clickOnPipeline(draftPipelineName)
                 .firstVersion()
                 .codeTab()
-                .clickOnFile(Utils.getFileNameFromPipelineName(draftPipelineName, "sh"))
-                .clickEdit()
+                .clearAndFillPipelineFile(
+                        Utils.getFileNameFromPipelineName(draftPipelineName, "sh"),
+                        " this is a new text to set new version"
+                )
                 .sleep(1, SECONDS)
-                .fillWith(" this is a new text to set new version")
-                .saveAndCommitWithMessage("new version commit")
                 .documentsTab()
                 .getVersion();
 
@@ -287,15 +298,15 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
                 .clickOnPipeline(draftPipelineName)
                 .firstVersion()
                 .historyTab()
-                .shouldContainRunWithVersion("draft-" + thirdVersion)
+                .runVersionsShouldBe("draft-" + thirdVersion)
                 .viewAllVersions()
-                .shouldContainRunWithVersion("draft-" + firstVersion)
-                .shouldContainRunWithVersion(releaseVersion);
+                .runVersionsShouldBe("draft-" + firstVersion, releaseVersion, "draft-" + thirdVersion);
     }
 
     private void runPipeline(String pipelineName, PipelineDetailsTest pipelineDetailsTest) {
         library()
                 .clickOnPipeline(pipelineName)
+                .sleep(2, SECONDS)
                 .firstVersion()
                 .runPipeline()
                 .launch(pipelineDetailsTest);
@@ -313,10 +324,6 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
         return new PipelineCodeTabAO(pipelineName);
     }
 
-    private PipelineGraphTabAO graphTab() {
-        return new PipelineGraphTabAO(pipelineName);
-    }
-
     private DocumentTabAO documentsTab() {
         return new DocumentTabAO(pipelineName);
     }
@@ -331,5 +338,12 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
 
     private RuleAdditionPopupAO addRulePopupAO() {
         return new RuleAdditionPopupAO(new StorageRulesTabAO(pipelineName));
+    }
+
+    private void assertCreatedBetween(final LocalDateTime createdDate, final LocalDateTime from) {
+        final LocalDateTime now = LocalDateTime.now();
+        assertTrue(!createdDate.isBefore(from.minus(CLOCK_TOLERANCE))
+                        && !createdDate.isAfter(now.plus(CLOCK_TOLERANCE)),
+                String.format("Created date %s is not between %s and %s", createdDate, from, now));
     }
 }

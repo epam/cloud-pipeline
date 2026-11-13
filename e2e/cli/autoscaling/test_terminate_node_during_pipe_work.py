@@ -17,7 +17,7 @@ import logging
 import pytest
 
 from common_utils.entity_managers import PipelineManager
-from utils.pipeline_utils import *
+from .utils.pipeline_utils import *
 
 MAX_REP_COUNT = 100
 
@@ -51,9 +51,9 @@ class TestTerminateNodeDuringPipelineWork(object):
             wait_for_node_termination(cls.node_name, MAX_REP_COUNT)
             logging.info("Node {} was terminated.".format(cls.node_name))
         except BaseException as e:
-            logging.error(e.message)
+            logging.error(str(e))
             cls.teardown_class()
-            raise RuntimeError(e.message)
+            raise RuntimeError(str(e))
 
     @classmethod
     def teardown_class(cls):
@@ -69,7 +69,7 @@ class TestTerminateNodeDuringPipelineWork(object):
         except AssertionError as e:
             logging.info("Case {} failed!".format(self.test_case))
             self.state.failure = True
-            pytest.fail("Test case {} failed.\n{}".format(self.test_case, e.message))
+            pytest.fail("Test case {} failed.\n{}".format(self.test_case, str(e)))
 
     def test_cluster_should_not_have_node_without_label(self):
         try:
@@ -77,4 +77,4 @@ class TestTerminateNodeDuringPipelineWork(object):
         except AssertionError as e:
             logging.info("Case {} failed!".format(self.test_case))
             self.state.failure = True
-            pytest.fail("Test case {} failed.\n{}".format(self.test_case, e.message))
+            pytest.fail("Test case {} failed.\n{}".format(self.test_case, str(e)))

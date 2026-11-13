@@ -15,26 +15,51 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.RunParameterAO;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.StorageHandling;
+import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.not;
+import static com.codeborne.selenide.Condition.value;
+import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.ParameterFieldAO.parameterByName;
+import static com.epam.pipeline.autotests.ao.Primitive.PARAMETER_VALUE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class LaunchParameterRemoveParameterTest extends AbstractAutoRemovingPipelineRunningTest
         implements StorageHandling {
 
     private final static String shellTemplate = "/fileKeeper.sh";
+    private final static String storage = "storage-" + Utils.randomSuffix();
+    private final static String storageFolder = "folder-" + Utils.randomSuffix();
+    private final static String parameterName = "new_parameter";
+
+    @BeforeClass
+    public void initStorage() {
+        createStorage(storage)
+                .createFolder(storageFolder)
+                .ensure(byText(storageFolder), visible);
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void deleteStorage() {
+        open(C.ROOT_ADDRESS);
+        removeStorage(storage);
+    }
 
     @Test
     @TestCase({"EPMCMBIBPC-1007"})
     public void validateParametersRemoval() {
-        navigationMenu()
+        final RunParameterAO parameter = navigationMenu()
                 .createPipeline(Template.SHELL, getPipelineName())
                 .firstVersion()
                 .codeTab()
@@ -45,8 +70,16 @@ public class LaunchParameterRemoveParameterTest extends AbstractAutoRemovingPipe
                 .sleep(2, SECONDS)
                 .runPipeline()
                 .clickAddOutputParameter()
-                .setName("new_parameter")
+                .setName(parameterName)
+                .openPathAdditionDialog()
+                .chooseStorage(storage)
+                .addToSelection(storageFolder)
+                .ok();
+        parameter
+                .ensure(parameterByName(parameterName), exist)
+                .ensure(PARAMETER_VALUE, value(storageFolder));
+        parameter
                 .remove()
-                .ensure(parameterByName("new_parameter"), not(exist));
+                .ensure(parameterByName(parameterName), not(exist));
     }
 }

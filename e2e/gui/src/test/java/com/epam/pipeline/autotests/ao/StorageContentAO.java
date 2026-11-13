@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.ElementsCollection;
+import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.Utils;
@@ -23,6 +24,7 @@ import com.epam.pipeline.autotests.utils.listener.Cloud;
 import com.google.common.collect.Comparators;
 import java.io.File;
 import java.net.URI;
+import java.time.Duration;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -33,6 +35,7 @@ import java.util.stream.Stream;
 import org.openqa.selenium.By;
 import org.testng.Assert;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byCssSelector;
@@ -49,14 +52,19 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.deleteButton;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.editButton;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.modalWithTitle;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 public class StorageContentAO implements AccessObject<StorageContentAO> {
+
+    private static final Duration UPLOAD_FINISH_TIMEOUT = Duration.ofSeconds(60);
+    private static final Duration LIST_LOADED_FOR = Duration.ofSeconds(2);
 
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
             entry(REFRESH, context().find(byId("refresh-storage-button"))),
@@ -67,25 +75,33 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
             entry(CREATE_FOLDER, context().find(byClassName("create-folder-button"))),
             entry(CREATE_FILE, context().find(byClassName("create-file-button"))),
             entry(ADDRESS_BAR, context().find(byClassName("ant-breadcrumb"))),
-            entry(CLEAR_SELECTION, context().find(byId("clear-selection-button"))),
-            entry(REMOVE_ALL, context().find(byId("remove-all-selected-button"))),
+            entry(CLEAR_SELECTION, context().find(selectionAction("clear"))),
+            entry(REMOVE_ALL, context().find(selectionAction("remove-all"))),
             entry(DESCRIPTION, context().find(byCssSelector(".browser__data-storage-info-container div:first-child"))),
             entry(NAVIGATION, context().find(byClassName("data-storage-navigation__path-components-container"))),
             entry(STORAGEPATH, context().find(byClassName("data-storage-navigation__breadcrumb-item"))),
             entry(HEADER, context().find(byClassName("browser__item-header"))),
-            entry(SHOW_METADATA, context().find(byId("show-metadata-button"))),
+            entry(SHOW_METADATA, context().find(byClassName("presentation-action-attributes"))),
             entry(PREV_PAGE, context().find(byId("prev-page-button"))),
-            entry(NEXT_PAGE, context().find(byId("next-page-button")))
+            entry(NEXT_PAGE, context().find(byId("next-page-button"))),
+            entry(GENERATE_URL, context().find(selectionAction("generate-url"))),
+            entry(SELECTION_ACTIONS, context().find(byId("selection-actions"))),
+            entry(ACTIONS, context().find(byId("presentation-actions")))
     );
 
-    public static By browser() {
-        return className("browser__children-container");
+    /**
+     * An action of the selected items. The storage page shows a single action as a button with the id
+     * {@code selection-action-<key>}, and several in the "Selection" dropdown ({@code #selection-actions}), whose
+     * menu items have the class {@code selection-action-<key>} (rc-menu items drop their id).
+     */
+    private static By selectionAction(final String key) {
+        return byCssSelector(format("#selection-action-%1$s, .selection-action-%1$s", key));
     }
 
     public static By browserItem(final String name) {
         final String browserItemClass = "ant-table-row";
         final String itemNameClass = "browser__tree-item-name";
-        return byXpath(String.format(
+        return byXpath(format(
             ".//tr[contains(@class, '%s') and ./td[@class = '%s' and . = '%s']]",
             browserItemClass, itemNameClass, name
         ));
@@ -98,7 +114,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
      * @return Qualifier of folder with exact {@code name} in a thee.
      */
     public static By folderWithName(final String name) {
-        return byXpath(String.format(".//*[contains(@class, 'browser__folder') and contains(., '%s')]", name));
+        return byXpath(format(".//*[contains(@class, 'browser__folder') and contains(., '%s')]", name));
     }
 
     @Override
@@ -158,6 +174,12 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         return this;
     }
 
+    public StorageContentAO rmFile(String name) {
+        elementRow(name).find(byClassName("ant-btn-danger")).shouldBe(visible).click();
+        new ConfirmationPopupAO<>(this).ensureTitleIs("Remove file").ok();
+        return this;
+    }
+
     public StorageContentAO createFolder(String folderName) {
         sleep(1, SECONDS);
         resetMouse().hover(CREATE).click(CREATE_FOLDER);
@@ -179,11 +201,28 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         return this;
     }
 
+    public StorageContentAO createFileWithContent(String fileName, String content) {
+        sleep(1, SECONDS);
+        resetMouse().hover(CREATE).click(CREATE_FILE);
+        $$(byId("name")).findBy(visible).setValue(fileName);
+        $$(byId("content")).findBy(visible).setValue(content);
+        $(button("OK")).shouldBe(visible).click();
+        return this;
+    }
+
     public StorageContentAO createAndEditFile(String fileName, String fileText) {
         return createFile(fileName)
+                .sleep(1, SECONDS)
                 .fileMetadata(fileName)
                 .fullScreen()
+                .sleep(3, SECONDS)
                 .editFileWithText(fileText);
+    }
+
+    public StorageContentAO editFile(String fileName, String fileText) {
+        return fileMetadata(fileName)
+               .fullScreen()
+               .editFileWithText(fileText);
     }
 
     public StorageContentAO validateElementIsPresent(String elementName) {
@@ -196,7 +235,12 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         return this;
     }
 
-    private SelenideElement elementRow(String elementName) {
+    public StorageContentAO validateElementByPatternIsPresent(String elementNamePattern) {
+        $$(className("ant-table-row")).findBy(matchText(elementNamePattern)).shouldBe(visible);
+        return this;
+    }
+
+    public SelenideElement elementRow(String elementName) {
         return $$(className("ant-table-row")).findBy(textCaseSensitive(elementName));
     }
 
@@ -215,8 +259,13 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         if (filesAndFolders.size() == 1) {
             Assert.assertEquals(filesAndFolders.get(0), "..");
         } else if (!filesAndFolders.isEmpty()) {
-            Assert.fail("Folder is not empty.");
+            fail("Folder is not empty.");
         }
+        return this;
+    }
+
+    public StorageContentAO validateFilesAndFoldersAre(final List<String> expected) {
+        assertEquals(filesAndFolders(), expected, "The list of files and folders has changed.");
         return this;
     }
 
@@ -224,10 +273,11 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         sleep(5, SECONDS);
         SelenideElement inputField = getOpenedNavigationBarInput();
 
-        String parentPath = String.format("%s/", inputField.should(exist).getValue());
+        String parentPath = format("%s/", inputField.should(exist).getValue());
         String addressPath = URI.create(parentPath).resolve(destination).toString();
-
-        inputField.setValue(addressPath).pressEnter();
+    
+        setValue(inputField, addressPath);
+        inputField.pressEnter();
         return this;
     }
 
@@ -239,7 +289,10 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     }
 
     private SelenideElement getOpenedNavigationBarInput() {
-        return click(STORAGEPATH).get(NAVIGATION).find(byClassName("ant-input"));
+        get(SELECT_ALL).shouldBe(exist);
+        get(STORAGEPATH).click();
+        sleep(3, SECONDS);
+        return get(NAVIGATION).find(byXpath(".//input[@class='ant-input']"));
     }
 
     private String replaceBucket(String path, String newBucketName) {
@@ -272,12 +325,18 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     }
 
     public StorageContentAO validateStsDuration(String duration) {
-        $(byText(duration + " days")).shouldBe(visible);
+        $(byClassName("browser__data-storage-info-container"))
+                .findAll(byClassName("ant-row"))
+                .findBy(text("Short-Term Storage duration:"))
+                .shouldHave(exactText(format("Short-Term Storage duration: %s days", duration)));
         return this;
     }
 
     public StorageContentAO validateLtsDuration(String duration) {
-        $(byText(duration + " days")).shouldBe(visible);
+        $(byClassName("browser__data-storage-info-container"))
+                .findAll(byClassName("ant-row"))
+                .findBy(text("Long-Term Storage duration:"))
+                .shouldHave(exactText(format("Long-Term Storage duration: %s days", duration)));
         return this;
     }
 
@@ -324,11 +383,47 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     }
 
     public StorageContentAO selectPage() {
-        return click(SELECT_ALL);
+        click(SELECT_ALL);
+        $(byCssSelector("#selection-actions, #selection-action-clear")).shouldBe(visible);
+        return this;
     }
 
     public StorageContentAO clearSelection() {
-        return click(CLEAR_SELECTION);
+        return openSelectionActions().click(CLEAR_SELECTION);
+    }
+
+    /**
+     * Opens the "Selection" dropdown of the selected items, if they have several actions. A single action is a
+     * button on the page, and nothing is opened then.
+     */
+    public StorageContentAO openSelectionActions() {
+        final SelenideElement menu = $(byClassName("selection-actions-menu"));
+        if (get(SELECTION_ACTIONS).isDisplayed() && !menu.isDisplayed()) {
+            click(SELECTION_ACTIONS);
+            menu.shouldBe(visible);
+        }
+        return this;
+    }
+
+    /**
+     * Opens the presentation dropdown ({@code #presentation-actions}) of the page: "Show attributes", "Show file
+     * versions" etc. are its items, and a ticked one has a check icon.
+     */
+    private SelenideElement openPresentationAction(final String key) {
+        final SelenideElement menu = $(byClassName("presentation-actions-menu"));
+        if (!menu.isDisplayed()) {
+            click(ACTIONS);
+            menu.shouldBe(visible);
+        }
+        return menu.find(byClassName("presentation-action-" + key)).shouldBe(visible);
+    }
+
+    private StorageContentAO closePresentationActions() {
+        if ($(byClassName("presentation-actions-menu")).isDisplayed()) {
+            click(ACTIONS);
+            $(byClassName("presentation-actions-menu")).shouldBe(hidden);
+        }
+        return this;
     }
 
     public StorageContentAO validateNoElementsAreSelected() {
@@ -380,15 +475,58 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         return this;
     }
 
+    public StorageContentAO validateIsUploading() {
+        $(withText("Uploading files...")).should(disappear);
+        return this;
+    }
+
+    /**
+     * Uploads the file and checks the "Uploading files..." pop-up: it shows a progress bar and the file name,
+     * then closes. The pop-up closes 2 seconds after the upload ends, so it is checked right after the upload starts.
+     */
+    public StorageContentAO uploadFileAndValidateUploadingPopup(final File file) {
+        uploadFileWithoutValidation(file);
+        final SelenideElement popup = $$(byClassName("ant-modal-content"))
+                .findBy(text("Uploading files...")).shouldBe(visible);
+        popup.find(byClassName("ant-progress")).shouldBe(visible);
+        popup.shouldHave(text(file.getName()));
+        popup.should(disappear);
+        return this;
+    }
+
     /**
      * An unstable version of {@link #uploadFile(File)} without validating file appearance.
      * Could be used in pagination tests (when elements count is greater than page can contain).
      */
     public StorageContentAO uploadFileWithoutValidation(File file) {
         // in order to avoid endless file uploading
-        sleep(5, SECONDS);
+        sleep(25, SECONDS);
         ensure(UPLOAD, visible);
         $(byClassName("ant-upload")).find(tagName("input")).should(exist).uploadFile(file);
+        return this;
+    }
+
+    /**
+     * Waits until the page is done with the last upload: the "Uploading files..." pop-up has closed and the list
+     * it reloads has loaded. The pop-up closes itself 2 seconds after the upload ends and then reloads the list
+     * (UploadButton.hideUploadInfo). While the list loads, the table and its toolbar ("Select page" too) are blurred
+     * under the loading spinner and do not get clicks, so a click in that transition can be lost. The reload
+     * starts a moment after the pop-up has gone, so the list has to stay loaded for {@link #LIST_LOADED_FOR} in a row.
+     */
+    public StorageContentAO waitForUploadToFinish() {
+        $$(byClassName("ant-modal-content")).findBy(text("Uploading files..."))
+                .should(disappear, UPLOAD_FINISH_TIMEOUT);
+        final long deadline = System.currentTimeMillis() + UPLOAD_FINISH_TIMEOUT.toMillis();
+        long loadedSince = System.currentTimeMillis();
+        while (System.currentTimeMillis() - loadedSince < LIST_LOADED_FOR.toMillis()) {
+            if (!$$(byClassName("ant-spin-blur")).isEmpty()) {
+                loadedSince = System.currentTimeMillis();
+            }
+            if (System.currentTimeMillis() > deadline) {
+                fail("The storage list is still loading " + UPLOAD_FINISH_TIMEOUT.getSeconds() + " s after the upload");
+            }
+            Selenide.sleep(100);
+        }
         return this;
     }
 
@@ -402,8 +540,18 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         return this;
     }
 
+    /**
+     * Shows the attributes panel: the "Show attributes" item of the presentation dropdown, unless it is ticked
+     * already. The page renders the dropdown once the storage has loaded.
+     */
     public MetadataSectionAO showMetadata() {
-        click(SHOW_METADATA);
+        get(ACTIONS).shouldBe(visible);
+        final SelenideElement attributes = openPresentationAction("attributes");
+        if (attributes.find(byClassName("anticon-check")).exists()) {
+            closePresentationActions();
+        } else {
+            attributes.click();
+        }
         return new MetadataSectionAO(this);
     }
 
@@ -419,20 +567,23 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         return folders().stream().map(this::selectFolder);
     }
 
+    /**
+     * Ticks or unticks the "Show file versions" item of the presentation dropdown (shown for a versioned storage
+     * only).
+     */
     public StorageContentAO showFilesVersions(final boolean requiredState) {
         sleep(1, SECONDS);
-        final SelenideElement inputLabel =
-                $(byText("Show files versions")).closest(".ant-checkbox-wrapper");
-
-        if (inputLabel.find("input").isSelected() != requiredState) {
-            inputLabel.shouldBe(visible).click();
+        final SelenideElement versions = openPresentationAction("version");
+        if (versions.find(byClassName("anticon-check")).exists() != requiredState) {
+            versions.click();
+            return this;
         }
-        return this;
+        return closePresentationActions();
     }
 
     public StorageContentAO assertShowFilesVersionsIsChecked() {
-        $(byClassName("ant-checkbox-checked")).shouldBe(visible);
-        return this;
+        openPresentationAction("version").find(byClassName("anticon-check")).shouldBe(visible);
+        return closePresentationActions();
     }
 
     public StorageContentAO assertFilesHaveVersions() {
@@ -441,23 +592,43 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     }
 
     public StorageContentAO elementsShouldBeSelected(String... elementsNames) {
-        filesAndFolderElements().stream()
-                .filter(element ->
-                        Arrays.stream(elementsNames)
-                                .anyMatch(name -> element.has(text(name)))
-                )
-                .map(toCheckBox())
-                .forEach(checkbox -> checkbox.shouldBe(selected));
+        Arrays.stream(elementsNames)
+                .forEach(name -> elementRow(name).shouldBe(visible)
+                        .find(className("ant-checkbox-input")).shouldBe(selected));
         return this;
     }
 
     public StorageContentAO shouldContainNumberOfElements(int number) {
-        filesAndFolderElements().shouldHaveSize(number);
+        filesAndFolderElements().shouldHave(size(number));
         return this;
+    }
+
+    public String getStoragePath() {
+        return get(STORAGEPATH).text();
     }
 
     public StorageContentAO removeAllSelectedElements() {
         return selectElementsUsingCheckboxes().removeAllSelected();
+    }
+
+    public StorageContentAO markCheckboxByName(String name) {
+        SelenideElement checkBox = context().shouldBe(visible)
+                .find(byText(format("%s", name)))
+                .find(byXpath("preceding-sibling::*[contains(@class, 'browser__checkbox-cell')]"));
+        checkBox.shouldBe(visible).click();
+        return this;
+    }
+
+    public String findFileSizeByPattern(String filename) {
+        return Optional.ofNullable(filename)
+                .map(fileName -> $(byClassName("ant-table-body"))
+                        .findAll(byClassName("browser__file"))
+                        .findBy(matchText(filename))
+                        .find(byCssSelector("td:nth-child(4)"))
+                        .shouldBe(visible)
+                        .getText()
+                )
+                .orElseThrow(() -> new NoSuchElementException(format("%s file was not found.", filename)));
     }
 
     public class FileAO extends ElementAO<FileAO> {
@@ -620,6 +791,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         }
 
         public StorageContentAO removeAllSelected() {
+            StorageContentAO.this.openSelectionActions().ensureVisible(CLEAR_SELECTION);
             StorageContentAO.this.click(REMOVE_ALL);
 
             $$(byClassName("ant-modal-content"))
@@ -633,7 +805,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         }
 
         public SelectedElementsAO clickOnRemoveAllSelectedButton() {
-            StorageContentAO.this.click(REMOVE_ALL);
+            StorageContentAO.this.openSelectionActions().click(REMOVE_ALL);
             return this;
         }
 
@@ -712,7 +884,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
                 entry(SAVE, $(byId("edit-storage-dialog-save-button"))),
                 entry(DELETE, $(byId("edit-storage-dialog-delete-button"))),
                 entry(CANCEL, $(byId("edit-storage-dialog-cancel-button"))),
-                entry(PERMISSIONS, context().find(byText("Permissions")))
+                entry(PERMISSIONS, $(byText("Permissions")))
         );
 
         public EditStoragePopUpAO() {
@@ -744,6 +916,13 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
                     .ensure(SAVE, visible)
                     .ensure(DELETE, visible)
                     .ensure(CANCEL, visible);
+        }
+
+        public EditStoragePopUpAO editForNfsMount() {
+            if (!filesAndFolderElements().isEmpty()) {
+                $(byClassName("edit-storage-button")).shouldBe(enabled).click();
+            }
+            return this;
         }
 
         @Override

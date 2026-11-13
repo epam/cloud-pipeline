@@ -23,6 +23,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import static com.codeborne.selenide.Selenide.open;
+import static java.lang.String.format;
 
 public class SshShellTest extends AbstractSinglePipelineRunningTest implements Tools {
     private final String tool = C.TESTING_TOOL_NAME;
@@ -49,25 +50,27 @@ public class SshShellTest extends AbstractSinglePipelineRunningTest implements T
     @Test(dependsOnMethods = {"sshLinkIsAvailable"})
     @TestCase({"EPMCMBIBPC-584"})
     public void checkSshLink() {
-        ShellAO.open(getSshLink())
+        navigationMenu()
+                .runs()
+                .activeRuns()
+                .showLog(getRunId())
+                .waitForSshLink()
+                .clickSshLinkInNewTab()
                 .assertPageContains(String.format("pipeline-%s", getRunId()));
     }
 
     @Test(dependsOnMethods = {"checkSshLink"})
     @TestCase({"EPMCMBIBPC-585"})
     public void checkShellFunctionality() {
-        shell().execute("cd /home")
-                .execute("mkdir test")
-                .execute("ls")
-                .assertOutputContains("test");
+        final String command = "cd /home && mkdir test && ls";
+        shell().executeAndWaitForPrompt(command, format("pipeline-%s", getRunId()))
+                .assertOutputOfLastCommandContains(command, "test")
+                // the error of mkdir also names the directory, so it must not be the row that holds "test"
+                .assertOutputOfLastCommandDoesNotContain(command, "mkdir:");
     }
 
     private ShellAO shell() {
         return new ShellAO();
-    }
-
-    private String getSshLink() {
-        return sshLink;
     }
 
     private void saveSshLink() {

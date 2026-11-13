@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..utils.pipeline_utils import *
+from ..autoscaling.utils.pipeline_utils import *
+import json
 import os
 
 MAX_REPETITIONS = 200
@@ -25,7 +26,7 @@ def get_tool_info(tool, max_retry=100):
         command = [
             'curl', '-H', 'Authorization: Bearer {}'.format(token), '-k', '-L', '{}/{}'.format(api.strip("/"), "tool/load?image={}".format(tool))
         ]
-        process = subprocess.Popen(command, stdout=subprocess.PIPE)
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, universal_newlines=True)
         return process.wait(), ''.join(process.stdout.readlines())
 
     rep_count = 1
@@ -48,7 +49,7 @@ def update_tool_info(tool, max_retry=100):
             'curl', '-H', "Content-Type: application/json", '-X', 'POST', '-H', 'Authorization: Bearer {}'.format(token),
             '-k', '-L', '{}/{}'.format(api.strip("/"), "tool/update"), '--data', json.dumps(tool)
         ]
-        process = subprocess.Popen(command, stdout=subprocess.PIPE)
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, universal_newlines=True)
         return process.wait(), process.stdout.readlines()
 
     rep_count = 1
@@ -92,7 +93,7 @@ def get_edge_services(max_retry=100):
             'curl', '-H', 'Authorization: Bearer {}'.format(token), '-k', '-L',
             '{}/{}'.format(api.strip("/"), "edge/services")
         ]
-        process = subprocess.Popen(command, stdout=subprocess.PIPE)
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, universal_newlines=True)
         return process.wait(), ''.join(process.stdout.readlines())
 
     rep_count = 1
@@ -140,7 +141,7 @@ def run(image, command="echo {test_case}; sleep infinity", no_machine=False, spa
         logging.info("Used node %s." % node_name)
 
         wait_for_run_initialized(run_id, MAX_REPETITIONS)
-        wait_for_service_urls(run_id, MAX_REPETITIONS / 4)
+        wait_for_service_urls(run_id, MAX_REPETITIONS // 4)
         logging.info("Pipeline %s has initialized successfully." % run_id)
     except RuntimeError as e:
         stop_pipe_with_retry(run_id)
@@ -172,7 +173,7 @@ def follow_service_url(url, max_rep_count, check=lambda x: "HTTP/1.1 200" in x):
 
 def curl_service_url(url, token, check):
     command = ['curl', '-H', 'Authorization: Bearer {}'.format(token), '-k', '-L', '-s', '-I', url]
-    process = subprocess.Popen(command, stdout=subprocess.PIPE)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, universal_newlines=True)
     process.wait()
     result = ''.join(process.stdout.readlines())
     return check(result)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import java.util.stream.Stream;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selenide.$;
-import static com.codeborne.selenide.Selenide.refresh;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -57,7 +57,17 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
     @AfterClass(alwaysRun = true)
     public void removeStorages() {
         reloadPageAndWait();
-        Utils.removeStorages(this, deletableStorage, storage, mountPointStorage, NfsMountNameSpaces);
+        Stream.of(deletableStorage, storage, NfsMountNameSpaces)
+                .forEach(s -> navigationMenu()
+                        .library()
+                        .selectStorage(s)
+                        .clickEditStorageButton()
+                        .editForNfsMount()
+                        .clickDeleteStorageButton()
+                        .clickDelete());
+        navigationMenu()
+                .library()
+                .removeStorageIfExists(mountPointStorage);
     }
 
     @Test(priority = 1)
@@ -82,6 +92,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
         navigateToLibrary()
                 .selectStorage(storage)
                 .clickEditStorageButton()
+                .editForNfsMount()
                 .validateEditFormElementsNfsMount()
                 .clickCancel();
     }
@@ -92,6 +103,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
         navigateToLibrary()
                 .selectStorage(storage)
                 .clickEditStorageButton()
+                .editForNfsMount()
                 .setAlias(tempAlias)
                 .clickSaveButton()
                 .validateStorage(tempAlias);
@@ -99,6 +111,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
         navigateToLibrary()
                 .selectStorage(tempAlias)
                 .clickEditStorageButton()
+                .editForNfsMount()
                 .setAlias(storage)
                 .clickSaveButton()
                 .validateStorage(storage);
@@ -203,7 +216,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
     @Test(priority = 11,dependsOnMethods = {"createNfsMountAndValidate"})
     @TestCase(value = {"EPMCMBIBPC-2594"})
     public void downloadFileAndValidateNfsMount() {
-        file = Utils.createTempFileWithNameAndSize(file.getName());
+        file = Utils.createFileAndFillWithString(file.getName(), "123", 20);
 
         final File destinationFile = Paths.get(C.DOWNLOAD_FOLDER).resolve(file.getName()).toFile();
 
@@ -257,8 +270,11 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
                 .uploadFile(newFile2)
                 .selectPage()
                 .validateAllFilesAreSelected()
+                .ensureVisible(SELECTION_ACTIONS)
+                .openSelectionActions()
                 .ensureVisible(REMOVE_ALL, CLEAR_SELECTION)
-                .ensure(SELECT_ALL, not(visible));
+                // the page keeps the Select page button, disabled while the whole page is selected
+                .ensure(SELECT_ALL, disabled);
     }
 
     @Test(priority = 14)
@@ -272,6 +288,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
                 .createFolder(folder)
                 .uploadFile(file)
                 .clickEditStorageButton()
+                .editForNfsMount()
                 .clickDeleteStorageButton()
                 .clickUnregister()
                 .validateStorageIsNotPresent(deletableStorage)
@@ -320,6 +337,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
         navigateToLibrary()
                 .createNfsMountWithDescription("/" + NfsMountNameSpaces, NfsMountNameSpaces,
                         nfsMountDescription)
+                .sleep(2, SECONDS)
                 .selectStorage(NfsMountNameSpaces)
                 .validateHeader(NfsMountNameSpaces)
                 .createFolder(folder)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.LibraryFolderAO;
 import com.epam.pipeline.autotests.ao.PermissionTabAO;
 import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
+import com.epam.pipeline.autotests.ao.StorageContentAO;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.ao.ToolGroup;
 import com.epam.pipeline.autotests.ao.ToolTab;
@@ -27,27 +29,37 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.codeborne.selenide.Condition.*;
+import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
-import static com.codeborne.selenide.Selenide.refresh;
+import static com.codeborne.selenide.Selenide.$$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.ToolDescription.editButtonFor;
 import static com.epam.pipeline.autotests.utils.Privilege.*;
 import static com.epam.pipeline.autotests.utils.PrivilegeValue.*;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
+import com.epam.pipeline.autotests.utils.C;
 
 public class RoleModelTest
         extends AbstractSeveralPipelineRunningTest
         implements Authorization, Tools {
 
     private final String userGroup = "DOMAIN USERS";
-    private final String userRoleGroup = "ROLE_USER";
+    private final String userRoleGroup = C.ROLE_USER;
+    private final String priceType = C.DEFAULT_INSTANCE_PRICE_TYPE;
 
     private final String pipelineName = "role-model-test-pipeline-" + Utils.randomSuffix();
     private final String fileInPipeline = Utils.getFileNameFromPipelineName(pipelineName, "sh");
@@ -58,6 +70,7 @@ public class RoleModelTest
     private final String secondOfTheSeveralPipelines = "second-of-the-several-pipelines-" + Utils.randomSuffix();
 
     private final String bucket = "bucket-" + Utils.randomSuffix();
+    private final String folderInBucket = "folder-in-bucket";
     private final String anotherBucket = "another-bucket-" + Utils.randomSuffix();
     private final String bucketForDataStoragesTests = "role-model-bucket-for-ds-test-" + Utils.randomSuffix();
     private final String presetBucketForDataStoragesTests = "role-model-preset-bucket-for-ds-test-" + Utils.randomSuffix();
@@ -78,7 +91,7 @@ public class RoleModelTest
                 .library()
                 .createStorage(bucket)
                 .selectStorage(bucket)
-                .createFolder("folder-in-bucket");
+                .createFolder(folderInBucket);
 
         navigationMenu()
                 .library()
@@ -125,6 +138,11 @@ public class RoleModelTest
                     .removePipeline(pipelineName);
 
             Utils.removeStorages(this, bucketForDataStoragesTests, presetBucketForDataStoragesTests);
+            navigationMenu()
+                    .settings()
+                    .switchToUserManagement()
+                    .switchToGroups()
+                    .deleteGroupIfPresent(userGroup);
         });
     }
 
@@ -177,6 +195,7 @@ public class RoleModelTest
         getPipelinePermissionsTab(pipelineName)
                 .addNewUser(user.login)
                 .validateUserHasPermissions(getUserNameByAccountLogin(user.login))
+                .deleteButtonShouldBeShownFor(getUserNameByAccountLogin(user.login))
                 .closeAll();
     }
 
@@ -199,13 +218,18 @@ public class RoleModelTest
     public void giveUserWritePermissionForPipeline() {
         logoutIfNeeded();
         loginAs(admin);
-        givePermissions(user, PipelinePermission.allow(WRITE, pipelineName));
+        // READ is unset before the click, so its Allow checkbox can only be checked by the WRITE click
         getUserPipelinePermissions(user, pipelineName)
+                .validatePrivilegeValue(READ, INHERIT)
+                .set(WRITE, ALLOW)
                 .validatePrivilegeValue(WRITE, ALLOW)
+                .validatePrivilegeValue(READ, ALLOW)
                 .closeAll();
 
         //return permissions back to the starting state
-        givePermissions(user, PipelinePermission.inherit(WRITE, pipelineName));
+        givePermissions(user,
+                PipelinePermission.inherit(WRITE, pipelineName),
+                PipelinePermission.inherit(READ, pipelineName));
     }
 
     @Test(priority = 5)
@@ -217,7 +241,8 @@ public class RoleModelTest
         logout();
         loginAs(user)
                 .library()
-                .validatePipeline(pipelineName);
+                .validateOnlyPipelineInTree(pipelineName)
+                .validatePipelineIsNotPresent(folderWithSeveralPipelines);
     }
 
     @Test(priority = 6)
@@ -225,16 +250,21 @@ public class RoleModelTest
     public void readOnlyUserIsNotAbleToEditPipeline() {
         logoutIfNeeded();
         loginAs(user);
+        // each tab's content is awaited before the absence checks, which would pass on a page still loading
         navigationMenu()
                 .library()
                 .clickOnPipeline(pipelineName)
                 .firstVersion()
+                .tabShouldBeActive(DOCUMENTS_TAB)
+                .ensurePipelineNameIsNotEditable()
+                .ensure(byClassName("pipeline-documents__docs-table"), visible)
+                .ensureNotVisible(DELETE, RENAME, UPLOAD, RUN)
                 .codeTab()
+                .shouldContainFile(fileInPipeline)
                 .ensureNotVisible(RENAME, DELETE, NEW_FILE, UPLOAD, RUN)
-                .documentsTab()
-                .ensureNotVisible(DELETE, RENAME, UPLOAD)
                 .storageRulesTab()
-                .ensureNotVisible(DELETE, ADD_NEW_RULE);
+                .ensure(byClassName("pipeline-storage-rules__table"), visible)
+                .ensureNotVisible(DELETE, ADD_NEW_RULE, RUN);
     }
 
     @Test(priority = 7)
@@ -264,11 +294,20 @@ public class RoleModelTest
         loginAs(user)
                 .library()
                 .clickOnFolder(folderWithSeveralPipelines)
+                .click(SETTINGS)
+                .ensure(PERMISSIONS, visible)
+                .ensure(EDIT_FOLDER, not(visible))
+                .clickPermissionsItem()
+                .ensureInfoTabIsActive()
+                .ensureNameIsNotEditable(folderWithSeveralPipelines)
+                .clickOnPermissionsTab()
+                .ownerShouldBe(admin.login)
+                .closeAll();
+        new LibraryFolderAO(folderWithSeveralPipelines)
                 .assertPipelineIsNotEditable(firstOfTheSeveralPipelines)
-                .assertPipelineIsNotEditable(secondOfTheSeveralPipelines)
-                .hover(SETTINGS)
-                .ensure(EDIT_FOLDER, not(visible));
+                .assertPipelineIsNotEditable(secondOfTheSeveralPipelines);
     }
+
     @Test(priority = 9)
     @TestCase({"EPMCMBIBPC-552"})
     public void checkFolderPermissionsForReadOnlyUserAndCheckInnerDeniedPipelinePermissions() {
@@ -299,6 +338,8 @@ public class RoleModelTest
     public void checkPermissionsForExecutingPipelines() {
         logoutIfNeeded();
         loginAs(admin);
+        // READ is still allowed by the earlier tests of this class; reset it, so the automatic READ allow is checked
+        givePermissions(user, PipelinePermission.inherit(READ, pipelineName));
         givePermissions(user, PipelinePermission.allow(EXECUTE, pipelineName));
         getUserPipelinePermissions(user, pipelineName)
                 .validatePrivilegeValue(READ, ALLOW)
@@ -310,16 +351,19 @@ public class RoleModelTest
                 .clickOnPipeline(pipelineName)
                 .firstVersion()
                 .runPipeline()
+		.setPriceType(ON_DEMAND)
                 .waitUntilLaunchButtonAppear()
                 .launch(this);
 
         navigationMenu()
-                .clusterNodes()
-                .waitForTheNode(pipelineName, getLastRunId());
-        navigationMenu()
                 .runs()
                 .activeRuns()
-                .validatePipelineIsPresent(pipelineName)
+                .validatePipelineIsPresent(pipelineName);
+        navigationMenu()
+                .clusterNodes()
+                .waitForTheNode(pipelineName, getLastRunId());
+        runsMenu()
+                .activeRuns()
                 .stopRun(getLastRunId());
         clusterMenu()
                 .removeNode(getLastRunId());
@@ -345,7 +389,7 @@ public class RoleModelTest
                 .clickOnPipeline(pipelineName)
                 .firstVersion()
                 .historyTab()
-                .rerun()
+                .click(RERUN)
                 .messageShouldAppear("You have no permissions to launch " + pipelineName);
     }
 
@@ -354,6 +398,11 @@ public class RoleModelTest
     public void validatePermissionsForEditPipeline() {
         logoutIfNeeded();
         loginAs(admin);
+        // READ and EXECUTE are still set by the earlier tests of this class;
+        // reset them, so the automatic READ allow is checked
+        givePermissions(user,
+                PipelinePermission.inherit(READ, pipelineName),
+                PipelinePermission.inherit(EXECUTE, pipelineName));
         givePermissions(user,
                 PipelinePermission.allow(WRITE, pipelineName));
         getPipelinePermissionsTab(pipelineName)
@@ -367,9 +416,11 @@ public class RoleModelTest
         getFirstVersionOfPipeline(pipelineName)
                 .clickOnRenameFileButton(fileInPipeline)
                 .typeInField(tempFileName)
-                .ok();
+                .ok()
+                .ensure(byText(tempFileName), visible);
+        refresh();
         // Rename file to the previous name
-        getFirstVersionOfPipeline(pipelineName)
+        new PipelineCodeTabAO(pipelineName)
                 .ensure(byText(tempFileName), visible)
                 .clickOnRenameFileButton(tempFileName)
                 .typeInField(fileInPipeline)
@@ -385,10 +436,11 @@ public class RoleModelTest
         getFirstVersionOfPipeline(pipelineName)
                 .clearAndFillPipelineFile(fileInPipeline, newFileContent);
         refresh();
-        getFirstVersionOfPipeline(pipelineName)
+        final PipelineCodeTabAO.FileEditingPopupAO file = getFirstVersionOfPipeline(pipelineName)
                 .clickOnFile(fileInPipeline)
-                .shouldContainInCode(newFileContent)
-                .close();
+                .shouldContainInCode(newFileContent);
+        assertEquals($$(byClassName("CodeMirror-line")).texts(), Collections.singletonList(newFileContent));
+        file.close();
     }
 
     @Test(priority = 14)
@@ -426,6 +478,7 @@ public class RoleModelTest
                 .shouldContainInCode(newFileContent)
                 .close()
                 .runPipeline()
+                .setPriceType(priceType)
                 .waitUntilLaunchButtonAppear()
                 .launch(this);
 
@@ -466,12 +519,18 @@ public class RoleModelTest
     public void checkBucketEditProhibitionForReadOnlyUser() {
         logoutIfNeeded();
         loginAs(user);
-        navigationMenu()
+        final StorageContentAO storage = navigationMenu()
                 .library()
                 .selectStorage(bucket)
+                .validateElementIsPresent(folderInBucket)
+                .validateElementIsPresent(tempFileName)
                 .validateElementsAreNotEditable()
-                .ensureNotVisible(CREATE_FOLDER, UPLOAD)
-                .ensureVisible(EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH, SHOW_METADATA);
+                .ensureVisible(EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH, ACTIONS)
+                .ensureNotVisible(CREATE, UPLOAD)
+                .click(ACTIONS)
+                .ensureVisible(SHOW_METADATA)
+                .click(ACTIONS);
+        storage.selectFile(tempFileName).ensureVisible(DOWNLOAD);
     }
 
     @Test(priority = 17)
@@ -495,11 +554,17 @@ public class RoleModelTest
                 BucketPermission.allow(WRITE, bucket),
                 BucketPermission.allow(READ, bucket));
         logout();
-        loginAs(user)
+        final StorageContentAO storage = loginAs(user)
                 .library()
                 .selectStorage(bucket)
+                .validateElementIsPresent(folderInBucket)
+                .validateElementIsPresent(tempFileName)
                 .validateElementsAreEditable()
-                .ensureVisible(CREATE, UPLOAD, EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH, SHOW_METADATA);
+                .ensureVisible(CREATE, UPLOAD, EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH, ACTIONS)
+                .click(ACTIONS)
+                .ensureVisible(SHOW_METADATA)
+                .click(ACTIONS);
+        storage.selectFile(tempFileName).ensureVisible(DOWNLOAD);
     }
 
     @Test(priority = 19)
@@ -603,15 +668,13 @@ public class RoleModelTest
     @Test(priority = 24)
     @TestCase({"EPMCMBIBPC-572"})
     public void checkToolsPageByReadOnlyUser() {
+        final Map<String, List<PrivilegeValue>> removedPermissions = new LinkedHashMap<>();
         try {
             logoutIfNeeded();
             loginAs(admin);
             List<String> adminTools = tools().perform(registry, group, ToolGroup::allToolsNames);
-            tools().editRegistry(registry, edition ->
-                    edition.permissions()
-                            .deleteIfPresent(userWithoutCompletedRuns.login)
-                            .deleteIfPresent(userRoleGroup)
-                            .closeAll());
+            removeRegistryPermissions(Arrays.asList(userWithoutCompletedRuns.login, userRoleGroup),
+                    removedPermissions);
             addNewUserToGroupPermissions(userWithoutCompletedRuns, registry, group);
             givePermissions(userWithoutCompletedRuns, GroupPermission.allow(READ, registry, group));
             logout();
@@ -625,35 +688,41 @@ public class RoleModelTest
         } finally {
             logoutIfNeeded();
             loginAs(admin);
-            tools().editRegistry(registry, edition ->
-                    edition.permissions()
-                            .addNewGroup(userRoleGroup)
-                            .selectByName(userRoleGroup)
-                            .showPermissions()
-                            .set(READ, ALLOW)
-                            .set(WRITE, DENY)
-                            .set(EXECUTE, ALLOW)
-                            .closeAll());
+            removedPermissions.remove(userWithoutCompletedRuns.login);
+            restoreRegistryPermissions(removedPermissions);
         }
     }
 
     @Test(priority = 25)
     @TestCase({"EPMCMBIBPC-573"})
     public void checkToolsPageByExecutePermissionUser() {
-        List<String> adminTools = tools().perform(registry, group, ToolGroup::allToolsNames);
-        givePermissions(userWithoutCompletedRuns,
-                GroupPermission.allow(READ, registry, group),
-                GroupPermission.deny(WRITE, registry, group),
-                GroupPermission.allow(EXECUTE, registry, group));
-        logout();
-        loginAs(userWithoutCompletedRuns);
-        List<String> userTools = tools().perform(registry, group, ToolGroup::allToolsNames);
-        tools().ensureOnlyOneRegistryIsAvailable()
-                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-                                .setCommand(defaultCommand)
-                                .setDefaultLaunchOptions()
-                                .ensureLaunchButtonIsVisible();
-        assertToolsListsAreEqual(userTools, adminTools);
+        final Map<String, List<PrivilegeValue>> removedPermissions = new LinkedHashMap<>();
+        try {
+            logoutIfNeeded();
+            loginAs(admin);
+            // registry permissions of the user or of its role would give EXECUTE on the tools of every group
+            removeRegistryPermissions(Arrays.asList(userWithoutCompletedRuns.login, userRoleGroup),
+                    removedPermissions);
+            List<String> adminTools = tools().perform(registry, group, ToolGroup::allToolsNames);
+            givePermissions(userWithoutCompletedRuns,
+                    GroupPermission.allow(READ, registry, group),
+                    GroupPermission.allow(EXECUTE, registry, group));
+            logout();
+            loginAs(userWithoutCompletedRuns);
+            List<String> userTools = tools().perform(registry, group, ToolGroup::allToolsNames);
+            tools().ensureOnlyOneRegistryIsAvailable()
+                    .performWithin(registry, group, tool, tool ->
+                            tool.settings().ensure(RUN, visible, enabled));
+            tools().perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                    .setCommand(defaultCommand)
+                    .setDefaultLaunchOptions()
+                    .ensureLaunchButtonIsVisible();
+            assertToolsListsAreEqual(userTools, adminTools);
+        } finally {
+            logoutIfNeeded();
+            loginAs(admin);
+            restoreRegistryPermissions(removedPermissions);
+        }
     }
 
     @Test(priority = 26)
@@ -672,7 +741,9 @@ public class RoleModelTest
                         tool
                                 .settings()
                                 .setDefaultCommand(command)
-                                .save()
+                                .ensure(SAVE, enabled)
+                                .click(SAVE)
+                                .ensure(SAVE, disabled)
                 );
         tools()
                 .performWithin(registry, group, tool, tool ->
@@ -695,7 +766,9 @@ public class RoleModelTest
                 .typeInField(userGroup)
                 .ok()
                 .validateGroupHasPermissions(userGroup)
-                .validateDeleteButtonIsDisplayedOppositeTo(userGroup);
+                .validateDeleteButtonIsDisplayedOppositeTo(userGroup)
+                .delete(userGroup)
+                .closeAll();
     }
 
     @Test(priority = 28)
@@ -729,6 +802,14 @@ public class RoleModelTest
                 .clickOnPipeline(pipelineName)
                 .assertEditButtonIsDisplayed()
                 .assertRunButtonIsDisplayed();
+        logout();
+        loginAs(admin)
+                .library()
+                .clickOnPipeline(pipelineName)
+                .clickEditButton()
+                .clickOnPermissionsTab()
+                .delete(userGroup)
+                .closeAll();
     }
 
     @Test(priority = 29)
@@ -739,6 +820,7 @@ public class RoleModelTest
         tools()
                 .performWithin(registry, group, tool, tool ->
                         tool.permissions()
+                                .deleteIfPresent(userGroup)
                                 .addNewGroup(userGroup)
                                 .closeAll()
                 );
@@ -758,7 +840,7 @@ public class RoleModelTest
         loginAs(userWithoutCompletedRuns);
         tools()
                 .performWithin(registry, group, tool, tool ->
-                        tool.ensure(RUN, visible)
+                        tool.ensureVisible(RUN)
                                 .ensure(editButtonFor(FULL_DESCRIPTION), visible)
                                 .ensure(editButtonFor(SHORT_DESCRIPTION), visible)
 
@@ -871,6 +953,58 @@ public class RoleModelTest
                                 .addNewUser(account.login)
                                 .closeAll())
                 );
+    }
+
+    /**
+     * Deletes the registry permission entries of the given users and groups. Each entry is put into
+     * {@code removed} before it is deleted, so a failure later on still lets the caller restore it.
+     */
+    private void removeRegistryPermissions(final List<String> names,
+                                           final Map<String, List<PrivilegeValue>> removed) {
+        tools().editRegistry(registry, edition -> {
+            final PermissionTabAO permissions = edition.permissions();
+            names.forEach(name -> {
+                if (permissions.rowExists(name)) {
+                    permissions.showRowPermissions(name);
+                    removed.put(name, Arrays.asList(READ.currentValue(), WRITE.currentValue(),
+                            EXECUTE.currentValue()));
+                    permissions.deleteRowIfPresent(name);
+                }
+            });
+            permissions.closeAll();
+        });
+    }
+
+    private void restoreRegistryPermissions(final Map<String, List<PrivilegeValue>> removed) {
+        final List<Throwable> failures = new ArrayList<>();
+        removed.forEach((name, values) -> {
+            try {
+                restoreRegistryPermission(name, values);
+            } catch (RuntimeException | Error e) {
+                failures.add(e);
+            }
+        });
+        if (!failures.isEmpty()) {
+            throw new AssertionError(format("Registry permissions are not restored for %d of %s",
+                    failures.size(), removed.keySet()), failures.get(0));
+        }
+    }
+
+    private void restoreRegistryPermission(final String name, final List<PrivilegeValue> values) {
+        tools().editRegistry(registry, edition -> {
+            final PermissionTabAO permissions = edition.permissions();
+            if (name.equals(userRoleGroup)) {
+                permissions.addNewGroup(name);
+            } else {
+                permissions.addNewUser(name);
+            }
+            // allowing WRITE or EXECUTE also allows READ, so READ is set last
+            permissions.showRowPermissions(name)
+                    .set(WRITE, values.get(1))
+                    .set(EXECUTE, values.get(2))
+                    .set(READ, values.get(0))
+                    .closeAll();
+        });
     }
 
     private void addNewUserToToolPermissions(final Account account, final String registryName, final String groupName,

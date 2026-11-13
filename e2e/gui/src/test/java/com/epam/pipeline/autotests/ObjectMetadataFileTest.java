@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,16 +27,20 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.File;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
 
+import static com.codeborne.selenide.Condition.enabled;
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_KEY;
+import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CLOSE;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE_ICON;
+import static com.epam.pipeline.autotests.ao.Primitive.EDIT;
 import static com.epam.pipeline.autotests.ao.Primitive.ENLARGE;
 import static com.epam.pipeline.autotests.ao.Primitive.FILE_PREVIEW;
 import static com.epam.pipeline.autotests.ao.Primitive.REMOVE_ALL;
+import static com.epam.pipeline.autotests.ao.Primitive.REMOVE_ALL_KEYS;
+import static com.epam.pipeline.autotests.utils.Utils.getFile;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -46,6 +50,7 @@ public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements A
     private final String fileLessThan10kb = "expectedRunLogPython.txt";
     private final String fileMoreThan10kb = "fileMoreThan10kb.txt";
     private final String fileMoreThan10kbPartOfContent = "abc1";
+    private final int fileMoreThan10kbLength = 11000;
     private final String fileIsTooLargeMessage = "File is too large to be shown.";
     private final String emptyKeyErrorMessage = "Enter key";
     private final String emptyValueErrorMessage = "Enter value";
@@ -69,7 +74,7 @@ public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements A
     public void createAllEntities() {
         navigationMenu()
                 .library()
-                .createStorage(bucket)
+                .createNewObjectStorage(bucket)
                 .selectStorage(bucket)
                 .uploadFile(getFile(fileLessThan10kb))
                 .sleep(30, SECONDS);
@@ -89,7 +94,8 @@ public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements A
                 .library()
                 .selectStorage(bucket)
                 .fileMetadata(fileLessThan10kb)
-                .ensureVisible(ADD_KEY, ENLARGE, FILE_PREVIEW)
+                .ensureVisible(ADD_KEY, REMOVE_ALL_KEYS, ENLARGE, FILE_PREVIEW)
+                .assertFilePreviewContainsText(readFromFile(fileLessThan10kb))
                 .assertKeyWithValueIsPresent(key6, getUserNameByAccountLogin(value6));
     }
 
@@ -106,8 +112,9 @@ public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements A
                 .sleep(1, SECONDS)
                 .fullScreen()
                 .sleep(2, SECONDS)
-                .ensureHeaderNotContainText(fileIsTooLargeMessage)
                 .assertFullScreenPreviewContainsText(fileContent)
+                .ensureHeaderNotContainText(fileIsTooLargeMessage)
+                .ensure(EDIT, visible)
                 .ensure(CLOSE, visible)
                 .ensureHeaderContainsText(fileLessThan10kb)
                 .close();
@@ -119,7 +126,7 @@ public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements A
         final File file = Utils.createFileAndFillWithString(
                 fileMoreThan10kb,
                 fileMoreThan10kbPartOfContent,
-                11000
+                fileMoreThan10kbLength
         );
         navigationMenu()
                 .library()
@@ -127,9 +134,13 @@ public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements A
                 .uploadFile(file)
                 .fileMetadata(fileMoreThan10kb)
                 .assertFilePreviewContainsText(fileMoreThan10kbPartOfContent)
+                .assertFilePreviewIsShorterThan(fileMoreThan10kbLength)
+                .ensureMetadataSectionContainsText(fileIsTooLargeMessage)
                 .fullScreen()
+                .ensureHeaderContainsText(fileMoreThan10kb)
                 .ensureHeaderContainsText(fileIsTooLargeMessage)
                 .assertFullScreenPreviewContainsText(fileMoreThan10kbPartOfContent)
+                .ensure(EDIT, not(visible))
                 .close();
     }
 
@@ -142,8 +153,10 @@ public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements A
                 .fileMetadata(fileLessThan10kb)
                 .addKeyWithValue(key1, value1)
                 .selectKey(key1)
-                .ensure(DELETE_ICON, visible)
+                .assertKeyIs(key1)
                 .validateKeyBackgroundIsGrey()
+                .ensure(DELETE_ICON, visible)
+                .assertValueIs(value1)
                 .ensureVisible(REMOVE_ALL);
     }
 
@@ -151,30 +164,33 @@ public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements A
     @TestCase(value = {"EPMCMBIBPC-1173"})
     public void updateKeyValidationForFileInBucket() {
         fileMetadata()
-                .selectKeyByOrderNumber(1)
-                .changeKey(key2)
+                .selectKeyByOrderNumber(2)
+                .editKey(key2)
+                .clickOnEmptySpace()
                 .assertKeyIs(key2)
-                .changeValue(value2)
+                .editValue(value2)
+                .clickOnEmptySpace()
                 .assertValueIs(value2);
     }
 
     @Test(dependsOnMethods = "updateKeyValidationForFileInBucket")
     @TestCase(value = {"EPMCMBIBPC-1174"})
     public void addSeveralKeysToFileMetadata() {
-        fileMetadata()
-                .addKeyWithValue(key3, value3)
-                .addKeyWithValue(key5, value5)
-                .assertKeyWithValueIsPresent(key3, value3)
-                .assertKeyWithValueIsPresent(key5, value5)
+        final boolean azure = Cloud.AZURE.name().equalsIgnoreCase(C.CLOUD_PROVIDER);
+        final MetadataSectionAO metadata = fileMetadata()
+                .addKeyWithValue(key3, value3);
+        if (!azure) {
+            metadata.addKeyWithValue(key4, value4);
+        }
+        metadata.addKeyWithValue(key5, value5)
+                .assertKeyWithExactValueIsPresent(key3, value3);
+        if (!azure) {
+            metadata.assertKeyWithExactValueIsPresent(key4, value4);
+        }
+        metadata.assertKeyWithExactValueIsPresent(key5, value5)
                 .addKeyWithValue(key7, value7)
                 .messageShouldAppear(emptyKeyErrorMessage)
                 .cancel();
-        if (Cloud.AZURE.name().equalsIgnoreCase(C.CLOUD_PROVIDER)) {
-            return;
-        }
-        fileMetadata()
-                .addKeyWithValue(key4, value4)
-                .assertKeyWithValueIsPresent(key4, value4);
     }
 
     @Test(dependsOnMethods = "addSeveralKeysToFileMetadata")
@@ -182,6 +198,7 @@ public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements A
     public void removeOneKeyValidation() {
         fileMetadata()
                 .deleteKey(key3)
+		.ensure(CANCEL, visible, enabled)
                 .cancel()
                 .assertKeyIsPresent(key3)
                 .deleteKey(key3)
@@ -224,14 +241,6 @@ public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements A
                 .sleep(5, SECONDS)
                 .addKeyWithValue(key1, "")
                 .messageShouldAppear(emptyValueErrorMessage);
-    }
-
-    private File getFile(String filename) {
-        try {
-            return Paths.get(ClassLoader.getSystemResource(filename).toURI()).toFile();
-        } catch (URISyntaxException e) {
-            throw new RuntimeException("Unable to get resource file");
-        }
     }
 
     private String readFromFile(String filename) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,11 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import com.epam.pipeline.autotests.utils.listener.Cloud;
 import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
+import com.epam.pipeline.autotests.utils.listener.ConditionalTestAnalyzer;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.appears;
@@ -35,6 +37,7 @@ import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.Configuration.confirmConfigurationChange;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CODE_TAB;
@@ -60,10 +63,11 @@ import static com.epam.pipeline.autotests.utils.PrivilegeValue.ALLOW;
 import com.epam.pipeline.autotests.ao.ToolDescription.InstanceManagementSectionAO;
 
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
-import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+@Listeners(value = ConditionalTestAnalyzer.class)
 public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         implements Navigation, Authorization {
 
@@ -80,7 +84,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     private final String secondConfiguration = "restrictionTestConfiguration" + Utils.randomSuffix();
     private final String customDisk = "22";
     private final String configurationName = "customConfig";
-    private final String testRole = "ROLE_USER";
+    private final String testGroup = C.ROLE_USER;
     private final String instanceTypesMask = "Allowed instance types mask";
     private final String toolInstanceTypesMask = "Allowed tool instance types mask";
     private final String onDemandPrice = "On demand";
@@ -104,7 +108,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         loginAs(admin);
         setMaskForUser(user.login, instanceTypesMask, "");
         setMaskForUser(user.login, toolInstanceTypesMask, "");
-        setMaskForRole(testRole, instanceTypesMask, "");
+        setMaskForGroup(testGroup, instanceTypesMask, "");
         setClusterAllowedStringPreference(clusterAllowedInstanceTypes, defaultClusterAllowedInstanceTypes);
         setClusterAllowedStringPreference(clusterAllowedInstanceTypesDocker, defaultClusterAllowedInstanceTypes);
         setClusterAllowedStringPreference(clusterAllowedPriceTypes, defaultClusterAllowedPriceTypes);
@@ -114,8 +118,8 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         navigationMenu()
                 .settings()
                 .switchToUserManagement()
-                .switchToRoles()
-                .editRole(testRole)
+                .switchToGroups()
+                .editGroup(testGroup)
                 .clearAllowedPriceTypeField()
                 .ok();
         tools()
@@ -132,7 +136,9 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
 
     @AfterMethod(alwaysRun = true)
     public void logoutUser() {
+        open(C.ROOT_ADDRESS);
         logout();
+        loginAs(admin);
     }
 
     @Test
@@ -159,6 +165,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                 .editConfiguration("default", profile ->
                         instanceTypesCount = profile
                                 .expandTab(EXEC_ENVIRONMENT)
+                                .sleep(2, SECONDS)
                                 .selectValue(INSTANCE_TYPE, defaultInstanceType)
                                 .clear(NAME).setValue(NAME, configurationName)
                                 .sleep(1, SECONDS)
@@ -242,13 +249,13 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     public void validationOfInstanceTypesRestrictionsForUserGroup() {
         try {
             loginAs(admin);
-            setMaskForRole(testRole, instanceTypesMask, format("%s.*", instanceFamilyName));
+            setMaskForGroup(testGroup, instanceTypesMask, format("%s.*", instanceFamilyName));
             logout();
             validationOfInstanceTypesRestrictions();
         } finally {
             logout();
             loginAs(admin);
-            setMaskForRole(testRole, instanceTypesMask, "");
+            setMaskForGroup(testGroup, instanceTypesMask, "");
         }
     }
 
@@ -276,7 +283,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     public void validationOfToolsInstanceTypesRestrictionsForUserGroup() {
         try {
             loginAs(admin);
-            setMaskForRole(testRole, toolInstanceTypesMask, format("%s.*", instanceFamilyName));
+            setMaskForGroup(testGroup, toolInstanceTypesMask, format("%s.*", instanceFamilyName));
             logout();
             loginAs(user);
             tools()
@@ -286,12 +293,11 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         } finally {
             logout();
             loginAs(admin);
-            setMaskForRole(testRole, toolInstanceTypesMask, "");
+            setMaskForGroup(testGroup, toolInstanceTypesMask, "");
         }
     }
 
     @Test
-    @TestCase({"EPMCMBIBPC-2642"})
     public void validationOfToolsInstanceTypesRestrictionsOverInstanceManagement() {
         try {
             loginAs(admin);
@@ -300,8 +306,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                             tool.showInstanceManagement(instanceManagement ->
                                     instanceManagement
                                             .addAllowedToolInstanceTypesMask(format("%s.*", instanceFamilyName))
-                                            .clickApply()
-                                            .sleep(2, SECONDS)));
+                                            .clickApply()));
             tools()
                     .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
                     .expandTab(EXEC_ENVIRONMENT)
@@ -320,13 +325,11 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                             tool.showInstanceManagement(instanceManagement ->
                                     instanceManagement
                                             .addAllowedToolInstanceTypesMask("")
-                                            .clickApply()
-                                            .sleep(2, SECONDS)));
+                                            .clickApply()));
         }
     }
 
     @Test(dependsOnMethods = {"preparationForValidationOfInstanceTypesRestrictions"})
-    @TestCase({"EPMCMBIBPC-2644"})
     public void validationOfInstanceTypesRestrictionsSystemSettings() {
         try {
             loginAs(admin);
@@ -345,7 +348,9 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                                     .also(confirmConfigurationChange())
                                     )
                                     .setValue(DISK, customDisk)
-                                    .click(SAVE));
+                                    .sleep(3, SECONDS)
+                                    .click(SAVE))
+                    .sleep(2, SECONDS);
             setClusterAllowedStringPreference(clusterAllowedInstanceTypes, format("%s.*", instanceFamilyName));
             logout();
             loginAs(user);
@@ -383,6 +388,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                     .ensure(INSTANCE_TYPE, empty)
                                     .checkValueIsInDropDown(INSTANCE_TYPE, instanceFamilyName)
                     )
+                    .sleep(5, SECONDS)
                     .exitFromConfigurationWithoutSaved();
         } finally {
             logout();
@@ -418,7 +424,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
             String[] masks = clusterAllowedMasks.split(",");
             loginAs(admin);
             setClusterAllowedStringPreference(clusterAllowedInstanceTypes, format("%s*", masks[0]));
-            setMaskForRole(testRole, instanceTypesMask, format("%s*", masks[1]));
+            setMaskForGroup(testGroup, instanceTypesMask, format("%s*", masks[1]));
             setMaskForUser(user.login, instanceTypesMask, format("%s*", masks[2]));
             setMaskForUser(user.login, toolInstanceTypesMask, format("%s*", masks[3]));
             logout();
@@ -455,7 +461,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
             logout();
             loginAs(admin);
             setClusterAllowedStringPreference(clusterAllowedInstanceTypes, defaultClusterAllowedInstanceTypes);
-            setMaskForRole(testRole, instanceTypesMask, "");
+            setMaskForGroup(testGroup, instanceTypesMask, "");
             setMaskForUser(user.login, instanceTypesMask, "");
             setMaskForUser(user.login, toolInstanceTypesMask, "");
         }
@@ -476,8 +482,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                             tool.showInstanceManagement(instanceManagement ->
                                     instanceManagement
                                             .addAllowedToolInstanceTypesMask(format("%s.*", instanceFamilyName))
-                                            .clickApply()
-                                            .sleep(2, SECONDS)));
+                                            .clickApply()));
             tools()
                     .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
                     .expandTab(EXEC_ENVIRONMENT)
@@ -500,8 +505,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                             tool.showInstanceManagement(instanceManagement ->
                                     instanceManagement
                                             .addAllowedToolInstanceTypesMask("")
-                                            .clickApply()
-                                            .sleep(2, SECONDS)));
+                                            .clickApply()));
         }
     }
 
@@ -535,8 +539,8 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
             navigationMenu()
                     .settings()
                     .switchToUserManagement()
-                    .switchToRoles()
-                    .editRole(testRole)
+                    .switchToGroups()
+                    .editGroup(testGroup)
                     .setAllowedPriceType(onDemandPrice)
                     .ok();
             logout();
@@ -548,8 +552,8 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
             navigationMenu()
                     .settings()
                     .switchToUserManagement()
-                    .switchToRoles()
-                    .editRole(testRole)
+                    .switchToGroups()
+                    .editGroup(testGroup)
                     .clearAllowedPriceTypeField()
                     .ok();
         }
@@ -567,8 +571,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                     instanceManagement
                                             .clearAllowedPriceTypeField()
                                             .setPriceType(onDemandPrice)
-                                            .clickApply()
-                                            .sleep(2, SECONDS)));
+                                            .clickApply()));
             tools()
                     .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
                     .expandTab(ADVANCED_PANEL)
@@ -624,8 +627,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                     instanceManagement
                                             .clearAllowedPriceTypeField()
                                             .setPriceType(spotPriceName)
-                                            .clickApply()
-                                            .sleep(2,SECONDS)));
+                                            .clickApply()));
             logout();
             loginAs(user);
             validationOfPriceTypesRestrictions(ON_DEMAND, ON_DEMAND, spotPriceName);
@@ -658,7 +660,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                 .settings()
                 .switchToUserManagement()
                 .switchToUsers()
-                .searchForUserEntry(user)
+                .searchUserEntry(user)
                 .edit();
     }
 
@@ -668,12 +670,12 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                 .ok();
     }
 
-    private void setMaskForRole(String role, String mask, String value) {
+    private void setMaskForGroup(String group, String mask, String value) {
         navigationMenu()
                 .settings()
                 .switchToUserManagement()
-                .switchToRoles()
-                .editRole(role)
+                .switchToGroups()
+                .editGroup(group)
                 .addAllowedLaunchOptions(mask, value)
                 .ok();
     }
@@ -684,8 +686,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                 .switchToPreferences()
                 .switchToCluster()
                 .setClusterAllowedStringPreference(pref, value)
-                .save();
-        sleep(10, SECONDS);
+                .saveIfNeeded();
     }
 
     private void validationOfInstanceTypesRestrictions() {

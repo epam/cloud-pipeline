@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.Configuration;
 import com.epam.pipeline.autotests.ao.DocumentTabAO;
 import com.epam.pipeline.autotests.ao.GlobalSearchAO;
@@ -42,19 +43,27 @@ import java.util.function.Function;
 import static com.codeborne.selenide.Condition.empty;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.matchText;
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.STOPPED;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
 import static com.epam.pipeline.autotests.utils.C.LOGIN;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest implements Navigation {
+
+    // the type buttons are <div>s, so Selenide's "enabled" always holds; the client marks a disabled one by a class
+    private static final Condition enabledType =
+            Condition.and("enabled type button", visible, not(GlobalSearchAO.disable));
 
     private final String folder = "globalSearchFolder" + Utils.randomSuffix();
     private final String pipeline = "globalSearchPipeline" + Utils.randomSuffix();
@@ -108,7 +117,9 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                                                 .selectTool(testingTool)
                                                 .click(OK)
                                 )
+                                .ensure(byText("Estimated price per hour:"), visible)
                                 .click(SAVE)
+                                .ensureDisable(SAVE)
                 );
         navigationMenu()
                 .library()
@@ -121,9 +132,9 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .createStorage(storage)
                 .selectStorage(storage)
                 .createFolder(storageFolder)
-                .createAndEditFile(storageFile, storageFileContent);
-        home()
-                .globalSearch()
+                .createFileWithContent(storageFile, storageFileContent);
+        home().sleep(2, SECONDS);
+        search()
                 .ensureVisible(FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES, SEARCH, QUESTION_MARK)
                 .ensureAll(enabled, FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES)
                 .close();
@@ -148,14 +159,14 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     @TestCase(value = {"EPMCMBIBPC-2657"})
     public void searchResultCancel() {
         search()
-                .search(folder)
+                .search(innerFolder1)
                 .enter()
                 .sleep(3, SECONDS)
-                .ensure(FOLDERS, enabled)
+                .ensure(FOLDERS, enabledType)
                 .ensureAll(GlobalSearchAO.disable, PIPELINES, RUNS, TOOLS, DATA, ISSUES)
-                .hover(SEARCH_RESULT)
+                .hover(GlobalSearchAO.searchItem(innerFolder1))
                 .close()
-                .ensureAll(enabled, FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES)
+                .ensureAll(enabledType, FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES)
                 .ensure(SEARCH, empty)
                 .close();
     }
@@ -174,9 +185,10 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                                 .clear(NAME).setValue(NAME, configurationName)
                                 .clear(DISK).setValue(DISK, configurationDisk)
                                 .selectValue(INSTANCE_TYPE, configurationNodeType)
-                                .sleep(3, SECONDS)
+                                .sleep(5, SECONDS)
                                 .click(SAVE)
-                                .sleep(3, SECONDS)
+                                .waitUntilSaveEnding(configurationName)
+                                .sleep(10, SECONDS)
                 );
         draftVersionName = library()
                 .cd(folder)
@@ -222,7 +234,8 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .enter()
                 .sleep(2, SECONDS)
                 .moveToSearchResultItem(configVar, () -> new PipelineCodeTabAO(pipeline))
-                .ensure(byText(configVar), visible);
+                .sleep(5, SECONDS)
+                .shouldContainFile(configVar);
     }
 
     @Test(dependsOnMethods = {"searchForPipeline"})
@@ -233,6 +246,10 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .runPipeline()
+		.setPriceType(ON_DEMAND)
+                // 2663 finds "InitializeNode" in the log of this run, which only a run on a new node has (2662 and
+                // 2663 are not selected in testng.xml)
+                .createNewNode()
                 .launch(this)
                 .showLog(testRunID = getLastRunId())
                 .waitForCompletion();
@@ -241,6 +258,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .runPipeline()
+		.setPriceType(ON_DEMAND)
                 .launch(this)
                 .stopRun(getLastRunId());
         library()
@@ -248,6 +266,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .runPipeline()
+		.setPriceType(ON_DEMAND)
                 .launch(this);
         search()
                 .click(PIPELINES)
@@ -281,10 +300,10 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                         text("Found in podId"))
                 .ensure(PREVIEW, text("Owner"), text(LOGIN), text("Scheduled"), text("Started"),
                         text("Finished"), text("Estimated price"))
-                .ensure(PREVIEW_TAB, text("InitializeNode"))
+                .ensure(CONTENT_PREVIEW, text("InitializeNode"))
                 .parent()
                 .moveToSearchResultItemWithText(pipelineWithRun(), LogAO::new)
-                .ensure(STATUS, text(String.format("Run #%s", testRunID)));
+                .ensure(LogAO.runId(), matchText(String.format("#%s\\b", testRunID)));
     }
 
     @Test(dependsOnMethods = {"searchForPipelineWithRuns"})
@@ -346,7 +365,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .clickEditStorageButton()
                 .setAlias(storageAlias)
                 .ok();
-        home().sleep(C.SEARCH_TIMEOUT, MINUTES);
+        home().sleep(C.SEARCH_TIMEOUT + 2, MINUTES);
         search()
                 .search(storageAlias)
                 .enter()
@@ -378,6 +397,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .runPipeline()
+		.setPriceType(ON_DEMAND)
                 .launch(this)
                 .showLog(getLastRunId())
                 .waitForCompletion();
@@ -462,15 +482,22 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     @Test
     @TestCase(value = {"EPMCMBIBPC-2668"})
     public void searchForToolRun() {
-        tools()
-                .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
-                .launchTool(this, toolEndpoint)
-                .showLog(testRunID_2668 = getLastRunId())
-                .waitForEndpointLink()
-                .clickOnEndpointLink()
-                .sleep(3, SECONDS)
-                .validateEndpointPage(LOGIN)
-                .closeTab();
+        ToolPageAO endpointPage = null;
+        try {
+            endpointPage = tools()
+                    .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
+		    .setPriceType(ON_DEMAND)
+                    .launchTool(this, toolEndpoint)
+                    .showLog(testRunID_2668 = getLastRunId())
+                    .waitForEndpointLink()
+                    .clickOnEndpointLink()
+                    .sleep(3, SECONDS)
+                    .validateEndpointPage(LOGIN);
+        } finally {
+            if (endpointPage != null) {
+                endpointPage.closeTab();
+            }
+        }
         LogAO logAO = new LogAO();
         String endpointLink = logAO.getEndpointLink();
         String[] instanceParam = new String[] {
@@ -492,55 +519,71 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .ensure(PREVIEW, text("Owner"), text("Scheduled"),
                         text("Started"), text("Running for"), text("Estimated price"))
                 .checkEndpointsLink(endpointLink)
-                .ensure(PREVIEW_TAB, text("InputData"), text("MountDataStorages"),
+                .ensure(CONTENT_PREVIEW, text("InputData"), text("MountDataStorages"),
                         text("InitializeEnvironment"), text("Console"))
                 .parent()
                 .moveToSearchResultItemWithText(testRunID_2668, LogAO::new)
                 .ensure(STATUS, text(testRunID_2668));
-        search()
-                .click(RUNS)
-                .search(testRunID_2668)
-                .enter()
-                .sleep(2, SECONDS)
-                .hover(SEARCH_RESULT)
-                .openSearchResultItemWithText(testRunID_2668)
-                .clickOnEndpointLink()
-                .sleep(3, SECONDS)
-                .validateEndpointPage(LOGIN)
-                .closeTab();
+        home();
+        endpointPage = null;
+        try {
+            endpointPage = search()
+                    .click(RUNS)
+                    .search(testRunID_2668)
+                    .enter()
+                    .sleep(2, SECONDS)
+                    .hover(SEARCH_RESULT)
+                    .openSearchResultItemWithText(testRunID_2668)
+                    .clickOnEndpointLink()
+                    .sleep(3, SECONDS)
+                    .validateEndpointPage(LOGIN);
+        } finally {
+            if (endpointPage != null) {
+                endpointPage.closeTab();
+            }
+        }
     }
 
     @Test(dependsOnMethods = {"searchForToolRun"})
     @TestCase(value = {"EPMCMBIBPC-2669"})
     public void searchForCompletedToolRun() {
-        runsMenu()
-                .activeRuns()
-                .stopRun(testRunID_2668);
-        home().sleep(C.SEARCH_TIMEOUT, MINUTES);
-        search()
-                .click(RUNS)
-                .search(testRunID_2668)
-                .enter()
-                .sleep(1, SECONDS)
-                .hover(SEARCH_RESULT)
-                .openSearchResultItemWithText(testRunID_2668)
-                .ensure(TITLE, STOPPED.reached, text(testRunID_2668),
-                        text(String.format("%s:%s", toolEndpoint, toolVersion)))
-                .parent()
-                .moveToSearchResultItemWithText(testRunID_2668, LogAO::new)
-                .ensure(STATUS, text(testRunID_2668))
-                .shouldHaveStatus(STOPPED);
-        search()
-                .click(RUNS)
-                .search(testRunID_2668)
-                .enter()
-                .sleep(1, SECONDS)
-                .hover(SEARCH_RESULT)
-                .openSearchResultItemWithText(testRunID_2668)
-                .clickOnEndpointLink()
-                .sleep(3, SECONDS)
-                .assertPageTitleIs("404 Not Found")
-                .closeTab();
+        ToolPageAO endpointPage = null;
+        try {
+            runsMenu()
+                    .activeRuns()
+                    .stopRun(testRunID_2668);
+            home().sleep(C.SEARCH_TIMEOUT + 2, MINUTES);
+            search()
+                    .click(RUNS)
+                    .search(testRunID_2668)
+                    .enter()
+                    .sleep(1, SECONDS)
+                    .hover(SEARCH_RESULT)
+                    .openSearchResultItemWithText(testRunID_2668)
+                    .ensure(TITLE, STOPPED.reached, text(testRunID_2668),
+                            text(String.format("%s:%s", toolEndpoint, toolVersion)))
+                    .parent()
+                    .moveToSearchResultItemWithText(testRunID_2668, LogAO::new)
+                    .ensure(STATUS, text(testRunID_2668))
+                    .shouldHaveStatus(STOPPED);
+            home();
+            endpointPage = search()
+                    .click(RUNS)
+                    .search(testRunID_2668)
+                    .enter()
+                    .sleep(1, SECONDS)
+                    .hover(SEARCH_RESULT)
+                    .openSearchResultItemWithText(testRunID_2668)
+                    .clickOnEndpointLink();
+            endpointPage
+                    .sleep(3, SECONDS)
+                    .refresh()
+                    .assertPageTitleIs("404 Not Found");
+        } finally {
+            if (endpointPage != null) {
+                endpointPage.closeTab();
+            }
+        }
     }
 
     @Test
@@ -553,7 +596,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .clickNewIssue()
                 .addNewIssue(title, description);
         home().sleep(C.SEARCH_TIMEOUT + 2, MINUTES);
-        search()
+        new NavigationMenuAO().searchFromMenu()
                 .search(title)
                 .enter()
                 .sleep(2, SECONDS)
@@ -564,8 +607,6 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .ensure(HIGHLIGHTS, text("Found in name"))
                 .ensure(PREVIEW, text(description))
                 .close()
-                .close();
-        search()
                 .click(ISSUES)
                 .search(description)
                 .enter()
@@ -585,37 +626,40 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
         library()
                 .cd(folder)
                 .createFolder(title);
-        home().sleep(C.SEARCH_TIMEOUT, MINUTES);
-        search()
-                .ensureAll(enabled, FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES)
+        home().sleep(C.SEARCH_TIMEOUT + 2, MINUTES);
+        new NavigationMenuAO().searchFromMenu()
+                .ensureAll(enabledType, FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES)
                 .search(title)
                 .enter()
                 .ensureAll(GlobalSearchAO.disable, PIPELINES, RUNS, TOOLS, DATA)
-                .ensureAll(enabled, FOLDERS, ISSUES)
+                .ensureAll(enabledType, FOLDERS, ISSUES)
                 .ensure(FOLDERS, text("1 FOLDER"))
                 .ensure(ISSUES, text("1 ISSUE"))
                 .validateSearchResults(2, title)
                 .click(FOLDERS)
-                .ensureAll(enabled, FOLDERS, ISSUES)
-                .ensure(FOLDERS, GlobalSearchAO.selected)
+                // a selected type limits the search to that type, so the other types have no hits
+                .ensure(FOLDERS, enabledType, GlobalSearchAO.selected, text("1 FOLDER"))
+                .ensureAll(GlobalSearchAO.disable, PIPELINES, RUNS, TOOLS, DATA, ISSUES)
                 .validateSearchResults(1, title)
                 .click(FOLDERS)
-                .ensureAll(enabled, FOLDERS, ISSUES)
+                .ensureAll(enabledType, FOLDERS, ISSUES)
+                .ensure(FOLDERS, text("1 FOLDER"))
+                .ensure(ISSUES, text("1 ISSUE"))
                 .validateSearchResults(2, title)
                 .close()
                 .click(ISSUES)
-                .ensureAll(enabled, FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES)
+                .ensureAll(enabledType, FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES)
                 .ensure(ISSUES, GlobalSearchAO.selected)
                 .search(title)
                 .enter()
                 .ensureAll(GlobalSearchAO.disable, FOLDERS, PIPELINES, RUNS, TOOLS, DATA)
-                .ensure(ISSUES, enabled)
-                .ensure(ISSUES, text("1 ISSUE"))
-                .ensure(ISSUES, GlobalSearchAO.selected)
+                .ensure(ISSUES, enabledType, GlobalSearchAO.selected, text("1 ISSUE"))
                 .validateSearchResults(1, title)
                 .click(ISSUES)
                 .ensureAll(GlobalSearchAO.disable, PIPELINES, RUNS, TOOLS, DATA)
-                .ensureAll(enabled, FOLDERS, ISSUES)
+                .ensureAll(enabledType, FOLDERS, ISSUES)
+                .ensure(FOLDERS, text("1 FOLDER"))
+                .ensure(ISSUES, text("1 ISSUE"))
                 .validateSearchResults(2, title)
                 .close()
                 .close();
@@ -628,6 +672,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .search(innerFolder1)
                 .sleep(3, SECONDS)
                 .validateSearchResults(1, innerFolder1)
+                .ensure(FOLDERS, text("1 FOLDER"))
                 .hover(SEARCH_RESULT)
                 .openSearchResultItem(innerFolder1)
                 .ensure(TITLE, text(innerFolder1))
@@ -636,6 +681,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .parent()
                 .moveToSearchResultItem(innerFolder1, () -> new LibraryFolderAO(innerFolder1))
                 .ensureAll(visible, SETTINGS, UPLOAD_METADATA);
+        folderShouldBeOpened(innerFolder1, innerFolder2);
     }
 
     @Test
@@ -644,6 +690,8 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
         search()
                 .search(innerFolder1)
                 .enter()
+                .validateSearchResults(1, innerFolder1)
+                .ensure(FOLDERS, text("1 FOLDER"))
                 .hover(SEARCH_RESULT)
                 .openSearchResultItem(innerFolder1)
                 .ensure(TITLE, text(innerFolder1))
@@ -652,6 +700,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .parent()
                 .moveToSearchResultItem(innerFolder1, () -> new LibraryFolderAO(innerFolder1))
                 .ensureAll(visible, SETTINGS, UPLOAD_METADATA);
+        folderShouldBeOpened(innerFolder1, innerFolder2);
     }
 
     @Test
@@ -745,7 +794,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .removeNotEmptyFolder(folder)
                 .sleep(C.SEARCH_TIMEOUT, MINUTES);
         home();
-        search()
+        new NavigationMenuAO().searchFromMenu()
                 .search(pipeline)
                 .enter()
                 .validateSearchResults(0, "")
@@ -753,6 +802,9 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .enter()
                 .validateSearchResults(0, "")
                 .search(innerFolder1)
+                .enter()
+                .validateSearchResults(0, "")
+                .search(storageFile)
                 .enter()
                 .validateSearchResults(0, "")
                 .search(title)
@@ -764,6 +816,13 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
 
     private GlobalSearchAO search() {
         return new NavigationMenuAO().search();
+    }
+
+    // the breadcrumb of a sub-folder holds the name of its parent too
+    private void folderShouldBeOpened(final String folderName, final String subFolderName) {
+        $(byClassName("browser__item-header"))
+                .shouldHave(text(folderName))
+                .shouldNotHave(text(subFolderName));
     }
 
     private String pipelineWithRun() {

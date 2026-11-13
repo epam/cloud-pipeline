@@ -1,0 +1,89 @@
+{
+    "_comment": [
+        "Platform fixtures of the GUI tests: platform-prepare.sh creates what is missing and removes it after the run;",
+        "generate-config.sh takes the names from here.",
+        "tool_groups/tools: in the first docker registry; tools are registered from images that already exist in the registry",
+        "  (deploy/docker/cp-tests, cp-tools). settings = the tool defaults (spec.json of the image).",
+        "  A tool registered already gets the settings anyway. A tool exactly as a docker push registers it (cpu 0mi,",
+        "  ram 0Gi, nothing else set) is taken over: it also gets cpu 1000mi / ram 1Gi and is unregistered after the run,",
+        "  with its tool group if the push created it (no description, only tools of the run). Other tools get their",
+        "  previous settings back after the run. Tools with empty settings here are never taken over.",
+        "role_user_group: group of the test users (e2e.ui.role.user). registry_mask is granted to it on the registry:",
+        "  READ allow + WRITE deny + EXECUTE allow = 1 + 8 + 16 = 25 (what RoleModelTest expects and restores).",
+        "anonymous_user: a user with ROLE_ANONYMOUS_USER for the anonymous access check (created if no such user exists).",
+        "default_instance_type: instance type of the tests runs (e2e.ui.default.instance.type).",
+        "sync_storage: the storage StorageSynchronizationTest unregisters is a storage of 'owner' (the user of the storage",
+        "  synchronization service of the deployment: set it, or set e2e.ui.sync.storage.* in the overrides) with a",
+        "  permission of a group matching 'permission_pattern' (regex, case-insensitive).",
+        "deactivate_blocking_notifications: blocking system notifications cover the UI in every fresh test browser:",
+        "  they are deactivated for the run (state only, the creation date is kept) and activated back afterwards."
+    ],
+    "tool_groups": [
+        {
+            "name": "tests",
+            "description": "Docker images used by the e2e tests"
+        },
+        {
+            "name": "library",
+            "description": "Base images"
+        }
+    ],
+    "tools": [
+        {
+            "image": "tests/e2e-endpoints",
+            "settings": {
+                "shortDescription": "Docker image used in E2E automated tests to verify HTTP endpoints and SSH access",
+                "defaultCommand": "/start.sh",
+                "disk": 20,
+                "instanceType": "m5.xlarge",
+                "endpoints": [
+                    "{ \"name\": \"E2E-Endpoint\", \"nginx\": { \"port\": \"8081\" }, \"isDefault\": false }"
+                ]
+            }
+        },
+        {
+            "image": "tests/e2e-empty",
+            "settings": {
+                "shortDescription": "Docker image used in E2E automated tests: a tool without default settings"
+            }
+        },
+        {
+            "image": "library/centos",
+            "settings": {}
+        },
+        {
+            "image": "library/ubuntu",
+            "settings": {}
+        },
+        {
+            "image": "library/rstudio",
+            "settings": {
+                "shortDescription": "Basic R development environment with RStudio Web GUI",
+                "defaultCommand": "/start.sh",
+                "disk": 50,
+                "endpoints": [
+                    "{ \"name\": \"RStudio\", \"nginx\": { \"port\": \"8788\" }, \"isDefault\": false }"
+                ]
+            }
+        }
+    ],
+    "role_user_group": {
+        "name": "ROLE_TEST_USER",
+        "members": [
+            "USER1",
+            "USER2",
+            "USER3"
+        ],
+        "registry_mask": 25
+    },
+    "anonymous_user": {
+        "name": "E2E_ANONYMOUS_USER"
+    },
+    "default_instance_type": "m5.xlarge",
+    "sync_storage": {
+        "owner": "",
+        "permission_pattern": "TEST"
+    },
+    "deactivate_blocking_notifications": true,
+    "preferences": []
+}

@@ -427,7 +427,7 @@ class TestCopyWithFolders(object):
             pipe_storage_cp(os.path.abspath(self.test_file_1), "cp://%s/%s/" % (self.bucket_name, case))
             assert object_exists(self.bucket_name, "%s/%s" % (case, self.test_file_1))
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_copy_folder_structure(self):
@@ -453,7 +453,7 @@ class TestCopyWithFolders(object):
                                       ObjectInfo(True).build(os.path.join(destination, self.test_folder_2,
                                                                           self.test_file_1)), case)
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_upload_file_to_not_empty_folder(self):
@@ -467,7 +467,7 @@ class TestCopyWithFolders(object):
             pipe_storage_cp(os.path.abspath(self.test_file_2), source2, expected_status=0)
             assert object_exists(self.bucket_name, "%s/%s" % (test_case, self.test_file_2))
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(test_case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_upload_folders_with_similar_keys(self):
@@ -487,7 +487,7 @@ class TestCopyWithFolders(object):
             assert object_exists(self.bucket_name, os.path.join(case, self.test_file_1))
             assert not object_exists(self.bucket_name, os.path.join(case, self.test_file_2))
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_download_folders_with_similar_keys(self):
@@ -504,7 +504,7 @@ class TestCopyWithFolders(object):
             assert not os.path.exists(os.path.abspath(
                 os.path.join(self.output_folder, case, self.test_file_2)))
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     test_case_for_upload_with_slash = [("EPMCMBIBPC-2159-1", True, True), ("EPMCMBIBPC-2159-2", True, False),
                                        ("EPMCMBIBPC-2159-3", False, False), ("EPMCMBIBPC-2159-4", False, True)]
@@ -521,7 +521,7 @@ class TestCopyWithFolders(object):
             assert object_exists(self.bucket_name, os.path.join(case, self.test_file_with_other_extension))
             assert object_exists(self.bucket_name, os.path.join(case, self.test_folder, self.test_file_1))
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     test_case_for_download_with_slash = [("EPMCMBIBPC-2200-1", True, True), ("EPMCMBIBPC-2200-2", True, False),
                                          ("EPMCMBIBPC-2200-3", False, False), ("EPMCMBIBPC-2200-4", False, True)]
@@ -540,7 +540,7 @@ class TestCopyWithFolders(object):
             assert os.path.exists(os.path.join(destination, self.test_file_with_other_extension))
             assert os.path.exists(os.path.join(destination, self.test_folder, self.test_file_1))
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     test_case_for_copy_between_buckets_with_slash = [("EPMCMBIBPC-2201-1", True, True),
                                                      ("EPMCMBIBPC-2201-2", True, False),
@@ -563,7 +563,7 @@ class TestCopyWithFolders(object):
             assert object_exists(self.other_bucket_name, os.path.join(case, self.test_file_with_other_extension))
             assert object_exists(self.other_bucket_name, os.path.join(case, self.test_folder, self.test_file_1))
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_upload_folder_with_skip_existing_option_should_skip(self):
@@ -586,7 +586,7 @@ class TestCopyWithFolders(object):
                 "Last modified time of destination and source file must be the same.\n" \
                 "Expected %s\nActual %s".format(expected.last_modified, actual.last_modified)
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_upload_folder_with_skip_existing_option_should_not_skip(self):
@@ -606,7 +606,7 @@ class TestCopyWithFolders(object):
             assert not expected.last_modified == actual.last_modified, \
                 "Last modified time of destination and source file must be different."
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_download_folder_with_skip_existing_option_should_skip(self):
@@ -634,7 +634,7 @@ class TestCopyWithFolders(object):
                 "Last modified time of destination and source file must be the same.\n" \
                 "Expected %s\nActual %s".format(expected.last_modified, actual.last_modified)
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_download_folder_with_skip_existing_option_should_not_skip(self):
@@ -660,7 +660,7 @@ class TestCopyWithFolders(object):
             assert not expected.last_modified == actual.last_modified, \
                 "Last modified time of destination and source file must be different."
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_copy_folder_between_buckets_with_skip_existing_option_should_skip(self):
@@ -687,7 +687,7 @@ class TestCopyWithFolders(object):
                 "Last modified time of destination and source file must be the same.\n" \
                 "Expected %s\nActual %s".format(expected.last_modified, actual.last_modified)
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_copy_folder_between_buckets_with_skip_existing_option_should_not_skip(self):
@@ -712,7 +712,7 @@ class TestCopyWithFolders(object):
             assert not expected.last_modified == actual.last_modified, \
                 "Last modified time of destination and source file must be different."
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     def _create_folder_on_bucket(self, case):
         source_files = os.path.abspath(self.test_folder)

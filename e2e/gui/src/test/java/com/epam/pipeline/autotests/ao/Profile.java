@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.epam.pipeline.autotests.utils.Utils;
@@ -26,6 +27,7 @@ import org.openqa.selenium.By;
 
 import static com.codeborne.selenide.Condition.and;
 import static com.codeborne.selenide.Condition.attribute;
+import static com.codeborne.selenide.Selectors.by;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
@@ -35,6 +37,7 @@ import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_PARAMETER;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
+import static com.epam.pipeline.autotests.ao.Primitive.CLOUD_REGION;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
 import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATE_PRICE;
@@ -83,7 +86,9 @@ public class Profile implements AccessObject<Profile> {
                 entry(ADD_PARAMETER, context().find(byId("add-parameter-button"))),
                 entry(INSTANCE_TYPE, context().find(comboboxOf(fieldWithLabel("Node type")))),
                 entry(PRICE_TYPE, context().find(comboboxOf(fieldWithLabel("Price type")))),
-                entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input")))
+                entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input"))),
+                entry(CLOUD_REGION, context().find(byXpath(".//*[contains(text(), 'Cloud Region')]"))
+                        .closest(".ant-row").find(by("role", "combobox")))
         );
     }
 
@@ -119,9 +124,31 @@ public class Profile implements AccessObject<Profile> {
         return this;
     }
 
+    /**
+     * Adds a boolean parameter and ticks it: the form adds a boolean parameter unticked.
+     */
+    public Profile addBooleanParameter(final String name) {
+        runForm.clickAddBooleanParameter().setName(name).setEnableParameter(true).close();
+        return this;
+    }
+
+    /**
+     * Opens the docker image selection by a click into the "Docker image" field, as
+     * {@link Configuration#selectDockerImage} does for a detached configuration.
+     */
+    public Profile selectDockerImage(final Consumer<DockerImageSelection> dockerImage) {
+        click(Configuration.image());
+        dockerImage.accept(new DockerImageSelection(this));
+        return this;
+    }
+
     public Profile removeParameter(final ParameterFieldAO parameter) {
         parameter.click(parameter.removeButton);
         return this;
+    }
+
+    public String getCloudRegion() {
+        return get(CLOUD_REGION).text();
     }
 
     public static Stream<ParameterFieldAO> parameters() {
@@ -159,11 +186,19 @@ public class Profile implements AccessObject<Profile> {
     }
 
     public Profile waitUntilSaveEnding(final String name) {
-        for (int i = 0; i < 2; i++) {
-            if ($(withText(String.format("Updating '%s' configuration ...", name))).exists()) {
-                sleep(3, SECONDS);
-                break;
-            }
+        int attempt = 0;
+        int maxAttempts = 3;
+        while ($(withText(String.format("Updating '%s' configuration ...", name))).exists()
+                && attempt < maxAttempts) {
+            sleep(3, SECONDS);
+            attempt++;
+        }
+        attempt = 0;
+        maxAttempts = 10;
+        while (get(SAVE).isEnabled()
+                && attempt < maxAttempts) {
+            sleep(3, SECONDS);
+            attempt++;
         }
         return this;
     }

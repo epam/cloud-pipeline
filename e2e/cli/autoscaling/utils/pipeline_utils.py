@@ -26,7 +26,7 @@ from autoscaling.utils.azure_client import AzureClient
 from autoscaling.utils.gcp_client import GCPClient
 from common_utils.entity_managers import UtilsManager
 
-IP_PATTERN = re.compile('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
+IP_PATTERN = re.compile(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
 
 
 _clients = {
@@ -41,7 +41,7 @@ def get_client():
     if provider in _clients:
         return _clients[provider]()
     else:
-        raise RuntimeError('Provider must be one of %s' % _clients.keys())
+        raise RuntimeError('Provider must be one of %s' % list(_clients.keys()))
 
 
 class FailureIndicator(object):
@@ -56,7 +56,7 @@ def get_pipe_status(run_id):
 
 def view_cluster_for_node(node_name):
     cluster_info = {}
-    process = subprocess.Popen(['pipe', 'view-cluster', node_name], stdout=subprocess.PIPE)
+    process = subprocess.Popen(['pipe', 'view-cluster', node_name], stdout=subprocess.PIPE, universal_newlines=True)
     line = process.stdout.readline()
     while line != '':
         __fill_record(line, cluster_info, "Pipeline")
@@ -68,7 +68,7 @@ def view_cluster_for_node(node_name):
             process.stdout.readline()  # skip the header
             line = process.stdout.readline()
             while not line.startswith("+"):
-                splitted = filter(None, line.replace(" ", "").split("|"))
+                splitted = [_f for _f in line.replace(" ", "").split("|") if _f]
                 if len(splitted) > 2 and splitted[1] == "default" and 'runid' in cluster_info and \
                         cluster_info['runid'] in splitted[0]:
                     cluster_info["IsNodeJobRunning"] = splitted[0]
@@ -100,7 +100,7 @@ def view_runs(run_id, *args):
     command = ['pipe', 'view-runs', run_id]
     for arg in args:
         command.append(arg)
-    process = subprocess.Popen(command, stdout=subprocess.PIPE)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, universal_newlines=True)
     line = process.stdout.readline()
     while line != '':
         __fill_record(line, pipe_info, "Pipeline")
@@ -125,7 +125,7 @@ def get_endpoint_urls(run_id, *args):
     command = ['pipe', 'view-runs', run_id]
     for arg in args:
         command.append(arg)
-    process = subprocess.Popen(command, stdout=subprocess.PIPE)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, universal_newlines=True)
     line = process.stdout.readline()
     collecting = False
     while line != '':
@@ -150,7 +150,7 @@ def get_endpoint_urls(run_id, *args):
 
 def task_in_status(run_id, task, status):
     command = ['pipe', 'view-runs', run_id, '-td']
-    process = subprocess.Popen(command, stdout=subprocess.PIPE)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, universal_newlines=True)
     line = process.stdout.readline()
     while task not in line and line != '':
         line = process.stdout.readline()
@@ -172,7 +172,40 @@ def run_tool(*args):
 
     for arg in args:
         command.append(arg)
-    process = subprocess.Popen(command, stdout=subprocess.PIPE)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, universal_newlines=True)
+    process.wait()
+    line = process.stdout.readline()
+    run_id = None
+    status = None
+    while line != '':
+        if line.startswith("Pipeline run scheduled with RunId:"):
+            splitted = line.rstrip().split(" ")
+            run_id = splitted[splitted.__len__() - 1]
+        if "completed with status" in line:
+            splitted = line.rstrip().split(" ")
+            status = splitted[splitted.__len__() - 1]
+        line = process.stdout.readline()
+    if not run_id:
+        raise RuntimeError('RunID was not found')
+    return run_id, status
+
+
+def run_pipe(pipeline_name, *args):
+    command = ['pipe', 'run', '--pipeline', pipeline_name, '-y']
+
+    instance_type = os.environ['CP_TEST_INSTANCE_TYPE']
+    if instance_type and "-it" not in args:
+        command.append("-it")
+        command.append(instance_type)
+
+    price_type = os.environ['CP_TEST_PRICE_TYPE']
+    if price_type and "-pt" not in args:
+        command.append("-pt")
+        command.append(price_type)
+
+    for arg in args:
+        command.append(arg)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, universal_newlines=True)
     process.wait()
     line = process.stdout.readline()
     run_id = None
@@ -212,6 +245,40 @@ def wait_for_node_termination(node_name, max_rep_count):
         node = view_cluster_for_node(node_name)
         sleep(3)
         rep = rep + 1
+
+
+def stop_pipe_with_retry(run_id, retry=10):
+    if retry == 0:
+        raise RuntimeError("Can't stop pipeline: " + run_id)
+    try:
+        stop_pipe(run_id)
+        wait_for_required_status("STOPPED", run_id, 10)
+    except BaseException as e:
+        sleep(5)
+        stop_pipe_with_retry(run_id, retry - 1)
+
+
+def terminate_node_with_retry(node_name, retry=10):
+    if retry == 0:
+        raise RuntimeError("Can't stop node: " + node_name)
+    terminate_node(node_name)
+    if check_node_termination(node_name, 10):
+        return
+    else:
+        sleep(5)
+        terminate_node_with_retry(node_name, retry - 1)
+
+
+def check_node_termination(node_name, max_rep_count):
+    node = view_cluster_for_node(node_name)
+    rep = 0
+    while rep < max_rep_count:
+        if not node:
+            return True
+        node = view_cluster_for_node(node_name)
+        sleep(3)
+        rep = rep + 1
+    return False
 
 
 def wait_for_required_status(required_status, run_id, max_rep_count, validation=True):
@@ -278,13 +345,13 @@ def get_node_name_from_cluster_state(node_state):
 
 def view_cluster():
     cluster_state = []
-    process = subprocess.Popen(['pipe', 'view-cluster'], stdout=subprocess.PIPE)
+    process = subprocess.Popen(['pipe', 'view-cluster'], stdout=subprocess.PIPE, universal_newlines=True)
     process.stdout.readline()
     process.stdout.readline()
     process.stdout.readline()  # skip header
     line = process.stdout.readline()
     while not line.startswith("+"):
-        splitted = filter(None, line.replace(" ", "").split("|"))
+        splitted = [_f for _f in line.replace(" ", "").split("|") if _f]
         cluster_item = {}
         addresses = []
         while splitted[0] != "\n":
@@ -296,7 +363,7 @@ def view_cluster():
             else:
                 addresses.append(splitted[0])
             line = process.stdout.readline()
-            splitted = filter(None, line.replace(" ", "").split("|"))
+            splitted = [_f for _f in line.replace(" ", "").split("|") if _f]
         ip = [ip for ip in addresses if "InternalIP" in ip]
         if len(ip) == 1:
             cluster_item["InternalIP"] = re.findall(IP_PATTERN, ip[0])[0]
@@ -306,7 +373,7 @@ def view_cluster():
 
 
 def view_cluster_errors(node_name):
-    process = subprocess.Popen(['pipe', 'view-cluster', node_name], stderr=subprocess.PIPE)
+    process = subprocess.Popen(['pipe', 'view-cluster', node_name], stderr=subprocess.PIPE, universal_newlines=True)
     return process.stderr.read()
 
 
@@ -435,7 +502,7 @@ def pipe_test(instance_method):
         except BaseException as e:
             self.__class__.state.failure = True
             logging.info("Case %s failed!" % self.test_case)
-            pytest.fail("Test case %s failed.\n%s" % (self.test_case, e.message))
+            pytest.fail("Test case %s failed.\n%s" % (self.test_case, str(e)))
 
     return test_method_wrapper
 
