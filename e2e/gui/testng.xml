@@ -12,8 +12,8 @@
         <classes>
             <class name="com.epam.pipeline.autotests.PlatformPreferencesTest">
                 <methods>
-                    <!-- TC-PARAMETERS-3: nodeup.py of this line does not log the EBS volume type it requests, and neither the API nor the GUI shows the volume type -->
-                    <exclude name="checkConfigureClusterAwsEBSvolumeType"/>
+                    <!-- TC-PARAMETERS-3, the log of a new node: nodeup.py of this line does not log the EBS volume type it requests, and neither the API nor the GUI shows the volume type -->
+                    <exclude name="checkClusterAwsEBSvolumeTypeOfNewNode"/>
                 </methods>
             </class>
         </classes>

@@ -28,6 +28,9 @@ import com.epam.pipeline.autotests.utils.Json;
 import com.epam.pipeline.autotests.utils.PipelinePermission;
 import com.epam.pipeline.autotests.utils.PlatformApi;
 import com.epam.pipeline.autotests.utils.TestCase;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 
 
 import com.epam.pipeline.autotests.utils.listener.Cloud;
@@ -148,9 +151,13 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
     @TestCase(value = {"2736"})
     public void forcibleTerminateInstancesIfJobIsStuckInUmount() {
         // The API stops a run stuck in its cleanup only with this preference set to STOP (DISABLED by default); it
-        // checks the runs every system.resource.monitoring.period (60 s by default)
-        assertEquals(PlatformApi.get("preferences/" + EMERGENCY_TERM_ACTION).path("value").asText(), "STOP",
-                format("The preference %s must be STOP", EMERGENCY_TERM_ACTION));
+        // checks the runs every system.resource.monitoring.period (60 s by default). The test sets it, and sets the
+        // previous value back after
+        final JsonNode termAction = PlatformApi.get("preferences/" + EMERGENCY_TERM_ACTION);
+        final boolean termActionChanged = !"STOP".equals(termAction.path("value").asText(""));
+        if (termActionChanged) {
+            saveTermAction("STOP", termAction.path("visible").asBoolean(false));
+        }
         logoutIfNeeded();
         loginAs(user);
         String stuckRunId = null;
@@ -194,6 +201,32 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                     .shouldHaveStatus(STOPPED);
         } finally {
             stopRunAsOwner(stuckRunId);
+            if (termActionChanged) {
+                restoreTermAction(termAction);
+            }
+        }
+    }
+
+    private static void saveTermAction(final String value, final boolean visible) {
+        final ObjectNode preference = new ObjectMapper().createObjectNode()
+                .put("name", EMERGENCY_TERM_ACTION)
+                .put("value", value)
+                .put("visible", visible);
+        PlatformApi.call("POST", "preferences", "[" + preference + "]");
+    }
+
+    /**
+     * Sets the previous value of the preference back, as the admin: a value the deployment never saved is the system
+     * default, and the saved one is deleted then.
+     */
+    private void restoreTermAction(final JsonNode original) {
+        logoutIfNeeded();
+        loginAs(admin);
+        open(C.ROOT_ADDRESS);
+        if (original.hasNonNull("createdDate")) {
+            saveTermAction(original.path("value").asText(""), original.path("visible").asBoolean(false));
+        } else {
+            PlatformApi.call("DELETE", "preferences/" + EMERGENCY_TERM_ACTION, null);
         }
     }
 

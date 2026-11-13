@@ -125,6 +125,16 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
                 .searchPreference(CLUSTER_AWS_EBS_TYPE);
         clusterTabAO
                 .checkClusterAwsEbsType(C.DEFAULT_CLUSTER_AWS_EBS_TYPE);
+    }
+
+    /**
+     * The volume type of the preference in the InitializeNode log of a new node. testng.xml excludes this method on
+     * release/0.16, whose nodeup logs no volume type.
+     */
+    @CloudProviderOnly(values = {Cloud.AWS})
+    @Test(dependsOnMethods = "checkConfigureClusterAwsEBSvolumeType")
+    @TestCase(value = {"TC-PARAMETERS-3"})
+    public void checkClusterAwsEBSvolumeTypeOfNewNode() {
         final Set<String> logMess = tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .expandTab(ADVANCED_PANEL)
