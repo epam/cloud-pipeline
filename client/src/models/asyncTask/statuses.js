@@ -141,6 +141,14 @@ export function taskArchiveIsAvailable (task) {
   return taskIsDownloadArchive(task) && statusOf(task) === ASYNC_TASK_STATUSES.SUCCESS;
 }
 
+// An extraction has no archive name of its own, so the leaf of `sourcePath`
+// identifies it.
+export function extractedArchiveNameOf (task) {
+  const path = (task && task.params && task.params.sourcePath) || '';
+  const segments = `${path}`.split('/');
+  return segments[segments.length - 1] || path || (task && task.id);
+}
+
 // The archive-name display fallback shared by the Downloads modal's list and
 // its completion toast: the name the user chose, or the task id when it
 // (or `params` itself) is missing.

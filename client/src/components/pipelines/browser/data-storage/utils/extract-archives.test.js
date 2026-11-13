@@ -19,6 +19,9 @@ import {
   ARCHIVE_EXTENSIONS,
   isArchive,
   hasArchives,
+  countArchives,
+  extractionBlockedBy,
+  selectedArchivePaths,
   uploadedArchivePaths,
   extractionFolderOf,
   handleExtractArchives
@@ -324,5 +327,81 @@ describe('handleExtractArchives', () => {
 
     expect(onShowDownloads).toHaveBeenCalledTimes(1);
     expect(hideQueued).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('countArchives', () => {
+  test('counts only the archives', () => {
+    expect(countArchives([
+      {name: 'a.zip'}, {name: 'notes.txt'}, {name: 'b.tar.gz'}
+    ])).toBe(2);
+    expect(countArchives([])).toBe(0);
+    expect(countArchives(undefined)).toBe(0);
+  });
+});
+
+describe('selectedArchivePaths', () => {
+  const item = (over) => ({type: 'file', ...over});
+
+  test('keeps the archive files, in order', () => {
+    expect(selectedArchivePaths([
+      item({path: 'a/one.zip', name: 'one.zip'}),
+      item({path: 'a/notes.txt', name: 'notes.txt'}),
+      item({path: 'a/two.tar.gz', name: 'two.tar.gz'})
+    ])).toEqual(['a/one.zip', 'a/two.tar.gz']);
+  });
+
+  // A folder is never an archive, whatever it is called.
+  test('drops folders, delete markers, and items with no path', () => {
+    expect(selectedArchivePaths([
+      {type: 'folder', path: 'a/backup.zip/', name: 'backup.zip'},
+      item({path: 'a/gone.zip', name: 'gone.zip', deleteMarker: true}),
+      item({name: 'nopath.zip'})
+    ])).toEqual([]);
+  });
+
+  // Built elsewhere, an item may carry no `name`.
+  test('falls back to the path when there is no name', () => {
+    expect(selectedArchivePaths([item({path: 'a/one.zip'})])).toEqual(['a/one.zip']);
+  });
+
+  test('an empty or missing selection has no archives', () => {
+    expect(selectedArchivePaths([])).toEqual([]);
+    expect(selectedArchivePaths(undefined)).toEqual([]);
+  });
+});
+
+describe('extractionBlockedBy', () => {
+  test('the cap being reached blocks, with the server\'s own reason', () => {
+    expect(extractionBlockedBy(1, {allowed: false, reason: 'at the limit', remaining: 0}))
+      .toBe('at the limit');
+  });
+
+  // One task per archive, so the batch needs that many slots.
+  test('more archives than slots blocks, naming both', () => {
+    const reason = extractionBlockedBy(3, {allowed: true, remaining: 1});
+    expect(reason).toContain('3 archives are selected');
+    expect(reason).toContain('1 more archive task');
+  });
+
+  test('singular and plural slots read correctly', () => {
+    expect(extractionBlockedBy(3, {allowed: true, remaining: 2}))
+      .toContain('2 more archive tasks');
+  });
+
+  test('enough slots blocks nothing', () => {
+    expect(extractionBlockedBy(2, {allowed: true, remaining: 2})).toBeUndefined();
+    expect(extractionBlockedBy(1, {allowed: true, remaining: 5})).toBeUndefined();
+  });
+
+  // Unknown is not zero: the server enforces the quota anyway.
+  test('an unknown allowance blocks nothing', () => {
+    expect(extractionBlockedBy(3, {allowed: true})).toBeUndefined();
+    expect(extractionBlockedBy(3, undefined)).toBeUndefined();
+    expect(extractionBlockedBy(3, {})).toBeUndefined();
+  });
+
+  test('nothing selected blocks nothing', () => {
+    expect(extractionBlockedBy(0, {allowed: true, remaining: 0})).toBeUndefined();
   });
 });

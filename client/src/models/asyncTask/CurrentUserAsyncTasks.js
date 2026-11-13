@@ -168,7 +168,7 @@ class CurrentUserAsyncTasks {
     entriesForUser(userName).forEach(entry => this.startPolling(entry));
     let active = [];
     try {
-      active = await this.fetchActiveTasks(ASYNC_TASK_TYPES.DOWNLOAD_ARCHIVE);
+      active = await this.fetchActiveTasks();
     } catch (error) {
       // The browser keeps watching whatever it already knew about; a failed
       // sync costs this visit's knowledge of other machines, nothing more.
@@ -492,8 +492,7 @@ class CurrentUserAsyncTasks {
 
   /**
    * One UNPACK_ARCHIVE task, for one archive: `sourcePath` is a single path
-   * server-side. Not passed to `trackTask` - the completion notification offers
-   * a download link an extraction has no equivalent for.
+   * server-side.
    *
    * @param {string|number} storageId
    * @param {string} sourcePath the archive, with no trailing slash
@@ -512,14 +511,15 @@ class CurrentUserAsyncTasks {
       sourcePath,
       destinationStorageId: storageId,
       destinationPath: destinationPath || '',
-      // `overwrite` avoids the all-or-nothing refusal on a collision. The archive
-      // goes because the user wanted its contents; the server deletes it last.
+      // `overwrite` avoids the all-or-nothing refusal on a collision. The
+      // archive itself is kept.
       overwrite: true,
-      deleteSourceOnSuccess: true
+      deleteSourceOnSuccess: false
     });
     if (request.error) {
       throw new Error(request.error);
     }
+    this.trackTask(request.value || {});
     return request.value;
   }
 

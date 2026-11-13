@@ -118,6 +118,11 @@ import handleDownloadArchive, {
   defaultArchiveName
 } from './utils/download-archive';
 import DownloadArchiveModal from './components/download-archive-modal';
+import {
+  extractionBlockedBy,
+  handleExtractArchives,
+  selectedArchivePaths
+} from './utils/extract-archives';
 import DownloadsModal from '../../../special/downloads/downloads-modal';
 import {SHOW_DOWNLOADS_LABEL} from '../../../special/downloads/queued-task-message';
 import JobList from './components/imported-jobs';
@@ -202,6 +207,7 @@ export default class DataStorage extends React.Component {
   state = {
     editDialogVisible: false,
     downloadArchiveModalVisible: false,
+    extractionLimitCheck: undefined,
     downloadsModalVisible: false,
     restoreDialogVisible: false,
     lifeCycleRestoreMode: undefined,
@@ -1109,6 +1115,41 @@ export default class DataStorage extends React.Component {
 
   closeDownloadsModal = () => {
     this.setState({downloadsModalVisible: false});
+  };
+
+  // Refreshed when the selection dropdown opens: the menu is transient, so a
+  // stale answer only costs one click the server would refuse anyway.
+  checkExtractionLimit = () => {
+    const {asyncTasks} = this.props;
+    if (!asyncTasks || typeof asyncTasks.checkActiveTasksLimit !== 'function') {
+      return;
+    }
+    asyncTasks.checkActiveTasksLimit()
+      .then((extractionLimitCheck) => this.setState({extractionLimitCheck}))
+      .catch((error) => {
+        console.warn('Could not check the active archive-task limit', error);
+      });
+  };
+
+  // Why "Extract archive" is unavailable for the current selection.
+  get extractionDisabledReason () {
+    const {selectedItems = []} = this.state;
+    return extractionBlockedBy(
+      selectedArchivePaths(selectedItems).length,
+      this.state.extractionLimitCheck
+    );
+  }
+
+  extractSelectedArchives = () => {
+    const {asyncTasks, storageId} = this.props;
+    const {selectedItems = []} = this.state;
+    void handleExtractArchives(
+      asyncTasks,
+      storageId,
+      selectedArchivePaths(selectedItems),
+      undefined,
+      this.showDownloadsModal
+    );
   };
 
   // Throws when the request fails.
@@ -2396,6 +2437,7 @@ export default class DataStorage extends React.Component {
       removeAll: 'remove-all',
       download: 'download',
       downloadArchive: 'download-archive',
+      extractArchive: 'extract-archive',
       restoreOmics: 'restoreOmics',
       downloadOmics: 'downloadOmics',
       permissions: 'permissions',
@@ -2419,6 +2461,20 @@ export default class DataStorage extends React.Component {
       title: 'Download archive',
       icon: 'download',
       available: archiveSupported && archiveActionAvailable(selectedItems)
+    };
+    const archivePathsToExtract = selectedArchivePaths(selectedItems);
+    const extractionDisabledReason = this.extractionDisabledReason;
+    // Offered for a single archive too, unlike "Download archive": extracting
+    // one file is the ordinary case. Needs write access - it writes.
+    const extractArchiveAction = {
+      key: Keys.extractArchive,
+      title: 'Extract archive',
+      icon: 'folder-add',
+      available: this.archiveStorageTypeSupported &&
+        this.currentFolderWriteAllowed &&
+        archivePathsToExtract.length > 0,
+      disabled: !!extractionDisabledReason,
+      disabledHint: extractionDisabledReason
     };
     const downloadOmicsAction = {
       key: Keys.downloadOmics,
@@ -2524,6 +2580,7 @@ export default class DataStorage extends React.Component {
     appendAction(copyPathsAction);
     appendAction(downloadAction);
     appendAction(downloadArchiveAction);
+    appendAction(extractArchiveAction);
     appendAction(downloadOmicsAction);
     if (this.userCanChangeStorageItemsPermissions) {
       appendAction(permissionsAction);
@@ -2539,7 +2596,7 @@ export default class DataStorage extends React.Component {
       return null;
     }
     const doAction = (action, event) => {
-      if (!action) {
+      if (!action || action.disabled) {
         return;
       }
       switch (action.key) {
@@ -2567,6 +2624,9 @@ export default class DataStorage extends React.Component {
         case Keys.downloadArchive:
           this.openDownloadArchiveModal();
           break;
+        case Keys.extractArchive:
+          this.extractSelectedArchives();
+          break;
         case Keys.copyPaths:
           this.copyPathsToClipboard(selectedItems);
           break;
@@ -2582,16 +2642,29 @@ export default class DataStorage extends React.Component {
     };
     if (actions.length === 1) {
       const action = actions[0];
-      return (
+      const button = (
         <Button
           size="small"
           id={`selection-action-${action.key}`}
+          disabled={action.disabled}
           onClick={(event) => doAction(action, event)}
           style={{lineHeight: 1}}
         >
           {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
           {action.title}
         </Button>
+      );
+      if (!action.disabledHint) {
+        return button;
+      }
+      return (
+        <Popover
+          content={<div style={{maxWidth: 300}}>{action.disabledHint}</div>}
+          trigger={['hover']}
+          placement="bottomRight"
+        >
+          <span>{button}</span>
+        </Popover>
       );
     }
     const title = selectedItems && selectedItems.length > 0
@@ -2607,6 +2680,7 @@ export default class DataStorage extends React.Component {
         <MenuItem
           id={`selection-action-${action.key}`}
           key={action.key}
+          disabled={action.disabled}
           className={classNames(action.className, `selection-action-${action.key}`)}
         >
           <div style={{display: 'flex', alignItems: 'center'}}>
@@ -2617,6 +2691,22 @@ export default class DataStorage extends React.Component {
                 <Icon type="info-circle" style={{marginLeft: 5}} />
               </Tooltip>
             )}
+            {action.disabledHint && (
+              // antd puts a popover (1030) below a dropdown (1050), so this
+              // needs the same override capability.js uses.
+              <Popover
+                content={<div style={{maxWidth: 300}}>{action.disabledHint}</div>}
+                trigger={['hover']}
+                placement="left"
+                overlayStyle={{zIndex: 1071}}
+              >
+                <Icon
+                  type="info-circle"
+                  id={`selection-action-${action.key}-disabled-hint`}
+                  style={{marginLeft: 5}}
+                />
+              </Popover>
+            )}
           </div>
         </MenuItem>
       );
@@ -2625,6 +2715,7 @@ export default class DataStorage extends React.Component {
       <Dropdown
         placement="bottomRight"
         trigger={['click']}
+        onVisibleChange={(visible) => visible && this.checkExtractionLimit()}
         overlayClassName="selection-actions-dropdown"
         overlay={
           <Menu

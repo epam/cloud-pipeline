@@ -78,6 +78,49 @@ export function countArchives (files) {
   return (files || []).filter(file => file && isArchive(file.name)).length;
 }
 
+/**
+ * The archives among a storage-browser selection - files only, since a folder
+ * is never an archive, and no delete markers.
+ *
+ * @param {{path: string, name: string, type: string, deleteMarker: boolean}[]} selectedItems
+ * @returns {string[]} storage-relative paths
+ */
+export function selectedArchivePaths (selectedItems) {
+  return (selectedItems || [])
+    .filter(item => item &&
+      item.path &&
+      !item.deleteMarker &&
+      /^file$/i.test(item.type || '') &&
+      isArchive(item.name || item.path))
+    .map(item => item.path);
+}
+
+function slots (remaining) {
+  return remaining === 1 ? '1 more archive task' : `${remaining} more archive tasks`;
+}
+
+/**
+ * Why extraction cannot be queued, or `undefined` where it can. One task per
+ * archive, so a batch needs that many free slots. An unknown allowance blocks
+ * nothing.
+ *
+ * @param {number} archives
+ * @param {{allowed: boolean, reason: string, remaining: number}} [check]
+ * @returns {string|undefined}
+ */
+export function extractionBlockedBy (archives, check = {}) {
+  const {allowed, reason, remaining} = check || {};
+  if (allowed === false) {
+    return reason || 'You have too many archive tasks in progress.';
+  }
+  if (archives < 1 || !Number.isFinite(remaining) || archives <= remaining) {
+    return undefined;
+  }
+  return `${archives} archives are selected, and you may start only ` +
+    `${slots(remaining)} right now. ` +
+    'Wait for one of your archive tasks to finish, or cancel one.';
+}
+
 // Both halves are needed: UploadButton's S3 path sets `done` and `status`,
 // its synchronous path only `status`.
 function succeeded (file) {

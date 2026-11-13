@@ -190,10 +190,8 @@ describe('startAsyncTaskNotifications', () => {
     expect(messageApi.success).not.toHaveBeenCalled();
   });
 
-  // The "ready, download it" message offers a link that consumes the task,
-  // which the server refuses for an extraction - so an extraction is never
-  // announced here, whatever its status.
-  it('calls neither for a finished extraction task', () => {
+  // Named by the leaf of `sourcePath`: an extraction has no `archiveName`.
+  it('announces a finished extraction, with no download link', () => {
     const store = newFakeStore();
     const messageApi = newFakeMessageApi();
     start(store, messageApi);
@@ -202,9 +200,41 @@ describe('startAsyncTaskNotifications', () => {
       id: 7,
       type: 'UNPACK_ARCHIVE',
       status: 'SUCCESS',
+      params: {sourcePath: 'folder/a.zip'}
+    });
+
+    expect(messageApi.success).toHaveBeenCalledTimes(1);
+    const [content, duration] = messageApi.success.mock.calls[0];
+    // A plain string, not a node: there is nothing to click.
+    expect(content).toBe('Archive "a.zip" has been extracted.');
+    // Not 0: unlike a ready download, this toast has no action to wait for.
+    expect(duration).toBe(5);
+  });
+
+  it('reports a failed extraction, with its reason', () => {
+    const store = newFakeStore();
+    const messageApi = newFakeMessageApi();
+    start(store, messageApi);
+
+    store.handler({
+      id: 8,
+      type: 'UNPACK_ARCHIVE',
+      status: 'FAILED',
+      errorMessage: 'boom',
       params: {sourcePath: 'a.zip'}
     });
-    store.handler({id: 8, type: 'UNPACK_ARCHIVE', status: 'FAILED', errorMessage: 'boom'});
+
+    expect(messageApi.error).toHaveBeenCalledWith('Extraction of "a.zip" has failed. boom', 5);
+    expect(messageApi.success).not.toHaveBeenCalled();
+  });
+
+  // Neither message is download-shaped, so no link is ever offered for one.
+  it('calls neither for a task of an unknown type', () => {
+    const store = newFakeStore();
+    const messageApi = newFakeMessageApi();
+    start(store, messageApi);
+
+    store.handler({id: 9, type: 'SOMETHING_ELSE', status: 'SUCCESS'});
 
     expect(messageApi.success).not.toHaveBeenCalled();
     expect(messageApi.error).not.toHaveBeenCalled();

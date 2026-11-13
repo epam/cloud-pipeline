@@ -28,7 +28,8 @@ import {
   taskIsUnpackArchive,
   displayTaskType,
   normalizeStatus,
-  archiveNameOf
+  archiveNameOf,
+  extractedArchiveNameOf
 } from '../../../models/asyncTask/statuses';
 import styles from './async-tasks-list.css';
 
@@ -72,14 +73,6 @@ function archiveSizeOf (task) {
     return undefined;
   }
   return bytes;
-}
-
-// An extraction names its archive by path and has no archive name of its own,
-// so the leaf of `sourcePath` is what identifies the row.
-function extractionNameOf (task) {
-  const path = (task.params && task.params.sourcePath) || '';
-  const segments = `${path}`.split('/');
-  return segments[segments.length - 1] || path || task.id;
 }
 
 // Mirrors the backend's own DownloadArchiveTaskProcessor.offeredArchiveName
@@ -187,7 +180,7 @@ export default function buildColumns ({
         if (taskIsUnpackArchive(task)) {
           // No `.zip` appended and no count: the archive is one file the user
           // uploaded, named exactly as it is on the storage.
-          return extractionNameOf(task);
+          return extractedArchiveNameOf(task);
         }
         const name = displayArchiveNameOf(task);
         const paths = (task.params && task.params.paths) || [];

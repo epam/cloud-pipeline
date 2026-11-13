@@ -21,7 +21,9 @@ import {
   ASYNC_TASK_STATUSES,
   normalizeStatus,
   archiveNameOf,
-  taskIsDownloadArchive
+  taskIsDownloadArchive,
+  taskIsUnpackArchive,
+  extractedArchiveNameOf
 } from '../../models/asyncTask/statuses';
 import downloadArchiveTask from '../special/downloads/download-archive-task';
 
@@ -40,9 +42,26 @@ import downloadArchiveTask from '../special/downloads/download-archive-task';
 let started = false;
 let teardown = () => {};
 
+function notifyExtraction (task, messageApi) {
+  const status = normalizeStatus(task && task.status);
+  // No link, unlike a download: an extraction writes into the storage, and
+  // `consume` throws for it. Five seconds, since there is nothing to act on.
+  const name = extractedArchiveNameOf(task);
+  if (status === ASYNC_TASK_STATUSES.SUCCESS) {
+    messageApi.success(`Archive "${name}" has been extracted.`, 5);
+  } else if (status === ASYNC_TASK_STATUSES.FAILED) {
+    const reason = task && task.errorMessage ? ` ${task.errorMessage}` : '';
+    messageApi.error(`Extraction of "${name}" has failed.${reason}`, 5);
+  }
+}
+
 function notify (task, messageApi, download) {
-  // Download tasks only: both messages are download-shaped, and one offers a
-  // link that consumes the task, which throws for any other type.
+  if (taskIsUnpackArchive(task)) {
+    notifyExtraction(task, messageApi);
+    return;
+  }
+  // Nothing else is announced: the messages below are download-shaped, and one
+  // offers a link that consumes the task.
   if (!taskIsDownloadArchive(task)) {
     return;
   }

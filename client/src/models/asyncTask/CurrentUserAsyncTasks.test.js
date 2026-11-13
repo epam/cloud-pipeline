@@ -409,10 +409,8 @@ describe('restore', () => {
     const body = JSON.parse(api.calls.find(c => c.path === FILTER_ROUTE).body);
     expect([...body.statuses].sort()).toEqual([...ACTIVE_STATUSES].sort());
     expect(body.owner).toBe(USER_NAME);
-    // Scoped to DOWNLOAD_ARCHIVE, unlike the quota count, because what this
-    // does with the answer is watch and announce: an unpack task has nothing
-    // to hand over, so announcing one would offer a download that is not there.
-    expect(body.type).toBe('DOWNLOAD_ARCHIVE');
+    // No type: both kinds of archive task are watched and announced now.
+    expect(body.type).toBeUndefined();
   });
 
   // A task that had already finished before start-up is not in the active
@@ -620,6 +618,7 @@ describe('startArchiveExtraction', () => {
     api.reply(FILTER_ROUTE, filterPage([]));
     const createdTask = {id: 101, status: 'PENDING', created: YESTERDAY(), owner: USER_NAME};
     api.reply('/async-task/create', createdTask);
+    api.reply(taskRoute(101), createdTask);
     const store = newStore();
 
     const result = await store.startArchiveExtraction(7, 'folder/data.zip', 'folder/');
@@ -633,7 +632,7 @@ describe('startArchiveExtraction', () => {
       destinationStorageId: 7,
       destinationPath: 'folder/',
       overwrite: true,
-      deleteSourceOnSuccess: true
+      deleteSourceOnSuccess: false
     });
     expect(result).toEqual(createdTask);
   });
@@ -645,7 +644,9 @@ describe('startArchiveExtraction', () => {
     const api = stubApi();
     stubWhoAmI(api);
     api.reply(FILTER_ROUTE, filterPage([]));
-    api.reply('/async-task/create', {id: 102, status: 'PENDING'});
+    const createdTask = {id: 102, status: 'PENDING', created: YESTERDAY(), owner: USER_NAME};
+    api.reply('/async-task/create', createdTask);
+    api.reply(taskRoute(102), createdTask);
     const store = newStore();
 
     await store.startArchiveExtraction(7, 'data.zip', undefined);
@@ -680,19 +681,21 @@ describe('startArchiveExtraction', () => {
       .rejects.toThrow(/Permission is not granted/);
   });
 
-  // The completion notification offers a download link an extraction has no
-  // equivalent for, so an extraction is not watched.
-  it('does not watch or persist the task it queued', async () => {
+  // Watched like a download, so its completion raises a notification.
+  it('starts watching the task it queued, and persists it', async () => {
     await setMaxUserTasks(5);
     const api = stubApi();
     stubWhoAmI(api);
     api.reply(FILTER_ROUTE, filterPage([]));
-    api.reply('/async-task/create', {id: 103, status: 'PENDING', created: YESTERDAY()});
+    const createdTask = {id: 103, status: 'PENDING', created: YESTERDAY(), owner: USER_NAME};
+    api.reply('/async-task/create', createdTask);
+    api.reply(taskRoute(103), createdTask);
     const store = newStore();
 
     await store.startArchiveExtraction(7, 'a.zip', '');
 
-    expect(loadEntries()).toEqual([]);
+    expect(loadEntries().map(entry => entry.id)).toEqual(['103']);
+    expect(store.pollers.has('103')).toBe(true);
   });
 });
 

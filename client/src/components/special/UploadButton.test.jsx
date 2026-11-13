@@ -706,9 +706,8 @@ describe('UploadButton - the archive-task cap in the confirmation pop-up', () =>
     expect(screen.queryByText(AT_THE_CAP)).not.toBeInTheDocument();
   });
 
-  // One task per archive, so a selection can cost more than is left - said up
-  // front rather than in two toasts afterwards.
-  test('fewer slots than archives warns up front, and still allows the batch', async () => {
+  // One task per archive, so a batch needs that many free slots.
+  test('fewer slots than archives disables the button, with the reason', async () => {
     useFakeTimers();
     const {input} = renderUploadButton({
       extractArchivesAvailable: true,
@@ -719,11 +718,12 @@ describe('UploadButton - the archive-task cap in the confirmation pop-up', () =>
     useRealTimers();
 
     await waitFor(() => {
-      expect(screen.getByText(/3 archives selected/)).toBeInTheDocument();
+      expect(screen.getByText(/3 archives are selected/)).toBeInTheDocument();
     });
     expect(screen.getByText(/only 1 more archive task/)).toBeInTheDocument();
-    // Not a refusal: one of the three can still be queued.
-    expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
+    expect(screen.getByRole('button', {name: 'Upload and extract'})).toBeDisabled();
+    // Plain Upload is unaffected.
+    expect(screen.getByRole('button', {name: 'Upload'})).not.toBeDisabled();
   });
 
   test('enough slots for every archive says nothing', async () => {
@@ -756,7 +756,7 @@ describe('UploadButton - the archive-task cap in the confirmation pop-up', () =>
     useRealTimers();
 
     await waitFor(() => {
-      expect(screen.getByText(/3 archives selected/)).toBeInTheDocument();
+      expect(screen.getByText(/3 archives are selected/)).toBeInTheDocument();
     });
   });
 

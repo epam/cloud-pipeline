@@ -35,6 +35,7 @@ import continuousFetch from '../../utils/continuous-fetch';
 import {
   hasArchives,
   countArchives,
+  extractionBlockedBy,
   uploadedArchivePaths,
   handleExtractArchives
 } from '../pipelines/browser/data-storage/utils/extract-archives';
@@ -81,9 +82,9 @@ class UploadButton extends React.Component {
     synchronousUploadingFiles: [],
     pendingConfirmation: false,
     extractAfterUpload: false,
-    // `undefined` while the cap check has not answered, which is allowed.
-    extractionBlockedReason: undefined,
-    extractionSlotsRemaining: undefined
+    // `checkActiveTasksLimit`'s answer; `undefined` until it lands, which
+    // allows extraction.
+    extractionLimitCheck: undefined
   };
 
   @observable s3Storage;
@@ -229,8 +230,7 @@ class UploadButton extends React.Component {
       synchronousUploadingFiles: [],
       pendingConfirmation: false,
       extractAfterUpload: false,
-      extractionBlockedReason: undefined,
-      extractionSlotsRemaining: undefined
+      extractionLimitCheck: undefined
     }, async () => {
       if (this.props.onRefresh) {
         this.props.onRefresh(uploadingFiles.map(f => f.name));
@@ -263,8 +263,7 @@ class UploadButton extends React.Component {
         pendingConfirmation: true,
         uploadInfoClosable: true,
         uploadingFiles: [],
-        extractionBlockedReason: undefined,
-        extractionSlotsRemaining: undefined
+        extractionLimitCheck: undefined
       }, this.startExtractionLimitPolling);
       return;
     }
@@ -307,41 +306,23 @@ class UploadButton extends React.Component {
     const token = this.extractionLimitToken;
     return Promise.resolve()
       .then(() => asyncTasks.checkActiveTasksLimit())
-      .then(({allowed, reason, remaining} = {}) => {
+      .then((check) => {
         if (this.unmounted || token !== this.extractionLimitToken) {
           return;
         }
-        this.setState({
-          extractionBlockedReason: allowed ? undefined : reason,
-          extractionSlotsRemaining: allowed ? remaining : 0
-        });
+        this.setState({extractionLimitCheck: check});
       })
       .catch((error) => {
         console.warn('Could not check the active archive-task limit', error);
       });
   };
 
-  get extractionBlocked () {
-    return !!this.state.extractionBlockedReason;
-  }
-
-  // Set only where the allowance is known and short of what the selection
-  // costs - one task per archive. Below that, the batch fits and says nothing.
-  get extractionShortfallWarning () {
-    const {extractionSlotsRemaining} = this.state;
-    if (this.extractionBlocked || !Number.isFinite(extractionSlotsRemaining)) {
-      return undefined;
-    }
-    const archives = countArchives(this.state.synchronousUploadingFiles);
-    if (extractionSlotsRemaining <= 0 || archives <= extractionSlotsRemaining) {
-      return undefined;
-    }
-    const slots = extractionSlotsRemaining === 1
-      ? '1 more archive task'
-      : `${extractionSlotsRemaining} more archive tasks`;
-    return `${archives} archives selected, but you may start only ${slots} right now. ` +
-      `Extraction will be queued for ${extractionSlotsRemaining} of them; ` +
-      'upload the rest again once your current tasks finish.';
+  // Why "Upload and extract" is unavailable, shown in the pop-up's alert.
+  get extractionDisabledReason () {
+    return extractionBlockedBy(
+      countArchives(this.state.synchronousUploadingFiles),
+      this.state.extractionLimitCheck
+    );
   }
 
   /**
@@ -354,8 +335,7 @@ class UploadButton extends React.Component {
       uploadInfoClosable: false,
       pendingConfirmation: false,
       extractAfterUpload: false,
-      extractionBlockedReason: undefined,
-      extractionSlotsRemaining: undefined,
+      extractionLimitCheck: undefined,
       uploadingFiles: [],
       synchronousUploadingFiles: []
     });
@@ -408,8 +388,7 @@ class UploadButton extends React.Component {
           // uploaded.
           pendingConfirmation: false,
           extractAfterUpload: false,
-          extractionBlockedReason: undefined,
-          extractionSlotsRemaining: undefined
+          extractionLimitCheck: undefined
         });
         return;
       }
@@ -423,8 +402,7 @@ class UploadButton extends React.Component {
           synchronousUploadingFiles: [],
           pendingConfirmation: false,
           extractAfterUpload: false,
-          extractionBlockedReason: undefined,
-          extractionSlotsRemaining: undefined
+          extractionLimitCheck: undefined
         });
         return;
       }
@@ -615,8 +593,7 @@ class UploadButton extends React.Component {
           // See `onUploadStatusChangedSynchronous`.
           pendingConfirmation: false,
           extractAfterUpload: false,
-          extractionBlockedReason: undefined,
-          extractionSlotsRemaining: undefined
+          extractionLimitCheck: undefined
         });
         return;
       }
@@ -807,7 +784,7 @@ class UploadButton extends React.Component {
         <Button
           id="upload-and-extract-button"
           style={{marginRight: 8}}
-          disabled={this.extractionBlocked}
+          disabled={!!this.extractionDisabledReason}
           onClick={this.confirmUpload(true)}
         >
           Upload and extract
@@ -1019,16 +996,12 @@ class UploadButton extends React.Component {
           visible={this.state.uploadInfoVisible}>
           {
             // `info`, not `warning`: the selection is fine and Upload works.
-            this.state.pendingConfirmation && (
-              this.state.extractionBlockedReason || this.extractionShortfallWarning
-            ) && (
+            this.state.pendingConfirmation && this.extractionDisabledReason && (
               <Alert
                 type="info"
                 showIcon
                 style={{marginBottom: 8}}
-                message={
-                  this.state.extractionBlockedReason || this.extractionShortfallWarning
-                }
+                message={this.extractionDisabledReason}
               />
             )
           }
