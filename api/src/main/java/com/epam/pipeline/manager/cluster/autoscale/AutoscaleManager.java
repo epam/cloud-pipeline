@@ -460,7 +460,7 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
                                     pool.getName()));
                 }
             });
-            final Map<String, String> tags = MapUtils.emptyIfNull(run.getTags());
+            final Map<String, String> tags = new HashMap<>(MapUtils.emptyIfNull(run.getTags()));
             if (!tags.containsKey(POOL_PENDING_TAG)) {
                 labelPoolPendingRun(longId, runId, run, poolId, tags);
             } else {
