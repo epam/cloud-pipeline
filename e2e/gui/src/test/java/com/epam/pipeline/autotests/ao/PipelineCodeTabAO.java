@@ -284,7 +284,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
             return this;
         }
 
-        private FileEditingPopupAO fillWith(String newText) {
+        public FileEditingPopupAO fillWith(String newText) {
             Utils.clickAndSendKeysWithSlashes($(byClassName("CodeMirror-line")), newText);
             return this;
         }
@@ -301,7 +301,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
             return new CommitPopupAO<>(parentAO);
         }
 
-        private FileEditingPopupAO clear() {
+        public FileEditingPopupAO clear() {
             final SelenideElement editor = $(byClassName("CodeMirror-code"));
             final int codeLength = editor.innerText().length();
             final SelenideElement mirrorLine = editor.find(byClassName("CodeMirror-line")).shouldBe(visible);
@@ -312,7 +312,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
             return this;
         }
 
-        private FileEditingPopupAO clickEdit() {
+        public FileEditingPopupAO clickEdit() {
             return click(EDIT);
         }
 
@@ -331,6 +331,10 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
                     .fillWith(edited)
                     .deleteExtraBrackets(100);
             return this;
+        }
+
+        public FileEditingPopupAO deleteExtraBrackets() {
+            return deleteExtraBrackets(100);
         }
 
         public FileEditingPopupAO deleteExtraBrackets(int num) {
