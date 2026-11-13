@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Covers the install of NICE DCV on the RPM based images by workflows/pipe-common/shell/nice_dcv_setup: which DCV
-# build install_dcv takes for the major version of the OS, or the one CP_CAP_DCV_DISTRIBUTION names, and how
-# install_prerequisites handles the optional packages, which Rocky Linux 9 does not provide.
-# Runs install_optional_rpm_pkgs, install_prerequisites and install_dcv with bash. yum, rpm, wget, tar, the pipe_log_*
-# commands and the python interpreter are replaced by stubs, which record their calls.
+# Covers the install of NICE DCV by workflows/pipe-common/shell/nice_dcv_setup: which DCV build install_dcv takes for
+# the major version of an RPM based OS, or the one CP_CAP_DCV_DISTRIBUTION names, and for the Ubuntu version; and how
+# install_prerequisites handles the optional packages: those Rocky Linux 9 does not provide, and those of the keyboard
+# layout switcher of the desktop.
+# Runs install_optional_rpm_pkgs, install_optional_deb_pkgs, install_prerequisites and install_dcv with bash. yum, apt,
+# rpm, gpg, wget, tar, the pipe_log_* commands and the python interpreter are replaced by stubs, which record their
+# calls.
 
 import os
 import subprocess
@@ -30,10 +32,12 @@ DISTRO_URL = 'https://distribution.test/'
 EL7 = 'nice-dcv-2021.2-11190-el7-x86_64'
 EL8 = 'nice-dcv-2021.2-11445-el8-x86_64'
 EL9 = 'nice-dcv-2024.0-19030-el9-x86_64'
-OPTIONAL_PACKAGES = ['libXvMC', 'mesa-libxatracker']
+OPTIONAL_PACKAGES = ['libXvMC', 'mesa-libxatracker', 'xfce4-xkb-plugin', 'setxkbmap', 'xorg-x11-xkb-utils', 'xrandr',
+                     'xorg-x11-server-utils']
+DEB_OPTIONAL_PACKAGES = ['xfce4-xkb-plugin', 'x11-xkb-utils']
 
-# yum fails a whole install if one of the packages is missing, as dnf does by default.
-# STUB_CP_REPO_BROKEN fails every call that does not disable the cloud-pipeline repository
+# yum and apt fail a whole install if one of the packages is missing, as dnf does by default.
+# STUB_CP_REPO_BROKEN fails every yum call that does not disable the cloud-pipeline repository
 STUBS = r'''
 record() { printf '%s\n' "$*" >> "$CALLS"; }
 pipe_log_info() { record "info $1"; }
@@ -41,6 +45,7 @@ pipe_log_warn() { record "warn $1"; }
 pipe_log_fail() { record "fail $1"; }
 python_stub() { record "python $*"; }
 rpm() { record "rpm $*"; }
+gpg() { record "gpg $*"; }
 wget() { record "wget $*"; }
 tar() {
     record "tar $*"
@@ -52,6 +57,16 @@ yum() {
         *" --disablerepo=cloud-pipeline "*) ;;
         *) [ "$STUB_CP_REPO_BROKEN" == "true" ] && return 1 ;;
     esac
+    local _arg
+    for _arg in "$@"; do
+        case " $STUB_MISSING " in
+            *" $_arg "*) return 1 ;;
+        esac
+    done
+    return 0
+}
+apt() {
+    record "apt $*"
     local _arg
     for _arg in "$@"; do
         case " $STUB_MISSING " in
@@ -77,6 +92,7 @@ def _run(tmpdir, call, **env_vars):
     work_dir = tmpdir.mkdir('work')
     script = STUBS + \
         _function_source('install_optional_rpm_pkgs') + \
+        _function_source('install_optional_deb_pkgs') + \
         _function_source('install_prerequisites') + \
         _function_source('install_dcv') + \
         call + '\necho "result $?" >> "$CALLS"\n'
@@ -201,3 +217,52 @@ def test_install_prerequisites_fails_if_a_required_package_is_missing(tmpdir):
         assert 'yum -y install %s' % package not in calls
     assert not any(call.startswith('python ') for call in calls)
     assert 'result 0' not in calls
+
+
+@pytest.mark.parametrize('version, build', [
+    ('20.04', 'nice-dcv-2021.2-11190-ubuntu2004-x86_64'),
+    ('22.04', 'nice-dcv-2022.2-14521-ubuntu2204-x86_64'),
+    ('24.04', 'nice-dcv-2024.0-19030-ubuntu2404-x86_64'),
+])
+def test_install_dcv_takes_the_build_of_the_ubuntu_version(tmpdir, version, build):
+    calls = _run(tmpdir, 'install_dcv', IS_RPM_BASED='1', CP_OS='ubuntu', CP_VER=version)
+
+    assert _downloaded_build(calls) == build
+    assert any(call.startswith('apt install -y ./nice-dcv-server') for call in calls)
+    assert 'info DCV successfully installed and configured' in calls
+    assert 'result 0' in calls
+
+
+def test_install_dcv_fails_on_an_ubuntu_version_without_a_build(tmpdir):
+    sentinel = tmpdir.join('sentinel')
+    sentinel.write('')
+
+    calls = _run(tmpdir, 'install_dcv', IS_RPM_BASED='1', CP_OS='ubuntu', CP_VER='26.04')
+
+    assert 'fail [ERROR] Unsupported Ubuntu version: 26.04' in calls
+    assert not any(call.startswith('wget') or call.startswith('apt') for call in calls)
+    assert 'result 0' not in calls
+    assert sentinel.check(file=True)
+
+
+def test_install_prerequisites_installs_the_optional_ubuntu_packages_after_the_required_ones(tmpdir):
+    calls = _run(tmpdir, 'install_prerequisites', IS_RPM_BASED='1', CP_OS='ubuntu', CP_VER='24.04',
+                 STUB_MISSING=DEB_OPTIONAL_PACKAGES[0])
+
+    installs = [call for call in calls if call.startswith('apt install')]
+    assert installs[0] == 'apt install -y --no-install-recommends xfce4 dbus-x11 xfce4-terminal firefox'
+    assert installs[1:] == ['apt install -y --no-install-recommends %s' % package
+                            for package in DEB_OPTIONAL_PACKAGES]
+    assert 'warn [WARNING] Optional DCV prerequisite %s is not available, skipping it' % DEB_OPTIONAL_PACKAGES[0] \
+        in calls
+    assert not any(call.startswith('fail ') for call in calls)
+    assert 'result 0' in calls
+
+
+def test_install_prerequisites_skips_the_optional_ubuntu_packages_if_the_required_ones_fail(tmpdir):
+    calls = _run(tmpdir, 'install_prerequisites', IS_RPM_BASED='1', CP_OS='ubuntu', CP_VER='24.04',
+                 STUB_MISSING='firefox')
+
+    assert 'fail [ERROR] Cannot install system prerequisites for DCV' in calls
+    for package in DEB_OPTIONAL_PACKAGES:
+        assert 'apt install -y --no-install-recommends %s' % package not in calls
