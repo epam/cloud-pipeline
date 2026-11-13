@@ -109,6 +109,7 @@
     - [The VM monitor does not check the open files on Amazon Linux 2023 nodes and other hosts with systemd 240 or later](#the-vm-monitor-does-not-check-the-open-files-on-amazon-linux-2023-nodes-and-other-hosts-with-systemd-240-or-later)
     - [Git synchronization: a new GitLab 9 user has to confirm the email](#git-synchronization-a-new-gitlab-9-user-has-to-confirm-the-email)
     - [Autoscaler keeps a free node for a waiting run that may not get it](#autoscaler-keeps-a-free-node-for-a-waiting-run-that-may-not-get-it)
+    - [Rocky Linux and RHEL runs: NICE DCV and SGE fail to install on Rocky Linux 9, and systemd is set up when it is not requested](#rocky-linux-and-rhel-runs-nice-dcv-and-sge-fail-to-install-on-rocky-linux-9-and-systemd-is-set-up-when-it-is-not-requested)
 
 ***
 
@@ -2349,3 +2350,19 @@ Now, the autoscaler keeps no free node for such a run. The node expires as any o
 When the cluster has reached `cluster.max.size`, and `cluster.kill.not.matching.nodes` is `true`, the autoscaler scales down a free node that the waiting run does not take, to make room for a new node. Previously, it could pick a free node of a hot node pool or of a local cluster. Such a node has no run ID, so the autoscaler failed to scale it down, and the waiting run was not processed until the next check, where the same could happen again. Now, these nodes are not scaled down this way: the pools keep their nodes.
 
 Also, a run whose parameter list or tags are not set is handled as a run with none. Previously, the autoscaler failed on such a run with an error in the API log. With no parameter list, each check of the autoscaler stopped there, so no waiting run got a node, and no free node was scaled down. With no tags, a waiting run did not get the `NODE_PENDING` tag when the cluster was full.
+
+### Rocky Linux and RHEL runs: NICE DCV and SGE fail to install on Rocky Linux 9, and systemd is set up when it is not requested
+
+[#4859](https://github.com/epam/cloud-pipeline/issues/4859)
+
+Previously, three steps of the run setup did not handle Rocky Linux 9, and one of them also affected the other Rocky Linux and RHEL runs:
+
+- **NICE DCV**: the setup chose the DCV build by a `7` anywhere in the OS version. A Rocky Linux 9 run got the el8 build (`nice-dcv-2021.2-11445-el8-x86_64`), and a version such as `8.7` or `9.7` got the el7 build. The setup also required the `libXvMC` and `mesa-libxatracker` packages, which Rocky Linux 9 does not have. So the install of the DCV prerequisites failed, and the `NiceDCVInitialization` task failed with "Cannot install system prerequisites for DCV".
+- **SGE**: the setup of the master and the workers installed `gridengine-debuginfo` and `gridengine-guiinst` too. The Cloud Pipeline repository for Rocky Linux 9.8 does not have them, so `yum` failed the whole install, and the SGE setup failed.
+- **systemd**: the launch script set up systemd for every Rocky Linux and RHEL run, also when neither `CP_CAP_SYSTEMD_CONTAINER` nor `CP_CAP_KUBE` was set, and when the image had no `systemctl`. It removed the systemd unit links of the image (e.g. `/etc/systemd/system/*.wants/*`) and started a `systemd` process that was not PID 1.
+
+Now:
+
+- On the RPM-based images, NICE DCV takes the build of the major OS version: el7 for 7, el8 for 8, and `nice-dcv-2024.0-19030-el9-x86_64` for 9 and later. If the major version cannot be resolved, the el8 build is used, as before. The run log names the build. The new `CP_CAP_DCV_DISTRIBUTION` parameter names another build for these images, e.g. `nice-dcv-2024.0-19030-el9-x86_64`: the setup downloads `<build>.tgz` from the `tools/dcv` folder of the global distribution, or from `CP_CAP_DCV_DISTRO_URL`. `libXvMC` and `mesa-libxatracker` are installed where the repositories have them. Otherwise, the run log gets a warning, and the setup goes on. Ubuntu images get the same builds as before.
+- SGE installs `gridengine`, `gridengine-devel`, `gridengine-drmaa4ruby`, `gridengine-execd`, `gridengine-qmaster` and `gridengine-qmon`. The `sge_setup_sbm_host` script, which added a run as an SGE submission host, is removed: nothing in the platform called it. The scripts of `pipe-common` are on the `PATH` of a run, so a user's own script that calls `sge_setup_sbm_host` now fails with "command not found".
+- systemd is set up only when `CP_CAP_SYSTEMD_CONTAINER` or `CP_CAP_KUBE` is `true`, the image has `systemctl`, and the OS is CentOS, Rocky Linux or RHEL. The systemd setup used to install `procps` (`procps-ng`), which has `sysctl`. The NFS events observer, which raises the inotify limits with `sysctl`, now installs `procps` itself if the image has no `sysctl`.

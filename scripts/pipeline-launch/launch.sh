@@ -2644,7 +2644,7 @@ echo "-"
 # Force SystemD capability if the Kubernetes is requested
 if ( check_cp_cap "CP_CAP_SYSTEMD_CONTAINER" || check_cp_cap "CP_CAP_KUBE" ) \
     && check_installed "systemctl" && \
-    [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
+    ( [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ] ); then
 
         # Make sure sysctl is available
         _SYSCTL_INSTALL_COMMAND=
@@ -2867,6 +2867,12 @@ if [ "$CP_CAP_NFS_MNT_OBSERVER_DISABLED" == "true" ]; then
 elif [ "$CP_SENSITIVE_RUN" == "true" ]; then
     echo "NFS event watching is disabled for sensitive runs"
 else
+    # sysctl comes with procps (procps-ng on Rocky Linux and RHEL), which some images do not have
+    if ! check_installed "sysctl"; then
+        _SYSCTL_INSTALL_COMMAND=
+        get_install_command_by_current_distr _SYSCTL_INSTALL_COMMAND "procps"
+        eval "$_SYSCTL_INSTALL_COMMAND"
+    fi
     inotify_watchers=${CP_CAP_NFS_MNT_OBSERVER_RUN_WATCHERS:-65535}
     sysctl -w fs.inotify.max_user_watches=$inotify_watchers
     sysctl -w fs.inotify.max_queued_events=$((inotify_watchers*2))
