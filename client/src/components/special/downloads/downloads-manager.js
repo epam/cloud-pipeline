@@ -21,10 +21,10 @@ import {message, Button} from 'antd';
 import AsyncTaskFilter from '../../../models/asyncTask/AsyncTaskFilter';
 import whoAmI from '../../../models/user/WhoAmI';
 import {
-  ASYNC_TASK_TYPES,
   POLLED_STATUSES,
   statusesAreFiltered,
-  ownerIsFiltered
+  ownerIsFiltered,
+  typeIsFiltered
 } from '../../../models/asyncTask/statuses';
 import AsyncTasksList from './async-tasks-list';
 import downloadArchiveTask from './download-archive-task';
@@ -203,7 +203,6 @@ class DownloadsManager extends React.Component {
         this.defaultOwner = userName;
       }
       const body = {
-        type: ASYNC_TASK_TYPES.DOWNLOAD_ARCHIVE,
         page: this.state.page,
         pageSize: PAGE_SIZE
       };
@@ -213,6 +212,12 @@ class DownloadsManager extends React.Component {
       // only applies before the first seed, in the `if` above.
       if (filters.owner) {
         body.owner = filters.owner;
+      }
+      // No `type` lists every kind of archive task. It used to be pinned to
+      // DOWNLOAD_ARCHIVE here, which is why an extraction task never showed
+      // up in this table at all.
+      if (filters.type) {
+        body.type = filters.type;
       }
       // `statuses` is the one exception to the rule above: an array goes out
       // verbatim, an EMPTY one included, rather than being dropped from the
@@ -387,6 +392,10 @@ class DownloadsManager extends React.Component {
   // async-tasks-list.js's Status column filter dropdown.
   handleStatusesFilterChange = (statuses) => this.setFilter('statuses', statuses);
 
+  // async-tasks-list.js's Type column filter dropdown. `undefined` deletes
+  // the key, which is how "every type" reaches the request.
+  handleTypeFilterChange = (type) => this.setFilter('type', type);
+
   // A no-op below page 1, even though antd's own pagination will not ask for
   // one. antd hands `(page, pageSize)`; the size is fixed, so the second
   // argument is ignored.
@@ -405,7 +414,8 @@ class DownloadsManager extends React.Component {
   get filtersChanged () {
     const {filters} = this.state;
     return statusesAreFiltered(filters.statuses, POLLED_STATUSES) ||
-      ownerIsFiltered(filters.owner, this.defaultOwner);
+      ownerIsFiltered(filters.owner, this.defaultOwner) ||
+      typeIsFiltered(filters.type);
   }
 
   // Leaves `filters.owner` alone when `defaultOwner` isn't known yet (a
@@ -472,6 +482,8 @@ class DownloadsManager extends React.Component {
           defaultOwner={this.defaultOwner}
           statusesFilter={this.state.filters.statuses}
           onStatusesFilterChange={this.handleStatusesFilterChange}
+          typeFilter={this.state.filters.type}
+          onTypeFilterChange={this.handleTypeFilterChange}
           page={this.state.page}
           pageSize={PAGE_SIZE}
           total={this.totalCount}

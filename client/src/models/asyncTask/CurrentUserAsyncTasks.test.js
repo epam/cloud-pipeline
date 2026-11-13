@@ -409,10 +409,8 @@ describe('restore', () => {
     const body = JSON.parse(api.calls.find(c => c.path === FILTER_ROUTE).body);
     expect([...body.statuses].sort()).toEqual([...ACTIVE_STATUSES].sort());
     expect(body.owner).toBe(USER_NAME);
-    // Scoped to DOWNLOAD_ARCHIVE, unlike the quota count, because what this
-    // does with the answer is watch and announce: an unpack task has nothing
-    // to hand over, so announcing one would offer a download that is not there.
-    expect(body.type).toBe('DOWNLOAD_ARCHIVE');
+    // No type: both kinds of archive task are watched and announced now.
+    expect(body.type).toBeUndefined();
   });
 
   // A task that had already finished before start-up is not in the active
@@ -479,7 +477,7 @@ describe('status-change listeners', () => {
 });
 
 describe('fetchActiveTasks / fetchActiveTasksCount', () => {
-  it('asks for type, owner and ACTIVE_STATUSES only, with no page or pageSize', async () => {
+  it('asks for owner and ACTIVE_STATUSES, with no type and no paging', async () => {
     const api = stubApi();
     stubWhoAmI(api);
     api.reply(FILTER_ROUTE, filterPage([{id: 1, status: 'RUNNING'}]));
@@ -523,7 +521,12 @@ describe('checkActiveTasksLimit', () => {
     api.reply(FILTER_ROUTE, filterPage([{id: 1, status: 'RUNNING'}]));
     const store = newStore();
 
-    await expect(store.checkActiveTasksLimit()).resolves.toEqual({allowed: true});
+    await expect(store.checkActiveTasksLimit()).resolves.toEqual({
+      allowed: true,
+      activeCount: 1,
+      limit: 2,
+      remaining: 1
+    });
   });
 
   it('blocks, naming the cap, when the server reports it reached', async () => {
@@ -539,12 +542,63 @@ describe('checkActiveTasksLimit', () => {
     const result = await store.checkActiveTasksLimit();
 
     expect(result.allowed).toBe(false);
-    expect(result.reason).toMatch(/2 archive downloads/);
+    expect(result.reason).toMatch(/2 archive tasks/);
   });
 
   // A check that cannot run must not be the thing that stops a legitimate
   // download: the server enforces this quota itself
   // (AsyncTaskApiService.assertUserQuota).
+  // A caller queueing several tasks at once needs the headroom, not just a
+  // yes or no.
+  it('reports the count, the limit and the headroom when below the limit', async () => {
+    await setMaxUserTasks(5);
+    const api = stubApi();
+    stubWhoAmI(api);
+    api.reply(FILTER_ROUTE, filterPage([
+      {id: 1, status: 'RUNNING'},
+      {id: 2, status: 'PENDING'}
+    ]));
+    const store = newStore();
+
+    const result = await store.checkActiveTasksLimit();
+
+    expect(result.allowed).toBe(true);
+    expect(result.activeCount).toBe(2);
+    expect(result.limit).toBe(5);
+    expect(result.remaining).toBe(3);
+  });
+
+  it('reports no headroom at the limit', async () => {
+    await setMaxUserTasks(2);
+    const api = stubApi();
+    stubWhoAmI(api);
+    api.reply(FILTER_ROUTE, filterPage([
+      {id: 1, status: 'RUNNING'},
+      {id: 2, status: 'PENDING'}
+    ]));
+    const store = newStore();
+
+    const result = await store.checkActiveTasksLimit();
+
+    expect(result.allowed).toBe(false);
+    expect(result.remaining).toBe(0);
+    expect(result.limit).toBe(2);
+  });
+
+  // `undefined` headroom is "unknown", which a caller must not read as zero.
+  it('leaves the headroom unset when the count request fails', async () => {
+    await setMaxUserTasks(5);
+    const api = stubApi();
+    stubWhoAmI(api);
+    api.fail(FILTER_ROUTE, 'nope');
+    const store = newStore();
+
+    const result = await store.checkActiveTasksLimit();
+
+    expect(result.allowed).toBe(true);
+    expect(result.remaining).toBeUndefined();
+  });
+
   it('allows when the count request fails', async () => {
     await setMaxUserTasks(1);
     const api = stubApi();
@@ -553,6 +607,95 @@ describe('checkActiveTasksLimit', () => {
     const store = newStore();
 
     await expect(store.checkActiveTasksLimit()).resolves.toEqual({allowed: true});
+  });
+});
+
+describe('startArchiveExtraction', () => {
+  it('posts one UNPACK_ARCHIVE task, with the same storage as the destination', async () => {
+    await setMaxUserTasks(5);
+    const api = stubApi();
+    stubWhoAmI(api);
+    api.reply(FILTER_ROUTE, filterPage([]));
+    const createdTask = {id: 101, status: 'PENDING', created: YESTERDAY(), owner: USER_NAME};
+    api.reply('/async-task/create', createdTask);
+    api.reply(taskRoute(101), createdTask);
+    const store = newStore();
+
+    const result = await store.startArchiveExtraction(7, 'folder/data.zip', 'folder/');
+
+    const call = api.calls.find(c => c.path === '/async-task/create');
+    expect(call.method).toBe('POST');
+    expect(JSON.parse(call.body)).toEqual({
+      type: 'UNPACK_ARCHIVE',
+      sourceStorageId: 7,
+      sourcePath: 'folder/data.zip',
+      destinationStorageId: 7,
+      destinationPath: 'folder/',
+      overwrite: true,
+      deleteSourceOnSuccess: false
+    });
+    expect(result).toEqual(createdTask);
+  });
+
+  // `destinationPath` is required server-side but may be empty - that is the
+  // storage root.
+  it('sends an empty destinationPath rather than omitting it', async () => {
+    await setMaxUserTasks(5);
+    const api = stubApi();
+    stubWhoAmI(api);
+    api.reply(FILTER_ROUTE, filterPage([]));
+    const createdTask = {id: 102, status: 'PENDING', created: YESTERDAY(), owner: USER_NAME};
+    api.reply('/async-task/create', createdTask);
+    api.reply(taskRoute(102), createdTask);
+    const store = newStore();
+
+    await store.startArchiveExtraction(7, 'data.zip', undefined);
+
+    const call = api.calls.find(c => c.path === '/async-task/create');
+    expect(JSON.parse(call.body).destinationPath).toBe('');
+  });
+
+  it('rejects, naming the limit, without posting when the cap is reached', async () => {
+    await setMaxUserTasks(1);
+    const api = stubApi();
+    stubWhoAmI(api);
+    api.reply(FILTER_ROUTE, filterPage([{id: 1, status: 'RUNNING'}]));
+    const store = newStore();
+
+    await expect(store.startArchiveExtraction(7, 'a.zip', ''))
+      .rejects.toThrow(/1 archive task/);
+    expect(api.calls.some(c => c.path === '/async-task/create')).toBe(false);
+  });
+
+  // `handleExtractArchives` stops its batch on the first rejection, so this
+  // line is what makes a partial batch possible at all.
+  it('rejects when the server refuses the task', async () => {
+    await setMaxUserTasks(5);
+    const api = stubApi();
+    stubWhoAmI(api);
+    api.reply(FILTER_ROUTE, filterPage([]));
+    api.fail('/async-task/create', 'Permission is not granted');
+    const store = newStore();
+
+    await expect(store.startArchiveExtraction(7, 'a.zip', ''))
+      .rejects.toThrow(/Permission is not granted/);
+  });
+
+  // Watched like a download, so its completion raises a notification.
+  it('starts watching the task it queued, and persists it', async () => {
+    await setMaxUserTasks(5);
+    const api = stubApi();
+    stubWhoAmI(api);
+    api.reply(FILTER_ROUTE, filterPage([]));
+    const createdTask = {id: 103, status: 'PENDING', created: YESTERDAY(), owner: USER_NAME};
+    api.reply('/async-task/create', createdTask);
+    api.reply(taskRoute(103), createdTask);
+    const store = newStore();
+
+    await store.startArchiveExtraction(7, 'a.zip', '');
+
+    expect(loadEntries().map(entry => entry.id)).toEqual(['103']);
+    expect(store.pollers.has('103')).toBe(true);
   });
 });
 
@@ -565,7 +708,7 @@ describe('startArchiveDownload', () => {
     const store = newStore();
 
     await expect(store.startArchiveDownload(7, ['a/'], 'archive-1'))
-      .rejects.toThrow(/1 archive download/);
+      .rejects.toThrow(/1 archive task/);
     expect(
       api.calls.some(c => c.path === '/async-task/create')
     ).toBe(false);
@@ -637,7 +780,7 @@ describe('startArchiveDownload', () => {
     expect(store.pollers.size).toBe(0);
 
     await expect(store.startArchiveDownload(7, ['a/'], 'archive-1'))
-      .rejects.toThrow(/2 archive downloads/);
+      .rejects.toThrow(/2 archive tasks/);
     expect(
       api.calls.some(c => c.path === '/async-task/create')
     ).toBe(false);

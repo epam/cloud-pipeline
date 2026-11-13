@@ -23,6 +23,7 @@
 
 import moment from 'moment-timezone';
 import {message} from 'antd';
+import {showQueuedTaskMessage} from '../../../../special/downloads/queued-task-message';
 
 function isFolder (item) {
   return /^folder$/i.test((item && item.type) || '');
@@ -238,7 +239,7 @@ export async function archiveDownloadAllowed (asyncTasks) {
   if (!asyncTasks || typeof asyncTasks.checkActiveTasksLimit !== 'function') {
     return true;
   }
-  const hide = message.loading('Checking active downloads...', 0);
+  const hide = message.loading('Checking active archive tasks...', 0);
   try {
     const {allowed, reason} = await asyncTasks.checkActiveTasksLimit();
     if (!allowed) {
@@ -246,7 +247,7 @@ export async function archiveDownloadAllowed (asyncTasks) {
     }
     return allowed;
   } catch (error) {
-    console.warn('Could not check the active-download limit', error);
+    console.warn('Could not check the active archive-task limit', error);
     return true;
   } finally {
     hide();
@@ -262,13 +263,17 @@ export async function archiveDownloadAllowed (asyncTasks) {
  * @param {string|number} storageId
  * @param {string[]} paths
  * @param {string} archiveName
+ * @param {function} [onShowDownloads] opens the Storage tasks modal. With
+ *   none, the queued toast is a plain string rather than a link; either way
+ *   it names the menu item that opens the modal.
  * @returns {Promise<void>}
  */
 export default async function handleDownloadArchive (
   asyncTasks,
   storageId,
   paths,
-  archiveName
+  archiveName,
+  onShowDownloads
 ) {
   if (!paths || paths.length === 0) {
     message.info('Nothing to download: select at least one file or folder.', 5);
@@ -277,10 +282,7 @@ export default async function handleDownloadArchive (
   const hide = message.loading('Starting archive download...', 0);
   try {
     await asyncTasks.startArchiveDownload(storageId, paths, archiveName);
-    message.info(
-      'Archive download has been queued. Follow its progress under "Show downloads".',
-      5
-    );
+    showQueuedTaskMessage(message, 'Archive download has been queued.', onShowDownloads);
   } catch (error) {
     message.error(error.message, 5);
     throw error;

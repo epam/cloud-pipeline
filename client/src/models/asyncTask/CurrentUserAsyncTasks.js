@@ -37,8 +37,8 @@ import preferences from '../preferences/PreferencesLoad';
 
 const POLL_INTERVAL_MS = 5000;
 
-// Watches the current user's archive-download tasks one poll per task
-// (`GET /async-task/{id}`), and announces each one when it finishes. There is
+// Watches the current user's archive tasks - downloads and extractions - one
+// poll per task (`GET /async-task/{id}`), and announces each when it finishes. There is
 // no poll of the task list any more: that asked for every task the user had,
 // every five seconds, for as long as the application was open, whether or not
 // anything was waiting on the answer.
@@ -168,7 +168,7 @@ class CurrentUserAsyncTasks {
     entriesForUser(userName).forEach(entry => this.startPolling(entry));
     let active = [];
     try {
-      active = await this.fetchActiveTasks(ASYNC_TASK_TYPES.DOWNLOAD_ARCHIVE);
+      active = await this.fetchActiveTasks();
     } catch (error) {
       // The browser keeps watching whatever it already knew about; a failed
       // sync costs this visit's knowledge of other machines, nothing more.
@@ -349,17 +349,10 @@ class CurrentUserAsyncTasks {
   // total of its own. A task queued in another browser or another tab is in
   // here and could not possibly be in anything local.
   //
-  // Two callers, both one-off rather than polled, and they want different
-  // scopes - which is why the type is a parameter:
-  //
-  //  - `checkActiveTasksLimit` (below) counts them and passes NO type. The
-  //    server's `maxUserTasks` is one budget across every task type, so a
-  //    count of one type only would let the user past a cap the server then
-  //    enforces anyway.
-  //  - `restore` (above) passes DOWNLOAD_ARCHIVE, because what it does with
-  //    the answer is start watching and announcing. An unpack task has nothing
-  //    to hand over, so announcing one would offer a download that does not
-  //    exist.
+  // Both callers - `checkActiveTasksLimit` below and `restore` above - pass no
+  // type. `maxUserTasks` is one budget across every type, and every type is
+  // watched and announced, so neither wants a narrower scope. The parameter
+  // stays for a caller that does.
   //
   // `ACTIVE_STATUSES`, the four active ones and nothing else. No
   // `page`/`pageSize` - this needs every match, and the cap means there are at
@@ -417,10 +410,16 @@ class CurrentUserAsyncTasks {
    * failure of this request is not allowed to be the thing that stops a
    * legitimate download.
    *
-   * @returns {Promise<{allowed: boolean, reason: string|undefined}>}
+   * `remaining` is how many more tasks fit. It is `undefined` only where the
+   * count could not be fetched - not zero, and not a refusal.
+   *
+   * @returns {Promise<{allowed: boolean, reason: string|undefined,
+   *   activeCount: number|undefined, limit: number|undefined,
+   *   remaining: number|undefined}>}
    */
   async checkActiveTasksLimit () {
     await preferences.fetchIfNeededOrWait();
+    const limit = this.maxUserTasks;
     let activeTasksCount;
     try {
       activeTasksCount = await this.fetchActiveTasksCount();
@@ -431,19 +430,26 @@ class CurrentUserAsyncTasks {
       );
       return {allowed: true};
     }
-    if (activeTasksCount >= this.maxUserTasks) {
+    if (activeTasksCount >= limit) {
       return {
         allowed: false,
-        // The measured count, not the cap: the two are equal in the ordinary
-        // case, but an administrator lowering the preference leaves users
-        // above it, and telling someone with five downloads that they have
-        // three is worse than saying nothing.
-        reason: `You already have ${activeTasksCount} archive downloads in progress, ` +
-          `and the limit is ${this.maxUserTasks}. ` +
+        activeCount: activeTasksCount,
+        limit,
+        remaining: 0,
+        // The measured count, not the cap: an administrator lowering the
+        // preference leaves users above it. "archive tasks", not "downloads":
+        // the allowance covers extraction too.
+        reason: `You already have ${activeTasksCount} archive tasks in progress, ` +
+          `and the limit is ${limit}. ` +
           'Wait for one to finish before starting another.'
       };
     }
-    return {allowed: true};
+    return {
+      allowed: true,
+      activeCount: activeTasksCount,
+      limit,
+      remaining: limit - activeTasksCount
+    };
   }
 
   /**
@@ -469,6 +475,39 @@ class CurrentUserAsyncTasks {
     }
     // Queueing a task is what starts watching it: one more click, one more
     // entry in `localStorage`, one more poll - until it finishes.
+    this.trackTask(request.value || {});
+    return request.value;
+  }
+
+  /**
+   * One UNPACK_ARCHIVE task, for one archive: `sourcePath` is a single path
+   * server-side.
+   *
+   * @param {string|number} storageId
+   * @param {string} sourcePath the archive, with no trailing slash
+   * @param {string} destinationPath the folder to extract into; `''` is the root
+   * @returns {Promise<*>}
+   */
+  async startArchiveExtraction (storageId, sourcePath, destinationPath) {
+    const {allowed, reason} = await this.checkActiveTasksLimit();
+    if (!allowed) {
+      throw new Error(reason);
+    }
+    const request = new AsyncTaskCreate();
+    await request.send({
+      type: ASYNC_TASK_TYPES.UNPACK_ARCHIVE,
+      sourceStorageId: storageId,
+      sourcePath,
+      destinationStorageId: storageId,
+      destinationPath: destinationPath || '',
+      // `overwrite` avoids the all-or-nothing refusal on a collision. The
+      // archive itself is kept.
+      overwrite: true,
+      deleteSourceOnSuccess: false
+    });
+    if (request.error) {
+      throw new Error(request.error);
+    }
     this.trackTask(request.value || {});
     return request.value;
   }

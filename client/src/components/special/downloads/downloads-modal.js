@@ -19,10 +19,9 @@ import PropTypes from 'prop-types';
 import {Button, Modal} from 'antd';
 import DownloadsManager from './downloads-manager';
 
-// The Modal shell shown from the storage page's presentation dropdown
-// ("Show downloads", pipelines/browser/data-storage/index.js). A class, not
-// the plain function client/AGENTS.md otherwise calls for: it needs the one
-// lifecycle method below.
+// The Modal shell shown from the storage page's presentation dropdown, which
+// the user reads as the "Storage tasks" window. A class, for the one lifecycle
+// method below; the module and class names here stay `downloads-*`.
 //
 // `{visible ? <DownloadsManager /> : null}` is load-bearing: antd 2.13.14's
 // Modal has no `destroyOnClose` and rc-dialog 6.5.11 implements no
@@ -66,7 +65,7 @@ class DownloadsModal extends React.Component {
     return (
       <Modal
         visible={visible}
-        title="Downloads"
+        title="Storage tasks"
         width="80%"
         onCancel={onClose}
         footer={[

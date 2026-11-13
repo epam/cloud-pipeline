@@ -26,14 +26,28 @@ import {
   Modal,
   Progress,
   Col,
-  Tooltip
+  Tooltip,
+  Alert
 } from 'antd';
 import S3Storage, {MAX_FILE_SIZE_DESCRIPTION} from '../../models/s3-upload/s3-storage';
 import DataStorageGenerateUploadUrl from '../../models/dataStorage/DataStorageGenerateUploadUrl';
+import continuousFetch from '../../utils/continuous-fetch';
+import {
+  hasArchives,
+  countArchives,
+  extractionBlockedBy,
+  uploadedArchivePaths,
+  handleExtractArchives
+} from '../pipelines/browser/data-storage/utils/extract-archives';
 
 const KB = 1024;
 const MB = 1024 * KB;
 const MAX_NFS_FILE_SIZE_MB = 500;
+// Shared by the confirmation and progress states, so a file's row is the same
+// height before and after the upload starts.
+const FILE_ROW_MARGIN_BOTTOM = 4;
+// The same interval the Storage tasks table polls on.
+const EXTRACTION_LIMIT_POLL_INTERVAL_MS = 5000;
 
 class UploadButton extends React.Component {
   static propTypes = {
@@ -51,23 +65,57 @@ class UploadButton extends React.Component {
     owner: PropTypes.string,
     onInitialized: PropTypes.func,
     style: PropTypes.object,
-    disabled: PropTypes.bool
+    disabled: PropTypes.bool,
+    extractArchivesAvailable: PropTypes.bool,
+    // The CurrentUserAsyncTasks store, which queues the extraction. Only the
+    // storage page passes it; without it `extractionOffered` is false and the
+    // confirmation pop-up is never shown.
+    asyncTasks: PropTypes.object,
+    // Opens the Storage tasks modal, whose state lives on the storage page.
+    onShowDownloads: PropTypes.func
   };
 
   state = {
     uploadInfoVisible: false,
     uploadInfoClosable: false,
     uploadingFiles: [],
-    synchronousUploadingFiles: []
+    synchronousUploadingFiles: [],
+    pendingConfirmation: false,
+    extractAfterUpload: false,
+    // `checkActiveTasksLimit`'s answer, and whether the first one is still in
+    // flight. Both buttons wait for it: clicking through before it lands could
+    // queue an extraction the allowance has no room for.
+    extractionLimitCheck: undefined,
+    extractionCheckPending: false
   };
 
   @observable s3Storage;
   @observable s3StorageError;
   uploadButton;
 
+  // Per path, not per batch: completion is reached several times for one batch,
+  // and a retried archive landing later still has to go out. Reset in
+  // `hideUploadInfo`.
+  queuedExtractionPaths = new Set();
+
+  unmounted = false;
+
+  // A new selection bumps this, so an in-flight check for the previous batch
+  // is ignored when it lands.
+  extractionLimitToken = 0;
+
   componentDidMount () {
     const {onInitialized} = this.props;
     onInitialized && onInitialized(this);
+  }
+
+  componentWillUnmount () {
+    this.unmounted = true;
+    this.stopExtractionLimitPolling();
+    if (this.uploadTimeout) {
+      clearTimeout(this.uploadTimeout);
+      this.uploadTimeout = null;
+    }
   }
 
   triggerClick = () => {
@@ -119,7 +167,7 @@ class UploadButton extends React.Component {
       uploadingFiles: files,
       uploadInfoClosable: true
     }, () => {
-      setTimeout(this.hideUploadInfo, 2000);
+      this.extractOrCloseDelayed();
     });
   };
 
@@ -130,29 +178,203 @@ class UploadButton extends React.Component {
     this.setState({
       uploadInfoClosable: allDone
     }, () => {
-      if (allDone && !haveRetry) {
-        setTimeout(this.hideUploadInfo, 2000);
+      if (allDone) {
+        // A retryable failure keeps the modal open, whether or not extraction
+        // also runs.
+        this.extractOrCloseDelayed(!!haveRetry);
       }
     });
+  };
+
+  /**
+   * Reached by both completion paths once the batch is finished, and more than
+   * once per batch. Arms the 2 s close timer, and on an "Upload and extract"
+   * batch also queues whatever newly landed - without waiting on it.
+   *
+   * @param {boolean} [skipAutoClose=false] true while a file still offers a
+   *   retry. Extraction is queued anyway.
+   */
+  extractOrCloseDelayed = (skipAutoClose = false) => {
+    const {extractAfterUpload, uploadingFiles} = this.state;
+    if (extractAfterUpload) {
+      const paths = uploadedArchivePaths(uploadingFiles, this.props.path);
+      const newPaths = paths.filter(path => !this.queuedExtractionPaths.has(path));
+      if (newPaths.length > 0) {
+        newPaths.forEach(path => this.queuedExtractionPaths.add(path));
+        // Not awaited: `handleExtractArchives` owns the toast and the error.
+        void handleExtractArchives(
+          this.props.asyncTasks,
+          this.props.storageId,
+          newPaths,
+          undefined,
+          this.props.onShowDownloads
+        );
+      }
+    }
+    if (!skipAutoClose) {
+      setTimeout(this.hideUploadInfo, 2000);
+    }
   };
 
   hideUploadInfo = () => {
     if (!this.state.uploadInfoClosable) {
       return;
     }
+    this.stopExtractionLimitPolling();
     const {
       uploadingFiles = []
     } = this.state;
+    this.queuedExtractionPaths = new Set();
     this.setState({
       uploadInfoVisible: false,
       uploadInfoClosable: false,
       uploadingFiles: [],
-      synchronousUploadingFiles: []
+      synchronousUploadingFiles: [],
+      pendingConfirmation: false,
+      extractAfterUpload: false,
+      extractionLimitCheck: undefined,
+      extractionCheckPending: false
     }, async () => {
       if (this.props.onRefresh) {
         this.props.onRefresh(uploadingFiles.map(f => f.name));
       }
     });
+  };
+
+  // Both halves are required. Without the store there is nothing to queue
+  // with, and offering "Upload and extract" would upload the files and then
+  // say nothing at all about the extraction that never happened.
+  get extractionOffered () {
+    const {extractArchivesAvailable, asyncTasks} = this.props;
+    return !!extractArchivesAvailable &&
+      !!asyncTasks &&
+      typeof asyncTasks.startArchiveExtraction === 'function';
+  }
+
+  /**
+   * Pauses a batch that holds an archive, where extraction is offered: the
+   * modal opens in its confirmation state and waits for the choice.
+   *
+   * @param {function} startUpload `startUploadToS3` or
+   *   `onUploadStatusChangedSynchronous`
+   */
+  onFilesSelected = (startUpload) => {
+    const {synchronousUploadingFiles} = this.state;
+    if (this.extractionOffered && hasArchives(synchronousUploadingFiles)) {
+      this.setState({
+        uploadInfoVisible: true,
+        pendingConfirmation: true,
+        uploadInfoClosable: true,
+        uploadingFiles: [],
+        extractionLimitCheck: undefined,
+        extractionCheckPending: false
+      }, this.startExtractionLimitPolling);
+      return;
+    }
+    startUpload();
+  };
+
+  /**
+   * The cap check `archiveDownloadAllowed` runs for a download, answered as an
+   * alert in the pop-up rather than a toast. Optimistic while in flight and on
+   * failure: the server enforces the quota itself.
+   */
+  // Polled so the user can wait in the open pop-up for a task to finish.
+  // Stopped when the pop-up closes.
+  startExtractionLimitPolling = () => {
+    const {asyncTasks} = this.props;
+    if (!asyncTasks || typeof asyncTasks.checkActiveTasksLimit !== 'function') {
+      return;
+    }
+    this.stopExtractionLimitPolling();
+    this.setState({extractionCheckPending: true});
+    this.extractionLimitPoller = continuousFetch({
+      call: this.checkExtractionLimit,
+      intervalMS: EXTRACTION_LIMIT_POLL_INTERVAL_MS,
+      identifier: 'upload-confirmation-archive-task-limit',
+      onError: (error) => {
+        console.warn('Could not check the active archive-task limit', error);
+      }
+    });
+  };
+
+  stopExtractionLimitPolling = () => {
+    if (this.extractionLimitPoller) {
+      this.extractionLimitPoller.stop();
+      this.extractionLimitPoller = undefined;
+    }
+  };
+
+  checkExtractionLimit = () => {
+    const {asyncTasks} = this.props;
+    if (!asyncTasks || typeof asyncTasks.checkActiveTasksLimit !== 'function') {
+      return Promise.resolve();
+    }
+    this.extractionLimitToken += 1;
+    const token = this.extractionLimitToken;
+    return Promise.resolve()
+      .then(() => asyncTasks.checkActiveTasksLimit())
+      .then((check) => {
+        if (this.unmounted || token !== this.extractionLimitToken) {
+          return;
+        }
+        this.setState({extractionLimitCheck: check, extractionCheckPending: false});
+      })
+      .catch((error) => {
+        if (!this.unmounted) {
+          // Optimistic, as the download flow is: the server enforces the quota.
+          this.setState({extractionCheckPending: false});
+        }
+        // Re-thrown so `continuousFetch` widens its interval rather than
+        // re-polling a failing endpoint every 5 s - as the other pollers do.
+        throw error;
+      });
+  };
+
+  // Why "Upload and extract" is unavailable, shown in the pop-up's alert.
+  get extractionDisabledReason () {
+    return extractionBlockedBy(
+      countArchives(this.state.synchronousUploadingFiles),
+      this.state.extractionLimitCheck
+    );
+  }
+
+  /**
+   * Cancels a paused batch. Nothing uploaded, so no `onRefresh`.
+   */
+  cancelConfirmation = () => {
+    this.stopExtractionLimitPolling();
+    this.setState({
+      uploadInfoVisible: false,
+      uploadInfoClosable: false,
+      pendingConfirmation: false,
+      extractAfterUpload: false,
+      extractionLimitCheck: undefined,
+      extractionCheckPending: false,
+      uploadingFiles: [],
+      synchronousUploadingFiles: []
+    });
+  };
+
+  /**
+   * "Upload" and "Upload and extract" both land here, differing only in
+   * `extractAfterUpload`.
+   *
+   * @param {boolean} extractAfterUpload
+   */
+  confirmUpload = (extractAfterUpload) => () => {
+    this.stopExtractionLimitPolling();
+    const startUpload = this.props.uploadToS3
+      ? this.startUploadToS3
+      : this.onUploadStatusChangedSynchronous;
+    this.setState({
+      pendingConfirmation: false,
+      extractAfterUpload,
+      // The confirmation state is dismissable; the progress state must not
+      // inherit that, or dismissing it mid-upload clears `extractAfterUpload`
+      // under an in-flight batch.
+      uploadInfoClosable: false
+    }, startUpload);
   };
 
   onUploadStatusChangedSynchronous = async () => {
@@ -176,7 +398,13 @@ class UploadButton extends React.Component {
           uploadInfoVisible: false,
           uploadInfoClosable: false,
           uploadingFiles: [],
-          synchronousUploadingFiles: []
+          synchronousUploadingFiles: [],
+          // Left set, these would arm extraction for a batch that never
+          // uploaded.
+          pendingConfirmation: false,
+          extractAfterUpload: false,
+          extractionLimitCheck: undefined,
+          extractionCheckPending: false
         });
         return;
       }
@@ -187,7 +415,11 @@ class UploadButton extends React.Component {
           uploadInfoVisible: false,
           uploadInfoClosable: false,
           uploadingFiles: [],
-          synchronousUploadingFiles: []
+          synchronousUploadingFiles: [],
+          pendingConfirmation: false,
+          extractAfterUpload: false,
+          extractionLimitCheck: undefined,
+          extractionCheckPending: false
         });
         return;
       }
@@ -198,6 +430,7 @@ class UploadButton extends React.Component {
     const uploadingFiles = this.state.synchronousUploadingFiles.map(f => ({
       uid: f.uid,
       name: f.name,
+      size: f.size,
       status: 'waiting...',
       percent: 0
     }));
@@ -305,6 +538,7 @@ class UploadButton extends React.Component {
     if (!uploadingFile) {
       uploadingFile = {
         name: info.file.name,
+        size: info.file.size,
         uid: info.file.uid,
         percent: 0,
         error: undefined,
@@ -347,7 +581,10 @@ class UploadButton extends React.Component {
       clearTimeout(this.uploadTimeout);
       this.uploadTimeout = null;
     }
-    this.uploadTimeout = setTimeout(this.onUploadStatusChangedSynchronous, 100);
+    this.uploadTimeout = setTimeout(
+      () => this.onFilesSelected(this.onUploadStatusChangedSynchronous),
+      100
+    );
   };
 
   startUploadToS3Timeout = () => {
@@ -355,7 +592,10 @@ class UploadButton extends React.Component {
       clearTimeout(this.uploadTimeout);
       this.uploadTimeout = null;
     }
-    this.uploadTimeout = setTimeout(this.startUploadToS3, 100);
+    this.uploadTimeout = setTimeout(
+      () => this.onFilesSelected(this.startUploadToS3),
+      100
+    );
   };
 
   startUploadToS3 = async () => {
@@ -366,7 +606,12 @@ class UploadButton extends React.Component {
           uploadInfoVisible: false,
           uploadInfoClosable: false,
           uploadingFiles: [],
-          synchronousUploadingFiles: []
+          synchronousUploadingFiles: [],
+          // See `onUploadStatusChangedSynchronous`.
+          pendingConfirmation: false,
+          extractAfterUpload: false,
+          extractionLimitCheck: undefined,
+          extractionCheckPending: false
         });
         return;
       }
@@ -377,6 +622,7 @@ class UploadButton extends React.Component {
     const uploadingFiles = this.state.synchronousUploadingFiles.map(f => ({
       uid: f.uid,
       name: f.name,
+      size: f.size,
       status: 'waiting...',
       percent: 0
     }));
@@ -542,6 +788,141 @@ class UploadButton extends React.Component {
     return doUpload();
   };
 
+  renderConfirmationFooter = () => {
+    return (
+      <Row type="flex" justify="end">
+        <Button
+          id="upload-cancel-button"
+          style={{marginRight: 8}}
+          onClick={this.cancelConfirmation}
+        >
+          Cancel
+        </Button>
+        {/* Only this one is disabled at the cap - plain Upload still works. */}
+        <Button
+          id="upload-and-extract-button"
+          style={{marginRight: 8}}
+          disabled={this.state.extractionCheckPending || !!this.extractionDisabledReason}
+          onClick={this.confirmUpload(true)}
+        >
+          Upload and extract
+        </Button>
+        <Button
+          id="upload-button-confirm"
+          type="primary"
+          disabled={this.state.extractionCheckPending}
+          onClick={this.confirmUpload(false)}
+        >
+          Upload
+        </Button>
+      </Row>
+    );
+  };
+
+  /**
+   * One row renderer for both states, so the rows cannot drift apart in height.
+   * The progress line is always rendered and only hidden by `visibility`, which
+   * reserves its height. Its fixed 22px tracks `Progress`'s own.
+   *
+   * @param {object} file a `synchronousUploadingFiles` or `uploadingFiles` entry
+   * @param {boolean} pending the batch only lists the selection so far
+   */
+  renderFileRow = (file, pending) => {
+    const {uploadToS3} = this.props;
+    let title = file.name;
+    if (!pending && file.status) {
+      title = `${file.name} - ${file.status}`;
+    }
+    // The span below is clipped to one line, so this attribute is the only
+    // place a long name, its status and its error are shown in full.
+    let hoverTitle = title;
+    if (!pending && file.error) {
+      hoverTitle = `${hoverTitle} - ${file.error}`;
+    }
+    let status = 'active';
+    if (!pending) {
+      if (file.error) {
+        status = 'exception';
+      } else if (file.percent === 100) {
+        status = 'success';
+      }
+    }
+    return (
+      <Row
+        style={{marginBottom: FILE_ROW_MARGIN_BOTTOM, marginTop: 0}}
+        type="flex"
+        key={file.uid}
+      >
+        <Row type="flex" style={{width: '100%'}}>
+          <span
+            title={hoverTitle}
+            style={{
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {title}
+          </span>
+        </Row>
+        {
+          // Outside the clipped span above, so a long reason wraps instead of
+          // being cut off with the name.
+          !pending && file.error && (
+            <Row type="flex" style={{width: '100%'}}>
+              <span className="cp-error" style={{fontSize: 'small'}}>
+                - {file.error}
+              </span>
+            </Row>
+          )
+        }
+        <Row
+          type="flex"
+          style={{
+            width: '100%',
+            marginTop: -4,
+            height: 22,
+            visibility: pending ? 'hidden' : 'visible'
+          }}
+        >
+          <Col span={21}>
+            <Progress
+              strokeWidth={3}
+              key={`${file.uid}-progress`}
+              percent={pending ? 0 : file.percent}
+              status={status} />
+          </Col>
+          {
+            uploadToS3 && (
+              <Col span={3}>
+                <Row type="flex" justify="space-around">
+                  {
+                    !pending && file.done && (file.error || file.aborted) &&
+                    file.retryCb && !file.aborting &&
+                    <Button
+                      size="small"
+                      shape="circle"
+                      icon="reload"
+                      onClick={() => file.retryCb()} />
+                  }
+                  {
+                    !pending && !file.done && file.cancelCb && file.uploadID &&
+                    <Button
+                      size="small"
+                      shape="circle"
+                      type="danger"
+                      icon="close"
+                      onClick={() => file.cancelCb()} />
+                  }
+                </Row>
+              </Col>
+            )
+          }
+        </Row>
+      </Row>
+    );
+  };
+
   render () {
     const uploadProps = {
       multiple: this.props.multiple,
@@ -571,6 +952,9 @@ class UploadButton extends React.Component {
         return false;
       };
     } else {
+      // Not routed through `onFilesSelected`: antd's `Upload` owns the start
+      // here, and no caller that enables `extractArchivesAvailable` uses this
+      // path. Enabling the prop for such a storage does nothing today.
       uploadProps.onChange = this.onUploadStatusChanged;
     }
     const button = (
@@ -620,79 +1004,35 @@ class UploadButton extends React.Component {
           }
         </Upload>
         <Modal
-          footer={false}
-          title="Uploading files..."
-          closable={this.state.uploadInfoClosable}
-          onCancel={this.hideUploadInfo}
+          footer={this.state.pendingConfirmation ? this.renderConfirmationFooter() : false}
+          title={
+            this.state.pendingConfirmation
+              ? 'Upload files'
+              : 'Uploading files...'
+          }
+          closable={this.state.pendingConfirmation ? true : this.state.uploadInfoClosable}
+          onCancel={this.state.pendingConfirmation ? this.cancelConfirmation : this.hideUploadInfo}
           visible={this.state.uploadInfoVisible}>
           {
-            this.state.uploadingFiles.map(f => {
-              let status = 'active';
-              if (f.error) {
-                status = 'exception';
-              } else if (f.percent === 100) {
-                status = 'success';
-              }
-              let title = f.name;
-              if (f.status) {
-                title = `${f.name} - ${f.status}`;
-              }
-              return (
-                <Row
-                  style={{marginBottom: 20, marginTop: 0}}
-                  type="flex"
-                  key={f.uid}>
-                  <Row type="flex" style={{width: '100%'}} >
-                    <span>
-                      {title}
-                      {
-                        f.error && (
-                          <span
-                            className="cp-error"
-                            style={{fontSize: 'small', marginLeft: 5}}
-                          >
-                            - {f.error}
-                          </span>
-                        )
-                      }
-                    </span>
-                  </Row>
-                  <Row type="flex" style={{width: '100%'}}>
-                    <Col span={21}>
-                      <Progress
-                        strokeWidth={3}
-                        key={`${f.uid}-progress`}
-                        percent={f.percent}
-                        status={status} />
-                    </Col>
-                    {
-                      this.props.uploadToS3 &&
-                      <Col span={3}>
-                        <Row type="flex" justify="space-around">
-                          {
-                            f.done && (f.error || f.aborted) && f.retryCb && !f.aborting &&
-                            <Button
-                              size="small"
-                              shape="circle"
-                              icon="reload"
-                              onClick={() => f.retryCb()} />
-                          }
-                          {
-                            !f.done && f.cancelCb && f.uploadID &&
-                            <Button
-                              size="small"
-                              shape="circle"
-                              type="danger"
-                              icon="close"
-                              onClick={() => f.cancelCb()} />
-                          }
-                        </Row>
-                      </Col>
-                    }
-                  </Row>
-                </Row>
-              );
-            })
+            // `info`, not `warning`: the selection is fine and Upload works.
+            this.state.pendingConfirmation && this.extractionDisabledReason && (
+              <Alert
+                type="info"
+                showIcon
+                style={{marginBottom: 8}}
+                message={this.extractionDisabledReason}
+              />
+            )
+          }
+          {
+            this.state.pendingConfirmation &&
+            this.state.synchronousUploadingFiles.map(
+              file => this.renderFileRow(file, true)
+            )
+          }
+          {
+            !this.state.pendingConfirmation &&
+            this.state.uploadingFiles.map(file => this.renderFileRow(file, false))
           }
         </Modal>
       </div>

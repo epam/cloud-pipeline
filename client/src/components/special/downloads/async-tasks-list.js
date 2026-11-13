@@ -16,13 +16,16 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Table, Pagination, Checkbox} from 'antd';
+import {Table, Pagination, Checkbox, Radio} from 'antd';
 import classNames from 'classnames';
 import {
   ALL_ASYNC_TASK_STATUSES,
   POLLED_STATUSES,
+  ASYNC_TASK_TYPES,
+  displayTaskType,
   statusesAreFiltered,
-  ownerIsFiltered
+  ownerIsFiltered,
+  typeIsFiltered
 } from '../../../models/asyncTask/statuses';
 import UserAutoComplete from '../../special/UserAutoComplete';
 import buildColumns from './columns';
@@ -63,7 +66,12 @@ class AsyncTasksList extends React.Component {
     ownerFilterVisible: false,
     pendingOwner: undefined,
     // What the input holds, which differs from `pendingOwner` while typing.
-    pendingOwnerText: undefined
+    pendingOwnerText: undefined,
+    // The Type column's dropdown mechanics. `undefined` is "every type", so
+    // the pending value is a type or nothing - not a list, because
+    // `AsyncTaskFilterVO.type` is one enum server-side.
+    typeFilterVisible: false,
+    pendingType: undefined
   };
 
   get committedStatuses () {
@@ -72,6 +80,14 @@ class AsyncTasksList extends React.Component {
 
   get committedOwner () {
     return this.props.ownerFilter;
+  }
+
+  get committedType () {
+    return this.props.typeFilter;
+  }
+
+  get typeFiltered () {
+    return typeIsFiltered(this.committedType);
   }
 
   // Whether the Status column's selection differs from the default
@@ -268,6 +284,69 @@ class AsyncTasksList extends React.Component {
     );
   }
 
+  openTypeFilter = () => {
+    this.setState({typeFilterVisible: true, pendingType: this.committedType});
+  };
+
+  selectType = (event) => {
+    // The "every type" radio carries an empty string, since a Radio value of
+    // `undefined` makes the group uncontrolled.
+    this.setState({pendingType: event.target.value || undefined});
+  };
+
+  commitTypeFilter = (type) => {
+    const {onTypeFilterChange} = this.props;
+    this.setState({typeFilterVisible: false, pendingType: undefined});
+    if (onTypeFilterChange) {
+      onTypeFilterChange(type);
+    }
+  };
+
+  handleTypeFilterOk = () => {
+    this.commitTypeFilter(this.state.pendingType);
+  };
+
+  handleTypeFilterResetToDefaults = () => {
+    this.commitTypeFilter(undefined);
+  };
+
+  // Same "commit on close" shape, and the same double-commit guard, as
+  // `handleStatusesFilterVisibleChange` above.
+  handleTypeFilterVisibleChange = (visible) => {
+    if (visible) {
+      this.openTypeFilter();
+    } else if (this.state.typeFilterVisible) {
+      this.commitTypeFilter(this.state.pendingType);
+    }
+  };
+
+  // A radio list, not the Status column's checkboxes: the server takes one
+  // type per request. "Any type" is the default and the first option.
+  get typeFilterDropdown () {
+    return (
+      <div
+        className={classNames(styles.filterPopoverContainer, 'cp-filter-popover-container')}
+      >
+        <Radio.Group value={this.state.pendingType || ''} onChange={this.selectType}>
+          <div className={styles.filterItem}>
+            <Radio value={''}>{'Any type'}</Radio>
+          </div>
+          {
+            Object.keys(ASYNC_TASK_TYPES).map((type) => (
+              <div key={type} className={styles.filterItem}>
+                <Radio value={type}>{displayTaskType(type)}</Radio>
+              </div>
+            ))
+          }
+        </Radio.Group>
+        <div className={styles.filterActionsButtonsContainer}>
+          <a onClick={this.handleTypeFilterOk}>{'OK'}</a>
+          <a onClick={this.handleTypeFilterResetToDefaults}>{'Reset to defaults'}</a>
+        </div>
+      </div>
+    );
+  }
+
   openOwnerFilter = () => {
     this.setState({
       ownerFilterVisible: true,
@@ -424,7 +503,11 @@ class AsyncTasksList extends React.Component {
       statusesFilterDropdown: this.statusesFilterDropdown,
       statusesFilterVisible: this.state.statusesFilterVisible,
       onStatusesFilterVisibleChange: this.handleStatusesFilterVisibleChange,
-      statusesFiltered: this.statusesFiltered
+      statusesFiltered: this.statusesFiltered,
+      typeFilterDropdown: this.typeFilterDropdown,
+      typeFilterVisible: this.state.typeFilterVisible,
+      onTypeFilterVisibleChange: this.handleTypeFilterVisibleChange,
+      typeFiltered: this.typeFiltered
     });
   }
 
@@ -497,6 +580,9 @@ AsyncTasksList.propTypes = {
   disabled: PropTypes.bool,
   statusesFilter: PropTypes.array,
   onStatusesFilterChange: PropTypes.func,
+  // One AsyncTaskType, or `undefined` for every type - the default.
+  typeFilter: PropTypes.string,
+  onTypeFilterChange: PropTypes.func,
   // 1-based, matching the API and `DownloadsManager`'s own state.
   page: PropTypes.number,
   pageSize: PropTypes.number,
@@ -532,6 +618,7 @@ AsyncTasksList.defaultProps = {
   // spuriously.
   statusesFilter: POLLED_STATUSES,
   onStatusesFilterChange: () => {},
+  onTypeFilterChange: () => {},
   page: 1,
   pageSize: 0,
   total: 0,

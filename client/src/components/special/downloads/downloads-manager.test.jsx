@@ -114,6 +114,10 @@ function filterCalls (api) {
 // the tests below that use it). Scoped to each column's own header cell,
 // because both render the identical default icon under the same title when
 // both are present (an admin user, the default here).
+function typeFilterIcon () {
+  return within(screen.getByText('Type').closest('th')).getByTitle('Filter menu');
+}
+
 function statusFilterIcon () {
   return within(screen.getByText('Status').closest('th')).getByTitle('Filter menu');
 }
@@ -186,7 +190,9 @@ test(
     const call = filterCalls(api)[0];
     expect(call.method).toBe('POST');
     const body = JSON.parse(call.body);
-    expect(body.type).toBe('DOWNLOAD_ARCHIVE');
+    // No `type`: the table lists every kind of archive task by default. It
+    // used to pin DOWNLOAD_ARCHIVE here, which hid every extraction task.
+    expect(body.type).toBeUndefined();
     expect(body.owner).toBe(USER_NAME);
     // The real, visible behaviour change this phase owns: the table hides
     // CANCELLED/EXPIRED by default, because the request now always carries
@@ -201,8 +207,8 @@ test(
 );
 
 // No heading assertion any more: the class itself carries no title - the
-// Modal shell's own `title` prop is what shows "Downloads" now, covered in
-// downloads-modal.test.jsx.
+// Modal shell's own `title` prop is what shows "Storage tasks" now, covered
+// in downloads-modal.test.jsx.
 test('renders the rows from its own response', async () => {
   const api = stubApi();
   stubFilter(api, [
@@ -1160,9 +1166,9 @@ test(
 
     await waitFor(() => expect(filterCalls(api).length).toBe(1));
     expect(screen.queryByText('Owner')).not.toBeInTheDocument();
-    // Only the Status column's own default filter icon remains - no second
-    // one for an Owner column that was never rendered at all.
-    expect(screen.getAllByTitle('Filter menu')).toHaveLength(1);
+    // Type and Status keep theirs - no third one for an Owner column that was
+    // never rendered at all.
+    expect(screen.getAllByTitle('Filter menu')).toHaveLength(2);
     // The seeded owner is still sent - the column controls visibility only,
     // never the request itself.
     expect(JSON.parse(filterCalls(api)[0].body).owner).toBe(USER_NAME);
@@ -1250,3 +1256,38 @@ test(
     expect(screen.queryByText('Owner')).not.toBeInTheDocument();
   }
 );
+
+// The other half of the Type column: async-tasks-list.test.jsx stops at
+// `onTypeFilterChange` being called, so without this a broken handler here
+// would pass both suites.
+test('choosing a type sends it, and Reset filters drops it again', async () => {
+  const api = stubApi();
+  stubFilter(api, []);
+
+  const utils = renderWithLocale(<DownloadsManager />, {stores: stores()});
+
+  await waitFor(() => expect(filterCalls(api).length).toBe(1));
+  expect(JSON.parse(filterCalls(api)[0].body).type).toBeUndefined();
+  expect(screen.queryByRole('button', {name: /reset filters/i})).not.toBeInTheDocument();
+
+  await click(typeFilterIcon());
+  const extractRadio = screen.getByRole('radio', {name: 'Extract archive'});
+  await click(extractRadio);
+  await click(within(extractRadio.closest('.filterPopoverContainer')).getByText('OK'));
+
+  await waitFor(() => expect(filterCalls(api).length).toBe(2));
+  const filtered = JSON.parse(filterCalls(api)[1].body);
+  expect(filtered.type).toBe('UNPACK_ARCHIVE');
+  // Changing a filter goes back to page 1.
+  expect(filtered.page).toBe(1);
+
+  // A committed type is a changed filter, so the reset control appears.
+  expect(screen.getByRole('button', {name: /reset filters/i})).toBeInTheDocument();
+  expect(utils.container.querySelector('.headingRow')).toBeInTheDocument();
+
+  await click(screen.getByRole('button', {name: /reset filters/i}));
+
+  await waitFor(() => expect(filterCalls(api).length).toBe(3));
+  expect(JSON.parse(filterCalls(api)[2].body).type).toBeUndefined();
+  expect(screen.queryByRole('button', {name: /reset filters/i})).not.toBeInTheDocument();
+});
