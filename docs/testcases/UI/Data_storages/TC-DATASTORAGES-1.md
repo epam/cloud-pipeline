@@ -26,7 +26,8 @@ Test verifies that Generate URL option for datastorage's files can be disabled f
 | 8 | Logout | |
 | 9 | Login as non-admin user from the prerequisites | |
 | 10 | Open the object storage created at step 2 of the preparations | |
-| 11 | Tick the checkbox of the file created at step 5 of the preparations | <li> The **Clear selection** button appears <li> ***Generate URL*** button doesn't appear |
+| 11 | Tick the checkbox of the file created at step 5 of the preparations | The selection actions appear: a **1 item selected** dropdown button, or a single **Clear selection** button when it is the only action |
+| 12 | If the **1 item selected** dropdown button is shown, click it | <li> The list has **Clear selection** <li> The list has no **Generate URL** item: neither the list nor the page shows **Generate URL** |
 
 **After**:
 - Login as admin user from the prerequisites, and restore the **Enabled** checkbox and the eye icon of the `storage.allow.signed.urls` preference saved at step 6 of the preparations
