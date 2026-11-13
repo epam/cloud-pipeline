@@ -26,8 +26,6 @@ public enum Template {
     DEFAULT("DEFAULT"),
     PYTHON("PYTHON"),
     SHELL("SHELL"),
-    WDL("WDL"),
-    LUIGI("LUIGI"),
     SAMPLE_SHEET_BATCH("SAMPLE_SHEET_BATCH"),
     FOLDER_BATCH("FOLDER_BATCH");
 

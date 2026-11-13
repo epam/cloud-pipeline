@@ -93,10 +93,6 @@ public abstract class AbstractPipelineTabAO<TAB_AO extends AbstractPipelineTabAO
         return onTab(PipelineConfigurationTabAO.class);
     }
 
-    public PipelineGraphTabAO graphTab() {
-        return onTab(PipelineGraphTabAO.class);
-    }
-
     public PipelineHistoryTabAO historyTab() {
         return onTab(PipelineHistoryTabAO.class);
     }
