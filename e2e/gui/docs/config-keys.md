@@ -5,7 +5,7 @@ the client/api/deploy sources of this repo.
 "EXEC" = used by a method that runs (enabled and selected by `testng.xml`), or by a `@Before*/@After*` method or helper
 of a class that has such methods. "notexec" = used only by methods that do not run.
 The marks were made for a narrower selection of `testng.xml`. On this line `testng.xml` runs whole classes, and more
-of them (the WDL, Luigi, commit, NFS, metadata, scan and instance price type classes among them), so a "notexec"
+of them (the commit, NFS, metadata, scan and instance price type classes among them), so a "notexec"
 use may run now; the rows of the keys those classes need are updated.
 Paths below are relative to `e2e/gui/src/test/java/com/epam/pipeline/autotests/`.
 

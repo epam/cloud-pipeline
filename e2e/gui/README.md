@@ -220,8 +220,8 @@ public CA, pass its CA certificate URL as `--build-arg CP_CA_CERT_URL=<url>` (`b
 arguments). The tests install packages in `tests/e2e-endpoints` with `yum`, and `stress` comes
 from EPEL, so that image also has `epel-release`.
 
-The WDL and Luigi tests (`WDL*Test`, `Launch_ChangeLanguage*Test`) create pipelines from the `WDL` and `SHELL`
-templates of Create > Pipeline and check the editor, the graph and the language change; they launch no WDL run.
+The suite has no tests of WDL and Luigi pipelines: the platform no longer has the `WDL` and `LUIGI` pipeline templates
+and their tool images.
 
 ## Running the tests without the scripts
 
