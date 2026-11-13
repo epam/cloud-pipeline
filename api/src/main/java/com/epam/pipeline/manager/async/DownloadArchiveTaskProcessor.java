@@ -26,11 +26,11 @@ import com.epam.pipeline.dto.async.AsyncTaskType;
 import com.epam.pipeline.dto.async.DownloadArchiveConsumable;
 import com.epam.pipeline.dto.async.DownloadArchiveParams;
 import com.epam.pipeline.dto.async.DownloadArchiveResult;
+import com.epam.pipeline.entity.async.AsyncTasksConfig;
+import com.epam.pipeline.entity.async.StorageDownloadArchiveTaskConfig;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
-import com.epam.pipeline.entity.datastorage.ArchiveTasksConfig;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
-import com.epam.pipeline.entity.datastorage.DownloadArchiveConfig;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -97,7 +97,7 @@ public class DownloadArchiveTaskProcessor implements AsyncTaskProcessor {
     public AsyncTaskConsumable consume(AsyncTask task) {
         Assert.isTrue(AsyncTaskStatus.SUCCESS == task.getStatus(), messageHelper.getMessage(
                 MessageConstants.ERROR_ASYNC_TASK_ARCHIVE_NOT_READY, task.getId(), task.getStatus()));
-        final DownloadArchiveConfig config = getDownloadArchiveConfig();
+        final StorageDownloadArchiveTaskConfig config = getDownloadArchiveConfig();
 
         final Long storageId = archiveStorageId(task, config);
         Assert.notNull(storageId, messageHelper.getMessage(
@@ -120,21 +120,21 @@ public class DownloadArchiveTaskProcessor implements AsyncTaskProcessor {
         return requested;
     }
 
-    private DownloadArchiveConfig getDownloadArchiveConfig() {
-        return ArchiveTasksConfig.downloadOrEmpty(fullConfig());
+    private StorageDownloadArchiveTaskConfig getDownloadArchiveConfig() {
+        return AsyncTasksConfig.downloadOrEmpty(fullConfig());
     }
 
-    private ArchiveTasksConfig fullConfig() {
-        return preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_ARCHIVE_CONFIG);
+    private AsyncTasksConfig fullConfig() {
+        return preferenceManager.getPreference(SystemPreferences.SYSTEM_ASYNC_TASKS_CONFIG);
     }
 
-    private Long archiveStorageId(final AsyncTask task, final DownloadArchiveConfig config) {
+    private Long archiveStorageId(final AsyncTask task, final StorageDownloadArchiveTaskConfig config) {
         return archiveResult(task)
                 .map(DownloadArchiveResult::getStorageId)
                 .orElseGet(config::getDestinationStorageId);
     }
 
-    private String archivePath(final AsyncTask task, final DownloadArchiveConfig config) {
+    private String archivePath(final AsyncTask task, final StorageDownloadArchiveTaskConfig config) {
         final String recorded = archiveResult(task)
                 .map(DownloadArchiveResult::getPath)
                 .filter(StringUtils::isNotBlank)
@@ -147,7 +147,7 @@ public class DownloadArchiveTaskProcessor implements AsyncTaskProcessor {
         return recorded;
     }
 
-    private String archivePrefix(final DownloadArchiveConfig config) {
+    private String archivePrefix(final StorageDownloadArchiveTaskConfig config) {
         final String configured = StringUtils.defaultIfBlank(config.getDestinationPrefix(),
                 DEFAULT_ARCHIVE_PREFIX);
         final String trimmed = StringUtils.strip(configured, SLASH);

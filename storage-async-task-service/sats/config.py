@@ -18,9 +18,9 @@ The two kinds of settings this service has, kept apart on purpose.
 `ServiceConfig` is ours: slots, scratch directory, poll intervals. Read once at startup from the
 command line and the environment.
 
-`StorageDownloadArchiveConfig` is the platform's: the bucket, the thresholds, the time limits. Read
-from the `storage.archive.config` preference on every round, so a change in the UI applies without a
-restart. Its field names mirror `DownloadArchiveConfig` on the Java side.
+`StorageDownloadArchiveTaskConfig` is the platform's: the bucket, the thresholds, the time limits.
+Read from the `system.async.tasks.config` preference on every round, so a change in the UI applies
+without a restart. Its field names mirror the Java classes the preference is read into.
 
 That preference holds a section per task type, so the values this service needs come from two levels
 of it: the download ones from its own `download` section, and the two that belong to the service
@@ -34,14 +34,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-# Keep in step with `SystemPreferences.DATA_STORAGE_ARCHIVE_CONFIG`.
-PREFERENCE_KEY = 'storage.archive.config'
+# Keep in step with `SystemPreferences.SYSTEM_ASYNC_TASKS_CONFIG`.
+PREFERENCE_KEY = 'system.async.tasks.config'
 
 # The preference nests one section per task type under `tasks`. `maxUserTasks` and
 # `stuckTasksThresholdMinutes` are deliberately NOT in there: they govern the service rather than one
 # task type, so they sit at the top level where there can only be one of each.
 TASKS_SECTION = 'tasks'
-DOWNLOAD_SECTION = 'download'
+DOWNLOAD_SECTION = 'storageDownloadAsArchive'
 
 # Used when the preference leaves a field out. They repeat the defaults in `SystemPreferences`, so a
 # half-filled preference behaves like an untouched one. A field present as `null` is honoured as
@@ -64,8 +64,8 @@ def normalise_prefix(configured: str | None) -> str:
     """
     The destination prefix with one trailing slash and no leading one.
 
-    Mirrors `DataStorageDownloadArchiveManager.archivePrefix`, and the two must agree: the API derives
-    the same key for a task whose executor never reported one. A lone slash means the bucket root.
+    Mirrors `DownloadArchiveTaskProcessor.archivePrefix`, and the two must agree: the API derives the
+    same key for a task whose executor never reported one. A lone slash means the bucket root.
     """
     if not configured or not configured.strip():
         configured = DEFAULT_DESTINATION_PREFIX
@@ -113,9 +113,14 @@ class ServiceConfig:
 
 
 @dataclass(frozen=True, slots=True)
-class StorageDownloadArchiveConfig:
+class StorageDownloadArchiveTaskConfig:
     """
-    Mirror of `com.epam.pipeline.entity.datastorage.DownloadArchiveConfig`.
+    Everything this service reads out of the preference, flattened into one object.
+
+    Mirror of `com.epam.pipeline.entity.async.StorageDownloadArchiveTaskConfig`, plus the two fields
+    the platform keeps one level above the section - `max_user_tasks` and
+    `stuck_tasks_threshold_minutes`, which are `AsyncTasksConfig`'s on the Java side because they
+    govern the service rather than one task type.
 
     `None` in either threshold means "no limit", which is the platform's meaning: an administrator
     removing the value is removing the limit.
@@ -133,7 +138,7 @@ class StorageDownloadArchiveConfig:
     stuck_tasks_threshold_minutes: int
 
     @classmethod
-    def from_preference(cls, raw: str | dict[str, Any] | None) -> StorageDownloadArchiveConfig:
+    def from_preference(cls, raw: str | dict[str, Any] | None) -> StorageDownloadArchiveTaskConfig:
         """
         Parses the preference, which arrives as a JSON string in `payload.value`.
 

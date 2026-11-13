@@ -21,7 +21,7 @@ in step.
 
 import pytest
 
-from sats.config import ServiceConfig, StorageDownloadArchiveConfig
+from sats.config import ServiceConfig, StorageDownloadArchiveTaskConfig
 from sats.model import ArchiveTask, AsyncTaskType, TaskStatus
 from sats.worker import SUPPORTED_TASK_TYPES, ArchivePreparationWorker, AsyncTaskWorker, worker_for
 
@@ -37,12 +37,12 @@ def _config(tmp_path) -> ServiceConfig:
     return ServiceConfig(api_url='https://api', api_token='token', work_dir=tmp_path, slots=1)
 
 
-def _archive_config() -> StorageDownloadArchiveConfig:
+def _archive_config() -> StorageDownloadArchiveTaskConfig:
     # A real one, because a worker reads the destination prefix in its constructor.
-    return StorageDownloadArchiveConfig(destination_storage_id=9, destination_prefix='archives/',
-                                        max_size_bytes=None, max_files_count=None, ttl_days=7,
-                                        max_user_tasks=3, worker_max_running_minutes=240,
-                                        stuck_tasks_threshold_minutes=360)
+    return StorageDownloadArchiveTaskConfig(
+        destination_storage_id=9, destination_prefix='archives/', max_size_bytes=None,
+        max_files_count=None, ttl_days=7, max_user_tasks=3, worker_max_running_minutes=240,
+        stuck_tasks_threshold_minutes=360)
 
 
 def test_a_download_archive_task_gets_the_archive_worker(tmp_path):

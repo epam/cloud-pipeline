@@ -23,17 +23,20 @@ import {Icon, Tooltip} from 'antd';
 const ABOVE_DROPDOWN = 1071;
 
 /**
- * The reason a disabled action is disabled, behind an info icon. Mounted on
- * `document.body` so the menu cannot clip it, and the click is swallowed so it
- * does not reach the menu.
+ * A selection action's hint - or the reason a disabled one is disabled -
+ * behind an info icon.
+ *
+ * Mounted on `document.body` rather than beside the icon, so the menu it sits
+ * in can neither clip it nor trap it in its own stacking context, and raised
+ * above the dropdown. The click is swallowed so it does not reach the menu.
  */
-export default function DisabledActionHint ({id, reason}) {
-  if (!reason) {
+export default function ActionHint ({id, hint}) {
+  if (!hint) {
     return null;
   }
   return (
     <Tooltip
-      title={<div style={{maxWidth: 300}}>{reason}</div>}
+      title={<div style={{maxWidth: 300}}>{hint}</div>}
       trigger="hover"
       placement="left"
       getPopupContainer={() => document.body}
@@ -44,7 +47,7 @@ export default function DisabledActionHint ({id, reason}) {
         style={{
           marginLeft: 5,
           display: 'inline-flex',
-          // Taken back from the disabled item, which turns them off, or the
+          // Taken back from a disabled item, which turns them off, or the
           // tooltip never sees a hover. The cursor stays the row's.
           pointerEvents: 'auto',
           cursor: 'inherit'
@@ -57,7 +60,7 @@ export default function DisabledActionHint ({id, reason}) {
   );
 }
 
-DisabledActionHint.propTypes = {
+ActionHint.propTypes = {
   id: PropTypes.string,
-  reason: PropTypes.node
+  hint: PropTypes.node
 };

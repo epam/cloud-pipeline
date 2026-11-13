@@ -33,10 +33,10 @@ const MAINTENANCE_MODE_DISCLAIMER = 'Platform is in a maintenance mode, operatio
 // (SystemPreferences.CLUSTER_NODEUP_RETRY_COUNT)
 export const DEFAULT_NODE_UP_RETRY_COUNT = 5;
 
-// fallback when "storage.archive.config" (or its "maxUserTasks" key) is absent;
-// mirrors the api's own default for `storage.archive.config`
-// (SystemPreferences.DATA_STORAGE_ARCHIVE_CONFIG)
-export const DEFAULT_STORAGE_ARCHIVE_MAX_USER_TASKS = 3;
+// fallback when "system.async.tasks.config" (or its "maxUserTasks" key) is absent;
+// mirrors the api's own default for `system.async.tasks.config`
+// (SystemPreferences.SYSTEM_ASYNC_TASKS_CONFIG)
+export const DEFAULT_ASYNC_TASKS_MAX_USER_TASKS = 3;
 
 const SYSTEM_CAPABILITY_PARAMETER_TO_DISPLAY = Object.entries(RUN_CAPABILITIES_PARAMETERS)
   .reduce((acc, [name, parameter]) => ({
@@ -234,13 +234,14 @@ class PreferencesLoad extends Remote {
     return `${this.getPreferenceValue('storage.allow.signed.urls')}` !== 'false';
   }
 
-  // The preference nests a section per asynchronous archive task type - `download` and `unpack` -
-  // under `tasks`, with the values shared by the whole service on top. `maxUserTasks` is one of
-  // those shared ones, deliberately: it is a single budget across every type, so it is read from
-  // the top level here and a copy inside `tasks` or a section is ignored rather than merged.
+  // The preference nests a section per asynchronous task type under `tasks` -
+  // `storageDownloadAsArchive` and `storageUnpackArchive` - with the values shared by the whole
+  // service on top. `maxUserTasks` is one of those shared ones, deliberately: it is a single budget
+  // across every type, so it is read from the top level here and a copy inside `tasks` or a section
+  // is ignored rather than merged.
   @computed
-  get storageArchiveConfig () {
-    const value = this.getPreferenceValue('storage.archive.config');
+  get asyncTasksConfig () {
+    const value = this.getPreferenceValue('system.async.tasks.config');
     let config = {};
     if (value) {
       try {
@@ -249,7 +250,7 @@ class PreferencesLoad extends Remote {
           config = parsed;
         }
       } catch (e) {
-        console.warn('Error parsing "storage.archive.config" preference:', e.message);
+        console.warn('Error parsing "system.async.tasks.config" preference:', e.message);
       }
     }
     const {maxUserTasks} = config;
@@ -258,7 +259,7 @@ class PreferencesLoad extends Remote {
       ...config,
       maxUserTasks: Number.isFinite(parsedMaxUserTasks) && parsedMaxUserTasks > 0
         ? parsedMaxUserTasks
-        : DEFAULT_STORAGE_ARCHIVE_MAX_USER_TASKS
+        : DEFAULT_ASYNC_TASKS_MAX_USER_TASKS
     };
   }
 

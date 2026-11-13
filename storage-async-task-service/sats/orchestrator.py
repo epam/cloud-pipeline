@@ -17,7 +17,7 @@ The loop. Reads the preference, runs the cleaner, claims what it has room for, a
 
 One round:
 
-    1. read `storage.archive.config`               so a change applies without a restart
+    1. read `system.async.tasks.config`            so a change applies without a restart
     2. run the four cleaner cleanups               before claiming, so a stuck task is out of the way
     3. claim tasks while slots are free            one call per task
     4. sleep until the next round                  interruptibly
@@ -37,7 +37,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 from .api import CloudPipelineApi
-from .config import PREFERENCE_KEY, ServiceConfig, StorageDownloadArchiveConfig
+from .config import PREFERENCE_KEY, ServiceConfig, StorageDownloadArchiveTaskConfig
 from .util.errors import ApiError, ApiRejected
 from .util.log import get_logger
 from .model import ArchiveTask, AsyncTaskType
@@ -152,7 +152,7 @@ class Orchestrator:
         self._next_cleanup = now + interval
         return True
 
-    def _load_archive_config(self) -> StorageDownloadArchiveConfig | None:
+    def _load_archive_config(self) -> StorageDownloadArchiveTaskConfig | None:
         """
         Reads and parses the preference. `None` when it cannot be read.
 
@@ -164,7 +164,7 @@ class Orchestrator:
             LOG.warning('Cannot read preference %s (%s), skipping this round', PREFERENCE_KEY, error)
             return None
         try:
-            archive_config = StorageDownloadArchiveConfig.from_preference(raw)
+            archive_config = StorageDownloadArchiveTaskConfig.from_preference(raw)
         except ValueError as error:
             # `JSONDecodeError` is a `ValueError`: somebody saved something that is not JSON.
             LOG.error('Preference %s does not parse (%s), skipping this round', PREFERENCE_KEY, error)
@@ -172,7 +172,7 @@ class Orchestrator:
         self._report_warnings(archive_config)
         return archive_config
 
-    def _report_warnings(self, archive_config: StorageDownloadArchiveConfig) -> None:
+    def _report_warnings(self, archive_config: StorageDownloadArchiveTaskConfig) -> None:
         """Logs what is wrong with the preference, once per change rather than once per round."""
         warnings = tuple(archive_config.warnings())
         if warnings == self._reported_warnings:
@@ -182,7 +182,7 @@ class Orchestrator:
             LOG.warning('%s', warning)
 
     def _claim_while_free(self, pool: ThreadPoolExecutor,
-                          archive_config: StorageDownloadArchiveConfig) -> None:
+                          archive_config: StorageDownloadArchiveTaskConfig) -> None:
         """
         Claims tasks one at a time while there is a slot and the queue is not empty.
 
@@ -231,7 +231,7 @@ class Orchestrator:
             LOG.error('Claimed a task that cannot be read (%s); the cleaner will clean it up', error)
             return None
 
-    def _start(self, pool: ThreadPoolExecutor, archive_config: StorageDownloadArchiveConfig,
+    def _start(self, pool: ThreadPoolExecutor, archive_config: StorageDownloadArchiveTaskConfig,
                task: ArchiveTask) -> bool:
         """
         Hands a claimed task to the pool. Returns whether the pool has taken it.
@@ -254,7 +254,7 @@ class Orchestrator:
         future.add_done_callback(lambda _, task_id=task.id: self._release(task_id))
         return True
 
-    def _run_worker(self, archive_config: StorageDownloadArchiveConfig, task: ArchiveTask) -> None:
+    def _run_worker(self, archive_config: StorageDownloadArchiveTaskConfig, task: ArchiveTask) -> None:
         """
         The body of a pool thread: the worker for whatever type was claimed.
 

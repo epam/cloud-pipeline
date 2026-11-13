@@ -25,7 +25,7 @@ import com.epam.pipeline.dto.async.AsyncTask;
 import com.epam.pipeline.dto.async.AsyncTaskConsumeResult;
 import com.epam.pipeline.dto.async.AsyncTaskParams;
 import com.epam.pipeline.dto.async.AsyncTaskType;
-import com.epam.pipeline.entity.datastorage.ArchiveTasksConfig;
+import com.epam.pipeline.entity.async.AsyncTasksConfig;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.manager.async.AsyncTaskManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -114,8 +114,8 @@ public class AsyncTaskApiService {
     }
 
     private void assertUserQuota(final String owner) {
-        final int limit = ArchiveTasksConfig.maxUserTasksOrDefault(
-                preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_ARCHIVE_CONFIG));
+        final int limit = AsyncTasksConfig.maxUserTasksOrDefault(
+                preferenceManager.getPreference(SystemPreferences.SYSTEM_ASYNC_TASKS_CONFIG));
         final long active = asyncTaskManager.countActive(owner);
         Assert.isTrue(active < limit, messageHelper.getMessage(
                 MessageConstants.ERROR_ASYNC_TASK_USER_QUOTA_EXCEEDED, limit));

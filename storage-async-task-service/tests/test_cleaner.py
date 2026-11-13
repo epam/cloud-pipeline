@@ -19,7 +19,7 @@ Tests of the four cleanups - the only place a killed worker is exercised at all.
 import datetime
 import os
 
-from sats.config import StorageDownloadArchiveConfig, ServiceConfig
+from sats.config import StorageDownloadArchiveTaskConfig, ServiceConfig
 from sats.worker.cleaner import ORPHAN_GRACE_MINUTES, Cleaner
 from sats.model import ArchiveTask, TaskStatus
 
@@ -31,11 +31,10 @@ def _service_config(tmp_path):
 
 
 def _archive_config():
-    return StorageDownloadArchiveConfig(destination_storage_id=9, destination_prefix='archives/',
-                                        max_size_bytes=None,
-                                        max_files_count=None, ttl_days=7, max_user_tasks=3,
-                                        worker_max_running_minutes=240,
-                                        stuck_tasks_threshold_minutes=360)
+    return StorageDownloadArchiveTaskConfig(
+        destination_storage_id=9, destination_prefix='archives/', max_size_bytes=None,
+        max_files_count=None, ttl_days=7, max_user_tasks=3, worker_max_running_minutes=240,
+        stuck_tasks_threshold_minutes=360)
 
 
 def _task(task_id, status):

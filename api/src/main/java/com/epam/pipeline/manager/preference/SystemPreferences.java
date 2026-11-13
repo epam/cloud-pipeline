@@ -21,6 +21,9 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsMode;
+import com.epam.pipeline.entity.async.AsyncTasksConfig;
+import com.epam.pipeline.entity.async.StorageDownloadArchiveTaskConfig;
+import com.epam.pipeline.entity.async.StorageUnpackArchiveTaskConfig;
 import com.epam.pipeline.entity.cloudaccess.CloudAccessManagementConfig;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
@@ -33,9 +36,6 @@ import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationP
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
-import com.epam.pipeline.entity.datastorage.ArchiveTasksConfig;
-import com.epam.pipeline.entity.datastorage.DownloadArchiveConfig;
-import com.epam.pipeline.entity.datastorage.UnpackArchiveConfig;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.datastorage.nfs.NFSMountPolicy;
 import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
@@ -212,31 +212,6 @@ public class SystemPreferences {
         "storage.max.download.size", 10000, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference DATA_STORAGE_TEMP_CREDENTIALS_DURATION = new IntPreference(
         "storage.temp.credentials.duration", 3600, DATA_STORAGE_GROUP, isGreaterThan(0));
-    public static final ObjectPreference<ArchiveTasksConfig> DATA_STORAGE_ARCHIVE_CONFIG =
-        new ObjectPreference<>(
-            "storage.archive.config",
-            ArchiveTasksConfig.builder()
-                .maxUserTasks(ArchiveTasksConfig.DEFAULT_MAX_USER_TASKS)
-                .stuckTasksThresholdMinutes(360)
-                .tasks(ArchiveTasksConfig.Tasks.builder()
-                    .download(DownloadArchiveConfig.builder()
-                        .destinationPrefix("archives/")
-                        .maxSizeBytes(107374182400L)
-                        .maxFilesCount(100000)
-                        .ttlDays(7)
-                        .workerMaxRunningMinutes(240)
-                        .build())
-                    .unpack(UnpackArchiveConfig.builder()
-                        .maxArchiveSizeBytes(53687091200L)
-                        .maxSizeBytes(214748364800L)
-                        .maxFilesCount(100000)
-                        .workerMaxRunningMinutes(240)
-                        .build())
-                    .build())
-                .build(),
-            new TypeReference<ArchiveTasksConfig>() {},
-            DATA_STORAGE_GROUP,
-            isNullOrValidJson(new TypeReference<ArchiveTasksConfig>() {}));
     public static final IntPreference PROFILE_TEMP_CREDENTIALS_DURATION = new IntPreference(
             "profile.temp.credentials.duration", 3600, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference STORAGE_MOUNTS_PER_GB_RATIO = new IntPreference(
@@ -1254,6 +1229,36 @@ public class SystemPreferences {
                     DATA_SHARING_GROUP, pass);
 
     // SYSTEM_GROUP
+    /**
+     * Everything tunable about the asynchronous tasks the platform runs outside a request: the quota
+     * shared by every task type, the stuck-task threshold, and a section per task type under
+     * {@code tasks}. Read by the api and by the executor services that drain the queue.
+     */
+    public static final ObjectPreference<AsyncTasksConfig> SYSTEM_ASYNC_TASKS_CONFIG =
+        new ObjectPreference<>(
+            "system.async.tasks.config",
+            AsyncTasksConfig.builder()
+                .maxUserTasks(AsyncTasksConfig.DEFAULT_MAX_USER_TASKS)
+                .stuckTasksThresholdMinutes(360)
+                .tasks(AsyncTasksConfig.Tasks.builder()
+                    .storageDownloadAsArchive(StorageDownloadArchiveTaskConfig.builder()
+                        .destinationPrefix("archives/")
+                        .maxSizeBytes(107374182400L)
+                        .maxFilesCount(100000)
+                        .ttlDays(7)
+                        .workerMaxRunningMinutes(240)
+                        .build())
+                    .storageUnpackArchive(StorageUnpackArchiveTaskConfig.builder()
+                        .maxArchiveSizeBytes(53687091200L)
+                        .maxSizeBytes(214748364800L)
+                        .maxFilesCount(100000)
+                        .workerMaxRunningMinutes(240)
+                        .build())
+                    .build())
+                .build(),
+            new TypeReference<AsyncTasksConfig>() {},
+            SYSTEM_GROUP,
+            isNullOrValidJson(new TypeReference<AsyncTasksConfig>() {}));
     /**
      * A list of endpoint IDs of external services. Those are services, that need to get Pipeline's JWT token
      */
