@@ -2688,7 +2688,16 @@ export default class DataStorage extends React.Component {
             {'cp-text-not-important': action.disabled}
           )}
         >
-          <div style={{display: 'flex', alignItems: 'center'}}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              // A disabled item is not hit-tested, so its cursor falls back to
+              // the menu's own `pointer`. rc-menu binds no onClick to one, so
+              // taking the events back cannot make it clickable.
+              ...(action.disabled ? {pointerEvents: 'auto', cursor: 'not-allowed'} : {})
+            }}
+          >
             {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
             {action.title}
             {action.hint && (

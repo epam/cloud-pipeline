@@ -46,6 +46,14 @@ test('re-enables pointer events, which a disabled menu item turns off', () => {
   expect(container.querySelector('#hint').style.pointerEvents).toBe('auto');
 });
 
+// Taking the events back would otherwise give the icon a cursor of its own,
+// where the rest of the row shows the menu's.
+test('leaves the cursor to the row', () => {
+  const {container} = render(<DisabledActionHint id="hint" reason={REASON} />);
+
+  expect(container.querySelector('#hint').style.cursor).toBe('inherit');
+});
+
 test('opens from inside a disabled menu item', async () => {
   const {container} = render(
     <Menu selectedKeys={[]}>

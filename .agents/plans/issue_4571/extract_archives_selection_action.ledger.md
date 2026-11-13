@@ -50,3 +50,8 @@ note · "Upload" is disabled alongside "Upload and extract" while the first chec
 user asked. Cancel stays live. A failing check releases both - the server enforces the quota.
 note · the existing confirmation tests clicked a button immediately after the debounce settled, which
 is now too early; `settleConfirmation()` waits for the button as a user would.
+note · the two cursors differed because `cursor` already inherits: the icon took the disabled item's
+`not-allowed`, while the row itself was not hit-tested at all and fell back to the menu's own
+`pointer`. The row now takes its pointer events back with `cursor: not-allowed`, and the icon's
+cursor is `inherit`, so both read the same. rc-menu binds no `onClick` to a disabled item, so this
+cannot make the row clickable.

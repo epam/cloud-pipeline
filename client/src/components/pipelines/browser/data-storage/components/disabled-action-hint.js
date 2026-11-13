@@ -23,12 +23,9 @@ import {Icon, Tooltip} from 'antd';
 const ABOVE_DROPDOWN = 1071;
 
 /**
- * The reason a disabled action is disabled, behind an info icon.
- *
- * `pointerEvents` is the load-bearing line: a disabled menu item gets
- * `pointer-events: none`, which its children inherit, so without this the
- * tooltip never sees a hover. Mounted on `document.body` so the menu cannot
- * clip it, and the click is swallowed so it does not reach the menu.
+ * The reason a disabled action is disabled, behind an info icon. Mounted on
+ * `document.body` so the menu cannot clip it, and the click is swallowed so it
+ * does not reach the menu.
  */
 export default function DisabledActionHint ({id, reason}) {
   if (!reason) {
@@ -44,7 +41,14 @@ export default function DisabledActionHint ({id, reason}) {
     >
       <span
         id={id}
-        style={{marginLeft: 5, display: 'inline-flex', pointerEvents: 'auto'}}
+        style={{
+          marginLeft: 5,
+          display: 'inline-flex',
+          // Taken back from the disabled item, which turns them off, or the
+          // tooltip never sees a hover. The cursor stays the row's.
+          pointerEvents: 'auto',
+          cursor: 'inherit'
+        }}
         onClick={(event) => event.stopPropagation()}
       >
         <Icon type="info-circle" />
