@@ -11,7 +11,8 @@ The Selenide/TestNG suite that drives the platform GUI in a browser. Run it for 
   registers the fixture tools, deactivates blocking system notifications, extends the admin's session
   in the API database and acts on the nodes of test runs. It reverts all that when it exits, also on
   Ctrl-C; a killed runner leaves it in place.
-- The whole `testng.xml` takes 10-12 hours. Run the classes the change touches.
+- The time of the whole `testng.xml` on this line is not measured: a narrower selection took 10-12 hours, and it
+  runs many more classes now. Run the classes the change touches.
 
 Ask before the first launch, and stop what you started. Unattended, launch nothing here: read the diff
 instead, and say in the hand-back that the suite did not run.

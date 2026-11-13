@@ -65,7 +65,7 @@ Per-key consequences (mode C, the recommended one for a platform with SSO):
   the session reports `isAuthenticated() == false` afterwards), and a JWT in the `HttpAuthorization` cookie does not
   open the UI pages either (they are behind SAML unless `CP_API_USE_ONLY_JWT_AUTH=true`). A browser session expires
   after `CP_API_SRV_SESSION_TIMEOUT_SEC` (default 1800 s) of **inactivity**; the running tests keep it alive (the
-  whole suite takes 10-12 h). Check: `curl -sk -b "SESSION=<v>" .../restapi/whoami` must return `login` - also after
+  time of the whole suite on this line is not measured). Check: `curl -sk -b "SESSION=<v>" .../restapi/whoami` must return `login` - also after
   65 s.
 * `another.password`, `clean.history.password`: **not used** in mode C (impersonation needs no credentials). Put a JWT
   of that user anyway (`GET /restapi/user/token?name=<user>&expiration=<s>`) so mode B stays possible.
@@ -149,19 +149,19 @@ Legend for "pre-exist": what must exist on the platform before the run. "Derive"
 
 | key | constant | used by | meaning / format | pre-exist | derive |
 |---|---|---|---|---|---|
-| `e2e.ui.default.instance.type` | DEFAULT_INSTANCE | EXEC in 18 classes: `PipelineRunFormAO.setDefaultLaunchOptions` (dropdown item by `text()` substring), tool default in `Tools` fallback, `{{instance_type}}` in config templates, run instance checks, `LaunchClusterTest` "Additional worker pipeline-X (<type>) has been scaled up", `Launch_InstanceConfigTest` (368 sets it in config.json and asserts it differs from the template's `instance_size`) | instance type: `m6i.xlarge` | allowed by `cluster.allowed.instance.types(.docker)` for admin and users; differs from the deploy-time `CP_PREF_CLUSTER_INSTANCE_TYPE` of the pipeline templates, or 368 fails | `GET /restapi/cluster/instance/loadAll` |
-| `e2e.ui.another.instance.type` | ANOTHER_INSTANCE | EXEC: `DetachedConfigurationsTest` (1544, the node type set in the attached pipeline configuration); notexec others (GlobalSearch, LaunchClusterTest Spark) | instance type different from the default | allowed by `cluster.allowed.instance.types` | any allowed, e.g. `m6i.2xlarge` |
-| `e2e.ui.default.instance.family.name` | DEFAULT_INSTANCE_FAMILY_NAME | EXEC (LaunchClusterTest hybrid, RestrictionsOnInstancePriceTypeTest, RestrictionsOnInstanceTypeTest: the family shown in the instance type lists) | family prefix: `m6i` | - | prefix of default.instance.type |
+| `e2e.ui.default.instance.type` | DEFAULT_INSTANCE | EXEC in 18 classes: `PipelineRunFormAO.setDefaultLaunchOptions` (dropdown item by `text()` substring), tool default in `Tools` fallback, `{{instance_type}}` in config templates, run instance checks, `LaunchClusterTest` "Additional worker pipeline-X (<type>) has been scaled up", `Launch_InstanceConfigTest` (368 sets it in config.json and asserts it differs from the template's `instance_size`) | instance type: `m5.xlarge` (`default_instance_type` of `scripts/fixtures.json`) | allowed by `cluster.allowed.instance.types(.docker)` for admin and users; differs from the deploy-time `CP_PREF_CLUSTER_INSTANCE_TYPE` of the pipeline templates, or 368 fails | `GET /restapi/cluster/instance/loadAll` |
+| `e2e.ui.another.instance.type` | ANOTHER_INSTANCE | EXEC: `DetachedConfigurationsTest` (1544, the node type set in the attached pipeline configuration); notexec others (GlobalSearch, LaunchClusterTest Spark) | instance type different from the default | allowed by `cluster.allowed.instance.types` | any allowed, e.g. `m5.2xlarge` (the generator takes the `.2xlarge` of the default family) |
+| `e2e.ui.default.instance.family.name` | DEFAULT_INSTANCE_FAMILY_NAME | EXEC (LaunchClusterTest hybrid, RestrictionsOnInstancePriceTypeTest, RestrictionsOnInstanceTypeTest: the family shown in the instance type lists) | family prefix: `m5` | - | prefix of default.instance.type |
 | `e2e.ui.default.instance.price.type` | DEFAULT_INSTANCE_PRICE_TYPE | EXEC: `DetachedConfigurationsTest` (default price type of a new configuration, `text()`), `PipelineConfigurationTest.priceTypeValidation` (selected value of the launch form); notexec others | UI label of the **platform default** price type: `Spot` if preference `cluster.spot`=true, `On-demand` otherwise | - | `GET /restapi/preferences/cluster.spot` |
 | `e2e.ui.default.instance.price.type.tool` | DEFAULT_INSTANCE_PRICE_TYPE_TOOL | EXEC: `Tools.fallbackToToolDefaultState` (sets the testing tool's price type, all fallback classes), RunToolsInSandBox, RunToolsInSandboxCheckDataStorage | dropdown label for the tool setting: `On-demand` / `Spot` | - | static `On-demand` |
 | `e2e.ui.spot.price.name` | SPOT_PRICE_NAME | EXEC `PipelineConfigurationTest` (1257/1263/1241 menu item / selected value); notexec LaunchCluster, RestrictionsOnInstancePriceType | spot label on AWS: `Spot` | spot in `cluster.allowed.price.types` | static per cloud (`Spot` for AWS) |
 | `e2e.ui.cloud.provider` | CLOUD_PROVIDER | EXEC: `ConditionalTestAnalyzer` (registered by `@Listeners`, applies to the whole suite) compares `Cloud.AWS.name().toLowerCase().equals(v)`: **must be lowercase `aws`**, otherwise every `@CloudProviderOnly(AWS)` test is SKIPPED (EBS/Lustre, RunAs, StorageSync, Backups, DataStorages, ...); ObjectMetadataFileTest, CreateStoragePopupAO, StorageContentAO (ignore case) | `aws` | - | `CP_CLOUD_PLATFORM` lowercased |
 | `e2e.ui.another.cloud.region` | ANOTHER_CLOUD_REGION | **read, never used** | region name | - | empty or `GET /restapi/cloud/region` |
-| `e2e.ui.default.cluster.allowed.instance.types` | DEFAULT_CLUSTER_ALLOWED_INSTANCE_TYPES | EXEC `PlatformPreferencesTest.checkClusterAllowedInstanceTypes` (`value()` contains); notexec RestrictionsOnInstancePriceType (would **write** it back as the default) | substring of preference `cluster.allowed.instance.types`, e.g. `m6i.*,c6i.*,r6i.*` | the preference must contain `m6i` types, no `m5` (`RestrictionsOnInstanceTypeTest` hard-codes this), and c6i/r6i (hard-coded tests) | `GET /restapi/preferences/cluster.allowed.instance.types` .value |
+| `e2e.ui.default.cluster.allowed.instance.types` | DEFAULT_CLUSTER_ALLOWED_INSTANCE_TYPES | EXEC `PlatformPreferencesTest.checkClusterAllowedInstanceTypes` (`value()` contains); `RestrictionsOnInstancePriceTypeTest` **writes** it back as the default | substring of preference `cluster.allowed.instance.types`, e.g. `m5.*,c5.*,r4.*,t2.*,c6i.*,r6i.*` (the 0.16 default `m5.*,c5.*,r4.*,t2.*` plus `c6i.*` and `r6i.*`) | the preference must allow the family of default.instance.type (`m5`) and `c6i.*` and `r6i.*`, which TC-PARAMETERS-4, TC-PARAMETERS-6 and 3433 hard-code; `RestrictionsOnInstanceTypeTest` reads the allowed families itself | `GET /restapi/preferences/cluster.allowed.instance.types` .value |
 | `e2e.ui.default.cluster.allowed.instance.types.docker` | DEFAULT_CLUSTER_ALLOWED_INSTANCE_TYPES_DOCKER | EXEC `checkClusterAllowedInstanceTypesDocker` | substring of `cluster.allowed.instance.types.docker` | same as above | the preference value |
-| `e2e.ui.cluster.allowed.masks` | CLUSTER_ALLOWED_MASKS | EXEC (`RestrictionsOnInstancePriceTypeTest`: `split(",")`, needs >= 4 items, `*` appended) | comma-separated instance-type prefixes, e.g. `m6i.,c6i.,r6i.,m6i.l` | - | static |
+| `e2e.ui.cluster.allowed.masks` | CLUSTER_ALLOWED_MASKS | EXEC (`RestrictionsOnInstancePriceTypeTest`: `split(",")`, needs >= 4 items, `*` appended) | comma-separated instance-type prefixes, e.g. `m5.,c5.,r4.,m5.l` | - | `<family>.,c5.,r4.,<family>.l`, with the family of default.instance.type |
 | `e2e.ui.default.cluster.allowed.price.types` | DEFAULT_CLUSTER_ALLOWED_PRICE_TYPES | EXEC (`RestrictionsOnInstancePriceTypeTest` writes it back to `cluster.allowed.price.types`) | e.g. `spot,on_demand` | - | `cluster.allowed.price.types` value |
-| `e2e.ui.cluster.aws.ebs.type` | DEFAULT_CLUSTER_AWS_EBS_TYPE | EXEC `PlatformPreferencesTest.checkConfigureClusterAwsEBSvolumeType`: input value **`equals`** it, eye icon must be "visible", and the InitializeNode log must match `The requested EBS volume type for \D+ device is <v>` | e.g. `gp3` | preference `cluster.aws.ebs.type` set and **visible=true** | `GET /restapi/preferences/cluster.aws.ebs.type` (value; check `visible`) |
+| `e2e.ui.cluster.aws.ebs.type` | DEFAULT_CLUSTER_AWS_EBS_TYPE | EXEC `PlatformPreferencesTest.checkConfigureClusterAwsEBSvolumeType`: input value **`equals`** it, eye icon must be "visible"; `checkClusterAwsEBSvolumeTypeOfNewNode` (the InitializeNode log must match `The requested EBS volume type for \D+ device is <v>`) is excluded on this line, whose nodeup logs no volume type | e.g. `gp3` | preference `cluster.aws.ebs.type` set and **visible=true** | `GET /restapi/preferences/cluster.aws.ebs.type` (value; check `visible`) |
 | `e2e.ui.cluster.instance.hdd.scale.delta.ratio` | CLUSTER_INSTANCE_HDD_SCALE_DELTA_RATIO | EXEC `LaunchParametersTest` (static `Double.parseDouble`; `checkHDDpreferences` compares the preference input value with `equals`; expected log "autoscaled XG + floor(X/2)G" hard-codes +50%) | the preference string exactly, in practice `0.5` | `cluster.instance.hdd.scale.enabled`=true and the ratio = 0.5 | `GET /restapi/preferences/cluster.instance.hdd.scale.delta.ratio` .value as string |
 
 ### 2.5 Storages, files, search, preferences content
@@ -172,7 +172,7 @@ Legend for "pre-exist": what must exist on the platform before the run. "Derive"
 | `e2e.ui.storage.name.prefix` | STORAGE_NAME_PREFIX | EXEC `DataStoragesTest` (expected bucket path `<prefix><name>` in messages and "add existing" paths); blank allowed | the bucket-name prefix the platform adds to new storages = preference `storage.object.prefix` | - | `GET /restapi/preferences/storage.object.prefix` .value or empty |
 | `e2e.ui.nfs.prefix` | NFS_PREFIX | EXEC (NfsDataStorageTest: expected storage paths and messages) | the path prefix of a new NFS storage as the API gives it, e.g. `<NFS host>:/` | an NFS file share mount in the region | from the overrides (the generator writes it empty and warns) |
 | `e2e.ui.download.folder` | DOWNLOAD_FOLDER | EXEC: `DataStoragesTest.downloadFileAndValidate`, `PipelineDetailsTest` (downloaded document), `RoleBasedAccessControlTest.generateListOfUsers` (`export.csv`), and `Utils.createTempFile*` writes upload files there (many classes) | absolute path inside the runner container = Chrome's download dir (`$HOME/Downloads`; no Chrome prefs are set): `/headless/Downloads` | dir exists and is writable by the test user | static |
-| `e2e.ui.search.prefix` | SEARCH_PREFIX | EXEC `GlobalSearchAO` (search input located by `placeholder` attribute, exact) for the 7 executed GlobalSearchTest methods | the full placeholder **`<ui.pipeline.deployment.name> search`** (`client/src/components/search/SearchDialog.js`) | - | `GET /restapi/preferences/ui.pipeline.deployment.name` .value + `" search"` |
+| `e2e.ui.search.prefix` | SEARCH_PREFIX | EXEC `GlobalSearchAO` (search input located by `placeholder` attribute, exact) for GlobalSearchTest | the full placeholder **`<ui.pipeline.deployment.name> search`** (`client/src/components/search/SearchDialog.js`) | - | `GET /restapi/preferences/ui.pipeline.deployment.name` .value + `" search"` |
 | `e2e.ui.environment.notifications` | ENVIRONMENT_NOTIFICATIONS | EXEC `NotificationsTest.validateSystemEventsMenu` (EPMCMBIBPC-1205): the System events table must hold exactly these notifications (by title), or show "No data" when the list is empty | JSON list of titles, e.g. `["Disclaimer"]`; optional, missing = `[]` (escape non-ASCII as `\uXXXX`) | the environment's own notifications (e.g. a disclaimer) | `GET /restapi/notification/list` .title, without the titles NotificationsTest creates (`^(info_notification\|info_edited\|warning_notification\|warning_active\|critical_notification)-YYYY-MM-DD$`, a leftover of an earlier run is reported and still fails 1205) |
 | `e2e.ui.notifier.logs.dir` | NOTIFIER_LOGS_DIR | EXEC `RunStatusNotificationTest.noEmailIsSentIfRunStatusDidNotChange` (TC-NOTIFICATION-01): reads `notifier.log` and the rolled `notifier-yyyyMMdd.log` files there for the emails of a run's STOPPED status, instead of a mailbox; EXEC `CertificateExpirationNotificationTest.notificationIsSentForCertificateExpiringWithinAWeek` (2870_1): the same for the "Certificate expires soon" email; EXEC `NodeThresholdNotificationTest.notificationIsSentWhenNodeExceedsThresholds` (2870_2): the same for the "Nodes exceed thresholds" email | **path of a directory** in the container, e.g. `/notifier-logs`; optional, blank makes TC-NOTIFICATION-01 and 2870_2 fail before they launch a run, and 2870_1 before it writes its certificate | the notifier log directory mounted read-only, readable by uid 1000, and written within the last 2 min (the notifier logs its queue check every 30 s); notifier with the subject and all recipients in its email log line | static `/notifier-logs`: `run-e2e.sh` mounts `/opt/notifier/logs` (or `E2E_NOTIFIER_LOGS_DIR`) of its node there |
 | `e2e.ui.vm.monitor.logs.dir` | VM_MONITOR_LOGS_DIR | EXEC `CertificateExpirationNotificationTest.notificationIsSentForCertificateExpiringWithinAWeek` (2870_1): reads `vm_monitor.log` and the rolled `vm_monitor-yyyyMMdd.log` files there: the VM monitor checked the test certificate, and the API accepted its notification; EXEC 2870_2: the node monitor checked the node of the run, found its `python` process above the NOFILE threshold, and the API accepted the notification, and when an earlier notification still delays it (`Aborting notifications for <m> more minutes`) | **path of a directory** in the container, e.g. `/vm-monitor-logs`; optional, blank makes 2870_1 fail before it writes its certificate, and 2870_2 before it launches a run | the VM monitor log directory mounted read-only, readable by uid 1000, and written within the last 2 min; for 2870_1, a VM monitor that checks new and changed certificate files every minute, with that check enabled (`CP_VM_MONITOR_PKI_CHANGES_ENABLE` not `false`); for 2870_2, the node monitor on (`CP_VM_MONITOR_NODE_ENABLE=true`) | static `/vm-monitor-logs`: `run-e2e.sh` mounts `/opt/vm-monitor/logs` (or `E2E_VM_MONITOR_LOGS_DIR`) of its node there |
@@ -254,9 +254,9 @@ e2e.ui.tool.without.default.settings=tests/e2e-empty
 e2e.ui.another.group=library
 e2e.ui.another.testing.tool=rstudio
 e2e.ui.test.docker.image=centos
-e2e.ui.default.instance.type=m6i.xlarge
-e2e.ui.another.instance.type=m6i.2xlarge
-e2e.ui.default.instance.family.name=m6i
+e2e.ui.default.instance.type=m5.xlarge
+e2e.ui.another.instance.type=m5.2xlarge
+e2e.ui.default.instance.family.name=m5
 e2e.ui.default.instance.price.type=Spot
 e2e.ui.default.instance.price.type.tool=On-demand
 e2e.ui.spot.price.name=Spot
@@ -267,7 +267,7 @@ e2e.ui.storage.name.prefix=<storage.object.prefix, empty>
 e2e.ui.search.prefix=<ui.pipeline.deployment.name> search
 e2e.ui.default.cluster.allowed.instance.types=<cluster.allowed.instance.types>
 e2e.ui.default.cluster.allowed.instance.types.docker=<cluster.allowed.instance.types.docker>
-e2e.ui.cluster.allowed.masks=m6i.,c6i.,r6i.,m6i.l
+e2e.ui.cluster.allowed.masks=m5.,c5.,r4.,m5.l
 e2e.ui.default.cluster.allowed.price.types=<cluster.allowed.price.types>
 e2e.ui.cluster.aws.ebs.type=<cluster.aws.ebs.type>
 e2e.ui.cluster.instance.hdd.scale.delta.ratio=0.5
@@ -324,8 +324,9 @@ e2e.ui.backup.storage.offset=<hours>
 * Pipeline templates `DEFAULT`, `PYTHON`, `SHELL` in Create > Pipeline (GitLab working).
 
 ### 4.3 Preferences / platform settings
-* `cluster.allowed.instance.types` and `.docker`: contain `m6i.*` (and default.instance.type), `c6i.*` (c6i.xlarge in
-  nodeMemoryLimits, c6i hybrid family), `r6i.*` (r6i.xlarge/8xlarge), and **no `m5`** (RestrictionsOnInstanceTypeTest).
+* `cluster.allowed.instance.types` and `.docker`: allow the family of default.instance.type (`m5`, which the 0.16 default
+  `m5.*,c5.*,r4.*,t2.*` allows), `c6i.*` (c6i.xlarge in nodeMemoryLimits, the c6i hybrid family) and `r6i.*`
+  (r6i.xlarge/8xlarge). RestrictionsOnInstanceTypeTest picks a family that neither preference allows itself.
 * `cluster.spot` consistent with default.instance.price.type; `cluster.allowed.price.types` includes spot and
   on_demand (menus must show both).
 * `cluster.aws.ebs.type` set and visible; `ui.support.template` set and visible; `lustre.fs.mount.options`,
@@ -365,10 +366,11 @@ e2e.ui.backup.storage.offset=<hours>
   nodes with `systemd-run` (systemd 218 or later). Its timeouts assume the Kubernetes default of 40 s before a silent
   node is marked unavailable, and the autoscaler every 40 s (`cluster.autoscale.rate`).
 * AWS: S3 bucket create/delete by the API (many test buckets), FSx for Lustre PERSISTENT_2 (PlatformPreferencesTest),
-  on-demand c6i/m6i/r6i capacity, SGE hybrid autoscaling, kube DNS `10.96.0.10` (DnsHostsManagementTest hard-codes
+  on-demand m5/c6i/r6i capacity, SGE hybrid autoscaling, kube DNS `10.96.0.10` (DnsHostsManagementTest hard-codes
   `Server: 10.96.0.10`).
-* `CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN` honoured (2736: a stuck umount run must still be running after 1 min,
-  and be terminated after 2 min with the parameter set to 2).
+* `CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN` honoured by the API (2736: a run stuck in its umount must still be running
+  after 1 min, and be stopped after 2 min and one `system.resource.monitoring.period` with the parameter set to 2).
+  The test sets `launch.run.emergency.termination.action` to `STOP` for itself and sets the previous value back.
 * Backups: daily cp-bkp-worker jobs for `cp-api-srv`, `cp-git`, `cp-api-db`; the test expects the GitLab backup name
   `cp-bkp-<n>_<YYYY_MM_DD>_<GitLab version>_gitlab_backup.tar`, any version.
 * The storage synchronization service for sync.storage.* (external to this repo).

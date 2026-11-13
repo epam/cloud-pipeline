@@ -282,7 +282,9 @@ _set e2e.ui.storage.name.prefix "$(_pref storage.object.prefix)" "preference sto
 # NfsDataStorageTest: the path prefix of a new NFS storage as the API gives it (the file share mount root and the
 # separator, e.g. <NFS host>:/). It is not derived: set it in the overrides
 _set e2e.ui.nfs.prefix "" "path prefix of a new NFS storage, from the overrides"
-if [ -z "$_OVERRIDES" ] || ! grep -q '^e2e\.ui\.nfs\.prefix=.' "$_OVERRIDES" 2> /dev/null; then
+# The overrides take "key=value" and "key = value" lines (_apply_overrides): any blanks around the key and the "="
+if [ -z "$_OVERRIDES" ] || \
+        ! grep -qE '^[[:space:]]*e2e\.ui\.nfs\.prefix[[:space:]]*=[[:space:]]*[^[:space:]]' "$_OVERRIDES" 2> /dev/null; then
     _warn "e2e.ui.nfs.prefix is not in the overrides: NfsDataStorageTest fails"
 fi
 _set e2e.ui.download.folder /headless/Downloads "Chrome downloads directory in the runner container"

@@ -36,7 +36,9 @@ class after that at its first page. So:
 
 - before the run, `scripts/admin-session.sh sso` reads `SessionNotOnOrAfter` and `AuthnInstant` from the assertion
   the API keeps in the session (nothing else of the assertion is printed or stored). The run does not start if the
-  authentication ends within `--min-sso-hours`: 12 h by default, 2 h with `--tests`, `0` skips the check. The
+  authentication ends within `--min-sso-hours`: 12 h by default, 2 h with `--tests`, `0` skips the check. A full
+  run on this line may take longer than 12 h (see below): raise it to the time the run needs, or run `--tests`
+  batches. The
   session file is then kept, but the remedy is a new sign-in: sign out of the SSO itself (the IdP, not only the
   platform), sign in again in a private window and save the new cookie. The log shows when the SSO authentication
   ends and when the IdP sign-in was.
@@ -113,7 +115,10 @@ class after that at its first page. So:
    TC-TEST-ENVIRONMENT-2: blocks the test users, reverts the preparation of step 2.
    Step 7 also runs if the tests fail or the run is interrupted (Ctrl-C, `kill`).
 
-The full suite takes ~10-12 hours. Results:
+The time of the full suite on this line is not measured. A narrower selection of it took ~10-12 hours, and
+`testng.xml` now runs many more classes, so plan for longer: run it in `--tests` batches, or raise
+`--min-sso-hours` (and `--timeout`, 24 h by default) so the run does not outlive the SSO authentication of the
+admin session. Results:
 
 ```
 <out>/<YYYYMMDD>/
@@ -139,7 +144,7 @@ Useful options (`./run-e2e.sh --help`):
 | `--conf my.conf` | use a ready config instead of generating one |
 | `--recording` | record the screen to `artifacts/<stand>_<date>.webm` (image `cp-e2e-gui-runner:latest-recording`) |
 | `--cleanup-dry-run` | only print what the cleanup would do |
-| `--min-sso-hours 12` | do not start if the SSO authentication of the admin session ends within these hours (default 12, 2 with `--tests`, `0`: no check) |
+| `--min-sso-hours 12` | do not start if the SSO authentication of the admin session ends within these hours (default 12, 2 with `--tests`, `0`: no check); raise it for a full run, whose time on this line is not measured |
 | `--skip-prepare`, `--skip-cleanup` | for debugging: the test users stay unblocked with `--skip-cleanup` |
 
 To watch the VNC desktop of a run, publish the container ports (`5901` VNC, `6901` noVNC, password `vncpassword`).
@@ -156,7 +161,6 @@ Besides the fixtures `platform-prepare.sh` creates, set these before a full run:
 | `CP_EDGE_DNS_RECORD_FORMAT={job_name}` in the `cp-config-global` config map (the edge default is `{job_name}.{region_name}`), with the edge restarted | `DNSrecordForRunsTest` (1615_1, 1615_2) |
 | `cluster.allowed.instance.types` and `cluster.allowed.instance.types.docker` allow the family of `default_instance_type` (`scripts/fixtures.json`, `m5`), and `c6i.*` and `r6i.*` | `PlatformPreferencesTest` (TC-PARAMETERS-4), `LaunchParametersTest` (TC-PARAMETERS-6, 3433) |
 | `launch.capabilities` has a `conda` capability | `LaunchParametersTest` (TC-PARAMETERS-7) |
-| `launch.run.emergency.termination.action=STOP` | `LaunchParametersTest` (2736) |
 | `PIPELINE_RUN_STATUS` email notifications enabled, an SMTP server for the notifier, and an `email` attribute of the admin; the notifier and the VM monitor on the node of `run-e2e.sh` | `RunStatusNotificationTest`, `CertificateExpirationNotificationTest`, `NodeThresholdNotificationTest` |
 
 `scripts/generate-config.sh` warns about the ones it can check. [`docs/config-keys.md`](docs/config-keys.md) section 4

@@ -48,7 +48,7 @@
 # existing IdP session gets the end of that session): the run refuses to start if it ends within --min-sso-hours, and
 # stops the tests when the session no longer authenticates during the run (E2E_STOP_ON_SESSION_LOSS=false: keep them).
 #
-# The run takes many hours (the full suite took ~10 h): run it detached, e.g.
+# The run takes many hours (the full suite is not timed on this line): run it detached, e.g.
 #   nohup ./run-e2e.sh > e2e-run.out 2>&1 &
 #
 # Usage: run-e2e.sh [options]
