@@ -14,7 +14,7 @@ The Selenide/TestNG suite that drives the platform GUI in a browser. Run it for 
 - The whole `testng.xml` takes 10-12 hours. Run the classes the change touches.
 
 Ask before the first launch, and stop what you started. Unattended, launch nothing here: read the diff
-instead, and record the suite as a declared skip.
+instead, and say in the hand-back that the suite did not run.
 
 ## Running it
 
@@ -24,10 +24,10 @@ is `Dockerfile` — Rocky Linux, a VNC desktop, Chrome for Testing with its matc
 JDK 8; `run.sh` is the entrypoint inside the container.
 
 `AbstractBfxPipelineTest` hardcodes `/usr/local/bin/chrome` and `/usr/local/bin/chromedriver`, which
-that image provides. Running on a host instead means editing it. `test` is bound to
-`suites 'testng.xml'`: `run-e2e.sh --tests` writes a narrower suite into its own copy of this
-directory, while a plain Gradle run means editing `testng.xml`. Both files are tracked: keep
-those edits out of every commit.
+that image provides. Running on a host instead means editing it. `test` depends on `prerequisites`
+(`prerequisites.xml`, a sign-in check that runs first) and is bound to `suites 'testng.xml'`:
+`run-e2e.sh --tests` writes a narrower suite into its own copy of this directory, while a plain Gradle
+run means editing `testng.xml`. Both files are tracked: keep those edits out of every commit.
 
 The configuration loader — `C.java`, under `src/test/java/com/epam/pipeline/autotests/utils/` — reads
 `default.conf` from the working directory; `build.gradle` passes no system properties to the test JVM,

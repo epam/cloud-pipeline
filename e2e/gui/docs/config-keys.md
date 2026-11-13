@@ -4,6 +4,9 @@ Sources: `e2e/gui/src/test/java/com/epam/pipeline/autotests/utils/C.java` (83 ke
 the client/api/deploy sources of this repo.
 "EXEC" = used by a method that runs (enabled and selected by `testng.xml`), or by a `@Before*/@After*` method or helper
 of a class that has such methods. "notexec" = used only by methods that do not run.
+The marks were made for a narrower selection of `testng.xml`. On this line `testng.xml` runs whole classes, and more
+of them (the WDL, Luigi, commit, NFS, metadata, scan and instance price type classes among them), so a "notexec"
+use may run now; the rows of the keys those classes need are updated.
 Paths below are relative to `e2e/gui/src/test/java/com/epam/pipeline/autotests/`.
 
 ---------------------------------------------------------------------------------------------------------------------
@@ -95,7 +98,7 @@ Legend for "pre-exist": what must exist on the platform before the run. "Derive"
 | key | constant | used by | meaning / unit | derive / recommended |
 |---|---|---|---|---|
 | `e2e.ui.default.timeout` | DEFAULT_TIMEOUT | EXEC: `Configuration.timeout` of Selenide for every `should*` without explicit timeout (all classes); `RunsMenuAO.stopRun`, `SystemManagementAO` logs, `ShellAO.assertNextStringIsVisible`, `PipelineRunFormAO.waitUntilLaunchButtonAppear` (x2), `MetadataFilePreviewAO` (x2), `PipelinesLibraryAO.removeStorage` | **ms** | static, e.g. `30000` |
-| `e2e.ui.commit.appearing.timeout` | COMMIT_APPEARING_TIMEOUT | notexec only: `LogAO.waitForCommitButton` (DockerCommitTest, PipelineDockerCommitTest) | ms | static, e.g. `600000` |
+| `e2e.ui.commit.appearing.timeout` | COMMIT_APPEARING_TIMEOUT | EXEC: `LogAO.waitForCommitButton` (DockerCommitTest, PipelineDockerCommitTest) | ms | static, e.g. `600000` |
 | `e2e.ui.ssh.appearing.timeout` | SSH_APPEARING_TIMEOUT | EXEC: `LogAO.waitForSshLink`, pause/resume button waits, `waitForEndpointLink`, `waitForNestedRunsLink`, `RunsMenuAO` pause/stop button waits | ms; must cover node provisioning + image pull + init (+ FSx Lustre creation in `PlatformPreferencesTest`, ~15 min per test) | static, e.g. `1800000` |
 | `e2e.ui.committing.timeout` | COMMITTING_TIMEOUT | EXEC: `LogAO.assertCommittingFinishedSuccessfully` ("COMMIT SUCCEEDED") in `LaunchParametersTest.addSupportForAutoscalingFilesystemForAWS`; notexec DockerCommit* | ms | static, e.g. `1800000` |
 | `e2e.ui.run.completion.timeout` | COMPLETION_TIMEOUT | EXEC: `LogAO.waitForCompletion/waitFor/shouldHaveStatus/waitForTask*`, `RunsMenuAO.waitForCompletion/waitUntilResumeButtonAppear`, `LaunchClusterTest.launchAutoScaledClusterTest` | ms | static, e.g. `1800000` |
@@ -148,7 +151,7 @@ Legend for "pre-exist": what must exist on the platform before the run. "Derive"
 |---|---|---|---|---|---|
 | `e2e.ui.default.instance.type` | DEFAULT_INSTANCE | EXEC in 18 classes: `PipelineRunFormAO.setDefaultLaunchOptions` (dropdown item by `text()` substring), tool default in `Tools` fallback, `{{instance_type}}` in config templates, run instance checks, `LaunchClusterTest` "Additional worker pipeline-X (<type>) has been scaled up", `Launch_InstanceConfigTest` (368 sets it in config.json and asserts it differs from the template's `instance_size`) | instance type: `m6i.xlarge` | allowed by `cluster.allowed.instance.types(.docker)` for admin and users; differs from the deploy-time `CP_PREF_CLUSTER_INSTANCE_TYPE` of the pipeline templates, or 368 fails | `GET /restapi/cluster/instance/loadAll` |
 | `e2e.ui.another.instance.type` | ANOTHER_INSTANCE | EXEC: `DetachedConfigurationsTest` (1544, the node type set in the attached pipeline configuration); notexec others (GlobalSearch, LaunchClusterTest Spark) | instance type different from the default | allowed by `cluster.allowed.instance.types` | any allowed, e.g. `m6i.2xlarge` |
-| `e2e.ui.default.instance.family.name` | DEFAULT_INSTANCE_FAMILY_NAME | notexec only (LaunchClusterTest hybrid, RestrictionsOnInstancePriceType) | family prefix: `m6i` | - | prefix of default.instance.type |
+| `e2e.ui.default.instance.family.name` | DEFAULT_INSTANCE_FAMILY_NAME | EXEC (LaunchClusterTest hybrid, RestrictionsOnInstancePriceTypeTest, RestrictionsOnInstanceTypeTest: the family shown in the instance type lists) | family prefix: `m6i` | - | prefix of default.instance.type |
 | `e2e.ui.default.instance.price.type` | DEFAULT_INSTANCE_PRICE_TYPE | EXEC: `DetachedConfigurationsTest` (default price type of a new configuration, `text()`), `PipelineConfigurationTest.priceTypeValidation` (selected value of the launch form); notexec others | UI label of the **platform default** price type: `Spot` if preference `cluster.spot`=true, `On-demand` otherwise | - | `GET /restapi/preferences/cluster.spot` |
 | `e2e.ui.default.instance.price.type.tool` | DEFAULT_INSTANCE_PRICE_TYPE_TOOL | EXEC: `Tools.fallbackToToolDefaultState` (sets the testing tool's price type, all fallback classes), RunToolsInSandBox, RunToolsInSandboxCheckDataStorage | dropdown label for the tool setting: `On-demand` / `Spot` | - | static `On-demand` |
 | `e2e.ui.spot.price.name` | SPOT_PRICE_NAME | EXEC `PipelineConfigurationTest` (1257/1263/1241 menu item / selected value); notexec LaunchCluster, RestrictionsOnInstancePriceType | spot label on AWS: `Spot` | spot in `cluster.allowed.price.types` | static per cloud (`Spot` for AWS) |
@@ -156,8 +159,8 @@ Legend for "pre-exist": what must exist on the platform before the run. "Derive"
 | `e2e.ui.another.cloud.region` | ANOTHER_CLOUD_REGION | **read, never used** | region name | - | empty or `GET /restapi/cloud/region` |
 | `e2e.ui.default.cluster.allowed.instance.types` | DEFAULT_CLUSTER_ALLOWED_INSTANCE_TYPES | EXEC `PlatformPreferencesTest.checkClusterAllowedInstanceTypes` (`value()` contains); notexec RestrictionsOnInstancePriceType (would **write** it back as the default) | substring of preference `cluster.allowed.instance.types`, e.g. `m6i.*,c6i.*,r6i.*` | the preference must contain `m6i` types, no `m5` (`RestrictionsOnInstanceTypeTest` hard-codes this), and c6i/r6i (hard-coded tests) | `GET /restapi/preferences/cluster.allowed.instance.types` .value |
 | `e2e.ui.default.cluster.allowed.instance.types.docker` | DEFAULT_CLUSTER_ALLOWED_INSTANCE_TYPES_DOCKER | EXEC `checkClusterAllowedInstanceTypesDocker` | substring of `cluster.allowed.instance.types.docker` | same as above | the preference value |
-| `e2e.ui.cluster.allowed.masks` | CLUSTER_ALLOWED_MASKS | notexec only (`RestrictionsOnInstancePriceTypeTest`: `split(",")`, needs >= 4 items, `*` appended) | comma-separated instance-type prefixes, e.g. `m6i.,c6i.,r6i.,m6i.l` | - | static |
-| `e2e.ui.default.cluster.allowed.price.types` | DEFAULT_CLUSTER_ALLOWED_PRICE_TYPES | notexec only (would be written back to `cluster.allowed.price.types`) | e.g. `spot,on_demand` | - | `cluster.allowed.price.types` value |
+| `e2e.ui.cluster.allowed.masks` | CLUSTER_ALLOWED_MASKS | EXEC (`RestrictionsOnInstancePriceTypeTest`: `split(",")`, needs >= 4 items, `*` appended) | comma-separated instance-type prefixes, e.g. `m6i.,c6i.,r6i.,m6i.l` | - | static |
+| `e2e.ui.default.cluster.allowed.price.types` | DEFAULT_CLUSTER_ALLOWED_PRICE_TYPES | EXEC (`RestrictionsOnInstancePriceTypeTest` writes it back to `cluster.allowed.price.types`) | e.g. `spot,on_demand` | - | `cluster.allowed.price.types` value |
 | `e2e.ui.cluster.aws.ebs.type` | DEFAULT_CLUSTER_AWS_EBS_TYPE | EXEC `PlatformPreferencesTest.checkConfigureClusterAwsEBSvolumeType`: input value **`equals`** it, eye icon must be "visible", and the InitializeNode log must match `The requested EBS volume type for \D+ device is <v>` | e.g. `gp3` | preference `cluster.aws.ebs.type` set and **visible=true** | `GET /restapi/preferences/cluster.aws.ebs.type` (value; check `visible`) |
 | `e2e.ui.cluster.instance.hdd.scale.delta.ratio` | CLUSTER_INSTANCE_HDD_SCALE_DELTA_RATIO | EXEC `LaunchParametersTest` (static `Double.parseDouble`; `checkHDDpreferences` compares the preference input value with `equals`; expected log "autoscaled XG + floor(X/2)G" hard-codes +50%) | the preference string exactly, in practice `0.5` | `cluster.instance.hdd.scale.enabled`=true and the ratio = 0.5 | `GET /restapi/preferences/cluster.instance.hdd.scale.delta.ratio` .value as string |
 
@@ -167,7 +170,7 @@ Legend for "pre-exist": what must exist on the platform before the run. "Derive"
 |---|---|---|---|---|---|
 | `e2e.ui.storage.prefix` | STORAGE_PREFIX | EXEC: `DataStoragesTest` (`<v>://` in create dialogs, `StorageContentAO.validateStoragePath` `matchText("<v>://")`), `Launch_DifferentTypesParametersValidationTest` (`<v>://<its own storage>/<folder>` parameter values); notexec Launch_*Output*, StorageRules, SamplesMetadata | storage **scheme without `://`**: `s3` | - | `CP_PREF_STORAGE_SCHEMA` or static per cloud |
 | `e2e.ui.storage.name.prefix` | STORAGE_NAME_PREFIX | EXEC `DataStoragesTest` (expected bucket path `<prefix><name>` in messages and "add existing" paths); blank allowed | the bucket-name prefix the platform adds to new storages = preference `storage.object.prefix` | - | `GET /restapi/preferences/storage.object.prefix` .value or empty |
-| `e2e.ui.nfs.prefix` | NFS_PREFIX | notexec only (NfsDataStorageTest); **missing from default.conf** | NFS mount prefix | - | omit |
+| `e2e.ui.nfs.prefix` | NFS_PREFIX | EXEC (NfsDataStorageTest: expected storage paths and messages) | the path prefix of a new NFS storage as the API gives it, e.g. `<NFS host>:/` | an NFS file share mount in the region | from the overrides (the generator writes it empty and warns) |
 | `e2e.ui.download.folder` | DOWNLOAD_FOLDER | EXEC: `DataStoragesTest.downloadFileAndValidate`, `PipelineDetailsTest` (downloaded document), `RoleBasedAccessControlTest.generateListOfUsers` (`export.csv`), and `Utils.createTempFile*` writes upload files there (many classes) | absolute path inside the runner container = Chrome's download dir (`$HOME/Downloads`; no Chrome prefs are set): `/headless/Downloads` | dir exists and is writable by the test user | static |
 | `e2e.ui.search.prefix` | SEARCH_PREFIX | EXEC `GlobalSearchAO` (search input located by `placeholder` attribute, exact) for the 7 executed GlobalSearchTest methods | the full placeholder **`<ui.pipeline.deployment.name> search`** (`client/src/components/search/SearchDialog.js`) | - | `GET /restapi/preferences/ui.pipeline.deployment.name` .value + `" search"` |
 | `e2e.ui.environment.notifications` | ENVIRONMENT_NOTIFICATIONS | EXEC `NotificationsTest.validateSystemEventsMenu` (EPMCMBIBPC-1205): the System events table must hold exactly these notifications (by title), or show "No data" when the list is empty | JSON list of titles, e.g. `["Disclaimer"]`; optional, missing = `[]` (escape non-ASCII as `\uXXXX`) | the environment's own notifications (e.g. a disclaimer) | `GET /restapi/notification/list` .title, without the titles NotificationsTest creates (`^(info_notification\|info_edited\|warning_notification\|warning_active\|critical_notification)-YYYY-MM-DD$`, a leftover of an earlier run is reported and still fails 1205) |
@@ -201,12 +204,11 @@ Legend for "pre-exist": what must exist on the platform before the run. "Derive"
 | `e2e.ui.tool.registry.path` | REGISTRY_PATH_FOR_TOOL | same | registry `host:port` to add/delete |
 | `e2e.ui.tool.invalid.registry.path` | INVALID_REGISTRY_PATH_FOR_TOOL | RegistryTest | non-existing registry |
 | `e2e.ui.repository` / `e2e.ui.token` | REPOSITORY / TOKEN | RemotePipelineRepositoryTest | git repository URL / git token |
-| `e2e.ui.nfs.prefix`, `e2e.ui.webdav.address` | NFS_PREFIX, WEBDAV_ADDRESS | NfsDataStorageTest / none | - |
+| `e2e.ui.webdav.address` | WEBDAV_ADDRESS | none | - |
 
 Read but unused in any code: `run.sharing.timeout.in.seconds`, `another.cloud.region`, `webdav.address`,
 `pipe.config.content.path` (PipeCLITest 2115_2 checks the `Config storing mode` lines itself).
-Used only by non-executed code: `commit.appearing.timeout`, `default.instance.family.name`,
-`cluster.allowed.masks`, `default.cluster.allowed.price.types`, the 7 keys of 2.6. Unused in mode C:
+Used only by classes that `testng.xml` does not run: the 6 keys of 2.6. Unused in mode C:
 `login.delay.timeout`, `another.password`, `clean.history.password`, `another.admin.token`, `platform.name`.
 (`e2e.ui.pass` is read by `ParallelLoadTests` from `parallelLoad.conf`, ignored.)
 

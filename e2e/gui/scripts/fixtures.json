@@ -35,7 +35,7 @@
                 "shortDescription": "Docker image used in E2E automated tests to verify HTTP endpoints and SSH access",
                 "defaultCommand": "/start.sh",
                 "disk": 20,
-                "instanceType": "m6i.xlarge",
+                "instanceType": "m5.xlarge",
                 "endpoints": [
                     "{ \"name\": \"E2E-Endpoint\", \"nginx\": { \"port\": \"8081\" }, \"isDefault\": false }"
                 ]
@@ -79,7 +79,7 @@
     "anonymous_user": {
         "name": "E2E_ANONYMOUS_USER"
     },
-    "default_instance_type": "m6i.xlarge",
+    "default_instance_type": "m5.xlarge",
     "sync_storage": {
         "owner": "",
         "permission_pattern": "TEST"

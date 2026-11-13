@@ -134,7 +134,7 @@ _ADMIN_NAME="$(cp_api_payload GET whoami | jq -r '.userName')"
 
 # --- timeouts ---------------------------------------------------------------------------------------------------------
 _set e2e.ui.default.timeout 30000 "ms, Selenide default wait"
-_set e2e.ui.commit.appearing.timeout 600000 "ms, used by non-executed commit tests only"
+_set e2e.ui.commit.appearing.timeout 600000 "ms, the COMMIT link of a run (DockerCommitTest, PipelineDockerCommitTest)"
 _set e2e.ui.ssh.appearing.timeout 1800000 "ms, node provisioning + image pull + init (FSx Lustre creation included)"
 _set e2e.ui.committing.timeout 1800000 "ms"
 _set e2e.ui.run.completion.timeout 1800000 "ms"
@@ -153,6 +153,12 @@ _edge="$(cp_config CP_EDGE_EXTERNAL_HOST)"
 _expected_edge="$(sed -E 's/^([^.]+)\./\1-edge./' <<< "$CP_API_HOST")"
 [ -z "$_edge" ] || [ "$_edge" == "$_expected_edge" ] || \
     _warn "Edge host $_edge is not $_expected_edge: DNSrecordForRunsTest derives the edge address from the root address"
+# DNSrecordForRunsTest (1615_1, 1615_2) expects the DNS records of the run endpoints as pipeline-<run>-<port>-0.<zone>,
+# which the edge creates with CP_EDGE_DNS_RECORD_FORMAT={job_name} (its default is {job_name}.{region_name})
+_dns_format="$(cp_config CP_EDGE_DNS_RECORD_FORMAT)"
+_dns_default='{job_name}.{region_name}'
+[ "$_dns_format" == "{job_name}" ] || \
+    _warn "CP_EDGE_DNS_RECORD_FORMAT is '${_dns_format:-$_dns_default}', not '{job_name}': DNSrecordForRunsTest fails"
 _set e2e.ui.auth.token true "impersonation mode"
 _set e2e.ui.impersonate.auth true "impersonation mode"
 # The admin's browser session (SESSION cookie of an SSO login). It can't be created from a JWT: the API trusts a
@@ -260,7 +266,8 @@ _set e2e.ui.another.cloud.region "" "read but not used by the tests"
 _set e2e.ui.default.cluster.allowed.instance.types "$_allowed" "preference cluster.allowed.instance.types"
 _set e2e.ui.default.cluster.allowed.instance.types.docker "$(_pref cluster.allowed.instance.types.docker)" \
     "preference cluster.allowed.instance.types.docker"
-_set e2e.ui.cluster.allowed.masks "${_default_instance%%.*}.,c6i.,r6i.,${_default_instance%%.*}.l" "used by non-executed tests only"
+_set e2e.ui.cluster.allowed.masks "${_default_instance%%.*}.,c5.,r4.,${_default_instance%%.*}.l" \
+    "instance type prefixes for RestrictionsOnInstancePriceTypeTest (families of the default cluster.allowed.instance.types)"
 _set e2e.ui.default.cluster.allowed.price.types "$(_pref cluster.allowed.price.types)" "preference cluster.allowed.price.types"
 _set e2e.ui.cluster.aws.ebs.type "$(_pref cluster.aws.ebs.type)" "preference cluster.aws.ebs.type"
 _set e2e.ui.cluster.instance.hdd.scale.delta.ratio "$(_pref cluster.instance.hdd.scale.delta.ratio)" \
@@ -272,6 +279,12 @@ _set e2e.ui.cluster.instance.hdd.scale.delta.ratio "$(_pref cluster.instance.hdd
 _schema="$(cp_config CP_PREF_STORAGE_SCHEMA)"
 _set e2e.ui.storage.prefix "${_schema:-s3}" "CP_PREF_STORAGE_SCHEMA"
 _set e2e.ui.storage.name.prefix "$(_pref storage.object.prefix)" "preference storage.object.prefix"
+# NfsDataStorageTest: the path prefix of a new NFS storage as the API gives it (the file share mount root and the
+# separator, e.g. <NFS host>:/). It is not derived: set it in the overrides
+_set e2e.ui.nfs.prefix "" "path prefix of a new NFS storage, from the overrides"
+if [ -z "$_OVERRIDES" ] || ! grep -q '^e2e\.ui\.nfs\.prefix=.' "$_OVERRIDES" 2> /dev/null; then
+    _warn "e2e.ui.nfs.prefix is not in the overrides: NfsDataStorageTest fails"
+fi
 _set e2e.ui.download.folder /headless/Downloads "Chrome downloads directory in the runner container"
 _set e2e.ui.search.prefix "$(_pref ui.pipeline.deployment.name) search" "placeholder of the search: <ui.pipeline.deployment.name> search"
 _set e2e.ui.help.content "$(_escape "$(_pref ui.support.template | tr -d '\r\n')")" "preference ui.support.template without line breaks"

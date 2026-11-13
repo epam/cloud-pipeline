@@ -49,8 +49,8 @@ class after that at its first page. So:
 `run-e2e.sh`:
 
 1. builds the runner image `cp-e2e-gui-runner:latest` if it is missing (`--build` forces it). The platform CA
-   (`/opt/common/pki/ca-public-cert.pem`, or `--ca-cert`) is trusted in the image: it also signs the TLS inspection
-   of a corporate proxy, if any. Docker's proxy settings are passed to the build.
+   (`/opt/common/pki/ca-public-cert.pem`, or `--ca-cert`) is trusted in the image. Extra CA certificates, e.g. of a
+   proxy that inspects TLS, go to `certs/` (see `certs/README.md`). Docker's proxy settings are passed to the build.
 2. prepares the platform (`scripts/platform-prepare.sh`), creating only what is missing: test users from
    `e2e/prerequisites/users.json` (created blocked), the fixtures of `scripts/fixtures.json` (tool group `tests`, the
    tools of the e2e images, the group of the test users `ROLE_TEST_USER` with its registry permission, a user with
@@ -144,6 +144,24 @@ Useful options (`./run-e2e.sh --help`):
 
 To watch the VNC desktop of a run, publish the container ports (`5901` VNC, `6901` noVNC, password `vncpassword`).
 
+## Platform settings the tests need
+
+Besides the fixtures `platform-prepare.sh` creates, set these before a full run:
+
+| Setting | Needed by |
+|---|---|
+| `E2E_NODE_SSH_KEY`: a private key file on the node of `run-e2e.sh` that logs in to the nodes of the runs | `NodeUnavailableTest` (3297) |
+| `sync_storage.owner` in `scripts/fixtures.json`: the user of the storage synchronization service, or `e2e.ui.sync.storage.*` in the overrides | `StorageSynchronizationTest` |
+| `e2e.ui.nfs.prefix` in the overrides: the path prefix of a new NFS storage, e.g. `<NFS host>:/` | `NfsDataStorageTest` |
+| `CP_EDGE_DNS_RECORD_FORMAT={job_name}` in the `cp-config-global` config map (the edge default is `{job_name}.{region_name}`), with the edge restarted | `DNSrecordForRunsTest` (1615_1, 1615_2) |
+| `cluster.allowed.instance.types` and `cluster.allowed.instance.types.docker` allow the family of `default_instance_type` (`scripts/fixtures.json`, `m5`), and `c6i.*` and `r6i.*` | `PlatformPreferencesTest` (TC-PARAMETERS-4), `LaunchParametersTest` (TC-PARAMETERS-6, 3433) |
+| `launch.capabilities` has a `conda` capability | `LaunchParametersTest` (TC-PARAMETERS-7) |
+| `launch.run.emergency.termination.action=STOP` | `LaunchParametersTest` (2736) |
+| `PIPELINE_RUN_STATUS` email notifications enabled, an SMTP server for the notifier, and an `email` attribute of the admin; the notifier and the VM monitor on the node of `run-e2e.sh` | `RunStatusNotificationTest`, `CertificateExpirationNotificationTest`, `NodeThresholdNotificationTest` |
+
+`scripts/generate-config.sh` warns about the ones it can check. [`docs/config-keys.md`](docs/config-keys.md) section 4
+lists the other prerequisites of the tests.
+
 ## Config (`default.conf`)
 
 The tests read `default.conf` (Java properties) from the working directory. `scripts/generate-config.sh` writes it
@@ -190,10 +208,12 @@ Pushing new versions of the images before a run is therefore enough: the tools d
 unregistered by hand. The images are not built or pushed by the run.
 
 Both images are built on `rockylinux/rockylinux:8.7`. The registry holds them as `tests/e2e-endpoints:latest`,
-`tests/e2e-endpoints:test` (the same image) and `tests/e2e-empty:latest`. `deploy/docker/build-dockers.sh` builds them
-under those names when `DOCKERS_INCLUDE_TESTS=yes`; otherwise build them from these folders and push them to the
-platform registry. If the platform's TLS certificate is not signed by a public CA, pass its CA certificate URL as
-`--build-arg CP_CA_CERT_URL=<url>`. The tests install packages in `tests/e2e-endpoints` with `yum`, and `stress` comes
+`tests/e2e-endpoints:test` (the same image) and `tests/e2e-empty:latest`. `deploy/docker/build-dockers.sh -t` builds
+them as `<CP_DIST_REPO_NAME>:tools-tests-e2e-*-<version>` and pushes them to the distribution repository, with the
+manifest entries that put them into the platform registry under those names at installation. Otherwise build them from
+these folders and push them to the platform registry yourself. If the platform's TLS certificate is not signed by a
+public CA, pass its CA certificate URL as `--build-arg CP_CA_CERT_URL=<url>` (`build-dockers.sh` passes no build
+arguments). The tests install packages in `tests/e2e-endpoints` with `yum`, and `stress` comes
 from EPEL, so that image also has `epel-release`.
 
 The WDL and Luigi tests (`WDL*Test`, `Launch_ChangeLanguage*Test`) create pipelines from the `WDL` and `SHELL`
