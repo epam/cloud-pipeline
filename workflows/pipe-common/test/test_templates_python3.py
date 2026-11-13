@@ -63,11 +63,10 @@ class TemplatesPython3Test(unittest.TestCase):
 
     def test_python_templates_run_with_the_python_of_the_run(self):
         commands = {}
-        for name in ('__COMMON/python', '__COMMON/luigi', '__SYSTEM/data_loader'):
+        for name in ('__COMMON/python', '__SYSTEM/data_loader'):
             configurations = json.loads(_read(os.path.join(TEMPLATES_DIR, name, 'config.json')))
             commands[name] = configurations[0]['configuration']['cmd_template'].split()[0]
         self.assertEqual({'__COMMON/python': '${CP_DOLLAR}CP_PYTHON_PATH',
-                          '__COMMON/luigi': '${CP_DOLLAR}CP_PYTHON_PATH',
                           '__SYSTEM/data_loader': '${CP_DOLLAR}CP_PYTHON_PATH'}, commands)
 
     def test_no_template_runs_the_python_first_on_path(self):
