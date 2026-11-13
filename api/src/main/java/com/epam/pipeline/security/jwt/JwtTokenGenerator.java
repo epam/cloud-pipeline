@@ -18,9 +18,6 @@ package com.epam.pipeline.security.jwt;
 
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_AUTHORITIES_SCOPED;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_EXCHANGEABLE;
-import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_ORIGIN_CLIENT;
-import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_ORIGIN_ISSUER;
-import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_ORIGIN_SUBJECT;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_GROUPS;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_ORG_UNIT_ID;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_ROLES;
@@ -232,19 +229,9 @@ public class JwtTokenGenerator {
             tokenBuilder.withClaim(CLAIM_EXCHANGEABLE, false);
         }
 
-        withOptionalClaim(tokenBuilder, CLAIM_ORIGIN_ISSUER, claims.getOriginIssuer());
-        withOptionalClaim(tokenBuilder, CLAIM_ORIGIN_SUBJECT, claims.getOriginSubject());
-        withOptionalClaim(tokenBuilder, CLAIM_ORIGIN_CLIENT, claims.getOriginClient());
-
         return tokenBuilder;
     }
 
-    private void withOptionalClaim(final JWTCreator.Builder tokenBuilder, final String name,
-                                   final String value) {
-        if (!Strings.isNullOrEmpty(value)) {
-            tokenBuilder.withClaim(name, value);
-        }
-    }
 
     private Date toDate(LocalDateTime dateTime) {
         return Date.from(dateTime.atZone(ZoneId.systemDefault()).toInstant());

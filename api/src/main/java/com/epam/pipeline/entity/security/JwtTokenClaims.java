@@ -36,9 +36,6 @@ public class JwtTokenClaims {
     public static final String CLAIM_EXTERNAL = "external";
     public static final String CLAIM_AUTHORITIES_SCOPED = "authorities_scoped";
     public static final String CLAIM_EXCHANGEABLE = "exchangeable";
-    public static final String CLAIM_ORIGIN_ISSUER = "origin_issuer";
-    public static final String CLAIM_ORIGIN_SUBJECT = "origin_subject";
-    public static final String CLAIM_ORIGIN_CLIENT = "origin_client";
 
     @JsonProperty("jti")
     private String jwtTokenId;
@@ -80,16 +77,4 @@ public class JwtTokenClaims {
      */
     @Builder.Default
     private boolean exchangeable = true;
-
-    /**
-     * Where a token obtained by exchanging an identity provider's token came from: the provider's
-     * issuer, the subject it named, and the configured client that was matched.
-     * <p>
-     * Recorded so that a token in a log or a support request can be traced back to the caller it
-     * was issued for, which the user name alone cannot say — several clients may act as the same
-     * user. Absent on a token the platform issued for a login of its own.
-     */
-    private String originIssuer;
-    private String originSubject;
-    private String originClient;
 }

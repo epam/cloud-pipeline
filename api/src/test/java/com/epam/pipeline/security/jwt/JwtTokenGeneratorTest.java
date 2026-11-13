@@ -41,9 +41,6 @@ public class JwtTokenGeneratorTest {
     private static final String ROLE_USER = "ROLE_USER";
     private static final String READER = "READER";
     private static final String GROUP = "BIOINFORMATICS";
-    private static final String ORIGIN_ISSUER = "https://token.actions.githubusercontent.com";
-    private static final String ORIGIN_SUBJECT = "repo:org/repo:environment:prod";
-    private static final String ORIGIN_CLIENT = "github-prod-deploy";
     private static final int EXPIRATION_SECONDS = 3600;
     private static final int KEY_SIZE = 2048;
 
@@ -117,18 +114,6 @@ public class JwtTokenGeneratorTest {
         assertThat(roundTrip(claims().exchangeable(false).build()).isExchangeable()).isFalse();
     }
 
-    @Test
-    public void shouldCarryProvenanceThroughTheToken() {
-        final JwtTokenClaims read = roundTrip(claims()
-                .originIssuer(ORIGIN_ISSUER)
-                .originSubject(ORIGIN_SUBJECT)
-                .originClient(ORIGIN_CLIENT)
-                .build());
-
-        assertThat(read.getOriginIssuer()).isEqualTo(ORIGIN_ISSUER);
-        assertThat(read.getOriginSubject()).isEqualTo(ORIGIN_SUBJECT);
-        assertThat(read.getOriginClient()).isEqualTo(ORIGIN_CLIENT);
-    }
 
     @Test
     public void shouldCarryTheNarrowedAuthoritiesThemselves() {

@@ -18,9 +18,6 @@ package com.epam.pipeline.security.jwt;
 
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_AUTHORITIES_SCOPED;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_EXCHANGEABLE;
-import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_ORIGIN_CLIENT;
-import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_ORIGIN_ISSUER;
-import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_ORIGIN_SUBJECT;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_GROUPS;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_ORG_UNIT_ID;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_ROLES;
@@ -85,9 +82,6 @@ public class JwtTokenVerifier {
                 // absent means exchangeable, so only an explicit false withholds it
                 .exchangeable(!Boolean.FALSE.equals(
                           decodedToken.getClaim(CLAIM_EXCHANGEABLE).asBoolean()))
-                .originIssuer(decodedToken.getClaim(CLAIM_ORIGIN_ISSUER).asString())
-                .originSubject(decodedToken.getClaim(CLAIM_ORIGIN_SUBJECT).asString())
-                .originClient(decodedToken.getClaim(CLAIM_ORIGIN_CLIENT).asString())
                 .build();
 
         return validateClaims(tokenClaims);
