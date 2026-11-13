@@ -60,26 +60,23 @@ public class OidcAssumeStrategy {
     private List<String> deniedUsers;
 
     /**
-     * Keep only these authorities out of the ones the user already holds. Absent means keep them
-     * all. Never widens: an authority the user does not hold is not granted by listing it here.
+     * Keep only these roles out of the ones the user already holds. Absent means keep them all.
+     * Never widens: a role the user does not hold is not granted by listing it here.
      * <p>
-     * <strong>This applies to groups as well as roles.</strong> The two share one list, matched by
-     * plain name, so a list of roles alone removes every group the user belongs to — and with it
-     * every permission granted through a group, which is how storage access is usually given. A
-     * client that is meant to keep its user's group permissions has to name those groups here
-     * alongside the roles.
+     * Roles only. The user's groups are carried into the token untouched, so the permissions
+     * granted through a group — which is how storage access is usually given — survive the
+     * narrowing.
      */
-    private List<String> authoritiesToKeep;
+    private List<String> rolesToKeep;
 
     /**
-     * Remove these authorities, applied after {@link #authoritiesToKeep}.
+     * Remove these roles, applied after {@link #rolesToKeep}.
      * <p>
-     * Listing an authority in both lists is rejected when the configuration is saved, because one
-     * of the two entries is certainly not what was meant. The ordering still matters for a
-     * configuration that predates that check or was written straight into the database, and there a
-     * drop wins.
+     * Listing a role in both lists is rejected when the configuration is saved, because one of the
+     * two entries is certainly not what was meant. The ordering still matters for a configuration
+     * that predates that check or was written straight into the database, and there a drop wins.
      */
-    private List<String> authoritiesToDrop;
+    private List<String> rolesToDrop;
 
     /**
      * The longest life, in seconds, of a token issued through this client.

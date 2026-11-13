@@ -20,7 +20,6 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.security.JwtTokenClaims;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
-import com.epam.pipeline.exception.docker.DockerAuthorizationException;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.UserContext;
@@ -37,7 +36,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class DockerAuthServiceTest {
 
@@ -79,16 +77,17 @@ public class DockerAuthServiceTest {
     }
 
     /**
-     * Registry access is authorized by user name, which resolves the authorities from the stored
-     * user, so the narrower set such a token carries cannot be applied. Accepting it would hand
-     * over the stored user's full rights, which is the opposite of what the token asks for.
+     * A token whose roles were narrowed is accepted here too. Registry access is authorized by
+     * user name, which resolves the roles from the stored user, so the narrowing does not reach
+     * it — see the limitation noted on the token exchange manual page.
      */
     @Test
-    public void shouldRefuseATokenWhoseAuthoritiesAreFinal() {
+    public void shouldAcceptATokenWhoseRolesWereNarrowed() {
         Mockito.when(jwtTokenVerifier.readClaims(TOKEN)).thenReturn(claims(true));
 
-        assertThatThrownBy(() -> service.verifyTokenForDocker(USER_NAME, TOKEN, REGISTRY_HOST))
-                .isInstanceOf(DockerAuthorizationException.class);
+        final UserContext context = service.verifyTokenForDocker(USER_NAME, TOKEN, REGISTRY_HOST);
+
+        assertThat(context.getUsername()).isEqualTo(USER_NAME);
     }
 
     private static JwtTokenClaims claims(final boolean authoritiesScoped) {

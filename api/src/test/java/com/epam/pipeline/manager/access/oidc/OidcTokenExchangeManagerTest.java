@@ -202,7 +202,7 @@ public class OidcTokenExchangeManagerTest {
     @Test
     public void shouldNotMarkATokenScopedWhenShapingRemovedNothing() {
         final OidcAssumeStrategy strategy = specificUser();
-        strategy.setAuthoritiesToDrop(Collections.singletonList("ROLE_BILLING_MANAGER"));
+        strategy.setRolesToDrop(Collections.singletonList("ROLE_BILLING_MANAGER"));
         configure(strategy, subjectClaims().build());
 
         manager.exchange(SUBJECT_TOKEN);
@@ -254,23 +254,39 @@ public class OidcTokenExchangeManagerTest {
         assertThat(issuedClaims().isAuthoritiesScoped()).isFalse();
     }
 
+    /**
+     * Groups are left alone: they carry the storage permissions the user plainly has, and taking
+     * them away would make the token unable to read what its user reads interactively.
+     */
     @Test
-    public void shouldKeepOnlyTheAuthoritiesTheClientAllows() {
+    public void shouldKeepOnlyTheRolesTheClientAllowsAndLeaveGroupsAlone() {
         final OidcAssumeStrategy strategy = specificUser();
-        strategy.setAuthoritiesToKeep(Arrays.asList(ROLE_USER, READER));
+        strategy.setRolesToKeep(Arrays.asList(ROLE_USER, READER));
         configure(strategy, subjectClaims().build());
 
         manager.exchange(SUBJECT_TOKEN);
 
         assertThat(issuedClaims().getRoles()).containsExactlyInAnyOrder(ROLE_USER, READER);
-        assertThat(issuedClaims().getGroups()).isEmpty();
+        assertThat(issuedClaims().getGroups()).containsExactly(GROUP);
         assertThat(issuedClaims().isAuthoritiesScoped()).isTrue();
     }
 
     @Test
-    public void shouldDropTheAuthoritiesTheClientExcludes() {
+    public void shouldNotNarrowGroupsEvenWhenNamedInTheRoleLists() {
         final OidcAssumeStrategy strategy = specificUser();
-        strategy.setAuthoritiesToDrop(Collections.singletonList(ROLE_ADMIN));
+        strategy.setRolesToDrop(Collections.singletonList(GROUP));
+        configure(strategy, subjectClaims().build());
+
+        manager.exchange(SUBJECT_TOKEN);
+
+        assertThat(issuedClaims().getGroups()).containsExactly(GROUP);
+        assertThat(issuedClaims().isAuthoritiesScoped()).isFalse();
+    }
+
+    @Test
+    public void shouldDropTheRolesTheClientExcludes() {
+        final OidcAssumeStrategy strategy = specificUser();
+        strategy.setRolesToDrop(Collections.singletonList(ROLE_ADMIN));
         configure(strategy, subjectClaims().build());
 
         manager.exchange(SUBJECT_TOKEN);
@@ -280,12 +296,12 @@ public class OidcTokenExchangeManagerTest {
     }
 
     /**
-     * Shaping can only narrow: naming an authority the user does not hold does not grant it.
+     * Shaping can only narrow: naming a role the user does not hold does not grant it.
      */
     @Test
-    public void shouldNotGrantAnAuthorityTheUserDoesNotHold() {
+    public void shouldNotGrantARoleTheUserDoesNotHold() {
         final OidcAssumeStrategy strategy = specificUser();
-        strategy.setAuthoritiesToKeep(Collections.singletonList("ROLE_BILLING_MANAGER"));
+        strategy.setRolesToKeep(Collections.singletonList("ROLE_BILLING_MANAGER"));
         configure(strategy, subjectClaims().build());
 
         manager.exchange(SUBJECT_TOKEN);

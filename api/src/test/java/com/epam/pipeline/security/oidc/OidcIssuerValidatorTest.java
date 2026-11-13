@@ -358,27 +358,27 @@ public class OidcIssuerValidatorTest {
     @Test
     public void shouldRejectAnAuthorityThatIsBothKeptAndDropped() {
         final OidcAssumeStrategy strategy = specificUser();
-        strategy.setAuthoritiesToKeep(Arrays.asList(ROLE_USER, "READER"));
-        strategy.setAuthoritiesToDrop(Collections.singletonList(ROLE_USER));
+        strategy.setRolesToKeep(Arrays.asList(ROLE_USER, "READER"));
+        strategy.setRolesToDrop(Collections.singletonList(ROLE_USER));
         assertThat(isValid(withStrategy(strategy))).isFalse();
     }
 
     @Test
     public void shouldAcceptDisjointKeepAndDropLists() {
         final OidcAssumeStrategy strategy = specificUser();
-        strategy.setAuthoritiesToKeep(Collections.singletonList(ROLE_USER));
-        strategy.setAuthoritiesToDrop(Collections.singletonList("ROLE_ADMIN"));
+        strategy.setRolesToKeep(Collections.singletonList(ROLE_USER));
+        strategy.setRolesToDrop(Collections.singletonList("ROLE_ADMIN"));
         assertThat(isValid(withStrategy(strategy))).isTrue();
     }
 
     @Test
     public void shouldRejectEmptyAuthorityLists() {
         final OidcAssumeStrategy withEmptyKeep = specificUser();
-        withEmptyKeep.setAuthoritiesToKeep(new ArrayList<>());
+        withEmptyKeep.setRolesToKeep(new ArrayList<>());
         assertThat(isValid(withStrategy(withEmptyKeep))).isFalse();
 
         final OidcAssumeStrategy withEmptyDrop = specificUser();
-        withEmptyDrop.setAuthoritiesToDrop(new ArrayList<>());
+        withEmptyDrop.setRolesToDrop(new ArrayList<>());
         assertThat(isValid(withStrategy(withEmptyDrop))).isFalse();
     }
 
