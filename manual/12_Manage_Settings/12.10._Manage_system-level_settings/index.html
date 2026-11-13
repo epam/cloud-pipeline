@@ -719,7 +719,7 @@
 </tr>
 <tr>
 <td><strong><code>cluster.kill.not.matching.nodes</code></strong></td>
-<td>If this property is true, any free node that doesn't match configuration of a pending pod will be scaled down immediately, otherwise it will be left until it will be reused or expired. If most of the time we use nodes with the same configuration set this to true</td>
+<td>If this property is true, any free node that doesn't match configuration of a pending pod will be scaled down immediately, otherwise it will be left until it will be reused or expired. If most of the time we use nodes with the same configuration set this to true. When the cluster has reached <code>cluster.max.size</code>, every free node is treated as not matching for a pending run that may not get a free node, e.g. a run with the <code>CP_CREATE_NEW_NODE</code> parameter set to <code>true</code>. A free node of a hot node pool or of a local cluster is not scaled down this way, and no free node is scaled down this way while <code>cluster.disable.reassign</code> is <code>true</code></td>
 </tr>
 <tr>
 <td><strong><code>cluster.spot</code></strong></td>
@@ -1168,6 +1168,10 @@
 <tr>
 <td><strong><code>git.host</code></strong></td>
 <td>IP address where Git service is deployed</td>
+</tr>
+<tr>
+<td><strong><code>git.gitlab.api.version</code></strong></td>
+<td>The version of the GitLab API that the platform and the Git synchronization service (<code>cp-git-sync</code>) call: <code>v3</code> or <code>v4</code>. The default is <code>v3</code>. The installer sets <code>v4</code> for GitLab 15 and later. GitLab 9 has both versions, GitLab 11.0 and later have <code>v4</code> only. On both versions, the Git synchronization creates the GitLab users with no email confirmation. If the setting has no value, the Git synchronization calls <code>v3</code></td>
 </tr>
 <tr>
 <td><strong><code>git.gitlab.hashed.repo.support</code></strong></td>

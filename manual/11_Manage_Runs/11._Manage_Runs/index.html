@@ -533,7 +533,7 @@
 <h3 id="active-run-states">Active run states</h3>
 <ul>
 <li><img alt="CP_ManageRuns" src="../attachments/ManageRuns_19.png" /> - <strong>Queued</strong> state ("sandglass" icon) - a run is waiting in the queue for the available compute node.</li>
-<li><img alt="CP_ManageRuns" src="../attachments/ManageRuns_20.png" /> - <strong>Initializing</strong> state ("rotating" icon) - a run is being initialized, at this stage a new compute node will be created or an existing node will be reused.</li>
+<li><img alt="CP_ManageRuns" src="../attachments/ManageRuns_20.png" /> - <strong>Initializing</strong> state ("rotating" icon) - a run is being initialized, at this stage a new compute node will be created or an existing node will be reused. A run with the <code>CP_CREATE_NEW_NODE</code> parameter set to <code>true</code>, <code>yes</code>, <code>on</code>, <code>y</code> or <code>t</code>, in any letter case, never gets a free node: a new node is always created for it, and no free node is kept for it.</li>
 <li><img alt="CP_ManageRuns" src="../attachments/ManageRuns_02.png" /> - <strong>Pulling</strong> state ("download" icon) - now pipeline <strong>Docker image</strong> is downloaded to the node.</li>
 <li><img alt="CP_ManageRuns" src="../attachments/ManageRuns_03.png" /> - <strong>Running</strong> state (stable "play" icon) - a pipeline is running. The node is appearing and pipeline input data is being downloaded to the node before the "<strong>InitializeEnvironment</strong>" service task appears.</li>
 <li><strong>Pausing</strong> state (blinking "pause" icon) - a run is being paused. At this moment compute node will be stopped (but persisted) and the docker image state will be kept as well.</li>

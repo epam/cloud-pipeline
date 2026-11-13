@@ -435,7 +435,8 @@ This is due to the following reasons:</p>
 <li>It helps to decrease the time for node relaunch.</li>
 <li>It helps to decrease the time for Docker image and data ("type": "common") download.</li>
 <li>Most pipelines will take much longer than 1 hour to complete.<br />
-<strong><em>Note</em></strong>: same instance configuration must be used in order to reuse currently active nodes.</li>
+<strong><em>Note</em></strong>: same instance configuration must be used in order to reuse currently active nodes.<br />
+    A run never reuses an active node, and no active node is kept for it, if it has the <code>CP_CREATE_NEW_NODE</code> or <code>CP_CAP_DEDICATED_INSTANCE</code> parameter set to <code>true</code>, if it is a Windows run, or if its image config in <code>cluster.networks.config</code> has an <code>IamInstanceProfile</code>. While <code>cluster.disable.reassign</code> is <code>true</code>, no run reuses an active node.</li>
 </ul>
 <p>If the node has no running jobs 10 minutes before the new hour of payment begins, it will be terminated.</p>
 <h3 id="instance-lifecycle-stages">Instance lifecycle stages</h3>
