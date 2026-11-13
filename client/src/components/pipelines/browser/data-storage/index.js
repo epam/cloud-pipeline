@@ -31,8 +31,7 @@ import {
   Popover,
   Row,
   Spin,
-  Table,
-  Tooltip
+  Table
 } from 'antd';
 import Dropdown from 'rc-dropdown';
 import Menu, {MenuItem, Divider} from 'rc-menu';
@@ -118,6 +117,7 @@ import handleDownloadArchive, {
   defaultArchiveName
 } from './utils/download-archive';
 import DownloadArchiveModal from './components/download-archive-modal';
+import ActionHint from './components/action-hint';
 import DownloadsModal from '../../../special/downloads/downloads-modal';
 import JobList from './components/imported-jobs';
 import styles from '../Browser.css';
@@ -2604,11 +2604,10 @@ export default class DataStorage extends React.Component {
           <div style={{display: 'flex', alignItems: 'center'}}>
             {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
             {action.title}
-            {action.hint && (
-              <Tooltip title={action.hint}>
-                <Icon type="info-circle" style={{marginLeft: 5}} />
-              </Tooltip>
-            )}
+            <ActionHint
+              id={`selection-action-${action.key}-hint`}
+              hint={action.hint}
+            />
           </div>
         </MenuItem>
       );
