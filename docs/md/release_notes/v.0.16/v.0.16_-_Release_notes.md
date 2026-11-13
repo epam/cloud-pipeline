@@ -957,6 +957,8 @@ Cloud Pipeline no longer has these parts of the WDL and Luigi pipelines:
 
 An update of a deployment does not change the pipelines that were created from these templates, a registered `Mutect2-GATK` pipeline, or the `library/cromwell` and `library/luigi` tools that are already in its registry. A deployment that has its own pipeline templates (a folder `CP_PREF_TEMPLATES_DIRECTORY_EXT` that is not empty) keeps the templates of that folder.
 
+The **Nextflow** pipeline template now sets `"language": "other"` instead of `"wdl"`, as on the `develop` branch. So a new Nextflow pipeline no longer shows the WDL **GRAPH** tab, which has nothing to show for a Nextflow script. The Nextflow pipelines that already exist keep their `config.json`.
+
 The code in the GUI and the API that supports these pipelines is still there. The **GRAPH** tab is still shown for a pipeline whose `config.json` sets `"language": "wdl"` or `"language": "luigi"`, and the **PipelineBuilder** still edits a WDL main file. The API still reads the graph of a Luigi pipeline, and the `pipeline` package still has its Luigi task classes (`pipeline.Pipeline`, `pipeline.HelperTask`). A WDL pipeline needs a `docker_image` that has Cromwell to run.  
 For more details see [here](../../manual/06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder.md).
 
