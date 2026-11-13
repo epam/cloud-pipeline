@@ -25,7 +25,8 @@ import {
   useFakeTimers,
   useRealTimers,
   advanceTimers,
-  act
+  act,
+  flushPromises
 } from '@test';
 import UploadButton from './UploadButton';
 
@@ -671,12 +672,35 @@ describe('UploadButton - queueing the extraction', () => {
 });
 
 describe('UploadButton - the archive-task cap in the confirmation pop-up', () => {
-  afterEach(() => {
+  // A failing poll reaches continuousFetch's backoff, which reads
+  // `window.crypto` through `utils/primitives`. jsdom has none, so it is
+  // stubbed here - a browser global, not a module under `src/`.
+  let cryptoStubbed = false;
+  beforeEach(() => {
+    if (!window.crypto) {
+      Object.defineProperty(window, 'crypto', {
+        value: {getRandomValues: (array) => array},
+        configurable: true,
+        writable: true
+      });
+      cryptoStubbed = true;
+    }
+  });
+
+  // The poller outlives the test that started it, so it is stopped here and
+  // drained while the window is still up.
+  afterEach(async () => {
     if (instance) {
+      instance.stopExtractionLimitPolling();
       instance.setState({uploadInfoVisible: false, pendingConfirmation: false});
       instance = null;
     }
     useRealTimers();
+    await flushPromises();
+    if (cryptoStubbed) {
+      delete window.crypto;
+      cryptoStubbed = false;
+    }
   });
 
   const AT_THE_CAP = 'You already have 2 archive tasks in progress, and the limit is 2.';
@@ -892,6 +916,6 @@ describe('UploadButton - the archive-task cap in the confirmation pop-up', () =>
     await click(screen.getByRole('button', {name: 'Cancel'}));
 
     expect(screen.queryByText(AT_THE_CAP)).not.toBeInTheDocument();
-    expect(instance.state.extractionBlockedReason).toBeUndefined();
+    expect(instance.state.extractionLimitCheck).toBeUndefined();
   });
 });

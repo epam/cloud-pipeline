@@ -477,7 +477,7 @@ describe('status-change listeners', () => {
 });
 
 describe('fetchActiveTasks / fetchActiveTasksCount', () => {
-  it('asks for type, owner and ACTIVE_STATUSES only, with no page or pageSize', async () => {
+  it('asks for owner and ACTIVE_STATUSES, with no type and no paging', async () => {
     const api = stubApi();
     stubWhoAmI(api);
     api.reply(FILTER_ROUTE, filterPage([{id: 1, status: 'RUNNING'}]));

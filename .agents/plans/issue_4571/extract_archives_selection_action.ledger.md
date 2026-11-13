@@ -36,7 +36,7 @@ which jsdom has no `window.crypto` for. They now stub the task route and carry `
 download tests already did - the suite's own `afterEach` comment describes this trap.
 decision · the disabled item is dimmed with `cp-text-not-important` (themes/styles/layout.less), not
 antd's own disabled grey, which the user found too faint.
-note · the hint popover moved into `components/disabled-action-hint.js`, with its own test that
+note · the hint moved into `components/action-hint.js` (`ActionHint`), with its own test that
 renders it inside a disabled `Menu.Item`. It mounts on `document.body`
 (`getPopupContainer`) so the menu can neither clip it nor trap it in its stacking context, keeps the
 `zIndex: 1071` override, and swallows the click so it does not reach the menu.
@@ -55,3 +55,19 @@ note · the two cursors differed because `cursor` already inherits: the icon too
 `pointer`. The row now takes its pointer events back with `cursor: not-allowed`, and the icon's
 cursor is `inherit`, so both read the same. rc-menu binds no `onClick` to a disabled item, so this
 cannot make the row clickable.
+
+note · the second merge of java21_migration brought `ActionHint` from
+`fix/selection_action_hint_tooltip_gui`, which now serves both a plain hint and a disabled action's
+reason; this branch's own `disabled-action-hint.js` is gone. Merging the branch rather than copying
+the file means whichever pull request lands first, the other does not conflict.
+correction · the cap check is re-thrown so `continuousFetch` widens its interval, as every other
+poller here does; it was swallowing the rejection and re-polling a failing endpoint every 5 s.
+correction · the selection menu only asks for the allowance where "Extract archive" could appear at
+all - it was costing a `POST /async-task/filter` on every open, on every storage.
+correction · `fetchActiveTasks`'s doc block still said `restore` passes DOWNLOAD_ARCHIVE and that an
+extraction must not be announced. Both became false in this work; two module headers and a test
+title said the same.
+correction · "Checking active downloads..." and the active-download warnings now read "archive
+tasks": the cap they check is the shared `maxUserTasks`.
+note · `!Number.isFinite(limit)` in `checkActiveTasksLimit` was unreachable - `PreferencesLoad`
+always substitutes the default - and is gone.

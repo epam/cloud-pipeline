@@ -27,10 +27,10 @@ import {
 } from '../../models/asyncTask/statuses';
 import downloadArchiveTask from '../special/downloads/download-archive-task';
 
-// Announces, with an antd `message`, that one of the current user's
-// archive-download tasks has finished - whatever page the user is on. This is
-// the completion toast only: the "archive download queued" toast fires
-// elsewhere, as soon as the task is created, not here.
+// Announces, with an antd `message`, that one of the current user's archive
+// tasks - a download or an extraction - has finished, whatever page the user
+// is on. The completion toast only: the "queued" toast fires elsewhere, as
+// soon as the task is created.
 //
 // This lives outside both the store (CurrentUserAsyncTasks) and the
 // server-driven NotificationCenter: `message` is imported only under

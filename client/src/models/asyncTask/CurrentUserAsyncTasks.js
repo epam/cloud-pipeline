@@ -37,8 +37,8 @@ import preferences from '../preferences/PreferencesLoad';
 
 const POLL_INTERVAL_MS = 5000;
 
-// Watches the current user's archive-download tasks one poll per task
-// (`GET /async-task/{id}`), and announces each one when it finishes. There is
+// Watches the current user's archive tasks - downloads and extractions - one
+// poll per task (`GET /async-task/{id}`), and announces each when it finishes. There is
 // no poll of the task list any more: that asked for every task the user had,
 // every five seconds, for as long as the application was open, whether or not
 // anything was waiting on the answer.
@@ -349,17 +349,10 @@ class CurrentUserAsyncTasks {
   // total of its own. A task queued in another browser or another tab is in
   // here and could not possibly be in anything local.
   //
-  // Two callers, both one-off rather than polled, and they want different
-  // scopes - which is why the type is a parameter:
-  //
-  //  - `checkActiveTasksLimit` (below) counts them and passes NO type. The
-  //    server's `maxUserTasks` is one budget across every task type, so a
-  //    count of one type only would let the user past a cap the server then
-  //    enforces anyway.
-  //  - `restore` (above) passes DOWNLOAD_ARCHIVE, because what it does with
-  //    the answer is start watching and announcing. An unpack task has nothing
-  //    to hand over, so announcing one would offer a download that does not
-  //    exist.
+  // Both callers - `checkActiveTasksLimit` below and `restore` above - pass no
+  // type. `maxUserTasks` is one budget across every type, and every type is
+  // watched and announced, so neither wants a narrower scope. The parameter
+  // stays for a caller that does.
   //
   // `ACTIVE_STATUSES`, the four active ones and nothing else. No
   // `page`/`pageSize` - this needs every match, and the cap means there are at
@@ -417,8 +410,8 @@ class CurrentUserAsyncTasks {
    * failure of this request is not allowed to be the thing that stops a
    * legitimate download.
    *
-   * `remaining` is how many more tasks fit, and is `undefined` where the check
-   * could not run - which is not zero and must not be read as a refusal.
+   * `remaining` is how many more tasks fit. It is `undefined` only where the
+   * count could not be fetched - not zero, and not a refusal.
    *
    * @returns {Promise<{allowed: boolean, reason: string|undefined,
    *   activeCount: number|undefined, limit: number|undefined,
@@ -436,10 +429,6 @@ class CurrentUserAsyncTasks {
         'letting the server enforce the quota'
       );
       return {allowed: true};
-    }
-    if (!Number.isFinite(limit)) {
-      // No limit to compare against - the preference is missing or unreadable.
-      return {allowed: true, activeCount: activeTasksCount};
     }
     if (activeTasksCount >= limit) {
       return {

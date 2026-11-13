@@ -291,7 +291,10 @@ class UploadButton extends React.Component {
     this.extractionLimitPoller = continuousFetch({
       call: this.checkExtractionLimit,
       intervalMS: EXTRACTION_LIMIT_POLL_INTERVAL_MS,
-      identifier: 'upload-confirmation-archive-task-limit'
+      identifier: 'upload-confirmation-archive-task-limit',
+      onError: (error) => {
+        console.warn('Could not check the active archive-task limit', error);
+      }
     });
   };
 
@@ -318,11 +321,13 @@ class UploadButton extends React.Component {
         this.setState({extractionLimitCheck: check, extractionCheckPending: false});
       })
       .catch((error) => {
-        console.warn('Could not check the active archive-task limit', error);
         if (!this.unmounted) {
           // Optimistic, as the download flow is: the server enforces the quota.
           this.setState({extractionCheckPending: false});
         }
+        // Re-thrown so `continuousFetch` widens its interval rather than
+        // re-polling a failing endpoint every 5 s - as the other pollers do.
+        throw error;
       });
   };
 

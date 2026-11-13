@@ -1096,7 +1096,7 @@ export default class DataStorage extends React.Component {
     try {
       allowed = await archiveDownloadAllowed(asyncTasks);
     } catch (error) {
-      console.warn('Could not check the active-download limit', error);
+      console.warn('Could not check the active archive-task limit', error);
     }
     if (allowed) {
       this.setState({downloadArchiveModalVisible: true});
@@ -1117,11 +1117,24 @@ export default class DataStorage extends React.Component {
     this.setState({downloadsModalVisible: false});
   };
 
+  // Whether "Extract archive" can appear for the current selection at all -
+  // before the allowance, which only matters once it can.
+  get extractionActionAvailable () {
+    const {selectedItems = []} = this.state;
+    return this.archiveStorageTypeSupported &&
+      this.currentFolderWriteAllowed &&
+      selectedArchivePaths(selectedItems).length > 0;
+  }
+
   // Refreshed when the selection dropdown opens: the menu is transient, so a
   // stale answer only costs one click the server would refuse anyway.
   checkExtractionLimit = () => {
     const {asyncTasks} = this.props;
-    if (!asyncTasks || typeof asyncTasks.checkActiveTasksLimit !== 'function') {
+    if (
+      !this.extractionActionAvailable ||
+      !asyncTasks ||
+      typeof asyncTasks.checkActiveTasksLimit !== 'function'
+    ) {
       return;
     }
     asyncTasks.checkActiveTasksLimit()
@@ -2462,7 +2475,6 @@ export default class DataStorage extends React.Component {
       icon: 'download',
       available: archiveSupported && archiveActionAvailable(selectedItems)
     };
-    const archivePathsToExtract = selectedArchivePaths(selectedItems);
     const extractionDisabledReason = this.extractionDisabledReason;
     // Offered for a single archive too, unlike "Download archive": extracting
     // one file is the ordinary case. Needs write access - it writes.
@@ -2470,9 +2482,7 @@ export default class DataStorage extends React.Component {
       key: Keys.extractArchive,
       title: 'Extract archive',
       icon: 'folder-add',
-      available: this.archiveStorageTypeSupported &&
-        this.currentFolderWriteAllowed &&
-        archivePathsToExtract.length > 0,
+      available: this.extractionActionAvailable,
       disabled: !!extractionDisabledReason,
       disabledHint: extractionDisabledReason
     };

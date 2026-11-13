@@ -239,7 +239,7 @@ export async function archiveDownloadAllowed (asyncTasks) {
   if (!asyncTasks || typeof asyncTasks.checkActiveTasksLimit !== 'function') {
     return true;
   }
-  const hide = message.loading('Checking active downloads...', 0);
+  const hide = message.loading('Checking active archive tasks...', 0);
   try {
     const {allowed, reason} = await asyncTasks.checkActiveTasksLimit();
     if (!allowed) {
@@ -247,7 +247,7 @@ export async function archiveDownloadAllowed (asyncTasks) {
     }
     return allowed;
   } catch (error) {
-    console.warn('Could not check the active-download limit', error);
+    console.warn('Could not check the active archive-task limit', error);
     return true;
   } finally {
     hide();
