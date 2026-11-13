@@ -18,16 +18,15 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Icon, Tooltip} from 'antd';
 
-// A tooltip is 1060 and a dropdown 1050, so this only just clears the menu.
-// Stated rather than inherited, since the margin is one step.
+// The selection menu is an rc-dropdown, and its stylesheet puts it at 1070,
+// above an antd tooltip's 1060.
 const ABOVE_DROPDOWN = 1071;
 
 /**
  * A selection action's hint, behind an info icon.
  *
- * Mounted on `document.body` rather than beside the icon, so the menu it sits
- * in can neither clip it nor trap it in its own stacking context, and raised
- * above the dropdown. The click is swallowed so it does not reach the menu.
+ * The tooltip is raised above the dropdown menu the icon sits in. The click is
+ * swallowed so it does not reach the menu.
  */
 export default function ActionHint ({id, hint}) {
   if (!hint) {
@@ -38,7 +37,6 @@ export default function ActionHint ({id, hint}) {
       title={hint}
       trigger="hover"
       placement="left"
-      getPopupContainer={() => document.body}
       overlayStyle={{zIndex: ABOVE_DROPDOWN}}
     >
       <span

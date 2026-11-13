@@ -15,7 +15,6 @@
  */
 
 import React from 'react';
-import {Menu} from 'antd';
 import {render, screen, hover, waitFor} from '@test';
 import ActionHint from './action-hint';
 
@@ -37,24 +36,16 @@ test('opens on hover and shows the hint', async () => {
   });
 });
 
-// Mounted on the body, so the dropdown it sits in cannot clip it. jsdom paints
-// nothing, so this asserts where it lands rather than that it is visible.
-test('mounts the tooltip outside the menu', async () => {
-  const {container} = render(
-    <Menu selectedKeys={[]}>
-      <Menu.Item key="generate-url">
-        <div style={{display: 'flex', alignItems: 'center'}}>
-          {'Generate URL'}
-          <ActionHint id="hint" hint={HINT} />
-        </div>
-      </Menu.Item>
-    </Menu>
-  );
+// rc-dropdown's stylesheet puts the selection menu at 1070. jsdom paints
+// nothing, so this asserts the tooltip's z-index rather than that it shows.
+const RC_DROPDOWN_Z_INDEX = 1070;
+
+test('raises the tooltip above the dropdown menu', async () => {
+  const {container} = render(<ActionHint id="hint" hint={HINT} />);
 
   await hover(container.querySelector('#hint'));
 
-  await waitFor(() => {
-    expect(screen.getByText(HINT)).toBeInTheDocument();
-  });
-  expect(container.contains(screen.getByText(HINT))).toBe(false);
+  const popup = (await screen.findByText(HINT)).closest('[style*="z-index"]');
+  expect(popup).not.toBeNull();
+  expect(Number(popup.style.zIndex)).toBeGreaterThan(RC_DROPDOWN_Z_INDEX);
 });
