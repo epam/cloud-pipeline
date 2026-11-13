@@ -25,6 +25,7 @@ import {
   removableStorageItems,
   removeConfirmTitle,
   restorableStorageItems,
+  selectPageAvailable,
   storageItemSelectionAvailable
 } from './index';
 
@@ -76,6 +77,62 @@ describe('storageItemSelectionAvailable', () => {
   test('answers a boolean, not the flag it found', () => {
     expect(storageItemSelectionAvailable(row({archiveSelectable: 'yes'}))).toBe(true);
     expect(storageItemSelectionAvailable(row({archiveSelectable: undefined}))).toBe(false);
+  });
+});
+
+describe('selectPageAvailable', () => {
+  const namedRow = (name, flags = {}) => ({
+    name,
+    selectable: true,
+    downloadable: false,
+    editable: false,
+    shareAvailable: false,
+    archiveSelectable: false,
+    ...flags
+  });
+  const parentRow = namedRow('..', {selectable: false});
+  const selects = (...names) => (item) => names.includes(item.name);
+  const nothingSelected = () => false;
+
+  test('a selectable row nobody has selected yet is available', () => {
+    expect(selectPageAvailable(
+      [parentRow, namedRow('a', {downloadable: true})],
+      nothingSelected
+    )).toBe(true);
+  });
+
+  // A read-only user's page of folders: every row renders without a checkbox.
+  test('a page whose rows no action can touch is not available', () => {
+    expect(selectPageAvailable(
+      [parentRow, namedRow('a'), namedRow('b')],
+      nothingSelected
+    )).toBe(false);
+  });
+
+  test('the ".." row alone is not available', () => {
+    expect(selectPageAvailable([parentRow], nothingSelected)).toBe(false);
+  });
+
+  test('an empty page is not available', () => {
+    expect(selectPageAvailable([], nothingSelected)).toBe(false);
+  });
+
+  test('a page whose selectable rows are all selected is not available', () => {
+    expect(selectPageAvailable(
+      [parentRow, namedRow('a', {downloadable: true}), namedRow('b')],
+      selects('a')
+    )).toBe(false);
+  });
+
+  test('one unselected selectable row is enough', () => {
+    expect(selectPageAvailable(
+      [namedRow('a', {downloadable: true}), namedRow('b', {editable: true})],
+      selects('a')
+    )).toBe(true);
+  });
+
+  test('answers false rather than throwing on no items', () => {
+    expect(selectPageAvailable(undefined, nothingSelected)).toBe(false);
   });
 });
 
