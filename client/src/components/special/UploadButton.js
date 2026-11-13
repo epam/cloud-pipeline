@@ -82,9 +82,11 @@ class UploadButton extends React.Component {
     synchronousUploadingFiles: [],
     pendingConfirmation: false,
     extractAfterUpload: false,
-    // `checkActiveTasksLimit`'s answer; `undefined` until it lands, which
-    // allows extraction.
-    extractionLimitCheck: undefined
+    // `checkActiveTasksLimit`'s answer, and whether the first one is still in
+    // flight. Both buttons wait for it: clicking through before it lands could
+    // queue an extraction the allowance has no room for.
+    extractionLimitCheck: undefined,
+    extractionCheckPending: false
   };
 
   @observable s3Storage;
@@ -230,7 +232,8 @@ class UploadButton extends React.Component {
       synchronousUploadingFiles: [],
       pendingConfirmation: false,
       extractAfterUpload: false,
-      extractionLimitCheck: undefined
+      extractionLimitCheck: undefined,
+      extractionCheckPending: false
     }, async () => {
       if (this.props.onRefresh) {
         this.props.onRefresh(uploadingFiles.map(f => f.name));
@@ -263,7 +266,8 @@ class UploadButton extends React.Component {
         pendingConfirmation: true,
         uploadInfoClosable: true,
         uploadingFiles: [],
-        extractionLimitCheck: undefined
+        extractionLimitCheck: undefined,
+        extractionCheckPending: false
       }, this.startExtractionLimitPolling);
       return;
     }
@@ -283,6 +287,7 @@ class UploadButton extends React.Component {
       return;
     }
     this.stopExtractionLimitPolling();
+    this.setState({extractionCheckPending: true});
     this.extractionLimitPoller = continuousFetch({
       call: this.checkExtractionLimit,
       intervalMS: EXTRACTION_LIMIT_POLL_INTERVAL_MS,
@@ -310,10 +315,14 @@ class UploadButton extends React.Component {
         if (this.unmounted || token !== this.extractionLimitToken) {
           return;
         }
-        this.setState({extractionLimitCheck: check});
+        this.setState({extractionLimitCheck: check, extractionCheckPending: false});
       })
       .catch((error) => {
         console.warn('Could not check the active archive-task limit', error);
+        if (!this.unmounted) {
+          // Optimistic, as the download flow is: the server enforces the quota.
+          this.setState({extractionCheckPending: false});
+        }
       });
   };
 
@@ -336,6 +345,7 @@ class UploadButton extends React.Component {
       pendingConfirmation: false,
       extractAfterUpload: false,
       extractionLimitCheck: undefined,
+      extractionCheckPending: false,
       uploadingFiles: [],
       synchronousUploadingFiles: []
     });
@@ -388,7 +398,8 @@ class UploadButton extends React.Component {
           // uploaded.
           pendingConfirmation: false,
           extractAfterUpload: false,
-          extractionLimitCheck: undefined
+          extractionLimitCheck: undefined,
+          extractionCheckPending: false
         });
         return;
       }
@@ -402,7 +413,8 @@ class UploadButton extends React.Component {
           synchronousUploadingFiles: [],
           pendingConfirmation: false,
           extractAfterUpload: false,
-          extractionLimitCheck: undefined
+          extractionLimitCheck: undefined,
+          extractionCheckPending: false
         });
         return;
       }
@@ -593,7 +605,8 @@ class UploadButton extends React.Component {
           // See `onUploadStatusChangedSynchronous`.
           pendingConfirmation: false,
           extractAfterUpload: false,
-          extractionLimitCheck: undefined
+          extractionLimitCheck: undefined,
+          extractionCheckPending: false
         });
         return;
       }
@@ -784,7 +797,7 @@ class UploadButton extends React.Component {
         <Button
           id="upload-and-extract-button"
           style={{marginRight: 8}}
-          disabled={!!this.extractionDisabledReason}
+          disabled={this.state.extractionCheckPending || !!this.extractionDisabledReason}
           onClick={this.confirmUpload(true)}
         >
           Upload and extract
@@ -792,6 +805,7 @@ class UploadButton extends React.Component {
         <Button
           id="upload-button-confirm"
           type="primary"
+          disabled={this.state.extractionCheckPending}
           onClick={this.confirmUpload(false)}
         >
           Upload

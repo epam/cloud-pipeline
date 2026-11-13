@@ -97,6 +97,17 @@ function settleSelection () {
   return Promise.resolve();
 }
 
+// The confirmation buttons stay disabled until the first cap check answers, so
+// a test that clicks one waits for that - on real timers, since the answer
+// comes through a promise chain.
+async function settleConfirmation () {
+  await settleSelection();
+  useRealTimers();
+  await waitFor(() => {
+    expect(screen.getByRole('button', {name: 'Upload'})).not.toBeDisabled();
+  });
+}
+
 describe('UploadButton - the paused confirmation modal', () => {
   afterEach(() => {
     if (instance) {
@@ -189,7 +200,7 @@ describe('UploadButton - the paused confirmation modal', () => {
     const {input} = renderUploadButton({extractArchivesAvailable: true});
 
     await selectFiles(input, [zipFile('archive.zip')]);
-    await settleSelection();
+    await settleConfirmation();
     expect(screen.getByRole('button', {name: 'Upload'})).toBeInTheDocument();
 
     await click(screen.getByRole('button', {name: 'Upload'}));
@@ -206,7 +217,7 @@ describe('UploadButton - the paused confirmation modal', () => {
       const {input} = renderUploadButton({extractArchivesAvailable: true});
 
       await selectFiles(input, [zipFile('archive.zip')]);
-      await settleSelection();
+      await settleConfirmation();
       expect(screen.getByRole('button', {name: 'Upload'})).toBeInTheDocument();
 
       await click(screen.getByRole('button', {name: 'Upload'}));
@@ -250,7 +261,7 @@ describe('UploadButton - extraction after upload', () => {
 
       await selectFiles(input, [zipFile('archive.zip')]);
       await waitFor(() => {
-        expect(screen.getByRole('button', {name: 'Upload and extract'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
       });
 
       await click(screen.getByRole('button', {name: 'Upload and extract'}));
@@ -282,7 +293,7 @@ describe('UploadButton - extraction after upload', () => {
       const {input} = renderUploadButton({extractArchivesAvailable: true});
 
       await selectFiles(input, [zipFile('archive.zip'), textFile('notes.txt')]);
-      await settleSelection();
+      await settleConfirmation();
 
       await click(screen.getByRole('button', {name: 'Upload and extract'}));
 
@@ -354,7 +365,7 @@ describe('UploadButton - queueing the extraction', () => {
 
       await selectFiles(input, [zipFile('archive.zip')]);
       await waitFor(() => {
-        expect(screen.getByRole('button', {name: 'Upload and extract'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
       });
 
       await click(screen.getByRole('button', {name: 'Upload and extract'}));
@@ -392,7 +403,7 @@ describe('UploadButton - queueing the extraction', () => {
 
       await selectFiles(input, [zipFile('archive.zip')]);
       await waitFor(() => {
-        expect(screen.getByRole('button', {name: 'Upload and extract'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
       });
 
       await click(screen.getByRole('button', {name: 'Upload and extract'}));
@@ -426,7 +437,7 @@ describe('UploadButton - queueing the extraction', () => {
 
       await selectFiles(input, [zipFile('archive.zip')]);
       await waitFor(() => {
-        expect(screen.getByRole('button', {name: 'Upload and extract'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
       });
 
       await click(screen.getByRole('button', {name: 'Upload and extract'}));
@@ -641,7 +652,7 @@ describe('UploadButton - queueing the extraction', () => {
 
       await selectFiles(input, [zipFile('archive.zip')]);
       await waitFor(() => {
-        expect(screen.getByRole('button', {name: 'Upload'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Upload'})).not.toBeDisabled();
       });
 
       // The earlier "clicking Upload" test would pass even if `confirmUpload(false)`
@@ -701,8 +712,10 @@ describe('UploadButton - the archive-task cap in the confirmation pop-up', () =>
     const checkActiveTasksLimit = fn().mockResolvedValue({allowed: true, remaining: 5});
     await openConfirmation(asyncTasksDouble(fn(), checkActiveTasksLimit));
 
-    await waitFor(() => expect(checkActiveTasksLimit).toHaveBeenCalledTimes(1));
-    expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
+    });
+    expect(checkActiveTasksLimit).toHaveBeenCalled();
     expect(screen.queryByText(AT_THE_CAP)).not.toBeInTheDocument();
   });
 
@@ -736,9 +749,10 @@ describe('UploadButton - the archive-task cap in the confirmation pop-up', () =>
     await settleSelection();
     useRealTimers();
 
-    await waitFor(() => expect(screen.getByText('a.zip')).toBeInTheDocument());
-    expect(screen.queryByText(/archives selected/)).not.toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
+    });
+    expect(screen.queryByText(/archives are selected/)).not.toBeInTheDocument();
   });
 
   // Only archives cost a task, so the other files in the batch do not count.
@@ -771,8 +785,10 @@ describe('UploadButton - the archive-task cap in the confirmation pop-up', () =>
     await settleSelection();
     useRealTimers();
 
-    await waitFor(() => expect(screen.getByText('a.zip')).toBeInTheDocument());
-    expect(screen.queryByText(/archives selected/)).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
+    });
+    expect(screen.queryByText(/archives are selected/)).not.toBeInTheDocument();
   });
 
   // The server enforces the quota, so a check that cannot run must not refuse.
@@ -780,8 +796,9 @@ describe('UploadButton - the archive-task cap in the confirmation pop-up', () =>
     const checkActiveTasksLimit = fn().mockRejectedValue(new Error('network is down'));
     await openConfirmation(asyncTasksDouble(fn(), checkActiveTasksLimit));
 
-    await waitFor(() => expect(checkActiveTasksLimit).toHaveBeenCalledTimes(1));
-    expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
+    });
   });
 
   test('a store with no cap check at all leaves the button enabled', async () => {
@@ -823,6 +840,47 @@ describe('UploadButton - the archive-task cap in the confirmation pop-up', () =>
 
     expect(checkActiveTasksLimit.mock.calls.length).toBe(callsAtCancel);
   }, 20000);
+
+  // Clicking through before the first answer could queue an extraction the
+  // allowance has no room for.
+  test('both buttons wait for the first check, then enable', async () => {
+    let answer;
+    const checkActiveTasksLimit = fn(() => new Promise((resolve) => {
+      answer = () => resolve({allowed: true, remaining: 5});
+    }));
+    await openConfirmation(asyncTasksDouble(fn(), checkActiveTasksLimit));
+
+    expect(screen.getByRole('button', {name: 'Upload and extract'})).toBeDisabled();
+    expect(screen.getByRole('button', {name: 'Upload'})).toBeDisabled();
+    // Cancel is always available - there is nothing to wait for to abandon.
+    expect(screen.getByRole('button', {name: 'Cancel'})).not.toBeDisabled();
+
+    answer();
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: 'Upload'})).not.toBeDisabled();
+    });
+    expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
+  }, 20000);
+
+  // A check that cannot answer must not leave the pop-up unusable.
+  test('a failing first check still releases both buttons', async () => {
+    const checkActiveTasksLimit = fn().mockRejectedValue(new Error('network is down'));
+    await openConfirmation(asyncTasksDouble(fn(), checkActiveTasksLimit));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: 'Upload'})).not.toBeDisabled();
+    });
+    expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
+  });
+
+  // Nothing to wait for where the store cannot check at all.
+  test('a store with no cap check leaves both buttons enabled from the start', async () => {
+    await openConfirmation({startArchiveExtraction: fn()});
+
+    expect(screen.getByRole('button', {name: 'Upload'})).not.toBeDisabled();
+    expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
+  });
 
   // So a blocked batch leaves no alert behind for the next one.
   test('Cancel clears the alert', async () => {

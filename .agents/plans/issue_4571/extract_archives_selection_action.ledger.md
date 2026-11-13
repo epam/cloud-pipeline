@@ -7,7 +7,9 @@
 | 3 | "Extract archive" selection action | done | opus · high | | no modal; disabled with a Popover at `zIndex: 1071` |
 | 4 | notify when an extraction finishes | done | opus · high | | `trackTask` + type-aware message, no link |
 | 5 | docs and release note | done | opus · medium | | new manual section for the selection action |
-| — | fresh-eyes review | | opus | | also owes the three commits before this |
+| 7 | dim the disabled item, fix the hint popover | done | opus · medium | | `cp-text-not-important`; the hint is its own tested component |
+| 8 | both modal buttons wait for the first cap check | done | opus · medium | | a click before the answer could have queued past the allowance |
+| — | fresh-eyes review | | opus | | also owes the four commits before this |
 | 6 | UI test cases | not done | | | `4571_4` and `4571_9` are now stale again |
 
 decision · `deleteSourceOnSuccess: false`, the user's call, reversing
@@ -32,3 +34,17 @@ extraction does not have.
 note · tracking an extraction made three store tests reach `continuousFetch`'s crypto-backed backoff,
 which jsdom has no `window.crypto` for. They now stub the task route and carry `created`, as the
 download tests already did - the suite's own `afterEach` comment describes this trap.
+decision · the disabled item is dimmed with `cp-text-not-important` (themes/styles/layout.less), not
+antd's own disabled grey, which the user found too faint.
+note · the hint popover moved into `components/disabled-action-hint.js`, with its own test that
+renders it inside a disabled `Menu.Item`. It mounts on `document.body`
+(`getPopupContainer`) so the menu can neither clip it nor trap it in its stacking context, keeps the
+`zIndex: 1071` override, and swallows the click so it does not reach the menu.
+note · the reported "popover did not open" is NOT reproducible in jsdom - a bare `<Icon>` trigger
+opens there too, so the ref theory was wrong. jsdom paints nothing, so neither z-index nor clipping
+is observable in it; both are what the body-mounted container and the override address. This one
+needs a browser to confirm.
+note · "Upload" is disabled alongside "Upload and extract" while the first check is in flight, as the
+user asked. Cancel stays live. A failing check releases both - the server enforces the quota.
+note · the existing confirmation tests clicked a button immediately after the debounce settled, which
+is now too early; `settleConfirmation()` waits for the button as a user would.

@@ -118,6 +118,7 @@ import handleDownloadArchive, {
   defaultArchiveName
 } from './utils/download-archive';
 import DownloadArchiveModal from './components/download-archive-modal';
+import DisabledActionHint from './components/disabled-action-hint';
 import {
   extractionBlockedBy,
   handleExtractArchives,
@@ -2658,13 +2659,13 @@ export default class DataStorage extends React.Component {
         return button;
       }
       return (
-        <Popover
-          content={<div style={{maxWidth: 300}}>{action.disabledHint}</div>}
-          trigger={['hover']}
-          placement="bottomRight"
-        >
-          <span>{button}</span>
-        </Popover>
+        <span style={{display: 'inline-flex', alignItems: 'center'}}>
+          {button}
+          <DisabledActionHint
+            id={`selection-action-${action.key}-disabled-hint`}
+            reason={action.disabledHint}
+          />
+        </span>
       );
     }
     const title = selectedItems && selectedItems.length > 0
@@ -2681,7 +2682,11 @@ export default class DataStorage extends React.Component {
           id={`selection-action-${action.key}`}
           key={action.key}
           disabled={action.disabled}
-          className={classNames(action.className, `selection-action-${action.key}`)}
+          className={classNames(
+            action.className,
+            `selection-action-${action.key}`,
+            {'cp-text-not-important': action.disabled}
+          )}
         >
           <div style={{display: 'flex', alignItems: 'center'}}>
             {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
@@ -2691,22 +2696,10 @@ export default class DataStorage extends React.Component {
                 <Icon type="info-circle" style={{marginLeft: 5}} />
               </Tooltip>
             )}
-            {action.disabledHint && (
-              // antd puts a popover (1030) below a dropdown (1050), so this
-              // needs the same override capability.js uses.
-              <Popover
-                content={<div style={{maxWidth: 300}}>{action.disabledHint}</div>}
-                trigger={['hover']}
-                placement="left"
-                overlayStyle={{zIndex: 1071}}
-              >
-                <Icon
-                  type="info-circle"
-                  id={`selection-action-${action.key}-disabled-hint`}
-                  style={{marginLeft: 5}}
-                />
-              </Popover>
-            )}
+            <DisabledActionHint
+              id={`selection-action-${action.key}-disabled-hint`}
+              reason={action.disabledHint}
+            />
           </div>
         </MenuItem>
       );
