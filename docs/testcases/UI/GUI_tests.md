@@ -154,7 +154,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Data_storages</b> (145 tests, 86 automated)</summary>
+<summary><b>Data_storages</b> (162 tests, 86 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -224,6 +224,23 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**2233_3**](Data_storages/2233/2233_3.md) | Check Disable link | :white_check_mark: |
 | [**2233_4**](Data_storages/2233/2233_4.md) | Check "Remove all" button | :white_check_mark: |
 | [**2233_5**](Data_storages/2233/2233_5.md) | Check help tooltip | :white_check_mark: |
+| [**4570_1**](Data_storages/4570/4570_1.md) | "Download"/"Download archive" selection items depend on what is selected |  |
+| [**4570_2**](Data_storages/4570/4570_2.md) | "Download archive" name pop-up: defaults and validation |  |
+| [**4570_3**](Data_storages/4570/4570_3.md) | Queue, track and download an archive |  |
+| [**4570_4**](Data_storages/4570/4570_4.md) | Downloads window: cancel a task, Status filter, paging |  |
+| [**4570_5**](Data_storages/4570/4570_5.md) | Downloads window: the Owner column is admin/ROLE_STORAGE_ADMIN-only |  |
+| [**4570_6**](Data_storages/4570/4570_6.md) | [MANUAL] The per-user archive-download task cap blocks queueing |  |
+| [**4570_7**](Data_storages/4570/4570_7.md) | Download archive pop-up blocks its controls while queuing and closes only once the archive is queued |  |
+| [**4570_8**](Data_storages/4570/4570_8.md) | [Negative] Download archive pop-up stays open when the per-user download cap is hit on confirm |  |
+| [**4570_9**](Data_storages/4570/4570_9.md) | Downloads window: the Status filter's select-all box and "Reset to defaults" |  |
+| [**4570_10**](Data_storages/4570/4570_10.md) | Downloads window: unselecting every status applies no status filter at all |  |
+| [**4570_11**](Data_storages/4570/4570_11.md) | Downloads window: clearing the Owner filter by hand, and "Reset to defaults" |  |
+| [**4570_12**](Data_storages/4570/4570_12.md) | Downloads window: the Owner filter takes a user picked from its suggestion list |  |
+| [**4570_13**](Data_storages/4570/4570_13.md) | A user with read-only access can select a folder and download it as an archive |  |
+| [**4570_14**](Data_storages/4570/4570_14.md) | [Negative] A storage that allows no downloads offers no "Download archive" either |  |
+| [**4570_15**](Data_storages/4570/4570_15.md) | Remove deletes only the selected items the user may write to |  |
+| [**4570_16**](Data_storages/4570/4570_16.md) | Generate URL creates URLs only for the files that can be downloaded |  |
+| [**4570_17**](Data_storages/4570/4570_17.md) | [Negative] Restore is not offered for a selected folder the user may only read |  |
 | [**EPMCMBIBPC-2274**](Data_storages/NFS_mount/EPMCMBIBPC-2274.md) | Validation of NFS storage creation | :white_check_mark: |
 | [**EPMCMBIBPC-2275**](Data_storages/NFS_mount/EPMCMBIBPC-2275.md) | Create existing NFS mount (negative), validation | :white_check_mark: |
 | [**EPMCMBIBPC-2276**](Data_storages/NFS_mount/EPMCMBIBPC-2276.md) | Create folder/file in NFS mount, validation | :white_check_mark: |
