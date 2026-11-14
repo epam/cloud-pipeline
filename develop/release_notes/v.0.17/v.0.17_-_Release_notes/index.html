@@ -272,6 +272,10 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#default-version-of-a-tool">Default version of a tool</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#nice-dcv-desktop-no-wallpaper-a-keyboard-layout-switcher-ubuntu-2404">NICE DCV desktop: no wallpaper, a keyboard layout switcher, Ubuntu 24.04</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#retries-of-a-failed-scratch-lustre-file-system">Retries of a failed scratch Lustre file system</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#notable-bug-fixes">Notable Bug fixes</a>
         <ul>
     <li class="toctree-l3"><a class="reference internal" href="#nextflow-run-view-some-tasks-stay-running-after-the-run-finishes">Nextflow run view: some tasks stay RUNNING after the run finishes</a>
@@ -786,6 +790,8 @@
 <li><a href="#vs-code-extension-the-folder-opened-on-connect">VS Code extension: the folder opened on connect</a></li>
 <li><a href="#pinning-a-run-to-the-docker-image-digest">Pinning a run to the Docker image digest</a></li>
 <li><a href="#default-version-of-a-tool">Default version of a tool</a></li>
+<li><a href="#nice-dcv-desktop-no-wallpaper-a-keyboard-layout-switcher-ubuntu-2404">NICE DCV desktop: no wallpaper, a keyboard layout switcher, Ubuntu 24.04</a></li>
+<li><a href="#retries-of-a-failed-scratch-lustre-file-system">Retries of a failed scratch Lustre file system</a></li>
 </ul>
 <hr />
 <ul>
@@ -2382,6 +2388,32 @@ In the current version, two new roles were introduced. Both cover every pipeline
 </ul>
 <p>Users with the <strong>WRITE</strong> permission for a tool set and unset the default version at the <strong>Versions</strong> tab of the tool. Until a default version is set, and once it is unset or deleted, the <code>latest</code> version is used, as before. The default version can also be managed via the API: <code>POST /tool/{id}/defaultVersion?version=&lt;version&gt;</code> sets it, <code>DELETE /tool/{id}/defaultVersion</code> removes it, and the tool returns it as the <code>defaultVersion</code> field.</p>
 <p>For more details see <a href="../../../manual/10_Manage_Tools/10.4._Edit_a_Tool/#set-a-default-version">here</a>.</p>
+<hr />
+<h2 id="nice-dcv-desktop-no-wallpaper-a-keyboard-layout-switcher-ubuntu-2404">NICE DCV desktop: no wallpaper, a keyboard layout switcher, Ubuntu 24.04</h2>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/4861">#4861</a></p>
+<p>Previously, the Xfce desktop of a NICE DCV session started with the default Xfce panel and wallpaper, and with one keyboard layout.</p>
+<p>In <strong><code>v0.17</code></strong>:</p>
+<ul>
+<li>the desktop has no wallpaper: a solid color is used instead</li>
+<li>the panel has a keyboard layout switcher, with the <code>us</code>, <code>fr</code> and <code>de</code> layouts. <strong>Ctrl+Shift</strong> switches them. The run parameters <code>CP_DCV_XKB_LAYOUTS</code> (e.g. <code>us,ru</code>), <code>CP_DCV_XKB_MODEL</code> (<code>pc105</code> by default) and <code>CP_DCV_XKB_TOGGLE</code> (an XKB option, <code>grp:ctrl_shift_toggle</code> by default) change them</li>
+<li>the switcher needs the <code>xfce4-xkb-plugin</code> package. The session also sets the layouts with <code>setxkbmap</code> (the <code>setxkbmap</code> or <code>xorg-x11-xkb-utils</code> package in RPM-based images, <code>x11-xkb-utils</code> in Ubuntu images); without it, Xfce sets them on its own. When the DCV setup installs NICE DCV, it also installs these packages where the repositories have them, and logs a warning in the run log for each one it cannot install. Without <code>xfce4-xkb-plugin</code>, the session starts with one layout and no switcher</li>
+<li>the desktop is set up this way also in the images that have NICE DCV installed already. There, the switcher is shown only if the image has <code>xfce4-xkb-plugin</code></li>
+</ul>
+<p>NICE DCV is also supported in the Ubuntu 24.04 images: the setup installs the <code>nice-dcv-2024.0-19030-ubuntu2404-x86_64</code> build. Previously, on an Ubuntu version that has no DCV build, e.g. 24.04, the setup installed no DCV and ran <code>rm -rf *</code> in the folder above its working folder. Only then did it fail, when it configured DCV. Now, such a version fails the setup with "Unsupported Ubuntu version", before DCV is downloaded.</p>
+<hr />
+<h2 id="retries-of-a-failed-scratch-lustre-file-system">Retries of a failed scratch Lustre file system</h2>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/4861">#4861</a></p>
+<p>A cluster run with <code>CP_CAP_SHARE_FS_TYPE=lustre</code> creates an FSx for Lustre file system as its shared scratch space.<br />
+Previously, if the file system ended up <code>FAILED</code>, e.g. because the cloud provider was out of capacity, the run failed. If it turned <code>FAILED</code> while it was being created, the run waited for it for 20 minutes (<code>CP_CAP_LUSTRE_WAIT_ATTEMPTS</code>), and then tried to mount it anyway.</p>
+<p>Now, the master run deletes a <code>FAILED</code> file system, waits until it is gone, and creates it again:</p>
+<ul>
+<li><code>CP_CAP_LUSTRE_CREATE_RETRIES</code> is the number of attempts in all, the first one included (<code>3</code> by default, i.e. up to 2 more), and they are <code>CP_CAP_LUSTRE_CREATE_RETRY_SLEEP</code> seconds apart (<code>60</code> by default)</li>
+<li>for a deletion, it waits up to <code>CP_CAP_LUSTRE_DELETE_WAIT_ATTEMPTS</code> checks, 5 seconds apart (<code>60</code> by default, i.e. 5 minutes)</li>
+<li>an empty answer of the API is retried too, after the same pause, and a file system that is still being deleted from an earlier attempt is waited for</li>
+<li>if the file system is not <code>AVAILABLE</code> after <code>CP_CAP_LUSTRE_WAIT_ATTEMPTS</code> checks, the run fails, and the mount is not tried</li>
+</ul>
+<p>The workers of the cluster do not create the file system. Previously, a worker failed at once only if the first answer of the API was <code>FAILED</code>. If the file system was being deleted, or turned <code>FAILED</code> later, the worker waited for 20 minutes and then tried to mount it. Now, a worker fails at once in all these cases.</p>
+<p>Please note: the workers wait for the master's <code>InitializeSharedFS</code> task for about 20 minutes (<code>CP_CLUSTER_WAIT_FOR_NODE_ATTEMPTS</code>, <code>120</code> checks, 10 seconds apart). One attempt of the master can take up to <code>CP_CAP_LUSTRE_WAIT_ATTEMPTS</code> × 5 seconds (20 minutes by default), plus the deletion wait and the pause. So if the master retries, its workers may fail with "Failed to attach to master node" before the file system is ready.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
 <h3 id="nextflow-run-view-some-tasks-stay-running-after-the-run-finishes">Nextflow run view: some tasks stay <code>RUNNING</code> after the run finishes</h3>
