@@ -252,3 +252,99 @@ describe('roleModel permission-enabled checks', () => {
     expect(enabled(all)).toEqual([true, true, true]);
   });
 });
+
+describe('roleModel.checkObjectPermissionsConflict', () => {
+  // Read and Execute requested, which is what the pipeline form asks of the
+  // docker images a pipeline uses.
+  const REQUESTED = EXT_READ_ALLOW | EXT_EXECUTE_ALLOW;
+  // Object rules the requested permissions are checked against.
+  const ALLOWS_EXECUTE = EXT_READ_ALLOW | EXT_EXECUTE_ALLOW;
+  const DENIES_EXECUTE = EXT_READ_ALLOW | EXT_EXECUTE_DENY;
+
+  const USER = {name: 'USER', principal: true};
+  // A group is a non-predefined role, or one of the user's external groups,
+  // which carries no `predefined` flag at all.
+  const group = name => ({name, principal: false, predefined: false});
+  const externalGroup = name => ({name, principal: false});
+  const role = name => ({name, principal: false, predefined: true});
+  const rule = ({name, principal = false}, mask) => ({sid: {name, principal}, mask});
+
+  const conflicts = (sidRoles, objectRules, owner = 'SOMEBODY_ELSE') => roleModel
+    .checkObjectPermissionsConflict(REQUESTED, USER, sidRoles, owner, objectRules);
+
+  it('reports no conflict for the object owner', () => {
+    expect(conflicts([], [rule(USER, DENIES_EXECUTE)], USER.name))
+      .toEqual({read: false, write: false, execute: false});
+  });
+
+  it('reports no conflict for an administrator', () => {
+    expect(conflicts([role('ROLE_ADMIN')], [rule(USER, DENIES_EXECUTE)]))
+      .toEqual({read: false, write: false, execute: false});
+  });
+
+  it('lets a group\'s "allow" win over a role\'s "deny"', () => {
+    // Issue #4127: a system role denying Execute used to raise a warning even
+    // though the user's group allows it, and the API resolves the group first.
+    const {read, execute} = conflicts(
+      [group('ROLE_GROUP1'), role('ROLE_ADVANCED_USER')],
+      [rule(group('ROLE_GROUP1'), ALLOWS_EXECUTE), rule(role('ROLE_ADVANCED_USER'), DENIES_EXECUTE)]
+    );
+    expect([read, execute]).toEqual([false, false]);
+  });
+
+  it('lets a group\'s "deny" win over a role\'s "allow"', () => {
+    const {read, execute} = conflicts(
+      [group('ROLE_GROUP1'), role('ROLE_ADVANCED_USER')],
+      [rule(group('ROLE_GROUP1'), DENIES_EXECUTE), rule(role('ROLE_ADVANCED_USER'), ALLOWS_EXECUTE)]
+    );
+    expect([read, execute]).toEqual([false, true]);
+  });
+
+  it('treats an external group as a group rather than as a role', () => {
+    const {execute} = conflicts(
+      [externalGroup('AD_GROUP1'), role('ROLE_ADVANCED_USER')],
+      [
+        rule(externalGroup('AD_GROUP1'), DENIES_EXECUTE),
+        rule(role('ROLE_ADVANCED_USER'), ALLOWS_EXECUTE)
+      ]
+    );
+    expect(execute).toBe(true);
+  });
+
+  it('lets the user\'s own rule win over the rules of its groups and roles', () => {
+    const sidRoles = [group('ROLE_GROUP1'), role('ROLE_ADVANCED_USER')];
+    const allowedForUser = conflicts(sidRoles, [
+      rule(USER, ALLOWS_EXECUTE),
+      rule(group('ROLE_GROUP1'), DENIES_EXECUTE),
+      rule(role('ROLE_ADVANCED_USER'), DENIES_EXECUTE)
+    ]);
+    expect(allowedForUser.execute).toBe(false);
+    const deniedForUser = conflicts(sidRoles, [
+      rule(USER, DENIES_EXECUTE),
+      rule(group('ROLE_GROUP1'), ALLOWS_EXECUTE),
+      rule(role('ROLE_ADVANCED_USER'), ALLOWS_EXECUTE)
+    ]);
+    expect(deniedForUser.execute).toBe(true);
+  });
+
+  it('lets a "deny" win over an "allow" set for the same type of a SID', () => {
+    const {execute} = conflicts(
+      [group('ROLE_GROUP1'), group('ROLE_GROUP2')],
+      [rule(group('ROLE_GROUP1'), ALLOWS_EXECUTE), rule(group('ROLE_GROUP2'), DENIES_EXECUTE)]
+    );
+    expect(execute).toBe(true);
+  });
+
+  it('falls through to the roles when neither the user nor its groups have a rule', () => {
+    const sidRoles = [group('ROLE_GROUP1'), role('ROLE_ADVANCED_USER')];
+    expect(conflicts(sidRoles, [rule(role('ROLE_ADVANCED_USER'), ALLOWS_EXECUTE)]).execute)
+      .toBe(false);
+    expect(conflicts(sidRoles, [rule(role('ROLE_ADVANCED_USER'), DENIES_EXECUTE)]).execute)
+      .toBe(true);
+  });
+
+  it('reports a conflict when no SID has a rule, since the access is then inherited', () => {
+    const {read, execute} = conflicts([group('ROLE_GROUP1'), role('ROLE_ADVANCED_USER')], []);
+    expect([read, execute]).toEqual([true, true]);
+  });
+});
