@@ -2073,8 +2073,6 @@ For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#se
 
 ## Data storage: the controls row stays visible while scrolling
 
-[#4865](https://github.com/epam/cloud-pipeline/issues/4865)
-
 Previously, the controls row of a data storage - **Select page**, the **Selection** actions, **Share current folder**, **Create** and **Upload** - scrolled out of view together with the file list. In a folder with more items than fit the panel, a bulk operation meant selecting the items and then scrolling back to the top to reach the controls.
 
 Now, that row stays at the top of the list at any scroll position. The column header scrolls under it, as before.
