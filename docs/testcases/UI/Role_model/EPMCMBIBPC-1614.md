@@ -9,7 +9,7 @@ Test verifies the UI available to a user for their own storage, with no other pe
 | :---: | --- | --- |
 | 1 | Perform the [EPMCMBIBPC-1613](EPMCMBIBPC-1613.md) case |  |
 | 2 | Login as the user from the prerequisites |  |
-| 3 | Navigate to the storage from the prerequisites | <li>Download, edit, and delete buttons are located across from file names <li>Edit and delete buttons are located across from folder names <li>The **+ Create** and **Upload** buttons are located to the right, above the file/folder list <li>The **Show attributes**, settings, and **Refresh** buttons are located in the upper-right corner <li>The **Select page** button is located to the left, above the file/folder list <li>The **Show file versions** checkbox is located near the **Select page** button, if the storage has versioning enabled |
+| 3 | Navigate to the storage from the prerequisites | <li>Download, edit, and delete buttons are located across from file names <li>Edit and delete buttons are located across from folder names <li>The **+ Create** and **Upload** buttons are located to the right, above the file/folder list <li>The **Show attributes**, settings, and **Refresh** buttons are located in the upper-right corner <li>The **Select page** button is located to the left, above the file/folder list <li>The **Show file versions** checkbox is available from the **Show attributes** drop-down in the upper-right corner, if the storage has versioning enabled |
 | 4 | Hover over the **+ Create** button | A drop-down list appears: Folder, File |
 | 5 | Click the settings button (gear icon in the upper-right corner) |  |
 | 6 | Open the **Permissions** tab |  |

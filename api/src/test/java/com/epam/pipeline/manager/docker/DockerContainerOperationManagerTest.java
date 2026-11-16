@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cluster.NodeInstance;
+import com.epam.pipeline.entity.cluster.container.ImagePullPolicy;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.monitoring.IdleMonitoringType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -83,6 +84,7 @@ public class DockerContainerOperationManagerTest {
     private static final String FALLBACK_NODE_TYPE_2 = "m5.2xlarge";
     private static final String POD_ID = "pipeline";
     private static final String TEST_TAG = "tag";
+    private static final String DIGEST = "sha256:digest";
     private static final long REGION_ID = 1L;
     private static final Long RUN_ID = 2L;
     private static final int CANNOT_EXECUTE_EXIT_CODE = 126;
@@ -222,9 +224,24 @@ public class DockerContainerOperationManagerTest {
         verifyResumeProcessing(1);
         verify(cloudFacade).startInstance(REGION_ID, NODE_ID);
         verify(pipelineLauncher)
-                .launch(any(), any(), any(), anyBoolean(), anyString(), anyString(), any());
+                .launch(any(), any(), any(), anyBoolean(), anyString(), anyString(), any(), eq(false));
         verify(runManager).updatePipelineStatus(any());
         assertEquals(TaskStatus.RUNNING, run.getStatus());
+    }
+
+    @Test
+    public void resumeRunShouldNotPinDockerImageDigest() throws InterruptedException {
+        when(regionManager.load(REGION_ID)).thenReturn(region());
+        when(cloudFacade.getInstanceState(RUN_ID)).thenReturn(CloudInstanceState.RUNNING);
+        when(pipelineConfigurationManager.getConfigurationFromRun(any())).thenReturn(new PipelineConfiguration());
+        final PipelineRun run = pipelineRun();
+        run.setId(RUN_ID);
+        run.setActualDockerImageDigest(DIGEST);
+
+        operationManager.resumeRun(run, Collections.emptyList());
+
+        verify(pipelineLauncher).launch(eq(run), any(), any(), eq(true), eq(POD_ID), any(),
+                eq(ImagePullPolicy.NEVER), eq(false));
     }
 
     @Test
@@ -256,7 +273,7 @@ public class DockerContainerOperationManagerTest {
         verifyResumeProcessing(1);
         verify(cloudFacade, never()).startInstance(REGION_ID, NODE_ID);
         verify(pipelineLauncher)
-                .launch(any(), any(), any(), anyBoolean(), anyString(), anyString(), any());
+                .launch(any(), any(), any(), anyBoolean(), anyString(), anyString(), any(), eq(false));
         verify(runManager).updatePipelineStatus(any());
         assertEquals(TaskStatus.RUNNING, run.getStatus());
     }
@@ -273,7 +290,7 @@ public class DockerContainerOperationManagerTest {
 
         verifyResumeProcessing(1);
         verify(pipelineLauncher, never())
-                .launch(any(), any(), any(), anyBoolean(), anyString(), anyString(), any());
+                .launch(any(), any(), any(), anyBoolean(), anyString(), anyString(), any(), anyBoolean());
         verify(runManager).updatePipelineStatus(any());
         assertEquals(TaskStatus.RUNNING, run.getStatus());
     }

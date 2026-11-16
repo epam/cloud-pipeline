@@ -9,7 +9,7 @@ Test verifies creating an NFS mount and the initial layout of its page.
 | :---: | --- | --- |
 | 1 | Open library |  |
 | 2 | Hover over **+ Create v** button |  |
-| 3 | Select **Storages** -> **Create new NFS mount** |  |
+| 3 | Select **Storages** -> **Create new FS mount** |  |
 | 4 | Specify the storage path value as `{NFS_MOUNT_PREFIX}/{NFS_STORAGE_NAME}` |  |
 | 5 | Input a valid value in the **Alias** field |  |
 | 6 | Input a valid value in the **Description** field |  |

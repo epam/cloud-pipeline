@@ -18,7 +18,7 @@ from datetime import datetime
 from mock import MagicMock, Mock
 
 from pipeline.hpc.engine.gridengine import GridEngineJobState, GridEngineJob
-from pipeline.hpc.engine.slurm import SlurmGridEngine
+from pipeline.hpc.engine.slurm import SlurmGridEngine, SlurmLaunchAdapter
 from utils import assert_first_argument_contained, assert_first_argument_not_contained
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
@@ -28,7 +28,7 @@ HOSTLIST = '@allhosts'
 QUEUE_DEFAULT = True
 
 executor = Mock()
-grid_engine = SlurmGridEngine(cmd_executor=executor)
+grid_engine = SlurmGridEngine(cmd_executor=executor, queue_name=QUEUE)
 
 
 def setup_function():
@@ -82,6 +82,18 @@ JobId=10 JobName=wrap3 UserId=user-name(123) GroupId=root(0) MCS_label=N/A Prior
                                       13, 55, 35)
 
 
+def test_qstat_parsing_skips_jobs_of_other_partitions():
+    # Each queue has its own autoscaler, which only takes the jobs of its own partition
+    stdout = """JobId=11 JobName=other UserId=root(0) GroupId=root(0) JobState=PENDING SubmitTime=2023-07-31T13:55:35 StartTime=Unknown Partition=gpu.q NodeList= NumNodes=1 NumCPUs=2 NumTasks=1 CPUs/Task=2 MinMemoryNode=0
+JobId=12 JobName=own UserId=root(0) GroupId=root(0) JobState=PENDING SubmitTime=2023-07-31T13:55:35 StartTime=Unknown Partition=main.q NodeList= NumNodes=1 NumCPUs=2 NumTasks=1 CPUs/Task=2 MinMemoryNode=0
+    """
+
+    executor.execute = MagicMock(return_value=stdout)
+    jobs = grid_engine.get_jobs()
+
+    assert [job.root_id for job in jobs] == ['12']
+
+
 def test_qstat_empty_parsing():
     stdout = """No jobs in the system
     """
@@ -114,3 +126,10 @@ def test_force_kill_jobs():
     assert_first_argument_contained(executor.execute, 'scancel ')
     assert_first_argument_contained(executor.execute, ' 1 2')
     assert_first_argument_contained(executor.execute, '-f')
+
+
+def test_additional_workers_get_their_queue():
+    # slurm_setup_worker gives an additional worker the feature of its queue, by which the queue's nodeset takes it
+    assert SlurmLaunchAdapter(queue='gpu.q').get_worker_launch_params() == {'CP_CAP_SLURM': 'false',
+                                                                           'CP_CAP_SLURM_QUEUE_NAME': 'gpu.q'}
+    assert SlurmLaunchAdapter().get_worker_launch_params() == {'CP_CAP_SLURM': 'false'}

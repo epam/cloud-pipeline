@@ -94,6 +94,9 @@ mkdir $COMMON_REPO_DIR
 cd $COMMON_REPO_DIR
 install_pipeline_code
 
+# Before the size check below: the container size counts a sparse file in full
+empty_uid_indexed_logs ${CONTAINER_ID}
+
 # Verify container size and warn user befor committing
 # TODO: Fail a job if not enough disk space
 # TODO: pass MAX_CONTAINER_SIZE_GB from outside

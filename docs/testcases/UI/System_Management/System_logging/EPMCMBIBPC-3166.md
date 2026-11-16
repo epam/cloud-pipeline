@@ -20,7 +20,7 @@ Test verifies that accessing a tool's endpoint and SSH console is recorded in th
 | 9 | Log out |  |
 | 10 | Login as the admin user from the prerequisites |  |
 | 11 | Click the gear icon (**System settings**) in the main menu |  |
-| 12 | Click the **SYSTEM LOGS** tab |  |
+| 12 | Click the **LOGS** tab |  |
 | 13 | Enter the name of the non-admin user from the prerequisites into the **User** field, press **Enter** |  |
 | 14 | Select the value `edge` for the **Service** field from the corresponding drop-down list | <li>In the logs table, there is a row with log message "...[SECURITY] Application: /pipeline-<ID>-<port>-0/; User: <user_name>; Status: Successfully authenticated...", type "security", where <ID> is the pipeline ID launched at step 2, <port> is the tool endpoint's port number, <user_name> is the non-admin user name from the prerequisites <li>In the logs table, there is a row with log message "...[SECURITY] Application: SSH-/ssh/pipeline/<ID>; User: <user_name>; Status: Successfully authenticated...", type "security", where <ID> is the pipeline ID launched at step 2, <user_name> is the non-admin user name from the prerequisites |
 

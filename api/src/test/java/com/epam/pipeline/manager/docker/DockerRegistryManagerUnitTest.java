@@ -108,7 +108,7 @@ public class DockerRegistryManagerUnitTest {
                 .toolId(tool3.getId())
                 .build();
         doReturn(Arrays.asList(gpuVersion1, noGpuVersion1, gpuVersion2, noGpuVersion2, emptyConfig))
-                .when(toolVersionManagerMock).loadAllLatestToolVersionSettings();
+                .when(toolVersionManagerMock).loadAllDefaultToolVersionSettings();
 
         doReturn(false).when(toolGroupManagerMock).isGroupPrivate(any());
 

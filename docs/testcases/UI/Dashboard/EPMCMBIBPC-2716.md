@@ -20,7 +20,7 @@ Test verifies the TOOLS widget's record and controls for a tool committed into a
 | 10 | Open the **Home** page |  |
 | 11 | Click **Configure** in the upper-right corner |  |
 | 12 | In the pop-up that appears, set the checkbox near **Tools** and unset the others |  |
-| 13 | Click **OK** | At least 1 record appears in the **TOOLS** widget, containing: <li>the tool name specified at step 5 <li>the short description from the tool saved at step 1 <li>labels: "Default registry"; "{personal tools group name}" equal to the admin name from prerequisite step 1 |
+| 13 | Click **OK** | At least 1 record appears in the **TOOLS** widget, containing: <li>the tool name specified at step 5 <li>the short description from the tool saved at step 1 <li>a breadcrumb with the registry name and the personal tools group name, where the group name is equal to the admin name from prerequisite step 1 |
 | 14 | Hover over the record with the tool name specified at step 5 | The **RUN** button appears |
 | 15 | Repeat step 14 and click on the tool name | The page of the tool with the name specified at step 5 opens |
 | 16 | Repeat step 10 |  |

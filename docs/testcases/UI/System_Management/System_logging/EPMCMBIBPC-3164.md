@@ -11,8 +11,8 @@ Test verifies that assigning and unassigning a role to a user is recorded in the
 | 1 | Repeat steps 1-7 of the [EPMCMBIBPC-3163](EPMCMBIBPC-3163.md) case |  |
 | 2 | Click **UNBLOCK** |  |
 | 3 | Click **OK** in the pop-up |  |
-| 4 | Click **OK** |  |
-| 5 | Click the **SYSTEM LOGS** tab |  |
+| 4 | Click **CANCEL** |  |
+| 5 | Click the **LOGS** tab |  |
 | 6 | Enter the name of the admin user from the prerequisites into the **User** field, press **Enter** |  |
 | 7 | Enter the text "Blocking status=false" into the **Message** field, press **Enter** |  |
 | 8 | In the search results, find the latest message like "Update user blocking status. User id=<user_id>. Blocking status=false" |  |

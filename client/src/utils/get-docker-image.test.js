@@ -27,8 +27,8 @@ describe('parseDockerImage', () => {
     });
   });
 
-  it('uses the latest version when the image has none', () => {
-    expect(parseDockerImage('cp-docker:443/library/ubuntu').version).toBe('latest');
+  it('leaves the version undefined when the image has none', () => {
+    expect(parseDockerImage('cp-docker:443/library/ubuntu').version).toBeUndefined();
   });
 
   it('returns undefined for an image in any other format', () => {
@@ -71,5 +71,41 @@ describe('getDockerImage', () => {
     expect(getDockerImage('cp-docker:443/library/ubuntu', {loaded: false, fetchIfNeededOrWait}))
       .toBeUndefined();
     expect(fetchIfNeededOrWait).toHaveBeenCalled();
+  });
+});
+
+describe('getDockerImage version', () => {
+  const registriesWith = (tool) => ({
+    loaded: true,
+    value: {
+      registries: [{
+        path: 'registry',
+        groups: [{name: 'library', tools: [tool]}]
+      }]
+    }
+  });
+
+  it('takes the version from the image tag', () => {
+    const tool = {image: 'library/tool', defaultVersion: '1.2'};
+
+    expect(getDockerImage('registry/library/tool:1.0', registriesWith(tool)).version).toBe('1.0');
+  });
+
+  it('takes the default version of a tool for an image without a tag', () => {
+    const tool = {image: 'library/tool', defaultVersion: '1.2'};
+
+    expect(getDockerImage('registry/library/tool', registriesWith(tool)).version).toBe('1.2');
+  });
+
+  it('takes the latest version of a tool without a default version, if there is no tag', () => {
+    const tool = {image: 'library/tool'};
+
+    expect(getDockerImage('registry/library/tool', registriesWith(tool)).version).toBe('latest');
+  });
+
+  it('finds nothing for an unknown tool', () => {
+    const tool = {image: 'library/tool'};
+
+    expect(getDockerImage('registry/library/other', registriesWith(tool))).toBeUndefined();
   });
 });

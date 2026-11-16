@@ -1,6 +1,6 @@
-# [MANUAL] Return tool without permission to execute
+# [MANUAL] Rerun tool without permission to execute
 
-Test verifies that returning a completed run of a tool the user's execute permission was revoked from is denied.
+Test verifies that rerunning a completed run of a tool the user's execute permission was revoked from is denied.
 
 **Prerequisites**:
 - A user has "read" and "execute" rights for at least one filled-in tool
@@ -28,6 +28,6 @@ Test verifies that returning a completed run of a tool the user's execute permis
 | 2 | Click the **Runs** button at the navigation panel |  |
 | 3 | Open the **COMPLETED RUNS** tab |  |
 | 4 | Find the tool from preparation step 3 in the list |  |
-| 5 | Click the **RETURN** button opposite the tool name |  |
+| 5 | Click the **RERUN** button opposite the tool name |  |
 | 6 | Click the **Launch** button in the upper-right corner |  |
 | 7 | Click **OK** in the pop-up that appears | The message "Access is denied" appears |

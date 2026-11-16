@@ -97,6 +97,8 @@ export interface RegistryToolPayload {
   instanceType?: string;
   disk?: number;
   defaultCommand?: string;
+  /** A version, which is used in place of the latest one, if it is set */
+  defaultVersion?: string;
 }
 
 export interface DockerRegistryPayload {

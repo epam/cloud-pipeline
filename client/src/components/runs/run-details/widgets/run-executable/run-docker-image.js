@@ -7,6 +7,23 @@ import {getDockerImage} from '../../../../../utils/get-docker-image';
 import ToolImage from '../../../../../models/tools/ToolImage';
 import styles from './run-executable.css';
 
+function renderDockerImageDetails (run) {
+  const {
+    dockerImage,
+    actualDockerImageDigest
+  } = run;
+  return (
+    <div>
+      <div>{dockerImage}</div>
+      {
+        actualDockerImageDigest && (
+          <div>{actualDockerImageDigest}</div>
+        )
+      }
+    </div>
+  );
+}
+
 function RunDockerImage (props) {
   const {
     className,
@@ -24,7 +41,7 @@ function RunDockerImage (props) {
   if (toolInfo) {
     const toolName = dockerImage.split('/').pop();
     return (
-      <Popover content={(<div>{dockerImage}</div>)}>
+      <Popover content={renderDockerImageDetails(run)}>
         <div className={className} style={style}>
           {
             toolInfo.tool.iconId ? (
@@ -47,7 +64,7 @@ function RunDockerImage (props) {
   if (dockerImage) {
     const toolName = dockerImage.split('/').pop();
     return (
-      <Popover content={(<div>{dockerImage}</div>)}>
+      <Popover content={renderDockerImageDetails(run)}>
         <span className={className} style={style}>
           {toolName}
         </span>

@@ -124,7 +124,7 @@ if [ -z "$CP_CAP_NFS_MNT_OBSERVER_DISABLED" ]; then
         if [ "$CP_PYTHON_VERSION" == "2" ]; then
             "$CP_PYTHON_PATH" -m pip install $CP_PIP_PACKAGE_INDEX_ARGS -I -q setuptools==44.1.1
         else
-            "$CP_PYTHON_PATH" -m pip install $CP_PIP_PACKAGE_INDEX_ARGS -I -q setuptools==68.0.0
+            "$CP_PYTHON_PATH" -m pip install $CP_PIP_PACKAGE_INDEX_ARGS -I -q setuptools==81.0.0
         fi && \
         "$CP_PYTHON_PATH" -m pip install $CP_PIP_PACKAGE_INDEX_ARGS -I -q pipe-common.tar.gz && \
         rm -rf pipe-common.tar.gz && \

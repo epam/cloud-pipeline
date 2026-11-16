@@ -28,6 +28,7 @@ import classNames from 'classnames';
 import DockerImageDetails from './docker-image-details';
 import MultiSelect from '../../special/multiSelect';
 import LoadToolTags from '../../../models/tools/LoadToolAttributes';
+import {getToolDefaultVersion} from '../../../utils/tool-default-version';
 import styles from './add-docker-registry-control.css';
 
 @inject('dockerRegistries')
@@ -68,7 +69,10 @@ class AddDockerRegistryControl extends React.Component {
       const [i, v] = iv.split(':');
       this.setState({
         docker: [r, g, i].join('/'),
-        version: v || 'latest'
+        // an image without a tag stands for the tool's default version, selected once loaded,
+        // so the versions are loaded again, even if they are of the same image
+        version: v,
+        ...(v ? {} : {versionsHash: undefined})
       }, this.fetchVersions);
     } else {
       this.setState({
@@ -201,17 +205,13 @@ class AddDockerRegistryControl extends React.Component {
           versionsPending: true
         }, () => {
           fn()
-            .then((versions) => {
+            .then(({tool, versions}) => {
               const versionsArray = (versions || [])
                 .slice()
                 .map(v => v.version);
               let v = currentVersion;
               if (versionsArray.indexOf(v) === -1) {
-                if (versionsArray.indexOf('latest') >= 0) {
-                  v = 'latest';
-                } else {
-                  v = versionsArray[0];
-                }
+                v = getToolDefaultVersion(tool, versionsArray) || versionsArray[0];
               }
               this.setState({
                 pending: false,
@@ -229,7 +229,7 @@ class AddDockerRegistryControl extends React.Component {
         this.getTool(docker)
           .then(tool => {
             if (!tool) {
-              resolve([]);
+              resolve({tool, versions: []});
             } else {
               const {id} = tool;
               const versionsRequest = new LoadToolTags(id);
@@ -241,13 +241,13 @@ class AddDockerRegistryControl extends React.Component {
                     const nonWindowsVersions = versions
                       .filter(v => !v.attributes || !/^windows$/i.test(v.attributes.platform))
                       .map(v => ({id: v.attributes?.id, version: v.version}));
-                    resolve(nonWindowsVersions);
+                    resolve({tool, versions: nonWindowsVersions});
                   } else {
-                    resolve([]);
+                    resolve({tool, versions: []});
                   }
                 })
                 .catch(() => {
-                  resolve([]);
+                  resolve({tool, versions: []});
                 });
             }
           });
@@ -259,7 +259,10 @@ class AddDockerRegistryControl extends React.Component {
     if (this.state.docker !== image) {
       this.setState({
         docker: image,
-        version: 'latest',
+        // the tool's default version is selected, once the versions are loaded
+        version: undefined,
+        versions: [],
+        versionsWithIdentifiers: [],
         versionsSelected: [],
         dockerImageField: undefined,
         dockerImageVersionField: undefined
@@ -309,7 +312,7 @@ class AddDockerRegistryControl extends React.Component {
     const {pending, version, versions, dockerImageVersionField} = this.state;
     if (versions.length > 0) {
       const filteredVersions = versions.filter((v) => {
-        if (v.toLowerCase() === version.toLowerCase()) {
+        if (version && v.toLowerCase() === version.toLowerCase()) {
           return true;
         }
         if (dockerImageVersionField && dockerImageVersionField.length) {

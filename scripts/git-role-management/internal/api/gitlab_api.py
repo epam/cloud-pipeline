@@ -29,10 +29,13 @@ class GitLabException(Exception):
 
 
 class GitLab(object):
-    def __init__(self, server, token, api_version):
+    # GitLab 9 has both v3 and v4, GitLab 11.0 and later have v4 only
+    DEFAULT_API_VERSION = 'v3'
+
+    def __init__(self, server, token, api_version=None):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         self.server = server
-        self.api_version = api_version
+        self.api_version = api_version or GitLab.DEFAULT_API_VERSION
         self.__config__ = Config.instance()
         self.__headers__ = {'Content-Type': 'application/json',
                             'Private-Token': token}
@@ -146,9 +149,13 @@ class GitLab(object):
             'name': to_bytes(name),
             'username': to_bytes(userName).replace(' ', '_'),
             'email': to_bytes(email),
-            'password': password,
-            'skip_confirmation': True
+            'password': password
         }
+        # v4 has no confirm parameter: a user created without skip_confirmation has to confirm the email
+        if self.api_version == 'v3':
+            payload['confirm'] = 'no'
+        else:
+            payload['skip_confirmation'] = True
         return self.call(
             'users',
             payload,

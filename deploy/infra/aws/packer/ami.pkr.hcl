@@ -31,8 +31,8 @@ locals {
   timestamp = formatdate("YYYYMMDDHHmmss", timestamp())
   truncated_sha = substr(data.git-commit.cwd-head.hash, 0, 8)
   source_ami = var.source_ami != "" ? var.source_ami : data.amazon-ami.amzn2023.id
-  # Tags are assigned to the AMI, while it is being created, in contrast to the description,
-  # which is applied afterwards and requires an extra permission, and is not set at all
+  # Tags are applied with CreateTags, once the AMI is available (to the AMI and its snapshots).
+  # A description is not set at all: it needs ModifyImageAttribute, i.e. an extra permission
   ami_tags = merge({
                      OS_Version = "amzn2023"
                      Base_AMI_Name = "{{ .SourceAMIName }}"

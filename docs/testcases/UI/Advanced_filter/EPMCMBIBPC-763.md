@@ -1,6 +1,6 @@
 # [MANUAL] Advanced_filtering by node.disk
 
-Test verifies filtering the advanced search results by `node.disk` using `=`, `!=`, and (partial) `*` matches.
+Test verifies filtering the advanced search results by `node.disk` using `=`, `!=`, `>`, `>=`, `<`, `<=`.
 
 **Prerequisites**:
 - Several pipelines launched with different disk size values

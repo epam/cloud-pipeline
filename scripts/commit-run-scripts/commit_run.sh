@@ -19,6 +19,9 @@ SCRIPT_PATH="$SCRIPTS_DIR/common_commit_initialization.sh"
 
 commit_hook ${CONTAINER_ID} "pre" ${CLEAN_UP} ${STOP_PIPELINE} ${PRE_COMMIT_COMMAND}
 
+# commit_run_starter.sh has emptied them already. Again, as the pre-commit hook may write to them
+empty_uid_indexed_logs ${CONTAINER_ID}
+
 commit_file $FULL_NEW_IMAGE_NAME
 check_last_exit_code $? "[ERROR] Error occurred while committing temporary container" \
                         "[INFO] Temporary container was successfully committed with name: $image_name" \
@@ -79,6 +82,14 @@ IS_VERSION_EXISTS=`$CP_PYTHON_PATH $COMMON_REPO_DIR/scripts/commit_run.py ive $R
 echo "IS_VERSION_EXISTS = $IS_VERSION_EXISTS"
 
 if [[ "$IS_VERSION_EXISTS" = "False" ]]; then
+    # A tool with a default version launches it in place of latest. The answer is the last line, after the retries' messages
+    IS_DEFAULT_VERSION_SET=`$CP_PYTHON_PATH $COMMON_REPO_DIR/scripts/commit_run.py idvs $RUN_ID $FULL_NEW_IMAGE_NAME | tail -n 1`
+    echo "IS_DEFAULT_VERSION_SET = $IS_DEFAULT_VERSION_SET"
+fi
+
+if [[ "$IS_DEFAULT_VERSION_SET" = "True" ]]; then
+    pipe_log_info "[INFO] $FULL_NEW_IMAGE_NAME tool has a default version set, latest version will not be created" "$TASK_NAME"
+elif [[ "$IS_VERSION_EXISTS" = "False" ]]; then
     pipe_log_info "[INFO] $FULL_NEW_IMAGE_NAME tool does not contain latest version, this may introduce issues in running this tool. Will create latest version..." "$TASK_NAME"
     # Replace existing tag in FULL_NEW_IMAGE_NAME if exists with latest
     LATEST_NEW_IMAGE_NAME=$(sed -e 's/\:[^\:/]*$//' <<< $FULL_NEW_IMAGE_NAME):latest
