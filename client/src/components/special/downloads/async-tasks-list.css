@@ -78,12 +78,8 @@
   word-break: break-all;
 }
 
-/*
- * A storage path can be far longer than the column, so it is clipped here and
- * read in full from the cell's own tooltip. `max-width` rather than `width`:
- * the table lays the columns out, and a short path should not reserve space it
- * does not need.
- */
+/* Clipped here, read in full from the cell's tooltip. `max-width`, not
+ * `width`: a short path should reserve no space it does not need. */
 .source-link {
   display: inline-block;
   max-width: 280px;

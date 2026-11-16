@@ -1118,13 +1118,15 @@ export default class DataStorage extends React.Component {
     this.setState({downloadsModalVisible: false});
   };
 
-  // Whether "Extract archive" can appear for the current selection at all -
-  // before the allowance, which only matters once it can.
+  // One archive at a time, and nothing else selected with it: extracting
+  // several at once can have them overwrite each other in the destination, so
+  // the user queues them one by one.
   get extractionActionAvailable () {
     const {selectedItems = []} = this.state;
     return this.archiveStorageTypeSupported &&
       this.currentFolderWriteAllowed &&
-      selectedArchivePaths(selectedItems).length > 0;
+      selectedItems.length === 1 &&
+      selectedArchivePaths(selectedItems).length === 1;
   }
 
   // Refreshed when the selection dropdown opens: the menu is transient, so a
@@ -2476,8 +2478,7 @@ export default class DataStorage extends React.Component {
       available: archiveSupported && archiveActionAvailable(selectedItems)
     };
     const extractionDisabledReason = this.extractionDisabledReason;
-    // Offered for a single archive too, unlike "Download archive": extracting
-    // one file is the ordinary case. Needs write access - it writes.
+    // Needs write access - it writes.
     const extractArchiveAction = {
       key: Keys.extractArchive,
       title: 'Extract archive',

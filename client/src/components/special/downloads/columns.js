@@ -89,24 +89,25 @@ function displayArchiveNameOf (task) {
   return /\.zip$/i.test(value) ? value : `${value}.zip`;
 }
 
-// The folder the user was browsing when they queued the task: the selection
-// came from one listing, so the items' shared parent is that folder.
+// One selected folder is its own source; anything else is the items' shared
+// parent, which is the folder the user queued the task from.
 function sourceFolderOf (task) {
   const params = task.params || {};
-  const paths = taskIsUnpackArchive(task)
+  const paths = (taskIsUnpackArchive(task)
     ? [params.sourcePath]
-    : (params.paths || []);
+    : (params.paths || [])).filter(Boolean);
+  // A folder's path ends with `/`; an extraction's source never does.
+  if (paths.length === 1 && `${paths[0]}`.endsWith('/')) {
+    return `${paths[0]}`;
+  }
   const folders = paths
-    .filter(Boolean)
     .map((path) => {
-      // A folder's own path ends with `/`, and its parent is what the user was
-      // in - so the trailing slash goes before the leaf does.
+      // Trailing slash off first, so a folder resolves to its parent.
       const withoutTrailing = `${path}`.replace(/\/+$/, '');
       const at = withoutTrailing.lastIndexOf('/');
       return at < 0 ? '' : withoutTrailing.slice(0, at + 1);
     });
-  // One listing, so they agree; the shortest is the safest answer if they
-  // somehow do not.
+  // One listing, so they agree; the shortest is the safe answer if not.
   return folders.sort((a, b) => a.length - b.length)[0] || '';
 }
 
@@ -237,16 +238,14 @@ export default function buildColumns ({
     {
       title: 'Source',
       key: 'source',
-      // `<storage>/<folder>`, linking to that folder in the storage browser -
-      // where the user was when they queued the task. Truncated by CSS, with
-      // the whole value in a tooltip, since a path can be long.
+      // `<storage>/<folder>`, linking there. Clipped by CSS, with the whole
+      // value in the tooltip - a path can be long.
       render: (task) => {
         const storageId = sourceStorageIdOf(task);
         if (storageId === undefined || storageId === null) {
           return storageId;
         }
-        // `Number(...)` is defensive: an id may arrive as a string, and this
-        // keeps the lookup right if `storageNamesById` ever becomes a `Map`.
+        // `Number(...)`: an id may arrive as a string.
         const name = storageNamesById ? storageNamesById[Number(storageId)] : undefined;
         const folder = sourceFolderOf(task);
         const text = `${name || storageId}/${folder}`;

@@ -89,3 +89,10 @@ down through the manager and the list - so it does not sit over a different stor
 note · `npm install` was needed: the base bumped the GUI dependencies. On Node 14's npm it rewrites
 `package-lock.json`, dropping two aliased dev entries, so the lock was restored from the base and
 left alone.
+
+decision · the Source cell points at the selected folder itself when the task covers exactly one
+folder, and at the shared parent otherwise - the user's refinement.
+decision · "Extract archive" is offered only for a selection of exactly one archive, the user's
+call: extracting several at once risks them overwriting one another in the destination, so they are
+queued one by one. This reverses the earlier "offered for a single file too, unlike Download
+archive" note, which had allowed several.

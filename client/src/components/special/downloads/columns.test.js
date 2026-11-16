@@ -177,6 +177,31 @@ describe('rendering a task of each type', () => {
     expect(sourceCell(DOWNLOAD_TASK).props.children.props.to).toBe('/storage/7');
   });
 
+  // One selected folder is its own source; the parent rule is for everything
+  // else, where there is no single folder to point at.
+  test('one selected folder is the source itself', () => {
+    const task = {...DOWNLOAD_TASK, params: {...DOWNLOAD_TASK.params, paths: ['data/reports/']}};
+
+    expect(sourceCell(task).props.title).toBe('my-storage/data/reports/');
+    expect(sourceCell(task).props.children.props.to)
+      .toBe('/storage/7?path=data%2Freports%2F');
+  });
+
+  test('one selected file is its parent folder', () => {
+    const task = {...DOWNLOAD_TASK, params: {...DOWNLOAD_TASK.params, paths: ['data/report.csv']}};
+
+    expect(sourceCell(task).props.title).toBe('my-storage/data/');
+  });
+
+  test('several selected items are their shared folder', () => {
+    const task = {
+      ...DOWNLOAD_TASK,
+      params: {...DOWNLOAD_TASK.params, paths: ['data/a.txt', 'data/b/']}
+    };
+
+    expect(sourceCell(task).props.title).toBe('my-storage/data/');
+  });
+
   test('the Source column falls back to the raw id for an unknown storage', () => {
     const task = {...EXTRACTION_TASK, params: {...EXTRACTION_TASK.params, sourceStorageId: 99}};
     expect(sourceCell(task).props.title).toBe('99/folder/');
