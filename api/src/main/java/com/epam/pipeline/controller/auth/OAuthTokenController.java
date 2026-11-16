@@ -32,6 +32,7 @@ import io.swagger.annotations.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -55,11 +56,19 @@ import java.util.Set;
  * the error code RFC 6749 defines.
  */
 @RestController
+@ConditionalOnProperty(value = OAuthTokenController.ENABLED_PROPERTY, havingValue = "true")
 @Api(value = "Methods to exchange an identity provider's token for a platform token.")
 @RequestMapping(value = "/oauth")
 @RequiredArgsConstructor
 @Slf4j
 public class OAuthTokenController extends AbstractRestController {
+
+    /**
+     * Off unless a deployment turns it on. The endpoint needs no platform token by design, so a
+     * deployment that has not set up an identity provider should not be answering on it at all —
+     * and one that never will should not carry the route.
+     */
+    public static final String ENABLED_PROPERTY = "oidc.token.exchange.enabled";
 
     private static final String BEARER_TOKEN_TYPE = "Bearer";
     private static final String NO_STORE = "no-store";
