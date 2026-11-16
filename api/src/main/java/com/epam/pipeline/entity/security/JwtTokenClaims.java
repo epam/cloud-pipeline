@@ -34,6 +34,8 @@ public class JwtTokenClaims {
     public static final String CLAIM_ROLES = "roles";
     public static final String CLAIM_GROUPS = "groups";
     public static final String CLAIM_EXTERNAL = "external";
+    public static final String CLAIM_AUTHORITIES_SCOPED = "authorities_scoped";
+    public static final String CLAIM_EXCHANGEABLE = "exchangeable";
 
     @JsonProperty("jti")
     private String jwtTokenId;
@@ -52,4 +54,28 @@ public class JwtTokenClaims {
     private List<String> roles;
     private List<String> groups;
     private boolean external;
+
+    /**
+     * Marks a token whose roles were deliberately scoped down when it was issued: the roles it
+     * carries are the whole of what its holder may do, and must not be replaced by whatever the
+     * user happens to hold in the database. Groups are never narrowed, and are refreshed from the
+     * stored user like any other token's.
+     * <p>
+     * Without it, a deployment that turns on {@code jwt.validate.token.user} would reload the
+     * authorities on every request and hand back exactly the rights the token was issued to
+     * withhold.
+     */
+    private boolean authoritiesScoped;
+
+    /**
+     * Whether this token may be traded for another one.
+     * <p>
+     * True unless the claim says otherwise, so every token the platform has ever issued stays
+     * exchangeable and nothing that works today stops working. A token issued with it off cannot
+     * mint a second one, which is how a token's life can be kept tied to something outside the
+     * platform: an exchanged token lives no longer than the identity provider's token it came
+     * from, and minting another from it would break that tie.
+     */
+    @Builder.Default
+    private boolean exchangeable = true;
 }
