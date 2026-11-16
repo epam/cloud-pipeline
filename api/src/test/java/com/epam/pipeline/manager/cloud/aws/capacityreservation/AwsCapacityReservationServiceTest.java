@@ -331,6 +331,30 @@ public class AwsCapacityReservationServiceTest {
     }
 
     @Test
+    public void shouldNameTheMarketTypeForACapacityBlockLaunchSpecification() {
+        final CapacityReservation reservation = capacityBlockReservation();
+        reservation.setCloudReservationId(CLOUD_ID);
+
+        final Map<String, Object> specification = service.launchSpecification(reservation);
+
+        assertThat(specification).containsEntry(AwsCapacityReservationService.INSTANCE_MARKET_OPTIONS,
+                Collections.singletonMap(AwsCapacityReservationService.MARKET_TYPE, "capacity-block"));
+        assertThat(specification).containsEntry(AwsCapacityReservationService.CAPACITY_RESERVATION_SPECIFICATION,
+                Collections.singletonMap("CapacityReservationTarget",
+                        Collections.singletonMap("CapacityReservationId", CLOUD_ID)));
+    }
+
+    @Test
+    public void shouldNotNameAMarketTypeForAPlainReservationLaunchSpecification() {
+        final CapacityReservation reservation = reservation();
+        reservation.setCloudReservationId(CLOUD_ID);
+
+        final Map<String, Object> specification = service.launchSpecification(reservation);
+
+        assertThat(specification).doesNotContainKey(AwsCapacityReservationService.INSTANCE_MARKET_OPTIONS);
+    }
+
+    @Test
     public void shouldLeaveTheZoneToAwsWhenNoneIsKnownYet() {
         client.created = awsReservation(AWS_SCHEDULED, null);
 

@@ -82,6 +82,7 @@ import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -138,6 +139,8 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
     public static final int MINIMUM_LEAD_DAYS = 5;
 
     static final String CAPACITY_RESERVATION_SPECIFICATION = "CapacityReservationSpecification";
+    static final String INSTANCE_MARKET_OPTIONS = "InstanceMarketOptions";
+    static final String MARKET_TYPE = "MarketType";
 
     private static final int HTTP_SERVER_ERROR = 500;
     private static final Set<CapacityReservationState> ALREADY_RELEASED = Collections.unmodifiableSet(EnumSet.of(
@@ -175,11 +178,25 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
         return Duration.ofDays(MINIMUM_LEAD_DAYS);
     }
 
+    /**
+     * A capacity block is a distinct purchasing option in AWS's own terms, not just a capacity reservation: next to
+     * {@value CAPACITY_RESERVATION_SPECIFICATION} targeting it, {@code RunInstances} also requires
+     * {@value INSTANCE_MARKET_OPTIONS} naming it, or AWS assumes the on-demand market instead, which the instance
+     * types sold only as capacity blocks (e.g. the ML GPU families) refuse with
+     * {@code InvalidParameterValue: The market type (purchasing) option is not valid}. A plain (non-block)
+     * reservation carries no such requirement, so this is added only for {@link CapacityReservation#isCapacityBlock}.
+     */
     @Override
     public Map<String, Object> launchSpecification(final CapacityReservation reservation) {
-        return Collections.singletonMap(CAPACITY_RESERVATION_SPECIFICATION,
+        final Map<String, Object> specification = new HashMap<>();
+        specification.put(CAPACITY_RESERVATION_SPECIFICATION,
                 Collections.singletonMap("CapacityReservationTarget",
                         Collections.singletonMap("CapacityReservationId", reservation.getCloudReservationId())));
+        if (reservation.isCapacityBlock()) {
+            specification.put(INSTANCE_MARKET_OPTIONS,
+                    Collections.singletonMap(MARKET_TYPE, CAPACITY_BLOCK_USAGE_CLASS));
+        }
+        return specification;
     }
 
     @Override
