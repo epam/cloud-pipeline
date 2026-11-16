@@ -23,6 +23,22 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
               -v 0.15                                               # Cloud Pipeline distribution version (used to tag docker images)
 ```
 
+# Build with GitHub Actions
+
+A push to a branch listed under `push` in `.github/workflows/main.yml` runs its `Cloud-Pipeline-Distribution` workflow:
+
+1. `Build_All` builds the distribution tarball and uploads it to `s3://cloud-pipeline-oss-builds/builds/<branch>/`
+2. `Build_Pipectl` runs the `Build-Pipectl-And-Dockers` workflow (`.github/workflows/build-pipectl.yml`) with that tarball:
+    - it builds the docker images that `docker/build-dockers.sh` builds, without the test images (`-t`). A new image is added to both files
+    - it pushes each image to `${CP_DOCKER_DIST_SRV}${CP_DOCKER_USER}/cloud-pipeline` as `<service>-<major>.<minor>.<commit>` (the first 8 characters of the commit), e.g. `api-srv-0.16.df88d16f`. If `DOCKERS_PUSH_FLOATING_TAG` is `true` (in `build-pipectl.yml`), it also pushes `<service>-<major>.<minor>`, e.g. `api-srv-0.16`, which every build overwrites, on any branch of the same version that has this workflow
+    - it builds pipectl, as `build.sh` does with the `-p` packages of the Jenkins `build-pipectl` job, and uploads it to `s3://cloud-pipeline-oss-builds/builds/<branch>/pipectl.<major>.<minor>.<patch>.<build>.<commit>`. This pipectl installs the `<service>-<major>.<minor>` images if `DOCKERS_PUSH_FLOATING_TAG` is `true`, and the `<service>-<major>.<minor>.<commit>` images otherwise
+
+`Build-Pipectl-And-Dockers` can also be run by hand with the URL of a distribution tarball.
+
+`Build_Pipectl` uses the repository secrets `CP_DOCKER_DIST_SRV` (the registry, with a trailing `/`), `CP_DOCKER_USER`, `CP_DOCKER_PASSWORD`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_DEFAULT_REGION`.
+
+pipectl pulls the platform images from `lifescience/cloud-pipeline` on Docker Hub by default. The base tool images are the exception: the tools manifest names them with the full `${CP_DOCKER_DIST_SRV}${CP_DOCKER_USER}/cloud-pipeline` name, so if that registry is private, `pipectl install` needs `CP_DOCKER_DIST_USER` and `CP_DOCKER_DIST_PASS`. To install the images from the registry of `CP_DOCKER_DIST_SRV`, add `-env CP_DOCKER_DIST_SRV=<registry>/ -env CP_COMMON_DISTR_DOCKER_PREFIX=<registry>/lifescience/cloud-pipeline` to `pipectl install`. Several deployment specs name the `lifescience/cloud-pipeline` repository explicitly, so this works only if `CP_DOCKER_USER` is `lifescience`.
+
 
 
 # Run pipectl
