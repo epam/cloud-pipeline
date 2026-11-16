@@ -308,7 +308,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**4571_4**](Data_storages/4571/4571_4.md) | "Upload and extract" uploads the batch, then queues extraction and closes |  |
 | [**4571_5**](Data_storages/4571/4571_5.md) | [Negative] A selection with no archive uploads immediately, with no confirmation pop-up |  |
 | [**4571_6**](Data_storages/4571/4571_6.md) | [Negative] The upload confirmation pop-up is not offered outside AWS S3 and NFS-mounted-NFS storages |  |
-| [**4571_7**](Data_storages/4571/4571_7.md) | The Storage tasks window names each task's type, and filters on one type at a time |  |
+| [**4571_7**](Data_storages/4571/4571_7.md) | The Storage tasks window: its columns, the task type, and filtering on one type |  |
 | [**4571_8**](Data_storages/4571/4571_8.md) | [Negative] An extraction task offers Cancel, and never Download |  |
 | [**4571_9**](Data_storages/4571/4571_9.md) | [MANUAL] The archive-task allowance governs Upload and extract, and frees up on its own |  |
 | [**4571_10**](Data_storages/4571/4571_10.md) | Extract archive from the storage's selection menu |  |
