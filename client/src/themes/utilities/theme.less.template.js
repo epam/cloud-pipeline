@@ -1066,6 +1066,20 @@ export default `
 @THEME .ant-table-small .ant-table-title {
   border-bottom-color: @table-border-color;
 }
+@THEME .cp-storage-items-table > .ant-spin-nested-loading > .ant-spin-container {
+  overflow: visible;
+}
+@THEME .cp-storage-items-table > .ant-spin-nested-loading > .ant-spin-container > .ant-table {
+  overflow: visible;
+  border-top: 0;
+}
+@THEME .cp-storage-items-table > .ant-spin-nested-loading > .ant-spin-container > .ant-table > .ant-table-title {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: @card-background-color;
+  border-top: 1px solid @table-border-color;
+}
 @THEME .ant-table-thead > tr > th .anticon-filter:hover,
 @THEME .ant-table-thead > tr > th .ant-table-filter-icon:hover,
 @THEME .ant-table-column-sorter-up:hover .anticon,

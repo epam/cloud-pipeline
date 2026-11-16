@@ -2813,7 +2813,7 @@ export default class DataStorage extends React.Component {
     };
     return (
       <Table
-        className={styles.table}
+        className={classNames(styles.table, 'cp-storage-items-table')}
         style={{flex: 1}}
         key="table"
         dataSource={this.items}
