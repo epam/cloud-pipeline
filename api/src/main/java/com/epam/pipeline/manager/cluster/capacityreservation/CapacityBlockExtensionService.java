@@ -88,7 +88,7 @@ public class CapacityBlockExtensionService {
                 .requestedBy(authManager.getAuthorizedUser())
                 .created(DateUtils.nowUTC())
                 .updated(DateUtils.nowUTC())
-                .status(decide(reservation, durationHours, originId))
+                .status(resolveApprovalStatus(reservation, durationHours, originId))
                 .build();
         final CapacityBlockExtension created = extensionDao.create(extension);
         log.debug("Capacity block extension {} requested for reservation {}, {}h, status {}",
@@ -98,9 +98,8 @@ public class CapacityBlockExtensionService {
     }
 
     /**
-     * The status check has to run again once the lock below is held, not just before it: two concurrent approvals
-     * of the same extension could otherwise both pass it before either reaches the lock, and the second would then
-     * purchase an extension already purchased by the first - a non-refundable payment, so not safe to risk.
+     * Re-checks the status after taking the lock, not just before: otherwise two concurrent approvals could both
+     * pass the check and double-purchase a non-refundable extension.
      */
     @Transactional
     public CapacityBlockExtension approve(final Long extensionId) {
@@ -119,23 +118,8 @@ public class CapacityBlockExtensionService {
                         MessageConstants.ERROR_CAPACITY_BLOCK_EXTENSION_NOT_FOUND, extensionId)));
     }
 
-    /**
-     * An extension is a non-refundable up-front payment, so this puts it through the same
-     * {@link CapacityReservationApprovalService} policies as the original purchase: a throwaway, unpersisted copy
-     * of the reservation carries the extension's own duration as its {@code commitmentDuration}, so the existing
-     * policy engine evaluates it exactly like a new request, with no changes to the condition DSL it reads. A
-     * retry naming a {@code FAILED} {@code originId} skips that policy call entirely instead, the same idea as
-     * {@code CapacityReservationApprovalService#inheritsApproval} for the reservation itself: asking for no more
-     * than the origin did is not a bigger commitment than an administrator already approved once.
-     *
-     * <p>{@code originId} is cleared on the throwaway copy passed to {@link CapacityReservationApprovalService
-     * #evaluate}: left as the reservation's own, it would make that call treat the extension as inheriting the
-     * approval of whatever retry chain the reservation itself came from, bypassing every policy an administrator
-     * configured for the extension itself. The extension's own retry chain - {@code originId} as this method's own
-     * parameter, not the reservation's - is handled separately by {@link #inheritsApproval}, below.
-     */
-    private CapacityBlockExtensionStatus decide(final CapacityReservation reservation, final int durationHours,
-                                                 final Long originId) {
+    private CapacityBlockExtensionStatus resolveApprovalStatus(final CapacityReservation reservation,
+                                                              final int durationHours, final Long originId) {
         if (inheritsApproval(reservation.getId(), originId, durationHours)) {
             return CapacityBlockExtensionStatus.APPROVED;
         }
@@ -148,11 +132,7 @@ public class CapacityBlockExtensionService {
     }
 
     /**
-     * Whether this request may reuse the approval of the extension it retries - only from a {@link
-     * CapacityBlockExtensionStatus#FAILED} original belonging to the same reservation, and only when it asks for no
-     * more than that original did: a smaller (or equal) ask is not a bigger commitment than an administrator
-     * already approved once. Mirrors {@code CapacityReservationApprovalService#inheritsApproval}, but over the
-     * extension's own retry chain rather than the reservation's.
+     * Mirrors {@code CapacityReservationApprovalService#inheritsApproval}, over the extension's own retry chain.
      */
     private boolean inheritsApproval(final Long reservationId, final Long originId, final int durationHours) {
         return Optional.ofNullable(originId)
@@ -164,11 +144,8 @@ public class CapacityBlockExtensionService {
     }
 
     /**
-     * Where the {@code CapacityReservationCloudFacade} call happens - today synchronous, so a request that
-     * auto-approves is purchased inline rather than waiting for a monitor cycle. AWS gives that call no idempotency
-     * token, and nothing here retries an uncertain outcome by checking what AWS actually holds first - an outcome
-     * other than a definitive success or failure is still recorded as {@link CapacityBlockExtensionStatus#FAILED},
-     * a risk left open for a caller to close once it needs to.
+     * AWS gives this call no idempotency token, and an uncertain outcome (e.g. a timeout) is recorded as
+     * {@link CapacityBlockExtensionStatus#FAILED} the same as a definitive refusal - a risk left open for now.
      */
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private CapacityBlockExtension purchase(final CapacityBlockExtension extension,
@@ -191,9 +168,7 @@ public class CapacityBlockExtensionService {
     }
 
     /**
-     * {@code durationHours} is overwritten with what the window AWS actually granted spans, not what was
-     * requested, so the stored record reflects the capacity the block actually ended up with rather than what was
-     * merely asked for.
+     * {@code durationHours} shall be overwritten with what AWS actually granted, not what was requested.
      */
     private void applyPurchaseResult(final CapacityBlockExtension extension, final CapacityReservation reservation,
                                      final CloudCapacityBlockExtension purchased) {
@@ -224,11 +199,7 @@ public class CapacityBlockExtensionService {
     }
 
     /**
-     * AWS sells a single capacity block extension only in 1-day steps up to
-     * {@value #MAX_ONE_DAY_STEP_TOTAL_HOURS} hours, then 7-day steps up to {@value #MAX_TOTAL_EXTENSION_HOURS}
-     * hours - the longest a single extension can span. There is no limit on how many extensions a block can take
-     * over its lifetime, so this looks only at {@code requestedHours} itself, not at anything the block has
-     * already been extended by.
+     * AWS steps a single extension by 1 day up to 14 days, then by 7 days up to 182 days.
      */
     static boolean isValidExtensionDuration(final int requestedHours) {
         if (requestedHours <= 0) {

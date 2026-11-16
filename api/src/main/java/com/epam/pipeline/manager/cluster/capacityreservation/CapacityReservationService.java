@@ -152,7 +152,7 @@ public class CapacityReservationService {
         final Map<String, Object> launchSpecification = launchSpecificationOf(reservation);
         final String zone = reservation.getAvailabilityZone();
         final String subnet = allowedNetworks(regionCodeOf(reservation)).get(zone);
-        final LocalDateTime poolEndDate = poolEndDate(reservation);
+        final LocalDateTime poolEndDate = getPoolEndDate(reservation);
         poolManager.applyReservationState(reservation.getNodePoolId(), pool -> {
             pool.setStartDate(reservation.getStartDate());
             pool.setEndDate(poolEndDate);
@@ -163,24 +163,18 @@ public class CapacityReservationService {
     }
 
     /**
-     * Moves the pool's own end date out to match an extended reservation - nothing else {@link #schedulePool} sets
-     * (the start date, zone, subnet and launch spec) changes for an extension, so only this one field is touched;
-     * kept separate from {@link #schedulePool} rather than reusing it here so this stays narrow if that method
-     * grows logic later that an extension has no business re-running.
+     * Kept separate from {@link #schedulePool} so that method stays free to grow logic later that an extension has
+     * no business re-running.
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public void extendPoolEndDate(final CapacityReservation reservation) {
-        final LocalDateTime poolEndDate = poolEndDate(reservation);
+        final LocalDateTime poolEndDate = getPoolEndDate(reservation);
         poolManager.applyReservationState(reservation.getNodePoolId(), pool -> pool.setEndDate(poolEndDate));
         log.debug("Extended node pool {} end date to {} for capacity reservation {}",
                 reservation.getNodePoolId(), poolEndDate, reservation.getId());
     }
 
-    /**
-     * The pool stops taking new runs once the reservation is finalizing, so a job is not started on capacity that
-     * ends shortly after; runs already on its nodes keep running until the reservation itself ends.
-     */
-    private LocalDateTime poolEndDate(final CapacityReservation reservation) {
+    private LocalDateTime getPoolEndDate(final CapacityReservation reservation) {
         return Optional.ofNullable(reservation.getEndDate())
                 .map(end -> end.minusHours(preferenceManager.getPreference(
                         SystemPreferences.CLUSTER_CAPACITY_RESERVATION_MONITOR_SETTINGS).getFinalizingLeadHours()))
@@ -231,15 +225,6 @@ public class CapacityReservationService {
                         authManager.getAuthorizedUser()));
     }
 
-    /**
-     * Writes an extended end date back onto the reservation's own record, once a
-     * {@code CapacityBlockExtensionService} request for it has succeeded, and moves the pool's own end date out to
-     * match: that column, not the reservation's, is what {@code NodePool#isActive} reads - the gate the autoscaler
-     * and the scale-down/reassign handlers use to decide whether the pool can still take new nodes - so without
-     * {@link #extendPoolEndDate} here, a paid, successful extension would leave the pool treated as ending on its
-     * old, pre-extension date regardless of what the reservation or AWS now say. The caller already holds the lock
-     * taken by {@link #loadForUpdate}.
-     */
     @Transactional(propagation = Propagation.MANDATORY)
     public void recordExtendedEndDate(final CapacityReservation reservation) {
         reservation.setUpdated(DateUtils.nowUTC());
