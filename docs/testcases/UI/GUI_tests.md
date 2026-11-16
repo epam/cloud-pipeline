@@ -6,20 +6,20 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Advanced_Search</b> (13 tests, 0 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
-| [**1836**](Advanced_Search/1836.md) | Advanced Search page |  |
-| [**1837_1**](Advanced_Search/1837_1.md) | Faceted Filter controls configure |  |
-| [**1837_2**](Advanced_Search/1837_2.md) | Faceted Filter controls |  |
-| [**1837_3**](Advanced_Search/1837_3.md) | Search for folder by the attributes. |  |
-| [**1837_4**](Advanced_Search/1837_4.md) | Search for Storage by the attributes. |  |
-| [**1837_5**](Advanced_Search/1837_5.md) | Search for Pipeline by the attributes. |  |
-| [**1837_6**](Advanced_Search/1837_6.md) | Search for File by the attributes. |  |
-| [**1837_7**](Advanced_Search/1837_7.md) | Search for Tools Group by the attributes. |  |
-| [**1837_8**](Advanced_Search/1837_8.md) | Search for Tool by the attributes. |  |
-| [**1838_1**](Advanced_Search/1838_1.md) | Advanced Search results: Default Table view for different entities |  |
-| [**1838_2**](Advanced_Search/1838_2.md) | Add columns to the Search results table |  |
-| [**1838_3**](Advanced_Search/1838_3.md) | Keeping of the Search results format for the current user. |  |
-| [**4698**](Advanced_Search/4698_2.md) | Scrolling of search results with files with long paths |  |
+|--- |--- | :---: |
+| [**1836**](Advanced_Search/1836.md) | Advanced Search page | |
+| [**1837_1**](Advanced_Search/1837_1.md) | Faceted Filter controls configure | |
+| [**1837_2**](Advanced_Search/1837_2.md) | Faceted Filter controls | |
+| [**1837_3**](Advanced_Search/1837_3.md) | Search for folder by the attributes. | |
+| [**1837_4**](Advanced_Search/1837_4.md) | Search for Storage by the attributes. | |
+| [**1837_5**](Advanced_Search/1837_5.md) | Search for Pipeline by the attributes. | |
+| [**1837_6**](Advanced_Search/1837_6.md) | Search for File by the attributes. | |
+| [**1837_7**](Advanced_Search/1837_7.md) | Search for Tools Group by the attributes. | |
+| [**1837_8**](Advanced_Search/1837_8.md) | Search for Tool by the attributes. | |
+| [**1838_1**](Advanced_Search/1838_1.md) | Advanced Search results: Default Table view for different entities | |
+| [**1838_2**](Advanced_Search/1838_2.md) | Add columns to the Search results table | |
+| [**1838_3**](Advanced_Search/1838_3.md) | Keeping of the Search results format for the current user. | |
+| [**4698**](Advanced_Search/4698_2.md) | Scrolling of search results with files with long paths | |
 
 </details>
 
@@ -27,53 +27,53 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Advanced_filter</b> (46 tests, 0 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
-| [**EPMCMBIBPC-727**](Advanced_filter/EPMCMBIBPC-727.md) | [MANUAL] Check elements for "Advanced_filter" |  |
-| [**EPMCMBIBPC-728**](Advanced_filter/EPMCMBIBPC-728.md) | [MANUAL] Advanced_filter by equal id validation |  |
-| [**EPMCMBIBPC-729**](Advanced_filter/EPMCMBIBPC-729.md) | [MANUAL] Advanced_filter by equal run.id validation |  |
-| [**EPMCMBIBPC-730**](Advanced_filter/EPMCMBIBPC-730.md) | [MANUAL] Advanced_filter by not equal id validation |  |
-| [**EPMCMBIBPC-731**](Advanced_filter/EPMCMBIBPC-731.md) | [MANUAL] Advanced_filter by non equal run.id validation |  |
-| [**EPMCMBIBPC-732**](Advanced_filter/EPMCMBIBPC-732.md) | [MANUAL] Advanced_filter by equal pipeline.version validation |  |
-| [**EPMCMBIBPC-733**](Advanced_filter/EPMCMBIBPC-733.md) | [MANUAL] Advanced_filter by non equal pipeline.version validation |  |
-| [**EPMCMBIBPC-734**](Advanced_filter/EPMCMBIBPC-734.md) | [MANUAL] Advanced_filter by partly equal pipeline.version validation |  |
-| [**EPMCMBIBPC-735**](Advanced_filter/EPMCMBIBPC-735.md) | [MANUAL] Advanced_filter by partly non equal pipeline.version validation |  |
-| [**EPMCMBIBPC-737**](Advanced_filter/EPMCMBIBPC-737.md) | [MANUAL] Advanced_filter by equal parent.id validation |  |
-| [**EPMCMBIBPC-738**](Advanced_filter/EPMCMBIBPC-738.md) | [MANUAL] Advanced_filter by equal owner validation |  |
-| [**EPMCMBIBPC-739**](Advanced_filter/EPMCMBIBPC-739.md) | [MANUAL] Advanced_filter by non equal owner validation |  |
-| [**EPMCMBIBPC-740**](Advanced_filter/EPMCMBIBPC-740.md) | [MANUAL] Advanced_filter by non equal parent.id validation |  |
-| [**EPMCMBIBPC-741**](Advanced_filter/EPMCMBIBPC-741.md) | [MANUAL] Advanced_filter by equal run.owner validation |  |
-| [**EPMCMBIBPC-742**](Advanced_filter/EPMCMBIBPC-742.md) | [MANUAL] Advanced_filter by non equal run.owner validation |  |
-| [**EPMCMBIBPC-743**](Advanced_filter/EPMCMBIBPC-743.md) | [MANUAL] Advanced_filter by equal status validation |  |
-| [**EPMCMBIBPC-744**](Advanced_filter/EPMCMBIBPC-744.md) | [MANUAL] Advanced_filter by non equal status validation |  |
-| [**EPMCMBIBPC-745**](Advanced_filter/EPMCMBIBPC-745.md) | [MANUAL] Advanced_filter by equal run.status validation |  |
-| [**EPMCMBIBPC-746**](Advanced_filter/EPMCMBIBPC-746.md) | [MANUAL] Advanced_filter by non equal run.status validation |  |
-| [**EPMCMBIBPC-748**](Advanced_filter/EPMCMBIBPC-748.md) | [MANUAL] Advanced_filter by equal pipeline.name validation |  |
-| [**EPMCMBIBPC-749**](Advanced_filter/EPMCMBIBPC-749.md) | [MANUAL] Advanced_filter by non equal pipeline.name validation |  |
-| [**EPMCMBIBPC-750**](Advanced_filter/EPMCMBIBPC-750.md) | [MANUAL] Advanced_filter by partly equal pipeline.name validation |  |
-| [**EPMCMBIBPC-751**](Advanced_filter/EPMCMBIBPC-751.md) | [MANUAL] Advanced_filter by partly non equal pipeline.name validation |  |
-| [**EPMCMBIBPC-752**](Advanced_filter/EPMCMBIBPC-752.md) | [MANUAL] Advanced_filter by partly equal owner validation |  |
-| [**EPMCMBIBPC-753**](Advanced_filter/EPMCMBIBPC-753.md) | [MANUAL] Advanced_filter by partly non equal owner validation |  |
-| [**EPMCMBIBPC-754**](Advanced_filter/EPMCMBIBPC-754.md) | [MANUAL] Advanced_filter by partly equal run.owner validation |  |
-| [**EPMCMBIBPC-755**](Advanced_filter/EPMCMBIBPC-755.md) | [MANUAL] Advanced_filter by partly non equal run.owner validation |  |
-| [**EPMCMBIBPC-759**](Advanced_filter/EPMCMBIBPC-759.md) | [MANUAL] Advanced_filtering by run.start date validation |  |
-| [**EPMCMBIBPC-760**](Advanced_filter/EPMCMBIBPC-760.md) | [MANUAL] Advanced_filtering by run.end date validation |  |
-| [**EPMCMBIBPC-761**](Advanced_filter/EPMCMBIBPC-761.md) | [MANUAL] Advanced_filtering by endDate date validation |  |
-| [**EPMCMBIBPC-762**](Advanced_filter/EPMCMBIBPC-762.md) | [MANUAL] Advanced_filtering by endDate date validation |  |
-| [**EPMCMBIBPC-763**](Advanced_filter/EPMCMBIBPC-763.md) | [MANUAL] Advanced_filtering by node.disk |  |
-| [**EPMCMBIBPC-764**](Advanced_filter/EPMCMBIBPC-764.md) | [MANUAL] Advanced_filtering by node.ip |  |
-| [**EPMCMBIBPC-771**](Advanced_filter/EPMCMBIBPC-771.md) | [MANUAL] Advanced_filtering by node.type |  |
-| [**EPMCMBIBPC-772**](Advanced_filter/EPMCMBIBPC-772.md) | [MANUAL] Advanced_filtering by node.image |  |
-| [**EPMCMBIBPC-781**](Advanced_filter/EPMCMBIBPC-781.md) | [MANUAL] Advanced_filtering by docker.image |  |
-| [**EPMCMBIBPC-783**](Advanced_filter/EPMCMBIBPC-783.md) | [MANUAL] Advanced_filtering by commit.status |  |
-| [**EPMCMBIBPC-787**](Advanced_filter/EPMCMBIBPC-787.md) | [MANUAL] Advanced_filtering by node.name |  |
-| [**EPMCMBIBPC-788**](Advanced_filter/EPMCMBIBPC-788.md) | [MANUAL] Advanced_filtering by parameter.{parameter_name} |  |
-| [**EPMCMBIBPC-789**](Advanced_filter/EPMCMBIBPC-789.md) | [MANUAL] Validation of "OR" operand |  |
-| [**EPMCMBIBPC-790**](Advanced_filter/EPMCMBIBPC-790.md) | [MANUAL] Validation of "AND" operand |  |
-| [**EPMCMBIBPC-791**](Advanced_filter/EPMCMBIBPC-791.md) | [MANUAL] Validation of "AND" and "OR" operands in one request |  |
-| [**EPMCMBIBPC-792**](Advanced_filter/EPMCMBIBPC-792.md) | [MANUAL] Validation of "SAVE" button |  |
-| [**EPMCMBIBPC-793**](Advanced_filter/EPMCMBIBPC-793.md) | [MANUAL] Validation of saved request removal |  |
-| [**EPMCMBIBPC-794**](Advanced_filter/EPMCMBIBPC-794.md) | [MANUAL] Autocomplete validation |  |
-| [**EPMCMBIBPC-962**](Advanced_filter/EPMCMBIBPC-962.md) | [MANUAL] Role_model validation in Advanced_filtering |  |
+|--- |--- | :---: |
+| [**EPMCMBIBPC-727**](Advanced_filter/EPMCMBIBPC-727.md) | [MANUAL] Check elements for "Advanced_filter" | |
+| [**EPMCMBIBPC-728**](Advanced_filter/EPMCMBIBPC-728.md) | [MANUAL] Advanced_filter by equal id validation | |
+| [**EPMCMBIBPC-729**](Advanced_filter/EPMCMBIBPC-729.md) | [MANUAL] Advanced_filter by equal run.id validation | |
+| [**EPMCMBIBPC-730**](Advanced_filter/EPMCMBIBPC-730.md) | [MANUAL] Advanced_filter by not equal id validation | |
+| [**EPMCMBIBPC-731**](Advanced_filter/EPMCMBIBPC-731.md) | [MANUAL] Advanced_filter by non equal run.id validation | |
+| [**EPMCMBIBPC-732**](Advanced_filter/EPMCMBIBPC-732.md) | [MANUAL] Advanced_filter by equal pipeline.version validation | |
+| [**EPMCMBIBPC-733**](Advanced_filter/EPMCMBIBPC-733.md) | [MANUAL] Advanced_filter by non equal pipeline.version validation | |
+| [**EPMCMBIBPC-734**](Advanced_filter/EPMCMBIBPC-734.md) | [MANUAL] Advanced_filter by partly equal pipeline.version validation | |
+| [**EPMCMBIBPC-735**](Advanced_filter/EPMCMBIBPC-735.md) | [MANUAL] Advanced_filter by partly non equal pipeline.version validation | |
+| [**EPMCMBIBPC-737**](Advanced_filter/EPMCMBIBPC-737.md) | [MANUAL] Advanced_filter by equal parent.id validation | |
+| [**EPMCMBIBPC-738**](Advanced_filter/EPMCMBIBPC-738.md) | [MANUAL] Advanced_filter by equal owner validation | |
+| [**EPMCMBIBPC-739**](Advanced_filter/EPMCMBIBPC-739.md) | [MANUAL] Advanced_filter by non equal owner validation | |
+| [**EPMCMBIBPC-740**](Advanced_filter/EPMCMBIBPC-740.md) | [MANUAL] Advanced_filter by non equal parent.id validation | |
+| [**EPMCMBIBPC-741**](Advanced_filter/EPMCMBIBPC-741.md) | [MANUAL] Advanced_filter by equal run.owner validation | |
+| [**EPMCMBIBPC-742**](Advanced_filter/EPMCMBIBPC-742.md) | [MANUAL] Advanced_filter by non equal run.owner validation | |
+| [**EPMCMBIBPC-743**](Advanced_filter/EPMCMBIBPC-743.md) | [MANUAL] Advanced_filter by equal status validation | |
+| [**EPMCMBIBPC-744**](Advanced_filter/EPMCMBIBPC-744.md) | [MANUAL] Advanced_filter by non equal status validation | |
+| [**EPMCMBIBPC-745**](Advanced_filter/EPMCMBIBPC-745.md) | [MANUAL] Advanced_filter by equal run.status validation | |
+| [**EPMCMBIBPC-746**](Advanced_filter/EPMCMBIBPC-746.md) | [MANUAL] Advanced_filter by non equal run.status validation | |
+| [**EPMCMBIBPC-748**](Advanced_filter/EPMCMBIBPC-748.md) | [MANUAL] Advanced_filter by equal pipeline.name validation | |
+| [**EPMCMBIBPC-749**](Advanced_filter/EPMCMBIBPC-749.md) | [MANUAL] Advanced_filter by non equal pipeline.name validation | |
+| [**EPMCMBIBPC-750**](Advanced_filter/EPMCMBIBPC-750.md) | [MANUAL] Advanced_filter by partly equal pipeline.name validation | |
+| [**EPMCMBIBPC-751**](Advanced_filter/EPMCMBIBPC-751.md) | [MANUAL] Advanced_filter by partly non equal pipeline.name validation | |
+| [**EPMCMBIBPC-752**](Advanced_filter/EPMCMBIBPC-752.md) | [MANUAL] Advanced_filter by partly equal owner validation | |
+| [**EPMCMBIBPC-753**](Advanced_filter/EPMCMBIBPC-753.md) | [MANUAL] Advanced_filter by partly non equal owner validation | |
+| [**EPMCMBIBPC-754**](Advanced_filter/EPMCMBIBPC-754.md) | [MANUAL] Advanced_filter by partly equal run.owner validation | |
+| [**EPMCMBIBPC-755**](Advanced_filter/EPMCMBIBPC-755.md) | [MANUAL] Advanced_filter by partly non equal run.owner validation | |
+| [**EPMCMBIBPC-759**](Advanced_filter/EPMCMBIBPC-759.md) | [MANUAL] Advanced_filtering by run.start date validation | |
+| [**EPMCMBIBPC-760**](Advanced_filter/EPMCMBIBPC-760.md) | [MANUAL] Advanced_filtering by run.end date validation | |
+| [**EPMCMBIBPC-761**](Advanced_filter/EPMCMBIBPC-761.md) | [MANUAL] Advanced_filtering by endDate date validation | |
+| [**EPMCMBIBPC-762**](Advanced_filter/EPMCMBIBPC-762.md) | [MANUAL] Advanced_filtering by endDate date validation | |
+| [**EPMCMBIBPC-763**](Advanced_filter/EPMCMBIBPC-763.md) | [MANUAL] Advanced_filtering by node.disk | |
+| [**EPMCMBIBPC-764**](Advanced_filter/EPMCMBIBPC-764.md) | [MANUAL] Advanced_filtering by node.ip | |
+| [**EPMCMBIBPC-771**](Advanced_filter/EPMCMBIBPC-771.md) | [MANUAL] Advanced_filtering by node.type | |
+| [**EPMCMBIBPC-772**](Advanced_filter/EPMCMBIBPC-772.md) | [MANUAL] Advanced_filtering by node.image | |
+| [**EPMCMBIBPC-781**](Advanced_filter/EPMCMBIBPC-781.md) | [MANUAL] Advanced_filtering by docker.image | |
+| [**EPMCMBIBPC-783**](Advanced_filter/EPMCMBIBPC-783.md) | [MANUAL] Advanced_filtering by commit.status | |
+| [**EPMCMBIBPC-787**](Advanced_filter/EPMCMBIBPC-787.md) | [MANUAL] Advanced_filtering by node.name | |
+| [**EPMCMBIBPC-788**](Advanced_filter/EPMCMBIBPC-788.md) | [MANUAL] Advanced_filtering by parameter.{parameter_name} | |
+| [**EPMCMBIBPC-789**](Advanced_filter/EPMCMBIBPC-789.md) | [MANUAL] Validation of "OR" operand | |
+| [**EPMCMBIBPC-790**](Advanced_filter/EPMCMBIBPC-790.md) | [MANUAL] Validation of "AND" operand | |
+| [**EPMCMBIBPC-791**](Advanced_filter/EPMCMBIBPC-791.md) | [MANUAL] Validation of "AND" and "OR" operands in one request | |
+| [**EPMCMBIBPC-792**](Advanced_filter/EPMCMBIBPC-792.md) | [MANUAL] Validation of "SAVE" button | |
+| [**EPMCMBIBPC-793**](Advanced_filter/EPMCMBIBPC-793.md) | [MANUAL] Validation of saved request removal | |
+| [**EPMCMBIBPC-794**](Advanced_filter/EPMCMBIBPC-794.md) | [MANUAL] Autocomplete validation | |
+| [**EPMCMBIBPC-962**](Advanced_filter/EPMCMBIBPC-962.md) | [MANUAL] Role_model validation in Advanced_filtering | |
 
 </details>
 
@@ -81,16 +81,16 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Billing</b> (9 tests, 0 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
-| [**2580**](Billing/2580.md) | [Manual] Check that Data Storage can be excluded from the billing reports |  |
-| [**762_1**](Billing/762/762_1.md) | Check the Global quota creation |  |
-| [**762_2**](Billing/762/762_2.md) | Check creation and deletion of Global quota with the same and different quota period |  |
-| [**762_3**](Billing/762/762_3.md) | Check Overall Compute instances quota |  |
-| [**762_4**](Billing/762/762_4.md) | Check User Compute instances Billing quota with Block action |  |
-| [**762_5**](Billing/762/762_5.md) | Check Billing Center and Users Compute instances quota |  |
-| [**762_6**](Billing/762/762_6.md) | Check Overall Storages quota |  |
-| [**762_7**](Billing/762/762_7.md) | Check Storages quota for Billing Center |  |
-| [**762_8**](Billing/762/762_8.md) | Check Users Storages quota |  |
+|--- |--- | :---: |
+| [**2580**](Billing/2580.md) | [Manual] Check that Data Storage can be excluded from the billing reports | |
+| [**762_1**](Billing/762/762_1.md) | Check the Global quota creation | |
+| [**762_2**](Billing/762/762_2.md) | Check creation and deletion of Global quota with the same and different quota period | |
+| [**762_3**](Billing/762/762_3.md) | Check Overall Compute instances quota | |
+| [**762_4**](Billing/762/762_4.md) | Check User Compute instances Billing quota with Block action | |
+| [**762_5**](Billing/762/762_5.md) | Check Billing Center and Users Compute instances quota | |
+| [**762_6**](Billing/762/762_6.md) | Check Overall Storages quota | |
+| [**762_7**](Billing/762/762_7.md) | Check Storages quota for Billing Center | |
+| [**762_8**](Billing/762/762_8.md) | Check Users Storages quota | |
 
 </details>
 
@@ -98,14 +98,14 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Cluster_nodes</b> (27 tests, 15 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
-| [**EPMCMBIBPC-1431**](Cluster_nodes/EPMCMBIBPC-1431.md) | [MANUAL] Validation of node monitor tab |  |
+|--- |--- | :---: |
+| [**EPMCMBIBPC-1431**](Cluster_nodes/EPMCMBIBPC-1431.md) | [MANUAL] Validation of node monitor tab | |
 | [**EPMCMBIBPC-267**](Cluster_nodes/EPMCMBIBPC-267.md) | Cluster nodes page | :white_check_mark: |
 | [**EPMCMBIBPC-269**](Cluster_nodes/EPMCMBIBPC-269.md) | Sorting by increase nodes by date | :white_check_mark: |
 | [**EPMCMBIBPC-270**](Cluster_nodes/EPMCMBIBPC-270.md) | Terminate node in UI | :white_check_mark: |
 | [**EPMCMBIBPC-271**](Cluster_nodes/EPMCMBIBPC-271.md) | Sorting by desc nodes by date | :white_check_mark: |
 | [**EPMCMBIBPC-272**](Cluster_nodes/EPMCMBIBPC-272.md) | Sorting by increase nodes by name | :white_check_mark: |
-| [**EPMCMBIBPC-2721**](Cluster_nodes/EPMCMBIBPC-2721.md) | [MANUAL] Validation of node jobs tab |  |
+| [**EPMCMBIBPC-2721**](Cluster_nodes/EPMCMBIBPC-2721.md) | [MANUAL] Validation of node jobs tab | |
 | [**EPMCMBIBPC-273**](Cluster_nodes/EPMCMBIBPC-273.md) | Sorting by desc nodes by name | :white_check_mark: |
 | [**EPMCMBIBPC-274**](Cluster_nodes/EPMCMBIBPC-274.md) | Sorting by increase nodes by labels | :white_check_mark: |
 | [**EPMCMBIBPC-275**](Cluster_nodes/EPMCMBIBPC-275.md) | Sorting by desc nodes by labels | :white_check_mark: |
@@ -115,16 +115,16 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-279**](Cluster_nodes/EPMCMBIBPC-279.md) | Clear filtering nodes by lables | :white_check_mark: |
 | [**EPMCMBIBPC-280**](Cluster_nodes/EPMCMBIBPC-280.md) | Node information | :white_check_mark: |
 | [**EPMCMBIBPC-302**](Cluster_nodes/EPMCMBIBPC-302.md) | Open active pipeline from node info | :white_check_mark: |
-| [**EPMCMBIBPC-533**](Cluster_nodes/EPMCMBIBPC-533.md) | [MANUAL] Filtering nodes by full label name |  |
-| [**2414_1**](Cluster_nodes/Hot_node_pools/2414/2414_1.md) | [Manual] Notify administrators if node pool reached its max size |  |
-| [**2414_2**](Cluster_nodes/Hot_node_pools/2414/2414_2.md) | [Manual] Notify administrators if several node pools reached its max size |  |
-| [**2414_3**](Cluster_nodes/Hot_node_pools/2414/2414_3.md) | [Manual] Notify administrators if node pool reached its max size - autoscaling |  |
-| [**841_1_pool_creation**](Cluster_nodes/Hot_node_pools/841_persistent_cluster_nodes/841_1_pool_creation.md) | Hot node pool creation |  |
-| [**841_2_pool_usage**](Cluster_nodes/Hot_node_pools/841_persistent_cluster_nodes/841_2_pool_usage.md) | Checking hot node pool usage |  |
-| [**841_3_pool_disk_delta**](Cluster_nodes/Hot_node_pools/841_persistent_cluster_nodes/841_3_pool_disk_delta.md) | Checking disk delta for a node from the pool |  |
-| [**841_4_pool_filters**](Cluster_nodes/Hot_node_pools/841_persistent_cluster_nodes/841_4_pool_filters.md) | Checking filters for hot node pool |  |
-| [**841_5_pool_usage_non_admin**](Cluster_nodes/Hot_node_pools/841_persistent_cluster_nodes/841_5_pool_usage_non_admin.md) | Checking hot node pool usage by non-admin user |  |
-| [**841_6_pool_autoscaled**](Cluster_nodes/Hot_node_pools/841_persistent_cluster_nodes/841_6_pool_autoscaled.md) | Checking the autoscaling of the hot node pool |  |
+| [**EPMCMBIBPC-533**](Cluster_nodes/EPMCMBIBPC-533.md) | [MANUAL] Filtering nodes by full label name | |
+| [**2414_1**](Cluster_nodes/Hot_node_pools/2414/2414_1.md) | [Manual] Notify administrators if node pool reached its max size | |
+| [**2414_2**](Cluster_nodes/Hot_node_pools/2414/2414_2.md) | [Manual] Notify administrators if several node pools reached its max size | |
+| [**2414_3**](Cluster_nodes/Hot_node_pools/2414/2414_3.md) | [Manual] Notify administrators if node pool reached its max size - autoscaling | |
+| [**841_1_pool_creation**](Cluster_nodes/Hot_node_pools/841_persistent_cluster_nodes/841_1_pool_creation.md) | Hot node pool creation | |
+| [**841_2_pool_usage**](Cluster_nodes/Hot_node_pools/841_persistent_cluster_nodes/841_2_pool_usage.md) | Checking hot node pool usage | |
+| [**841_3_pool_disk_delta**](Cluster_nodes/Hot_node_pools/841_persistent_cluster_nodes/841_3_pool_disk_delta.md) | Checking disk delta for a node from the pool | |
+| [**841_4_pool_filters**](Cluster_nodes/Hot_node_pools/841_persistent_cluster_nodes/841_4_pool_filters.md) | Checking filters for hot node pool | |
+| [**841_5_pool_usage_non_admin**](Cluster_nodes/Hot_node_pools/841_persistent_cluster_nodes/841_5_pool_usage_non_admin.md) | Checking hot node pool usage by non-admin user | |
+| [**841_6_pool_autoscaled**](Cluster_nodes/Hot_node_pools/841_persistent_cluster_nodes/841_6_pool_autoscaled.md) | Checking the autoscaling of the hot node pool | |
 | [**1489**](Cluster_nodes/Lustre_mount/1489.md) | Check the Lustre FS mount options | :white_check_mark: |
 
 </details>
@@ -133,23 +133,23 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Dashboard</b> (16 tests, 2 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
+|--- |--- | :---: |
 | [**2356**](Dashboard/2356.md) | Allow to configure several "support" icons | :white_check_mark: |
 | [**897**](Dashboard/897.md) | Check the Support pop-up content | :white_check_mark: |
-| [**EPMCMBIBPC-2705**](Dashboard/EPMCMBIBPC-2705.md) | [MANUAL] Configure widgets |  |
-| [**EPMCMBIBPC-2706**](Dashboard/EPMCMBIBPC-2706.md) | [MANUAL] ACTIVE RUNS widget with pipeline |  |
-| [**EPMCMBIBPC-2707**](Dashboard/EPMCMBIBPC-2707.md) | [MANUAL] ACTIVE RUNS widget with tool |  |
-| [**EPMCMBIBPC-2708**](Dashboard/EPMCMBIBPC-2708.md) | [MANUAL] RECENTLY COMPLETED RUNS widget |  |
-| [**EPMCMBIBPC-2709**](Dashboard/EPMCMBIBPC-2709.md) | [MANUAL] DATA widget |  |
-| [**EPMCMBIBPC-2710**](Dashboard/EPMCMBIBPC-2710.md) | [MANUAL] Check favorites |  |
-| [**EPMCMBIBPC-2711**](Dashboard/EPMCMBIBPC-2711.md) | [MANUAL] DATA widget after storages deleting |  |
-| [**EPMCMBIBPC-2712**](Dashboard/EPMCMBIBPC-2712.md) | [MANUAL] NOTIFICATIONS widget |  |
-| [**EPMCMBIBPC-2713**](Dashboard/EPMCMBIBPC-2713.md) | [MANUAL] ACTIVITIES widget |  |
-| [**EPMCMBIBPC-2714**](Dashboard/EPMCMBIBPC-2714.md) | [MANUAL] PIPELINES widget |  |
-| [**EPMCMBIBPC-2715**](Dashboard/EPMCMBIBPC-2715.md) | [MANUAL] PROJECTS widget |  |
-| [**EPMCMBIBPC-2716**](Dashboard/EPMCMBIBPC-2716.md) | [MANUAL] TOOLS widget |  |
-| [**EPMCMBIBPC-2717**](Dashboard/EPMCMBIBPC-2717.md) | [MANUAL] TOOLS widget search |  |
-| [**EPMCMBIBPC-2718**](Dashboard/EPMCMBIBPC-2718.md) | [MANUAL] SERVICES widget |  |
+| [**EPMCMBIBPC-2705**](Dashboard/EPMCMBIBPC-2705.md) | [MANUAL] Configure widgets | |
+| [**EPMCMBIBPC-2706**](Dashboard/EPMCMBIBPC-2706.md) | [MANUAL] ACTIVE RUNS widget with pipeline | |
+| [**EPMCMBIBPC-2707**](Dashboard/EPMCMBIBPC-2707.md) | [MANUAL] ACTIVE RUNS widget with tool | |
+| [**EPMCMBIBPC-2708**](Dashboard/EPMCMBIBPC-2708.md) | [MANUAL] RECENTLY COMPLETED RUNS widget | |
+| [**EPMCMBIBPC-2709**](Dashboard/EPMCMBIBPC-2709.md) | [MANUAL] DATA widget | |
+| [**EPMCMBIBPC-2710**](Dashboard/EPMCMBIBPC-2710.md) | [MANUAL] Check favorites | |
+| [**EPMCMBIBPC-2711**](Dashboard/EPMCMBIBPC-2711.md) | [MANUAL] DATA widget after storages deleting | |
+| [**EPMCMBIBPC-2712**](Dashboard/EPMCMBIBPC-2712.md) | [MANUAL] NOTIFICATIONS widget | |
+| [**EPMCMBIBPC-2713**](Dashboard/EPMCMBIBPC-2713.md) | [MANUAL] ACTIVITIES widget | |
+| [**EPMCMBIBPC-2714**](Dashboard/EPMCMBIBPC-2714.md) | [MANUAL] PIPELINES widget | |
+| [**EPMCMBIBPC-2715**](Dashboard/EPMCMBIBPC-2715.md) | [MANUAL] PROJECTS widget | |
+| [**EPMCMBIBPC-2716**](Dashboard/EPMCMBIBPC-2716.md) | [MANUAL] TOOLS widget | |
+| [**EPMCMBIBPC-2717**](Dashboard/EPMCMBIBPC-2717.md) | [MANUAL] TOOLS widget search | |
+| [**EPMCMBIBPC-2718**](Dashboard/EPMCMBIBPC-2718.md) | [MANUAL] SERVICES widget | |
 
 </details>
 
@@ -157,18 +157,18 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Data_storages</b> (162 tests, 86 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
+|---|--- | :---: |
 | [**1469**](Data_storages/1469.md) | Check transfer between regions | :white_check_mark: |
 | [**EPMCMBIBPC-1017**](Data_storages/EPMCMBIBPC-1017.md) | Cross button validation if user delete bucket | :white_check_mark: |
 | [**EPMCMBIBPC-1035**](Data_storages/EPMCMBIBPC-1035.md) | Validation of navigation buttons in storage | :white_check_mark: |
-| [**EPMCMBIBPC-1178**](Data_storages/EPMCMBIBPC-1178.md) | [MANUAL] Validation of upload several files |  |
-| [**EPMCMBIBPC-1186**](Data_storages/EPMCMBIBPC-1186.md) | [MANUAL] "Generate URL" button validation |  |
-| [**EPMCMBIBPC-1467**](Data_storages/EPMCMBIBPC-1467.md) | [MANUAL] File/Folder creation pop-up focus validation |  |
-| [**EPMCMBIBPC-1468**](Data_storages/EPMCMBIBPC-1468.md) | [MANUAL] Edit file/folder pop-up focus validation |  |
-| [**EPMCMBIBPC-1469**](Data_storages/EPMCMBIBPC-1469.md) | [MANUAL] Edit storage pop-up focus validation |  |
-| [**EPMCMBIBPC-1470**](Data_storages/EPMCMBIBPC-1470.md) | [MANUAL] Create storage pop-up focus validation |  |
-| [**EPMCMBIBPC-1542**](Data_storages/EPMCMBIBPC-1542.md) | [MANUAL] Validate of file content editing |  |
-| [**EPMCMBIBPC-1549**](Data_storages/EPMCMBIBPC-1549.md) | [MANUAL] Create nameless folder |  |
+| [**EPMCMBIBPC-1178**](Data_storages/EPMCMBIBPC-1178.md) | [MANUAL] Validation of upload several files | |
+| [**EPMCMBIBPC-1186**](Data_storages/EPMCMBIBPC-1186.md) | [MANUAL] "Generate URL" button validation | |
+| [**EPMCMBIBPC-1467**](Data_storages/EPMCMBIBPC-1467.md) | [MANUAL] File/Folder creation pop-up focus validation | |
+| [**EPMCMBIBPC-1468**](Data_storages/EPMCMBIBPC-1468.md) | [MANUAL] Edit file/folder pop-up focus validation | |
+| [**EPMCMBIBPC-1469**](Data_storages/EPMCMBIBPC-1469.md) | [MANUAL] Edit storage pop-up focus validation | |
+| [**EPMCMBIBPC-1470**](Data_storages/EPMCMBIBPC-1470.md) | [MANUAL] Create storage pop-up focus validation | |
+| [**EPMCMBIBPC-1542**](Data_storages/EPMCMBIBPC-1542.md) | [MANUAL] Validate of file content editing | |
+| [**EPMCMBIBPC-1549**](Data_storages/EPMCMBIBPC-1549.md) | [MANUAL] Create nameless folder | |
 | [**EPMCMBIBPC-3232**](Data_storages/EPMCMBIBPC-3232.md) | [MANUAL] Storage synchronization from the DynamoDB | :white_check_mark: |
 | [**EPMCMBIBPC-448**](Data_storages/EPMCMBIBPC-448.md) | Validate bucket creating | :white_check_mark: |
 | [**EPMCMBIBPC-454**](Data_storages/EPMCMBIBPC-454.md) | Create subfolder in bucket | :white_check_mark: |
@@ -205,8 +205,8 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-490**](Data_storages/EPMCMBIBPC-490.md) | Validate of cancel deleting several folders | :white_check_mark: |
 | [**EPMCMBIBPC-491**](Data_storages/EPMCMBIBPC-491.md) | Create existing bucket (negative) | :white_check_mark: |
 | [**EPMCMBIBPC-492**](Data_storages/EPMCMBIBPC-492.md) | Create folder that have name of existing folder in bucket | :white_check_mark: |
-| [**EPMCMBIBPC-843**](Data_storages/EPMCMBIBPC-843.md) | [MANUAL] Bucket that haven't versioning creation |  |
-| [**TC-DATASTORAGES-1**](Data_storages/TC-DATASTORAGES-1.md) | Deactivate Download File Option |  |
+| [**EPMCMBIBPC-843**](Data_storages/EPMCMBIBPC-843.md) | [MANUAL] Bucket that haven't versioning creation | |
+| [**TC-DATASTORAGES-1**](Data_storages/TC-DATASTORAGES-1.md) | Deactivate Download File Option | |
 | [**TC-DATASTORAGES-2**](Data_storages/TC-DATASTORAGES-2.md) | Check API backups storages | :white_check_mark: |
 | [**1339_1**](Data_storages/1339_pipe_storage_ls_paging/1339_1.md) | Check `pipe storage ls` paging | :white_check_mark: |
 | [**1339_2**](Data_storages/1339_pipe_storage_ls_paging/1339_2.md) | Check `pipe storage ls` paging of versions | :white_check_mark: |
@@ -216,50 +216,50 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**2182_4**](Data_storages/2182_2398/2182_4.md) | READ ONLY Quota verification | :white_check_mark: |
 | [**2182_5**](Data_storages/2182_2398/2182_5.md) | Quota verification at back process | :white_check_mark: |
 | [**2182_6**](Data_storages/2182_2398/2182_6.md) | Validate quotas and storage size via UI | :white_check_mark: |
-| [**2398_1**](Data_storages/2182_2398/2398_1.md) | [Manual] Grace period for the FS quotas and Effective storage size |  |
-| [**2398_2**](Data_storages/2182_2398/2398_2.md) | [Manual] Grace period at double threshold case (2nd period exceeds earlier than 1st) |  |
-| [**2398_3**](Data_storages/2182_2398/2398_3.md) | [Manual] Grace period at double threshold case (2nd period exceeds later than 1st) |  |
+| [**2398_1**](Data_storages/2182_2398/2398_1.md) | [Manual] Grace period for the FS quotas and Effective storage size | |
+| [**2398_2**](Data_storages/2182_2398/2398_2.md) | [Manual] Grace period at double threshold case (2nd period exceeds earlier than 1st) | |
+| [**2398_3**](Data_storages/2182_2398/2398_3.md) | [Manual] Grace period at double threshold case (2nd period exceeds later than 1st) | |
 | [**2233_1**](Data_storages/2233/2233_1.md) | Check webdav access duration preference | :white_check_mark: |
 | [**2233_2**](Data_storages/2233/2233_2.md) | Check max number of storages with webdav access | :white_check_mark: |
 | [**2233_3**](Data_storages/2233/2233_3.md) | Check Disable link | :white_check_mark: |
 | [**2233_4**](Data_storages/2233/2233_4.md) | Check "Remove all" button | :white_check_mark: |
 | [**2233_5**](Data_storages/2233/2233_5.md) | Check help tooltip | :white_check_mark: |
-| [**4570_1**](Data_storages/4570/4570_1.md) | "Download"/"Download archive" selection items depend on what is selected |  |
-| [**4570_2**](Data_storages/4570/4570_2.md) | "Download archive" name pop-up: defaults and validation |  |
-| [**4570_3**](Data_storages/4570/4570_3.md) | Queue, track and download an archive |  |
-| [**4570_4**](Data_storages/4570/4570_4.md) | Downloads window: cancel a task, Status filter, paging |  |
-| [**4570_5**](Data_storages/4570/4570_5.md) | Downloads window: the Owner column is admin/ROLE_STORAGE_ADMIN-only |  |
-| [**4570_6**](Data_storages/4570/4570_6.md) | [MANUAL] The per-user archive-download task cap blocks queueing |  |
-| [**4570_7**](Data_storages/4570/4570_7.md) | Download archive pop-up blocks its controls while queuing and closes only once the archive is queued |  |
-| [**4570_8**](Data_storages/4570/4570_8.md) | [Negative] Download archive pop-up stays open when the per-user download cap is hit on confirm |  |
-| [**4570_9**](Data_storages/4570/4570_9.md) | Downloads window: the Status filter's select-all box and "Reset to defaults" |  |
-| [**4570_10**](Data_storages/4570/4570_10.md) | Downloads window: unselecting every status applies no status filter at all |  |
-| [**4570_11**](Data_storages/4570/4570_11.md) | Downloads window: clearing the Owner filter by hand, and "Reset to defaults" |  |
-| [**4570_12**](Data_storages/4570/4570_12.md) | Downloads window: the Owner filter takes a user picked from its suggestion list |  |
-| [**4570_13**](Data_storages/4570/4570_13.md) | A user with read-only access can select a folder and download it as an archive |  |
-| [**4570_14**](Data_storages/4570/4570_14.md) | [Negative] A storage that allows no downloads offers no "Download archive" either |  |
-| [**4570_15**](Data_storages/4570/4570_15.md) | Remove deletes only the selected items the user may write to |  |
-| [**4570_16**](Data_storages/4570/4570_16.md) | Generate URL creates URLs only for the files that can be downloaded |  |
-| [**4570_17**](Data_storages/4570/4570_17.md) | [Negative] Restore is not offered for a selected folder the user may only read |  |
+| [**4570_1**](Data_storages/4570/4570_1.md) | "Download"/"Download archive" selection items depend on what is selected | |
+| [**4570_2**](Data_storages/4570/4570_2.md) | "Download archive" name pop-up: defaults and validation | |
+| [**4570_3**](Data_storages/4570/4570_3.md) | Queue, track and download an archive | |
+| [**4570_4**](Data_storages/4570/4570_4.md) | Downloads window: cancel a task, paging | |
+| [**4570_5**](Data_storages/4570/4570_5.md) | Downloads window: the Owner column is admin/ROLE_STORAGE_ADMIN-only | |
+| [**4570_6**](Data_storages/4570/4570_6.md) | The per-user archive-download task cap blocks queueing | |
+| [**4570_7**](Data_storages/4570/4570_7.md) | An archive download fails once the selection exceeds the `maxFilesCount` configured in `system.async.tasks.config` | |
+| [**4570_8**](Data_storages/4570/4570_8.md) | An archive download fails once the selection exceeds the `maxSizeBytes` configured in `system.async.tasks.config` | |
+| [**4570_9**](Data_storages/4570/4570_9.md) | [MANUAL] A finished archive expires once the `ttlDays` configured in `system.async.tasks.config` has passed | |
+| [**4570_10**](Data_storages/4570/4570_10.md) | Downloads window: the Status filter's select-all box and "Reset to defaults" | |
+| [**4570_11**](Data_storages/4570/4570_11.md) | Downloads window: clearing the Owner filter by hand, and "Reset to defaults" | |
+| [**4570_12**](Data_storages/4570/4570_12.md) | Downloads window: the Owner filter takes a user picked from its suggestion list | |
+| [**4570_13**](Data_storages/4570/4570_13.md) | A user with read-only access can select a folder and download it as an archive | |
+| [**4570_14**](Data_storages/4570/4570_14.md) | A storage that allows no downloads offers no "Download archive" either | |
+| [**4570_15**](Data_storages/4570/4570_15.md) | Remove deletes only the selected items the user may write to | |
+| [**4570_16**](Data_storages/4570/4570_16.md) | Generate URL creates URLs only for the files that can be downloaded | |
+| [**4570_17**](Data_storages/4570/4570_17.md) | Restore is not offered for a selected folder the user may only read | |
 | [**EPMCMBIBPC-2274**](Data_storages/NFS_mount/EPMCMBIBPC-2274.md) | Validation of NFS storage creation | :white_check_mark: |
 | [**EPMCMBIBPC-2275**](Data_storages/NFS_mount/EPMCMBIBPC-2275.md) | Create existing NFS mount (negative), validation | :white_check_mark: |
 | [**EPMCMBIBPC-2276**](Data_storages/NFS_mount/EPMCMBIBPC-2276.md) | Create folder/file in NFS mount, validation | :white_check_mark: |
-| [**EPMCMBIBPC-2290**](Data_storages/NFS_mount/EPMCMBIBPC-2290.md) | [MANUAL] Validation of navigation buttons in NFS mount |  |
-| [**EPMCMBIBPC-2291**](Data_storages/NFS_mount/EPMCMBIBPC-2291.md) | [MANUAL] Validation of content view |  |
-| [**EPMCMBIBPC-2292**](Data_storages/NFS_mount/EPMCMBIBPC-2292.md) | [MANUAL] Validation of remove objects from NFS mount |  |
-| [**EPMCMBIBPC-2293**](Data_storages/NFS_mount/EPMCMBIBPC-2293.md) | [MANUAL] "Generate URL" button validation |  |
-| [**EPMCMBIBPC-2294**](Data_storages/NFS_mount/EPMCMBIBPC-2294.md) | [MANUAL] Folder navigation in NFS mount |  |
+| [**EPMCMBIBPC-2290**](Data_storages/NFS_mount/EPMCMBIBPC-2290.md) | [MANUAL] Validation of navigation buttons in NFS mount | |
+| [**EPMCMBIBPC-2291**](Data_storages/NFS_mount/EPMCMBIBPC-2291.md) | [MANUAL] Validation of content view | |
+| [**EPMCMBIBPC-2292**](Data_storages/NFS_mount/EPMCMBIBPC-2292.md) | [MANUAL] Validation of remove objects from NFS mount | |
+| [**EPMCMBIBPC-2293**](Data_storages/NFS_mount/EPMCMBIBPC-2293.md) | [MANUAL] "Generate URL" button validation | |
+| [**EPMCMBIBPC-2294**](Data_storages/NFS_mount/EPMCMBIBPC-2294.md) | [MANUAL] Folder navigation in NFS mount | |
 | [**EPMCMBIBPC-2295**](Data_storages/NFS_mount/EPMCMBIBPC-2295.md) | Remove not empty folder on NFS mount | :white_check_mark: |
-| [**EPMCMBIBPC-2296**](Data_storages/NFS_mount/EPMCMBIBPC-2296.md) | [MANUAL] Validation of spaces in objects names for NFS mount |  |
-| [**EPMCMBIBPC-2297**](Data_storages/NFS_mount/EPMCMBIBPC-2297.md) | [MANUAL] Validation of alias and description editing for NFS mount |  |
-| [**EPMCMBIBPC-2298**](Data_storages/NFS_mount/EPMCMBIBPC-2298.md) | [MANUAL] Validation of spaces and slash symbol in NFS mount path |  |
+| [**EPMCMBIBPC-2296**](Data_storages/NFS_mount/EPMCMBIBPC-2296.md) | [MANUAL] Validation of spaces in objects names for NFS mount | |
+| [**EPMCMBIBPC-2297**](Data_storages/NFS_mount/EPMCMBIBPC-2297.md) | [MANUAL] Validation of alias and description editing for NFS mount | |
+| [**EPMCMBIBPC-2298**](Data_storages/NFS_mount/EPMCMBIBPC-2298.md) | [MANUAL] Validation of spaces and slash symbol in NFS mount path | |
 | [**EPMCMBIBPC-2300**](Data_storages/NFS_mount/EPMCMBIBPC-2300.md) | [Negative] validate of exception if user set invalid mount-point for NFS mount | :white_check_mark: |
-| [**EPMCMBIBPC-2301**](Data_storages/NFS_mount/EPMCMBIBPC-2301.md) | [MANUAL] Validation of mounting NFS in docker container |  |
-| [**EPMCMBIBPC-2302**](Data_storages/NFS_mount/EPMCMBIBPC-2302.md) | [MANUAL] Validation of access to NFS from container |  |
-| [**EPMCMBIBPC-2303**](Data_storages/NFS_mount/EPMCMBIBPC-2303.md) | [MANUAL] Using of Input/output data from NFS in pipeline validation |  |
+| [**EPMCMBIBPC-2301**](Data_storages/NFS_mount/EPMCMBIBPC-2301.md) | [MANUAL] Validation of mounting NFS in docker container | |
+| [**EPMCMBIBPC-2302**](Data_storages/NFS_mount/EPMCMBIBPC-2302.md) | [MANUAL] Validation of access to NFS from container | |
+| [**EPMCMBIBPC-2303**](Data_storages/NFS_mount/EPMCMBIBPC-2303.md) | [MANUAL] Using of Input/output data from NFS in pipeline validation | |
 | [**EPMCMBIBPC-2304**](Data_storages/NFS_mount/EPMCMBIBPC-2304.md) | [Negative] Validate of handling invalid path of NFS mount | :white_check_mark: |
 | [**EPMCMBIBPC-2307**](Data_storages/NFS_mount/EPMCMBIBPC-2307.md) | Validation of NFS mount unregister | :white_check_mark: |
-| [**EPMCMBIBPC-2308**](Data_storages/NFS_mount/EPMCMBIBPC-2308.md) | [MANUAL] Validation of NFS mount remove |  |
+| [**EPMCMBIBPC-2308**](Data_storages/NFS_mount/EPMCMBIBPC-2308.md) | [MANUAL] Validation of NFS mount remove | |
 | [**EPMCMBIBPC-2593**](Data_storages/NFS_mount/EPMCMBIBPC-2593.md) | NFS mount editing form | :white_check_mark: |
 | [**EPMCMBIBPC-2594**](Data_storages/NFS_mount/EPMCMBIBPC-2594.md) | NFS File upload/download validation | :white_check_mark: |
 | [**EPMCMBIBPC-2595**](Data_storages/NFS_mount/EPMCMBIBPC-2595.md) | NFS mount edit alias | :white_check_mark: |
@@ -272,19 +272,19 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-2603**](Data_storages/NFS_mount/EPMCMBIBPC-2603.md) | Validation of NFS storage creation with spaces in path | :white_check_mark: |
 | [**EPMCMBIBPC-2604**](Data_storages/NFS_mount/EPMCMBIBPC-2604.md) | Create files and folders with spaces in name | :white_check_mark: |
 | [**EPMCMBIBPC-2605**](Data_storages/NFS_mount/EPMCMBIBPC-2605.md) | Remove files and folders with spaces in name | :white_check_mark: |
-| [**4599_1**](Data_storages/NFS_mount/4599/4599_1.md) | Exclude NFS storage from file indexing by metadata attribute |  |
-| [**4599_2**](Data_storages/NFS_mount/4599/4599_2.md) | Resume NFS storage file indexing after removing the exclusion attribute |  |
-| [**4599_3**](Data_storages/NFS_mount/4599/4599_3.md) | NFS storage with Billing status=Exclude attribute isn't shown in the Billing report |  |
-| [**4599_4**](Data_storages/NFS_mount/4599/4599_4.md) | "Standard size" of an excluded NFS storage doesn't change after adding files and re-indexing |  |
-| [**EPMCMBIBPC-2401**](Data_storages/Shared_storages/EPMCMBIBPC-2401.md) | [MANUAL] Validation of shared bucket creation |  |
-| [**EPMCMBIBPC-2402**](Data_storages/Shared_storages/EPMCMBIBPC-2402.md) | [MANUAL] Check access to shared bucket |  |
-| [**EPMCMBIBPC-2403**](Data_storages/Shared_storages/EPMCMBIBPC-2403.md) | [MANUAL] Upload files on shared bucket |  |
-| [**EPMCMBIBPC-2404**](Data_storages/Shared_storages/EPMCMBIBPC-2404.md) | [MANUAL] Validation of delete files and folders on shared bucket |  |
-| [**EPMCMBIBPC-2405**](Data_storages/Shared_storages/EPMCMBIBPC-2405.md) | [MANUAL] Validate uploaded files on shared bucket in Cloud Pipeline |  |
-| [**EPMCMBIBPC-2410**](Data_storages/Shared_storages/EPMCMBIBPC-2410.md) | [MANUAL] Validation of read-only user access to shared storage |  |
-| [**EPMCMBIBPC-2413**](Data_storages/Shared_storages/EPMCMBIBPC-2413.md) | [MANUAL] [Negative] validation of unauthorized access |  |
+| [**4599_1**](Data_storages/NFS_mount/4599/4599_1.md) | Exclude NFS storage from file indexing by metadata attribute | |
+| [**4599_2**](Data_storages/NFS_mount/4599/4599_2.md) | Resume NFS storage file indexing after removing the exclusion attribute | |
+| [**4599_3**](Data_storages/NFS_mount/4599/4599_3.md) | NFS storage with Billing status=Exclude attribute isn't shown in the Billing report | |
+| [**4599_4**](Data_storages/NFS_mount/4599/4599_4.md) | "Standard size" of an excluded NFS storage doesn't change after adding files and re-indexing | |
+| [**EPMCMBIBPC-2401**](Data_storages/Shared_storages/EPMCMBIBPC-2401.md) | [MANUAL] Validation of shared bucket creation | |
+| [**EPMCMBIBPC-2402**](Data_storages/Shared_storages/EPMCMBIBPC-2402.md) | [MANUAL] Check access to shared bucket | |
+| [**EPMCMBIBPC-2403**](Data_storages/Shared_storages/EPMCMBIBPC-2403.md) | [MANUAL] Upload files on shared bucket | |
+| [**EPMCMBIBPC-2404**](Data_storages/Shared_storages/EPMCMBIBPC-2404.md) | [MANUAL] Validation of delete files and folders on shared bucket | |
+| [**EPMCMBIBPC-2405**](Data_storages/Shared_storages/EPMCMBIBPC-2405.md) | [MANUAL] Validate uploaded files on shared bucket in Cloud Pipeline | |
+| [**EPMCMBIBPC-2410**](Data_storages/Shared_storages/EPMCMBIBPC-2410.md) | [MANUAL] Validation of read-only user access to shared storage | |
+| [**EPMCMBIBPC-2413**](Data_storages/Shared_storages/EPMCMBIBPC-2413.md) | [MANUAL] [Negative] validation of unauthorized access | |
 | [**EPMCMBIBPC-1068**](Data_storages/Version_control/EPMCMBIBPC-1068.md) | Check bucket navigation when "Show files versions" mode on | :white_check_mark: |
-| [**EPMCMBIBPC-1283**](Data_storages/Version_control/EPMCMBIBPC-1283.md) | [MANUAL] Validation of hard deletion files with common keys |  |
+| [**EPMCMBIBPC-1283**](Data_storages/Version_control/EPMCMBIBPC-1283.md) | [MANUAL] Validation of hard deletion files with common keys | |
 | [**EPMCMBIBPC-1502**](Data_storages/Version_control/EPMCMBIBPC-1502.md) | Deleting bucket after the disable of versioning | :white_check_mark: |
 | [**EPMCMBIBPC-1540**](Data_storages/Version_control/EPMCMBIBPC-1540.md) | Delete one of sibling files | :white_check_mark: |
 | [**EPMCMBIBPC-813**](Data_storages/Version_control/EPMCMBIBPC-813.md) | Validation of "Show files versions" behavior | :white_check_mark: |
@@ -297,29 +297,29 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-845**](Data_storages/Version_control/EPMCMBIBPC-845.md) | Delete not empty folder | :white_check_mark: |
 | [**EPMCMBIBPC-854**](Data_storages/Version_control/EPMCMBIBPC-854.md) | Read permission test for bucket that have enabled versioning | :white_check_mark: |
 | [**EPMCMBIBPC-855**](Data_storages/Version_control/EPMCMBIBPC-855.md) | Edit permission test for bucket that have enabled versioning | :white_check_mark: |
-| [**EPMCMBIBPC-877**](Data_storages/Version_control/EPMCMBIBPC-877.md) | [MANUAL] Validation of mark for deletion file |  |
-| [**EPMCMBIBPC-881**](Data_storages/Version_control/EPMCMBIBPC-881.md) | [MANUAL] Validation of restore marked for deletion file |  |
-| [**EPMCMBIBPC-882**](Data_storages/Version_control/EPMCMBIBPC-882.md) | [MANUAL] Validation of file versions |  |
-| [**EPMCMBIBPC-883**](Data_storages/Version_control/EPMCMBIBPC-883.md) | [MANUAL] Validation of restore specified version |  |
-| [**EPMCMBIBPC-884**](Data_storages/Version_control/EPMCMBIBPC-884.md) | [MANUAL] Validation hard deletion file |  |
-| [**EPMCMBIBPC-885**](Data_storages/Version_control/EPMCMBIBPC-885.md) | [MANUAL] Validation of mark for deletion non-empty folder |  |
-| [**EPMCMBIBPC-886**](Data_storages/Version_control/EPMCMBIBPC-886.md) | [MANUAL] Validation of restore marked for deletion non-empty folder |  |
-| [**EPMCMBIBPC-887**](Data_storages/Version_control/EPMCMBIBPC-887.md) | [MANUAL] Validation hard deletion non-empty folder |  |
+| [**EPMCMBIBPC-877**](Data_storages/Version_control/EPMCMBIBPC-877.md) | [MANUAL] Validation of mark for deletion file | |
+| [**EPMCMBIBPC-881**](Data_storages/Version_control/EPMCMBIBPC-881.md) | [MANUAL] Validation of restore marked for deletion file | |
+| [**EPMCMBIBPC-882**](Data_storages/Version_control/EPMCMBIBPC-882.md) | [MANUAL] Validation of file versions | |
+| [**EPMCMBIBPC-883**](Data_storages/Version_control/EPMCMBIBPC-883.md) | [MANUAL] Validation of restore specified version | |
+| [**EPMCMBIBPC-884**](Data_storages/Version_control/EPMCMBIBPC-884.md) | [MANUAL] Validation hard deletion file | |
+| [**EPMCMBIBPC-885**](Data_storages/Version_control/EPMCMBIBPC-885.md) | [MANUAL] Validation of mark for deletion non-empty folder | |
+| [**EPMCMBIBPC-886**](Data_storages/Version_control/EPMCMBIBPC-886.md) | [MANUAL] Validation of restore marked for deletion non-empty folder | |
+| [**EPMCMBIBPC-887**](Data_storages/Version_control/EPMCMBIBPC-887.md) | [MANUAL] Validation hard deletion non-empty folder | |
 | [**EPMCMBIBPC-888**](Data_storages/Version_control/EPMCMBIBPC-888.md) | Restore specified file version validation | :white_check_mark: |
-| [**EPMCMBIBPC-889**](Data_storages/Version_control/EPMCMBIBPC-889.md) | [MANUAL] Validation of mark for deletion file for non-admin user |  |
-| [**EPMCMBIBPC-890**](Data_storages/Version_control/EPMCMBIBPC-890.md) | [MANUAL] Validation of mark for deletion non-empty folder for non-admin user |  |
-| [**EPMCMBIBPC-891**](Data_storages/Version_control/EPMCMBIBPC-891.md) | [MANUAL] [Negative] Validation of file versions for non-admin and non-owner user |  |
-| [**EPMCMBIBPC-892**](Data_storages/Version_control/EPMCMBIBPC-892.md) | [MANUAL] [Negative] Validation hard deletion file for non-admin and non-owner user |  |
-| [**EPMCMBIBPC-893**](Data_storages/Version_control/EPMCMBIBPC-893.md) | [MANUAL] [Negative] Validation of restore marked for deletion non-empty folder for non-admin and non-owner user |  |
-| [**EPMCMBIBPC-894**](Data_storages/Version_control/EPMCMBIBPC-894.md) | [MANUAL] [Negative] Validation of restore marked for deletion file for non admin and non-owner user |  |
-| [**EPMCMBIBPC-895**](Data_storages/Version_control/EPMCMBIBPC-895.md) | [MANUAL] [Negative] Validation hard deletion non-empty folder for non-admin and non-owner user |  |
-| [**EPMCMBIBPC-945**](Data_storages/Version_control/EPMCMBIBPC-945.md) | [MANUAL] [Negative] Try to mark for delete unexisting file |  |
-| [**EPMCMBIBPC-946**](Data_storages/Version_control/EPMCMBIBPC-946.md) | [MANUAL] [Negative] Try to hard delete unexisting file |  |
-| [**EPMCMBIBPC-947**](Data_storages/Version_control/EPMCMBIBPC-947.md) | [MANUAL] [Negative] Try to restore unexciting file version |  |
-| [**EPMCMBIBPC-948**](Data_storages/Version_control/EPMCMBIBPC-948.md) | [MANUAL] [Negative] Try to restore not removed file |  |
-| [**EPMCMBIBPC-949**](Data_storages/Version_control/EPMCMBIBPC-949.md) | [MANUAL] [Negative] Try to restore latest version of file |  |
-| [**EPMCMBIBPC-993**](Data_storages/Version_control/EPMCMBIBPC-993.md) | [MANUAL] Validation of hard deletion of marked for delete file |  |
-| [**EPMCMBIBPC-998**](Data_storages/Version_control/EPMCMBIBPC-998.md) | [MANUAL] Validation of hard deletion of marked for non-empty folder |  |
+| [**EPMCMBIBPC-889**](Data_storages/Version_control/EPMCMBIBPC-889.md) | [MANUAL] Validation of mark for deletion file for non-admin user | |
+| [**EPMCMBIBPC-890**](Data_storages/Version_control/EPMCMBIBPC-890.md) | [MANUAL] Validation of mark for deletion non-empty folder for non-admin user | |
+| [**EPMCMBIBPC-891**](Data_storages/Version_control/EPMCMBIBPC-891.md) | [MANUAL] [Negative] Validation of file versions for non-admin and non-owner user | |
+| [**EPMCMBIBPC-892**](Data_storages/Version_control/EPMCMBIBPC-892.md) | [MANUAL] [Negative] Validation hard deletion file for non-admin and non-owner user | |
+| [**EPMCMBIBPC-893**](Data_storages/Version_control/EPMCMBIBPC-893.md) | [MANUAL] [Negative] Validation of restore marked for deletion non-empty folder for non-admin and non-owner user | |
+| [**EPMCMBIBPC-894**](Data_storages/Version_control/EPMCMBIBPC-894.md) | [MANUAL] [Negative] Validation of restore marked for deletion file for non admin and non-owner user | |
+| [**EPMCMBIBPC-895**](Data_storages/Version_control/EPMCMBIBPC-895.md) | [MANUAL] [Negative] Validation hard deletion non-empty folder for non-admin and non-owner user | |
+| [**EPMCMBIBPC-945**](Data_storages/Version_control/EPMCMBIBPC-945.md) | [MANUAL] [Negative] Try to mark for delete unexisting file | |
+| [**EPMCMBIBPC-946**](Data_storages/Version_control/EPMCMBIBPC-946.md) | [MANUAL] [Negative] Try to hard delete unexisting file | |
+| [**EPMCMBIBPC-947**](Data_storages/Version_control/EPMCMBIBPC-947.md) | [MANUAL] [Negative] Try to restore unexciting file version | |
+| [**EPMCMBIBPC-948**](Data_storages/Version_control/EPMCMBIBPC-948.md) | [MANUAL] [Negative] Try to restore not removed file | |
+| [**EPMCMBIBPC-949**](Data_storages/Version_control/EPMCMBIBPC-949.md) | [MANUAL] [Negative] Try to restore latest version of file | |
+| [**EPMCMBIBPC-993**](Data_storages/Version_control/EPMCMBIBPC-993.md) | [MANUAL] Validation of hard deletion of marked for delete file | |
+| [**EPMCMBIBPC-998**](Data_storages/Version_control/EPMCMBIBPC-998.md) | [MANUAL] Validation of hard deletion of marked for non-empty folder | |
 
 </details>
 
@@ -327,18 +327,18 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Docker_commit</b> (20 tests, 14 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
+|--- |--- | :---: |
 | [**EPMCMBIBPC-1350**](Docker_commit/EPMCMBIBPC-1350.md) | Check list of groups in the registry | :white_check_mark: |
 | [**EPMCMBIBPC-1352**](Docker_commit/EPMCMBIBPC-1352.md) | Commit docker validation in personal group | :white_check_mark: |
 | [**EPMCMBIBPC-1353**](Docker_commit/EPMCMBIBPC-1353.md) | Validation of commited docker | :white_check_mark: |
 | [**EPMCMBIBPC-1408**](Docker_commit/EPMCMBIBPC-1408.md) | Validation of commit docker image with tag | :white_check_mark: |
 | [**EPMCMBIBPC-1409**](Docker_commit/EPMCMBIBPC-1409.md) | Validation of specific version launch | :white_check_mark: |
-| [**EPMCMBIBPC-1557**](Docker_commit/EPMCMBIBPC-1557.md) | [MANUAL] [NEGATIVE] Invalid tool name in commit pop-up error validation |  |
-| [**EPMCMBIBPC-1565**](Docker_commit/EPMCMBIBPC-1565.md) | [MANUAL] [NEGATIVE] Commit docker from stopped tool |  |
-| [**EPMCMBIBPC-1597**](Docker_commit/EPMCMBIBPC-1597.md) | [MANUAL] Commit pipeline as docker image by user with restricted permissions |  |
-| [**EPMCMBIBPC-1600**](Docker_commit/EPMCMBIBPC-1600.md) | [MANUAL] Overwrite tool version by user with restricted permissions |  |
-| [**EPMCMBIBPC-1602**](Docker_commit/EPMCMBIBPC-1602.md) | [MANUAL] Commit a tool with denied permissions on the group and write permission on the registry |  |
-| [**EPMCMBIBPC-1603**](Docker_commit/EPMCMBIBPC-1603.md) | [MANUAL] Repeat commit of tool in personal group with the same name |  |
+| [**EPMCMBIBPC-1557**](Docker_commit/EPMCMBIBPC-1557.md) | [MANUAL] [NEGATIVE] Invalid tool name in commit pop-up error validation | |
+| [**EPMCMBIBPC-1565**](Docker_commit/EPMCMBIBPC-1565.md) | [MANUAL] [NEGATIVE] Commit docker from stopped tool | |
+| [**EPMCMBIBPC-1597**](Docker_commit/EPMCMBIBPC-1597.md) | [MANUAL] Commit pipeline as docker image by user with restricted permissions | |
+| [**EPMCMBIBPC-1600**](Docker_commit/EPMCMBIBPC-1600.md) | [MANUAL] Overwrite tool version by user with restricted permissions | |
+| [**EPMCMBIBPC-1602**](Docker_commit/EPMCMBIBPC-1602.md) | [MANUAL] Commit a tool with denied permissions on the group and write permission on the registry | |
+| [**EPMCMBIBPC-1603**](Docker_commit/EPMCMBIBPC-1603.md) | [MANUAL] Repeat commit of tool in personal group with the same name | |
 | [**EPMCMBIBPC-692**](Docker_commit/EPMCMBIBPC-692.md) | Push docker form validation | :white_check_mark: |
 | [**EPMCMBIBPC-693**](Docker_commit/EPMCMBIBPC-693.md) | Check list of registry | :white_check_mark: |
 | [**EPMCMBIBPC-694**](Docker_commit/EPMCMBIBPC-694.md) | Commit docker validation in library group | :white_check_mark: |
@@ -355,8 +355,8 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Global_search</b> (23 tests, 22 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
-| [**4698**](Global_search/4698_1.md) | Search for files with paths longer than 512 bytes |  |
+|--- |--- | :---: |
+| [**4698**](Global_search/4698_1.md) | Search for files with paths longer than 512 bytes | |
 | [**EPMCMBIBPC-2653**](Global_search/EPMCMBIBPC-2653.md) | Prepare for search | :white_check_mark: |
 | [**EPMCMBIBPC-2654**](Global_search/EPMCMBIBPC-2654.md) | Search for folder | :white_check_mark: |
 | [**EPMCMBIBPC-2655**](Global_search/EPMCMBIBPC-2655.md) | Search for folder by Enter key | :white_check_mark: |
@@ -386,19 +386,19 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>HCS</b> (12 tests, 0 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
-| [**2489_1**](HCS/2489_1.md) | Open preview for the HCS image |  |
-| [**2489_2**](HCS/2489_2.md) | [Manual] HCS files metadata |  |
-| [**2489_2758**](HCS/2489_2758.md) | [Manual] Channel panel and standard channels colors |  |
-| [**2527**](HCS/2527.md) | [Manual] Download current image |  |
-| [**2528**](HCS/2528.md) | [Manual] Ability to lock ranges of the channels |  |
-| [**2534**](HCS/2534.md) | [Manual] Switch between Well/Field view |  |
-| [**2694_1**](HCS/2694_1.md) | [Manual] Analysis panel |  |
-| [**2694_2**](HCS/2694_2.md) | [Manual] Single HCS images analysis |  |
-| [**2694_3**](HCS/2694_3.md) | [Manual] HCS images analysis. Define results block |  |
-| [**2694_4**](HCS/2694_4.md) | [Manual] Batch HCS images analysis |  |
-| [**2749**](HCS/2749.md) | [Manual] Ability to merge Z-stack in a single projection |  |
-| [**2766**](HCS/2766.md) | [Manual] Video from images stack |  |
+|--- |--- | :---: |
+| [**2489_1**](HCS/2489_1.md) | Open preview for the HCS image | |
+| [**2489_2**](HCS/2489_2.md) | [Manual] HCS files metadata | |
+| [**2489_2758**](HCS/2489_2758.md) | [Manual] Channel panel and standard channels colors | |
+| [**2527**](HCS/2527.md) | [Manual] Download current image | |
+| [**2528**](HCS/2528.md) | [Manual] Ability to lock ranges of the channels | |
+| [**2534**](HCS/2534.md) | [Manual] Switch between Well/Field view | |
+| [**2694_1**](HCS/2694_1.md) | [Manual] Analysis panel | |
+| [**2694_2**](HCS/2694_2.md) | [Manual] Single HCS images analysis | |
+| [**2694_3**](HCS/2694_3.md) | [Manual] HCS images analysis. Define results block | |
+| [**2694_4**](HCS/2694_4.md) | [Manual] Batch HCS images analysis | |
+| [**2749**](HCS/2749.md) | [Manual] Ability to merge Z-stack in a single projection | |
+| [**2766**](HCS/2766.md) | [Manual] Video from images stack | |
 
 </details>
 
@@ -406,21 +406,21 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Issues</b> (14 tests, 0 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
-| [**EPMCMBIBPC-2691**](Issues/EPMCMBIBPC-2691.md) | [MANUAL] Create issue |  |
-| [**EPMCMBIBPC-2692**](Issues/EPMCMBIBPC-2692.md) | [MANUAL] [NEGATIVE] Create issue |  |
-| [**EPMCMBIBPC-2693**](Issues/EPMCMBIBPC-2693.md) | [MANUAL] Edit issue |  |
-| [**EPMCMBIBPC-2694**](Issues/EPMCMBIBPC-2694.md) | [MANUAL] [NEGATIVE] Edit issue |  |
-| [**EPMCMBIBPC-2695**](Issues/EPMCMBIBPC-2695.md) | [MANUAL] Delete issue |  |
-| [**EPMCMBIBPC-2696**](Issues/EPMCMBIBPC-2696.md) | [MANUAL] Issue formatting |  |
-| [**EPMCMBIBPC-2697**](Issues/EPMCMBIBPC-2697.md) | [MANUAL] Add comment to issue |  |
-| [**EPMCMBIBPC-2698**](Issues/EPMCMBIBPC-2698.md) | [MANUAL] Edit comment to issue |  |
-| [**EPMCMBIBPC-2699**](Issues/EPMCMBIBPC-2699.md) | [MANUAL] Delete comment to issue |  |
-| [**EPMCMBIBPC-2700**](Issues/EPMCMBIBPC-2700.md) | [MANUAL] Multiuser issues |  |
-| [**EPMCMBIBPC-2701**](Issues/EPMCMBIBPC-2701.md) | [MANUAL] Create issue for folder |  |
-| [**EPMCMBIBPC-2702**](Issues/EPMCMBIBPC-2702.md) | [MANUAL] Create issue for Project |  |
-| [**EPMCMBIBPC-2703**](Issues/EPMCMBIBPC-2703.md) | [MANUAL] Create issue for pipeline |  |
-| [**EPMCMBIBPC-2704**](Issues/EPMCMBIBPC-2704.md) | [MANUAL] Create issue for tool |  |
+|--- |--- | :---: |
+| [**EPMCMBIBPC-2691**](Issues/EPMCMBIBPC-2691.md) | [MANUAL] Create issue | |
+| [**EPMCMBIBPC-2692**](Issues/EPMCMBIBPC-2692.md) | [MANUAL] [NEGATIVE] Create issue | |
+| [**EPMCMBIBPC-2693**](Issues/EPMCMBIBPC-2693.md) | [MANUAL] Edit issue | |
+| [**EPMCMBIBPC-2694**](Issues/EPMCMBIBPC-2694.md) | [MANUAL] [NEGATIVE] Edit issue | |
+| [**EPMCMBIBPC-2695**](Issues/EPMCMBIBPC-2695.md) | [MANUAL] Delete issue | |
+| [**EPMCMBIBPC-2696**](Issues/EPMCMBIBPC-2696.md) | [MANUAL] Issue formatting | |
+| [**EPMCMBIBPC-2697**](Issues/EPMCMBIBPC-2697.md) | [MANUAL] Add comment to issue | |
+| [**EPMCMBIBPC-2698**](Issues/EPMCMBIBPC-2698.md) | [MANUAL] Edit comment to issue | |
+| [**EPMCMBIBPC-2699**](Issues/EPMCMBIBPC-2699.md) | [MANUAL] Delete comment to issue | |
+| [**EPMCMBIBPC-2700**](Issues/EPMCMBIBPC-2700.md) | [MANUAL] Multiuser issues | |
+| [**EPMCMBIBPC-2701**](Issues/EPMCMBIBPC-2701.md) | [MANUAL] Create issue for folder | |
+| [**EPMCMBIBPC-2702**](Issues/EPMCMBIBPC-2702.md) | [MANUAL] Create issue for Project | |
+| [**EPMCMBIBPC-2703**](Issues/EPMCMBIBPC-2703.md) | [MANUAL] Create issue for pipeline | |
+| [**EPMCMBIBPC-2704**](Issues/EPMCMBIBPC-2704.md) | [MANUAL] Create issue for tool | |
 
 </details>
 
@@ -428,8 +428,8 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Layouts</b> (1 tests, 0 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
-| [**1504**](Layouts/1504.md) | [MANUAL] Check layout in Groups/Roles membership view |  |
+|--- |--- | :---: |
+| [**1504**](Layouts/1504.md) | [MANUAL] Check layout in Groups/Roles membership view | |
 
 </details>
 
@@ -437,7 +437,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Notifications</b> (26 tests, 13 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
+|--- |--- | :---: |
 | [**EPMCMBIBPC-1205**](Notifications/EPMCMBIBPC-1205.md) | Validation of "Systems events" menu | :white_check_mark: |
 | [**EPMCMBIBPC-1206**](Notifications/EPMCMBIBPC-1206.md) | Validation of create inactive info notification | :white_check_mark: |
 | [**EPMCMBIBPC-1209**](Notifications/EPMCMBIBPC-1209.md) | Validation of active notification | :white_check_mark: |
@@ -450,12 +450,12 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-1222**](Notifications/EPMCMBIBPC-1222.md) | Validation of edit inactive notifications | :white_check_mark: |
 | [**EPMCMBIBPC-1223**](Notifications/EPMCMBIBPC-1223.md) | Validation of delete inactive notification | :white_check_mark: |
 | [**EPMCMBIBPC-1224**](Notifications/EPMCMBIBPC-1224.md) | Validation of create active warning notification | :white_check_mark: |
-| [**EPMCMBIBPC-1225**](Notifications/EPMCMBIBPC-1225.md) | [MANUAL] Validation of notification timeout |  |
+| [**EPMCMBIBPC-1225**](Notifications/EPMCMBIBPC-1225.md) | [MANUAL] Validation of notification timeout | |
 | [**EPMCMBIBPC-1229**](Notifications/EPMCMBIBPC-1229.md) | Validation of role model for notifications creating | :white_check_mark: |
-| [**EPMCMBIBPC-1511**](Notifications/EPMCMBIBPC-1511.md) | [MANUAL] Validation of "Systems events" layout |  |
-| [**EPMCMBIBPC-1513**](Notifications/EPMCMBIBPC-1513.md) | [MANUAL] Validation of create empty active notification |  |
-| [**EPMCMBIBPC-1515**](Notifications/EPMCMBIBPC-1515.md) | [MANUAL] Validation of create active notification paired with empty active notification |  |
-| [**TC-NOTIFICATION-01**](Notifications/TC-NOTIFICATION-01.md) | Do not send notifications if a run's status did not change |  |
+| [**EPMCMBIBPC-1511**](Notifications/EPMCMBIBPC-1511.md) | [MANUAL] Validation of "Systems events" layout | |
+| [**EPMCMBIBPC-1513**](Notifications/EPMCMBIBPC-1513.md) | [MANUAL] Validation of create empty active notification | |
+| [**EPMCMBIBPC-1515**](Notifications/EPMCMBIBPC-1515.md) | [MANUAL] Validation of create active notification paired with empty active notification | |
+| [**TC-NOTIFICATION-01**](Notifications/TC-NOTIFICATION-01.md) | Do not send notifications if a run's status did not change | |
 
 </details>
 
@@ -463,9 +463,9 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Object_attributes</b> (29 tests, 26 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
+|--- |--- | :---: |
 | [**EPMCMBIBPC-1193**](Object_attributes/EPMCMBIBPC-1193.md) | [Negative] Try to enter wrong key-values of attributes | :white_check_mark: |
-| [**EPMCMBIBPC-1486**](Object_attributes/EPMCMBIBPC-1486.md) | [MANUAL] Add attributes focus validation |  |
+| [**EPMCMBIBPC-1486**](Object_attributes/EPMCMBIBPC-1486.md) | [MANUAL] Add attributes focus validation | |
 | [**EPMCMBIBPC-857**](Object_attributes/EPMCMBIBPC-857.md) | Add attributes to folder validation | :white_check_mark: |
 | [**EPMCMBIBPC-858**](Object_attributes/EPMCMBIBPC-858.md) | Add key to attributes | :white_check_mark: |
 | [**EPMCMBIBPC-860**](Object_attributes/EPMCMBIBPC-860.md) | Add several keys to attributes | :white_check_mark: |
@@ -491,8 +491,8 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-1175**](Object_attributes/Files_attributes/EPMCMBIBPC-1175.md) | Remove one key validation for files in bucket | :white_check_mark: |
 | [**EPMCMBIBPC-1176**](Object_attributes/Files_attributes/EPMCMBIBPC-1176.md) | Remove all for file validation | :white_check_mark: |
 | [**EPMCMBIBPC-1194**](Object_attributes/Files_attributes/EPMCMBIBPC-1194.md) | [Negative] Add wrong key-value attributes to file | :white_check_mark: |
-| [**EPMCMBIBPC-1541**](Object_attributes/Files_attributes/EPMCMBIBPC-1541.md) | [MANUAL] Search field clearance after navigate to another entity |  |
-| [**EPMCMBIBPC-1543**](Object_attributes/Files_attributes/EPMCMBIBPC-1543.md) | [MANUAL] Search for unexisting value in metadata |  |
+| [**EPMCMBIBPC-1541**](Object_attributes/Files_attributes/EPMCMBIBPC-1541.md) | [MANUAL] Search field clearance after navigate to another entity | |
+| [**EPMCMBIBPC-1543**](Object_attributes/Files_attributes/EPMCMBIBPC-1543.md) | [MANUAL] Search for unexisting value in metadata | |
 
 </details>
 
@@ -500,12 +500,12 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Pipe_CLI</b> (5 tests, 0 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
-| [**2847_introduce_extended_attributes_support**](Pipe_CLI/2847_introduce_extended_attributes_support.md) | Introduce extended attributes support in pipe fuse |  |
-| [**1948_1_check_pipe_cli_admin_run_as_user**](Pipe_CLI/1948_launch_run_as_different_user/1948_1_check_pipe_cli_admin_run_as_user.md) | Check Pipe CLI Admin Run As User |  |
-| [**1948_2_check_pipe_cli_user_run_as_user**](Pipe_CLI/1948_launch_run_as_different_user/1948_2_check_pipe_cli_user_run_as_user.md) | Check Pipe CLI User Run As User |  |
-| [**2115_1_check_pipe_cli_installation_content**](Pipe_CLI/2115_store_cli_config_in_install_dir/2115_1_check_pipe_cli_installation_content.md) | Check Pipe CLI Installation Content |  |
-| [**2115_2_check_pipe_cli_config_store**](Pipe_CLI/2115_store_cli_config_in_install_dir/2115_2_check_pipe_cli_config_store.md) | Check Pipe CLI Config Store |  |
+|--- |--- | :---: |
+| [**2847_introduce_extended_attributes_support**](Pipe_CLI/2847_introduce_extended_attributes_support.md) | Introduce extended attributes support in pipe fuse | |
+| [**1948_1_check_pipe_cli_admin_run_as_user**](Pipe_CLI/1948_launch_run_as_different_user/1948_1_check_pipe_cli_admin_run_as_user.md) | Check Pipe CLI Admin Run As User | |
+| [**1948_2_check_pipe_cli_user_run_as_user**](Pipe_CLI/1948_launch_run_as_different_user/1948_2_check_pipe_cli_user_run_as_user.md) | Check Pipe CLI User Run As User | |
+| [**2115_1_check_pipe_cli_installation_content**](Pipe_CLI/2115_store_cli_config_in_install_dir/2115_1_check_pipe_cli_installation_content.md) | Check Pipe CLI Installation Content | |
+| [**2115_2_check_pipe_cli_config_store**](Pipe_CLI/2115_store_cli_config_in_install_dir/2115_2_check_pipe_cli_config_store.md) | Check Pipe CLI Config Store | |
 
 </details>
 
@@ -513,7 +513,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Pipeline_library</b> (203 tests, 150 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
+|--- |--- | :---: |
 | [**EPMCMBIBPC-2618**](Pipeline_library/Cluster_runs/EPMCMBIBPC-2618.md) | Validation of auto-scaled cluster | :white_check_mark: |
 | [**EPMCMBIBPC-2620**](Pipeline_library/Cluster_runs/EPMCMBIBPC-2620.md) | Validate error messages on "Configure cluster" pop-up | :white_check_mark: |
 | [**EPMCMBIBPC-2628**](Pipeline_library/Cluster_runs/EPMCMBIBPC-2628.md) | Validation of auto-scaled cluster with default child nodes | :white_check_mark: |
@@ -527,7 +527,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-3159**](Pipeline_library/Cluster_runs/EPMCMBIBPC-3159.md) | Hybrid auto-scaled cluster: CPU "deadlock" with additional restrictions | :white_check_mark: |
 | [**EPMCMBIBPC-3160**](Pipeline_library/Cluster_runs/EPMCMBIBPC-3160.md) | Auto-scaled cluster: workers price type (On-demand) | :white_check_mark: |
 | [**EPMCMBIBPC-3161**](Pipeline_library/Cluster_runs/EPMCMBIBPC-3161.md) | Auto-scaled cluster: workers price type (Master's config) | :white_check_mark: |
-| [**EPMCMBIBPC-3176**](Pipeline_library/Cluster_runs/EPMCMBIBPC-3176.md) | [MANUAL] Validation of Kubernetes cluster |  |
+| [**EPMCMBIBPC-3176**](Pipeline_library/Cluster_runs/EPMCMBIBPC-3176.md) | [MANUAL] Validation of Kubernetes cluster | |
 | [**EPMCMBIBPC-975**](Pipeline_library/Cluster_runs/EPMCMBIBPC-975.md) | Validation of cluster's run | :white_check_mark: |
 | [**EPMCMBIBPC-1091**](Pipeline_library/Detached_configurations/EPMCMBIBPC-1091.md) | Validation of creation detached configuration | :white_check_mark: |
 | [**EPMCMBIBPC-1112**](Pipeline_library/Detached_configurations/EPMCMBIBPC-1112.md) | Validation of add configuration from pipeline | :white_check_mark: |
@@ -558,25 +558,25 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-1604**](Pipeline_library/Detached_configurations/EPMCMBIBPC-1604.md) | Delete detached configuration validation | :white_check_mark: |
 | [**EPMCMBIBPC-1611**](Pipeline_library/Detached_configurations/EPMCMBIBPC-1611.md) | Validation of config with filled parameters in detach configuration | :white_check_mark: |
 | [**EPMCMBIBPC-1072**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1072.md) | Case sensitive validation in the storage | :white_check_mark: |
-| [**EPMCMBIBPC-1497**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1497.md) | [MANUAL] Search pop-up focus validation |  |
-| [**EPMCMBIBPC-1735**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1735.md) | [MANUAL] Collapse/expand tree panel validation |  |
-| [**EPMCMBIBPC-1838**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1838.md) | [MANUAL] Check of attributes and description displaying for pipeline |  |
-| [**EPMCMBIBPC-1839**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1839.md) | [MANUAL] Check of attributes and description displaying for bucket |  |
-| [**EPMCMBIBPC-1840**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1840.md) | [MANUAL] Check of description displaying for detach configs |  |
-| [**EPMCMBIBPC-1841**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1841.md) | [MANUAL] Check of attributes displaying for folder |  |
-| [**EPMCMBIBPC-1938**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1938.md) | [MANUAL] Clone project folder test |  |
-| [**EPMCMBIBPC-1984**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1984.md) | [MANUAL] Clone project folder test, define path |  |
-| [**EPMCMBIBPC-1986**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1986.md) | [MANUAL] Clone folder with detach configuration |  |
-| [**EPMCMBIBPC-1987**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1987.md) | [MANUAL] Clone folder with storage |  |
-| [**EPMCMBIBPC-1988**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1988.md) | [MANUAL] Clone folder with pipeline |  |
-| [**EPMCMBIBPC-1989**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1989.md) | [MANUAL] Clone folder with subfolder |  |
-| [**EPMCMBIBPC-2684**](Pipeline_library/Folder_navigation/EPMCMBIBPC-2684.md) | [MANUAL] Lock folder |  |
-| [**EPMCMBIBPC-2685**](Pipeline_library/Folder_navigation/EPMCMBIBPC-2685.md) | [MANUAL] Viewing of a locked folder |  |
-| [**EPMCMBIBPC-2686**](Pipeline_library/Folder_navigation/EPMCMBIBPC-2686.md) | [MANUAL] Lock Project |  |
-| [**EPMCMBIBPC-2687**](Pipeline_library/Folder_navigation/EPMCMBIBPC-2687.md) | [MANUAL] Unlock folder |  |
-| [**EPMCMBIBPC-2688**](Pipeline_library/Folder_navigation/EPMCMBIBPC-2688.md) | [MANUAL] Viewing of a locked Project |  |
-| [**EPMCMBIBPC-2689**](Pipeline_library/Folder_navigation/EPMCMBIBPC-2689.md) | [MANUAL] Unlock Project |  |
-| [**EPMCMBIBPC-2690**](Pipeline_library/Folder_navigation/EPMCMBIBPC-2690.md) | [MANUAL] Combine lock and unlock |  |
+| [**EPMCMBIBPC-1497**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1497.md) | [MANUAL] Search pop-up focus validation | |
+| [**EPMCMBIBPC-1735**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1735.md) | [MANUAL] Collapse/expand tree panel validation | |
+| [**EPMCMBIBPC-1838**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1838.md) | [MANUAL] Check of attributes and description displaying for pipeline | |
+| [**EPMCMBIBPC-1839**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1839.md) | [MANUAL] Check of attributes and description displaying for bucket | |
+| [**EPMCMBIBPC-1840**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1840.md) | [MANUAL] Check of description displaying for detach configs | |
+| [**EPMCMBIBPC-1841**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1841.md) | [MANUAL] Check of attributes displaying for folder | |
+| [**EPMCMBIBPC-1938**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1938.md) | [MANUAL] Clone project folder test | |
+| [**EPMCMBIBPC-1984**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1984.md) | [MANUAL] Clone project folder test, define path | |
+| [**EPMCMBIBPC-1986**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1986.md) | [MANUAL] Clone folder with detach configuration | |
+| [**EPMCMBIBPC-1987**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1987.md) | [MANUAL] Clone folder with storage | |
+| [**EPMCMBIBPC-1988**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1988.md) | [MANUAL] Clone folder with pipeline | |
+| [**EPMCMBIBPC-1989**](Pipeline_library/Folder_navigation/EPMCMBIBPC-1989.md) | [MANUAL] Clone folder with subfolder | |
+| [**EPMCMBIBPC-2684**](Pipeline_library/Folder_navigation/EPMCMBIBPC-2684.md) | [MANUAL] Lock folder | |
+| [**EPMCMBIBPC-2685**](Pipeline_library/Folder_navigation/EPMCMBIBPC-2685.md) | [MANUAL] Viewing of a locked folder | |
+| [**EPMCMBIBPC-2686**](Pipeline_library/Folder_navigation/EPMCMBIBPC-2686.md) | [MANUAL] Lock Project | |
+| [**EPMCMBIBPC-2687**](Pipeline_library/Folder_navigation/EPMCMBIBPC-2687.md) | [MANUAL] Unlock folder | |
+| [**EPMCMBIBPC-2688**](Pipeline_library/Folder_navigation/EPMCMBIBPC-2688.md) | [MANUAL] Viewing of a locked Project | |
+| [**EPMCMBIBPC-2689**](Pipeline_library/Folder_navigation/EPMCMBIBPC-2689.md) | [MANUAL] Unlock Project | |
+| [**EPMCMBIBPC-2690**](Pipeline_library/Folder_navigation/EPMCMBIBPC-2690.md) | [MANUAL] Combine lock and unlock | |
 | [**EPMCMBIBPC-315**](Pipeline_library/Folder_navigation/EPMCMBIBPC-315.md) | Validation of folder navigation on Pipelines Library page | :white_check_mark: |
 | [**EPMCMBIBPC-316**](Pipeline_library/Folder_navigation/EPMCMBIBPC-316.md) | Delete folder that have subitem | :white_check_mark: |
 | [**EPMCMBIBPC-333**](Pipeline_library/Folder_navigation/EPMCMBIBPC-333.md) | Search folder on "Pipelines library" page. Positive test. | :white_check_mark: |
@@ -591,17 +591,17 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-400**](Pipeline_library/Folder_navigation/EPMCMBIBPC-400.md) | Clear search field | :white_check_mark: |
 | [**1506_1**](Pipeline_library/Folder_navigation/1506_pipelines_and_storages_repositories/1506_1.md) | Check "All pipelines" repository | :white_check_mark: |
 | [**1506_2**](Pipeline_library/Folder_navigation/1506_pipelines_and_storages_repositories/1506_2.md) | Check "All storages" repository | :white_check_mark: |
-| [**EPMCMBIBPC-1474**](Pipeline_library/Pipeline_configuration/EPMCMBIBPC-1474.md) | [MANUAL] Configuration form shall perform parameter names validation |  |
-| [**EPMCMBIBPC-1478**](Pipeline_library/Pipeline_configuration/EPMCMBIBPC-1478.md) | [MANUAL] Add descriptions to all parameters within config form validation |  |
+| [**EPMCMBIBPC-1474**](Pipeline_library/Pipeline_configuration/EPMCMBIBPC-1474.md) | [MANUAL] Configuration form shall perform parameter names validation | |
+| [**EPMCMBIBPC-1478**](Pipeline_library/Pipeline_configuration/EPMCMBIBPC-1478.md) | [MANUAL] Add descriptions to all parameters within config form validation | |
 | [**EPMCMBIBPC-1500**](Pipeline_library/Pipeline_configuration/EPMCMBIBPC-1500.md) | Check the saving of the parameters in configurations | :white_check_mark: |
 | [**EPMCMBIBPC-1517**](Pipeline_library/Pipeline_configuration/EPMCMBIBPC-1517.md) | Price type validation | :white_check_mark: |
-| [**EPMCMBIBPC-1533**](Pipeline_library/Pipeline_configuration/EPMCMBIBPC-1533.md) | [MANUAL] Modified configuration name validation |  |
-| [**EPMCMBIBPC-1571**](Pipeline_library/Pipeline_configuration/EPMCMBIBPC-1571.md) | [MANUAL] [NEGATIVE] Validation of editing new configuration |  |
-| [**EPMCMBIBPC-1676**](Pipeline_library/Pipeline_configuration/EPMCMBIBPC-1676.md) | [MANUAL] Validation of "Add system parameter" button on Pipeline configuration tab |  |
-| [**EPMCMBIBPC-1677**](Pipeline_library/Pipeline_configuration/EPMCMBIBPC-1677.md) | [MANUAL] Validation of "Add system parameter" button on launch form |  |
-| [**EPMCMBIBPC-1678**](Pipeline_library/Pipeline_configuration/EPMCMBIBPC-1678.md) | [MANUAL] System parameters validating on pipeline log page |  |
-| [**EPMCMBIBPC-1679**](Pipeline_library/Pipeline_configuration/EPMCMBIBPC-1679.md) | [MANUAL] Validation exception if user use system parameters names for non-system parameter |  |
-| [**EPMCMBIBPC-1680**](Pipeline_library/Pipeline_configuration/EPMCMBIBPC-1680.md) | [MANUAL] Validation exception if user use system parameters names for non-system parameter on launch form |  |
+| [**EPMCMBIBPC-1533**](Pipeline_library/Pipeline_configuration/EPMCMBIBPC-1533.md) | [MANUAL] Modified configuration name validation | |
+| [**EPMCMBIBPC-1571**](Pipeline_library/Pipeline_configuration/EPMCMBIBPC-1571.md) | [MANUAL] [NEGATIVE] Validation of editing new configuration | |
+| [**EPMCMBIBPC-1676**](Pipeline_library/Pipeline_configuration/EPMCMBIBPC-1676.md) | [MANUAL] Validation of "Add system parameter" button on Pipeline configuration tab | |
+| [**EPMCMBIBPC-1677**](Pipeline_library/Pipeline_configuration/EPMCMBIBPC-1677.md) | [MANUAL] Validation of "Add system parameter" button on launch form | |
+| [**EPMCMBIBPC-1678**](Pipeline_library/Pipeline_configuration/EPMCMBIBPC-1678.md) | [MANUAL] System parameters validating on pipeline log page | |
+| [**EPMCMBIBPC-1679**](Pipeline_library/Pipeline_configuration/EPMCMBIBPC-1679.md) | [MANUAL] Validation exception if user use system parameters names for non-system parameter | |
+| [**EPMCMBIBPC-1680**](Pipeline_library/Pipeline_configuration/EPMCMBIBPC-1680.md) | [MANUAL] Validation exception if user use system parameters names for non-system parameter on launch form | |
 | [**EPMCMBIBPC-795**](Pipeline_library/Pipeline_configuration/EPMCMBIBPC-795.md) | Check "CONFIGURATION" tab on pipeline edit page | :white_check_mark: |
 | [**EPMCMBIBPC-796**](Pipeline_library/Pipeline_configuration/EPMCMBIBPC-796.md) | Validation of adding new config feature | :white_check_mark: |
 | [**EPMCMBIBPC-797**](Pipeline_library/Pipeline_configuration/EPMCMBIBPC-797.md) | Validation of edit new configuration | :white_check_mark: |
@@ -613,11 +613,11 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**1517_1**](Pipeline_library/Pipeline_configuration/1517_custom_node_images_for_runs/1517_1.md) | Check custom node image for the pipeline run | :white_check_mark: |
 | [**1517_2**](Pipeline_library/Pipeline_configuration/1517_custom_node_images_for_runs/1517_2.md) | Check node reuse after the custom node image run | :white_check_mark: |
 | [**1353**](Pipeline_library/Pipeline_details/1353.md) | Check pipeline sources for previous draft versions | :white_check_mark: |
-| [**2445**](Pipeline_library/Pipeline_details/2445.md) | Check Markdown for the Tools/Pipelines Description |  |
-| [**EPMCMBIBPC-1482**](Pipeline_library/Pipeline_details/EPMCMBIBPC-1482.md) | [MANUAL] Create folder pop-up focus validation |  |
-| [**EPMCMBIBPC-1483**](Pipeline_library/Pipeline_details/EPMCMBIBPC-1483.md) | [MANUAL] Create file pop-up focus validation |  |
-| [**EPMCMBIBPC-1484**](Pipeline_library/Pipeline_details/EPMCMBIBPC-1484.md) | [MANUAL] Git repository pop-up focus validation |  |
-| [**EPMCMBIBPC-1485**](Pipeline_library/Pipeline_details/EPMCMBIBPC-1485.md) | [MANUAL] New storage rule pop-up focus validation |  |
+| [**2445**](Pipeline_library/Pipeline_details/2445.md) | Check Markdown for the Tools/Pipelines Description | |
+| [**EPMCMBIBPC-1482**](Pipeline_library/Pipeline_details/EPMCMBIBPC-1482.md) | [MANUAL] Create folder pop-up focus validation | |
+| [**EPMCMBIBPC-1483**](Pipeline_library/Pipeline_details/EPMCMBIBPC-1483.md) | [MANUAL] Create file pop-up focus validation | |
+| [**EPMCMBIBPC-1484**](Pipeline_library/Pipeline_details/EPMCMBIBPC-1484.md) | [MANUAL] Git repository pop-up focus validation | |
+| [**EPMCMBIBPC-1485**](Pipeline_library/Pipeline_details/EPMCMBIBPC-1485.md) | [MANUAL] New storage rule pop-up focus validation | |
 | [**EPMCMBIBPC-1629**](Pipeline_library/Pipeline_details/EPMCMBIBPC-1629.md) | Validation of view all draft versions history of a pipeline | :white_check_mark: |
 | [**EPMCMBIBPC-339**](Pipeline_library/Pipeline_details/EPMCMBIBPC-339.md) | Create folder in pipeline | :white_check_mark: |
 | [**EPMCMBIBPC-340**](Pipeline_library/Pipeline_details/EPMCMBIBPC-340.md) | File creation in pipeline subfolder | :white_check_mark: |
@@ -634,14 +634,14 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-355**](Pipeline_library/Pipeline_details/EPMCMBIBPC-355.md) | Storage rule delete | :white_check_mark: |
 | [**EPMCMBIBPC-356**](Pipeline_library/Pipeline_details/EPMCMBIBPC-356.md) | Create copy of exist storage rule | :white_check_mark: |
 | [**EPMCMBIBPC-363**](Pipeline_library/Pipeline_details/EPMCMBIBPC-363.md) | Storage rules test | :white_check_mark: |
-| [**EPMCMBIBPC-1188**](Pipeline_library/Pipeline_editing/EPMCMBIBPC-1188.md) | [MANUAL] Upload file on CODE tab |  |
-| [**EPMCMBIBPC-1189**](Pipeline_library/Pipeline_editing/EPMCMBIBPC-1189.md) | [MANUAL] Upload several files on CODE tab |  |
-| [**EPMCMBIBPC-1191**](Pipeline_library/Pipeline_editing/EPMCMBIBPC-1191.md) | [MANUAL] [Negative] Try to upload file that have spaces in file name |  |
-| [**EPMCMBIBPC-1192**](Pipeline_library/Pipeline_editing/EPMCMBIBPC-1192.md) | [MANUAL] [Negative] Try to upload wrong named file and correct named file |  |
-| [**EPMCMBIBPC-1471**](Pipeline_library/Pipeline_editing/EPMCMBIBPC-1471.md) | [MANUAL] Create pipeline pop-up focus validation |  |
-| [**EPMCMBIBPC-1472**](Pipeline_library/Pipeline_editing/EPMCMBIBPC-1472.md) | [MANUAL] Edit pipeline pop-up focus validation |  |
-| [**EPMCMBIBPC-1473**](Pipeline_library/Pipeline_editing/EPMCMBIBPC-1473.md) | [MANUAL] Rename file/folder pop-up focus validation |  |
-| [**EPMCMBIBPC-1481**](Pipeline_library/Pipeline_editing/EPMCMBIBPC-1481.md) | [MANUAL] Edit pipeline info pop-up focus validation |  |
+| [**EPMCMBIBPC-1188**](Pipeline_library/Pipeline_editing/EPMCMBIBPC-1188.md) | [MANUAL] Upload file on CODE tab | |
+| [**EPMCMBIBPC-1189**](Pipeline_library/Pipeline_editing/EPMCMBIBPC-1189.md) | [MANUAL] Upload several files on CODE tab | |
+| [**EPMCMBIBPC-1191**](Pipeline_library/Pipeline_editing/EPMCMBIBPC-1191.md) | [MANUAL] [Negative] Try to upload file that have spaces in file name | |
+| [**EPMCMBIBPC-1192**](Pipeline_library/Pipeline_editing/EPMCMBIBPC-1192.md) | [MANUAL] [Negative] Try to upload wrong named file and correct named file | |
+| [**EPMCMBIBPC-1471**](Pipeline_library/Pipeline_editing/EPMCMBIBPC-1471.md) | [MANUAL] Create pipeline pop-up focus validation | |
+| [**EPMCMBIBPC-1472**](Pipeline_library/Pipeline_editing/EPMCMBIBPC-1472.md) | [MANUAL] Edit pipeline pop-up focus validation | |
+| [**EPMCMBIBPC-1473**](Pipeline_library/Pipeline_editing/EPMCMBIBPC-1473.md) | [MANUAL] Rename file/folder pop-up focus validation | |
+| [**EPMCMBIBPC-1481**](Pipeline_library/Pipeline_editing/EPMCMBIBPC-1481.md) | [MANUAL] Edit pipeline info pop-up focus validation | |
 | [**EPMCMBIBPC-231**](Pipeline_library/Pipeline_editing/EPMCMBIBPC-231.md) | Create pipeline in folder | :white_check_mark: |
 | [**EPMCMBIBPC-284**](Pipeline_library/Pipeline_editing/EPMCMBIBPC-284.md) | Create folder | :white_check_mark: |
 | [**EPMCMBIBPC-285**](Pipeline_library/Pipeline_editing/EPMCMBIBPC-285.md) | Create pipeline from python template | :white_check_mark: |
@@ -661,12 +661,12 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-1256**](Pipeline_library/Pipeline_launch/EPMCMBIBPC-1256.md) | Change instance price type in config.json | :white_check_mark: |
 | [**EPMCMBIBPC-1257**](Pipeline_library/Pipeline_launch/EPMCMBIBPC-1257.md) | Change instance price type to spot in config.json | :white_check_mark: |
 | [**EPMCMBIBPC-1263**](Pipeline_library/Pipeline_launch/EPMCMBIBPC-1263.md) | Validation of default "Price type" | :white_check_mark: |
-| [**EPMCMBIBPC-1428**](Pipeline_library/Pipeline_launch/EPMCMBIBPC-1428.md) | [MANUAL] Run pipeline that have two configured output in parameters by UI |  |
-| [**EPMCMBIBPC-1475**](Pipeline_library/Pipeline_launch/EPMCMBIBPC-1475.md) | [MANUAL] Launch form shall perform parameter names validation |  |
-| [**EPMCMBIBPC-1480**](Pipeline_library/Pipeline_launch/EPMCMBIBPC-1480.md) | [MANUAL] Add descriptions to all parameters within launch form validation |  |
-| [**EPMCMBIBPC-1579**](Pipeline_library/Pipeline_launch/EPMCMBIBPC-1579.md) | [MANUAL] Validation of file-folder siblings in the Path parameter pop-up |  |
-| [**EPMCMBIBPC-1798**](Pipeline_library/Pipeline_launch/EPMCMBIBPC-1798.md) | [MANUAL] Groups of instance types validation on launch form |  |
-| [**EPMCMBIBPC-1842**](Pipeline_library/Pipeline_launch/EPMCMBIBPC-1842.md) | [MANUAL] Check of add Boolean parameter |  |
+| [**EPMCMBIBPC-1428**](Pipeline_library/Pipeline_launch/EPMCMBIBPC-1428.md) | [MANUAL] Run pipeline that have two configured output in parameters by UI | |
+| [**EPMCMBIBPC-1475**](Pipeline_library/Pipeline_launch/EPMCMBIBPC-1475.md) | [MANUAL] Launch form shall perform parameter names validation | |
+| [**EPMCMBIBPC-1480**](Pipeline_library/Pipeline_launch/EPMCMBIBPC-1480.md) | [MANUAL] Add descriptions to all parameters within launch form validation | |
+| [**EPMCMBIBPC-1579**](Pipeline_library/Pipeline_launch/EPMCMBIBPC-1579.md) | [MANUAL] Validation of file-folder siblings in the Path parameter pop-up | |
+| [**EPMCMBIBPC-1798**](Pipeline_library/Pipeline_launch/EPMCMBIBPC-1798.md) | [MANUAL] Groups of instance types validation on launch form | |
+| [**EPMCMBIBPC-1842**](Pipeline_library/Pipeline_launch/EPMCMBIBPC-1842.md) | [MANUAL] Check of add Boolean parameter | |
 | [**EPMCMBIBPC-2158**](Pipeline_library/Pipeline_launch/EPMCMBIBPC-2158.md) | Input data in pipeline validation | :white_check_mark: |
 | [**EPMCMBIBPC-360**](Pipeline_library/Pipeline_launch/EPMCMBIBPC-360.md) | Run pipeline that have configured output in JSON file | :white_check_mark: |
 | [**EPMCMBIBPC-362**](Pipeline_library/Pipeline_launch/EPMCMBIBPC-362.md) | Run pipeline that have configured output in parameters run | :white_check_mark: |
@@ -693,19 +693,19 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-935**](Pipeline_library/Pipeline_launch/EPMCMBIBPC-935.md) | Validation of several paths in parameter | :white_check_mark: |
 | [**EPMCMBIBPC-941**](Pipeline_library/Pipeline_launch/EPMCMBIBPC-941.md) | Validation of button for all supported parameters types | :white_check_mark: |
 | [**EPMCMBIBPC-100**](Pipeline_library/Pipeline_run/EPMCMBIBPC-100.md) | Launch pipeline | :white_check_mark: |
-| [**EPMCMBIBPC-1552**](Pipeline_library/Pipeline_run/EPMCMBIBPC-1552.md) | [MANUAL] On-demand estimated price validation of run pipeline |  |
-| [**EPMCMBIBPC-1555**](Pipeline_library/Pipeline_run/EPMCMBIBPC-1555.md) | [MANUAL] Export logs button validation |  |
-| [**EPMCMBIBPC-1558**](Pipeline_library/Pipeline_run/EPMCMBIBPC-1558.md) | [MANUAL] Export log file content validation |  |
-| [**EPMCMBIBPC-1573**](Pipeline_library/Pipeline_run/EPMCMBIBPC-1573.md) | [MANUAL] Several input path bucket validation |  |
-| [**EPMCMBIBPC-1742**](Pipeline_library/Pipeline_run/EPMCMBIBPC-1742.md) | [MANUAL] Validation of auto-scroll pipeline logs |  |
-| [**EPMCMBIBPC-1743**](Pipeline_library/Pipeline_run/EPMCMBIBPC-1743.md) | [MANUAL] Validation of disable auto-scroll pipeline logs |  |
-| [**EPMCMBIBPC-1850**](Pipeline_library/Pipeline_run/EPMCMBIBPC-1850.md) | [MANUAL] Output to read only buckets validation |  |
+| [**EPMCMBIBPC-1552**](Pipeline_library/Pipeline_run/EPMCMBIBPC-1552.md) | [MANUAL] On-demand estimated price validation of run pipeline | |
+| [**EPMCMBIBPC-1555**](Pipeline_library/Pipeline_run/EPMCMBIBPC-1555.md) | [MANUAL] Export logs button validation | |
+| [**EPMCMBIBPC-1558**](Pipeline_library/Pipeline_run/EPMCMBIBPC-1558.md) | [MANUAL] Export log file content validation | |
+| [**EPMCMBIBPC-1573**](Pipeline_library/Pipeline_run/EPMCMBIBPC-1573.md) | [MANUAL] Several input path bucket validation | |
+| [**EPMCMBIBPC-1742**](Pipeline_library/Pipeline_run/EPMCMBIBPC-1742.md) | [MANUAL] Validation of auto-scroll pipeline logs | |
+| [**EPMCMBIBPC-1743**](Pipeline_library/Pipeline_run/EPMCMBIBPC-1743.md) | [MANUAL] Validation of disable auto-scroll pipeline logs | |
+| [**EPMCMBIBPC-1850**](Pipeline_library/Pipeline_run/EPMCMBIBPC-1850.md) | [MANUAL] Output to read only buckets validation | |
 | [**EPMCMBIBPC-281**](Pipeline_library/Pipeline_run/EPMCMBIBPC-281.md) | Open active pipeline from node info | :white_check_mark: |
 | [**EPMCMBIBPC-298**](Pipeline_library/Pipeline_run/EPMCMBIBPC-298.md) | Create pipeline from python template | :white_check_mark: |
 | [**EPMCMBIBPC-299**](Pipeline_library/Pipeline_run/EPMCMBIBPC-299.md) | Pipeline run form validation | :white_check_mark: |
 | [**EPMCMBIBPC-300**](Pipeline_library/Pipeline_run/EPMCMBIBPC-300.md) | Cluster nodes page | :white_check_mark: |
 | [**EPMCMBIBPC-301**](Pipeline_library/Pipeline_run/EPMCMBIBPC-301.md) | Node information | :white_check_mark: |
-| [**EPMCMBIBPC-303**](Pipeline_library/Pipeline_run/EPMCMBIBPC-303.md) | [MANUAL] Validation instance type selection |  |
+| [**EPMCMBIBPC-303**](Pipeline_library/Pipeline_run/EPMCMBIBPC-303.md) | [MANUAL] Validation instance type selection | |
 | [**EPMCMBIBPC-304**](Pipeline_library/Pipeline_run/EPMCMBIBPC-304.md) | Check node that use for pipeline | :white_check_mark: |
 | [**EPMCMBIBPC-305**](Pipeline_library/Pipeline_run/EPMCMBIBPC-305.md) | Pipeline log | :white_check_mark: |
 | [**EPMCMBIBPC-306**](Pipeline_library/Pipeline_run/EPMCMBIBPC-306.md) | Cmd template check | :white_check_mark: |
@@ -724,7 +724,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Platform_Usage</b> (1 tests, 1 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
+|--- |--- | :---: |
 | [**2433**](Platform_Usage/2433.md) | Show user statuses | :white_check_mark: |
 
 </details>
@@ -733,7 +733,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Restrictions</b> (16 tests, 16 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
+|--- |--- | :---: |
 | [**EPMCMBIBPC-2637**](Restrictions/EPMCMBIBPC-2637.md) | Preparation for validation of instance types restrictions | :white_check_mark: |
 | [**EPMCMBIBPC-2638**](Restrictions/EPMCMBIBPC-2638.md) | Validation of instance types restrictions (existing objects) | :white_check_mark: |
 | [**EPMCMBIBPC-2639**](Restrictions/EPMCMBIBPC-2639.md) | Validation of instance types restrictions (creating objects) | :white_check_mark: |
@@ -757,8 +757,8 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Role_Based_Access_Control</b> (30 tests, 14 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
-| [**2144_impersonate_admin_as_general_user**](Role_Based_Access_Control/2144_impersonate_admin_as_general_user.md) | Allow to "impersonate" administrator as a general user |  |
+|--- |--- | :---: |
+| [**2144_impersonate_admin_as_general_user**](Role_Based_Access_Control/2144_impersonate_admin_as_general_user.md) | Allow to "impersonate" administrator as a general user | |
 | [**EPMCMBIBPC-3014**](Role_Based_Access_Control/EPMCMBIBPC-3014.md) | Authentication in platform | :white_check_mark: |
 | [**EPMCMBIBPC-3015**](Role_Based_Access_Control/EPMCMBIBPC-3015.md) | [NEGATIVE] Failed authentication | :white_check_mark: |
 | [**EPMCMBIBPC-3016**](Role_Based_Access_Control/EPMCMBIBPC-3016.md) | Block/unblock user | :white_check_mark: |
@@ -766,28 +766,28 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-3018**](Role_Based_Access_Control/EPMCMBIBPC-3018.md) | Remove admin rights from the user | :white_check_mark: |
 | [**EPMCMBIBPC-3019**](Role_Based_Access_Control/EPMCMBIBPC-3019.md) | Add the user | :white_check_mark: |
 | [**EPMCMBIBPC-3020**](Role_Based_Access_Control/EPMCMBIBPC-3020.md) | Remove the user | :white_check_mark: |
-| [**EPMCMBIBPC-3028**](Role_Based_Access_Control/EPMCMBIBPC-3028.md) | Associate a group to the user |  |
+| [**EPMCMBIBPC-3028**](Role_Based_Access_Control/EPMCMBIBPC-3028.md) | Associate a group to the user | |
 | [**EPMCMBIBPC-3168**](Role_Based_Access_Control/EPMCMBIBPC-3168.md) | Generate a list of users | :white_check_mark: |
 | [**EPMCMBIBPC-3169**](Role_Based_Access_Control/EPMCMBIBPC-3169.md) | Check anonymous access | :white_check_mark: |
 | [**3229_1**](Role_Based_Access_Control/3229_grant_permissions_to_user_account/3229_1.md) | READ grant permissions to user account | :white_check_mark: |
 | [**3229_2**](Role_Based_Access_Control/3229_grant_permissions_to_user_account/3229_2.md) | WRITE grant permissions to user account | :white_check_mark: |
 | [**3229_3**](Role_Based_Access_Control/3229_grant_permissions_to_user_account/3229_3.md) | EXECUTE grant permissions to user account | :white_check_mark: |
-| [**3230_1**](Role_Based_Access_Control/3230_personal_group_permissions_restrictions/3230_1.md) | Personal tool groups/tools: permission restrictions for group |  |
-| [**3230_2**](Role_Based_Access_Control/3230_personal_group_permissions_restrictions/3230_2.md) | Personal tool groups/tools: permission restrictions for all groups/roles |  |
-| [**3389_1**](Role_Based_Access_Control/3389_storage_admine_role/3389_1.md) | ROLE_STORAGE_ADMIN: operations with existing storage |  |
-| [**3389_2**](Role_Based_Access_Control/3389_storage_admine_role/3389_2.md) | ROLE_STORAGE_ADMIN: storage creation |  |
-| [**3389_3**](Role_Based_Access_Control/3389_storage_admine_role/3389_3.md) | ROLE_STORAGE_ADMIN: operations with storage tags |  |
+| [**3230_1**](Role_Based_Access_Control/3230_personal_group_permissions_restrictions/3230_1.md) | Personal tool groups/tools: permission restrictions for group | |
+| [**3230_2**](Role_Based_Access_Control/3230_personal_group_permissions_restrictions/3230_2.md) | Personal tool groups/tools: permission restrictions for all groups/roles | |
+| [**3389_1**](Role_Based_Access_Control/3389_storage_admine_role/3389_1.md) | ROLE_STORAGE_ADMIN: operations with existing storage | |
+| [**3389_2**](Role_Based_Access_Control/3389_storage_admine_role/3389_2.md) | ROLE_STORAGE_ADMIN: storage creation | |
+| [**3389_3**](Role_Based_Access_Control/3389_storage_admine_role/3389_3.md) | ROLE_STORAGE_ADMIN: operations with storage tags | |
 | [**3751_1**](Role_Based_Access_Control/3751_allow_to_grant_permissions_to_group/3751_1.md) | READ grant permissions to User Group | :white_check_mark: |
 | [**3751_2**](Role_Based_Access_Control/3751_allow_to_grant_permissions_to_group/3751_2.md) | WRITE grant permissions to User Group | :white_check_mark: |
-| [**3970_1**](Role_Based_Access_Control/3970_storage_permissions_restrictions/3970_1.md) | Storage permissions restrictions |  |
-| [**3970_2**](Role_Based_Access_Control/3970_storage_permissions_restrictions/3970_2.md) | Storage permissions restrictions for all groups/roles |  |
-| [**4146_3_1**](Role_Based_Access_Control/4146_Admin_privileges/4146_role_tool_admin/4146_3_1.md) | ROLE_TOOL_ADMIN: edit Instance management items |  |
-| [**4146_3_2**](Role_Based_Access_Control/4146_Admin_privileges/4146_role_tool_admin/4146_3_2.md) | ROLE_TOOL: managing permissions of existing pipeline |  |
-| [**4146_3_3**](Role_Based_Access_Control/4146_Admin_privileges/4146_role_tool_admin/4146_3_3.md) | ROLE_TOOL_ADMIN: edit Instance management items |  |
-| [**4146_3_4**](Role_Based_Access_Control/4146_Admin_privileges/4146_role_tool_admin/4146_3_4.md) | ROLE_TOOL_ADMIN: managing tags of registry, group, tool |  |
-| [**4146_4_10**](Role_Based_Access_Control/4146_Admin_privileges/4146_role_user_admin/4146_4_10.md) | ROLE_USER_ADMIN: impersonate admin user |  |
-| [**4146_4_11**](Role_Based_Access_Control/4146_Admin_privileges/4146_role_user_admin/4146_4_11.md) | ROLE_USER_ADMIN: add admin roles to user |  |
-| [**4593_1**](Role_Based_Access_Control/4593_storage_reader_role/4593_1.md) | ROLE_STORAGE_READER: read-only access to existing storages |  |
+| [**3970_1**](Role_Based_Access_Control/3970_storage_permissions_restrictions/3970_1.md) | Storage permissions restrictions | |
+| [**3970_2**](Role_Based_Access_Control/3970_storage_permissions_restrictions/3970_2.md) | Storage permissions restrictions for all groups/roles | |
+| [**4146_3_1**](Role_Based_Access_Control/4146_Admin_privileges/4146_role_tool_admin/4146_3_1.md) | ROLE_TOOL_ADMIN: edit Instance management items | |
+| [**4146_3_2**](Role_Based_Access_Control/4146_Admin_privileges/4146_role_tool_admin/4146_3_2.md) | ROLE_TOOL: managing permissions of existing pipeline | |
+| [**4146_3_3**](Role_Based_Access_Control/4146_Admin_privileges/4146_role_tool_admin/4146_3_3.md) | ROLE_TOOL_ADMIN: edit Instance management items | |
+| [**4146_3_4**](Role_Based_Access_Control/4146_Admin_privileges/4146_role_tool_admin/4146_3_4.md) | ROLE_TOOL_ADMIN: managing tags of registry, group, tool | |
+| [**4146_4_10**](Role_Based_Access_Control/4146_Admin_privileges/4146_role_user_admin/4146_4_10.md) | ROLE_USER_ADMIN: impersonate admin user | |
+| [**4146_4_11**](Role_Based_Access_Control/4146_Admin_privileges/4146_role_user_admin/4146_4_11.md) | ROLE_USER_ADMIN: add admin roles to user | |
+| [**4593_1**](Role_Based_Access_Control/4593_storage_reader_role/4593_1.md) | ROLE_STORAGE_READER: read-only access to existing storages | |
 
 </details>
 
@@ -795,49 +795,49 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Role_model</b> (68 tests, 28 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
-| [**EPMCMBIBPC-1465**](Role_model/EPMCMBIBPC-1465.md) | [MANUAL] Permissions on completed runs validation |  |
-| [**EPMCMBIBPC-1487**](Role_model/EPMCMBIBPC-1487.md) | [MANUAL] Check accessibility of read-denied tool from detached configuration |  |
-| [**EPMCMBIBPC-1491**](Role_model/EPMCMBIBPC-1491.md) | [MANUAL] Commit tool with denied write permission to the tools group |  |
-| [**EPMCMBIBPC-1498**](Role_model/EPMCMBIBPC-1498.md) | [MANUAL] User/Group permission pop-up focus validation |  |
-| [**EPMCMBIBPC-1547**](Role_model/EPMCMBIBPC-1547.md) | [MANUAL] Check tool group by user with read-only permissions for registry |  |
-| [**EPMCMBIBPC-1548**](Role_model/EPMCMBIBPC-1548.md) | [MANUAL] Check tools group page by user with denied permissions for registry and approved permissions for tools group |  |
-| [**EPMCMBIBPC-1551**](Role_model/EPMCMBIBPC-1551.md) | [MANUAL] Check tool accessibility for user without permissions for registry and group |  |
+|--- |--- | :---: |
+| [**EPMCMBIBPC-1465**](Role_model/EPMCMBIBPC-1465.md) | [MANUAL] Permissions on completed runs validation | |
+| [**EPMCMBIBPC-1487**](Role_model/EPMCMBIBPC-1487.md) | [MANUAL] Check accessibility of read-denied tool from detached configuration | |
+| [**EPMCMBIBPC-1491**](Role_model/EPMCMBIBPC-1491.md) | [MANUAL] Commit tool with denied write permission to the tools group | |
+| [**EPMCMBIBPC-1498**](Role_model/EPMCMBIBPC-1498.md) | [MANUAL] User/Group permission pop-up focus validation | |
+| [**EPMCMBIBPC-1547**](Role_model/EPMCMBIBPC-1547.md) | [MANUAL] Check tool group by user with read-only permissions for registry | |
+| [**EPMCMBIBPC-1548**](Role_model/EPMCMBIBPC-1548.md) | [MANUAL] Check tools group page by user with denied permissions for registry and approved permissions for tools group | |
+| [**EPMCMBIBPC-1551**](Role_model/EPMCMBIBPC-1551.md) | [MANUAL] Check tool accessibility for user without permissions for registry and group | |
 | [**EPMCMBIBPC-1575**](Role_model/EPMCMBIBPC-1575.md) | Search validation within "edit user" dialog | :white_check_mark: |
-| [**EPMCMBIBPC-1577**](Role_model/EPMCMBIBPC-1577.md) | [MANUAL] Commit tool with allowed write permission to the tools group with denied write permission |  |
+| [**EPMCMBIBPC-1577**](Role_model/EPMCMBIBPC-1577.md) | [MANUAL] Commit tool with allowed write permission to the tools group with denied write permission | |
 | [**EPMCMBIBPC-1581**](Role_model/EPMCMBIBPC-1581.md) | [NEGATIVE] Search for no user in User management tab | :white_check_mark: |
-| [**EPMCMBIBPC-1598**](Role_model/EPMCMBIBPC-1598.md) | [MANUAL] Run pipeline without permissions on docker image validation |  |
-| [**EPMCMBIBPC-1606**](Role_model/EPMCMBIBPC-1606.md) | [MANUAL] Pipeline manager role validation |  |
-| [**EPMCMBIBPC-1607**](Role_model/EPMCMBIBPC-1607.md) | [MANUAL] Folder manager role validation |  |
-| [**EPMCMBIBPC-1608**](Role_model/EPMCMBIBPC-1608.md) | [MANUAL] Storage manager role validation |  |
-| [**EPMCMBIBPC-1609**](Role_model/EPMCMBIBPC-1609.md) | [MANUAL] Configuration manager role validation |  |
-| [**EPMCMBIBPC-1610**](Role_model/EPMCMBIBPC-1610.md) | [MANUAL] Entities manager role validation |  |
-| [**EPMCMBIBPC-1612**](Role_model/EPMCMBIBPC-1612.md) | [MANUAL] Tool group manager role validation |  |
-| [**EPMCMBIBPC-1613**](Role_model/EPMCMBIBPC-1613.md) | [MANUAL] User own folder validation |  |
-| [**EPMCMBIBPC-1614**](Role_model/EPMCMBIBPC-1614.md) | [MANUAL] User own storage validation |  |
-| [**EPMCMBIBPC-1615**](Role_model/EPMCMBIBPC-1615.md) | [MANUAL] User own pipeline validation |  |
-| [**EPMCMBIBPC-1616**](Role_model/EPMCMBIBPC-1616.md) | [MANUAL] User own configuration validation |  |
-| [**EPMCMBIBPC-1617**](Role_model/EPMCMBIBPC-1617.md) | [MANUAL] User own tool in public group validation |  |
-| [**EPMCMBIBPC-1618**](Role_model/EPMCMBIBPC-1618.md) | [MANUAL] User own tool in personal group validation |  |
-| [**EPMCMBIBPC-1619**](Role_model/EPMCMBIBPC-1619.md) | [MANUAL] Third-party tool in user personal group validation |  |
-| [**EPMCMBIBPC-1620**](Role_model/EPMCMBIBPC-1620.md) | [MANUAL] Check tool permissions for read-only user |  |
-| [**EPMCMBIBPC-1621**](Role_model/EPMCMBIBPC-1621.md) | [MANUAL] Check tool edit prohibition for read-only user |  |
-| [**EPMCMBIBPC-1628**](Role_model/EPMCMBIBPC-1628.md) | [MANUAL] Check folder permissions for read+write user |  |
-| [**EPMCMBIBPC-1630**](Role_model/EPMCMBIBPC-1630.md) | [MANUAL] Check folder permissions for read+execute user |  |
-| [**EPMCMBIBPC-1633**](Role_model/EPMCMBIBPC-1633.md) | [MANUAL] Check tool permissions by user with read-only permissions for tools group |  |
-| [**EPMCMBIBPC-1634**](Role_model/EPMCMBIBPC-1634.md) | [MANUAL] Check tool permissions by user with read-only permissions for registry |  |
-| [**EPMCMBIBPC-1635**](Role_model/EPMCMBIBPC-1635.md) | [MANUAL] Check tool accessibility for user with read-only permissions for tools group and full-denied permissions for tool |  |
-| [**EPMCMBIBPC-1637**](Role_model/EPMCMBIBPC-1637.md) | [MANUAL] Return tool without permission to execute |  |
-| [**EPMCMBIBPC-1638**](Role_model/EPMCMBIBPC-1638.md) | [MANUAL] [NEGATIVE] Set of allow checkbox validation |  |
-| [**EPMCMBIBPC-1639**](Role_model/EPMCMBIBPC-1639.md) | [MANUAL] Check folder read-only permissions and full deny permissions for sub-storage |  |
-| [**EPMCMBIBPC-1641**](Role_model/EPMCMBIBPC-1641.md) | [MANUAL] Check detached configuration permissions for read-only user |  |
-| [**EPMCMBIBPC-1642**](Role_model/EPMCMBIBPC-1642.md) | [MANUAL] Check detached configuration permissions for read+write user |  |
-| [**EPMCMBIBPC-1643**](Role_model/EPMCMBIBPC-1643.md) | [MANUAL] Check detached configuration permissions for read+execute user |  |
-| [**EPMCMBIBPC-1701**](Role_model/EPMCMBIBPC-1701.md) | [MANUAL] Change pipeline owner validation |  |
-| [**EPMCMBIBPC-1702**](Role_model/EPMCMBIBPC-1702.md) | [MANUAL] Change folder owner validation |  |
-| [**EPMCMBIBPC-1703**](Role_model/EPMCMBIBPC-1703.md) | [MANUAL] Change data storage owner validation |  |
-| [**EPMCMBIBPC-1704**](Role_model/EPMCMBIBPC-1704.md) | [MANUAL] Change detached configuration owner validation |  |
-| [**EPMCMBIBPC-406**](Role_model/EPMCMBIBPC-406.md) | [MANUAL] Check access to ssh for not owner and non admin user |  |
+| [**EPMCMBIBPC-1598**](Role_model/EPMCMBIBPC-1598.md) | [MANUAL] Run pipeline without permissions on docker image validation | |
+| [**EPMCMBIBPC-1606**](Role_model/EPMCMBIBPC-1606.md) | [MANUAL] Pipeline manager role validation | |
+| [**EPMCMBIBPC-1607**](Role_model/EPMCMBIBPC-1607.md) | [MANUAL] Folder manager role validation | |
+| [**EPMCMBIBPC-1608**](Role_model/EPMCMBIBPC-1608.md) | [MANUAL] Storage manager role validation | |
+| [**EPMCMBIBPC-1609**](Role_model/EPMCMBIBPC-1609.md) | [MANUAL] Configuration manager role validation | |
+| [**EPMCMBIBPC-1610**](Role_model/EPMCMBIBPC-1610.md) | [MANUAL] Entities manager role validation | |
+| [**EPMCMBIBPC-1612**](Role_model/EPMCMBIBPC-1612.md) | [MANUAL] Tool group manager role validation | |
+| [**EPMCMBIBPC-1613**](Role_model/EPMCMBIBPC-1613.md) | [MANUAL] User own folder validation | |
+| [**EPMCMBIBPC-1614**](Role_model/EPMCMBIBPC-1614.md) | [MANUAL] User own storage validation | |
+| [**EPMCMBIBPC-1615**](Role_model/EPMCMBIBPC-1615.md) | [MANUAL] User own pipeline validation | |
+| [**EPMCMBIBPC-1616**](Role_model/EPMCMBIBPC-1616.md) | [MANUAL] User own configuration validation | |
+| [**EPMCMBIBPC-1617**](Role_model/EPMCMBIBPC-1617.md) | [MANUAL] User own tool in public group validation | |
+| [**EPMCMBIBPC-1618**](Role_model/EPMCMBIBPC-1618.md) | [MANUAL] User own tool in personal group validation | |
+| [**EPMCMBIBPC-1619**](Role_model/EPMCMBIBPC-1619.md) | [MANUAL] Third-party tool in user personal group validation | |
+| [**EPMCMBIBPC-1620**](Role_model/EPMCMBIBPC-1620.md) | [MANUAL] Check tool permissions for read-only user | |
+| [**EPMCMBIBPC-1621**](Role_model/EPMCMBIBPC-1621.md) | [MANUAL] Check tool edit prohibition for read-only user | |
+| [**EPMCMBIBPC-1628**](Role_model/EPMCMBIBPC-1628.md) | [MANUAL] Check folder permissions for read+write user | |
+| [**EPMCMBIBPC-1630**](Role_model/EPMCMBIBPC-1630.md) | [MANUAL] Check folder permissions for read+execute user | |
+| [**EPMCMBIBPC-1633**](Role_model/EPMCMBIBPC-1633.md) | [MANUAL] Check tool permissions by user with read-only permissions for tools group | |
+| [**EPMCMBIBPC-1634**](Role_model/EPMCMBIBPC-1634.md) | [MANUAL] Check tool permissions by user with read-only permissions for registry | |
+| [**EPMCMBIBPC-1635**](Role_model/EPMCMBIBPC-1635.md) | [MANUAL] Check tool accessibility for user with read-only permissions for tools group and full-denied permissions for tool | |
+| [**EPMCMBIBPC-1637**](Role_model/EPMCMBIBPC-1637.md) | [MANUAL] Return tool without permission to execute | |
+| [**EPMCMBIBPC-1638**](Role_model/EPMCMBIBPC-1638.md) | [MANUAL] [NEGATIVE] Set of allow checkbox validation | |
+| [**EPMCMBIBPC-1639**](Role_model/EPMCMBIBPC-1639.md) | [MANUAL] Check folder read-only permissions and full deny permissions for sub-storage | |
+| [**EPMCMBIBPC-1641**](Role_model/EPMCMBIBPC-1641.md) | [MANUAL] Check detached configuration permissions for read-only user | |
+| [**EPMCMBIBPC-1642**](Role_model/EPMCMBIBPC-1642.md) | [MANUAL] Check detached configuration permissions for read+write user | |
+| [**EPMCMBIBPC-1643**](Role_model/EPMCMBIBPC-1643.md) | [MANUAL] Check detached configuration permissions for read+execute user | |
+| [**EPMCMBIBPC-1701**](Role_model/EPMCMBIBPC-1701.md) | [MANUAL] Change pipeline owner validation | |
+| [**EPMCMBIBPC-1702**](Role_model/EPMCMBIBPC-1702.md) | [MANUAL] Change folder owner validation | |
+| [**EPMCMBIBPC-1703**](Role_model/EPMCMBIBPC-1703.md) | [MANUAL] Change data storage owner validation | |
+| [**EPMCMBIBPC-1704**](Role_model/EPMCMBIBPC-1704.md) | [MANUAL] Change detached configuration owner validation | |
+| [**EPMCMBIBPC-406**](Role_model/EPMCMBIBPC-406.md) | [MANUAL] Check access to ssh for not owner and non admin user | |
 | [**EPMCMBIBPC-537**](Role_model/EPMCMBIBPC-537.md) | Permissions form validation | :white_check_mark: |
 | [**EPMCMBIBPC-539**](Role_model/EPMCMBIBPC-539.md) | Form for set user permissions validation | :white_check_mark: |
 | [**EPMCMBIBPC-540**](Role_model/EPMCMBIBPC-540.md) | Validate of set read allow automatically if any other permission was allowed | :white_check_mark: |
@@ -871,10 +871,10 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Run_tools_in_sandbox</b> (148 tests, 75 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
-| [**1949_write_access_to_bucket_with_runas**](Run_tools_in_sandbox/1949_write_access_to_bucket_with_runas.md) | User And Write Access To Bucket With Run As Option |  |
+|--- |--- | :---: |
+| [**1949_write_access_to_bucket_with_runas**](Run_tools_in_sandbox/1949_write_access_to_bucket_with_runas.md) | User And Write Access To Bucket With Run As Option | |
 | [**2338**](Run_tools_in_sandbox/2338.md) | Allow to disable COMMIT function for the tool | :white_check_mark: |
-| [**EPMCMBIBPC-1179**](Run_tools_in_sandbox/EPMCMBIBPC-1179.md) | [MANUAL] Validation of endpoint in tooltip |  |
+| [**EPMCMBIBPC-1179**](Run_tools_in_sandbox/EPMCMBIBPC-1179.md) | [MANUAL] Validation of endpoint in tooltip | |
 | [**EPMCMBIBPC-2309**](Run_tools_in_sandbox/EPMCMBIBPC-2309.md) | Validation of pipelines pause/resume (check SSH) | :white_check_mark: |
 | [**EPMCMBIBPC-2626**](Run_tools_in_sandbox/EPMCMBIBPC-2626.md) | Validation of pipelines pause/resume (check endpoints) | :white_check_mark: |
 | [**EPMCMBIBPC-2627**](Run_tools_in_sandbox/EPMCMBIBPC-2627.md) | Validation of docker.extra_multi | :white_check_mark: |
@@ -883,8 +883,8 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-2634**](Run_tools_in_sandbox/EPMCMBIBPC-2634.md) | Autopause validation [PAUSE_OR_STOP] | :white_check_mark: |
 | [**EPMCMBIBPC-2635**](Run_tools_in_sandbox/EPMCMBIBPC-2635.md) | Autopause validation [PAUSE] | :white_check_mark: |
 | [**EPMCMBIBPC-2636**](Run_tools_in_sandbox/EPMCMBIBPC-2636.md) | Validation of hdd_extra_multi | :white_check_mark: |
-| [**EPMCMBIBPC-2659**](Run_tools_in_sandbox/EPMCMBIBPC-2659.md) | [MANUAL] Validation of disabling autopause |  |
-| [**EPMCMBIBPC-3021**](Run_tools_in_sandbox/EPMCMBIBPC-3021.md) | [MANUAL] Validation of keyboard settings modification |  |
+| [**EPMCMBIBPC-2659**](Run_tools_in_sandbox/EPMCMBIBPC-2659.md) | [MANUAL] Validation of disabling autopause | |
+| [**EPMCMBIBPC-3021**](Run_tools_in_sandbox/EPMCMBIBPC-3021.md) | [MANUAL] Validation of keyboard settings modification | |
 | [**EPMCMBIBPC-3172**](Run_tools_in_sandbox/EPMCMBIBPC-3172.md) | Validation of DinD launch | :white_check_mark: |
 | [**EPMCMBIBPC-3173**](Run_tools_in_sandbox/EPMCMBIBPC-3173.md) | Validation of DinD functionality | :white_check_mark: |
 | [**EPMCMBIBPC-3174**](Run_tools_in_sandbox/EPMCMBIBPC-3174.md) | Validation of Singularity launch | :white_check_mark: |
@@ -901,57 +901,57 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-503**](Run_tools_in_sandbox/EPMCMBIBPC-503.md) | Check node reuse for tool launch | :white_check_mark: |
 | [**EPMCMBIBPC-504**](Run_tools_in_sandbox/EPMCMBIBPC-504.md) | Stop tool in sandbox by timeout | :white_check_mark: |
 | [**EPMCMBIBPC-526**](Run_tools_in_sandbox/EPMCMBIBPC-526.md) | Prepare for sandbox testing | :white_check_mark: |
-| [**1615_1**](Run_tools_in_sandbox/1615_AWS%20route53/1615_1.md) | Check DNS records for runs without pretty URL |  |
-| [**1615_2**](Run_tools_in_sandbox/1615_AWS%20route53/1615_2.md) | Check DNS records for runs with pretty URL |  |
-| [**1615_3**](Run_tools_in_sandbox/1615_AWS%20route53/1615_3.md) | Check endpoint change in active run |  |
-| [**1825_1**](Run_tools_in_sandbox/1825_allow_to_run_hosted_applications/1825_1.md) | Check the Configure internal DNS pop-up |  |
-| [**1825_2**](Run_tools_in_sandbox/1825_allow_to_run_hosted_applications/1825_2.md) | Check run "hosted" applications (1 port) |  |
-| [**1825_3**](Run_tools_in_sandbox/1825_allow_to_run_hosted_applications/1825_3.md) | [Manual] Check run "hosted" applications (several ports) |  |
-| [**3052_1**](Run_tools_in_sandbox/3052_report_run_tags_timepoint/3052_1.md) | Report timestamp when a PRESSURE tag was assigned to a run |  |
-| [**4419_1**](Run_tools_in_sandbox/4419_tool_version_black_list/4419_1.md) | Admin adds a tool version to the black list |  |
-| [**4419_2**](Run_tools_in_sandbox/4419_tool_version_black_list/4419_2.md) | Blacklisted tool version is visible but cannot be launched by a regular user |  |
-| [**4419_3**](Run_tools_in_sandbox/4419_tool_version_black_list/4419_3.md) | Pipeline with blacklisted tool version can't be launched by a regular user |  |
-| [**4419_4**](Run_tools_in_sandbox/4419_tool_version_black_list/4419_4.md) | Admin removes a tool version from the black list |  |
-| [**4419_5**](Run_tools_in_sandbox/4419_tool_version_black_list/4419_5.md) | User with ROLE_TOOL_ADMIN can manage the tool version black list |  |
-| [**4439_1**](Run_tools_in_sandbox/4439/4439_1.md) | EXTERNAL_URLS tag is not displayed in run tags |  |
-| [**4439_2**](Run_tools_in_sandbox/4439/4439_2.md) | Custom endpoints from EXTERNAL_URLS are shown in the Endpoints section |  |
-| [**4439_3**](Run_tools_in_sandbox/4439/4439_3.md) | Custom endpoint with displayOnCompletion=false is hidden after run completion |  |
-| [**4439_4**](Run_tools_in_sandbox/4439/4439_4.md) | Custom endpoint with displayOnCompletion=true (or omitted) remains visible after run completion |  |
-| [**4439_5**](Run_tools_in_sandbox/4439/4439_5.md) | Custom endpoints are shown in all run log form views (Default, Nextflow, MLflow) |  |
-| [**4512_1**](Run_tools_in_sandbox/4512/4512_1.md) | IDLE_CPU and IDLE tags for non-GPU run with CPU utilization below than threshold |  |
-| [**4512_2**](Run_tools_in_sandbox/4512/4512_2.md) | IDLE_GPU tag for a GPU run with no GPU activity |  |
-| [**4512_3**](Run_tools_in_sandbox/4512/4512_3.md) | Notifications for idle states |  |
-| [**4512_4**](Run_tools_in_sandbox/4512/4512_4.md) | IDLE tag disappears when at least one of the activity type appears |  |
-| [**4512_5**](Run_tools_in_sandbox/4512/4512_5.md) | Check PAUSE action for a GPU run with no GPU activity |  |
-| [**4512_6**](Run_tools_in_sandbox/4512/4512_6.md) | Check PAUSE_OR_STOP action for a spot GPU run with no GPU activity |  |
-| [**4512_7**](Run_tools_in_sandbox/4512/4512_7.md) | Check PAUSE_OR_STOP action for a on-demand GPU run with no GPU activity |  |
-| [**4512_8**](Run_tools_in_sandbox/4512/4512_8.md) | Run is NOT marked IDLE when CPU config is disabled |  |
-| [**4512_9**](Run_tools_in_sandbox/4512/4512_9.md) | Run is NOT marked IDLE when GPU config is disabled and only CPU would be idle |  |
-| [**4608_1**](Run_tools_in_sandbox/4608_capacity_retries/4608_1.md) | CP_NODEUP_RETRY_COUNT works as a regular parameter when `ui.launch.allow.nodeup.count` is off |  |
-| [**4608_2**](Run_tools_in_sandbox/4608_capacity_retries/4608_2.md) | "Capacity retries" field appears on the Tool launch form when `ui.launch.allow.nodeup.count` is on |  |
-| [**4608_3**](Run_tools_in_sandbox/4608_capacity_retries/4608_3.md) | "Capacity retries" field validation |  |
-| [**4608_4**](Run_tools_in_sandbox/4608_capacity_retries/4608_4.md) | A "Capacity retries" value is sent to the run as the CP_NODEUP_RETRY_COUNT parameter |  |
-| [**4608_5**](Run_tools_in_sandbox/4608_capacity_retries/4608_5.md) | CP_NODEUP_RETRY_COUNT name is reserved when `ui.launch.allow.nodeup.count` is on |  |
-| [**4608_6**](Run_tools_in_sandbox/4608_capacity_retries/4608_6.md) | "Capacity retries" field is available for a Pipeline, a Detached configuration, a Launch profile and a Rerun |  |
-| [**4608_7**](Run_tools_in_sandbox/4608_capacity_retries/4608_7.md) | "Capacity retries" field in the Tool settings |  |
-| [**4608_8**](Run_tools_in_sandbox/4608_capacity_retries/4608_8.md) | "Capacity retries" limits the number of node-up attempts after `Insufficient instance capacity` |  |
-| [**4608_9**](Run_tools_in_sandbox/4608_capacity_retries/4608_9.md) | "Capacity retries" applies to every "Fallback node types" entry too |  |
-| [**4656_1**](Run_tools_in_sandbox/4656_digest_pinning/4656_1.md) | Docker image digest pinning is disabled by default |  |
-| [**4656_2**](Run_tools_in_sandbox/4656_digest_pinning/4656_2.md) | A run launched with the digest pinning enabled shows the docker image digest |  |
-| [**4656_3**](Run_tools_in_sandbox/4656_digest_pinning/4656_3.md) | Pause and resume of a run pinned to the docker image digest keep the run's changes |  |
-| [**4656_4**](Run_tools_in_sandbox/4656_digest_pinning/4656_4.md) | Commit of a run pinned to the docker image digest |  |
-| [**4656_5**](Run_tools_in_sandbox/4656_digest_pinning/4656_5.md) | A run launched before the digest pinning is enabled keeps working with the tag |  |
-| [**4656_6**](Run_tools_in_sandbox/4656_digest_pinning/4656_6.md) | Disabling the digest pinning does not affect the runs that are already pinned |  |
-| [**4656_7**](Run_tools_in_sandbox/4656_digest_pinning/4656_7.md) | A rerun of a pinned run is pinned to the digest its tag points to at the rerun |  |
+| [**1615_1**](Run_tools_in_sandbox/1615_AWS%20route53/1615_1.md) | Check DNS records for runs without pretty URL | |
+| [**1615_2**](Run_tools_in_sandbox/1615_AWS%20route53/1615_2.md) | Check DNS records for runs with pretty URL | |
+| [**1615_3**](Run_tools_in_sandbox/1615_AWS%20route53/1615_3.md) | Check endpoint change in active run | |
+| [**1825_1**](Run_tools_in_sandbox/1825_allow_to_run_hosted_applications/1825_1.md) | Check the Configure internal DNS pop-up | |
+| [**1825_2**](Run_tools_in_sandbox/1825_allow_to_run_hosted_applications/1825_2.md) | Check run "hosted" applications (1 port) | |
+| [**1825_3**](Run_tools_in_sandbox/1825_allow_to_run_hosted_applications/1825_3.md) | [Manual] Check run "hosted" applications (several ports) | |
+| [**3052_1**](Run_tools_in_sandbox/3052_report_run_tags_timepoint/3052_1.md) | Report timestamp when a PRESSURE tag was assigned to a run | |
+| [**4419_1**](Run_tools_in_sandbox/4419_tool_version_black_list/4419_1.md) | Admin adds a tool version to the black list | |
+| [**4419_2**](Run_tools_in_sandbox/4419_tool_version_black_list/4419_2.md) | Blacklisted tool version is visible but cannot be launched by a regular user | |
+| [**4419_3**](Run_tools_in_sandbox/4419_tool_version_black_list/4419_3.md) | Pipeline with blacklisted tool version can't be launched by a regular user | |
+| [**4419_4**](Run_tools_in_sandbox/4419_tool_version_black_list/4419_4.md) | Admin removes a tool version from the black list | |
+| [**4419_5**](Run_tools_in_sandbox/4419_tool_version_black_list/4419_5.md) | User with ROLE_TOOL_ADMIN can manage the tool version black list | |
+| [**4439_1**](Run_tools_in_sandbox/4439/4439_1.md) | EXTERNAL_URLS tag is not displayed in run tags | |
+| [**4439_2**](Run_tools_in_sandbox/4439/4439_2.md) | Custom endpoints from EXTERNAL_URLS are shown in the Endpoints section | |
+| [**4439_3**](Run_tools_in_sandbox/4439/4439_3.md) | Custom endpoint with displayOnCompletion=false is hidden after run completion | |
+| [**4439_4**](Run_tools_in_sandbox/4439/4439_4.md) | Custom endpoint with displayOnCompletion=true (or omitted) remains visible after run completion | |
+| [**4439_5**](Run_tools_in_sandbox/4439/4439_5.md) | Custom endpoints are shown in all run log form views (Default, Nextflow, MLflow) | |
+| [**4512_1**](Run_tools_in_sandbox/4512/4512_1.md) | IDLE_CPU and IDLE tags for non-GPU run with CPU utilization below than threshold | |
+| [**4512_2**](Run_tools_in_sandbox/4512/4512_2.md) | IDLE_GPU tag for a GPU run with no GPU activity | |
+| [**4512_3**](Run_tools_in_sandbox/4512/4512_3.md) | Notifications for idle states | |
+| [**4512_4**](Run_tools_in_sandbox/4512/4512_4.md) | IDLE tag disappears when at least one of the activity type appears | |
+| [**4512_5**](Run_tools_in_sandbox/4512/4512_5.md) | Check PAUSE action for a GPU run with no GPU activity | |
+| [**4512_6**](Run_tools_in_sandbox/4512/4512_6.md) | Check PAUSE_OR_STOP action for a spot GPU run with no GPU activity | |
+| [**4512_7**](Run_tools_in_sandbox/4512/4512_7.md) | Check PAUSE_OR_STOP action for a on-demand GPU run with no GPU activity | |
+| [**4512_8**](Run_tools_in_sandbox/4512/4512_8.md) | Run is NOT marked IDLE when CPU config is disabled | |
+| [**4512_9**](Run_tools_in_sandbox/4512/4512_9.md) | Run is NOT marked IDLE when GPU config is disabled and only CPU would be idle | |
+| [**4608_1**](Run_tools_in_sandbox/4608_capacity_retries/4608_1.md) | CP_NODEUP_RETRY_COUNT works as a regular parameter when `ui.launch.allow.nodeup.count` is off | |
+| [**4608_2**](Run_tools_in_sandbox/4608_capacity_retries/4608_2.md) | "Capacity retries" field appears on the Tool launch form when `ui.launch.allow.nodeup.count` is on | |
+| [**4608_3**](Run_tools_in_sandbox/4608_capacity_retries/4608_3.md) | "Capacity retries" field validation | |
+| [**4608_4**](Run_tools_in_sandbox/4608_capacity_retries/4608_4.md) | A "Capacity retries" value is sent to the run as the CP_NODEUP_RETRY_COUNT parameter | |
+| [**4608_5**](Run_tools_in_sandbox/4608_capacity_retries/4608_5.md) | CP_NODEUP_RETRY_COUNT name is reserved when `ui.launch.allow.nodeup.count` is on | |
+| [**4608_6**](Run_tools_in_sandbox/4608_capacity_retries/4608_6.md) | "Capacity retries" field is available for a Pipeline, a Detached configuration, a Launch profile and a Rerun | |
+| [**4608_7**](Run_tools_in_sandbox/4608_capacity_retries/4608_7.md) | "Capacity retries" field in the Tool settings | |
+| [**4608_8**](Run_tools_in_sandbox/4608_capacity_retries/4608_8.md) | "Capacity retries" limits the number of node-up attempts after `Insufficient instance capacity` | |
+| [**4608_9**](Run_tools_in_sandbox/4608_capacity_retries/4608_9.md) | "Capacity retries" applies to every "Fallback node types" entry too | |
+| [**4656_1**](Run_tools_in_sandbox/4656_digest_pinning/4656_1.md) | Docker image digest pinning is disabled by default | |
+| [**4656_2**](Run_tools_in_sandbox/4656_digest_pinning/4656_2.md) | A run launched with the digest pinning enabled shows the docker image digest | |
+| [**4656_3**](Run_tools_in_sandbox/4656_digest_pinning/4656_3.md) | Pause and resume of a run pinned to the docker image digest keep the run's changes | |
+| [**4656_4**](Run_tools_in_sandbox/4656_digest_pinning/4656_4.md) | Commit of a run pinned to the docker image digest | |
+| [**4656_5**](Run_tools_in_sandbox/4656_digest_pinning/4656_5.md) | A run launched before the digest pinning is enabled keeps working with the tag | |
+| [**4656_6**](Run_tools_in_sandbox/4656_digest_pinning/4656_6.md) | Disabling the digest pinning does not affect the runs that are already pinned | |
+| [**4656_7**](Run_tools_in_sandbox/4656_digest_pinning/4656_7.md) | A rerun of a pinned run is pinned to the digest its tag points to at the rerun | |
 | [**223**](Run_tools_in_sandbox/Launch_parameters/223.md) | Check the launch system parameters preference (CP_FSBROWSER_ENABLED) | :white_check_mark: |
 | [**2234**](Run_tools_in_sandbox/Launch_parameters/2234.md) | "Custom" capabilities implementation | :white_check_mark: |
 | [**2295**](Run_tools_in_sandbox/Launch_parameters/2295.md) | "Custom" capabilities with configured job parameters | :white_check_mark: |
 | [**2319**](Run_tools_in_sandbox/Launch_parameters/2319.md) | Check automatically blocking users, based on the AD info | :white_check_mark: |
 | [**2736**](Run_tools_in_sandbox/Launch_parameters/2736.md) | Forcible terminate instances if the job is stuck in umount | :white_check_mark: |
-| [**3069**](Run_tools_in_sandbox/Launch_parameters/3069.md) | Check hiding system capabilities |  |
-| [**3074**](Run_tools_in_sandbox/Launch_parameters/3074.md) | GUI Launch form: disk size disclaimers |  |
-| [**3300**](Run_tools_in_sandbox/Launch_parameters/3300.md) | Display warning for tools with/without CUDA toolkit |  |
-| [**3417**](Run_tools_in_sandbox/Launch_parameters/3417.md) | Add kubernetes support to grid engine autoscaler |  |
+| [**3069**](Run_tools_in_sandbox/Launch_parameters/3069.md) | Check hiding system capabilities | |
+| [**3074**](Run_tools_in_sandbox/Launch_parameters/3074.md) | GUI Launch form: disk size disclaimers | |
+| [**3300**](Run_tools_in_sandbox/Launch_parameters/3300.md) | Display warning for tools with/without CUDA toolkit | |
+| [**3417**](Run_tools_in_sandbox/Launch_parameters/3417.md) | Add kubernetes support to grid engine autoscaler | |
 | [**3433**](Run_tools_in_sandbox/Launch_parameters/3433.md) | Allow to use r6i instance family in the SGE hybrid autoscaling | :white_check_mark: |
 | [**783**](Run_tools_in_sandbox/Launch_parameters/783.md) | Check the configure CPU resource | :white_check_mark: |
 | [**913**](Run_tools_in_sandbox/Launch_parameters/913.md) | Add support for autoscaling filesystem for AWS | :white_check_mark: |
@@ -960,7 +960,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**TC-PARAMETERS-3**](Run_tools_in_sandbox/Launch_parameters/TC-PARAMETERS-3.md) | Check the configure cluster aws ebs volume type for docker images | :white_check_mark: |
 | [**TC-PARAMETERS-4**](Run_tools_in_sandbox/Launch_parameters/TC-PARAMETERS-4.md) | Node memory limits | :white_check_mark: |
 | [**TC-PARAMETERS-5**](Run_tools_in_sandbox/Launch_parameters/TC-PARAMETERS-5.md) | Link storage with their URLs and not only with their IDs | :white_check_mark: |
-| [**TC-PARAMETERS-7**](Run_tools_in_sandbox/Launch_parameters/TC-PARAMETERS-7.md) | Check 'conda' run capability |  |
+| [**TC-PARAMETERS-7**](Run_tools_in_sandbox/Launch_parameters/TC-PARAMETERS-7.md) | Check 'conda' run capability | |
 | [**1900_1**](Run_tools_in_sandbox/Launch_parameters/1900/1900_1.md) | Implement kubernetes dns custom hosts management | :white_check_mark: |
 | [**1900_2**](Run_tools_in_sandbox/Launch_parameters/1900/1900_2.md) | Support dns hosts management in sge autoscaler | :white_check_mark: |
 | [**2323_1**](Run_tools_in_sandbox/Launch_parameters/2323/2323_1.md) | Check that "Capabilities" for Tools can depend on the docker image OS | :white_check_mark: |
@@ -977,28 +977,28 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**2423_3**](Run_tools_in_sandbox/Launch_parameters/2423/2423_3.md) | Check switch to Maintenance mode during the run Committing | :white_check_mark: |
 | [**2423_4**](Run_tools_in_sandbox/Launch_parameters/2423/2423_4.md) | Check switch to Maintenance mode during the run Pausing and Resuming operations | :white_check_mark: |
 | [**2423_5**](Run_tools_in_sandbox/Launch_parameters/2423/2423_5.md) | Check disabled Hot node pools autoscaling in Maintenance mode | :white_check_mark: |
-| [**2642_1**](Run_tools_in_sandbox/Launch_parameters/2642/2642_1.md) | Check Global Restriction a count of the running instances |  |
-| [**2642_2**](Run_tools_in_sandbox/Launch_parameters/2642/2642_2.md) | Check running instances restriction applied to Group |  |
-| [**2642_3**](Run_tools_in_sandbox/Launch_parameters/2642/2642_3.md) | Check simultaneous applying of two Group level running instances restrictions |  |
-| [**2642_4**](Run_tools_in_sandbox/Launch_parameters/2642/2642_4.md) | Check running instances restriction applied to User |  |
-| [**2642_5**](Run_tools_in_sandbox/Launch_parameters/2642/2642_5.md) | Check running instances restriction for Cluster runs |  |
-| [**2642_6**](Run_tools_in_sandbox/Launch_parameters/2642/2642_6.md) | Check running instances restriction for launch tool with configured Cluster |  |
-| [**2642_7**](Run_tools_in_sandbox/Launch_parameters/2642/2642_7.md) | Check running instances restriction for Auto-Scaled Cluster runs |  |
-| [**3064_1**](Run_tools_in_sandbox/Launch_parameters/3064/3064_1.md) | Optionally hide maintenance configuration for tool jobs |  |
-| [**3064_2**](Run_tools_in_sandbox/Launch_parameters/3064/3064_2.md) | Optionally hide maintenance configuration for pipeline jobs |  |
-| [**3122_1**](Run_tools_in_sandbox/Launch_parameters/3122_insufficient_capacity/3122_1.md) | Run jobs in other regions in case of insufficient capacity |  |
-| [**3122_2**](Run_tools_in_sandbox/Launch_parameters/3122_insufficient_capacity/3122_2.md) | Restart jobs in other regions shouldn't work for cluster run |  |
-| [**3122_3**](Run_tools_in_sandbox/Launch_parameters/3122_insufficient_capacity/3122_3.md) | Restart jobs in other regions shouldn't work for run with cloud dependent parameters |  |
-| [**3122_4**](Run_tools_in_sandbox/Launch_parameters/3122_insufficient_capacity/3122_4.md) | Run jobs in case of insufficient capacity for region without Run shift policy flag |  |
-| [**3298_1**](Run_tools_in_sandbox/Launch_parameters/3122_insufficient_capacity/3298_1.md) | Restart jobs in other regions shouldn't work if Allow reschedule option is disabled |  |
-| [**3298_2**](Run_tools_in_sandbox/Launch_parameters/3122_insufficient_capacity/3298_2.md) | Restart jobs in other regions should work if Allow reschedule option is enabled |  |
-| [**3971_1**](Run_tools_in_sandbox/Launch_parameters/3971_cloud_region/3971_1.md) | Mount rules: Mount None Storages located in cloud region |  |
-| [**3971_2**](Run_tools_in_sandbox/Launch_parameters/3971_cloud_region/3971_2.md) | Mount rules: Mount Storages located in the same cloud region with instance |  |
-| [**3971_3**](Run_tools_in_sandbox/Launch_parameters/3971_cloud_region/3971_3.md) | Mount rules: check Mount Storages located in the certain region via pipe CLI |  |
-| [**3971_4**](Run_tools_in_sandbox/Launch_parameters/3971_cloud_region/3971_4.md) | Mount rules: check filter storages for cloud region in Launch confirmation |  |
-| [**4682_1**](Run_tools_in_sandbox/Launch_parameters/4682/4682_1.md) | "Show optional parameters" checkbox is checked by default on the pipeline launch form |  |
-| [**4682_2**](Run_tools_in_sandbox/Launch_parameters/4682/4682_2.md) | "Show optional parameters" checkbox overrides for a single pipeline |  |
-| [**4682_3**](Run_tools_in_sandbox/Launch_parameters/4682/4682_3.md) | "Show optional parameters" checkbox overrides for a single tool |  |
+| [**2642_1**](Run_tools_in_sandbox/Launch_parameters/2642/2642_1.md) | Check Global Restriction a count of the running instances | |
+| [**2642_2**](Run_tools_in_sandbox/Launch_parameters/2642/2642_2.md) | Check running instances restriction applied to Group | |
+| [**2642_3**](Run_tools_in_sandbox/Launch_parameters/2642/2642_3.md) | Check simultaneous applying of two Group level running instances restrictions | |
+| [**2642_4**](Run_tools_in_sandbox/Launch_parameters/2642/2642_4.md) | Check running instances restriction applied to User | |
+| [**2642_5**](Run_tools_in_sandbox/Launch_parameters/2642/2642_5.md) | Check running instances restriction for Cluster runs | |
+| [**2642_6**](Run_tools_in_sandbox/Launch_parameters/2642/2642_6.md) | Check running instances restriction for launch tool with configured Cluster | |
+| [**2642_7**](Run_tools_in_sandbox/Launch_parameters/2642/2642_7.md) | Check running instances restriction for Auto-Scaled Cluster runs | |
+| [**3064_1**](Run_tools_in_sandbox/Launch_parameters/3064/3064_1.md) | Optionally hide maintenance configuration for tool jobs | |
+| [**3064_2**](Run_tools_in_sandbox/Launch_parameters/3064/3064_2.md) | Optionally hide maintenance configuration for pipeline jobs | |
+| [**3122_1**](Run_tools_in_sandbox/Launch_parameters/3122_insufficient_capacity/3122_1.md) | Run jobs in other regions in case of insufficient capacity | |
+| [**3122_2**](Run_tools_in_sandbox/Launch_parameters/3122_insufficient_capacity/3122_2.md) | Restart jobs in other regions shouldn't work for cluster run | |
+| [**3122_3**](Run_tools_in_sandbox/Launch_parameters/3122_insufficient_capacity/3122_3.md) | Restart jobs in other regions shouldn't work for run with cloud dependent parameters | |
+| [**3122_4**](Run_tools_in_sandbox/Launch_parameters/3122_insufficient_capacity/3122_4.md) | Run jobs in case of insufficient capacity for region without Run shift policy flag | |
+| [**3298_1**](Run_tools_in_sandbox/Launch_parameters/3122_insufficient_capacity/3298_1.md) | Restart jobs in other regions shouldn't work if Allow reschedule option is disabled | |
+| [**3298_2**](Run_tools_in_sandbox/Launch_parameters/3122_insufficient_capacity/3298_2.md) | Restart jobs in other regions should work if Allow reschedule option is enabled | |
+| [**3971_1**](Run_tools_in_sandbox/Launch_parameters/3971_cloud_region/3971_1.md) | Mount rules: Mount None Storages located in cloud region | |
+| [**3971_2**](Run_tools_in_sandbox/Launch_parameters/3971_cloud_region/3971_2.md) | Mount rules: Mount Storages located in the same cloud region with instance | |
+| [**3971_3**](Run_tools_in_sandbox/Launch_parameters/3971_cloud_region/3971_3.md) | Mount rules: check Mount Storages located in the certain region via pipe CLI | |
+| [**3971_4**](Run_tools_in_sandbox/Launch_parameters/3971_cloud_region/3971_4.md) | Mount rules: check filter storages for cloud region in Launch confirmation | |
+| [**4682_1**](Run_tools_in_sandbox/Launch_parameters/4682/4682_1.md) | "Show optional parameters" checkbox is checked by default on the pipeline launch form | |
+| [**4682_2**](Run_tools_in_sandbox/Launch_parameters/4682/4682_2.md) | "Show optional parameters" checkbox overrides for a single pipeline | |
+| [**4682_3**](Run_tools_in_sandbox/Launch_parameters/4682/4682_3.md) | "Show optional parameters" checkbox overrides for a single tool | |
 | [**TC-PARAMETERS-6**](Run_tools_in_sandbox/Launch_parameters/SGE_Configuration/TC-PARAMETERS-6.md) | Autoscaling cluster configuration | :white_check_mark: |
 | [**1447**](Run_tools_in_sandbox/Limit_mounts/1447.md) | Displaying the CP_CAP_LIMIT_MOUNTS in a user-friendly manner | :white_check_mark: |
 | [**1480**](Run_tools_in_sandbox/Limit_mounts/1480.md) | Check limit mounts warnings | :white_check_mark: |
@@ -1027,36 +1027,36 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Runs</b> (35 tests, 3 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
-| [**EPMCMBIBPC-102**](Runs/EPMCMBIBPC-102.md) | [MANUAL] Status of working pipeline |  |
+|--- |--- | :---: |
+| [**EPMCMBIBPC-102**](Runs/EPMCMBIBPC-102.md) | [MANUAL] Status of working pipeline | |
 | [**EPMCMBIBPC-103**](Runs/EPMCMBIBPC-103.md) | Platform usage info | :white_check_mark: |
-| [**EPMCMBIBPC-113**](Runs/EPMCMBIBPC-113.md) | [MANUAL] Pipeline log |  |
-| [**EPMCMBIBPC-114**](Runs/EPMCMBIBPC-114.md) | [MANUAL] Rerurn pipeline |  |
-| [**EPMCMBIBPC-1991**](Runs/EPMCMBIBPC-1991.md) | [MANUAL] Validate of active runs switcher |  |
-| [**EPMCMBIBPC-235**](Runs/EPMCMBIBPC-235.md) | [MANUAL] Filtering active runs by pipeline name |  |
-| [**EPMCMBIBPC-236**](Runs/EPMCMBIBPC-236.md) | [MANUAL] Clear filtering active runs by pipeline name |  |
-| [**EPMCMBIBPC-237**](Runs/EPMCMBIBPC-237.md) | [MANUAL] Filtering completed runs by pipeline name |  |
-| [**EPMCMBIBPC-238**](Runs/EPMCMBIBPC-238.md) | [MANUAL] Clear filtering completed runs by pipeline name |  |
-| [**EPMCMBIBPC-239**](Runs/EPMCMBIBPC-239.md) | [MANUAL] Filtering completed runs by pipeline status |  |
-| [**EPMCMBIBPC-240**](Runs/EPMCMBIBPC-240.md) | [MANUAL] Clear filtering completed runs by pipeline status |  |
-| [**EPMCMBIBPC-241**](Runs/EPMCMBIBPC-241.md) | [MANUAL] Filtering completed runs by pipeline started date |  |
-| [**EPMCMBIBPC-242**](Runs/EPMCMBIBPC-242.md) | [MANUAL] Clear filtering completed runs by pipeline started date |  |
-| [**EPMCMBIBPC-243**](Runs/EPMCMBIBPC-243.md) | [MANUAL] Filtering completed runs by pipeline completed date |  |
-| [**EPMCMBIBPC-244**](Runs/EPMCMBIBPC-244.md) | [MANUAL] Clear filtering completed runs by pipeline completed date |  |
-| [**EPMCMBIBPC-245**](Runs/EPMCMBIBPC-245.md) | [MANUAL] Filtering completed runs by pipeline owner |  |
-| [**EPMCMBIBPC-246**](Runs/EPMCMBIBPC-246.md) | [MANUAL] Clear filtering completed runs by pipeline owner |  |
-| [**EPMCMBIBPC-250**](Runs/EPMCMBIBPC-250.md) | [MANUAL] Filtering completed runs by pipeline parent run |  |
-| [**EPMCMBIBPC-251**](Runs/EPMCMBIBPC-251.md) | [MANUAL] Clear filtering completed runs by pipeline parent run |  |
-| [**EPMCMBIBPC-252**](Runs/EPMCMBIBPC-252.md) | [MANUAL] Navigation on "COMPLETED RUNS" page |  |
-| [**EPMCMBIBPC-253**](Runs/EPMCMBIBPC-253.md) | [MANUAL] Navigation on "ACTIVE RUNS" page |  |
-| [**EPMCMBIBPC-257**](Runs/EPMCMBIBPC-257.md) | [MANUAL] Filtering active runs by pipeline parent run |  |
-| [**EPMCMBIBPC-258**](Runs/EPMCMBIBPC-258.md) | [MANUAL] Clear filtering active runs by pipeline parent run |  |
-| [**EPMCMBIBPC-261**](Runs/EPMCMBIBPC-261.md) | [MANUAL] Filtering active runs by pipeline owner |  |
-| [**EPMCMBIBPC-262**](Runs/EPMCMBIBPC-262.md) | [MANUAL] Clear filtering active runs by pipeline owner |  |
-| [**EPMCMBIBPC-263**](Runs/EPMCMBIBPC-263.md) | [MANUAL] Filtering active runs by pipeline started date |  |
-| [**EPMCMBIBPC-264**](Runs/EPMCMBIBPC-264.md) | [MANUAL] Clear filtering active runs by pipeline started date |  |
-| [**EPMCMBIBPC-265**](Runs/EPMCMBIBPC-265.md) | [MANUAL] Pipeline log timings |  |
-| [**EPMCMBIBPC-266**](Runs/EPMCMBIBPC-266.md) | [MANUAL] Navigate to node from pipeline log |  |
+| [**EPMCMBIBPC-113**](Runs/EPMCMBIBPC-113.md) | [MANUAL] Pipeline log | |
+| [**EPMCMBIBPC-114**](Runs/EPMCMBIBPC-114.md) | [MANUAL] Rerurn pipeline | |
+| [**EPMCMBIBPC-1991**](Runs/EPMCMBIBPC-1991.md) | [MANUAL] Validate of active runs switcher | |
+| [**EPMCMBIBPC-235**](Runs/EPMCMBIBPC-235.md) | [MANUAL] Filtering active runs by pipeline name | |
+| [**EPMCMBIBPC-236**](Runs/EPMCMBIBPC-236.md) | [MANUAL] Clear filtering active runs by pipeline name | |
+| [**EPMCMBIBPC-237**](Runs/EPMCMBIBPC-237.md) | [MANUAL] Filtering completed runs by pipeline name | |
+| [**EPMCMBIBPC-238**](Runs/EPMCMBIBPC-238.md) | [MANUAL] Clear filtering completed runs by pipeline name | |
+| [**EPMCMBIBPC-239**](Runs/EPMCMBIBPC-239.md) | [MANUAL] Filtering completed runs by pipeline status | |
+| [**EPMCMBIBPC-240**](Runs/EPMCMBIBPC-240.md) | [MANUAL] Clear filtering completed runs by pipeline status | |
+| [**EPMCMBIBPC-241**](Runs/EPMCMBIBPC-241.md) | [MANUAL] Filtering completed runs by pipeline started date | |
+| [**EPMCMBIBPC-242**](Runs/EPMCMBIBPC-242.md) | [MANUAL] Clear filtering completed runs by pipeline started date | |
+| [**EPMCMBIBPC-243**](Runs/EPMCMBIBPC-243.md) | [MANUAL] Filtering completed runs by pipeline completed date | |
+| [**EPMCMBIBPC-244**](Runs/EPMCMBIBPC-244.md) | [MANUAL] Clear filtering completed runs by pipeline completed date | |
+| [**EPMCMBIBPC-245**](Runs/EPMCMBIBPC-245.md) | [MANUAL] Filtering completed runs by pipeline owner | |
+| [**EPMCMBIBPC-246**](Runs/EPMCMBIBPC-246.md) | [MANUAL] Clear filtering completed runs by pipeline owner | |
+| [**EPMCMBIBPC-250**](Runs/EPMCMBIBPC-250.md) | [MANUAL] Filtering completed runs by pipeline parent run | |
+| [**EPMCMBIBPC-251**](Runs/EPMCMBIBPC-251.md) | [MANUAL] Clear filtering completed runs by pipeline parent run | |
+| [**EPMCMBIBPC-252**](Runs/EPMCMBIBPC-252.md) | [MANUAL] Navigation on "COMPLETED RUNS" page | |
+| [**EPMCMBIBPC-253**](Runs/EPMCMBIBPC-253.md) | [MANUAL] Navigation on "ACTIVE RUNS" page | |
+| [**EPMCMBIBPC-257**](Runs/EPMCMBIBPC-257.md) | [MANUAL] Filtering active runs by pipeline parent run | |
+| [**EPMCMBIBPC-258**](Runs/EPMCMBIBPC-258.md) | [MANUAL] Clear filtering active runs by pipeline parent run | |
+| [**EPMCMBIBPC-261**](Runs/EPMCMBIBPC-261.md) | [MANUAL] Filtering active runs by pipeline owner | |
+| [**EPMCMBIBPC-262**](Runs/EPMCMBIBPC-262.md) | [MANUAL] Clear filtering active runs by pipeline owner | |
+| [**EPMCMBIBPC-263**](Runs/EPMCMBIBPC-263.md) | [MANUAL] Filtering active runs by pipeline started date | |
+| [**EPMCMBIBPC-264**](Runs/EPMCMBIBPC-264.md) | [MANUAL] Clear filtering active runs by pipeline started date | |
+| [**EPMCMBIBPC-265**](Runs/EPMCMBIBPC-265.md) | [MANUAL] Pipeline log timings | |
+| [**EPMCMBIBPC-266**](Runs/EPMCMBIBPC-266.md) | [MANUAL] Navigate to node from pipeline log | |
 | [**EPMCMBIBPC-3170**](Runs/EPMCMBIBPC-3170.md) | [MANUAL] Platform usage (pipelines) | :white_check_mark: |
 | [**EPMCMBIBPC-3171**](Runs/EPMCMBIBPC-3171.md) | [MANUAL] Platform usage (tools) | :white_check_mark: |
 
@@ -1066,7 +1066,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Sample_Processing_Module</b> (38 tests, 27 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
+|--- |--- | :---: |
 | [**1569**](Sample_Processing_Module/1569.md) | Check the Metadata entities IDs autogeneration | :white_check_mark: |
 | [**1589**](Sample_Processing_Module/1589.md) | Check the "Created Date" field for Metadata entities | :white_check_mark: |
 | [**1613**](Sample_Processing_Module/1613.md) | Check an error on duplicated Metadata entities IDs | :white_check_mark: |
@@ -1094,17 +1094,17 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-1625**](Sample_Processing_Module/EPMCMBIBPC-1625.md) | "Select metadata"-"SampleSet" pop-up validation | :white_check_mark: |
 | [**EPMCMBIBPC-1626**](Sample_Processing_Module/EPMCMBIBPC-1626.md) | Run SampleSet validation | :white_check_mark: |
 | [**EPMCMBIBPC-1627**](Sample_Processing_Module/EPMCMBIBPC-1627.md) | Validation of pipeline parameters (SampleSet) | :white_check_mark: |
-| [**EPMCMBIBPC-1921**](Sample_Processing_Module/EPMCMBIBPC-1921.md) | [MANUAL] View history of project runs |  |
-| [**2023_1-Column_sorting_extension**](Sample_Processing_Module/2023_Metadata_control_improvements/2023_1-Column_sorting_extension.md) | Column sorting extension |  |
-| [**2023_2-Metadata_entities_display_setting**](Sample_Processing_Module/2023_Metadata_control_improvements/2023_2-Metadata_entities_display_setting.md) | Metadata entities display setting |  |
-| [**2023_3-Metadata_entities_autofill**](Sample_Processing_Module/2023_Metadata_control_improvements/2023_3-Metadata_entities_autofill.md) | Metadata entities autofill |  |
-| [**2023_4-Resolve_variables_for_rerun**](Sample_Processing_Module/2023_Metadata_control_improvements/2023_4-Resolve_variables_for_rerun.md) | Resolve variables for rerun |  |
-| [**2023_5-Samples_preselect_for_a_rerun**](Sample_Processing_Module/2023_Metadata_control_improvements/2023_5-Samples_preselect_for_a_rerun.md) | Samples preselect for a rerun |  |
-| [**EPMCMBIBPC-2722**](Sample_Processing_Module/Download_from_external_resources/EPMCMBIBPC-2722.md) | [MANUAL] Prepare for downloading |  |
-| [**EPMCMBIBPC-2723**](Sample_Processing_Module/Download_from_external_resources/EPMCMBIBPC-2723.md) | [MANUAL] Download with specifying names into several folders |  |
-| [**EPMCMBIBPC-2724**](Sample_Processing_Module/Download_from_external_resources/EPMCMBIBPC-2724.md) | [MANUAL] Download with updating path values |  |
-| [**EPMCMBIBPC-2725**](Sample_Processing_Module/Download_from_external_resources/EPMCMBIBPC-2725.md) | [MANUAL] Download with default names |  |
-| [**EPMCMBIBPC-2726**](Sample_Processing_Module/Download_from_external_resources/EPMCMBIBPC-2726.md) | [MANUAL] Download with default names into specific folders |  |
+| [**EPMCMBIBPC-1921**](Sample_Processing_Module/EPMCMBIBPC-1921.md) | [MANUAL] View history of project runs | |
+| [**2023_1-Column_sorting_extension**](Sample_Processing_Module/2023_Metadata_control_improvements/2023_1-Column_sorting_extension.md) | Column sorting extension | |
+| [**2023_2-Metadata_entities_display_setting**](Sample_Processing_Module/2023_Metadata_control_improvements/2023_2-Metadata_entities_display_setting.md) | Metadata entities display setting | |
+| [**2023_3-Metadata_entities_autofill**](Sample_Processing_Module/2023_Metadata_control_improvements/2023_3-Metadata_entities_autofill.md) | Metadata entities autofill | |
+| [**2023_4-Resolve_variables_for_rerun**](Sample_Processing_Module/2023_Metadata_control_improvements/2023_4-Resolve_variables_for_rerun.md) | Resolve variables for rerun | |
+| [**2023_5-Samples_preselect_for_a_rerun**](Sample_Processing_Module/2023_Metadata_control_improvements/2023_5-Samples_preselect_for_a_rerun.md) | Samples preselect for a rerun | |
+| [**EPMCMBIBPC-2722**](Sample_Processing_Module/Download_from_external_resources/EPMCMBIBPC-2722.md) | [MANUAL] Prepare for downloading | |
+| [**EPMCMBIBPC-2723**](Sample_Processing_Module/Download_from_external_resources/EPMCMBIBPC-2723.md) | [MANUAL] Download with specifying names into several folders | |
+| [**EPMCMBIBPC-2724**](Sample_Processing_Module/Download_from_external_resources/EPMCMBIBPC-2724.md) | [MANUAL] Download with updating path values | |
+| [**EPMCMBIBPC-2725**](Sample_Processing_Module/Download_from_external_resources/EPMCMBIBPC-2725.md) | [MANUAL] Download with default names | |
+| [**EPMCMBIBPC-2726**](Sample_Processing_Module/Download_from_external_resources/EPMCMBIBPC-2726.md) | [MANUAL] Download with default names into specific folders | |
 
 </details>
 
@@ -1112,7 +1112,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Ssh_Shell_Test</b> (3 tests, 3 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
+|--- |--- | :---: |
 | [**EPMCMBIBPC-583**](Ssh_Shell_Test/EPMCMBIBPC-583.md) | Validate of SSH access link is available | :white_check_mark: |
 | [**EPMCMBIBPC-584**](Ssh_Shell_Test/EPMCMBIBPC-584.md) | Click SSH link | :white_check_mark: |
 | [**EPMCMBIBPC-585**](Ssh_Shell_Test/EPMCMBIBPC-585.md) | Check shell functionality | :white_check_mark: |
@@ -1123,7 +1123,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>System_Management</b> (30 tests, 17 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
+|--- |--- | :---: |
 | [**2232_1**](System_Management/2232-2444_NAT_Gateway/2232_1.md) | Check "Add new route" form | :white_check_mark: |
 | [**2232_10**](System_Management/2232-2444_NAT_Gateway/2232_10.md) | Add several route records with the same server name but different ports | :white_check_mark: |
 | [**2232_2**](System_Management/2232-2444_NAT_Gateway/2232_2.md) | Creating a new route with specified IP address | :white_check_mark: |
@@ -1135,19 +1135,19 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**2232_8**](System_Management/2232-2444_NAT_Gateway/2232_8.md) | Add route without resolved IP and with different Protocol to the existing route | :white_check_mark: |
 | [**2232_9**](System_Management/2232-2444_NAT_Gateway/2232_9.md) | Add new route with several ports and the same Protocol | :white_check_mark: |
 | [**2444_1**](System_Management/2232-2444_NAT_Gateway/2444_1.md) | Add new route with several ports and different Protocols | :white_check_mark: |
-| [**3059_1**](System_Management/3059-3075-4039_audit_pipe_mount_operation/3059_1.md) | Data access audit (operations with files) |  |
-| [**3059_2**](System_Management/3059-3075-4039_audit_pipe_mount_operation/3059_2.md) | Data access audit (operations with folders) |  |
-| [**3059_3**](System_Management/3059-3075-4039_audit_pipe_mount_operation/3059_3.md) | UI Data access audit |  |
-| [**3059_4**](System_Management/3059-3075-4039_audit_pipe_mount_operation/3059_4.md) | WebDav data access audit |  |
-| [**3059_5**](System_Management/3059-3075-4039_audit_pipe_mount_operation/3059_5.md) | Audit of Sharing storage data access |  |
-| [**3059_6**](System_Management/3059-3075-4039_audit_pipe_mount_operation/3059_6.md) | Audit of partially sharing storage Data access |  |
-| [**3075**](System_Management/3059-3075-4039_audit_pipe_mount_operation/3075.md) | Audit pipe mount operations |  |
-| [**4024_1**](System_Management/3059-3075-4039_audit_pipe_mount_operation/4024_1.md) | Audit mount events |  |
-| [**4024_2**](System_Management/3059-3075-4039_audit_pipe_mount_operation/4024_2.md) | Audit run sharing event |  |
-| [**4039**](System_Management/3059-3075-4039_audit_pipe_mount_operation/4039.md) | Data access audit - NFS |  |
-| [**4689_1**](System_Management/4689_group_ui_preferences_priority/4689_1.md) | Group with the higher priority sets the GUI settings |  |
-| [**4689_2**](System_Management/4689_group_ui_preferences_priority/4689_2.md) | Group without priority counts as priority 0 |  |
-| [**4689_3**](System_Management/4689_group_ui_preferences_priority/4689_3.md) | Groups with the same priority keep the preference order |  |
+| [**3059_1**](System_Management/3059-3075-4039_audit_pipe_mount_operation/3059_1.md) | Data access audit (operations with files) | |
+| [**3059_2**](System_Management/3059-3075-4039_audit_pipe_mount_operation/3059_2.md) | Data access audit (operations with folders) | |
+| [**3059_3**](System_Management/3059-3075-4039_audit_pipe_mount_operation/3059_3.md) | UI Data access audit | |
+| [**3059_4**](System_Management/3059-3075-4039_audit_pipe_mount_operation/3059_4.md) | WebDav data access audit | |
+| [**3059_5**](System_Management/3059-3075-4039_audit_pipe_mount_operation/3059_5.md) | Audit of Sharing storage data access | |
+| [**3059_6**](System_Management/3059-3075-4039_audit_pipe_mount_operation/3059_6.md) | Audit of partially sharing storage Data access | |
+| [**3075**](System_Management/3059-3075-4039_audit_pipe_mount_operation/3075.md) | Audit pipe mount operations | |
+| [**4024_1**](System_Management/3059-3075-4039_audit_pipe_mount_operation/4024_1.md) | Audit mount events | |
+| [**4024_2**](System_Management/3059-3075-4039_audit_pipe_mount_operation/4024_2.md) | Audit run sharing event | |
+| [**4039**](System_Management/3059-3075-4039_audit_pipe_mount_operation/4039.md) | Data access audit - NFS | |
+| [**4689_1**](System_Management/4689_group_ui_preferences_priority/4689_1.md) | Group with the higher priority sets the GUI settings | |
+| [**4689_2**](System_Management/4689_group_ui_preferences_priority/4689_2.md) | Group without priority counts as priority 0 | |
+| [**4689_3**](System_Management/4689_group_ui_preferences_priority/4689_3.md) | Groups with the same priority keep the preference order | |
 | [**EPMCMBIBPC-3162**](System_Management/System_logging/EPMCMBIBPC-3162.md) | User authentication | :white_check_mark: |
 | [**EPMCMBIBPC-3163**](System_Management/System_logging/EPMCMBIBPC-3163.md) | User authentication. Unsuccessful attempt | :white_check_mark: |
 | [**EPMCMBIBPC-3164**](System_Management/System_logging/EPMCMBIBPC-3164.md) | User profile modifications | :white_check_mark: |
@@ -1161,15 +1161,15 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Test_Environment</b> (8 tests, 3 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
-| [**2870_1**](Test_Environment/2870_1.md) | [Manual] Checking the notification that the certificate is about to expire |  |
-| [**2870_2**](Test_Environment/2870_2.md) | [Manual] Checking the notification that Nodes exceed thresholds |  |
+|--- |--- | :---: |
+| [**2870_1**](Test_Environment/2870_1.md) | [Manual] Checking the notification that the certificate is about to expire | |
+| [**2870_2**](Test_Environment/2870_2.md) | [Manual] Checking the notification that Nodes exceed thresholds | |
 | [**3404**](Test_Environment/3404.md) | Allow to specify Lustre FS type and thoughput | :white_check_mark: |
 | [**3676**](Test_Environment/3676.md) | Allow to specify Lustre FS metadata IOPS for the clusters scratch spac | :white_check_mark: |
-| [**TC-TEST-ENVIRONMENT-1**](Test_Environment/TC-TEST-ENVIRONMENT-1.md) | Unblock test Users before tests |  |
-| [**TC-TEST-ENVIRONMENT-2**](Test_Environment/TC-TEST-ENVIRONMENT-2.md) | Block test Users after tests |  |
+| [**TC-TEST-ENVIRONMENT-1**](Test_Environment/TC-TEST-ENVIRONMENT-1.md) | Unblock test Users before tests | |
+| [**TC-TEST-ENVIRONMENT-2**](Test_Environment/TC-TEST-ENVIRONMENT-2.md) | Block test Users after tests | |
 | [**TC-TEST-ENVIRONMENT-3**](Test_Environment/TC-TEST-ENVIRONMENT-3.md) | Check update pipe version in the existing run | :white_check_mark: |
-| [**TC-TEST-ENVIRONMENT-4**](Test_Environment/TC-TEST-ENVIRONMENT-4.md) | SSH terminal theme settings |  |
+| [**TC-TEST-ENVIRONMENT-4**](Test_Environment/TC-TEST-ENVIRONMENT-4.md) | SSH terminal theme settings | |
 
 </details>
 
@@ -1177,45 +1177,45 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Tools</b> (63 tests, 30 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
-| [**4664_1**](Tools/4664_default_version/4664_1.md) | The latest version is used until a default version is set |  |
-| [**4664_10**](Tools/4664_default_version/4664_10.md) | Deleting a version of the same image removes the default version |  |
-| [**4664_11**](Tools/4664_default_version/4664_11.md) | A default version removed outside the platform |  |
-| [**4664_12**](Tools/4664_default_version/4664_12.md) | A commit into a tool with a default version doesn't create the latest version |  |
-| [**4664_13**](Tools/4664_default_version/4664_13.md) | Delete the default version of a tool without the latest version |  |
-| [**4664_2**](Tools/4664_default_version/4664_2.md) | Set a version as the default one |  |
-| [**4664_3**](Tools/4664_default_version/4664_3.md) | Unset the default version |  |
-| [**4664_4**](Tools/4664_default_version/4664_4.md) | Delete the default version |  |
-| [**4664_5**](Tools/4664_default_version/4664_5.md) | The default version in the version pickers |  |
-| [**4664_6**](Tools/4664_default_version/4664_6.md) | The default version controls depend on the permissions |  |
-| [**4664_7**](Tools/4664_default_version/4664_7.md) | A docker image without a tag is launched with the default version |  |
-| [**4664_8**](Tools/4664_default_version/4664_8.md) | A version without own settings is launched with the settings of the default version |  |
-| [**4664_9**](Tools/4664_default_version/4664_9.md) | The security messages name the default version |  |
+|--- |--- | :---: |
+| [**4664_1**](Tools/4664_default_version/4664_1.md) | The latest version is used until a default version is set | |
+| [**4664_10**](Tools/4664_default_version/4664_10.md) | Deleting a version of the same image removes the default version | |
+| [**4664_11**](Tools/4664_default_version/4664_11.md) | A default version removed outside the platform | |
+| [**4664_12**](Tools/4664_default_version/4664_12.md) | A commit into a tool with a default version doesn't create the latest version | |
+| [**4664_13**](Tools/4664_default_version/4664_13.md) | Delete the default version of a tool without the latest version | |
+| [**4664_2**](Tools/4664_default_version/4664_2.md) | Set a version as the default one | |
+| [**4664_3**](Tools/4664_default_version/4664_3.md) | Unset the default version | |
+| [**4664_4**](Tools/4664_default_version/4664_4.md) | Delete the default version | |
+| [**4664_5**](Tools/4664_default_version/4664_5.md) | The default version in the version pickers | |
+| [**4664_6**](Tools/4664_default_version/4664_6.md) | The default version controls depend on the permissions | |
+| [**4664_7**](Tools/4664_default_version/4664_7.md) | A docker image without a tag is launched with the default version | |
+| [**4664_8**](Tools/4664_default_version/4664_8.md) | A version without own settings is launched with the settings of the default version | |
+| [**4664_9**](Tools/4664_default_version/4664_9.md) | The security messages name the default version | |
 | [**EPMCMBIBPC-1296**](Tools/EPMCMBIBPC-1296.md) | Run tool with custom settings validation (EXECUTION DEFAULTS aren't filled) | :white_check_mark: |
 | [**EPMCMBIBPC-1404**](Tools/EPMCMBIBPC-1404.md) | Delete tool validation | :white_check_mark: |
 | [**EPMCMBIBPC-1407**](Tools/EPMCMBIBPC-1407.md) | Enable tool validation | :white_check_mark: |
-| [**EPMCMBIBPC-1432**](Tools/EPMCMBIBPC-1432.md) | [MANUAL] Validation of estimated price availability of empty tool |  |
+| [**EPMCMBIBPC-1432**](Tools/EPMCMBIBPC-1432.md) | [MANUAL] Validation of estimated price availability of empty tool | |
 | [**EPMCMBIBPC-1436**](Tools/EPMCMBIBPC-1436.md) | Validation of estimated price availability of filled tool | :white_check_mark: |
-| [**EPMCMBIBPC-1446**](Tools/EPMCMBIBPC-1446.md) | [MANUAL] Add a parameter validation |  |
-| [**EPMCMBIBPC-1454**](Tools/EPMCMBIBPC-1454.md) | [MANUAL] Clear selection button validation |  |
-| [**EPMCMBIBPC-1457**](Tools/EPMCMBIBPC-1457.md) | [MANUAL] Parameter name validation |  |
-| [**EPMCMBIBPC-1458**](Tools/EPMCMBIBPC-1458.md) | [MANUAL] Parameter name validation (negative) |  |
-| [**EPMCMBIBPC-1459**](Tools/EPMCMBIBPC-1459.md) | [MANUAL] Parameter name duplication validation |  |
-| [**EPMCMBIBPC-1460**](Tools/EPMCMBIBPC-1460.md) | [MANUAL] Duplicated parameter name validation (negative) |  |
-| [**EPMCMBIBPC-1461**](Tools/EPMCMBIBPC-1461.md) | [MANUAL] Path parameter browse button validation |  |
-| [**EPMCMBIBPC-1464**](Tools/EPMCMBIBPC-1464.md) | [MANUAL] Cancel and OK buttons validation |  |
-| [**EPMCMBIBPC-1488**](Tools/EPMCMBIBPC-1488.md) | [MANUAL] Create tool group pop-up focus validation |  |
-| [**EPMCMBIBPC-1490**](Tools/EPMCMBIBPC-1490.md) | [MANUAL] Registry edit pop-up focus validation |  |
-| [**EPMCMBIBPC-1492**](Tools/EPMCMBIBPC-1492.md) | [MANUAL] Enable tool pop-up focus validation |  |
-| [**EPMCMBIBPC-1504**](Tools/EPMCMBIBPC-1504.md) | [MANUAL] Validation of "Login into cloud registry" dialog |  |
-| [**EPMCMBIBPC-1505**](Tools/EPMCMBIBPC-1505.md) | [MANUAL] Validation "docker login trouble shooting" on "Login into cloud registry" dialog |  |
-| [**EPMCMBIBPC-1506**](Tools/EPMCMBIBPC-1506.md) | [MANUAL] Validation of OK button on "How to configure" dialog |  |
+| [**EPMCMBIBPC-1446**](Tools/EPMCMBIBPC-1446.md) | [MANUAL] Add a parameter validation | |
+| [**EPMCMBIBPC-1454**](Tools/EPMCMBIBPC-1454.md) | [MANUAL] Clear selection button validation | |
+| [**EPMCMBIBPC-1457**](Tools/EPMCMBIBPC-1457.md) | [MANUAL] Parameter name validation | |
+| [**EPMCMBIBPC-1458**](Tools/EPMCMBIBPC-1458.md) | [MANUAL] Parameter name validation (negative) | |
+| [**EPMCMBIBPC-1459**](Tools/EPMCMBIBPC-1459.md) | [MANUAL] Parameter name duplication validation | |
+| [**EPMCMBIBPC-1460**](Tools/EPMCMBIBPC-1460.md) | [MANUAL] Duplicated parameter name validation (negative) | |
+| [**EPMCMBIBPC-1461**](Tools/EPMCMBIBPC-1461.md) | [MANUAL] Path parameter browse button validation | |
+| [**EPMCMBIBPC-1464**](Tools/EPMCMBIBPC-1464.md) | [MANUAL] Cancel and OK buttons validation | |
+| [**EPMCMBIBPC-1488**](Tools/EPMCMBIBPC-1488.md) | [MANUAL] Create tool group pop-up focus validation | |
+| [**EPMCMBIBPC-1490**](Tools/EPMCMBIBPC-1490.md) | [MANUAL] Registry edit pop-up focus validation | |
+| [**EPMCMBIBPC-1492**](Tools/EPMCMBIBPC-1492.md) | [MANUAL] Enable tool pop-up focus validation | |
+| [**EPMCMBIBPC-1504**](Tools/EPMCMBIBPC-1504.md) | [MANUAL] Validation of "Login into cloud registry" dialog | |
+| [**EPMCMBIBPC-1505**](Tools/EPMCMBIBPC-1505.md) | [MANUAL] Validation "docker login trouble shooting" on "Login into cloud registry" dialog | |
+| [**EPMCMBIBPC-1506**](Tools/EPMCMBIBPC-1506.md) | [MANUAL] Validation of OK button on "How to configure" dialog | |
 | [**EPMCMBIBPC-1546**](Tools/EPMCMBIBPC-1546.md) | Add tool description and change settings | :white_check_mark: |
 | [**EPMCMBIBPC-1576**](Tools/EPMCMBIBPC-1576.md) | [NEGATIVE] Create group with invalid name | :white_check_mark: |
-| [**EPMCMBIBPC-1580**](Tools/EPMCMBIBPC-1580.md) | [MANUAL] Validation of short cut information of custom run form tabs |  |
-| [**EPMCMBIBPC-1640**](Tools/EPMCMBIBPC-1640.md) | [MANUAL] Validation "docker push/pull trouble shooting" on "Login into cloud registry" dialog |  |
+| [**EPMCMBIBPC-1580**](Tools/EPMCMBIBPC-1580.md) | [MANUAL] Validation of short cut information of custom run form tabs | |
+| [**EPMCMBIBPC-1640**](Tools/EPMCMBIBPC-1640.md) | [MANUAL] Validation "docker push/pull trouble shooting" on "Login into cloud registry" dialog | |
 | [**EPMCMBIBPC-1645**](Tools/EPMCMBIBPC-1645.md) | Validation of first "group default" repository is opened | :white_check_mark: |
-| [**EPMCMBIBPC-1800**](Tools/EPMCMBIBPC-1800.md) | [MANUAL] Groups of instance types validation on tool setting form |  |
+| [**EPMCMBIBPC-1800**](Tools/EPMCMBIBPC-1800.md) | [MANUAL] Groups of instance types validation on tool setting form | |
 | [**EPMCMBIBPC-1994**](Tools/EPMCMBIBPC-1994.md) | Validation of run unscanned tool | :white_check_mark: |
 | [**EPMCMBIBPC-1995**](Tools/EPMCMBIBPC-1995.md) | Validation of tool scanning | :white_check_mark: |
 | [**EPMCMBIBPC-1996**](Tools/EPMCMBIBPC-1996.md) | Validation of tool scan results | :white_check_mark: |
@@ -1223,8 +1223,8 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-2629**](Tools/EPMCMBIBPC-2629.md) | Validation of "grace period" option | :white_check_mark: |
 | [**EPMCMBIBPC-2630**](Tools/EPMCMBIBPC-2630.md) | Validation of unchecked "deny not scanned tool" option | :white_check_mark: |
 | [**EPMCMBIBPC-2631**](Tools/EPMCMBIBPC-2631.md) | Validation of "white list" flag | :white_check_mark: |
-| [**EPMCMBIBPC-2719**](Tools/EPMCMBIBPC-2719.md) | [MANUAL] Validate tool version's settings |  |
-| [**EPMCMBIBPC-2720**](Tools/EPMCMBIBPC-2720.md) | [MANUAL] Validate hierarchy of tool settings |  |
+| [**EPMCMBIBPC-2719**](Tools/EPMCMBIBPC-2719.md) | [MANUAL] Validate tool version's settings | |
+| [**EPMCMBIBPC-2720**](Tools/EPMCMBIBPC-2720.md) | [MANUAL] Validate hierarchy of tool settings | |
 | [**EPMCMBIBPC-398**](Tools/EPMCMBIBPC-398.md) | Tools page validation | :white_check_mark: |
 | [**EPMCMBIBPC-399**](Tools/EPMCMBIBPC-399.md) | Search by full tool name on tools page | :white_check_mark: |
 | [**EPMCMBIBPC-401**](Tools/EPMCMBIBPC-401.md) | Search by full group name on tools page | :white_check_mark: |
@@ -1248,20 +1248,20 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Versioned_Storages</b> (13 tests, 0 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
-| [**1805_1**](Versioned_Storages/1805_1.md) | The creation of empty Versioned Storage |  |
-| [**1805_10**](Versioned_Storages/1805_10.md) | Rename file |  |
-| [**1805_11**](Versioned_Storages/1805_11.md) | Remove folder |  |
-| [**1805_12**](Versioned_Storages/1805_12.md) | Remove file |  |
-| [**1805_13**](Versioned_Storages/1805_13.md) | View and edit csv and tsv files |  |
-| [**1805_2**](Versioned_Storages/1805_2.md) | The creation of the Versioned Storage with predefined structure |  |
-| [**1805_3**](Versioned_Storages/1805_3.md) | Create new folder in the VS |  |
-| [**1805_4**](Versioned_Storages/1805_4.md) | Create new file in the VS |  |
-| [**1805_5**](Versioned_Storages/1805_5.md) | Upload file to VS |  |
-| [**1805_6**](Versioned_Storages/1805_6.md) | VS allowed User's Permissions |  |
-| [**1805_7**](Versioned_Storages/1805_7.md) | VS denied User's Permissions |  |
-| [**1805_8**](Versioned_Storages/1805_8.md) | View and edit file |  |
-| [**1805_9**](Versioned_Storages/1805_9.md) | Rename folder |  |
+|--- |--- | :---: |
+| [**1805_1**](Versioned_Storages/1805_1.md) | The creation of empty Versioned Storage | |
+| [**1805_10**](Versioned_Storages/1805_10.md) | Rename file | |
+| [**1805_11**](Versioned_Storages/1805_11.md) | Remove folder | |
+| [**1805_12**](Versioned_Storages/1805_12.md) | Remove file | |
+| [**1805_13**](Versioned_Storages/1805_13.md) | View and edit csv and tsv files | |
+| [**1805_2**](Versioned_Storages/1805_2.md) | The creation of the Versioned Storage with predefined structure | |
+| [**1805_3**](Versioned_Storages/1805_3.md) | Create new folder in the VS | |
+| [**1805_4**](Versioned_Storages/1805_4.md) | Create new file in the VS | |
+| [**1805_5**](Versioned_Storages/1805_5.md) | Upload file to VS | |
+| [**1805_6**](Versioned_Storages/1805_6.md) | VS allowed User's Permissions | |
+| [**1805_7**](Versioned_Storages/1805_7.md) | VS denied User's Permissions | |
+| [**1805_8**](Versioned_Storages/1805_8.md) | View and edit file | |
+| [**1805_9**](Versioned_Storages/1805_9.md) | Rename folder | |
 
 </details>
 
@@ -1269,8 +1269,8 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>WDL_editor</b> (21 tests, 20 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | :---: |
-| [**EPMCMBIBPC-1509**](WDL_editor/EPMCMBIBPC-1509.md) | [MANUAL] Check of the content of the edit scatter pop-up name field |  |
+|--- |--- | :---: |
+| [**EPMCMBIBPC-1509**](WDL_editor/EPMCMBIBPC-1509.md) | [MANUAL] Check of the content of the edit scatter pop-up name field | |
 | [**EPMCMBIBPC-1538**](WDL_editor/EPMCMBIBPC-1538.md) | Closing pop-up after WDL pipeline commit | :white_check_mark: |
 | [**EPMCMBIBPC-588**](WDL_editor/EPMCMBIBPC-588.md) | Check buttons for edit wdl graph | :white_check_mark: |
 | [**EPMCMBIBPC-608**](WDL_editor/EPMCMBIBPC-608.md) | Add task pop-up validation | :white_check_mark: |
