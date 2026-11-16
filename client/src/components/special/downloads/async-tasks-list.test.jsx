@@ -881,9 +881,21 @@ test('links the source to its folder in the storage browser', () => {
   renderWithRouting(<AsyncTasksList tasks={[SUCCESS_TASK]} storageNamesById={{7: 'my-storage'}} />);
 
   const link = within(rowFor('archive-success')).getByText('my-storage/').closest('a');
-  // No `?path=` for the storage root.
-  expect(link.getAttribute('href')).toContain('/storage/7');
-  expect(link.getAttribute('href')).not.toContain('path=');
+  // No `?path=` at all for the storage root.
+  expect(link.getAttribute('href')).toMatch(/\/storage\/7$/);
+});
+
+// The rendered `href` for a real folder, which the element-level tests in
+// columns.test.js cannot show: react-router builds it, not this code.
+test('the rendered href carries the folder, with no trailing slash', () => {
+  const task = {
+    ...SUCCESS_TASK,
+    params: {...SUCCESS_TASK.params, paths: ['data/reports/a.txt', 'data/reports/b.txt']}
+  };
+  renderWithRouting(<AsyncTasksList tasks={[task]} storageNamesById={{7: 'my-storage'}} />);
+
+  const link = within(rowFor('archive-success')).getByText('my-storage/data/reports/').closest('a');
+  expect(link.getAttribute('href')).toMatch(/\/storage\/7\?path=data%2Freports$/);
 });
 
 // Otherwise the modal would sit over whichever storage the link opened.

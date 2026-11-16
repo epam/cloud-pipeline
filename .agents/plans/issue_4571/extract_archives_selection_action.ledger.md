@@ -96,3 +96,20 @@ decision · "Extract archive" is offered only for a selection of exactly one arc
 call: extracting several at once risks them overwriting one another in the destination, so they are
 queued one by one. This reverses the earlier "offered for a single file too, unlike Download
 archive" note, which had allowed several.
+
+| — | fresh-eyes review of the table work | done | opus | | 7 findings; all applied |
+
+correction · the Source folder for several items took the shortest per-item parent, which is not
+their common one: `x/a.txt` + `y/b.txt` gave `x/`, and `sub1/sub2/f/` + `sub1/sub3/g/` gave
+`sub1/sub2/`. It is now a folder-wise common prefix, mirroring `_archive_root` in the archive
+worker, which documents the same cases. The "one listing, so they agree" premise was wrong too -
+Back/Forward changes the folder with the selection intact.
+correction · the link kept the folder's trailing slash, which no other URL in the app does: it
+reaches the breadcrumbs as an extra empty folder and makes the current folder clickable. Stripped
+from the URL; the cell's text keeps it.
+correction · a cmd/ctrl/shift-click opened a new tab and still closed the modal - react-router calls
+`onClick` before its own modified-click guard.
+note · the one-archive rule moved into `extractionSelectionAvailable` in `utils/extract-archives.js`,
+where it has tests; `data-storage/index.js` has no test file of its own.
+note · the rendered `href` for a real folder is now pinned in `async-tasks-list.test.jsx` - the
+element-level assertions in `columns.test.js` cannot see what react-router builds.

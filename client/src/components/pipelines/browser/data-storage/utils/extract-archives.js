@@ -95,6 +95,19 @@ export function selectedArchivePaths (selectedItems) {
     .map(item => item.path);
 }
 
+/**
+ * Whether "Extract archive" is offered for a selection: exactly one item, and
+ * it is an archive. Several at once could overwrite one another in the
+ * destination, so they are queued one by one.
+ *
+ * @param {{path: string, name: string, type: string}[]} selectedItems
+ * @returns {boolean}
+ */
+export function extractionSelectionAvailable (selectedItems) {
+  const items = selectedItems || [];
+  return items.length === 1 && selectedArchivePaths(items).length === 1;
+}
+
 function slots (remaining) {
   return remaining === 1 ? '1 more archive task' : `${remaining} more archive tasks`;
 }

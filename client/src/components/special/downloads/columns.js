@@ -89,8 +89,17 @@ function displayArchiveNameOf (task) {
   return /\.zip$/i.test(value) ? value : `${value}.zip`;
 }
 
-// One selected folder is its own source; anything else is the items' shared
-// parent, which is the folder the user queued the task from.
+// The folders above each path: `a/b/c` and `a/b/c/` both give `['a','b']`.
+function parentSegmentsOf (path) {
+  const segments = `${path}`.replace(/\/+$/, '').split('/');
+  segments.pop();
+  return segments;
+}
+
+// One selected folder is its own source. Anything else is what the selection
+// has in common above its items - the folder it was made in. Compared folder
+// by folder, never by characters: `sub2` and `sub20` share four characters and
+// no folder. Mirrors `_archive_root` in the archive worker.
 function sourceFolderOf (task) {
   const params = task.params || {};
   const paths = (taskIsUnpackArchive(task)
@@ -100,17 +109,24 @@ function sourceFolderOf (task) {
   if (paths.length === 1 && `${paths[0]}`.endsWith('/')) {
     return `${paths[0]}`;
   }
-  const folders = paths
-    .map((path) => {
-      // Trailing slash off first, so a folder resolves to its parent.
-      const withoutTrailing = `${path}`.replace(/\/+$/, '');
-      const at = withoutTrailing.lastIndexOf('/');
-      return at < 0 ? '' : withoutTrailing.slice(0, at + 1);
-    });
-  // One listing, so they agree; the shortest is the safe answer if not.
-  return folders.sort((a, b) => a.length - b.length)[0] || '';
+  let common;
+  paths.forEach((path) => {
+    const folders = parentSegmentsOf(path);
+    if (common === undefined) {
+      common = folders;
+      return;
+    }
+    let kept = 0;
+    while (kept < common.length && kept < folders.length && common[kept] === folders[kept]) {
+      kept += 1;
+    }
+    common = common.slice(0, kept);
+  });
+  return common && common.length ? `${common.join('/')}/` : '';
 }
 
+// An extraction's destination is the storage it read from, so its source id
+// is the whole answer.
 function sourceStorageIdOf (task) {
   const params = task.params || {};
   return taskIsUnpackArchive(task) ? params.sourceStorageId : params.storageId;
@@ -182,6 +198,14 @@ export default function buildColumns ({
     onFilterDropdownVisibleChange: onOwnerFilterVisibleChange,
     filteredValue: ownerFiltered ? ['filtered'] : []
   } : null;
+  const followSource = (event) => {
+    const modified = event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
+    // react-router runs this before its own modified-click guard, so without
+    // this a cmd-click would open a tab and close the modal behind it.
+    if (onNavigate && !modified && event.button === 0 && !event.defaultPrevented) {
+      onNavigate();
+    }
+  };
   return [
     {
       title: 'Type',
@@ -245,20 +269,24 @@ export default function buildColumns ({
         if (storageId === undefined || storageId === null) {
           return storageId;
         }
-        // `Number(...)`: an id may arrive as a string.
+        // `Number(...)`: an id may arrive as a string, and this still holds if
+        // `storageNamesById` ever becomes a `Map`.
         const name = storageNamesById ? storageNamesById[Number(storageId)] : undefined;
         const folder = sourceFolderOf(task);
         const text = `${name || storageId}/${folder}`;
-        // No empty `?path=` for the storage root.
-        const url = folder
-          ? `/storage/${storageId}?path=${encodeURIComponent(folder)}`
+        // No trailing slash and no empty `?path=`: that is the shape the
+        // storage browser's own links use, and a trailing one reaches the
+        // breadcrumbs as an extra empty folder.
+        const query = folder.replace(/\/+$/, '');
+        const url = query
+          ? `/storage/${storageId}?path=${encodeURIComponent(query)}`
           : `/storage/${storageId}`;
         return (
           <Tooltip title={text} mouseEnterDelay={0.5}>
             <Link
               className={styles.sourceLink}
               to={url}
-              onClick={onNavigate}
+              onClick={followSource}
             >
               {text}
             </Link>

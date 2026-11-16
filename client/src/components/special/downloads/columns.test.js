@@ -172,7 +172,7 @@ describe('rendering a task of each type', () => {
 
   test('the Source column links to that folder', () => {
     expect(sourceCell(EXTRACTION_TASK).props.children.props.to)
-      .toBe('/storage/7?path=folder%2F');
+      .toBe('/storage/7?path=folder');
     // No empty `?path=` at the root.
     expect(sourceCell(DOWNLOAD_TASK).props.children.props.to).toBe('/storage/7');
   });
@@ -184,7 +184,7 @@ describe('rendering a task of each type', () => {
 
     expect(sourceCell(task).props.title).toBe('my-storage/data/reports/');
     expect(sourceCell(task).props.children.props.to)
-      .toBe('/storage/7?path=data%2Freports%2F');
+      .toBe('/storage/7?path=data%2Freports');
   });
 
   test('one selected file is its parent folder', () => {
@@ -200,6 +200,29 @@ describe('rendering a task of each type', () => {
     };
 
     expect(sourceCell(task).props.title).toBe('my-storage/data/');
+  });
+
+  // Folder by folder, not by characters: `sub2` and `sub20` share four
+  // characters and no folder.
+  test.each([
+    [['x/a.txt', 'y/b.txt'], 'my-storage/'],
+    [['sub1/sub2/f/', 'sub1/sub3/g/'], 'my-storage/sub1/'],
+    [['sub2/a.txt', 'sub20/b.txt'], 'my-storage/'],
+    [['a/b/c/one.txt', 'a/b/two.txt'], 'my-storage/a/b/'],
+    [['root.txt', 'data/a.txt'], 'my-storage/']
+  ])('items in different folders resolve to %j -> %j', (paths, expected) => {
+    const task = {...DOWNLOAD_TASK, params: {...DOWNLOAD_TASK.params, paths}};
+
+    expect(sourceCell(task).props.title).toBe(expected);
+  });
+
+  // The storage browser's own links carry no trailing slash, and one reaches
+  // the breadcrumbs as an extra empty folder.
+  test('the link strips the folder\'s trailing slash, which the text keeps', () => {
+    const task = {...DOWNLOAD_TASK, params: {...DOWNLOAD_TASK.params, paths: ['data/reports/']}};
+
+    expect(sourceCell(task).props.title).toBe('my-storage/data/reports/');
+    expect(sourceCell(task).props.children.props.to).toBe('/storage/7?path=data%2Freports');
   });
 
   test('the Source column falls back to the raw id for an unknown storage', () => {

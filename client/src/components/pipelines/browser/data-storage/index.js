@@ -120,6 +120,7 @@ import DownloadArchiveModal from './components/download-archive-modal';
 import ActionHint from './components/action-hint';
 import {
   extractionBlockedBy,
+  extractionSelectionAvailable,
   handleExtractArchives,
   selectedArchivePaths
 } from './utils/extract-archives';
@@ -1118,15 +1119,11 @@ export default class DataStorage extends React.Component {
     this.setState({downloadsModalVisible: false});
   };
 
-  // One archive at a time, and nothing else selected with it: extracting
-  // several at once can have them overwrite each other in the destination, so
-  // the user queues them one by one.
   get extractionActionAvailable () {
     const {selectedItems = []} = this.state;
     return this.archiveStorageTypeSupported &&
       this.currentFolderWriteAllowed &&
-      selectedItems.length === 1 &&
-      selectedArchivePaths(selectedItems).length === 1;
+      extractionSelectionAvailable(selectedItems);
   }
 
   // Refreshed when the selection dropdown opens: the menu is transient, so a

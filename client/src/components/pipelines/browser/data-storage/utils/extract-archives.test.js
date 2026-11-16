@@ -21,6 +21,7 @@ import {
   hasArchives,
   countArchives,
   extractionBlockedBy,
+  extractionSelectionAvailable,
   selectedArchivePaths,
   uploadedArchivePaths,
   extractionFolderOf,
@@ -403,5 +404,38 @@ describe('extractionBlockedBy', () => {
 
   test('nothing selected blocks nothing', () => {
     expect(extractionBlockedBy(0, {allowed: true, remaining: 0})).toBeUndefined();
+  });
+});
+
+describe('extractionSelectionAvailable', () => {
+  const file = (name) => ({type: 'file', path: `data/${name}`, name});
+
+  test('one selected archive is offered', () => {
+    expect(extractionSelectionAvailable([file('one.zip')])).toBe(true);
+  });
+
+  // Several at once could overwrite one another in the destination.
+  test('two archives are not', () => {
+    expect(extractionSelectionAvailable([file('one.zip'), file('two.tar.gz')])).toBe(false);
+  });
+
+  test('an archive alongside anything else is not', () => {
+    expect(extractionSelectionAvailable([file('one.zip'), file('notes.txt')])).toBe(false);
+  });
+
+  test('one item that is not an archive is not', () => {
+    expect(extractionSelectionAvailable([file('notes.txt')])).toBe(false);
+  });
+
+  // A folder is never an archive, whatever it is called.
+  test('one folder named like an archive is not', () => {
+    expect(extractionSelectionAvailable([
+      {type: 'folder', path: 'data/backup.zip/', name: 'backup.zip'}
+    ])).toBe(false);
+  });
+
+  test('an empty or missing selection is not', () => {
+    expect(extractionSelectionAvailable([])).toBe(false);
+    expect(extractionSelectionAvailable(undefined)).toBe(false);
   });
 });
