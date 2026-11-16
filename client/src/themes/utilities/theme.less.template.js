@@ -1073,6 +1073,9 @@ export default `
   overflow: visible;
   border-top: 0;
 }
+@THEME .cp-storage-items-table > .ant-spin-nested-loading > .ant-spin-container > .ant-table > .ant-table-content {
+  border-radius: 0 0 4px 4px;
+}
 @THEME .cp-storage-items-table > .ant-spin-nested-loading > .ant-spin-container > .ant-table > .ant-table-title {
   position: sticky;
   top: 0;
