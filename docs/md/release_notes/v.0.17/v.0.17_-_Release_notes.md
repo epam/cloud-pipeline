@@ -72,6 +72,9 @@
 - [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
 - [Pinning a run to the Docker image digest](#pinning-a-run-to-the-docker-image-digest)
 - [Default version of a tool](#default-version-of-a-tool)
+- [NICE DCV desktop: no wallpaper, a keyboard layout switcher, Ubuntu 24.04](#nice-dcv-desktop-no-wallpaper-a-keyboard-layout-switcher-ubuntu-2404)
+- [Retries of a failed scratch Lustre file system](#retries-of-a-failed-scratch-lustre-file-system)
+- [OIDC token exchange](#oidc-token-exchange)
 
 ***
 
@@ -114,6 +117,7 @@
     - [The VM monitor does not check the open files on Amazon Linux 2023 nodes and other hosts with systemd 240 or later](#the-vm-monitor-does-not-check-the-open-files-on-amazon-linux-2023-nodes-and-other-hosts-with-systemd-240-or-later)
     - [Git synchronization: a new GitLab 9 user has to confirm the email](#git-synchronization-a-new-gitlab-9-user-has-to-confirm-the-email)
     - [Autoscaler keeps a free node for a waiting run that may not get it](#autoscaler-keeps-a-free-node-for-a-waiting-run-that-may-not-get-it)
+    - [Rocky Linux and RHEL runs: NICE DCV and SGE fail to install on Rocky Linux 9, and systemd is set up when it is not requested](#rocky-linux-and-rhel-runs-nice-dcv-and-sge-fail-to-install-on-rocky-linux-9-and-systemd-is-set-up-when-it-is-not-requested)
 
 ***
 
@@ -2070,6 +2074,68 @@ For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#se
 
 ***
 
+## NICE DCV desktop: no wallpaper, a keyboard layout switcher, Ubuntu 24.04
+
+[#4861](https://github.com/epam/cloud-pipeline/issues/4861)
+
+Previously, the Xfce desktop of a NICE DCV session started with the default Xfce panel and wallpaper, and with one keyboard layout.
+
+In **`v0.17`**:
+
+- the desktop has no wallpaper: a solid color is used instead
+- the panel has a keyboard layout switcher, with the `us`, `fr` and `de` layouts. **Ctrl+Shift** switches them. The run parameters `CP_DCV_XKB_LAYOUTS` (e.g. `us,ru`), `CP_DCV_XKB_MODEL` (`pc105` by default) and `CP_DCV_XKB_TOGGLE` (an XKB option, `grp:ctrl_shift_toggle` by default) change them
+- the switcher needs the `xfce4-xkb-plugin` package. The session also sets the layouts with `setxkbmap` (the `setxkbmap` or `xorg-x11-xkb-utils` package in RPM-based images, `x11-xkb-utils` in Ubuntu images); without it, Xfce sets them on its own. When the DCV setup installs NICE DCV, it also installs these packages where the repositories have them, and logs a warning in the run log for each one it cannot install. Without `xfce4-xkb-plugin`, the session starts with one layout and no switcher
+- the desktop is set up this way also in the images that have NICE DCV installed already. There, the switcher is shown only if the image has `xfce4-xkb-plugin`
+
+NICE DCV is also supported in the Ubuntu 24.04 images: the setup installs the `nice-dcv-2024.0-19030-ubuntu2404-x86_64` build. Previously, on an Ubuntu version that has no DCV build, e.g. 24.04, the setup installed no DCV and ran `rm -rf *` in the folder above its working folder. Only then did it fail, when it configured DCV. Now, such a version fails the setup with "Unsupported Ubuntu version", before DCV is downloaded.
+
+***
+
+## Retries of a failed scratch Lustre file system
+
+[#4861](https://github.com/epam/cloud-pipeline/issues/4861)
+
+A cluster run with `CP_CAP_SHARE_FS_TYPE=lustre` creates an FSx for Lustre file system as its shared scratch space.  
+Previously, if the file system ended up `FAILED`, e.g. because the cloud provider was out of capacity, the run failed. If it turned `FAILED` while it was being created, the run waited for it for 20 minutes (`CP_CAP_LUSTRE_WAIT_ATTEMPTS`), and then tried to mount it anyway.
+
+Now, the master run deletes a `FAILED` file system, waits until it is gone, and creates it again:
+
+- `CP_CAP_LUSTRE_CREATE_RETRIES` is the number of attempts in all, the first one included (`3` by default, i.e. up to 2 more), and they are `CP_CAP_LUSTRE_CREATE_RETRY_SLEEP` seconds apart (`60` by default)
+- for a deletion, it waits up to `CP_CAP_LUSTRE_DELETE_WAIT_ATTEMPTS` checks, 5 seconds apart (`60` by default, i.e. 5 minutes)
+- an empty answer of the API is retried too, after the same pause, and a file system that is still being deleted from an earlier attempt is waited for
+- if the file system is not `AVAILABLE` after `CP_CAP_LUSTRE_WAIT_ATTEMPTS` checks, the run fails, and the mount is not tried
+
+The workers of the cluster do not create the file system. Previously, a worker failed at once only if the first answer of the API was `FAILED`. If the file system was being deleted, or turned `FAILED` later, the worker waited for 20 minutes and then tried to mount it. Now, a worker fails at once in all these cases.
+
+Please note: the workers wait for the master's `InitializeSharedFS` task for about 20 minutes (`CP_CLUSTER_WAIT_FOR_NODE_ATTEMPTS`, `120` checks, 10 seconds apart). One attempt of the master can take up to `CP_CAP_LUSTRE_WAIT_ATTEMPTS` × 5 seconds (20 minutes by default), plus the deletion wait and the pause. So if the master retries, its workers may fail with "Failed to attach to master node" before the file system is ready.
+
+***
+
+## OIDC token exchange
+
+An application that calls the Cloud Pipeline API for its signed-in users previously needed a Cloud Pipeline token issued from the platform side - in practice a long-lived one, copied into the application's configuration, and often a single token shared by all of its users. The API could then not tell which user was really acting.
+
+In **`v0.17`**, such an application can trade a user's own access token, issued by the corporate identity provider, for a short-lived Cloud Pipeline token for that same user, as [RFC 8693](https://www.rfc-editor.org/rfc/rfc8693) describes:
+
+```
+POST /restapi/oauth/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=urn:ietf:params:oauth:grant-type:token-exchange
+subject_token=<the user's access token>
+subject_token_type=urn:ietf:params:oauth:token-type:access_token
+```
+
+So the application stores no static token from Cloud Pipeline, every call is made and audited as the real user with that user's own permissions, and blocking a user takes effect within one token lifetime. The issued token is an ordinary platform token, which the API, the edge and `pipe` accept as any other.
+
+The exchange is off by default, and is enabled by the `oidc.token.exchange.enabled` property of the API service - until then the endpoint is not registered at all. The administrator then configures the trusted identity providers in the **`system.oidc.token.exchange.issuers`** preference. Each provider holds a list of **clients** - the callers trusted under it, because one provider issues tokens for many callers: every repository on github.com shares one issuer, as does every application in an Entra ID tenant. A client is identified by conditions on the token's claims, and says which user it may act as: a user named by a claim of the token, or a fixed service account for a CI job. A client can also narrow the roles its tokens carry, so an application can be given read-only access to the API on behalf of users who have more.
+
+The exchange never creates a user: the user has to exist in Cloud Pipeline already, and the usual blocking checks apply. The issued token lives no longer than the provider's token it came from, so ending a user's session at the provider ends their Cloud Pipeline access, and it cannot be traded for a longer-lived one unless the client is configured to allow it.
+
+For more details see [here](../../manual/12_Manage_Settings/12.16._OIDC_token_exchange.md).
+
+***
+
 ## Notable Bug fixes
 
 ### Nextflow run view: some tasks stay `RUNNING` after the run finishes
@@ -2407,3 +2473,19 @@ Now, the autoscaler keeps no free node for such a run. The node expires as any o
 When the cluster has reached `cluster.max.size`, and `cluster.kill.not.matching.nodes` is `true`, the autoscaler scales down a free node that the waiting run does not take, to make room for a new node. Previously, it could pick a free node of a hot node pool or of a local cluster. Such a node has no run ID, so the autoscaler failed to scale it down, and the waiting run was not processed until the next check, where the same could happen again. Now, these nodes are not scaled down this way: the pools keep their nodes.
 
 Also, a run whose parameter list or tags are not set is handled as a run with none. Previously, the autoscaler failed on such a run with an error in the API log. With no parameter list, each check of the autoscaler stopped there, so no waiting run got a node, and no free node was scaled down. With no tags, a waiting run did not get the `NODE_PENDING` tag when the cluster was full.
+
+### Rocky Linux and RHEL runs: NICE DCV and SGE fail to install on Rocky Linux 9, and systemd is set up when it is not requested
+
+[#4859](https://github.com/epam/cloud-pipeline/issues/4859)
+
+Previously, three steps of the run setup did not handle Rocky Linux 9, and one of them also affected the other Rocky Linux and RHEL runs:
+
+- **NICE DCV**: the setup chose the DCV build by a `7` anywhere in the OS version. A Rocky Linux 9 run got the el8 build (`nice-dcv-2021.2-11445-el8-x86_64`), and a version such as `8.7` or `9.7` got the el7 build. The setup also required the `libXvMC` and `mesa-libxatracker` packages, which Rocky Linux 9 does not have. So the install of the DCV prerequisites failed, and the `NiceDCVInitialization` task failed with "Cannot install system prerequisites for DCV".
+- **SGE**: the setup of the master and the workers installed `gridengine-debuginfo` and `gridengine-guiinst` too. The Cloud Pipeline repository for Rocky Linux 9.8 does not have them, so `yum` failed the whole install, and the SGE setup failed.
+- **systemd**: the launch script set up systemd for every Rocky Linux and RHEL run, also when neither `CP_CAP_SYSTEMD_CONTAINER` nor `CP_CAP_KUBE` was set, and when the image had no `systemctl`. It removed the systemd unit links of the image (e.g. `/etc/systemd/system/*.wants/*`) and started a `systemd` process that was not PID 1.
+
+Now:
+
+- On the RPM-based images, NICE DCV takes the build of the major OS version: el7 for 7, el8 for 8, and `nice-dcv-2024.0-19030-el9-x86_64` for 9 and later. If the major version cannot be resolved, the el8 build is used, as before. The run log names the build. The new `CP_CAP_DCV_DISTRIBUTION` parameter names another build for these images, e.g. `nice-dcv-2024.0-19030-el9-x86_64`: the setup downloads `<build>.tgz` from the `tools/dcv` folder of the global distribution, or from `CP_CAP_DCV_DISTRO_URL`. `libXvMC` and `mesa-libxatracker` are installed where the repositories have them. Otherwise, the run log gets a warning, and the setup goes on. Ubuntu images get the same builds as before.
+- SGE installs `gridengine`, `gridengine-devel`, `gridengine-drmaa4ruby`, `gridengine-execd`, `gridengine-qmaster` and `gridengine-qmon`. The `sge_setup_sbm_host` script, which added a run as an SGE submission host, is removed: nothing in the platform called it. The scripts of `pipe-common` are on the `PATH` of a run, so a user's own script that calls `sge_setup_sbm_host` now fails with "command not found".
+- systemd is set up only when `CP_CAP_SYSTEMD_CONTAINER` or `CP_CAP_KUBE` is `true`, the image has `systemctl`, and the OS is CentOS, Rocky Linux or RHEL. The systemd setup used to install `procps` (`procps-ng`), which has `sysctl`. The NFS events observer, which raises the inotify limits with `sysctl`, now installs `procps` itself if the image has no `sysctl`.

@@ -134,6 +134,7 @@ import com.epam.pipeline.repository.quota.QuotaRepository;
 import com.epam.pipeline.repository.role.RoleRepository;
 import com.epam.pipeline.repository.user.OnlineUsersRepository;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
+import com.epam.pipeline.security.UserAccessService;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
@@ -589,6 +590,9 @@ public class AspectTestBeans {
 
     @MockBean
     protected PlatformUsageCreditsEventService platformUsageCreditsEventService;
+
+    @MockBean
+    protected UserAccessService userAccessService;
 
     @MockBean
     protected AsyncTaskRepository asyncTaskRepository;
