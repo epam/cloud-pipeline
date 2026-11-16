@@ -72,6 +72,7 @@
 - [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
 - [Pinning a run to the Docker image digest](#pinning-a-run-to-the-docker-image-digest)
 - [Default version of a tool](#default-version-of-a-tool)
+- [Data storage: the controls row stays visible while scrolling](#data-storage-the-controls-row-stays-visible-while-scrolling)
 
 ***
 
@@ -2067,6 +2068,18 @@ In **`v0.17`**, any version of a tool can be set as its default version. The def
 Users with the **WRITE** permission for a tool set and unset the default version at the **Versions** tab of the tool. Until a default version is set, and once it is unset or deleted, the `latest` version is used, as before. The default version can also be managed via the API: `POST /tool/{id}/defaultVersion?version=<version>` sets it, `DELETE /tool/{id}/defaultVersion` removes it, and the tool returns it as the `defaultVersion` field.
 
 For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#set-a-default-version).
+
+***
+
+## Data storage: the controls row stays visible while scrolling
+
+[#4865](https://github.com/epam/cloud-pipeline/issues/4865)
+
+Previously, the controls row of a data storage - **Select page**, the **Selection** actions, **Share current folder**, **Create** and **Upload** - scrolled out of view together with the file list. In a folder with more items than fit the panel, a bulk operation meant selecting the items and then scrolling back to the top to reach the controls.
+
+Now, that row stays at the top of the list at any scroll position. The column header scrolls under it, as before.
+
+See details in [8. Manage Data Storage](../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage.md#controls).
 
 ***
 
