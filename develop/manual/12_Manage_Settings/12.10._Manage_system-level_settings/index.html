@@ -303,6 +303,8 @@
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../12.15._System_jobs/">12.15. System jobs</a>
                 </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.16._OIDC_token_exchange/">12.16. OIDC token exchange</a>
+                </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../13_Permissions/13._Permissions/">13. Permissions</a>
@@ -1592,6 +1594,14 @@ Note: a run gets the <strong><code>git.token</code></strong> value when it start
 <tr>
 <td><strong><code>system.access.code.ttl.minutes</code></strong></td>
 <td>[<em>Refers to <code>pipe</code> CLI code authorization</em>]<br>Sets the period during which the authorization code is valid.</td>
+</tr>
+<tr>
+<td><strong><code>system.oidc.token.exchange.issuers</code></strong></td>
+<td>[<em>Refers to <a href="../12.16._OIDC_token_exchange/">OIDC token exchange</a></em>]<br>The identity providers whose access tokens may be exchanged for a Cloud Pipeline token, and the callers trusted under each of them, as a JSON list. Empty or unset means the exchange is not configured.</td>
+</tr>
+<tr>
+<td><strong><code>system.oidc.token.exchange.token.lifetime</code></strong></td>
+<td>[<em>Refers to <a href="../12.16._OIDC_token_exchange/">OIDC token exchange</a></em>]<br>The longest life, in seconds, of a token issued by the exchange. An issuer or a client may ask for less; a larger value is reduced to this one.</td>
 </tr>
 </tbody>
 </table>

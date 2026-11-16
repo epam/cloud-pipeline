@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>12.16. OIDC token exchange - Cloud Pipeline</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "12.16. OIDC token exchange";
+        var mkdocs_page_input_path = "manual/12_Manage_Settings/12.16._OIDC_token_exchange.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Cloud Pipeline
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Release notes</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User guide</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../../Cloud_Pipeline_-_Manual/">Contents</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../01_Quick_start/1._Quick_start/">1. Quick start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../02_Getting_started/2._Getting_started/">2. Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../03_Overview/3._Overview/">3. Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >4. Manage Folder</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >5. Manage Metadata</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >6. Manage Pipeline</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.4._Work_with_aws_healthomics_workflow/">6.4. Work with AWS HealthOmics Workflow</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.5._Pipeline_configuration/">6.5. Pipeline configuration</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >7. Manage Detached configuration</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >8. Manage Data Storage</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.9._Mapping_storages/">8.9. Mapping storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.10._Storage_lifecycle/">8.10. Storage lifecycle</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.11._Sensitive_storages/">8.11. Sensitive storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.12._Cloud_Data_app/">8.12. Cloud Data application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.13._Versioned_storages/">8.13. Versioned storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.14._Omics_storages/">8.14. Omics storages</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >9. Manage cluster nodes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9.0. Cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.1._Hot_node_pools/">9.1. Hot node pools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.2._Core_Services_Monitoring/">9.2. Core services monitoring</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.3._Cloud_nodes/">9.3. Cloud nodes</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >10. Manage Tools</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.9._Run_capabilities/">10.9. Run capabilities</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >11. Manage Runs</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.5._Archive_runs/">11.5. Archive completed runs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" >12. Manage settings</a>
+    <ul class="current">
+                <li class="toctree-l2"><a class="reference internal" href="../12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.9._Change_email_notification/">12.9. Email notifications</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.12._System_logs/">12.12. System logs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.13._System_dictionaries/">12.13. System dictionaries</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.14._NAT_gateway/">12.14. NAT gateway</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.15._System_jobs/">12.15. System jobs</a>
+                </li>
+                <li class="toctree-l2 current"><a class="reference internal current" href="#">12.16. OIDC token exchange</a>
+    <ul class="current">
+    <li class="toctree-l3"><a class="reference internal" href="#overview">Overview</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#how-it-works">How it works</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#configuration">Configuration</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#turning-it-on">Turning it on</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#preferences">Preferences</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#issuer">Issuer</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#client">Client</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#rules">Rules</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#assume-strategy">Assume strategy</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#setting-up-microsoft-entra-id">Setting up Microsoft Entra ID</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#setting-up-github-actions">Setting up GitHub Actions</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#making-the-request">Making the request</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#troubleshooting">Troubleshooting</a>
+    </li>
+    </ul>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../13_Permissions/13._Permissions/">13. Permissions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >14. CLI interface</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.9._User_management_via_CLI/">14.9. User management</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.10._SSH_tunnel/">14.10. SSH tunnel</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >15. Interactive services</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.5._VSCode_interactions/">15.5. VSCode interactions</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../16_Issues/16._Issues/">16. Issues</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >17. Tagging by attributes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17.0. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags/">17.1. Faceted filters search using tags</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../18_Home_page/18._Home_page/">18. Home page</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../19_Search/19._Global_search/">19. Global search</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_D/Appendix_D._Costs_management/">Appendix D. Costs management</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_E/Appendix_E._Pipeline_objects_concept/">Appendix E. Pipeline objects concept</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_F/Appendix_F._%D0%A1omparison_of_using_different_FS_storages_%28FSx_for_Lustre_vs_EFS_in_AWS%29/">Appendix F. Сomparison of using different FS storage types</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline API</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/API_tutorials/">API tutorials</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Automation_via_CLI/">Automation via CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Direct_HTTP_API/">Direct HTTP API implementation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/JavaScript_example/">JavaScript example</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" >Prerequisites</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/self-hosted/prerequisites/common/">General requirements</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/self-hosted/prerequisites/aws/">AWS</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/self-hosted/prerequisites/azure/">Azure</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/self-hosted/prerequisites/gcp/">GCP</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >Deployment</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" >Cloud native</a>
+    <ul>
+                <li class="toctree-l3"><a class="reference internal" >AWS</a>
+    <ul>
+                <li class="toctree-l4"><a class="reference internal" href="../../../installation/native/aws/terraform/">Terraform</a>
+                </li>
+                <li class="toctree-l4"><a class="reference internal" href="../../../installation/native/aws/cloud-formation/">AWS CloudFormation</a>
+                </li>
+    </ul>
+                </li>
+    </ul>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >GitLab</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/gitlab/gitlab_versions/">GitLab versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/gitlab/upgrade_gitlab_15_to_19/">Upgrade GitLab 15.5 to 19.5</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >Management</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../operation/environments_sync/environments_sync/">Environments sync</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/change_kube_certificates/">Change Kubernetes certificates</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/support_windows_runs/">Support Windows runs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Cloud Pipeline</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">User guide</li>
+          <li class="breadcrumb-item">12. Manage settings</li>
+      <li class="breadcrumb-item active">12.16. OIDC token exchange</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="1216-oidc-token-exchange">12.16. OIDC token exchange</h1>
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#how-it-works">How it works</a></li>
+<li><a href="#configuration">Configuration</a><ul>
+<li><a href="#turning-it-on">Turning it on</a></li>
+<li><a href="#preferences">Preferences</a></li>
+<li><a href="#issuer">Issuer</a></li>
+<li><a href="#client">Client</a></li>
+<li><a href="#rules">Rules</a></li>
+<li><a href="#assume-strategy">Assume strategy</a></li>
+</ul>
+</li>
+<li><a href="#setting-up-microsoft-entra-id">Setting up Microsoft Entra ID</a></li>
+<li><a href="#setting-up-github-actions">Setting up GitHub Actions</a></li>
+<li><a href="#making-the-request">Making the request</a></li>
+<li><a href="#troubleshooting">Troubleshooting</a></li>
+</ul>
+<h2 id="overview">Overview</h2>
+<p>An application that calls the Cloud Pipeline API for its signed-in users needs a Cloud Pipeline
+token. Without this feature that means a long-lived token, issued once and copied into the
+application's configuration, often one token shared by all of its users — so the API cannot tell
+who is really acting.</p>
+<p>The token exchange lets such an application trade a user's own access token, issued by the
+corporate identity provider, for a short-lived Cloud Pipeline token for that same user, as
+<a href="https://www.rfc-editor.org/rfc/rfc8693">RFC 8693</a> describes. With it:</p>
+<ul>
+<li>the application stores no static token from Cloud Pipeline;</li>
+<li>every call is made as the real user, with that user's permissions, and is audited as that user;</li>
+<li>blocking a user in Cloud Pipeline takes effect within one token lifetime.</li>
+</ul>
+<p>The exchange never creates a user. The user named by the identity provider's token has to exist in
+Cloud Pipeline already, and the exchange changes neither their groups nor their attributes.</p>
+<blockquote>
+<p><strong><em>Note</em></strong>: only JSON Web Tokens are accepted as the incoming token. An opaque access token,
+which would need the provider's introspection endpoint, is not supported.</p>
+</blockquote>
+<h2 id="how-it-works">How it works</h2>
+<pre><code>1. User             --- signs in ------------------------------&gt;  Identity provider
+2. Application      --- asks for a token, aud = Cloud Pipeline -&gt;  Identity provider
+3. Application      --- POST /restapi/oauth/token
+                        subject_token = the user's token ------&gt;  Cloud Pipeline API
+4. Cloud Pipeline   --- fetches and caches the signing keys ---&gt;  Identity provider
+5. Cloud Pipeline   --- a short-lived platform token ----------&gt;  Application
+6. Application      --- Authorization: Bearer &lt;platform token&gt; -&gt;  Cloud Pipeline API, edge
+</code></pre>
+<p>Cloud Pipeline checks, in this order:</p>
+<ol>
+<li>the token is a signed JWT, and its <code>iss</code> names a configured issuer. An issuer that is not
+   configured is refused before anything is fetched over the network;</li>
+<li>the signature, against that issuer's keys, using only the algorithms it allows;</li>
+<li><code>aud</code> contains one of the configured audiences, and <code>exp</code>, <code>nbf</code> and <code>iat</code> pass, with 60 seconds
+   of clock skew allowed;</li>
+<li>the token matches one of the issuer's configured <strong>clients</strong>;</li>
+<li>the user that client acts as exists, is not blocked, and none of their groups is blocked.</li>
+</ol>
+<p>Only then is a token issued. If any check fails, the response says so in the terms
+<a href="https://www.rfc-editor.org/rfc/rfc6749#section-5.2">RFC 6749</a> defines and nothing more — the reason
+is written to the API log instead, because the endpoint is reachable without a Cloud Pipeline token
+and an unknown caller must not be able to learn from it which check refused them.</p>
+<h2 id="configuration">Configuration</h2>
+<h3 id="turning-it-on">Turning it on</h3>
+<p>The exchange is <strong>off by default</strong>. Until it is enabled the endpoint is not registered at all, so a
+request to it answers <code>404</code> rather than refusing — a deployment that has not set up an identity
+provider is not listening on it.</p>
+<p>It is enabled by an application property of the API service, not by a system preference, because it
+decides whether the route exists:</p>
+<pre><code>oidc.token.exchange.enabled=true
+</code></pre>
+<p>In a <code>pipectl</code> deployment that is the <code>CP_API_OIDC_TOKEN_EXCHANGE_ENABLED</code> environment variable of
+the <code>cp-api-srv</code> service. The API has to be restarted for a change to take effect.</p>
+<h3 id="preferences">Preferences</h3>
+<p>Then two system preferences, both in the <strong>System</strong> group (see
+<a href="../12.10._Manage_system-level_settings/">12.10</a>):</p>
+<table>
+<thead>
+<tr>
+<th>Preference</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>system.oidc.token.exchange.issuers</code></strong></td>
+<td>The identity providers whose tokens may be exchanged, and the callers trusted under each. Empty or unset means the exchange is not configured, and the endpoint refuses everything</td>
+</tr>
+<tr>
+<td><strong><code>system.oidc.token.exchange.token.lifetime</code></strong></td>
+<td>The longest life, in seconds, of a token the exchange issues. Default <code>3600</code>. A cap: an issuer or a client may ask for less, and a larger value is reduced to this one</td>
+</tr>
+</tbody>
+</table>
+<p>The issuers preference holds a JSON list. An example:</p>
+<pre><code class="language-json">[
+  {
+    &quot;issuer&quot;: &quot;https://login.microsoftonline.com/&lt;tenant-id&gt;/v2.0&quot;,
+    &quot;audiences&quot;: [&quot;&lt;Cloud Pipeline API client ID&gt;&quot;],
+    &quot;algorithms&quot;: [&quot;RS256&quot;],
+    &quot;maxTokenLifetime&quot;: 3600,
+    &quot;clients&quot;: [
+      {
+        &quot;id&quot;: &quot;portal&quot;,
+        &quot;rules&quot;: [
+          { &quot;claim&quot;: &quot;azp&quot;, &quot;operator&quot;: &quot;EQUALS&quot;, &quot;value&quot;: &quot;&lt;portal client ID&gt;&quot; }
+        ],
+        &quot;requiredScopes&quot;: [&quot;access_as_user&quot;],
+        &quot;assumeStrategy&quot;: {
+          &quot;type&quot;: &quot;REQUESTED_USER&quot;,
+          &quot;userClaim&quot;: &quot;preferred_username&quot;,
+          &quot;rolesToKeep&quot;: [&quot;ROLE_USER&quot;],
+          &quot;maxTokenLifetime&quot;: 900
+        }
+      }
+    ]
+  }
+]
+</code></pre>
+<h3 id="issuer">Issuer</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>issuer</code></td>
+<td>yes</td>
+<td>Matched against the token's <code>iss</code>, exactly, and used as the base for discovery. Must be an <strong>https</strong> URL</td>
+</tr>
+<tr>
+<td><code>jwks</code></td>
+<td>no</td>
+<td>An inline JSON Web Key Set, for a deployment whose API cannot reach the provider</td>
+</tr>
+<tr>
+<td><code>jwksUri</code></td>
+<td>no</td>
+<td>An explicit key set URL, which skips discovery. Must be an <strong>https</strong> URL</td>
+</tr>
+<tr>
+<td><code>audiences</code></td>
+<td>yes</td>
+<td>The token's <code>aud</code> must contain one of these</td>
+</tr>
+<tr>
+<td><code>algorithms</code></td>
+<td>no</td>
+<td>Accepted signing algorithms. Default <code>RS256</code> and <code>ES256</code>. Only asymmetric algorithms are accepted; <code>none</code> and the <code>HS*</code> family are refused</td>
+</tr>
+<tr>
+<td><code>maxTokenLifetime</code></td>
+<td>no</td>
+<td>The longest life, in seconds, of any token issued under this issuer</td>
+</tr>
+<tr>
+<td><code>clients</code></td>
+<td>yes</td>
+<td>The callers trusted under this issuer</td>
+</tr>
+</tbody>
+</table>
+<p>The signing keys come from whichever of the three sources is configured:</p>
+<ol>
+<li><strong><code>jwks</code></strong> — used as it is, nothing is fetched. It cannot pick up a key rotation on its own, so
+   it has to list <strong>every</strong> key the provider publishes and be updated whenever they change. A
+   provider signs with its next key before retiring the old one, so a set holding one key breaks at
+   the moment of rotation.</li>
+<li><strong><code>jwksUri</code></strong> — fetched directly.</li>
+<li><strong>Discovery</strong>, used when neither is set — the configured <code>issuer</code> plus
+   <code>/.well-known/openid-configuration</code>, and <code>jwks_uri</code> is read from that document. The document's
+   own <code>issuer</code> is checked against the configured one.</li>
+</ol>
+<p>Setting both <code>jwks</code> and <code>jwksUri</code> is refused, so the choice is never left to chance. Prefer
+discovery or <code>jwksUri</code> where the API can reach the provider: both pick up a key rotation by
+themselves.</p>
+<blockquote>
+<p><strong><em>Note</em></strong>: give each deployment an audience of its own, such as its API URL. With a value shared
+between deployments, a token minted for one of them can be replayed at another.</p>
+</blockquote>
+<h3 id="client">Client</h3>
+<p>An issuer is not a caller. Every repository on github.com shares one issuer, and so does every
+application registered in one Entra ID tenant. A <strong>client</strong> is the unit that trust is actually
+expressed against.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>yes</td>
+<td>Names this client in the API log, so an administrator can tell which one a token was issued through. Unique within its issuer</td>
+</tr>
+<tr>
+<td><code>rules</code></td>
+<td>yes</td>
+<td>The claim conditions identifying the caller. All of them must pass</td>
+</tr>
+<tr>
+<td><code>requiredScopes</code></td>
+<td>no</td>
+<td>Scopes the token must carry, read from its <code>scp</code> claim or, failing that, <code>scope</code>. Either a space-separated string or a list is understood</td>
+</tr>
+<tr>
+<td><code>assumeStrategy</code></td>
+<td>yes</td>
+<td>Which user this client acts as, and what its token may do</td>
+</tr>
+</tbody>
+</table>
+<p>Clients are tried <strong>in the order they are configured, and the first match wins</strong>. A narrower client
+has to be placed above a wider one that would also match, or it never fires. The matched client is
+named in the log line of every exchange, which is how a shadowed entry shows up.</p>
+<h3 id="rules">Rules</h3>
+<p>Each rule is one condition on one claim:</p>
+<pre><code class="language-json">{ &quot;claim&quot;: &quot;repository_id&quot;, &quot;operator&quot;: &quot;EQUALS&quot;, &quot;value&quot;: &quot;456789&quot; }
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Operator</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>EQUALS</code></td>
+<td>The claim equals the value, case-sensitively. Claims are compared as text, so an identifier arriving as a JSON number matches a value written as a string</td>
+</tr>
+<tr>
+<td><code>CONTAINS</code></td>
+<td>The claim is a list and the value is one of its entries. A single value is not treated as a list of one</td>
+</tr>
+<tr>
+<td><code>LIKE</code></td>
+<td>The claim matches the value as a glob, where <code>*</code> stands for any run of characters and <code>?</code> for exactly one. The whole claim has to match</td>
+</tr>
+</tbody>
+</table>
+<p>A claim the token does not carry never matches, whatever the operator. A claim holding an object
+never matches either, and neither do the time claims <code>exp</code>, <code>nbf</code> and <code>iat</code>, which are not text.</p>
+<p>Every client must carry at least one <code>EQUALS</code> condition. A provider shares its issuer between many
+callers, so these conditions are the only boundary there is, and a client built out of patterns
+alone is too easy to widen by accident. For the same reason, prefer claims holding an immutable
+identifier over claims holding a name: a name can be released and taken by somebody else.</p>
+<h3 id="assume-strategy">Assume strategy</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>type</code></td>
+<td><code>SPECIFIC_USER</code> or <code>REQUESTED_USER</code></td>
+</tr>
+<tr>
+<td><code>user</code></td>
+<td>The fixed user name. <code>SPECIFIC_USER</code> only</td>
+</tr>
+<tr>
+<td><code>userClaim</code></td>
+<td>The claim naming the user. <code>REQUESTED_USER</code> only</td>
+</tr>
+<tr>
+<td><code>allowedUsers</code></td>
+<td>The only users this client may act as. <code>REQUESTED_USER</code> only</td>
+</tr>
+<tr>
+<td><code>deniedUsers</code></td>
+<td>Users this client may never act as, applied after <code>allowedUsers</code>. <code>REQUESTED_USER</code> only</td>
+</tr>
+<tr>
+<td><code>rolesToKeep</code></td>
+<td>Keep only these roles out of the ones the user already holds. Groups are not affected</td>
+</tr>
+<tr>
+<td><code>rolesToDrop</code></td>
+<td>Remove these roles, applied after <code>rolesToKeep</code></td>
+</tr>
+<tr>
+<td><code>maxTokenLifetime</code></td>
+<td>The longest life, in seconds, of a token issued through this client</td>
+</tr>
+<tr>
+<td><code>ignoreSubjectTokenLifetime</code></td>
+<td>Let the issued token outlive the provider's token. Off by default</td>
+</tr>
+<tr>
+<td><code>exchangeable</code></td>
+<td>Let the issued token be traded for another through Cloud Pipeline's own token endpoints. <strong>Off by default</strong></td>
+</tr>
+<tr>
+<td><code>external</code></td>
+<td>Mark the issued token external, which limits data storage access to shared storages</td>
+</tr>
+</tbody>
+</table>
+<p>With <strong><code>SPECIFIC_USER</code></strong> the user is named in the configuration — for a CI job or another service
+account, whose token names no person. With <strong><code>REQUESTED_USER</code></strong> the user comes from a claim of the
+token; the claim is chosen by the configuration and never by the caller, so this is not
+impersonation. The name is upper-cased before it is looked up, the same way a SAML login does it.</p>
+<p>Both role lists can only <strong>narrow</strong>. They start from what the user already holds, so naming a role
+the user does not have does not grant it.</p>
+<p>They apply to <strong>roles only</strong>. The user's groups are carried into the token untouched, so any
+permission granted through a group — which is how storage access is usually given — survives the
+narrowing. A permission granted to a role that was narrowed away is lost, as intended.</p>
+<blockquote>
+<p><strong><em>Note</em></strong>: narrowing the roles does not reach the Docker registry. Registry access is authorized
+by user name, and resolves the roles from the stored user rather than from the token, so an
+exchanged token used for <code>docker login</code> carries whatever roles its user holds in Cloud Pipeline.
+Where that matters, do not grant the user those roles in the first place.</p>
+</blockquote>
+<p>The issued token's life is the <strong>smallest</strong> of: this client's <code>maxTokenLifetime</code>, the issuer's, the
+<code>system.oidc.token.exchange.token.lifetime</code> preference, and what is left of the provider's token.
+That last one is what ties the two together: ending a user's session at the provider ends their
+Cloud Pipeline access within one token lifetime. Two settings give that up deliberately, and both
+are off unless turned on:</p>
+<ul>
+<li><strong><code>ignoreSubjectTokenLifetime</code></strong> lets the issued token outlive the provider's. It exists for CI
+  tokens, which are short by design — a GitHub Actions token expires minutes after it is issued,
+  which would otherwise end a long <code>pipe storage cp</code> midway — and which carry no revocable session
+  to begin with.</li>
+<li><strong><code>exchangeable</code></strong> lets the issued token be traded for another through
+  <code>GET /restapi/user/token</code>. Left off, that call is refused for an exchanged token, so its holder
+  cannot turn a token good for minutes into one good for weeks. Turn it on only for a client that
+  genuinely needs to mint platform tokens.</li>
+</ul>
+<h2 id="setting-up-microsoft-entra-id">Setting up Microsoft Entra ID</h2>
+<p>Register Cloud Pipeline as the API, and each application as a client of it:</p>
+<ol>
+<li>Create an app registration for Cloud Pipeline — this is the <strong>resource</strong>. Note its
+   <strong>client ID</strong>: that GUID is what appears in the token's <code>aud</code>.</li>
+<li>Under <strong>Expose an API</strong>, set an Application ID URI such as <code>api://cloud-pipeline-prod</code> and add a
+   scope, for example <code>access_as_user</code>.</li>
+<li>In the registration's <strong>manifest</strong>, set <code>"requestedAccessTokenVersion": 2</code>.</li>
+<li>For each calling application, add an API permission for the Cloud Pipeline API and that scope.</li>
+<li>Under <strong>Token configuration</strong>, make sure the token carries the claim naming the user.</li>
+</ol>
+<blockquote>
+<p><strong><em>Important</em></strong>: step 3 is not optional. An API-only registration issues version 1.0 tokens by
+default, and those have a different issuer (<code>https://sts.windows.net/&lt;tenant-id&gt;/</code>), carry <code>appid</code>
+rather than <code>azp</code>, and carry no <code>preferred_username</code> — so none of the configuration above matches
+them. Only version 2.0 tokens, whose issuer ends in <code>/v2.0</code>, are supported.</p>
+<p><strong><em>Note</em></strong>: <code>aud</code> holds the <strong>client ID</strong> of the Cloud Pipeline registration, a GUID. It does not
+hold the Application ID URI — that is what a calling application asks for as a scope.</p>
+</blockquote>
+<p>Pick for <code>userClaim</code> whatever attribute the deployment's SAML login already uses as its NameID, so
+the exchange identifies a user exactly as a normal login does. Microsoft calls <code>preferred_username</code>
+mutable, so where the two differ, follow the NameID.</p>
+<h2 id="setting-up-github-actions">Setting up GitHub Actions</h2>
+<p>A CI job acts as a service account, not as a person, so use <code>SPECIFIC_USER</code>. Nothing has to be
+registered at GitHub — the whole setup is on the Cloud Pipeline side.</p>
+<pre><code class="language-json">[
+  {
+    &quot;issuer&quot;: &quot;https://token.actions.githubusercontent.com&quot;,
+    &quot;audiences&quot;: [&quot;https://&lt;cp-host&gt;/pipeline/restapi&quot;],
+    &quot;algorithms&quot;: [&quot;RS256&quot;],
+    &quot;clients&quot;: [
+      {
+        &quot;id&quot;: &quot;github-prod-deploy&quot;,
+        &quot;rules&quot;: [
+          { &quot;claim&quot;: &quot;repository_id&quot;, &quot;operator&quot;: &quot;EQUALS&quot;, &quot;value&quot;: &quot;456789&quot; },
+          { &quot;claim&quot;: &quot;environment&quot;, &quot;operator&quot;: &quot;EQUALS&quot;, &quot;value&quot;: &quot;prod&quot; }
+        ],
+        &quot;assumeStrategy&quot;: {
+          &quot;type&quot;: &quot;SPECIFIC_USER&quot;,
+          &quot;user&quot;: &quot;GITHUB_CI_DEPLOY&quot;,
+          &quot;rolesToKeep&quot;: [&quot;ROLE_USER&quot;],
+          &quot;maxTokenLifetime&quot;: 3600,
+          &quot;ignoreSubjectTokenLifetime&quot;: true
+        }
+      }
+    ]
+  }
+]
+</code></pre>
+<p>Points worth knowing:</p>
+<ul>
+<li><strong><code>aud</code> protects nothing here.</strong> Every repository on github.com shares one issuer, and a workflow
+  chooses its own audience, so the claim conditions are the only boundary. Match on
+  <code>repository_id</code> rather than <code>repository</code>: a repository name can be released and taken by somebody
+  else, an identifier cannot. Pin an environment or a branch as well, or anyone able to push a
+  branch in that repository can obtain the token.</li>
+<li><strong><code>ignoreSubjectTokenLifetime</code> is needed.</strong> A GitHub token expires minutes after it is issued, so
+  without this the Cloud Pipeline token would expire with it and end a long step midway.</li>
+<li><strong>The runner has to reach the API.</strong> GitHub-hosted runners run on the public internet, so a
+  deployment with a private API needs a self-hosted runner inside the network. The API in turn
+  needs outbound HTTPS to GitHub to fetch the signing keys, unless an inline <code>jwks</code> is configured.</li>
+</ul>
+<p>A workflow step:</p>
+<pre><code class="language-yaml">permissions:
+  id-token: write
+steps:
+  - run: |
+      GH=$(curl -sH &quot;Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN&quot; \
+        &quot;$ACTIONS_ID_TOKEN_REQUEST_URL&amp;audience=https://&lt;cp-host&gt;/pipeline/restapi&quot; | jq -r .value)
+      CP=$(curl -s https://&lt;cp-host&gt;/pipeline/restapi/oauth/token \
+        -d grant_type=urn:ietf:params:oauth:grant-type:token-exchange \
+        -d subject_token=&quot;$GH&quot; \
+        -d subject_token_type=urn:ietf:params:oauth:token-type:jwt | jq -r .access_token)
+      echo &quot;::add-mask::$CP&quot;
+      echo &quot;API=https://&lt;cp-host&gt;/pipeline/restapi/&quot; &gt;&gt; &quot;$GITHUB_ENV&quot;
+      echo &quot;API_TOKEN=$CP&quot; &gt;&gt; &quot;$GITHUB_ENV&quot;
+</code></pre>
+<h2 id="making-the-request">Making the request</h2>
+<p>Form encoded, and no Cloud Pipeline token is needed:</p>
+<pre><code>POST /restapi/oauth/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=urn:ietf:params:oauth:grant-type:token-exchange
+subject_token=&lt;the user's access token&gt;
+subject_token_type=urn:ietf:params:oauth:token-type:access_token
+requested_token_type=urn:ietf:params:oauth:token-type:jwt
+</code></pre>
+<p><code>subject_token_type</code> may be either <code>...:token-type:access_token</code> or <code>...:token-type:jwt</code>;
+<code>requested_token_type</code> is optional and may only be <code>...:token-type:jwt</code>.</p>
+<p>A successful response:</p>
+<pre><code class="language-json">{
+  &quot;access_token&quot;: &quot;&lt;platform token&gt;&quot;,
+  &quot;issued_token_type&quot;: &quot;urn:ietf:params:oauth:token-type:jwt&quot;,
+  &quot;token_type&quot;: &quot;Bearer&quot;,
+  &quot;expires_in&quot;: 900
+}
+</code></pre>
+<p>The token is an ordinary Cloud Pipeline token, so the API, the edge and <code>pipe</code> accept it as they
+accept any other — with <code>pipe</code>, set it as <code>API_TOKEN</code>. There is no refresh token: when it expires,
+exchange again.</p>
+<p>A refused response carries the error code and nothing else:</p>
+<pre><code class="language-json">{ &quot;error&quot;: &quot;invalid_grant&quot; }
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Status</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>unsupported_grant_type</code></td>
+<td>400</td>
+<td><code>grant_type</code> is missing or is not the token exchange grant</td>
+</tr>
+<tr>
+<td><code>invalid_request</code></td>
+<td>400</td>
+<td><code>subject_token</code> is missing, or a token type is missing or unsupported</td>
+</tr>
+<tr>
+<td><code>invalid_grant</code></td>
+<td>400</td>
+<td>The token was not accepted, or the user it names cannot be acted as</td>
+</tr>
+<tr>
+<td><code>unauthorized_client</code></td>
+<td>400</td>
+<td>The token is genuine, but no configured client matches it</td>
+</tr>
+<tr>
+<td><code>server_error</code></td>
+<td>500</td>
+<td>A fault on the Cloud Pipeline side</td>
+</tr>
+</tbody>
+</table>
+<p>The same subject token may be exchanged more than once, for application replicas or retries.</p>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<p>Because the response says so little by design, the API log is where the reason is. Every exchange is
+logged with the issuer, the subject, the matched client, the resulting user, the token's <code>jti</code> and
+the lifetime it was given.</p>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Likely cause</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The endpoint answers <code>404</code></td>
+<td>The exchange is not enabled. See <a href="#turning-it-on">Turning it on</a></td>
+</tr>
+<tr>
+<td><code>unauthorized_client</code> for a token that looks right</td>
+<td>No client matched. A condition on a claim the token does not carry, or a client above this one matched first</td>
+</tr>
+<tr>
+<td><code>invalid_grant</code> straight away</td>
+<td>The issuer is not configured, <code>aud</code> does not match, the token has expired, or the user does not exist in Cloud Pipeline</td>
+</tr>
+<tr>
+<td>Every exchange fails after a provider key rotation</td>
+<td>An inline <code>jwks</code> has gone stale. Prefer discovery or <code>jwksUri</code></td>
+</tr>
+<tr>
+<td>The issued token has more rights at the Docker registry than its roles suggest</td>
+<td>Expected: registry access resolves roles from the stored user, not from the token. See the note above</td>
+</tr>
+<tr>
+<td>The issued token expires far sooner than <code>maxTokenLifetime</code></td>
+<td>It is capped by what was left of the provider's token. For a CI client, set <code>ignoreSubjectTokenLifetime</code></td>
+</tr>
+<tr>
+<td><code>GET /restapi/user/token</code> is refused</td>
+<td>Expected: an exchanged token cannot mint another unless the client sets <code>exchangeable</code></td>
+</tr>
+</tbody>
+</table>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../12.15._System_jobs/" class="btn btn-neutral float-left" title="12.15. System jobs"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../13_Permissions/13._Permissions/" class="btn btn-neutral float-right" title="13. Permissions">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../12.15._System_jobs/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../13_Permissions/13._Permissions/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../../..";</script>
+    <script src="../../../js/theme_extra.js"></script>
+    <script src="../../../js/theme.js"></script>
+      <script src="../../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

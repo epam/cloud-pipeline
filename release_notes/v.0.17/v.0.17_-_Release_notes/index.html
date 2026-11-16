@@ -276,6 +276,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#retries-of-a-failed-scratch-lustre-file-system">Retries of a failed scratch Lustre file system</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#oidc-token-exchange">OIDC token exchange</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#notable-bug-fixes">Notable Bug fixes</a>
         <ul>
     <li class="toctree-l3"><a class="reference internal" href="#nextflow-run-view-some-tasks-stay-running-after-the-run-finishes">Nextflow run view: some tasks stay RUNNING after the run finishes</a>
@@ -559,6 +561,8 @@
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.15._System_jobs/">12.15. System jobs</a>
                 </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.16._OIDC_token_exchange/">12.16. OIDC token exchange</a>
+                </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../../manual/13_Permissions/13._Permissions/">13. Permissions</a>
@@ -792,6 +796,7 @@
 <li><a href="#default-version-of-a-tool">Default version of a tool</a></li>
 <li><a href="#nice-dcv-desktop-no-wallpaper-a-keyboard-layout-switcher-ubuntu-2404">NICE DCV desktop: no wallpaper, a keyboard layout switcher, Ubuntu 24.04</a></li>
 <li><a href="#retries-of-a-failed-scratch-lustre-file-system">Retries of a failed scratch Lustre file system</a></li>
+<li><a href="#oidc-token-exchange">OIDC token exchange</a></li>
 </ul>
 <hr />
 <ul>
@@ -2414,6 +2419,21 @@ Previously, if the file system ended up <code>FAILED</code>, e.g. because the cl
 </ul>
 <p>The workers of the cluster do not create the file system. Previously, a worker failed at once only if the first answer of the API was <code>FAILED</code>. If the file system was being deleted, or turned <code>FAILED</code> later, the worker waited for 20 minutes and then tried to mount it. Now, a worker fails at once in all these cases.</p>
 <p>Please note: the workers wait for the master's <code>InitializeSharedFS</code> task for about 20 minutes (<code>CP_CLUSTER_WAIT_FOR_NODE_ATTEMPTS</code>, <code>120</code> checks, 10 seconds apart). One attempt of the master can take up to <code>CP_CAP_LUSTRE_WAIT_ATTEMPTS</code> × 5 seconds (20 minutes by default), plus the deletion wait and the pause. So if the master retries, its workers may fail with "Failed to attach to master node" before the file system is ready.</p>
+<hr />
+<h2 id="oidc-token-exchange">OIDC token exchange</h2>
+<p>An application that calls the Cloud Pipeline API for its signed-in users previously needed a Cloud Pipeline token issued from the platform side - in practice a long-lived one, copied into the application's configuration, and often a single token shared by all of its users. The API could then not tell which user was really acting.</p>
+<p>In <strong><code>v0.17</code></strong>, such an application can trade a user's own access token, issued by the corporate identity provider, for a short-lived Cloud Pipeline token for that same user, as <a href="https://www.rfc-editor.org/rfc/rfc8693">RFC 8693</a> describes:</p>
+<pre><code>POST /restapi/oauth/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=urn:ietf:params:oauth:grant-type:token-exchange
+subject_token=&lt;the user's access token&gt;
+subject_token_type=urn:ietf:params:oauth:token-type:access_token
+</code></pre>
+<p>So the application stores no static token from Cloud Pipeline, every call is made and audited as the real user with that user's own permissions, and blocking a user takes effect within one token lifetime. The issued token is an ordinary platform token, which the API, the edge and <code>pipe</code> accept as any other.</p>
+<p>The exchange is off by default, and is enabled by the <code>oidc.token.exchange.enabled</code> property of the API service - until then the endpoint is not registered at all. The administrator then configures the trusted identity providers in the <strong><code>system.oidc.token.exchange.issuers</code></strong> preference. Each provider holds a list of <strong>clients</strong> - the callers trusted under it, because one provider issues tokens for many callers: every repository on github.com shares one issuer, as does every application in an Entra ID tenant. A client is identified by conditions on the token's claims, and says which user it may act as: a user named by a claim of the token, or a fixed service account for a CI job. A client can also narrow the roles its tokens carry, so an application can be given read-only access to the API on behalf of users who have more.</p>
+<p>The exchange never creates a user: the user has to exist in Cloud Pipeline already, and the usual blocking checks apply. The issued token lives no longer than the provider's token it came from, so ending a user's session at the provider ends their Cloud Pipeline access, and it cannot be traded for a longer-lived one unless the client is configured to allow it.</p>
+<p>For more details see <a href="../../../manual/12_Manage_Settings/12.16._OIDC_token_exchange/">here</a>.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
 <h3 id="nextflow-run-view-some-tasks-stay-running-after-the-run-finishes">Nextflow run view: some tasks stay <code>RUNNING</code> after the run finishes</h3>
