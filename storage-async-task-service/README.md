@@ -21,6 +21,23 @@ POST /async-task/{id}/status                SUCCESS, with the size and the skipp
 GET  /async-task/{id}/consume               the user gets a signed link
 ```
 
+Inside the archive a file is named without the folders the selection has in common above the items
+it names - `archive_preparation_worker._archive_root`. One folder picked deep in a tree is unpacked
+under its own name (`sub1/sub2/folder` gives `folder/...`), and a selection spread across folders
+keeps as much of the tree as it takes to tell its items apart (`sub1/sub2/folder` and
+`sub1/sub3/folder` give `sub2/folder/...` and `sub3/folder/...`). One prefix for the whole selection,
+not the parent of each item: taking the same prefix off every path cannot turn two paths that differ
+in the storage into one name, while cutting each item back to its own name would - two folders
+called `folder` would become one.
+
+The paths are normalised before any of that, because an entry name that starts with `..` is written
+outside the folder the archive is unpacked into by extractors that do not sanitise it. A path that
+still climbs above the storage root once normalised - only a literal S3 key of that spelling does -
+has its leading `..` dropped, which is the one place two different paths can still meet under one
+name, and a path normalising to nothing at all is skipped and reported in the archive's note rather
+than packed: `ZipFile.extractall` raises on an entry called `.` or `..` and abandons the rest of
+the archive with it.
+
 A cancelled task stops within `--status-poll-seconds` and deletes what it had built. A task whose
 worker was killed is finished by the cleaner, which also expires archives past `ttlDays`.
 

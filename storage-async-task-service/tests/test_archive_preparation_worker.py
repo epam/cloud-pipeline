@@ -58,8 +58,9 @@ def _archive_config(max_files=None, max_size=None, worker_minutes=10, prefix='ar
     )
 
 
-def _task(status=TaskStatus.RUNNING):
-    return ArchiveTask(id=TASK_ID, status=status, owner='USER', storage_id=1, paths=('data/',))
+def _task(status=TaskStatus.RUNNING, paths=('data/',)):
+    """A task over `paths`. The default is one folder at the storage root, with nothing above it."""
+    return ArchiveTask(id=TASK_ID, status=status, owner='USER', storage_id=1, paths=paths)
 
 
 def _run(tmp_path, monkeypatch, source, api=None, archive_config=None, bucket=None,
@@ -97,6 +98,100 @@ def test_packs_the_selection_and_reports_success(tmp_path, monkeypatch):
     # are the kind of thing that only breaks silently.
     assert source.closed
     assert not (tmp_path / TASK_ID).exists()
+
+
+def test_packs_a_selected_folder_without_the_folders_above_it(tmp_path, monkeypatch):
+    # The case this exists for: the user asked for `ggplot2`, so that is what they unpack - not a
+    # chain of folders to walk down before they reach it.
+    selected = 'R/x86_64-pc-linux-gnu-library/ggplot2/'
+    source = FakeSource({f'{selected}DESCRIPTION': b'package', f'{selected}R/plot.R': b'code'})
+    api = FakeApi(_task(paths=(selected,)))
+
+    api, bucket = _run(tmp_path, monkeypatch, source, api=api)
+
+    assert api.statuses == [TaskStatus.SUCCESS]
+    assert sorted(bucket.uploaded) == ['ggplot2/DESCRIPTION', 'ggplot2/R/plot.R']
+
+
+def test_keeps_enough_of_the_tree_to_tell_the_selected_items_apart(tmp_path, monkeypatch):
+    # Two folders of the same name picked in different places. Cutting each item back to its own
+    # name would give both of them `folder`, and their files would then overwrite each other, so
+    # what is stripped is only what the whole selection has in common.
+    source = FakeSource({'root/sub1/sub2/folder/a.txt': b'first',
+                         'root/sub1/sub3/folder/a.txt': b'second'})
+    api = FakeApi(_task(paths=('root/sub1/sub2/folder/', 'root/sub1/sub3/folder/')))
+
+    api, bucket = _run(tmp_path, monkeypatch, source, api=api)
+
+    assert api.statuses == [TaskStatus.SUCCESS]
+    assert sorted(bucket.uploaded) == ['sub2/folder/a.txt', 'sub3/folder/a.txt']
+
+
+def test_packs_a_single_selected_file_under_its_own_name(tmp_path, monkeypatch):
+    source = FakeSource({'R/lib/notes.txt': b'hello'})
+    api = FakeApi(_task(paths=('R/lib/notes.txt',)))
+
+    api, bucket = _run(tmp_path, monkeypatch, source, api=api)
+
+    assert api.statuses == [TaskStatus.SUCCESS]
+    assert bucket.uploaded == ['notes.txt']
+
+
+def test_never_writes_an_entry_that_unpacks_outside_the_archive(tmp_path, monkeypatch):
+    # A selected path holding `..`, which the GUI cannot produce and a task created through the REST
+    # API can; `NfsSource` keeps it in the paths it reports. Asserted on the archive itself, because
+    # what matters is the name `zipfile` ends up storing - it sanitises a name of its own accord
+    # except when it already starts with `..`.
+    source = FakeSource({'sub1/sub2/../other/x.txt': b'data'})
+    api = FakeApi(_task(paths=('sub1/sub2/..',)))
+
+    api, bucket = _run(tmp_path, monkeypatch, source, api=api)
+
+    assert api.statuses == [TaskStatus.SUCCESS]
+    assert bucket.uploaded == ['sub1/other/x.txt']
+
+
+def test_skips_a_file_that_has_no_name_to_be_packed_under(tmp_path, monkeypatch):
+    # A storage path that normalises to nothing - only an S3 key spelt this way produces one. The
+    # entry would be called `..`, and `ZipFile.extractall` raises on such an entry and abandons
+    # every file after it, so the one file is given up instead of the rest of the archive.
+    source = FakeSource({'a/../..': b'odd', 'a/b.txt': b'wanted'})
+
+    api, bucket = _run(tmp_path, monkeypatch, source)
+
+    assert api.statuses == [TaskStatus.SUCCESS]
+    # The other file, and the note that says what happened to this one.
+    assert sorted(bucket.uploaded) == ['README.txt', 'a/b.txt']
+    assert api.reports[0][1]['skippedFiles'] == 1
+    # It was not downloaded either: the name is known before a byte is fetched.
+    assert source.heartbeats == 1
+
+
+def test_keeps_the_users_own_readme_when_the_prefix_leaves_it_at_the_root(tmp_path, monkeypatch):
+    # Stripping is what brings a file to the top of the archive, which is where the note goes, so a
+    # selected `README.txt` can now collide with the note from any folder rather than only from the
+    # storage root.
+    source = FakeSource({'sub1/sub2/README.txt': b'the user wrote this'},
+                        unreadable={'sub1/sub2/cold.bin': 'stored in GLACIER'})
+
+    api = FakeApi(_task(paths=('sub1/sub2/README.txt',)))
+    bucket = FakeBucket()
+    monkeypatch.setattr('sats.worker.archive_preparation_worker.open_source', lambda *_args: source)
+    captured = {}
+
+    def capture(path, key, heartbeat):
+        with zipfile.ZipFile(path) as archive:
+            captured['names'] = archive.namelist()
+            captured['readme'] = archive.read('README.txt').decode()
+        return path.stat().st_size
+
+    bucket.upload = capture
+    ArchivePreparationWorker(api, _service_config(tmp_path), _archive_config(), api.task,
+                             bucket=bucket).run()
+
+    assert api.statuses == [TaskStatus.SUCCESS]
+    assert captured['readme'] == 'the user wrote this'
+    assert sorted(captured['names']) == ['CLOUD-PIPELINE-SKIPPED-FILES.txt', 'README.txt']
 
 
 def test_names_the_unreadable_files_in_the_archive(tmp_path, monkeypatch):
@@ -143,6 +238,33 @@ def test_the_archive_note_says_why_each_file_is_missing(tmp_path, monkeypatch):
     ArchivePreparationWorker(api, _service_config(tmp_path), _archive_config(), api.task, bucket=bucket).run()
 
     assert 'cold.bin: stored in GLACIER' in captured['note']
+
+
+def test_the_note_names_a_missing_file_by_its_storage_path(tmp_path, monkeypatch):
+    # The note is read beside the unpacked folder, and whoever reads it then goes looking for the
+    # file in the storage. So it names the file the way they selected it - with the folders above it -
+    # even though the files that did make it in are packed without them.
+    selected = 'R/lib/ggplot2/'
+    source = FakeSource({f'{selected}DESCRIPTION': b'package'},
+                        unreadable={f'{selected}data.rds': 'stored in GLACIER'})
+
+    api = FakeApi(_task(paths=(selected,)))
+    bucket = FakeBucket()
+    monkeypatch.setattr('sats.worker.archive_preparation_worker.open_source', lambda *_args: source)
+    captured = {}
+
+    def capture(path, key, heartbeat):
+        with zipfile.ZipFile(path) as archive:
+            captured['names'] = archive.namelist()
+            captured['note'] = archive.read('README.txt').decode()
+        return path.stat().st_size
+
+    bucket.upload = capture
+    ArchivePreparationWorker(api, _service_config(tmp_path), _archive_config(), api.task,
+                             bucket=bucket).run()
+
+    assert 'R/lib/ggplot2/data.rds: stored in GLACIER' in captured['note']
+    assert captured['names'] == ['ggplot2/DESCRIPTION', 'README.txt']
 
 
 def test_refuses_a_selection_with_too_many_files(tmp_path, monkeypatch):

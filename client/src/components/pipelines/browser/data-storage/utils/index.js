@@ -62,6 +62,20 @@ export function storageItemSelectionAvailable (item) {
 }
 
 /**
+ * Whether "Select page" has anything to do: a row that can be selected, and
+ * is not selected yet.
+ *
+ * @param {Object[]} items the rows as rendered, the ".." row included
+ * @param {function(Object): boolean} isSelected
+ * @returns {boolean}
+ */
+export function selectPageAvailable (items, isSelected) {
+  return (items || []).some(
+    (item) => storageItemSelectionAvailable(item) && !isSelected(item)
+  );
+}
+
+/**
  * Whether the user may download from the storage: it is not sensitive, and
  * its download attribute allows this user.
  *

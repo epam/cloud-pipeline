@@ -145,6 +145,7 @@ import {
   removableStorageItems,
   removeConfirmTitle,
   restorableStorageItems,
+  selectPageAvailable,
   storageItemSelectionAvailable
 } from './utils';
 
@@ -2153,9 +2154,7 @@ export default class DataStorage extends React.Component {
   }
 
   get selectAllAvailable () {
-    return !!this.storage.pageElements &&
-      this.storage.pageElements.length > 0 &&
-      this.storage.pageElements.some(o => !this.fileIsSelected(o));
+    return selectPageAvailable(this.items, this.fileIsSelected);
   }
 
   get clearSelectionVisible () {

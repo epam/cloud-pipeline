@@ -40,6 +40,7 @@ report: an archive no task points at is unreachable for the user.
 from __future__ import annotations
 
 import itertools
+import posixpath
 import shutil
 import threading
 import time
@@ -73,6 +74,11 @@ SKIPPED_NOTE_FALLBACK = 'CLOUD-PIPELINE-SKIPPED-FILES.txt'
 # Error messages go into a database column and into the GUI, so the text is cut. The full one is in
 # this service's log.
 MAX_ERROR_MESSAGE = 1000
+
+# What a path can be left as once it is normalised, and no file can be packed under: the folder
+# itself, its parent, or nothing at all. `ZipFile.extractall` raises on such an entry and abandons
+# the rest of the archive with it, so the file is skipped instead - see `_archive_name`.
+_UNUSABLE_NAMES = frozenset({'', '.', '..'})
 
 
 class ArchivePreparationWorker(AsyncTaskWorker):
@@ -272,14 +278,30 @@ class ArchivePreparationWorker(AsyncTaskWorker):
         a user whose nine hundred and ninety-ninth file has a permission problem wants the rest.
 
         `zipfile` writes ZIP64 by itself when it needs to, so a file above 4 GiB is not a special case.
+
+        The entry names are the storage paths with `_archive_root` taken off - see `_archive_name` -
+        so the archive holds what the user picked rather than the folders above it.
         """
         archive_path = self._task_dir / LOCAL_ARCHIVE_NAME
         temp_path = self._task_dir / DOWNLOAD_TEMP_NAME
         failed: list[tuple[str, str]] = []
+        root = _archive_root(self._task.paths)
+        LOG.debug('Task %s packs its files under %s', self._task.id, root or 'their storage paths')
+        self._warn_about_paths_outside(files, root)
         with zipfile.ZipFile(archive_path, 'w', zipfile.ZIP_DEFLATED,
                              compresslevel=self._config.compress_level) as archive:
             for found in files:
                 self._watcher.check()
+                name = _archive_name(found.path, root)
+                if name in _UNUSABLE_NAMES:
+                    # Nothing is left of the path to name the entry by. Such an entry is not merely
+                    # useless: `ZipFile.extractall` raises on it and stops, so the files after it
+                    # would not be extracted either. Skipped before the download, and named in the
+                    # note like any other file that could not be packed.
+                    LOG.warning('Task %s: %s has no name that can be used inside an archive, '
+                                'skipping it', self._task.id, found.path)
+                    failed.append((found.path, 'it has no name that can be used inside an archive'))
+                    continue
                 try:
                     source.download(found, temp_path, self._watcher.check)
                 except StopRequested:
@@ -292,7 +314,7 @@ class ArchivePreparationWorker(AsyncTaskWorker):
                     temp_path.unlink(missing_ok=True)
                     continue
                 # Without `arcname` every entry would be called `current.part`.
-                archive.write(temp_path, arcname=found.path)
+                archive.write(temp_path, arcname=name)
                 temp_path.unlink(missing_ok=True)
             if unreadable or failed:
                 # The name is chosen against what is already in the archive: `zipfile` would happily
@@ -302,6 +324,21 @@ class ArchivePreparationWorker(AsyncTaskWorker):
         LOG.info('Task %s packed %s file(s), %s skipped', self._task.id,
                  len(files) - len(failed), len(unreadable) + len(failed))
         return archive_path, failed
+
+    def _warn_about_paths_outside(self, files: list[SourceFile], root: str) -> None:
+        """
+        Says once, rather than per file, that some paths are not under the selection's own folder.
+
+        No source produces such a path today - `_archive_name` packs it whole rather than by a
+        half-match - and an archive where one file keeps its folders while its neighbours do not is
+        impossible to explain without this line. One warning for the task and not one per file,
+        because a selection may hold a hundred thousand of them.
+        """
+        outside = [found.path for found in files if not _is_under(found.path, root)]
+        if outside:
+            LOG.warning('Task %s: %s file(s) are not under %s, which this selection has in common, '
+                        'starting with %s. They are packed under their whole paths', self._task.id,
+                        len(outside), root, outside[0])
 
     def _upload(self, archive_path: Path) -> int:
         """
@@ -422,6 +459,82 @@ class ArchivePreparationWorker(AsyncTaskWorker):
         if self._task_dir.exists():
             LOG.warning('Task %s: scratch directory %s could not be removed', self._task.id,
                         self._task_dir)
+
+
+def _archive_root(paths: tuple[str, ...]) -> str:
+    """
+    The prefix taken off every file's storage path to name it inside the archive.
+
+    What the selection has in common *above* the items it names, so a folder picked deep in a tree
+    is unpacked under its own name and nothing of the way to it survives:
+
+        sub1/sub2/folder                      ->  folder/...
+        sub1/sub2/folder, sub1/sub2/folder2   ->  folder/..., folder2/...
+        sub1/sub2/folder, sub1/sub3/folder2   ->  sub2/folder/..., sub3/folder2/...
+
+    The third case is why this is one prefix for the whole selection rather than the parent of each
+    selected path: cutting each item back to its own name would give two folders of the same name
+    picked in different places one name in the archive, and the files under them would then
+    overwrite each other. Taking the same prefix off every path cannot do that - two paths that
+    differ in the storage still differ once a common head is gone - so nothing has to be renamed on
+    the way in, and what is left tells the user which of the two they are looking at.
+
+    Compared folder by folder, never by characters: `sub2` and `sub20` share four characters and no
+    folder at all.
+
+    The answer is `''` - nothing is stripped - for a selection whose items have no folder in common,
+    which includes any selection holding an item at the storage root, and for a task with no paths.
+    It ends in `/` otherwise, so it can be removed from a path as it is.
+    """
+    common: list[str] | None = None
+    for path in paths:
+        # Everything above the item: a selected `a/b/c` contributes `a/b`, and one at the root `''`.
+        # Normalised first, so that `a//b` and `a/x/../b` are the one folder they name - see
+        # `_archive_name`, which normalises the file paths the same way.
+        parent = posixpath.normpath(path).lstrip('/').rpartition('/')[0]
+        folders = parent.split('/') if parent else []
+        if common is None:
+            common = folders
+            continue
+        kept = 0
+        while kept < len(common) and kept < len(folders) and common[kept] == folders[kept]:
+            kept += 1
+        common = common[:kept]
+    return f'{"/".join(common)}/' if common else ''
+
+
+def _is_under(path: str, root: str) -> bool:
+    """Whether a storage path is under the folder the selection has in common, once normalised."""
+    return not root or posixpath.normpath(path).lstrip('/').startswith(root)
+
+
+def _archive_name(path: str, root: str) -> str:
+    """
+    The name one file is packed under: its storage path, normalised, with `root` taken off.
+
+    Normalised because a path is text here and may hold `.` or `..` segments - the GUI cannot
+    produce one, a task created through the REST API can, and an S3 key may simply contain `..`.
+    `NfsSource` only guarantees that such a path stays inside the storage, not that it is written
+    without them, and `zipfile` normalises an `arcname` of its own accord **except** when it already
+    starts with `..`. So taking a prefix off `sub1/sub2/../other/x.txt` is what would turn a name
+    that unpacks inside the folder the user chose into `../other/x.txt`, which extractors that do
+    not sanitise their input write outside it. Normalising before anything is stripped is what
+    stops that, and the loop below is the second line of defence.
+
+    What the loop cannot do is give the file a name where normalising left none: a path of `a/..`
+    answers `.` and one of `a/../..` answers `..`, which only a literal S3 key of that spelling
+    produces, and which the caller refuses to pack - see `_UNUSABLE_NAMES`. Those are also the one
+    case where two paths that differ in the storage can meet under one name, because the number of
+    `..` segments dropped is per path rather than the one prefix everything else loses.
+
+    A path the root does not cover is packed whole, rather than by a half-match. `_is_under` is the
+    same question asked ahead of the loop, so the caller can say so once.
+    """
+    normalised = posixpath.normpath(path).lstrip('/')
+    name = normalised.removeprefix(root) if _is_under(path, root) else normalised
+    while name.startswith('../'):
+        name = name.removeprefix('../')
+    return name
 
 
 def _note_name(taken: list[str]) -> str:

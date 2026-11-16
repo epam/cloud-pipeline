@@ -62,7 +62,7 @@ export default function getMarkdownRenderer (options = {}) {
       lang = lang || 'bash';
       if (lang && highlightJs.getLanguage(lang)) {
         try {
-          return highlightJs.highlight(lang, str).value;
+          return highlightJs.highlight(str, {language: lang}).value;
         } catch (__) {}
       }
       try {
