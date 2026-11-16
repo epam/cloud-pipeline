@@ -19,6 +19,7 @@ import {observable} from 'mobx';
 import {
   renderWithStores,
   renderWithLocale,
+  renderWithRouter,
   screen,
   within,
   click,
@@ -259,9 +260,10 @@ test('resolves the Storage column to the dataStorages singleton\'s name', async 
     }
   ]);
 
-  renderWithStores(<DownloadsManager />, stores());
+  renderWithRouter(<DownloadsManager />, {stores: stores()});
 
-  expect(await screen.findByText('my-storage')).toBeInTheDocument();
+  // `<storage>/<folder>`, and these fixtures carry no paths - so the root.
+  expect(await screen.findByText('my-storage/')).toBeInTheDocument();
 });
 
 test(
@@ -277,14 +279,16 @@ test(
       }
     ]);
 
-    renderWithStores(<DownloadsManager />, {
-      asyncTasks: asyncTasksDouble(),
-      authenticatedUserInfo: authenticatedUserInfoDouble(),
-      dataStorages: dataStoragesDouble({loaded: false, value: []})
+    renderWithRouter(<DownloadsManager />, {
+      stores: {
+        asyncTasks: asyncTasksDouble(),
+        authenticatedUserInfo: authenticatedUserInfoDouble(),
+        dataStorages: dataStoragesDouble({loaded: false, value: []})
+      }
     });
 
     expect(await screen.findByText('archive-one.zip')).toBeInTheDocument();
-    expect(screen.getByText('7')).toBeInTheDocument();
+    expect(screen.getByText('7/')).toBeInTheDocument();
   }
 );
 
@@ -302,17 +306,19 @@ test('shows the storage name once dataStorages loads after the first render', as
   ]);
   const dataStorages = dataStoragesDouble({loaded: false, value: []});
 
-  renderWithStores(<DownloadsManager />, {
-    asyncTasks: asyncTasksDouble(),
-    authenticatedUserInfo: authenticatedUserInfoDouble(),
-    dataStorages
+  renderWithRouter(<DownloadsManager />, {
+    stores: {
+      asyncTasks: asyncTasksDouble(),
+      authenticatedUserInfo: authenticatedUserInfoDouble(),
+      dataStorages
+    }
   });
-  expect(await screen.findByText('7')).toBeInTheDocument();
+  expect(await screen.findByText('7/')).toBeInTheDocument();
 
   dataStorages.value = [{id: 7, name: 'my-storage'}];
   dataStorages.loaded = true;
 
-  expect(await screen.findByText('my-storage')).toBeInTheDocument();
+  expect(await screen.findByText('my-storage/')).toBeInTheDocument();
 });
 
 // The cap hint this component used to render is gone, and so is the store

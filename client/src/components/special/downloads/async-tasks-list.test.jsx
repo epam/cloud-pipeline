@@ -19,6 +19,7 @@ import {observable} from 'mobx';
 import {
   render,
   renderWithLocale,
+  renderWithRouter,
   screen,
   within,
   click,
@@ -196,18 +197,6 @@ test('a lowercase status still gets the FAILED CSS class and tooltip', async () 
   await hover(statusText);
 
   expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
-});
-
-test('renders both API timestamp shapes through displayDate', () => {
-  render(<AsyncTasksList tasks={[SUCCESS_TASK, RUNNING_TASK]} />);
-
-  // SUCCESS_TASK.created is ISO ('2026-10-21T13:13:02.274Z'), RUNNING_TASK.created
-  // is space-separated ('2026-10-21 13:15:19.689') — both formats the API sends.
-  // displayDate formats both the same way, and never the raw string.
-  expect(screen.queryByText('2026-10-21T13:13:02.274Z')).not.toBeInTheDocument();
-  expect(screen.queryByText('2026-10-21 13:15:19.689')).not.toBeInTheDocument();
-  expect(screen.getAllByText('2026-10-21 13:13:02').length).toBeGreaterThan(0);
-  expect(screen.getAllByText('2026-10-21 13:15:19').length).toBeGreaterThan(0);
 });
 
 test('a SUCCESS task gets the cp-success class, not cp-primary', () => {
@@ -869,35 +858,70 @@ test('clicking Previous on the first page asks for nothing', async () => {
   expect(onPageChange).not.toHaveBeenCalled();
 });
 
-// The Storage column resolves `task.params.storageId` against the
+// The Source column resolves the task's storage id against the
 // `storageNamesById` lookup the container builds from the `dataStorages`
-// singleton. Every fixture above carries `storageId: 7`, so these reuse
-// SUCCESS_TASK rather than adding new fixtures.
+// singleton, and renders `<storage>/<folder>` as a link. Every fixture above
+// carries `storageId: 7` and paths at the storage root, so the folder is
+// empty and the text is `<storage>/`.
+function renderWithRouting (element) {
+  return renderWithRouter(element, {
+    stores: {authenticatedUserInfo: authenticatedUserInfoDouble()}
+  });
+}
+
 test('resolves a known storageId to its name, and hides the raw id', () => {
-  render(<AsyncTasksList tasks={[SUCCESS_TASK]} storageNamesById={{7: 'my-storage'}} />);
+  renderWithRouting(<AsyncTasksList tasks={[SUCCESS_TASK]} storageNamesById={{7: 'my-storage'}} />);
 
   const row = rowFor('archive-success');
-  expect(within(row).getByText('my-storage')).toBeInTheDocument();
-  expect(within(row).queryByText('7')).not.toBeInTheDocument();
+  expect(within(row).getByText('my-storage/')).toBeInTheDocument();
+  expect(within(row).queryByText('7/')).not.toBeInTheDocument();
+});
+
+test('links the source to its folder in the storage browser', () => {
+  renderWithRouting(<AsyncTasksList tasks={[SUCCESS_TASK]} storageNamesById={{7: 'my-storage'}} />);
+
+  const link = within(rowFor('archive-success')).getByText('my-storage/').closest('a');
+  // No `?path=` for the storage root.
+  expect(link.getAttribute('href')).toContain('/storage/7');
+  expect(link.getAttribute('href')).not.toContain('path=');
+});
+
+// Otherwise the modal would sit over whichever storage the link opened.
+test('following a source link reports the navigation', async () => {
+  const onNavigate = fn();
+  renderWithRouter(
+    <AsyncTasksList
+      tasks={[SUCCESS_TASK]}
+      storageNamesById={{7: 'my-storage'}}
+      onNavigate={onNavigate}
+    />,
+    {stores: {authenticatedUserInfo: authenticatedUserInfoDouble()}}
+  );
+
+  await click(within(rowFor('archive-success')).getByText('my-storage/'));
+
+  expect(onNavigate).toHaveBeenCalled();
 });
 
 test('falls back to the raw id when the storageId has no entry in the map', () => {
-  render(<AsyncTasksList tasks={[SUCCESS_TASK]} storageNamesById={{99: 'some-other-storage'}} />);
+  renderWithRouting(
+    <AsyncTasksList tasks={[SUCCESS_TASK]} storageNamesById={{99: 'some-other-storage'}} />
+  );
 
-  expect(within(rowFor('archive-success')).getByText('7')).toBeInTheDocument();
+  expect(within(rowFor('archive-success')).getByText('7/')).toBeInTheDocument();
 });
 
 test('falls back to the raw id, without throwing, when storageNamesById is omitted', () => {
-  render(<AsyncTasksList tasks={[SUCCESS_TASK]} />);
+  renderWithRouting(<AsyncTasksList tasks={[SUCCESS_TASK]} />);
 
-  expect(within(rowFor('archive-success')).getByText('7')).toBeInTheDocument();
+  expect(within(rowFor('archive-success')).getByText('7/')).toBeInTheDocument();
 });
 
 test('still resolves a name when the task\'s storageId arrives as a string', () => {
   const task = {...SUCCESS_TASK, params: {...SUCCESS_TASK.params, storageId: '7'}};
-  render(<AsyncTasksList tasks={[task]} storageNamesById={{7: 'my-storage'}} />);
+  renderWithRouting(<AsyncTasksList tasks={[task]} storageNamesById={{7: 'my-storage'}} />);
 
-  expect(within(rowFor('archive-success')).getByText('my-storage')).toBeInTheDocument();
+  expect(within(rowFor('archive-success')).getByText('my-storage/')).toBeInTheDocument();
 });
 
 // The item count, and its popover listing the archived paths, both live in

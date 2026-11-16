@@ -2471,7 +2471,8 @@ export default class DataStorage extends React.Component {
     const downloadArchiveAction = {
       key: Keys.downloadArchive,
       title: 'Download archive',
-      icon: 'download',
+      // Not `download`: the plain Download item above already uses it.
+      icon: 'inbox',
       available: archiveSupported && archiveActionAvailable(selectedItems)
     };
     const extractionDisabledReason = this.extractionDisabledReason;
@@ -2552,7 +2553,8 @@ export default class DataStorage extends React.Component {
     const copyPathsAction = {
       key: Keys.copyPaths,
       title: 'Copy Paths',
-      icon: 'link',
+      // Not `link`: Generate URL above is the one that produces a link.
+      icon: 'copy',
       available: this.clearSelectionVisible
     };
     const removeAllAction = {

@@ -71,3 +71,21 @@ correction · "Checking active downloads..." and the active-download warnings no
 tasks": the cap they check is the shared `maxUserTasks`.
 note · `!Number.isFinite(limit)` in `checkActiveTasksLimit` was unreachable - `PreferencesLoad`
 always substitutes the default - and is gone.
+
+| 9 | Storage tasks table: Source column, fewer columns, distinct icons | done | opus · high | | the third merge of java21_migration came first |
+
+decision · the Source cell links to the folder the user was browsing when they queued the task - the
+items' shared parent - not to a selected item, and its text is that same folder for one item or
+many, so text and target always agree. The user chose this.
+decision · the Created and Finished columns are gone, the user's call.
+decision · only the two icons the user named changed: Download archive `download` -> `inbox` (the
+plain Download already used `download`) and Copy Paths `link` -> `copy` (Generate URL is the one
+that makes a link). antd 2.13.14 has no `file-zip`. The `download`/`download` and `reload`/`reload`
+pairs that remain are omics versus non-omics and never render together.
+note · the path is clipped by CSS (`.source-link`, max-width 280px) with the whole value in the
+cell's own tooltip. `/storage/<id>` carries no `?path=` for the storage root.
+note · following a Source link closes the modal - `onNavigate` threads the modal's own `onClose`
+down through the manager and the list - so it does not sit over a different storage.
+note · `npm install` was needed: the base bumped the GUI dependencies. On Node 14's npm it rewrites
+`package-lock.json`, dropping two aliased dev entries, so the lock was restored from the base and
+left alone.

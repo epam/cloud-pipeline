@@ -484,6 +484,7 @@ class DownloadsManager extends React.Component {
           onStatusesFilterChange={this.handleStatusesFilterChange}
           typeFilter={this.state.filters.type}
           onTypeFilterChange={this.handleTypeFilterChange}
+          onNavigate={this.props.onNavigate}
           page={this.state.page}
           pageSize={PAGE_SIZE}
           total={this.totalCount}

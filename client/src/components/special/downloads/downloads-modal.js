@@ -72,7 +72,7 @@ class DownloadsModal extends React.Component {
           <Button key="close" size="large" onClick={onClose}>Close</Button>
         ]}
       >
-        {visible ? <DownloadsManager ref={this.setBodyRef} /> : null}
+        {visible ? <DownloadsManager ref={this.setBodyRef} onNavigate={onClose} /> : null}
       </Modal>
     );
   }

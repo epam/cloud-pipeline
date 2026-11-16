@@ -15,9 +15,9 @@
  */
 
 import React from 'react';
+import {Link} from 'react-router';
 import {Button, Icon, Tooltip, Popover} from 'antd';
 import classNames from 'classnames';
-import displayDate from '../../../utils/displayDate';
 import displaySize from '../../../utils/displaySize';
 import {
   ASYNC_TASK_STATUSES,
@@ -89,6 +89,32 @@ function displayArchiveNameOf (task) {
   return /\.zip$/i.test(value) ? value : `${value}.zip`;
 }
 
+// The folder the user was browsing when they queued the task: the selection
+// came from one listing, so the items' shared parent is that folder.
+function sourceFolderOf (task) {
+  const params = task.params || {};
+  const paths = taskIsUnpackArchive(task)
+    ? [params.sourcePath]
+    : (params.paths || []);
+  const folders = paths
+    .filter(Boolean)
+    .map((path) => {
+      // A folder's own path ends with `/`, and its parent is what the user was
+      // in - so the trailing slash goes before the leaf does.
+      const withoutTrailing = `${path}`.replace(/\/+$/, '');
+      const at = withoutTrailing.lastIndexOf('/');
+      return at < 0 ? '' : withoutTrailing.slice(0, at + 1);
+    });
+  // One listing, so they agree; the shortest is the safest answer if they
+  // somehow do not.
+  return folders.sort((a, b) => a.length - b.length)[0] || '';
+}
+
+function sourceStorageIdOf (task) {
+  const params = task.params || {};
+  return taskIsUnpackArchive(task) ? params.sourceStorageId : params.storageId;
+}
+
 // Neither filterable column below supplies a custom `filterIcon` - on
 // purpose. antd's own `FilterMenu.renderFilterIcon` (node_modules/antd/lib/
 // table/filterDropdown.js) only ever applies its built-in "active" highlight
@@ -138,7 +164,8 @@ export default function buildColumns ({
   typeFilterDropdown,
   typeFilterVisible,
   onTypeFilterVisibleChange,
-  typeFiltered
+  typeFiltered,
+  onNavigate
 }) {
   // Admin-only, and omitted from the array entirely (not merely hidden)
   // when `isAdmin` is false - a non-admin must see neither the column nor
@@ -208,29 +235,36 @@ export default function buildColumns ({
       }
     },
     {
-      title: 'Storage',
-      key: 'storage',
-      // Resolves the id to the storage's name via the lookup the container
-      // builds from the `dataStorages` singleton, falling back to the raw
-      // id when the storage is unknown (deleted, or the list has not
-      // loaded yet) - never nothing, and never a throw either way. The
-      // `Number(...)` coercion is defensive, not load-bearing against a
-      // plain object (whose keys stringify either way): a task's
-      // storageId may arrive as a string or a number, and coercing first
-      // keeps the lookup correct if `storageNamesById` is ever built as a
-      // `Map`, where a numeric and a string key are genuinely distinct.
+      title: 'Source',
+      key: 'source',
+      // `<storage>/<folder>`, linking to that folder in the storage browser -
+      // where the user was when they queued the task. Truncated by CSS, with
+      // the whole value in a tooltip, since a path can be long.
       render: (task) => {
-        const params = task.params || {};
-        // An extraction reads and writes the same storage today, so its
-        // source id is the whole answer.
-        const storageId = taskIsUnpackArchive(task)
-          ? params.sourceStorageId
-          : params.storageId;
+        const storageId = sourceStorageIdOf(task);
         if (storageId === undefined || storageId === null) {
           return storageId;
         }
+        // `Number(...)` is defensive: an id may arrive as a string, and this
+        // keeps the lookup right if `storageNamesById` ever becomes a `Map`.
         const name = storageNamesById ? storageNamesById[Number(storageId)] : undefined;
-        return name || storageId;
+        const folder = sourceFolderOf(task);
+        const text = `${name || storageId}/${folder}`;
+        // No empty `?path=` for the storage root.
+        const url = folder
+          ? `/storage/${storageId}?path=${encodeURIComponent(folder)}`
+          : `/storage/${storageId}`;
+        return (
+          <Tooltip title={text} mouseEnterDelay={0.5}>
+            <Link
+              className={styles.sourceLink}
+              to={url}
+              onClick={onNavigate}
+            >
+              {text}
+            </Link>
+          </Tooltip>
+        );
       }
     },
     {
@@ -287,16 +321,6 @@ export default function buildColumns ({
       }
     },
     ownerColumn,
-    {
-      title: 'Created',
-      key: 'created',
-      render: (task) => displayDate(task.created)
-    },
-    {
-      title: 'Finished',
-      key: 'finished',
-      render: (task) => displayDate(task.finished)
-    },
     {
       title: 'Actions',
       key: 'actions',

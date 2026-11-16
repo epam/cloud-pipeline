@@ -507,7 +507,8 @@ class AsyncTasksList extends React.Component {
       typeFilterDropdown: this.typeFilterDropdown,
       typeFilterVisible: this.state.typeFilterVisible,
       onTypeFilterVisibleChange: this.handleTypeFilterVisibleChange,
-      typeFiltered: this.typeFiltered
+      typeFiltered: this.typeFiltered,
+      onNavigate: this.props.onNavigate
     });
   }
 
@@ -583,6 +584,9 @@ AsyncTasksList.propTypes = {
   // One AsyncTaskType, or `undefined` for every type - the default.
   typeFilter: PropTypes.string,
   onTypeFilterChange: PropTypes.func,
+  // Called when a Source link is followed, so the modal can close rather than
+  // sit over a different storage.
+  onNavigate: PropTypes.func,
   // 1-based, matching the API and `DownloadsManager`'s own state.
   page: PropTypes.number,
   pageSize: PropTypes.number,

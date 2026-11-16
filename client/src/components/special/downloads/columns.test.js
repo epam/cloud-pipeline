@@ -75,7 +75,7 @@ test('omits the Owner column entirely when isAdmin is false', () => {
   const columns = buildColumns(baseOptions({isAdmin: false}));
 
   expect(keysOf(columns)).toEqual([
-    'type', 'archive', 'storage', 'size', 'status', 'created', 'finished', 'actions'
+    'type', 'archive', 'source', 'size', 'status', 'actions'
   ]);
 });
 
@@ -83,7 +83,7 @@ test('includes the Owner column, right after Status, when isAdmin is true', () =
   const columns = buildColumns(baseOptions({isAdmin: true}));
 
   expect(keysOf(columns)).toEqual([
-    'type', 'archive', 'storage', 'size', 'status', 'owner', 'created', 'finished', 'actions'
+    'type', 'archive', 'source', 'size', 'status', 'owner', 'actions'
   ]);
 });
 
@@ -159,9 +159,31 @@ describe('rendering a task of each type', () => {
     expect(render('archive', EXTRACTION_TASK)).toBe('data.tar.gz');
   });
 
-  test('the Storage column resolves an extraction\'s source storage', () => {
-    expect(render('storage', EXTRACTION_TASK)).toBe('my-storage');
-    expect(render('storage', DOWNLOAD_TASK)).toBe('my-storage');
+  // The cell is a link, so this reads the element rather than mounting a
+  // router; async-tasks-list.test.jsx covers the rendered anchor.
+  const sourceCell = (task) => columnBy(columns, 'source').render(task);
+
+  test('the Source column names the storage and the folder the user was in', () => {
+    // `folder/data.tar.gz` was selected while browsing `folder/`.
+    expect(sourceCell(EXTRACTION_TASK).props.title).toBe('my-storage/folder/');
+    // `a.txt` and `b/` were selected at the storage root.
+    expect(sourceCell(DOWNLOAD_TASK).props.title).toBe('my-storage/');
+  });
+
+  test('the Source column links to that folder', () => {
+    expect(sourceCell(EXTRACTION_TASK).props.children.props.to)
+      .toBe('/storage/7?path=folder%2F');
+    // No empty `?path=` at the root.
+    expect(sourceCell(DOWNLOAD_TASK).props.children.props.to).toBe('/storage/7');
+  });
+
+  test('the Source column falls back to the raw id for an unknown storage', () => {
+    const task = {...EXTRACTION_TASK, params: {...EXTRACTION_TASK.params, sourceStorageId: 99}};
+    expect(sourceCell(task).props.title).toBe('99/folder/');
+  });
+
+  test('the Source column renders nothing without a storage id', () => {
+    expect(sourceCell({...DOWNLOAD_TASK, params: {paths: ['a.txt']}})).toBeUndefined();
   });
 
   // `bytesWritten` for an extraction, `archiveSizeBytes` for a download.
