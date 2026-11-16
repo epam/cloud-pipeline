@@ -414,7 +414,8 @@ describe('extractionSelectionAvailable', () => {
     expect(extractionSelectionAvailable([file('one.zip')])).toBe(true);
   });
 
-  // Several at once could overwrite one another in the destination.
+  // "Select page" takes a whole listing in one click, so a batch extraction
+  // from the selection would be too easy to start by accident.
   test('two archives are not', () => {
     expect(extractionSelectionAvailable([file('one.zip'), file('two.tar.gz')])).toBe(false);
   });

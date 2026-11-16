@@ -93,9 +93,12 @@ left alone.
 decision · the Source cell points at the selected folder itself when the task covers exactly one
 folder, and at the shared parent otherwise - the user's refinement.
 decision · "Extract archive" is offered only for a selection of exactly one archive, the user's
-call: extracting several at once risks them overwriting one another in the destination, so they are
-queued one by one. This reverses the earlier "offered for a single file too, unlike Download
-archive" note, which had allowed several.
+call. The reason is accidental bulk, not collision: "Select page" takes a whole listing in one
+click, and the user would not know what they were extracting. The collision argument recorded
+earlier is weak - each archive extracts into its own folder, so they do not overwrite one another -
+and the wording was corrected in the code, the manual, the release note and 4571_10.
+decision · the asymmetry with "Upload and extract" is deliberate and confirmed by the user: an
+upload batch is files the user picked themselves, so it still queues one task per archive.
 
 | — | fresh-eyes review of the table work | done | opus | | 7 findings; all applied |
 

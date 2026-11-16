@@ -97,8 +97,10 @@ export function selectedArchivePaths (selectedItems) {
 
 /**
  * Whether "Extract archive" is offered for a selection: exactly one item, and
- * it is an archive. Several at once could overwrite one another in the
- * destination, so they are queued one by one.
+ * it is an archive. Deliberately not a batch - "Select page" takes a whole
+ * listing in one click, and extracting whatever that happened to hold is not
+ * something the user asked for. An upload batch is different: there the user
+ * picked the files themselves.
  *
  * @param {{path: string, name: string, type: string}[]} selectedItems
  * @returns {boolean}
