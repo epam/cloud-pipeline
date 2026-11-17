@@ -43,6 +43,7 @@
 - [Custom Run capabilities](#custom-run-capabilities)
 - [Storage lifecycle management](#storage-lifecycle-management)
 - [Download storage contents as an archive](#download-storage-contents-as-an-archive)
+- [Upload and extract archives](#upload-and-extract-archives)
 - [Image history and generating of Dockerfile](#image-history-and-generating-of-dockerfile)
 - [Environments synchronization via `pipectl`](#environments-synchronization-via-pipectl)
 - [Data access audit](#data-access-audit)
@@ -72,7 +73,6 @@
 - [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
 - [Pinning a run to the Docker image digest](#pinning-a-run-to-the-docker-image-digest)
 - [Default version of a tool](#default-version-of-a-tool)
-- [Upload and extract archives](#upload-and-extract-archives)
 
 ***
 
@@ -1577,6 +1577,18 @@ In **`v0.17`**, a selection of files **and** folders can be downloaded as a sing
 
 For more details see [here](../../manual/08_Manage_Data_Storage/8.2._Upload_Download_data.md#download-as-archive).
 
+## Upload and extract archives
+
+Previously, uploading a batch of files that included an archive uploaded the archive like any other file, with no way to unpack it on the platform's side.
+
+In **`v0.17`**, uploading a batch that includes an archive - one of `ZIP`, `TAR`, `TAR.GZ`, `TGZ`, `TAR.BZ2`, `TAR.XZ`, `GZ`, `BZ2` or `XZ` - on a data storage on AWS S3, or on an NFS storage whose share is mounted as NFS, pauses the upload with a pop-up that lists the selected files and offers a choice: **Upload**, which uploads everything exactly as before, or **Upload and extract**, which uploads everything and then queues one background task per archive that uploaded successfully, closing the pop-up the same way an ordinary upload does. Each archive is extracted into a new folder beside it, named after the archive without its extension - `data/reports.tar.gz` into `data/reports/` - and the archive itself is kept. A message confirms how many extractions have been queued, and its **Show storage tasks** is a link that opens the **Storage tasks** window.
+
+The **Storage tasks** window now lists every kind of archive task rather than downloads alone, with a new **Type** column naming each one - **Download archive** or **Extract archive** - and a filter on that column to show one kind at a time. Its **Storage** column has become **Source**, reading `<storage name>/<folder>` and linking to the folder the task was queued from, shortened to fit the column with the whole path on hover; the **Created** and **Finished** columns are gone. An extraction task is cancelled from the same window as a download, counts towards the same per-user allowance of active archive tasks, and offers no **Download** button, since it writes into the storage itself. An archive already in a storage is extracted the same way from the storage's own selection menu, via a new **Extract archive** item below **Download archive**, with no pop-up in between. That item takes one archive at a time, so that a bulk extraction cannot be started by accident - **Select page** takes a whole listing in one click - so it is offered only for a selection of exactly one archive. Uploading is unchanged: there the user picked the files, so **Upload and extract** still takes the whole batch.
+
+One archive is one task, counted against the per-user allowance of active archive tasks that archive downloads already use. Where a user does not have enough of it left for every archive they picked, the action is unavailable and says why - the upload pop-up greys **Upload and extract** out and shows the reason, and the selection menu greys its item out with an information icon beside it. The pop-up keeps checking while it is open, so the button becomes available again as soon as one of the user's tasks finishes, with no need to pick the files afresh. A finished extraction raises a notification of its own, like a finished download.
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8.2._Upload_Download_data.md#upload-data).
+
 ## Image history and generating of Dockerfile
 
 **Cloud Pipeline** performs scanning of the Docker images on a regular basis. This is used to grab the information on:
@@ -2068,20 +2080,6 @@ In **`v0.17`**, any version of a tool can be set as its default version. The def
 Users with the **WRITE** permission for a tool set and unset the default version at the **Versions** tab of the tool. Until a default version is set, and once it is unset or deleted, the `latest` version is used, as before. The default version can also be managed via the API: `POST /tool/{id}/defaultVersion?version=<version>` sets it, `DELETE /tool/{id}/defaultVersion` removes it, and the tool returns it as the `defaultVersion` field.
 
 For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#set-a-default-version).
-
-***
-
-## Upload and extract archives
-
-Previously, uploading a batch of files that included an archive uploaded the archive like any other file, with no way to unpack it on the platform's side.
-
-In **`v0.17`**, uploading a batch that includes an archive - one of `ZIP`, `TAR`, `TAR.GZ`, `TGZ`, `TAR.BZ2`, `TAR.XZ`, `GZ`, `BZ2` or `XZ` - on a data storage on AWS S3, or on an NFS storage whose share is mounted as NFS, pauses the upload with a pop-up that lists the selected files and offers a choice: **Upload**, which uploads everything exactly as before, or **Upload and extract**, which uploads everything and then queues one background task per archive that uploaded successfully, closing the pop-up the same way an ordinary upload does. Each archive is extracted into a new folder beside it, named after the archive without its extension - `data/reports.tar.gz` into `data/reports/` - and the archive itself is kept. A message confirms how many extractions have been queued, and its **Show storage tasks** is a link that opens the **Storage tasks** window.
-
-The **Storage tasks** window now lists every kind of archive task rather than downloads alone, with a new **Type** column naming each one - **Download archive** or **Extract archive** - and a filter on that column to show one kind at a time. Its **Storage** column has become **Source**, reading `<storage name>/<folder>` and linking to the folder the task was queued from, shortened to fit the column with the whole path on hover; the **Created** and **Finished** columns are gone. An extraction task is cancelled from the same window as a download, counts towards the same per-user allowance of active archive tasks, and offers no **Download** button, since it writes into the storage itself. An archive already in a storage is extracted the same way from the storage's own selection menu, via a new **Extract archive** item below **Download archive**, with no pop-up in between. That item takes one archive at a time, so that a bulk extraction cannot be started by accident - **Select page** takes a whole listing in one click - so it is offered only for a selection of exactly one archive. Uploading is unchanged: there the user picked the files, so **Upload and extract** still takes the whole batch.
-
-One archive is one task, counted against the per-user allowance of active archive tasks that archive downloads already use. Where a user does not have enough of it left for every archive they picked, the action is unavailable and says why - the upload pop-up greys **Upload and extract** out and shows the reason, and the selection menu greys its item out with an information icon beside it. The pop-up keeps checking while it is open, so the button becomes available again as soon as one of the user's tasks finishes, with no need to pick the files afresh. A finished extraction raises a notification of its own, like a finished download.
-
-For more details see [here](../../manual/08_Manage_Data_Storage/8.2._Upload_Download_data.md#upload-data).
 
 ***
 
