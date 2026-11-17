@@ -349,10 +349,8 @@ class CurrentUserAsyncTasks {
   // total of its own. A task queued in another browser or another tab is in
   // here and could not possibly be in anything local.
   //
-  // Both callers - `checkActiveTasksLimit` below and `restore` above - pass no
-  // type. `maxUserTasks` is one budget across every type, and every type is
-  // watched and announced, so neither wants a narrower scope. The parameter
-  // stays for a caller that does.
+  // With no `type`, every type counts: `maxUserTasks` is one budget across
+  // all of them.
   //
   // `ACTIVE_STATUSES`, the four active ones and nothing else. No
   // `page`/`pageSize` - this needs every match, and the cap means there are at

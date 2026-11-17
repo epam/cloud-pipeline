@@ -191,8 +191,7 @@ test(
     const call = filterCalls(api)[0];
     expect(call.method).toBe('POST');
     const body = JSON.parse(call.body);
-    // No `type`: the table lists every kind of archive task by default. It
-    // used to pin DOWNLOAD_ARCHIVE here, which hid every extraction task.
+    // No `type`: the table lists every kind of archive task by default.
     expect(body.type).toBeUndefined();
     expect(body.owner).toBe(USER_NAME);
     // The real, visible behaviour change this phase owns: the table hides
@@ -207,9 +206,8 @@ test(
   }
 );
 
-// No heading assertion any more: the class itself carries no title - the
-// Modal shell's own `title` prop is what shows "Storage tasks" now, covered
-// in downloads-modal.test.jsx.
+// No heading assertion: the class carries no title. The Modal shell's own
+// `title` prop shows "Storage tasks", covered in downloads-modal.test.jsx.
 test('renders the rows from its own response', async () => {
   const api = stubApi();
   stubFilter(api, [

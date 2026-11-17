@@ -21,7 +21,7 @@ import DownloadsManager from './downloads-manager';
 
 // The Modal shell shown from the storage page's presentation dropdown, which
 // the user reads as the "Storage tasks" window. A class, for the one lifecycle
-// method below; the module and class names here stay `downloads-*`.
+// method below.
 //
 // `{visible ? <DownloadsManager /> : null}` is load-bearing: antd 2.13.14's
 // Modal has no `destroyOnClose` and rc-dialog 6.5.11 implements no

@@ -409,7 +409,7 @@ describe('restore', () => {
     const body = JSON.parse(api.calls.find(c => c.path === FILTER_ROUTE).body);
     expect([...body.statuses].sort()).toEqual([...ACTIVE_STATUSES].sort());
     expect(body.owner).toBe(USER_NAME);
-    // No type: both kinds of archive task are watched and announced now.
+    // No type: both kinds of archive task are watched and announced.
     expect(body.type).toBeUndefined();
   });
 
@@ -667,8 +667,6 @@ describe('startArchiveExtraction', () => {
     expect(api.calls.some(c => c.path === '/async-task/create')).toBe(false);
   });
 
-  // `handleExtractArchives` stops its batch on the first rejection, so this
-  // line is what makes a partial batch possible at all.
   it('rejects when the server refuses the task', async () => {
     await setMaxUserTasks(5);
     const api = stubApi();

@@ -73,9 +73,8 @@ export const ASYNC_TASK_TYPES = {
   UNPACK_ARCHIVE: 'UNPACK_ARCHIVE'
 };
 
-// What each type is called in the GUI. The Storage tasks table's Type column
-// and its filter both read this, so a type with no entry here shows its raw
-// enum rather than nothing.
+// What each type is called in the GUI. A type with no entry here shows its
+// raw enum rather than nothing.
 export const ASYNC_TASK_TYPE_NAMES = {
   [ASYNC_TASK_TYPES.DOWNLOAD_ARCHIVE]: 'Download archive',
   [ASYNC_TASK_TYPES.UNPACK_ARCHIVE]: 'Extract archive'
@@ -183,9 +182,8 @@ export function ownerIsFiltered (owner, defaultOwner) {
   return (owner || undefined) !== defaultOwner;
 }
 
-// The Type column's own "differs from default" comparison, shared by
-// async-tasks-list.js and DownloadsManager's "Reset filters" control. The
-// default is every type, which the request expresses by sending no `type`.
+// The Type column's "differs from default" comparison. The default is every
+// type, which the request expresses by sending no `type`.
 export function typeIsFiltered (type) {
   return normalizeType(type) !== undefined;
 }

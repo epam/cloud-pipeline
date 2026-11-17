@@ -67,9 +67,8 @@ class UploadButton extends React.Component {
     style: PropTypes.object,
     disabled: PropTypes.bool,
     extractArchivesAvailable: PropTypes.bool,
-    // The CurrentUserAsyncTasks store, which queues the extraction. Only the
-    // storage page passes it; without it `extractionOffered` is false and the
-    // confirmation pop-up is never shown.
+    // The CurrentUserAsyncTasks store, which queues the extraction. Without it
+    // `extractionOffered` is false and the confirmation pop-up is never shown.
     asyncTasks: PropTypes.object,
     // Opens the Storage tasks modal, whose state lives on the storage page.
     onShowDownloads: PropTypes.func
@@ -952,9 +951,8 @@ class UploadButton extends React.Component {
         return false;
       };
     } else {
-      // Not routed through `onFilesSelected`: antd's `Upload` owns the start
-      // here, and no caller that enables `extractArchivesAvailable` uses this
-      // path. Enabling the prop for such a storage does nothing today.
+      // antd's `Upload` starts the upload itself here, so this path offers no
+      // extraction, even with `extractArchivesAvailable` set.
       uploadProps.onChange = this.onUploadStatusChanged;
     }
     const button = (

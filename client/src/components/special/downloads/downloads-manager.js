@@ -213,9 +213,7 @@ class DownloadsManager extends React.Component {
       if (filters.owner) {
         body.owner = filters.owner;
       }
-      // No `type` lists every kind of archive task. It used to be pinned to
-      // DOWNLOAD_ARCHIVE here, which is why an extraction task never showed
-      // up in this table at all.
+      // With no `type`, the request lists every kind of archive task.
       if (filters.type) {
         body.type = filters.type;
       }
@@ -392,8 +390,7 @@ class DownloadsManager extends React.Component {
   // async-tasks-list.js's Status column filter dropdown.
   handleStatusesFilterChange = (statuses) => this.setFilter('statuses', statuses);
 
-  // async-tasks-list.js's Type column filter dropdown. `undefined` deletes
-  // the key, which is how "every type" reaches the request.
+  // `undefined` deletes the key, which is how "every type" reaches the request.
   handleTypeFilterChange = (type) => this.setFilter('type', type);
 
   // A no-op below page 1, even though antd's own pagination will not ask for

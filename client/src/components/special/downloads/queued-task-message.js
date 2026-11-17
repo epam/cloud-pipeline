@@ -39,9 +39,9 @@ export function queuedTaskMessage (sentence, onShowDownloads, plural = false) {
     <span>
       {lead}
       {/*
-        No `href`: the click opens a modal, there is nowhere to navigate to -
-        life-cycle-counter.js's "Restore files" link does the same. With no
-        `href` there is no implicit `link` role, so a test queries by text.
+        No `href`: the click opens a modal, there is nowhere to navigate to.
+        With no `href` there is no implicit `link` role, so a test queries by
+        text.
       */}
       <a className="cp-link" onClick={onShowDownloads}>{SHOW_DOWNLOADS_LABEL}</a>
       {'".'}

@@ -425,8 +425,7 @@ describe('UploadButton - queueing the extraction', () => {
   test(
     'a rejected extraction still closes the modal and does not leave it stuck',
     async () => {
-      // The other outcome: a rejection used to leave the modal open. It now closes
-      // on its own timer either way.
+      // The other outcome: a rejection still closes the modal on its own timer.
       const startArchiveExtraction = fn(() => Promise.reject(new Error('extraction failed')));
       const onRefresh = fn();
       const {input} = renderUploadButton({
@@ -544,8 +543,8 @@ describe('UploadButton - queueing the extraction', () => {
       expect(startArchiveExtraction)
         .toHaveBeenCalledWith('storage-1', 'folder/one.zip', 'folder/one/');
 
-      // A retryable failure never auto-closed, and must not now: an armed timer
-      // would have fired well within this real delay.
+      // A retryable failure must not auto-close: an armed timer would have
+      // fired well within this real delay.
       await new Promise((resolve) => setTimeout(resolve, 2200));
       expect(onRefresh).not.toHaveBeenCalled();
     },
@@ -601,8 +600,7 @@ describe('UploadButton - queueing the extraction', () => {
       expect(onRefresh).not.toHaveBeenCalled();
 
       // The retry succeeds: `retry.zip` is now done with no error and no
-      // retry on offer - the batch's second completion, and the one this
-      // fix is for.
+      // retry on offer - the batch's second completion.
       await act(async () => {
         instance.setState({
           uploadingFiles: [
@@ -630,8 +628,7 @@ describe('UploadButton - queueing the extraction', () => {
       expect(startArchiveExtraction).toHaveBeenCalledTimes(2);
 
       // No retry is on offer any more, so the second completion (and this
-      // third one) armed the close timer - the modal still closes and
-      // refreshes, where the unfixed boolean guard left it open forever.
+      // third one) armed the close timer - the modal closes and refreshes.
       await waitFor(() => {
         expect(onRefresh).toHaveBeenCalled();
       }, {timeout: 5000});

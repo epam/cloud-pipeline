@@ -28,7 +28,7 @@ import {showQueuedTaskMessage} from '../../../../special/downloads/queued-task-m
 
 // Lower case, leading dot, longest first. The compound forms are redundant
 // for `isArchive` - each also ends in a shorter suffix on the list - and stay
-// for the docs and for any later "which part is the name" logic.
+// so `baseNameOf` strips the whole suffix.
 export const ARCHIVE_EXTENSIONS = [
   '.tar.gz',
   '.tar.bz2',
@@ -208,7 +208,7 @@ export function extractionFolderOf (archivePath) {
 /**
  * Queues one UNPACK_ARCHIVE task per archive, reported in one toast. Stops at
  * the first failure, since the cap is counted per task. The error is reported,
- * not re-thrown - the caller does not await this.
+ * not re-thrown.
  *
  * @param {{startArchiveExtraction: function}} asyncTasks
  * @param {string|number} storageId
