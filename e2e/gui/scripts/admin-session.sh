@@ -159,11 +159,12 @@ function _create_session {
 # creation; prints the new length of the attribute on success.
 function _patch_token_expiration {
     local _session="$1" _new_ms="$2" _found _count _pos
+    _valid_id "$_session" || { e2e_err "Invalid session id, not patching it"; return 1; }
     _found="$(printf "with s as (select creation_time, (select attribute_bytes from %s_attributes where session_id = '%s' and attribute_name = 'SPRING_SECURITY_CONTEXT') as b from %s where session_id = '%s'), m as (select position(int8send(ms) in b) as pos from s, generate_series(s.creation_time + 58000, s.creation_time + 62000) as ms where b is not null and position(int8send(ms) in b) > 0) select count(*), coalesce(max(pos), 0) from m;\n" \
         "$_TABLE" "$_session" "$_TABLE" "$_session" | _sql)" || return 1
     IFS=$'\t' read -r _count _pos <<< "$_found"
     if [ "$_count" != "1" ]; then
-        e2e_err "Found $_count candidates for the token expiration field of session $_session, expected exactly 1: not patching it"
+        e2e_err "Found $_count candidates for the token expiration field of the session, expected exactly 1: not patching it"
         return 1
     fi
     printf "update %s_attributes set attribute_bytes = overlay(attribute_bytes placing int8send(%d::bigint) from %d for 8) where session_id = '%s' and attribute_name = 'SPRING_SECURITY_CONTEXT' returning length(attribute_bytes);\n" \
@@ -246,14 +247,14 @@ case "$_CMD" in
         [ "$_jwt" ] || e2e_die "Unable to mint a token for $_USER"
         IFS=$'\t' read -r _code _session <<< "$(_create_session "$_jwt")"
         [ "$_code" == "200" ] && [ "$_session" ] || \
-            e2e_die "whoami for $_USER returned HTTP $_code and created session '$_session': expected 200 and a new" \
-                "SESSION cookie (check CP_API_JWT_DISABLE_SESSION again)"
-        _valid_id "$_session" || e2e_die "The session id '$_session' from the Set-Cookie header looks wrong"
+            e2e_die "whoami for $_USER returned HTTP $_code and created no session: expected 200 and a new SESSION" \
+                "cookie (check CP_API_JWT_DISABLE_SESSION again)"
+        _valid_id "$_session" || e2e_die "The session id from the Set-Cookie header looks wrong"
         # From here on nothing may call the API with this session before it is patched: a single failed
         # authentication attempt on it wipes its stored SPRING_SECURITY_CONTEXT outright, not just leaves it stale.
         _new_ms="$(( $(date -u +%s) * 1000 + _SECONDS * 1000 ))"
         _patch_token_expiration "$_session" "$_new_ms" > /dev/null || \
-            e2e_die "Unable to extend the token expiration stored in session $_session for $_USER: it may still" \
+            e2e_die "Unable to extend the token expiration stored in the new session for $_USER: it may still" \
                 "only last 60s"
         ( umask 077; jq -n --arg s "$_session" --arg p "$_USER" --argjson o 1800 --argjson n "$_SECONDS" \
             '{session: $s, principal: $p, original: $o, extended: $n, created: true}' > "$_STATE_FILE" )

@@ -328,7 +328,8 @@ function _finalize {
                 --log "$_REPORT_DIR/${_PREFIX}_TC-TEST-ENVIRONMENT-2_block_test_users_after_tests_${_DATE}.log" || _rc=1
         fi
     fi
-    if [ -f "$_ADMIN_SESSION_FILE" ]; then
+    # --dummy-session never reads this file: leave it alone, e.g. a browser cookie staged for a later non-dummy run
+    if [ "$_DUMMY_SESSION" != "true" ] && [ -f "$_ADMIN_SESSION_FILE" ]; then
         if [ "$_TESTS_RC" ]; then
             rm -f "$_ADMIN_SESSION_FILE"
             e2e_log "The admin session file $_ADMIN_SESSION_FILE is deleted (the next run needs a new sign-in)"
@@ -390,7 +391,9 @@ if [ "$_DUMMY_SESSION" == "true" ]; then
         --seconds "${E2E_SESSION_EXTENSION_SECONDS:-2592000}" 2>&1 | tee "$_ARTIFACTS_DIR/admin-session.log" \
         || e2e_die "Unable to create a database-made session for $_DUMMY_SESSION_USER"
     E2E_ADMIN_SESSION="$(jq -r '.session' "$_PRIVATE_DIR/session/admin-session.json")"
-    export E2E_ADMIN_SESSION
+    # Already patched past the 60 s deadline: generate-config.sh's own outlive check (gated on this variable) would
+    # otherwise re-prove that with a pointless extra 65 s wait on every run.
+    export E2E_ADMIN_SESSION E2E_ADMIN_SESSION_CHECKED="$_DUMMY_SESSION_USER"
 elif [ -z "$_CONF" ]; then
     _SESSION_EXTENDED="true"
     bash "$E2E_SCRIPTS_DIR/admin-session.sh" extend --state "$_PRIVATE_DIR/session" \
