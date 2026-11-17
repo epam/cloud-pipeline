@@ -362,6 +362,8 @@
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#rocky-linux-and-rhel-runs-nice-dcv-and-sge-fail-to-install-on-rocky-linux-9-and-systemd-is-set-up-when-it-is-not-requested">Rocky Linux and RHEL runs: NICE DCV and SGE fail to install on Rocky Linux 9, and systemd is set up when it is not requested</a>
     </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ubuntu-2510-and-later-runs-do-not-add-the-cloud-pipeline-apt-repository">Ubuntu 25.10 and later: runs do not add the Cloud Pipeline apt repository</a>
+    </li>
         </ul>
     </li>
     </ul>
@@ -2432,7 +2434,10 @@ subject_token_type=urn:ietf:params:oauth:token-type:access_token
 </code></pre>
 <p>So the application stores no static token from Cloud Pipeline, every call is made and audited as the real user with that user's own permissions, and blocking a user takes effect within one token lifetime. The issued token is an ordinary platform token, which the API, the edge and <code>pipe</code> accept as any other.</p>
 <p>The exchange is off by default, and is enabled by the <code>oidc.token.exchange.enabled</code> property of the API service - until then the endpoint is not registered at all. The administrator then configures the trusted identity providers in the <strong><code>system.oidc.token.exchange.issuers</code></strong> preference. Each provider holds a list of <strong>clients</strong> - the callers trusted under it, because one provider issues tokens for many callers: every repository on github.com shares one issuer, as does every application in an Entra ID tenant. A client is identified by conditions on the token's claims, and says which user it may act as: a user named by a claim of the token, or a fixed service account for a CI job. A client can also narrow the roles its tokens carry, so an application can be given read-only access to the API on behalf of users who have more.</p>
-<p>The exchange never creates a user: the user has to exist in Cloud Pipeline already, and the usual blocking checks apply. The issued token lives no longer than the provider's token it came from, so ending a user's session at the provider ends their Cloud Pipeline access, and it cannot be traded for a longer-lived one unless the client is configured to allow it.</p>
+<p>The exchange never creates a user: the user has to exist in Cloud Pipeline already, and the usual blocking checks apply. The issued token lives no longer than the provider's token it came from, so ending a user's session at the provider ends their Cloud Pipeline access, and it cannot be renewed into a longer-lived one unless the client is configured to allow it.</p>
+<blockquote>
+<p><strong><em>Note</em></strong>: upgrading removes the stored web sessions. The security context is held in the database with Java serialization, and it gained fields for this feature, which makes a session written by an earlier version unreadable - so clearing them avoids an error on the first request after the upgrade. Most users will not notice: a GUI session with a valid <code>bearer</code> cookie is re-established on the next request, and only a user without one is asked to sign in again. Three things to know when planning the upgrade: restart the API service with the old replicas out of service, because a rolling upgrade lets an old replica keep writing sessions the new one cannot read; clear the sessions by hand if the service is ever rolled back, since the migration runs only once; and expect the platform usage report to show no online users for the interval covering the upgrade, as that figure is derived from the stored sessions.</p>
+</blockquote>
 <p>For more details see <a href="../../../manual/12_Manage_Settings/12.16._OIDC_token_exchange/">here</a>.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
@@ -2668,6 +2673,19 @@ Now, the autoscaler keeps no free node for such a run. The node expires as any o
 <li>SGE installs <code>gridengine</code>, <code>gridengine-devel</code>, <code>gridengine-drmaa4ruby</code>, <code>gridengine-execd</code>, <code>gridengine-qmaster</code> and <code>gridengine-qmon</code>. The <code>sge_setup_sbm_host</code> script, which added a run as an SGE submission host, is removed: nothing in the platform called it. The scripts of <code>pipe-common</code> are on the <code>PATH</code> of a run, so a user's own script that calls <code>sge_setup_sbm_host</code> now fails with "command not found".</li>
 <li>systemd is set up only when <code>CP_CAP_SYSTEMD_CONTAINER</code> or <code>CP_CAP_KUBE</code> is <code>true</code>, the image has <code>systemctl</code>, and the OS is CentOS, Rocky Linux or RHEL. The systemd setup used to install <code>procps</code> (<code>procps-ng</code>), which has <code>sysctl</code>. The NFS events observer, which raises the inotify limits with <code>sysctl</code>, now installs <code>procps</code> itself if the image has no <code>sysctl</code>.</li>
 </ul>
+<h3 id="ubuntu-2510-and-later-runs-do-not-add-the-cloud-pipeline-apt-repository">Ubuntu 25.10 and later: runs do not add the Cloud Pipeline apt repository</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/4875">#4875</a></p>
+<p>Previously, a run imported the key of the Cloud Pipeline apt repository with <code>apt-key</code>, and Docker in Docker on a GPU node imported the key of NVIDIA's apt repository the same way. apt 2.9 and later has no <code>apt-key</code>, e.g. on Ubuntu 25.10 and 26.04. So runs from such images removed the Cloud Pipeline repository after three failed attempts, and could not install SGE, LizardFS, Singularity or blobfuse, which need it. Docker in Docker got no <code>nvidia</code> runtime there, nor on Ubuntu 24.10 and 25.04, as NVIDIA has no list for the Ubuntu releases after 22.04. Also:</p>
+<ul>
+<li>most capabilities install from the Cloud Pipeline repository without <code>--allow-unauthenticated</code>. So they failed when the repository was unsigned, or its key did not match</li>
+<li>a run from an image without <code>/etc/apt/sources.list</code> failed to add the repository</li>
+</ul>
+<p>Now:</p>
+<ul>
+<li>the run adds the Cloud Pipeline repository as a trusted repository, in <code>/etc/apt/sources.list.d/cloud-pipeline.list</code>, and imports no key. So the repository may be unsigned, or signed with a key that the run does not have. For a signed repository, such as the public one, apt prints a <code>W:</code> line about the signature (<code>NO_PUBKEY</code>) at each refresh of the package lists, and uses the repository anyway. The line that an older run added to <code>/etc/apt/sources.list</code> is removed, and <code>gnupg</code> is no longer installed for the key</li>
+<li>Docker in Docker puts NVIDIA's key into <code>/etc/apt/keyrings/nvidia-docker.asc</code>, which its list names, and uses NVIDIA's 22.04 list for the Ubuntu releases after 22.04. With an apt older than 1.4 (Ubuntu 16.04), it imports the key with <code>apt-key</code>, as before</li>
+</ul>
+<p>Please note: a run adds the Cloud Pipeline repository only if the distribution has one for its OS version. The public distribution has Ubuntu 16.04 to 22.04 and Debian 8 to 10. So with the public distribution URL, runs on Ubuntu 24.04 and later still get no Cloud Pipeline repository. A deployment that needs it there has to host <code>tools/repos/ubuntu/&lt;version&gt;</code> of its own distribution URL.</p>
               
             </div>
           </div><footer>

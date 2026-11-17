@@ -739,8 +739,8 @@ identifier over claims holding a name: a name can be released and taken by someb
 <td>Let the issued token outlive the provider's token. Off by default</td>
 </tr>
 <tr>
-<td><code>exchangeable</code></td>
-<td>Let the issued token be traded for another through Cloud Pipeline's own token endpoints. <strong>Off by default</strong></td>
+<td><code>renewable</code></td>
+<td>Let the issued token be renewed - traded for a fresh platform token through Cloud Pipeline's own token endpoints. <strong>Off by default</strong></td>
 </tr>
 <tr>
 <td><code>external</code></td>
@@ -773,10 +773,11 @@ are off unless turned on:</p>
   tokens, which are short by design — a GitHub Actions token expires minutes after it is issued,
   which would otherwise end a long <code>pipe storage cp</code> midway — and which carry no revocable session
   to begin with.</li>
-<li><strong><code>exchangeable</code></strong> lets the issued token be traded for another through
-  <code>GET /restapi/user/token</code>. Left off, that call is refused for an exchanged token, so its holder
-  cannot turn a token good for minutes into one good for weeks. Turn it on only for a client that
-  genuinely needs to mint platform tokens.</li>
+<li><strong><code>renewable</code></strong> lets the issued token be renewed through <code>GET /restapi/user/token</code>. Left off,
+  that call is refused for a token from the exchange, so its holder cannot turn a token good for
+  minutes into one good for weeks. Turn it on only for a client that genuinely needs to mint
+  platform tokens. The issued token carries a <code>non_renewable</code> claim when it is off, so the
+  restriction travels with the token rather than being re-derived.</li>
 </ul>
 <h2 id="setting-up-microsoft-entra-id">Setting up Microsoft Entra ID</h2>
 <p>Register Cloud Pipeline as the API, and each application as a client of it:</p>
@@ -956,7 +957,7 @@ the lifetime it was given.</p>
 </tr>
 <tr>
 <td><code>GET /restapi/user/token</code> is refused</td>
-<td>Expected: an exchanged token cannot mint another unless the client sets <code>exchangeable</code></td>
+<td>Expected: a token from the exchange cannot be renewed unless the client sets <code>renewable</code></td>
 </tr>
 </tbody>
 </table>
