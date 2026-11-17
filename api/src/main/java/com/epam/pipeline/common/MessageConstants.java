@@ -855,6 +855,7 @@ public final class MessageConstants {
     public static final String ERROR_NODE_POOL_MISSING_PRICE_TYPE = "error.node.pool.missing.price.type";
     public static final String ERROR_NODE_POOL_MISSING_REGION = "error.node.pool.missing.region";
     public static final String ERROR_NODE_POOL_MISSING_INSTANCE_TYPE = "error.node.pool.missing.instance.type";
+    public static final String ERROR_NODE_POOL_MISSING_POOL_TYPE = "error.node.pool.missing.pool.type";
     public static final String ERROR_NODE_POOL_PRICE_TYPE_NOT_ALLOWED = "error.node.pool.price.type.not.allowed";
     public static final String ERROR_NODE_POOL_INSTANCE_TYPE_NOT_ALLOWED = "error.node.pool.instance.type.not.allowed";
     public static final String ERROR_NODE_POOL_INVALID_DISK_SIZE = "error.node.pool.invalid.disk.size";

@@ -175,6 +175,7 @@ public class NodePoolLockingTest extends AbstractManagerTest {
         vo.setInstanceDisk(pool.getInstanceDisk());
         vo.setPriceType(PriceType.ON_DEMAND);
         vo.setCount(count);
+        vo.setPoolType(pool.getPoolType());
         return vo;
     }
 

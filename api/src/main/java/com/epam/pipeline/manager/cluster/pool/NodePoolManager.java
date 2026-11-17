@@ -198,7 +198,7 @@ public class NodePoolManager implements SecuredEntityManager {
             validator.validateReservationPoolUpdate(existing, vo);
         }
         vo.setAmiConfiguration(resolveAmiConfiguration(vo, existing));
-        vo.setLaunchConfig(resolveLaunchConfig(vo, existing.getPoolType(), existing.getLaunchConfig()));
+        vo.setLaunchConfig(resolveLaunchConfig(vo, vo.getPoolType(), existing.getLaunchConfig()));
 
         final NodePool updated = poolMapper.toEntity(vo);
         updated.setOwner(existing.getOwner());
@@ -246,7 +246,7 @@ public class NodePoolManager implements SecuredEntityManager {
                                                      final NodePoolType poolType,
                                                      final NodePoolLaunchConfig current) {
         if (NodePoolType.SHAREABLE_NODE != poolType) {
-            return current;
+            return null;
         }
         if (vo.getLaunchConfig() == null && current != null) {
             return current;

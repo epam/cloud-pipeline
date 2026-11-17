@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.cluster.pool.NodePoolType;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -331,6 +332,7 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
         vo.setInstanceDisk(INSTANCE_DISK);
         vo.setPriceType(PriceType.ON_DEMAND);
         vo.setCount(1);
+        vo.setPoolType(NodePoolType.STANDARD);
         return vo;
     }
 }
