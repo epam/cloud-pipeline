@@ -26,7 +26,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * The flag that stops a token being traded for another.
+ * The flag that stops a token being renewed.
  */
 public class UserContextTokenClaimsTest {
 
@@ -34,25 +34,25 @@ public class UserContextTokenClaimsTest {
     private static final String RAW_TOKEN = "token";
 
     /**
-     * Nothing that works today may stop working, so a context is exchangeable unless the token
+     * Nothing that works today may stop working, so a context is renewable unless the token
      * explicitly withholds it.
      */
     @Test
-    public void shouldBeExchangeableUnlessTheTokenSaysOtherwise() {
-        assertThat(new UserContext(new JwtRawToken(RAW_TOKEN), claims()).isExchangeable())
-                .isTrue();
-        assertThat(new UserContext().isExchangeable()).isTrue();
+    public void shouldBeRenewableUnlessTheTokenSaysOtherwise() {
+        assertThat(new UserContext(new JwtRawToken(RAW_TOKEN), claims()).isNonRenewable())
+                .isFalse();
+        assertThat(new UserContext().isNonRenewable()).isFalse();
 
-        final JwtTokenClaims withheld = claimsBuilder().exchangeable(false).build();
-        assertThat(new UserContext(new JwtRawToken(RAW_TOKEN), withheld).isExchangeable()).isFalse();
+        final JwtTokenClaims withheld = claimsBuilder().nonRenewable(true).build();
+        assertThat(new UserContext(new JwtRawToken(RAW_TOKEN), withheld).isNonRenewable()).isTrue();
     }
 
     @Test
-    public void shouldCarryTheExchangeableFlagBackIntoClaims() {
-        final JwtTokenClaims withheld = claimsBuilder().exchangeable(false).build();
+    public void shouldCarryTheNonRenewableFlagBackIntoClaims() {
+        final JwtTokenClaims withheld = claimsBuilder().nonRenewable(true).build();
         final UserContext context = new UserContext(new JwtRawToken(RAW_TOKEN), withheld);
 
-        assertThat(context.toClaims().isExchangeable()).isFalse();
+        assertThat(context.toClaims().isNonRenewable()).isTrue();
     }
 
     private static JwtTokenClaims claims() {

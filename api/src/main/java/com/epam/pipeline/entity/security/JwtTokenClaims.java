@@ -35,7 +35,7 @@ public class JwtTokenClaims {
     public static final String CLAIM_GROUPS = "groups";
     public static final String CLAIM_EXTERNAL = "external";
     public static final String CLAIM_AUTHORITIES_SCOPED = "authorities_scoped";
-    public static final String CLAIM_EXCHANGEABLE = "exchangeable";
+    public static final String CLAIM_NON_RENEWABLE = "non_renewable";
 
     @JsonProperty("jti")
     private String jwtTokenId;
@@ -68,14 +68,15 @@ public class JwtTokenClaims {
     private boolean authoritiesScoped;
 
     /**
-     * Whether this token may be traded for another one.
+     * Whether this token may <em>not</em> be renewed — traded for a fresh platform token through
+     * the platform's own token endpoints.
      * <p>
-     * True unless the claim says otherwise, so every token the platform has ever issued stays
-     * exchangeable and nothing that works today stops working. A token issued with it off cannot
-     * mint a second one, which is how a token's life can be kept tied to something outside the
-     * platform: an exchanged token lives no longer than the identity provider's token it came
-     * from, and minting another from it would break that tie.
+     * Named and held as the negative so that its absence means renewable. Every token the platform
+     * has ever issued carries no such claim and has to keep working, and a token written before
+     * this claim existed has to read back as permitted rather than refused. A token that does
+     * carry it cannot mint a second one, which is how a token's life is kept tied to something
+     * outside the platform: a token from the exchange lives no longer than the identity provider's
+     * token it came from, and renewing it would break that tie.
      */
-    @Builder.Default
-    private boolean exchangeable = true;
+    private boolean nonRenewable;
 }
