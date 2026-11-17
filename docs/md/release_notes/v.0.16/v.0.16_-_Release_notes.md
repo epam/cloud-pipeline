@@ -1458,3 +1458,18 @@ Previously, when `pipectl` installed the search services (`cp-search`), it set t
 Now, `pipectl` sets **`search.elastic.port`** to the HTTP port only. The transport port is used by the search Elasticsearch itself, and no preference needs it. See details in [12.10. Manage system-level settings](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#search).
 
 Please note: `pipectl` sets **`search.elastic.port`** each time it deploys the search services: on every `pipectl install` without `-s` options, which deploys all the services, and on `pipectl install -s cp-search`. So a deployment where a `pipectl` of this version built since June 2024 last deployed the search services has the transport port in **`search.elastic.port`**, unless an administrator has changed it since. Check this preference (**Settings** > **Preferences** > **Search**). If it is `30092` (or the value of `CP_SEARCH_ELK_TRANSPORT_INTERNAL_PORT`), set it to the value of `CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT`, `30091` by default. A re-deploy of the search services with a `pipectl` with this fix sets it too.
+### Ubuntu 25.10 and later: runs do not add the Cloud Pipeline apt repository
+
+[#4875](https://github.com/epam/cloud-pipeline/issues/4875)
+
+Previously, a run imported the key of the Cloud Pipeline apt repository with `apt-key`, and Docker in Docker on a GPU node imported the key of NVIDIA's apt repository the same way. apt 2.9 and later has no `apt-key`, e.g. on Ubuntu 25.10 and 26.04. So runs from such images removed the Cloud Pipeline repository after three failed attempts, and could not install SGE, LizardFS, Singularity or blobfuse, which need it. Docker in Docker got no `nvidia` runtime there, nor on Ubuntu 24.10 and 25.04, as NVIDIA has no list for the Ubuntu releases after 22.04. Also:
+
+- most capabilities install from the Cloud Pipeline repository without `--allow-unauthenticated`. So they failed when the repository was unsigned, or its key did not match
+- a run from an image without `/etc/apt/sources.list` failed to add the repository
+
+Now:
+
+- the run adds the Cloud Pipeline repository as a trusted repository, in `/etc/apt/sources.list.d/cloud-pipeline.list`, and imports no key. So the repository may be unsigned, or signed with a key that the run does not have. For a signed repository, such as the public one, apt prints a `W:` line about the signature (`NO_PUBKEY`) at each refresh of the package lists, and uses the repository anyway. The line that an older run added to `/etc/apt/sources.list` is removed, and `gnupg` is no longer installed for the key. For more details see [Supported OS families](../../manual/10_Manage_Tools/10.3._Add_a_Tool.md#supported-os-families)
+- Docker in Docker puts NVIDIA's key into `/etc/apt/keyrings/nvidia-docker.asc`, which its list names, and uses NVIDIA's 22.04 list for the Ubuntu releases after 22.04. With an apt older than 1.4 (Ubuntu 16.04), it imports the key with `apt-key`, as before
+
+Please note: a run adds the Cloud Pipeline repository only if the distribution has one for its OS version. The public distribution has Ubuntu 16.04 to 22.04 and Debian 8 to 10. So with the public distribution URL, runs on Ubuntu 24.04 and later still get no Cloud Pipeline repository. A deployment that needs it there has to host `tools/repos/ubuntu/<version>` of its own distribution URL.
