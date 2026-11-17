@@ -71,8 +71,8 @@
 - [Rocky Linux 9.8 for the proxy and the backup workers](#rocky-linux-98-for-the-proxy-and-the-backup-workers)
 - [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
 - [Pinning a run to the Docker image digest](#pinning-a-run-to-the-docker-image-digest)
-- [Default version of a tool](#default-version-of-a-tool)
 - [Data storage: the controls row and the column header stay visible while scrolling](#data-storage-the-controls-row-and-the-column-header-stay-visible-while-scrolling)
+- [Default version of a tool](#default-version-of-a-tool)
 
 ***
 
@@ -2053,6 +2053,14 @@ For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system
 
 ***
 
+## Data storage: the controls row and the column header stay visible while scrolling
+
+The controls row of a data storage - **Select page**, **Create**, **Upload** and the others - and the column header with its sort and filter controls now stay at the top while the file list is scrolled.
+
+See details in [8. Manage Data Storage](../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage.md#controls).
+
+***
+
 ## Default version of a tool
 
 Previously, the version of a tool, which was used if a version was not specified, was always the `latest` one. To make another version the default one, it had to be pushed again with the `latest` tag, and when a version was deleted, `latest` could still point to an old image.
@@ -2068,14 +2076,6 @@ In **`v0.17`**, any version of a tool can be set as its default version. The def
 Users with the **WRITE** permission for a tool set and unset the default version at the **Versions** tab of the tool. Until a default version is set, and once it is unset or deleted, the `latest` version is used, as before. The default version can also be managed via the API: `POST /tool/{id}/defaultVersion?version=<version>` sets it, `DELETE /tool/{id}/defaultVersion` removes it, and the tool returns it as the `defaultVersion` field.
 
 For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#set-a-default-version).
-
-***
-
-## Data storage: the controls row and the column header stay visible while scrolling
-
-The controls row of a data storage - **Select page**, **Create**, **Upload** and the others - and the column header with its sort and filter controls now stay at the top while the file list is scrolled.
-
-See details in [8. Manage Data Storage](../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage.md#controls).
 
 ***
 
