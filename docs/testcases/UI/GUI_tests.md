@@ -154,7 +154,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Data_storages</b> (145 tests, 86 automated)</summary>
+<summary><b>Data_storages</b> (148 tests, 86 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -224,6 +224,9 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**2233_3**](Data_storages/2233/2233_3.md) | Check Disable link | :white_check_mark: |
 | [**2233_4**](Data_storages/2233/2233_4.md) | Check "Remove all" button | :white_check_mark: |
 | [**2233_5**](Data_storages/2233/2233_5.md) | Check help tooltip | :white_check_mark: |
+| [**4865_1**](Data_storages/4865/4865_1.md) | Controls row and column header stay visible while scrolling the storage content |  |
+| [**4865_2**](Data_storages/4865/4865_2.md) | [MANUAL] An item focused by keyboard is not hidden under the sticky rows |  |
+| [**4865_3**](Data_storages/4865/4865_3.md) | [MANUAL] Sticky rows of a storage list are opaque in every theme |  |
 | [**EPMCMBIBPC-2274**](Data_storages/NFS_mount/EPMCMBIBPC-2274.md) | Validation of NFS storage creation | :white_check_mark: |
 | [**EPMCMBIBPC-2275**](Data_storages/NFS_mount/EPMCMBIBPC-2275.md) | Create existing NFS mount (negative), validation | :white_check_mark: |
 | [**EPMCMBIBPC-2276**](Data_storages/NFS_mount/EPMCMBIBPC-2276.md) | Create folder/file in NFS mount, validation | :white_check_mark: |
