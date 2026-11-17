@@ -13,21 +13,55 @@
 # limitations under the License.
 
 """
-Stand-ins for everything outside the process: the API, the archive bucket, the file source.
+Stand-ins for everything outside the process: the API, a bucket, a file source, a destination.
 
 Hand-written rather than mocks: a fake has to be changed when the thing it stands for changes.
 """
 
 from __future__ import annotations
 
+import dataclasses
+import io
 import zipfile
 from pathlib import Path
 
 from botocore.exceptions import ClientError
 
-from sats.util.errors import ApiRejected
-from sats.model import ArchiveTask, CloudRegion, FileShare, Storage, StorageType, TaskStatus
-from sats.datastorage_providers.base import FileSource, SourceFile
+from sats.config import AsyncTasksConfig, StorageDownloadArchiveTaskConfig, \
+    StorageUnpackArchiveTaskConfig
+from sats.util.errors import ApiRejected, DestinationConflict, InvalidTask
+from sats.model import ArchiveTask, AsyncTaskType, CloudRegion, FileShare, Storage, StorageType, \
+    TaskStatus
+from sats.datastorage_providers.base import EntryKind, FileDestination, FileSource, SourceFile
+
+
+def task_configs(download_destination: int | None = 9,
+                 unpack: StorageUnpackArchiveTaskConfig | None = None,
+                 stuck_tasks_threshold_minutes: int = 360) -> AsyncTasksConfig:
+    """
+    The preference as a worker or the cleaner reads it, with both sections filled in.
+
+    A helper rather than a literal in every test, because the shape has two levels and a test that
+    cares about one limit should not have to spell out the other seven.
+    """
+    return AsyncTasksConfig(
+        download=StorageDownloadArchiveTaskConfig(
+            destination_storage_id=download_destination, destination_prefix='archives/',
+            max_size_bytes=None, max_files_count=None, ttl_days=7, max_user_tasks=3,
+            worker_max_running_minutes=240,
+            stuck_tasks_threshold_minutes=stuck_tasks_threshold_minutes),
+        unpack=unpack or unpack_config(),
+        max_user_tasks=3, stuck_tasks_threshold_minutes=stuck_tasks_threshold_minutes)
+
+
+def unpack_config(max_archive_size_bytes: int | None = None, max_size_bytes: int | None = None,
+                  max_files_count: int | None = None, worker_max_running_minutes: int = 240,
+                  configured: bool = True) -> StorageUnpackArchiveTaskConfig:
+    """The `storageUnpackArchive` section, every limit off unless a test sets it."""
+    return StorageUnpackArchiveTaskConfig(
+        max_archive_size_bytes=max_archive_size_bytes, max_size_bytes=max_size_bytes,
+        max_files_count=max_files_count, worker_max_running_minutes=worker_max_running_minutes,
+        configured=configured)
 
 
 class FakeApi:
@@ -40,8 +74,13 @@ class FakeApi:
         # cannot be built for a storage that has none - see `aws._load_region`.
         self.storage = storage or Storage(id=1, name='bucket-storage', type=StorageType.S3,
                                           path='some-bucket', region_id=1)
+        # A storage per id, for a test with a source and a destination. `storage` answers for any id
+        # this does not name, which is what most tests want.
+        self.storages: dict[int, Storage] = {}
         self.preference = preference
         self.reports: list[tuple[TaskStatus, dict | None, str | None]] = []
+        # Every list of types `claim_next` was called with, in order.
+        self.claimed_types: list[tuple] = []
         # What `filter_tasks` answers, per status asked about: one cleanup runs three filters, each
         # asking about different statuses.
         self.filtered: dict[TaskStatus, list[ArchiveTask]] = {}
@@ -66,7 +105,10 @@ class FakeApi:
     def get_preference(self, key: str) -> str | None:
         return self.preference
 
-    def claim_next(self, task_type: str) -> ArchiveTask | None:
+    def claim_next(self, task_types) -> ArchiveTask | None:
+        # A list of types, as the real method takes. Recorded so a test can assert that the service
+        # asked for every type it runs in one call.
+        self.claimed_types.append(tuple(task_types))
         return None
 
     def load_task(self, task_id: str) -> ArchiveTask:
@@ -74,12 +116,16 @@ class FakeApi:
             raise ApiRejected(f'Task {task_id} does not exist')
         return self.task
 
-    def filter_tasks(self, statuses: list[TaskStatus] | None = None, **_kwargs) -> list[ArchiveTask]:
-        # `**_kwargs` ignores the rest: the real method has six arguments and no test cares. The
-        # statuses are the exception - the cleaner's cleanups are told apart by them.
+    def filter_tasks(self, task_type: AsyncTaskType | None = None,
+                     statuses: list[TaskStatus] | None = None, **_kwargs) -> list[ArchiveTask]:
+        # `**_kwargs` ignores the rest: the real method has six arguments and no test cares about the
+        # timestamps. The type and the statuses are not ignored - the cleaner's cleanups are told
+        # apart by the statuses, and it now asks once per task type, so a fake that ignored the type
+        # would hand every cleanup every task.
         found = []
         for status in statuses or []:
-            found += self.filtered.get(status, [])
+            found += [task for task in self.filtered.get(status, [])
+                      if task_type is None or task.type == task_type]
         return found
 
     def report_status(self, task_id: str, status: TaskStatus, result: dict | None = None,
@@ -89,15 +135,16 @@ class FakeApi:
         self.reports.append((status, result, error_message))
         # The real API answers with the task as it now is, and the worker ignores the answer. Keeping
         # the status up to date anyway means a `load_task` after a report behaves like the real one.
-        self.task = ArchiveTask(id=self.task.id, status=status, owner=self.task.owner,
-                                storage_id=self.task.storage_id, paths=self.task.paths,
-                                archive_name=self.task.archive_name)
+        # `replace` and not a fresh object, so the type and the params survive - a worker polls its
+        # own task through `load_task`, and one that came back as another type would be dispatched
+        # wrongly.
+        self.task = dataclasses.replace(self.task, status=status)
         return self.task
 
     def load_storage(self, storage_id: int) -> Storage:
         if self.storage_missing:
             raise ApiRejected(f'Data storage {storage_id} was not found')
-        return self.storage
+        return self.storages.get(storage_id, self.storage)
 
     def load_file_share(self, share_id: int) -> FileShare:
         raise AssertionError('No test needs a file share yet')
@@ -143,13 +190,25 @@ class FakeS3Client:
     """The boto3 S3 client, with only the calls this service makes."""
 
     def __init__(self, objects: dict[str, int] | None = None, denied: set[str] | None = None,
-                 storage_classes: dict[str, str] | None = None):
+                 storage_classes: dict[str, str] | None = None,
+                 bodies: dict[str, bytes] | None = None):
         self.objects = objects or {}
         self.denied = denied or set()
         self.storage_classes = storage_classes or {}
+        # The content of the objects a test reads. Apart from `objects`, which is only their sizes,
+        # because most tests care about the listing and not about any bytes.
+        self.bodies = dict(bodies or {})
+        for key, content in self.bodies.items():
+            self.objects.setdefault(key, len(content))
         # Every key a HEAD was made for, which is how a test shows that a listing did not make one per
         # object.
         self.heads: list[str] = []
+        # Every `Range` header asked for, in order: the point of reading an archive where it lies is
+        # that it costs a handful of requests, so a test asserts on their number.
+        self.ranges: list[str] = []
+        # `(key, whether the write was conditional)` per put, and the keys deleted.
+        self.puts: list[tuple[str, bool]] = []
+        self.deleted: list[str] = []
 
     def head_object(self, Bucket: str, Key: str) -> dict:
         self.heads.append(Key)
@@ -166,8 +225,39 @@ class FakeS3Client:
         assert operation_name == 'list_objects_v2'
         return _FakePaginator(self)
 
-    def get_object(self, Bucket: str, Key: str) -> dict:
-        raise AssertionError('No test downloads through the fake client yet')
+    def get_object(self, Bucket: str, Key: str, Range: str | None = None) -> dict:
+        content = self.bodies[Key]
+        if Range is not None:
+            self.ranges.append(Range)
+            first, _, last = Range.removeprefix('bytes=').partition('-')
+            content = content[int(first):int(last) + 1]
+        return {'Body': io.BytesIO(content)}
+
+    def list_objects_v2(self, Bucket: str, Prefix: str, MaxKeys: int | None = None) -> dict:
+        found = [key for key in sorted(self.objects) if key.startswith(Prefix)]
+        if MaxKeys is not None:
+            found = found[:MaxKeys]
+        if not found:
+            # A listing that matches nothing omits `Contents` altogether.
+            return {'KeyCount': 0}
+        return {'Contents': [{'Key': key, 'Size': self.objects[key]} for key in found]}
+
+    def put_object(self, Bucket: str, Key: str, Body, IfNoneMatch: str | None = None) -> dict:
+        if IfNoneMatch is not None and Key in self.objects:
+            # What S3 answers a conditional write with when the key is taken.
+            raise ClientError({'ResponseMetadata': {'HTTPStatusCode': 412},
+                               'Error': {'Code': 'PreconditionFailed'}}, 'PutObject')
+        content = Body.read()
+        self.objects[Key] = len(content)
+        self.bodies[Key] = content
+        self.puts.append((Key, IfNoneMatch is not None))
+        return {}
+
+    def delete_object(self, Bucket: str, Key: str) -> dict:
+        self.deleted.append(Key)
+        self.objects.pop(Key, None)
+        self.bodies.pop(Key, None)
+        return {}
 
 
 class _FakePaginator:
@@ -205,12 +295,83 @@ class FakeSource(FileSource):
         for name, reason in self._unreadable.items():
             yield SourceFile(path=name, size=0, locator=name, skip_reason=reason)
 
+    def stat(self, path: str) -> SourceFile | None:
+        if path in self._unreadable:
+            return SourceFile(path=path, size=0, locator=path,
+                              skip_reason=self._unreadable[path])
+        if path not in self._files:
+            return None
+        return SourceFile(path=path, size=len(self._files[path]), locator=path)
+
     def download(self, source_file: SourceFile, destination: Path, heartbeat) -> None:
         heartbeat()
         self.heartbeats += 1
         if source_file.path in self._failing:
             raise OSError('permission denied')
         destination.write_bytes(self._files[source_file.path])
+
+    def open_stream(self, source_file: SourceFile):
+        # `BytesIO` is seekable and readable, which is all `archive_probe` asks of a stream.
+        return io.BytesIO(self._files[source_file.path])
+
+    def close(self) -> None:
+        self.closed = True
+
+
+class FakeDestination(FileDestination):
+    """
+    A destination in memory: what it already holds, what was written into it, what it refuses.
+
+    `appearing` is the one case a fake has to be able to produce and a real storage cannot be made
+    to: a key created between the collision pass and the upload. The first upload of such a key is
+    refused, as a conditional write would refuse it.
+    """
+
+    def __init__(self, existing: dict[str, bytes] | None = None,
+                 folders: set[str] | None = None, appearing: set[str] | None = None,
+                 missing_prefix: bool = False):
+        self.existing = dict(existing or {})
+        self.folders = set(folders or ())
+        self.appearing = set(appearing or ())
+        self.missing_prefix = missing_prefix
+        self.written: list[str] = []
+        self.created_folders: list[str] = []
+        self.deleted: list[str] = []
+        self.checked: list[str] = []
+        self.closed = False
+        self.asserted_prefix: str | None = None
+        self.fail_upload_of: str | None = None
+
+    def assert_writable(self, prefix: str) -> None:
+        self.asserted_prefix = prefix
+        if self.missing_prefix:
+            raise InvalidTask(f'The folder {prefix or "/"} does not exist in storage fake')
+
+    def kind(self, key: str) -> EntryKind:
+        self.checked.append(key)
+        if key in self.folders:
+            return EntryKind.FOLDER
+        if key in self.existing:
+            return EntryKind.FILE
+        return EntryKind.MISSING
+
+    def upload(self, local_path: Path, key: str, heartbeat, overwrite: bool = False) -> int:
+        heartbeat()
+        if key == self.fail_upload_of:
+            raise OSError('the storage refused the write')
+        if not overwrite and (key in self.existing or key in self.appearing):
+            raise DestinationConflict(f'{key} already exists')
+        self.existing[key] = local_path.read_bytes()
+        self.written.append(key)
+        return local_path.stat().st_size
+
+    def create_folder(self, key: str) -> None:
+        self.created_folders.append(key)
+        self.folders.add(key)
+
+    def delete(self, key: str) -> None:
+        self.deleted.append(key)
+        self.existing.pop(key, None)
 
     def close(self) -> None:
         self.closed = True

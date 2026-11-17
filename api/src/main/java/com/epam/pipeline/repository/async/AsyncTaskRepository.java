@@ -36,7 +36,7 @@ public interface AsyncTaskRepository extends JpaRepository<AsyncTaskEntity, Stri
         JpaSpecificationExecutor<AsyncTaskEntity> {
 
     String LOCK_NEXT_PENDING = "SELECT id FROM pipeline.async_task "
-            + "WHERE status = 'PENDING' AND type = :type "
+            + "WHERE status = 'PENDING' AND type IN (:types) "
             + "ORDER BY created "
             + "LIMIT 1 FOR UPDATE SKIP LOCKED";
 
@@ -57,13 +57,13 @@ public interface AsyncTaskRepository extends JpaRepository<AsyncTaskEntity, Stri
     long countByOwnerAndStatusIn(String owner, Collection<AsyncTaskStatus> statuses);
 
     /**
-     * Takes the oldest pending task of the type and holds its row lock until the transaction ends.
-     * Rows locked by another claimer are skipped, so two callers get two different tasks.
+     * Takes the oldest pending task of any of the types and holds its row lock until the transaction
+     * ends. Rows locked by another claimer are skipped, so two callers get two different tasks.
      *
-     * @return id of the locked task, empty when nothing is pending
+     * @return id of the locked task, empty when nothing of those types is pending
      */
     @Query(value = LOCK_NEXT_PENDING, nativeQuery = true)
-    Optional<String> lockNextPending(@Param("type") String type);
+    Optional<String> lockNextPending(@Param("types") Collection<String> types);
 
     /**
      * Moves the task to {@code target} only while it is still in {@code expected}.

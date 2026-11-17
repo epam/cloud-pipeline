@@ -443,7 +443,7 @@ def test_builds_the_destination_client_from_the_destination_storages_region(tmp_
     monkeypatch.setattr('sats.worker.archive_preparation_worker.open_source', lambda *_args: source)
     # The real `build_s3_client` runs - that is what is under test - while the bucket around it is
     # replaced, so nothing is uploaded.
-    monkeypatch.setattr('sats.worker.archive_preparation_worker.ArchiveBucket',
+    monkeypatch.setattr('sats.worker.archive_preparation_worker.S3Bucket',
                         lambda _bucket, _part_size, _client: FakeBucket())
 
     ArchivePreparationWorker(api, _service_config(tmp_path), _archive_config(), api.task).run()

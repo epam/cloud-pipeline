@@ -130,18 +130,41 @@ def test_claims_through_the_client_that_does_not_retry():
     client, claim_client = _FakeClient(), _FakeClient(TASK_PAYLOAD)
     api = _api(client, claim_client)
 
-    task = api.claim_next(AsyncTaskType.DOWNLOAD_ARCHIVE)
+    task = api.claim_next([AsyncTaskType.DOWNLOAD_ARCHIVE])
 
-    assert claim_client.calls == [('claim_next_async_task', ('DOWNLOAD_ARCHIVE',), {})]
+    assert claim_client.calls == [('claim_next_async_task', (['DOWNLOAD_ARCHIVE'],), {})]
     assert client.calls == []
     assert task.id == 'task-1'
     assert task.type is AsyncTaskType.DOWNLOAD_ARCHIVE
 
 
+def test_claims_every_type_in_one_call():
+    # One call over the list, so the oldest task wins across the types rather than the tasks of one
+    # type waiting behind another's.
+    claim_client = _FakeClient(TASK_PAYLOAD)
+    api = _api(_FakeClient(), claim_client)
+
+    api.claim_next([AsyncTaskType.DOWNLOAD_ARCHIVE, AsyncTaskType.UNPACK_ARCHIVE])
+
+    assert claim_client.calls == [
+        ('claim_next_async_task', (['DOWNLOAD_ARCHIVE', 'UNPACK_ARCHIVE'],), {})]
+
+
+def test_claims_one_type_passed_on_its_own():
+    # `AsyncTaskType` is a `StrEnum`, so a single value handed to a sequence parameter would iterate
+    # into its characters and ask for sixteen task types named `D`, `O`, `W`...
+    claim_client = _FakeClient(TASK_PAYLOAD)
+    api = _api(_FakeClient(), claim_client)
+
+    api.claim_next(AsyncTaskType.DOWNLOAD_ARCHIVE)
+
+    assert claim_client.calls == [('claim_next_async_task', (['DOWNLOAD_ARCHIVE'],), {})]
+
+
 def test_an_empty_queue_is_an_answer_rather_than_a_failure():
     api = _api(claim_client=_FakeClient(payload=None))
 
-    assert api.claim_next(AsyncTaskType.DOWNLOAD_ARCHIVE) is None
+    assert api.claim_next([AsyncTaskType.DOWNLOAD_ARCHIVE]) is None
 
 
 # ---------------------------------------------------------------- the two kinds of failure

@@ -57,8 +57,57 @@ class UnsupportedSource(Exception):
     """The storage is of a kind this service cannot read."""
 
 
+class UnsupportedArchive(Exception):
+    """
+    The file is not an archive this service can open: an unknown format, encrypted, or damaged.
+
+    Raised once for the whole archive rather than per entry - a password-protected archive would
+    otherwise fail on every file in it and say nothing about the cause. The message is written for
+    the user who asked for the extraction.
+    """
+
+
+class UnsafeArchiveEntry(Exception):
+    """
+    An entry inside the archive is named in a way this service refuses to write.
+
+    Separate from `UnsupportedArchive` because the archive is perfectly readable: what is wrong is
+    one name in it - `..`, an absolute path, a backslash, a drive letter, an invisible or a control
+    character. The whole task fails on the first such name, before anything is written: the names
+    come from whoever built the archive, nobody else has checked them, and an archive carrying one
+    is not an archive to half-extract.
+    """
+
+
+class DestinationConflict(Exception):
+    """
+    Something is already where the extraction would write, and the task did not ask to replace it.
+
+    Its own type because the answer is always the same - refuse before the first upload, so the
+    destination is left exactly as it was - and because the message has to name the entry.
+    """
+
+
+class DestinationWriteFailed(Exception):
+    """
+    One file could not be written into the destination, for a reason that is not a collision.
+
+    Apart from the internal-error arm, because this is not a bug in this service: the storage
+    refused the write, the share went away, the bucket's policy changed. The message names the key,
+    so the person who asked for the extraction knows which file and how far it got.
+
+    One file failing fails the task. Skipping it with a note - as a download-archive task does for a
+    file it cannot read - would leave a half-extracted archive that looks complete.
+    """
+
+
 class InvalidTask(Exception):
-    """The task describes no work - no storage, or no paths."""
+    """
+    The task describes work that cannot be carried out as written.
+
+    No storage, no paths, a storage that was deleted after the task was created, or a destination
+    folder that is not on the share.
+    """
 
 
 class CredentialsUnavailable(Exception):

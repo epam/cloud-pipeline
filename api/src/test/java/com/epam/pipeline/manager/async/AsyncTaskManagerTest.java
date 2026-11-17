@@ -49,6 +49,7 @@ import org.springframework.data.jpa.domain.Specification;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.UnaryOperator;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
@@ -280,34 +281,58 @@ public class AsyncTaskManagerTest {
 
     @Test
     public void shouldClaimPendingTask() {
-        Mockito.when(repository.lockNextPending(TYPE.name())).thenReturn(Optional.of(ID));
+        Mockito.when(repository.lockNextPending(Set.of(TYPE.name()))).thenReturn(Optional.of(ID));
         Mockito.when(repository.moveStatus(Mockito.eq(ID), Mockito.eq(AsyncTaskStatus.PENDING.name()),
                 Mockito.eq(AsyncTaskStatus.RUNNING.name()), Mockito.isNull(), Mockito.isNull(), Mockito.any()))
                 .thenReturn(1);
         Mockito.when(repository.findById(ID)).thenReturn(Optional.of(task(AsyncTaskStatus.RUNNING)));
 
-        final Optional<AsyncTask> claimed = manager.claimNext(TYPE);
+        final Optional<AsyncTask> claimed = manager.claimNext(List.of(TYPE));
 
         assertTrue(claimed.isPresent());
         assertEquals(AsyncTaskStatus.RUNNING, claimed.get().getStatus());
     }
 
     @Test
+    public void shouldClaimFromEveryTypeAskedInOneQuery() {
+        // One query over the whole list, not one per type: that is what keeps the tasks of one type
+        // from waiting behind another's, and what makes the oldest task win across both.
+        Mockito.when(repository.lockNextPending(Set.of(TYPE.name(), AsyncTaskType.UNPACK_ARCHIVE.name())))
+                .thenReturn(Optional.of(ID));
+        Mockito.when(repository.moveStatus(Mockito.eq(ID), Mockito.eq(AsyncTaskStatus.PENDING.name()),
+                Mockito.eq(AsyncTaskStatus.RUNNING.name()), Mockito.isNull(), Mockito.isNull(), Mockito.any()))
+                .thenReturn(1);
+        Mockito.when(repository.findById(ID)).thenReturn(Optional.of(task(AsyncTaskStatus.RUNNING)));
+
+        assertTrue(manager.claimNext(List.of(TYPE, AsyncTaskType.UNPACK_ARCHIVE)).isPresent());
+        Mockito.verify(repository, Mockito.times(1)).lockNextPending(Mockito.anyCollection());
+    }
+
+    @Test
+    public void shouldRefuseClaimWithoutAType() {
+        // Without the guard the query would run as `type IN ()`, which Postgres refuses with a syntax
+        // error rather than with anything a caller can read.
+        assertThrows(IllegalArgumentException.class, () -> manager.claimNext(Collections.emptyList()));
+        assertThrows(IllegalArgumentException.class, () -> manager.claimNext(null));
+        Mockito.verify(repository, Mockito.never()).lockNextPending(Mockito.anyCollection());
+    }
+
+    @Test
     public void shouldNotClaimTaskTakenByAnotherWorker() {
-        Mockito.when(repository.lockNextPending(TYPE.name())).thenReturn(Optional.of(ID));
+        Mockito.when(repository.lockNextPending(Set.of(TYPE.name()))).thenReturn(Optional.of(ID));
         Mockito.when(repository.moveStatus(Mockito.eq(ID), Mockito.eq(AsyncTaskStatus.PENDING.name()),
                 Mockito.eq(AsyncTaskStatus.RUNNING.name()), Mockito.isNull(), Mockito.isNull(), Mockito.any()))
                 .thenReturn(0);
 
-        assertFalse(manager.claimNext(TYPE).isPresent());
+        assertFalse(manager.claimNext(List.of(TYPE)).isPresent());
         Mockito.verify(repository, Mockito.never()).findById(Mockito.anyString());
     }
 
     @Test
     public void shouldReturnEmptyWhenQueueHoldsNothingOfType() {
-        Mockito.when(repository.lockNextPending(TYPE.name())).thenReturn(Optional.empty());
+        Mockito.when(repository.lockNextPending(Set.of(TYPE.name()))).thenReturn(Optional.empty());
 
-        assertFalse(manager.claimNext(TYPE).isPresent());
+        assertFalse(manager.claimNext(List.of(TYPE)).isPresent());
         Mockito.verify(repository, Mockito.never())
                 .moveStatus(Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(),
                         Mockito.any());

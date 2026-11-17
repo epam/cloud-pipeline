@@ -75,6 +75,7 @@
 - [NICE DCV desktop: no wallpaper, a keyboard layout switcher, Ubuntu 24.04](#nice-dcv-desktop-no-wallpaper-a-keyboard-layout-switcher-ubuntu-2404)
 - [Retries of a failed scratch Lustre file system](#retries-of-a-failed-scratch-lustre-file-system)
 - [OIDC token exchange](#oidc-token-exchange)
+- [Extracting an archive that lies in a data storage](#extracting-an-archive-that-lies-in-a-data-storage)
 
 ***
 
@@ -2133,6 +2134,22 @@ The exchange is off by default, and is enabled by the `oidc.token.exchange.enabl
 The exchange never creates a user: the user has to exist in Cloud Pipeline already, and the usual blocking checks apply. The issued token lives no longer than the provider's token it came from, so ending a user's session at the provider ends their Cloud Pipeline access, and it cannot be traded for a longer-lived one unless the client is configured to allow it.
 
 For more details see [here](../../manual/12_Manage_Settings/12.16._OIDC_token_exchange.md).
+
+***
+
+## Extracting an archive that lies in a data storage
+
+Previously, an archive stored in a data storage could only be unpacked by hand: download it, extract it locally, upload the content back. For a large archive that is two transfers of the whole thing over the user's own connection, and the files arrive in the storage one by one.
+
+In **`v0.17`**, the platform extracts such an archive itself. The request names the archive - a storage and a path - and where its content shall go, again a storage and a folder, and the two may be the same storage. It is recorded as an asynchronous task, like an [archive download](#download-storage-contents-as-an-archive), and performed in the background by the storage task service; the task is visible, cancellable and reports what it wrote. Both ends are checked against the requesting user's own permissions: **READ** on the source and **WRITE** on the destination folder, plus **WRITE** on the source as well when the request asks for the archive to be deleted after a successful extraction.
+
+`ZIP`, `TAR`, `TAR.GZ`, `TGZ`, `TAR.BZ2`, `TAR.XZ`, `GZ`, `BZ2` and `XZ` are supported, and the format is taken from the content of the file rather than from its name - a `.zip` that is really a tar extracts, and a file that is neither fails with a reason. The archive's own folder structure is preserved under the requested folder, and no folder is added on top of it: a caller who wants the content in a folder named after the archive asks for that folder. **Extraction is one level deep** - an archive found inside the archive is written out as a file, with its name unchanged and its content untouched, and extracting that one is a second request.
+
+By default nothing in the destination is replaced: a single entry whose name is already taken refuses the whole task, before anything is written, and the request has to ask for replacement explicitly. A task that fails or is cancelled part way through **leaves the files it had already written** - there is no rollback - and says how many in its error message; a new request over the same folder then needs replacement allowed, or those files removed.
+
+AWS S3 storages and NFS storages on an NFS share are supported as both the source and the destination. How large an archive may be, how much it may be extracted into, how many entries it may hold and how long one extraction may take are set by an administrator in the `tasks.storageUnpackArchive` section of the **`system.async.tasks.config`** preference.
+
+For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md).
 
 ***
 

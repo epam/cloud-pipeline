@@ -102,11 +102,12 @@ class AsyncTaskType(StrEnum):
     """
     Mirror of `com.epam.pipeline.dto.async.AsyncTaskType`.
 
-    One member today. An enum because the orchestrator asks the API per type and workers are
-    registered by it - see `worker/__init__`.
+    An enum because workers are registered by it and the orchestrator claims by it - see
+    `worker/__init__`.
     """
 
     DOWNLOAD_ARCHIVE = 'DOWNLOAD_ARCHIVE'
+    UNPACK_ARCHIVE = 'UNPACK_ARCHIVE'
 
 
 class StorageType(StrEnum):
@@ -141,9 +142,54 @@ MOUNT_PROTOCOLS = {
 
 
 @dataclass(frozen=True, slots=True)
+class UnpackParams:
+    """
+    Mirror of `com.epam.pipeline.dto.async.UnpackArchiveParams`: what to extract and where.
+
+    Everything here was validated and authorized by the API when the task was created, and nothing
+    downstream asks again - see the README. Two guarantees the worker relies on and must not
+    re-derive:
+
+      * `destination_path` is already a folder prefix - it ends in a slash, or it is empty for the
+        root of the storage - with no leading slash, no `..` and no `.`. So building a key is a
+        concatenation, and the string whose permissions were checked is the string recorded here.
+      * `source_path` names a file: no trailing slash, and not blank.
+
+    That covers those two strings and nothing else. **The names inside the archive are checked by
+    nobody but this service** - see `archive_extractor`.
+    """
+
+    source_storage_id: int | None
+    source_path: str
+    destination_storage_id: int | None
+    destination_path: str
+    delete_source_on_success: bool = False
+    overwrite: bool = False
+
+    @classmethod
+    def from_api(cls, params: dict[str, Any]) -> UnpackParams:
+        return cls(
+            source_storage_id=params.get('sourceStorageId'),
+            source_path=params.get('sourcePath') or '',
+            destination_storage_id=params.get('destinationStorageId'),
+            # `or ''` and not a default: the root of the storage is the empty string, and the API
+            # records it as one.
+            destination_path=params.get('destinationPath') or '',
+            delete_source_on_success=bool(params.get('deleteSourceOnSuccess')),
+            overwrite=bool(params.get('overwrite')),
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class ArchiveTask:
     """
-    Mirror of `AsyncTask` plus its `DownloadArchiveParams`, flattened into one object.
+    Mirror of `AsyncTask` and the params of whichever type it is.
+
+    One class for both types this service runs, because the queue's own half - the id, the status,
+    the owner, the timestamps - is the same whatever the type. The type-specific half is not merged:
+    the download fields are read only for a `DOWNLOAD_ARCHIVE` task and `unpack` is set only for an
+    `UNPACK_ARCHIVE` one, so a worker that read the wrong half would find it empty rather than
+    plausible.
 
     Frozen because the object crosses from the orchestrator thread to a worker thread.
     """
@@ -152,11 +198,14 @@ class ArchiveTask:
     status: TaskStatus
     owner: str | None
     storage_id: int | None
-    # Which worker runs this task - see the registry in `worker/__init__`. The default is the only
-    # type that exists today; remove it when a second one is added.
+    # Which worker runs this task - see the registry in `worker/__init__`. The default serves the
+    # places that build a download task by hand; `from_api` never falls back to it, because a task
+    # whose type was guessed wrong would be run by the wrong worker over somebody's data.
     type: AsyncTaskType = AsyncTaskType.DOWNLOAD_ARCHIVE
     paths: tuple[str, ...] = field(default_factory=tuple)
     archive_name: str = 'archive.zip'
+    # Set for an `UNPACK_ARCHIVE` task and `None` for every other type.
+    unpack: UnpackParams | None = None
     # Where a finished archive went. Both stay `None` for a task whose worker died before reporting;
     # the cleaner then derives the key from the configured destination.
     result_storage_id: int | None = None
@@ -171,8 +220,10 @@ class ArchiveTask:
         """
         Builds a task from one element of an API payload.
 
-        `params` is polymorphic and may be absent. Only our own type is read; the id and the status
-        are required.
+        The id, the status and the type are required. `params` is polymorphic and may be absent -
+        the cleaner's filter answers without it - and params of a type other than the task's own are
+        refused rather than ignored, because that is the API and this service disagreeing about what
+        was handed over.
         """
         task_id = raw.get('id')
         if not task_id:
@@ -180,10 +231,18 @@ class ArchiveTask:
         status = raw.get('status')
         if not status:
             raise ValueError(f'Task {task_id} has no status in the API answer')
+        task_type = raw.get('type')
+        if not task_type:
+            # No fallback: with more than one type, guessing means running the wrong worker.
+            raise ValueError(f'Task {task_id} has no type in the API answer')
+        # Raises for a type this service does not know, which the orchestrator reports and leaves to
+        # the cleaner.
+        task_type = AsyncTaskType(task_type)
         params = raw.get('params') or {}
-        if params.get('type') not in (None, AsyncTaskType.DOWNLOAD_ARCHIVE):
-            raise ValueError(f'Task {task_id} carries params of a foreign type {params.get("type")}')
-        paths = params.get('paths') or []
+        if params.get('type') not in (None, task_type):
+            raise ValueError(f'Task {task_id} of type {task_type} carries params of a foreign type '
+                             f'{params.get("type")}')
+        download = params if task_type is AsyncTaskType.DOWNLOAD_ARCHIVE else {}
         # A foreign result type is not an error: the cleaner lists tasks of types it does not run, and
         # there is simply nothing to clean up for them.
         result = raw.get('result') or {}
@@ -192,11 +251,13 @@ class ArchiveTask:
         return cls(
             id=task_id,
             status=TaskStatus(status),
-            type=AsyncTaskType(raw.get('type') or AsyncTaskType.DOWNLOAD_ARCHIVE),
+            type=task_type,
             owner=raw.get('owner'),
-            storage_id=params.get('storageId'),
-            paths=tuple(paths),
-            archive_name=params.get('archiveName') or 'archive.zip',
+            storage_id=download.get('storageId'),
+            paths=tuple(download.get('paths') or []),
+            archive_name=download.get('archiveName') or 'archive.zip',
+            unpack=(UnpackParams.from_api(params)
+                    if task_type is AsyncTaskType.UNPACK_ARCHIVE else None),
             result_storage_id=result.get('storageId'),
             result_path=result.get('path'),
             created=parse_api_datetime(raw.get('created')),

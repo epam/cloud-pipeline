@@ -25,7 +25,7 @@ import time
 
 from sats.config import ServiceConfig
 from sats.util.errors import ApiError
-from sats.model import ArchiveTask, TaskStatus
+from sats.model import ArchiveTask, AsyncTaskType, TaskStatus
 from sats.orchestrator import Orchestrator
 
 from .fakes import FakeApi
@@ -49,7 +49,7 @@ def _api(preference=None):
 
 def _task(task_id):
     return ArchiveTask(id=task_id, status=TaskStatus.RUNNING, owner='USER', storage_id=1,
-                       paths=('data/',))
+                       type=AsyncTaskType.DOWNLOAD_ARCHIVE, paths=('data/',))
 
 
 def _free_slots(orchestrator, limit):
@@ -238,3 +238,52 @@ def test_skips_the_round_when_the_preference_cannot_be_read(tmp_path):
     orchestrator.run()
 
     assert cleaned == []
+
+
+# ---------------------------------------------------------------- claiming more than one type
+
+def _preference(download=None, unpack=None):
+    tasks = {}
+    if download is not None:
+        tasks['storageDownloadAsArchive'] = download
+    if unpack is not None:
+        tasks['storageUnpackArchive'] = unpack
+    return json.dumps({'tasks': tasks})
+
+
+def test_claims_every_type_it_runs_in_one_call(tmp_path):
+    # One call over the whole list, so the oldest task wins across the types rather than the tasks of
+    # one type waiting behind another's.
+    api = _api(_preference(download={'destinationStorageId': 9}, unpack={}))
+
+    Orchestrator(api, _config(tmp_path)).run()
+
+    assert api.claimed_types == [(AsyncTaskType.DOWNLOAD_ARCHIVE, AsyncTaskType.UNPACK_ARCHIVE)]
+
+
+def test_claims_only_the_types_whose_settings_are_filled_in(tmp_path):
+    # Per type on purpose: an unfilled unpack section must not stop downloads, and a download section
+    # with no destination must not stop extractions.
+    api = _api(_preference(download={'destinationStorageId': 9}))
+
+    Orchestrator(api, _config(tmp_path)).run()
+
+    assert api.claimed_types == [(AsyncTaskType.DOWNLOAD_ARCHIVE,)]
+
+
+def test_claims_extractions_while_the_download_destination_is_missing(tmp_path):
+    api = _api(_preference(download={}, unpack={}))
+
+    Orchestrator(api, _config(tmp_path)).run()
+
+    assert api.claimed_types == [(AsyncTaskType.UNPACK_ARCHIVE,)]
+
+
+def test_claims_nothing_when_no_type_is_usable(tmp_path):
+    # Tasks stay pending, which is where they belong: filling the preference in makes the backlog
+    # run, while failing them would lose work over a fixable mistake.
+    api = _api(_preference(download={}))
+
+    Orchestrator(api, _config(tmp_path)).run()
+
+    assert api.claimed_types == []

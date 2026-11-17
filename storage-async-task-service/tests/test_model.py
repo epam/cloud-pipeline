@@ -52,6 +52,7 @@ def test_reads_a_task_with_its_params():
     task = ArchiveTask.from_api({
         'id': 'e3b0c442',
         'status': 'RUNNING',
+        'type': 'DOWNLOAD_ARCHIVE',
         'owner': 'USER',
         'created': '2026-10-09 06:30:35.000',
         'params': {
@@ -70,9 +71,9 @@ def test_reads_a_task_with_its_params():
 
 
 def test_reads_a_task_without_params():
-    # What the cleaner's filter returns in some orders of events, and what a task of another type would
-    # look like if one existed. It has to parse, because the cleaner only needs the id and the status.
-    task = ArchiveTask.from_api({'id': 'x', 'status': 'PENDING'})
+    # What the cleaner's filter returns in some orders of events. It has to parse, because the cleaner
+    # only needs the id, the type and the status.
+    task = ArchiveTask.from_api({'id': 'x', 'status': 'PENDING', 'type': 'DOWNLOAD_ARCHIVE'})
 
     assert task.paths == ()
     assert task.archive_name == 'archive.zip'
@@ -86,13 +87,14 @@ def test_refuses_params_of_another_type():
         ArchiveTask.from_api({
             'id': 'x',
             'status': 'PENDING',
+            'type': 'DOWNLOAD_ARCHIVE',
             'params': {'type': 'SOMETHING_ELSE'},
         })
 
 
 def test_an_unknown_status_is_refused():
     with pytest.raises(ValueError):
-        ArchiveTask.from_api({'id': 'x', 'status': 'CANCELED'})
+        ArchiveTask.from_api({'id': 'x', 'status': 'CANCELED', 'type': 'DOWNLOAD_ARCHIVE'})
 
 
 # `CANCELED` appears twice on purpose: it is the misspelling the specification carried, and the
@@ -137,6 +139,7 @@ def test_reads_the_recorded_archive_location_from_a_finished_task():
     task = ArchiveTask.from_api({
         'id': 'task-1',
         'status': 'SUCCESS',
+        'type': 'DOWNLOAD_ARCHIVE',
         'params': {'type': 'DOWNLOAD_ARCHIVE', 'storageId': 1, 'paths': ['data/']},
         'result': {'type': 'DOWNLOAD_ARCHIVE', 'storageId': 9,
                    'path': 'old-prefix/task-1.zip', 'archiveSizeBytes': 10,
@@ -148,7 +151,7 @@ def test_reads_the_recorded_archive_location_from_a_finished_task():
 
 
 def test_reads_no_location_from_a_task_that_has_not_finished():
-    task = ArchiveTask.from_api({'id': 'task-1', 'status': 'RUNNING'})
+    task = ArchiveTask.from_api({'id': 'task-1', 'status': 'RUNNING', 'type': 'DOWNLOAD_ARCHIVE'})
 
     assert task.result_storage_id is None
     assert task.result_path is None
@@ -160,6 +163,7 @@ def test_ignores_a_result_of_a_foreign_task_type():
     task = ArchiveTask.from_api({
         'id': 'task-1',
         'status': 'SUCCESS',
+        'type': 'DOWNLOAD_ARCHIVE',
         'result': {'type': 'SOMETHING_ELSE', 'storageId': 99, 'path': 'not/ours.zip'},
     })
 
@@ -173,12 +177,12 @@ def test_reads_the_type_the_task_carries():
     assert task.type is AsyncTaskType.DOWNLOAD_ARCHIVE
 
 
-def test_a_task_without_a_type_falls_back_to_the_only_one_there_is():
-    # The platform always sends it; the fallback keeps a task built by hand dispatchable. It is also
-    # what will hide a mistake when a second type arrives.
-    task = ArchiveTask.from_api({'id': 'task-1', 'status': 'RUNNING'})
-
-    assert task.type is AsyncTaskType.DOWNLOAD_ARCHIVE
+def test_a_task_without_a_type_is_refused():
+    # There used to be a fallback to the only type there was, and the comment beside it said it would
+    # hide a mistake once a second type arrived. It has: with two types, a guessed type means the
+    # wrong worker over somebody's data, so the task is refused and the cleaner deals with it.
+    with pytest.raises(ValueError):
+        ArchiveTask.from_api({'id': 'task-1', 'status': 'RUNNING'})
 
 
 def test_a_type_this_service_does_not_know_is_refused():
@@ -235,3 +239,68 @@ def test_reads_a_region_that_carries_none_of_the_aws_fields():
     assert region.iam_role is None
     assert region.temp_credentials_role is None
     assert region.s3_endpoint is None
+
+
+def test_reads_an_unpack_task_with_its_params():
+    task = ArchiveTask.from_api({
+        'id': 'task-2',
+        'status': 'PENDING',
+        'type': 'UNPACK_ARCHIVE',
+        'owner': 'USER',
+        'params': {
+            'type': 'UNPACK_ARCHIVE',
+            'sourceStorageId': 1,
+            'sourcePath': 'incoming/data.zip',
+            'destinationStorageId': 2,
+            'destinationPath': 'out/',
+            'deleteSourceOnSuccess': True,
+            'overwrite': True,
+        },
+    })
+
+    assert task.type is AsyncTaskType.UNPACK_ARCHIVE
+    assert task.unpack.source_storage_id == 1
+    assert task.unpack.source_path == 'incoming/data.zip'
+    assert task.unpack.destination_storage_id == 2
+    # Already a folder prefix when it arrives: the API appends the slash before it checks the
+    # permissions, so the string that was checked is the string recorded here.
+    assert task.unpack.destination_path == 'out/'
+    assert task.unpack.delete_source_on_success
+    assert task.unpack.overwrite
+    # The download half stays empty rather than plausible, so a worker reading the wrong one finds
+    # nothing instead of something.
+    assert task.paths == ()
+    assert task.storage_id is None
+
+
+def test_an_unpack_task_without_the_two_flags_defaults_them_to_off():
+    # Both are destructive in their own way, so an absent field means "no".
+    task = ArchiveTask.from_api({
+        'id': 'task-2', 'status': 'PENDING', 'type': 'UNPACK_ARCHIVE',
+        'params': {'type': 'UNPACK_ARCHIVE', 'sourceStorageId': 1, 'sourcePath': 'a.zip',
+                   'destinationStorageId': 2, 'destinationPath': ''},
+    })
+
+    assert not task.unpack.delete_source_on_success
+    assert not task.unpack.overwrite
+    # The empty string is how the root of the storage is asked for, and it survives as one.
+    assert task.unpack.destination_path == ''
+
+
+def test_a_download_task_carries_no_unpack_params():
+    task = ArchiveTask.from_api({
+        'id': 'task-1', 'status': 'PENDING', 'type': 'DOWNLOAD_ARCHIVE',
+        'params': {'type': 'DOWNLOAD_ARCHIVE', 'storageId': 1, 'paths': ['data/']},
+    })
+
+    assert task.unpack is None
+
+
+def test_params_of_a_type_other_than_the_tasks_own_are_refused():
+    # The API and this service disagreeing about what was handed over. Refused rather than ignored:
+    # the alternative is a worker running with the wrong half of the payload empty.
+    with pytest.raises(ValueError):
+        ArchiveTask.from_api({
+            'id': 'task-2', 'status': 'PENDING', 'type': 'UNPACK_ARCHIVE',
+            'params': {'type': 'DOWNLOAD_ARCHIVE', 'storageId': 1},
+        })

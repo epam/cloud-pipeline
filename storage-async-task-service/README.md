@@ -1,24 +1,33 @@
 # Cloud Pipeline Storage Async Task Service
 
-A Python service that executes the platform's asynchronous storage tasks. Today there is one kind:
-`DOWNLOAD_ARCHIVE` - "download this folder as one archive".
+A Python service that executes the platform's asynchronous storage tasks. Two kinds today:
 
-The platform API does not build archives. It records the request as a task, and this service claims
-it, reads the selected files out of the data storage, packs them into a ZIP, uploads the result to a
-dedicated bucket and reports the task as finished. The user then asks the API for a signed link.
+| Task type | What it does |
+|---|---|
+| `DOWNLOAD_ARCHIVE` | "download this folder as one archive" - packs a selection into a ZIP and uploads it to a dedicated bucket, which the user then gets a signed link to |
+| `UNPACK_ARCHIVE` | "extract this archive" - takes an archive that lies in a data storage and writes its content into a storage and folder the caller named |
+
+The platform API does neither. It records the request as a task, and this service claims it, does the
+work and reports the task as finished.
 
 It never accepts an inbound request: it polls the API, which is the only state it has.
 
 ## What one task goes through
 
 ```
-POST /datastorage/{id}/download/archive     the API checks the rights and records a PENDING task
-POST /async-task/next                       this service claims it, the API makes it RUNNING
-                                            read the selection, check the thresholds
-                                            download file by file, write each into the ZIP
-                                            upload the ZIP to the archive bucket
-POST /async-task/{id}/status                SUCCESS, with the size and the skipped count
-GET  /async-task/{id}/consume               the user gets a signed link
+POST /async-task/create                     the API checks the rights and records a PENDING task
+POST /async-task/next?type=A&type=B         this service claims the oldest task of any type it runs
+POST /async-task/{id}/status                SUCCESS, with what the task produced
+```
+
+Between the second and the third line the two types differ:
+
+```
+DOWNLOAD_ARCHIVE   read the selection, check the thresholds, download file by file into a ZIP,
+                   upload the ZIP to the archive bucket
+UNPACK_ARCHIVE     head the archive and read its tail for an entry count and a total, extract it
+                   locally while counting bytes and checking every entry name, look once at the
+                   destination for collisions, then upload entry by entry
 ```
 
 Inside the archive a file is named without the folders the selection has in common above the items
@@ -38,10 +47,22 @@ name, and a path normalising to nothing at all is skipped and reported in the ar
 than packed: `ZipFile.extractall` raises on an entry called `.` or `..` and abandons the rest of
 the archive with it.
 
-A cancelled task stops within `--status-poll-seconds` and deletes what it had built. A task whose
-worker was killed is finished by the cleaner, which also expires archives past `ttlDays`.
+A cancelled task stops within `--status-poll-seconds`. A task whose worker was killed is finished by
+the cleaner, which also expires archives past `ttlDays`.
 
-Permissions are never evaluated here. The API does that once, when the task is created.
+**A download task's archive is deleted when its task ends badly; an extraction's content is not.**
+There is no rollback: a failed or cancelled extraction leaves the files it had already written where
+they are, and says how many in the task's error message. A new run with `"overwrite": false` then
+refuses exactly those files. Rolling back would need a journal of written keys, retries, a rule for
+files that were replaced and the same logic again in the cleaner - and none of it brings back the
+content an overwrite replaced.
+
+Permissions are never evaluated here. The API does that once, when the task is created - READ on the
+source, WRITE on the destination folder, and WRITE on the source as well for
+`deleteSourceOnSuccess`. **The entry names inside an archive are checked by nothing but this
+service** (`sats/archive_extractor.py`): the API never opens the archive, this container runs as root
+and its node holds a role of every storage on the platform, so a name leading out of the destination
+is code execution. That is what every rule in `safe_entry_path` and every `is_inside` call is for.
 
 ## Requirements
 
@@ -74,6 +95,11 @@ python -m sats.app --once --slots 1 --work-dir ./tasks --log-level DEBUG
 `--once` does one round - preference, cleanups, claim - waits for whatever it started, and exits.
 Without it the service loops until `Ctrl-C`, which asks it to stop claiming and wait for its workers.
 
+**S3 storages work from a workstation; NFS ones do not.** Mounting a share needs `/proc/mounts` and
+root, so off Linux a task on an NFS storage fails with the reason named rather than misbehaving. An
+extraction between two S3 storages needs nothing but credentials that may assume the roles of both
+storages' regions.
+
 ## Settings
 
 Every setting is both an option and an environment variable, and the option wins.
@@ -91,7 +117,7 @@ Every setting is both an option and an environment variable, and the option wins
 | `--status-poll-seconds` | `CP_SATS_STATUS_POLL` | `15` | How often a worker checks whether its task was cancelled. |
 | `--part-size-mb` | `CP_SATS_PART_SIZE_MB` | `8` | Upload part size, raised automatically for an archive above 80 GiB. |
 | `--compress-level` | `CP_SATS_COMPRESS_LEVEL` | `1` | ZIP deflate level. Low, because research data is usually already compressed. |
-| `--nfs-mount-root` | `CP_SATS_NFS_MOUNT_ROOT` | `/mnt/sats-shares` | Where NFS shares are mounted. |
+| `--nfs-mount-root` | `CP_SATS_NFS_MOUNT_ROOT` | `/mnt/sats-shares` | Where NFS shares are mounted: `<root>/ro/<share>` for reading and `<root>/rw/<share>` for an extraction's destination. The mode is a directory level so that one share needed both ways at once is two mounts. |
 | `--nfs-mount-timeout-seconds` | `CP_SATS_NFS_MOUNT_TIMEOUT` | `30` | Hard limit on `mount` and on the liveness check of a mount point. |
 | `--once` | `CP_SATS_ONCE` | off | One round, then exit. |
 | `--log-level` | `CP_SATS_LOG_LEVEL` | `INFO` | |
@@ -115,6 +141,12 @@ a change applies without a restart:
       "maxFilesCount": 100000,
       "ttlDays": 7,
       "workerMaxRunningMinutes": 240
+    },
+    "storageUnpackArchive": {
+      "maxArchiveSizeBytes": 53687091200,
+      "maxSizeBytes": 214748364800,
+      "maxFilesCount": 100000,
+      "workerMaxRunningMinutes": 240
     }
   }
 }
@@ -128,8 +160,21 @@ be a trap, which is why neither sits inside `tasks`. A value put in the wrong le
 absent and silently replaced by its default, so the warnings this service logs at startup name the
 level each setting is read from.
 
-Without `tasks.storageDownloadAsArchive.destinationStorageId` nothing is claimed and tasks stay
-pending. `null` in either threshold means no limit.
+**The same names mean different things in the two sections**, which is why each is read and
+validated on its own:
+
+| Setting | In `storageDownloadAsArchive` | In `storageUnpackArchive` |
+|---|---|---|
+| `maxSizeBytes` | the size of the selection a user asked to be packed | the **uncompressed** total an archive may be extracted into |
+| `maxFilesCount` | the file count of that selection | the **entry count** of one archive |
+| `maxArchiveSizeBytes` | - | the archive object itself, checked before it is fetched |
+| `ttlDays`, `destination*` | where a finished archive goes and how long it lives | - an extraction's content belongs to the storage the caller named, so the platform owns no artifact to expire |
+
+**Each type is claimed only when its own section is usable.** Without
+`tasks.storageDownloadAsArchive.destinationStorageId` no download task is claimed; without a
+`tasks.storageUnpackArchive` section at all, no extraction is - its limits were never reviewed by an
+administrator, and extracting under invented ones is worse than waiting. Either way the tasks stay
+`PENDING`, so filling the preference in makes the backlog run. `null` in a limit means no limit.
 
 ## How it is deployed
 

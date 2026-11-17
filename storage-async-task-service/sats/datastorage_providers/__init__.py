@@ -13,19 +13,19 @@
 # limitations under the License.
 
 """
-Picking the right source for a storage.
+Picking the right source or destination for a storage.
 
-The one place that knows which storage types can be archived. Everything else works against
-`FileSource`.
+The one place that knows which storage types this service can read and write. Everything else works
+against `FileSource` and `FileDestination`.
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .base import FileSource, SourceFile
-from .nfs import NfsSource
-from .s3 import S3Source
+from .base import EntryKind, FileDestination, FileSource, SourceFile
+from .nfs import NfsDestination, NfsSource
+from .s3 import S3Destination, S3Source
 from ..cloud.aws import build_s3_client
 from ..config import ServiceConfig
 from ..util.errors import UnsupportedSource
@@ -38,7 +38,8 @@ if TYPE_CHECKING:
 
 LOG = get_logger(__name__)
 
-__all__ = ['FileSource', 'SourceFile', 'open_source']
+__all__ = ['EntryKind', 'FileDestination', 'FileSource', 'SourceFile', 'open_destination',
+           'open_source']
 
 
 def open_source(api: CloudPipelineApi, storage: Storage, config: ServiceConfig) -> FileSource:
@@ -64,3 +65,30 @@ def open_source(api: CloudPipelineApi, storage: Storage, config: ServiceConfig) 
             # Azure and GCP storages reach this. Supporting one means a module next to `s3.py`.
             raise UnsupportedSource(f'Storage {storage.name} is of type {storage.type}, which this '
                                     f'service cannot read')
+
+
+def open_destination(api: CloudPipelineApi, storage: Storage,
+                     config: ServiceConfig) -> FileDestination:
+    """
+    Opens a writer for the storage a task extracts into.
+
+    Apart from `open_source` and not a flag on it: on a share the difference is the mount mode, and
+    a destination is opened only for a task that writes. The caller uses the result in a `with`
+    block.
+    """
+    match storage.type:
+        case StorageType.S3:
+            LOG.debug('Writing into storage %s, S3 bucket %s', storage.name, storage.path)
+            return S3Destination(storage, config.part_size_bytes, build_s3_client(api, storage))
+        case StorageType.NFS:
+            if not storage.file_share_mount_id:
+                raise UnsupportedSource(f'NFS storage {storage.name} has no file share mount, so '
+                                        f'there is no share to mount')
+            share = api.load_file_share(storage.file_share_mount_id)
+            LOG.debug('Writing into storage %s on %s share %s', storage.name, share.mount_type,
+                      share.mount_root)
+            return NfsDestination(storage, share, config.nfs_mount_root,
+                                  config.nfs_mount_timeout_seconds)
+        case _:
+            raise UnsupportedSource(f'Storage {storage.name} is of type {storage.type}, which this '
+                                    f'service cannot write to')

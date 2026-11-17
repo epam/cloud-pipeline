@@ -1727,12 +1727,21 @@ class PipelineAPI:
 
         Returns None when the queue is empty, which is the ordinary answer rather than a failure.
 
+        `task_type` is one type or a list of them. With several, the oldest pending task of any of
+        them is claimed in one call - which is what an executor that handles more than one type
+        needs, since a call per type would make the tasks of the first type block the rest. A single
+        value is still accepted, so a caller written before the second type existed keeps working.
+
         This call is not idempotent: the API hands the task over and marks it RUNNING in one
         transaction, so a lost *response* leaves a task claimed with nobody working on it. A caller
         that must not have it retried should use a client built with attempts=1.
         """
-        return self._request(endpoint=self.ASYNC_TASK_NEXT_URL + '?type=' + str(task_type),
-                             http_method='post')
+        types = list(task_type) if isinstance(task_type, (list, tuple, set)) else [task_type]
+        if not types:
+            # Sent as it is, the API would answer 400 and the reason would be nowhere near the caller.
+            raise RuntimeError('At least one task type is required to claim an asynchronous task')
+        query = '&'.join('type=' + str(one) for one in types)
+        return self._request(endpoint=self.ASYNC_TASK_NEXT_URL + '?' + query, http_method='post')
 
     def load_async_task(self, task_id):
         return self._request(endpoint=self.ASYNC_TASK_LOAD_URL.format(id=task_id), http_method='get')
