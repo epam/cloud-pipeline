@@ -262,7 +262,7 @@ public class UserApiService {
      */
     @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public JwtRawToken issueTokenForCurrentUser(final Long expiration) {
-        assertTokenExchangeable();
+        assertTokenRenewable();
         return authManager.issueTokenForCurrentUser(expiration, !authManager.isAdmin());
     }
 
@@ -281,23 +281,23 @@ public class UserApiService {
      */
     @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public NamedJwtToken issueNamedJwtTokenForCurrentUser(final Long expiration, final String registryLabel) {
-        assertTokenExchangeable();
+        assertTokenRenewable();
         return namedJwtTokenManager.issueNamedTokenForCurrentUser(expiration, !authManager.isAdmin(),
                 NamedJwtToken.normalizeTokenName(registryLabel));
     }
 
     /**
-     * A token may say that it must not be traded for another.
+     * A token may say that it must not be renewed.
      * <p>
-     * Every token is exchangeable unless it says otherwise, so this changes nothing for an
-     * ordinary login. It matters for a token whose life is deliberately tied to something outside
-     * the platform: trading it for a second token would give the holder one with its own, longer
-     * life, and they could keep renewing long after whatever vouched for them stopped. A client
-     * that needs a fresh token obtains one the same way it obtained the first.
+     * Every token is renewable unless it says otherwise, so this changes nothing for an ordinary
+     * login. It matters for a token whose life is deliberately tied to something outside the
+     * platform: renewing it would give the holder one with its own, longer life, and they could
+     * keep doing so long after whatever vouched for them stopped. A client that needs a fresh
+     * token obtains one the same way it obtained the first.
      */
-    private void assertTokenExchangeable() {
+    private void assertTokenRenewable() {
         final UserContext context = authManager.getUserContext();
-        if (Objects.nonNull(context) && !context.isExchangeable()) {
+        if (Objects.nonNull(context) && context.isNonRenewable()) {
             throw new AccessDeniedException("This token cannot be used to issue another token");
         }
     }

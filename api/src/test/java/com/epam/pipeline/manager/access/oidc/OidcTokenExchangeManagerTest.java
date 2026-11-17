@@ -386,27 +386,27 @@ public class OidcTokenExchangeManagerTest {
     }
 
     /**
-     * The exchanged token's life is tied to the provider's, and trading it for another would break
-     * that tie, so it cannot be traded unless the client asks for it.
+     * The exchanged token's life is tied to the provider's, and renewing it would break that tie,
+     * so it cannot be renewed unless the client asks for it.
      */
     @Test
-    public void shouldIssueANonExchangeableTokenByDefault() {
+    public void shouldIssueANonRenewableTokenByDefault() {
         configure(specificUser(), subjectClaims().build());
 
         manager.exchange(SUBJECT_TOKEN);
 
-        assertThat(issuedClaims().isExchangeable()).isFalse();
+        assertThat(issuedClaims().isNonRenewable()).isTrue();
     }
 
     @Test
-    public void shouldIssueAnExchangeableTokenOnlyWhenTheClientAsksFor() {
+    public void shouldIssueARenewableTokenOnlyWhenTheClientAsksFor() {
         final OidcAssumeStrategy strategy = specificUser();
-        strategy.setExchangeable(true);
+        strategy.setRenewable(true);
         configure(strategy, subjectClaims().build());
 
         manager.exchange(SUBJECT_TOKEN);
 
-        assertThat(issuedClaims().isExchangeable()).isTrue();
+        assertThat(issuedClaims().isNonRenewable()).isFalse();
     }
 
     /**
