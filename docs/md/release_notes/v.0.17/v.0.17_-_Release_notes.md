@@ -71,6 +71,7 @@
 - [Rocky Linux 9.8 for the proxy and the backup workers](#rocky-linux-98-for-the-proxy-and-the-backup-workers)
 - [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
 - [Pinning a run to the Docker image digest](#pinning-a-run-to-the-docker-image-digest)
+- [Data storage: the controls row and the column header stay visible while scrolling](#data-storage-the-controls-row-and-the-column-header-stay-visible-while-scrolling)
 - [Default version of a tool](#default-version-of-a-tool)
 - [NICE DCV desktop: no wallpaper, a keyboard layout switcher, Ubuntu 24.04](#nice-dcv-desktop-no-wallpaper-a-keyboard-layout-switcher-ubuntu-2404)
 - [Retries of a failed scratch Lustre file system](#retries-of-a-failed-scratch-lustre-file-system)
@@ -2055,6 +2056,14 @@ The preference applies when a run is launched or restarted. The runs launched be
 > **_Note_**: the previous API versions cannot find the container of a running pinned run. Before downgrading the API to such a version, disable the preference and wait until no pinned run is running - otherwise pausing, committing or limiting the network of such a run fails, and a failed pause fails the run and terminates its node. Paused pinned runs are safe: a previous version resumes them with the tag, as before.
 
 For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#launch).
+
+***
+
+## Data storage: the controls row and the column header stay visible while scrolling
+
+The controls row of a data storage - **Select page**, **Create**, **Upload** and the others - and the column header with its sort and filter controls now stay at the top while the file list is scrolled.
+
+See details in [8. Manage Data Storage](../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage.md#controls).
 
 ***
 
