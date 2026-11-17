@@ -851,7 +851,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Run_tools_in_sandbox</b> (148 tests, 75 automated)</summary>
+<summary><b>Run_tools_in_sandbox</b> (149 tests, 75 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
