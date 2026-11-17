@@ -24,10 +24,12 @@
 # run in the directory of default.conf).
 #
 # Login mode: impersonation (e2e.ui.auth.token=true, e2e.ui.impersonate.auth=true), as on an SSO platform the test
-# users can't log in with a form. The tests put the admin's browser session (SESSION cookie) into the browser and reach
-# the other accounts through UI impersonation. The session must come from an SSO sign-in of an administrator: a session
-# created from a JWT is trusted for 60 s only. Give it in E2E_ADMIN_SESSION or in the file E2E_ADMIN_SESSION_FILE
-# (default ~/.cp-e2e/admin-session); it is checked to belong to an admin and to outlive 65 s.
+# users can't log in with a form. The tests put the admin's session (SESSION cookie) into the browser and reach
+# the other accounts through UI impersonation. Ordinarily the session must come from an SSO sign-in of an
+# administrator: a session created from a JWT is trusted for 60 s only. Give it in E2E_ADMIN_SESSION or in the file
+# E2E_ADMIN_SESSION_FILE (default ~/.cp-e2e/admin-session); it is checked to belong to an admin and to outlive 65 s.
+# run-e2e.sh --dummy-session instead makes a session for a dedicated non-SSO account (admin-session.sh create,
+# which patches that same 60 s deadline away) and gives it here the same way, in E2E_ADMIN_SESSION.
 # JWTs of the test users are issued from the admin token of the config map (CP_API_JWT_ADMIN): used by the token mode
 # and by the anonymous access check. They expire after --token-ttl seconds (default 172800 = 48 h).
 #
@@ -161,9 +163,10 @@ _dns_default='{job_name}.{region_name}'
     _warn "CP_EDGE_DNS_RECORD_FORMAT is '${_dns_format:-$_dns_default}', not '{job_name}': DNSrecordForRunsTest fails"
 _set e2e.ui.auth.token true "impersonation mode"
 _set e2e.ui.impersonate.auth true "impersonation mode"
-# The admin's browser session (SESSION cookie of an SSO login). It can't be created from a JWT: the API trusts a
-# session created by a JWT request for 60 s only (JwtAuthenticationToken.TOKEN_SESSION_TIMEOUT), and the UI pages are
-# behind SAML unless CP_API_USE_ONLY_JWT_AUTH=true, so a JWT cookie does not open the UI either.
+# The admin's session (SESSION cookie of an SSO login, ordinarily). A session created by a JWT request is trusted
+# for 60 s only (JwtAuthenticationToken.TOKEN_SESSION_TIMEOUT), and the UI pages are behind SAML unless
+# CP_API_USE_ONLY_JWT_AUTH=true, so a bare JWT cookie does not open the UI either: run-e2e.sh --dummy-session gets
+# around both by patching that 60 s deadline in the database (admin-session.sh create), not by using a JWT cookie.
 _session="${E2E_ADMIN_SESSION:-}"
 [ -z "$_session" ] && [ -f "$_ADMIN_SESSION_FILE" ] && _session="$(tr -d ' \r\n' < "$_ADMIN_SESSION_FILE")"
 _session="${_session#SESSION=}"

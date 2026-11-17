@@ -48,6 +48,11 @@
 # existing IdP session gets the end of that session): the run refuses to start if it ends within --min-sso-hours, and
 # stops the tests when the session no longer authenticates during the run (E2E_STOP_ON_SESSION_LOSS=false: keep them).
 #
+# --dummy-session skips all of that: a dedicated account (created with ROLE_ADMIN if it does not exist yet, default
+# name E2E_ADMIN) gets a session made in the API database instead of an SSO sign-in (scripts/admin-session.sh
+# create), with no browser and no human needed. Needs CP_API_JWT_DISABLE_SESSION=false in the cp-config-global
+# config map; real deployments already set it, a dev stand may not.
+#
 # The run takes many hours (the full suite is not timed on this line): run it detached, e.g.
 #   nohup ./run-e2e.sh > e2e-run.out 2>&1 &
 #
@@ -67,6 +72,9 @@
 #   --timeout <hours>      Stop the tests after this time (default: 24)
 #   --min-sso-hours <h>    Do not start if the SSO sign-in of the admin session ends within <h> hours (default: 12,
 #                          2 with --tests; 0: no check)
+#   --dummy-session        Sign in as a dedicated non-SSO account instead of an administrator's browser session
+#                          (E2E_DUMMY_SESSION=true; mutually exclusive with --conf and E2E_ADMIN_SESSION)
+#   --dummy-session-user <name>  Account --dummy-session uses (default: E2E_ADMIN; E2E_DUMMY_SESSION_USER)
 #   -h|--help
 
 set -o pipefail
@@ -88,6 +96,8 @@ _SKIP_CLEANUP="false"
 _CLEANUP_DRY_RUN=""
 _TIMEOUT_HOURS=24
 _MIN_SSO_HOURS=""
+_DUMMY_SESSION="${E2E_DUMMY_SESSION:-false}"
+_DUMMY_SESSION_USER="${E2E_DUMMY_SESSION_USER:-E2E_ADMIN}"
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -105,10 +115,16 @@ while [ $# -gt 0 ]; do
         --cleanup-dry-run) _CLEANUP_DRY_RUN="--dry-run"; shift ;;
         --timeout) _TIMEOUT_HOURS="$2"; shift 2 ;;
         --min-sso-hours) _MIN_SSO_HOURS="$2"; shift 2 ;;
-        -h|--help) sed -n '17,71p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        --dummy-session) _DUMMY_SESSION="true"; shift ;;
+        --dummy-session-user) _DUMMY_SESSION_USER="$2"; shift 2 ;;
+        -h|--help) sed -n '17,78p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) e2e_die "Unknown option $1 (see --help)" ;;
     esac
 done
+if [ "$_DUMMY_SESSION" == "true" ]; then
+    { [ -z "$_CONF" ] && [ -z "$E2E_ADMIN_SESSION" ]; } || \
+        e2e_die "--dummy-session is mutually exclusive with --conf and E2E_ADMIN_SESSION"
+fi
 
 e2e_require_tools docker kubectl curl jq
 cp_init_api
@@ -133,17 +149,20 @@ e2e_log "Platform: $CP_ROOT_URL"
 _WHOAMI="$(cp_api_payload GET whoami)" || e2e_die "The platform API is not accessible with the admin token"
 [ "$(jq -r '.admin' <<< "$_WHOAMI")" == "true" ] || e2e_die "The API token does not belong to an administrator"
 
-# The admin browser session the tests sign in with (SSO sign-in; see scripts/generate-config.sh)
+# The admin browser session the tests sign in with (SSO sign-in; see scripts/generate-config.sh), unless
+# --dummy-session makes one for a dedicated non-SSO account instead: that happens in step 3 below, together with
+# its extension (admin-session.sh create does both in one step), so the checks here - that it outlives 60 s, that
+# its SSO authentication does not end soon - apply only to a human-supplied session, which --dummy-session has none of
 _ADMIN_SESSION_FILE="${E2E_ADMIN_SESSION_FILE:-$HOME/.cp-e2e/admin-session}"
 export E2E_ADMIN_SESSION_FILE="$_ADMIN_SESSION_FILE"
-if [ -z "$E2E_ADMIN_SESSION" ] && [ -z "$_CONF" ]; then
+if [ "$_DUMMY_SESSION" != "true" ] && [ -z "$E2E_ADMIN_SESSION" ] && [ -z "$_CONF" ]; then
     [ -f "$_ADMIN_SESSION_FILE" ] || e2e_die "No admin browser session: sign in to $CP_ROOT_URL/pipeline/ as an administrator \
 in a private browser window, save the value of its SESSION cookie to $_ADMIN_SESSION_FILE (chmod 600), close the window \
-without signing out and start the run within ~25 minutes"
+without signing out and start the run within ~25 minutes (or pass --dummy-session to skip SSO entirely)"
     E2E_ADMIN_SESSION="$(tr -d ' \r\n' < "$_ADMIN_SESSION_FILE")"
     E2E_ADMIN_SESSION="${E2E_ADMIN_SESSION#SESSION=}"
 fi
-if [ -z "$_CONF" ]; then
+if [ "$_DUMMY_SESSION" != "true" ] && [ -z "$_CONF" ]; then
     _session_user() {
         curl -s -k --noproxy "$CP_API_HOST" -b "SESSION=$E2E_ADMIN_SESSION" "$CP_API_URL/whoami" \
             | jq -r '.payload | select(.admin == true) | .userName // empty' 2> /dev/null
@@ -363,8 +382,16 @@ trap 'e2e_warn "Interrupted"; exit 130' INT TERM
 # --- 3. platform preparation (test users, fixtures) ---------------------------------------------------------------------
 
 # The admin session must not expire while the tests run (default inactivity timeout 30 min): extended in the API
-# database for the run (E2E_SESSION_EXTENSION_SECONDS, default 30 days), restored at the end
-if [ -z "$_CONF" ]; then
+# database for the run (E2E_SESSION_EXTENSION_SECONDS, default 30 days), restored at the end. --dummy-session makes
+# and extends its own session here instead (admin-session.sh create), rather than extending a human-supplied one.
+if [ "$_DUMMY_SESSION" == "true" ]; then
+    _SESSION_EXTENDED="true"
+    bash "$E2E_SCRIPTS_DIR/admin-session.sh" create --state "$_PRIVATE_DIR/session" --user "$_DUMMY_SESSION_USER" \
+        --seconds "${E2E_SESSION_EXTENSION_SECONDS:-2592000}" 2>&1 | tee "$_ARTIFACTS_DIR/admin-session.log" \
+        || e2e_die "Unable to create a database-made session for $_DUMMY_SESSION_USER"
+    E2E_ADMIN_SESSION="$(jq -r '.session' "$_PRIVATE_DIR/session/admin-session.json")"
+    export E2E_ADMIN_SESSION
+elif [ -z "$_CONF" ]; then
     _SESSION_EXTENDED="true"
     bash "$E2E_SCRIPTS_DIR/admin-session.sh" extend --state "$_PRIVATE_DIR/session" \
         --seconds "${E2E_SESSION_EXTENSION_SECONDS:-2592000}" 2>&1 | tee "$_ARTIFACTS_DIR/admin-session.log" \
