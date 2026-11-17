@@ -16,7 +16,7 @@
 
 import {pipelineRun, stubApi} from '@test';
 import preferences from '../../../models/preferences/PreferencesLoad';
-import {canCommitRun, canPauseRun} from './stopRun';
+import {canCommitRun, canPauseRun, checkCommitAllowedForTool} from './stopRun';
 
 const unavailableNodeTags = {NODE_UNAVAILABLE: 'true'};
 
@@ -47,5 +47,46 @@ describe('canCommitRun', () => {
 
   it('does not allow to commit a run whose node is unavailable', () => {
     expect(canCommitRun(pipelineRun({tags: unavailableNodeTags}))).toBeFalsy();
+  });
+});
+
+describe('checkCommitAllowedForTool', () => {
+  const dockerRegistries = (tool) => ({
+    fetchIfNeededOrWait: () => Promise.resolve(),
+    value: {
+      registries: [{
+        path: 'registry',
+        groups: [{name: 'library', tools: [tool]}]
+      }]
+    }
+  });
+
+  // the latest version allows a commit, the "1.2" one does not
+  beforeEach(() => {
+    stubApi({
+      '/tool/1/settings?version=latest': [{version: 'latest', allowCommit: true}],
+      '/tool/1/settings?version=1.2': [{version: '1.2', allowCommit: false}]
+    });
+  });
+
+  it('checks the default version of a tool for an image without a tag', async () => {
+    const tool = {id: 1, image: 'library/tool', defaultVersion: '1.2'};
+
+    expect(await checkCommitAllowedForTool('registry/library/tool', dockerRegistries(tool)))
+      .toBe(false);
+  });
+
+  it('checks the latest version of a tool without a default version', async () => {
+    const tool = {id: 1, image: 'library/tool'};
+
+    expect(await checkCommitAllowedForTool('registry/library/tool', dockerRegistries(tool)))
+      .toBe(true);
+  });
+
+  it('checks the version of an image with a tag', async () => {
+    const tool = {id: 1, image: 'library/tool', defaultVersion: '1.2'};
+
+    expect(await checkCommitAllowedForTool('registry/library/tool:latest', dockerRegistries(tool)))
+      .toBe(true);
   });
 });

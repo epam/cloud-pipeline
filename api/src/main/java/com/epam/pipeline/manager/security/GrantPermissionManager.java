@@ -1058,14 +1058,20 @@ public class GrantPermissionManager {
 
     private Integer retrieveMaskForSid(AbstractSecuredEntity entity, boolean merge, boolean includeInherited,
                                        List<Sid> sids, Optional<AppliedQuota> activeQuota) {
-        final int mask = retrieveAclMaskForSid(entity, merge, includeInherited, sids, activeQuota);
-        if (!permissionsHelper.isScopedReader(entity, sids)) {
-            return mask;
+        int mask = retrieveAclMaskForSid(entity, merge, includeInherited, sids, activeQuota);
+        if (permissionsHelper.isScopedReader(entity, sids)) {
+            mask = withGrantedPermission(mask, merge, (AclPermission) AclPermission.READ);
         }
-        final int readMask = AclPermission.READ.getMask();
+        if (permissionsHelper.isScopedExecutor(entity, sids)) {
+            mask = withGrantedPermission(mask, merge, (AclPermission) AclPermission.EXECUTE);
+        }
+        return mask;
+    }
+
+    private int withGrantedPermission(final int mask, final boolean merge, final AclPermission permission) {
         return merge
-                ? mask | readMask
-                : permissionsService.unsetBits(mask, AclPermission.NO_READ.getMask()) | readMask;
+                ? mask | permission.getSimpleMask()
+                : permissionsService.unsetBits(mask, permission.getDenyPermission().getMask()) | permission.getMask();
     }
 
     private Integer retrieveAclMaskForSid(AbstractSecuredEntity entity, boolean merge, boolean includeInherited,

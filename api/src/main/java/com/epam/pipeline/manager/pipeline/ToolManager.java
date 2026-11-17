@@ -90,6 +90,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.manager.docker.DockerParsingUtils.processCommands;
+import static com.epam.pipeline.manager.pipeline.ToolUtils.PATH_DELIMITER;
+import static com.epam.pipeline.manager.pipeline.ToolUtils.REPOSITORY_AND_IMAGE;
+import static com.epam.pipeline.manager.pipeline.ToolUtils.TAG_DELIMITER;
 import static com.epam.pipeline.manager.pipeline.ToolUtils.getImageWithoutTag;
 
 @Slf4j
@@ -99,9 +102,9 @@ public class ToolManager implements SecuredEntityManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ToolManager.class);
 
-    private static final Pattern REPOSITORY_AND_IMAGE = Pattern.compile("^(.*)\\/(.*\\/.*)$");
-    private static final String TAG_DELIMITER = ":";
-    private static final String TOOL_DELIMETER = "/";
+    // a digest as the OCI image specification defines it, e.g. sha256:6c3c62...
+    private static final Pattern DIGEST_PATTERN =
+            Pattern.compile("^[a-z0-9]+(?:[+._-][a-z0-9]+)*:[a-zA-Z0-9=_-]+$");
     private static final String LATEST_TAG = "latest";
     private static final int KB_SIZE = 1000;
     private static final long SECONDS_IN_HOUR = 3600;
@@ -226,6 +229,40 @@ public class ToolManager implements SecuredEntityManager {
 
         toolDao.updateTool(loadedTool);
         return loadedTool;
+    }
+
+    /**
+     * Sets a tool's default version: it is used in place of the "latest" one, f.i. it is launched,
+     * if a tool's image is specified without a tag
+     * @param id tool's id
+     * @param version an existing tool's version
+     * @return the updated tool
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public Tool updateToolDefaultVersion(final Long id, final String version) {
+        final Tool tool = loadExisting(id);
+        validateToolCanBeModified(tool);
+        Assert.isTrue(StringUtils.hasText(version), messageHelper.getMessage(
+                MessageConstants.ERROR_PARAMETER_REQUIRED, "version", Tool.class.getSimpleName()));
+        Assert.isTrue(loadTags(tool).contains(version), messageHelper.getMessage(
+                MessageConstants.ERROR_TOOL_DEFAULT_VERSION_NOT_FOUND, version, tool.getImage()));
+        toolDao.updateDefaultVersion(tool.getId(), version);
+        tool.setDefaultVersion(version);
+        return tool;
+    }
+
+    /**
+     * Removes a tool's default version, so that the "latest" one is used again
+     * @param id tool's id
+     * @return the updated tool
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public Tool deleteToolDefaultVersion(final Long id) {
+        final Tool tool = loadExisting(id);
+        validateToolCanBeModified(tool);
+        toolDao.updateDefaultVersion(tool.getId(), null);
+        tool.setDefaultVersion(null);
+        return tool;
     }
 
 
@@ -369,10 +406,10 @@ public class ToolManager implements SecuredEntityManager {
 
     private String getFullImageNameWithSameTag(final Tool tool, final String image) {
         return tool.getRegistry()
-                + TOOL_DELIMETER
+                + PATH_DELIMITER
                 + getImageWithoutTag(tool.getImage())
                 + TAG_DELIMITER
-                + getTagFromImageName(image);
+                + getTagFromImageName(image, resolveDefaultVersion(tool));
     }
 
     @Override
@@ -502,10 +539,37 @@ public class ToolManager implements SecuredEntityManager {
         Tool tool = loadTool(registry, image);
         validateToolNotNull(tool, image);
         validateToolCanBeModified(tool);
+        final boolean deletesDefaultVersion = isDefaultVersionDeletedWith(tool, version);
         deleteToolVersionFromRegistry(tool, version);
         deleteToolVersionScan(tool.getId(), version);
         toolVersionManager.deleteToolVersion(tool.getId(), version);
+        if (deletesDefaultVersion) {
+            toolDao.updateDefaultVersion(tool.getId(), null);
+            tool.setDefaultVersion(null);
+        }
         return tool;
+    }
+
+    /**
+     * A registry deletes a version by its manifest, so the default version is deleted along with any version,
+     * which refers to the same manifest
+     */
+    private boolean isDefaultVersionDeletedWith(final Tool tool, final String version) {
+        final String defaultVersion = tool.getDefaultVersion();
+        if (!StringUtils.hasText(defaultVersion)) {
+            return false;
+        }
+        if (defaultVersion.equals(version)) {
+            return true;
+        }
+        final Optional<String> digest = findVersionDigest(tool, version);
+        return digest.isPresent() && digest.equals(findVersionDigest(tool, defaultVersion));
+    }
+
+    private Optional<String> findVersionDigest(final Tool tool, final String version) {
+        return toolVersionManager.findToolVersion(tool.getId(), version)
+                .map(ToolVersion::getDigest)
+                .filter(StringUtils::hasText);
     }
 
     /**
@@ -790,17 +854,71 @@ public class ToolManager implements SecuredEntityManager {
 
     /**
      * Cuts tag value from a image string. f.i. : repo/image:tag, image:tag
-     * @return a docker tag for a tool
+     * @param image the image, with or without a tag
+     * @param defaultVersion the version to be used, if the image is specified without a tag: shall not be
+     *                       empty, see {@link #resolveDefaultVersion(Tool)}
+     * @return a docker tag for a tool: an image without a tag stands for the given default version
      */
-    public String getTagFromImageName(String image) {
+    public String getTagFromImageName(final String image, final String defaultVersion) {
         Matcher matcher = REPOSITORY_AND_IMAGE.matcher(image);
         String imageWithTag;
 
         if (matcher.find()) {
             imageWithTag = matcher.group(2);
-            return getImageTag(imageWithTag);
         } else {
-            return getImageTag(image);
+            imageWithTag = image;
+        }
+        return findImageTag(imageWithTag).orElse(defaultVersion);
+    }
+
+    /**
+     * @return a tool's version, which is used, if a tool's image is specified without a tag: the tool's
+     * default version, or the "latest" one, if a default version is not set
+     */
+    public String resolveDefaultVersion(final Tool tool) {
+        return StringUtils.hasText(tool.getDefaultVersion()) ? tool.getDefaultVersion() : LATEST_TAG;
+    }
+
+    /**
+     * Resolves the digest, which a docker image tag points to.
+     * <p>
+     * The digest is resolved in the registry the given image names, so it always belongs to that repository.
+     * A digest, which cannot be resolved, is not an error: an empty value is returned, and it is up to a caller
+     * to fall back to the image tag.
+     *
+     * @param dockerImage    a docker image, in the registry/group/tool:tag form
+     * @param defaultVersion default version tag of the corresponding tool
+     * @return the digest, or an empty value if it cannot be resolved
+     */
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    public Optional<String> resolveImageDigest(final String dockerImage, final String defaultVersion) {
+        try {
+            final Matcher matcher = REPOSITORY_AND_IMAGE.matcher(dockerImage);
+            if (!matcher.find()) {
+                LOGGER.warn("Digest of docker image {} is not resolved: it names no registry.", dockerImage);
+                return Optional.empty();
+            }
+            final DockerRegistry registry = dockerRegistryManager.loadByNameOrId(matcher.group(1));
+            if (registry == null) {
+                LOGGER.warn("Digest of docker image {} is not resolved: its registry is not found.", dockerImage);
+                return Optional.empty();
+            }
+            final String imageWithTag = matcher.group(2);
+            final String image = getImageWithoutTag(imageWithTag);
+            final String tag = getTagFromImageName(imageWithTag, defaultVersion);
+            final Optional<String> digest = dockerRegistryManager.getDockerClient(registry, image)
+                    .getManifest(registry, image, tag)
+                    .map(ManifestV2::getDigest)
+                    .filter(value -> DIGEST_PATTERN.matcher(value).matches());
+            if (!digest.isPresent()) {
+                LOGGER.warn("Digest of docker image {} is not resolved: the registry reports no valid digest.",
+                        dockerImage);
+            }
+            return digest;
+        } catch (RuntimeException e) {
+            LOGGER.warn("Digest of docker image {} cannot be resolved. {}", dockerImage, e.getMessage());
+            LOGGER.debug(e.getMessage(), e);
+            return Optional.empty();
         }
     }
 
@@ -919,7 +1037,7 @@ public class ToolManager implements SecuredEntityManager {
     private long getCurrentImageSize(final Tool tool) {
         DockerRegistry dockerRegistry = dockerRegistryManager.load(tool.getRegistryId());
         String imageWithoutTag = getImageWithoutTag(tool.getImage());
-        String tag = getTagFromImageName(tool.getImage());
+        String tag = getTagFromImageName(tool.getImage(), resolveDefaultVersion(tool));
         DockerClient dockerClient = dockerRegistryManager.getDockerClient(dockerRegistry,
                 imageWithoutTag);
         try {
@@ -985,7 +1103,7 @@ public class ToolManager implements SecuredEntityManager {
     }
 
     private String getSymlinkTargetImage(final Tool sourceTool, final ToolGroup targetGroup) {
-        return targetGroup.getName() + TOOL_DELIMETER +
+        return targetGroup.getName() + PATH_DELIMITER +
                 toolGroupManager.getGroupAndTool(sourceTool.getImage()).getRight();
     }
 
@@ -1023,12 +1141,12 @@ public class ToolManager implements SecuredEntityManager {
         return tool;
     }
 
-    private String getImageTag(String imageWithTag) {
+    private Optional<String> findImageTag(String imageWithTag) {
         String[] nameAndTag = imageWithTag.split(TAG_DELIMITER);
         if (nameAndTag.length == 2) {
-            return nameAndTag[1];
+            return Optional.of(nameAndTag[1]);
         } else {
-            return LATEST_TAG;
+            return Optional.empty();
         }
     }
 
@@ -1099,7 +1217,8 @@ public class ToolManager implements SecuredEntityManager {
     }
 
     public Optional<ToolVersion> findToolVersion(final Tool tool) {
-        return toolVersionManager.findToolVersion(tool.getId(), getTagFromImageName(tool.getImage()));
+        return toolVersionManager.findToolVersion(tool.getId(),
+                getTagFromImageName(tool.getImage(), resolveDefaultVersion(tool)));
     }
 
     private Optional<ToolVersionScanResult> prepareToolVersionScanForUpdate(final Tool tool, final Long toolId,

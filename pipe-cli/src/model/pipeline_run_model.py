@@ -51,6 +51,8 @@ class PipelineRunModel(object):
         self.platform = None
         self.tags = {}
         self.tags_str = ''
+        self.docker_image = None
+        self.docker_image_digest = None
 
     @property
     def is_initialized(self):
@@ -78,6 +80,9 @@ class PipelineRunModel(object):
             instance.pipeline = 'CMD'
         if 'version' in result:
             instance.version = result['version']
+        instance.docker_image = result.get('dockerImage')
+        # a run has a digest only if its pod was pinned to it at the launch
+        instance.docker_image_digest = result.get('actualDockerImageDigest')
         instance.status = result['status']
         if 'startDate' in result:
             instance.scheduled_date = date_utilities.server_date_representation(result['startDate'])

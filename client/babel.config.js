@@ -76,7 +76,8 @@ const plugins = [
   '@babel/plugin-proposal-nullish-coalescing-operator',
   '@babel/plugin-proposal-do-expressions',
   '@babel/plugin-proposal-function-bind',
-  ['@babel/plugin-proposal-private-methods', {'loose': true}]
+  ['@babel/plugin-proposal-private-methods', {'loose': true}],
+  ['@babel/plugin-proposal-private-property-in-object', {'loose': true}]
 ];
 
 module.exports = {presets, plugins};

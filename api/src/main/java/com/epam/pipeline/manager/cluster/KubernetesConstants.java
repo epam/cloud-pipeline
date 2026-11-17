@@ -50,6 +50,9 @@ public final class KubernetesConstants {
     public static final String PAUSED_NODE_LABEL = "Paused";
     public static final String UNAVAILABLE_NODE_LABEL = "Unavailable";
     public static final String OWNER_LABEL = "owner";
+    // a label value cannot hold an image name, so the tag of a pod pinned to a digest is kept in an annotation
+    public static final String DOCKER_IMAGE_ANNOTATION = "docker_image";
+    public static final String PIPELINE_CONTAINER_NAME = "pipeline";
 
     public static final String CP_CAP_DIND_NATIVE = "CP_CAP_DIND_NATIVE";
     public static final String CP_CAP_SYSTEMD_CONTAINER = "CP_CAP_SYSTEMD_CONTAINER";

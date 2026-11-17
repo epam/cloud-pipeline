@@ -20,21 +20,21 @@ _PY3_12  = sys.version_info >= (3, 12)
 # Same version for both Python 2 and 3
 _deps_shared = [
     'chardet==3.0.4',
-    'httplib2==0.18.1',
-    'idna==2.8',
     'lockfile==0.12.2',
     'oauth2client==4.1.3',
-    'oauthlib==3.1.0',
     'python-daemon==2.2.4',
     'python-dateutil==2.8.1',
     'pytz==2020.1',
-    'requests-oauthlib==1.3.0',
-    'rsa==4.0',
     'tzlocal==2.1',
-    'pywin32==300;platform_system == "Windows"',
 ]
 
 _deps_py2 = [
+    'httplib2==0.18.1',
+    'idna==2.8',
+    'oauthlib==3.1.0',
+    'requests-oauthlib==1.3.0',
+    'rsa==4.0',
+    'pywin32==300;platform_system == "Windows"',
     'six==1.15.0',
     'PyYAML==5.3.1',
     'backports-abc==0.5',
@@ -64,32 +64,39 @@ _deps_py2 = [
     'pyOpenSSL==20.0.1;platform_system == "Windows"',
 ]
 _deps_py3 = [
+    # The versions of these six with the known advisories fixed need Python 3: _deps_py2 keeps the older ones
+    'httplib2==0.32.1',
+    'idna==3.20',
+    'oauthlib==4.0.1',
+    'requests-oauthlib==2.0.0',
+    'rsa==4.9.1',
+    'pywin32==312;platform_system == "Windows"',
     'six==1.16.0',
     'PyYAML==6.0.3',
-    'certifi==2026.7.22',
+    'certifi==2026.10.23',
     'cryptography==50.0.1',
     'docutils==0.23',
     'luigi==3.8.1',
     'packaging==26.3',
-    'pyasn1==0.6.4',
+    'pyasn1==0.6.5',
     'pyasn1-modules==0.4.2',
     'pykube-ng==23.6.0',
     'pyOpenSSL==26.4.0',
     'requests==2.34.2',
-    'tornado==6.4.0',
-    'urllib3==2.7.0',
+    'tornado==6.6',
+    'urllib3==2.8.0',
     'pynacl==1.6.2',
     'paramiko==5.0.0',
     'psutil==7.2.2',
     'watchdog==6.0.0',
-    'PyJWT==2.13.0',
+    'PyJWT==2.15.1',
     'click==8.5.0',
 ]
 
 _install_requires = (
     _deps_shared
     + (_deps_py3 if _PY3_12 else _deps_py2)
-    + ['setuptools==68.0' if _PY3_12 else 'setuptools==44.1.1']
+    + ['setuptools==81.0.0' if _PY3_12 else 'setuptools==44.1.1']
 )
 
 setup(name='pipeline',

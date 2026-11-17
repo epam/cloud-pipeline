@@ -11,4 +11,4 @@ Test verifies the buttons shown on the WDL graph diagram for a new WDL pipeline.
 | 5 | Click **CREATE** button |  |
 | 6 | Click on the just-created pipeline |  |
 | 7 | Click on the pipeline version |  |
-| 8 | Click **GRAPH** tab | The WDL diagram appears, containing: <li> on the left side: **Save**, **Revert changes** buttons (disabled); **Layout**, **Fit to screen**, **Show links**, **Zoom in**, **Zoom out**, **Fullscreen** buttons (enabled) <li> on the right side: **PROPERTIES** button (enabled) |
+| 8 | Click **GRAPH** tab | The WDL diagram appears, containing: <li> on the left side: **Save**, **Revert changes** buttons (disabled); **Layout**, **Fit to screen**, **Show links**, **Zoom out**, **Zoom in**, **Fullscreen** buttons (enabled) <li> on the right side: **PROPERTIES** button (enabled) |

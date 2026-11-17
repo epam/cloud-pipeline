@@ -15,7 +15,7 @@ Test verifies that adding an unscanned tool version to the white list allows a n
 | 9 | Open the tool from step 8 (`shell`) |  |
 | 10 | Click **VERSIONS** tab |  |
 | 11 | Click **VIEW UNSCANNED VERSIONS** |  |
-| 12 | Click **Add to white list** button opposite the **latest** version | <li> **Add to white list** button opposite the **latest** version is not displayed <li> **Remove from white list** button opposite the **latest** version is displayed <li> the row of the **latest** version is colored green |
+| 12 | Click the **Configure access** dropdown button opposite the **latest** version, then select **Add to white list** in the appeared menu | <li> the dropdown button opposite the **latest** version now reads **White-listed** <li> the row of the **latest** version is colored green |
 | 13 | Logout |  |
 | 14 | Login as user |  |
 | 15 | Open **Tools** page |  |

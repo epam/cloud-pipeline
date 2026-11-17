@@ -19,7 +19,7 @@ Test verifies that running an unscanned tool version is denied when the `securit
 | 13 | Click **VERSIONS** tab |  |
 | 14 | Click **VIEW UNSCANNED VERSIONS** | **Run** buttons opposite the version names are disabled and have exclamation-mark icons |
 | 15 | Hover the mouse pointer over the **Run** button opposite the **latest** version | Tooltip with the text `The latest version shall be scanned for vulnerabilities <...>` appears |
-| 16 | Click the **Run** button opposite the **latest** version | Tool version page appears |
+| 16 | Click the **latest** version name in the appeared versions list | Tool version page appears |
 
 **After**:
 - Login as admin and restore the system preferences changed at steps 5 and 6 to their initial values

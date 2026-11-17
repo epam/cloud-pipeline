@@ -25,4 +25,4 @@ Test verifies
 | 13 | Navigate to 1st page of table | Columns order isn't changed |
 | 14 | Navigate to any other entity and return to the Sample metadata table | All columns are shown in default order |
 | 15 | Repeat steps 6-7, 11 | |
-| 16 | Click **Reset columns** button on the ***Show columns*** control | All columns are shown in default order |
+| 16 | Click **Reset Columns** button on the ***Show columns*** control | All columns are shown in default order |

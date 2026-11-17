@@ -228,7 +228,7 @@ export default class MiewPage extends React.Component {
         <div className={styles.miewTerminal} style={{display: this.state.terminalVisible ? 'block' : 'none'}}>
           <div className={styles.miewTerminalOverlay} />
           <div className={styles.miewTerminalComponent}>
-            <div ref={this.initializeTerminal} />
+            <div ref={this.initializeTerminal} style={{height: '100%'}} />
           </div>
         </div>
       </div>

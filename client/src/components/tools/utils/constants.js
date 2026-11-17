@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-// latest - the version is latest
+// versionLabel - 'latest' or 'default' for the version, which is used if a user does not choose one
+// ('default' - if it is a default version set for a tool), undefined for any other version
 // allowedToExecute - is admin or we're within grace period
 // (not 'allowedToExecute' flag received from server!)
-export const ScanStatusDescriptionsFn = (latest = false, allowedToExecute = false) => {
+export const ScanStatusDescriptionsFn = (versionLabel = undefined, allowedToExecute = false) => {
+  const label = versionLabel ? `${versionLabel} ` : '';
   let againstSecurityPolicy = allowedToExecute
-    ? `This Run is pulling the ${latest ? 'latest ' : ''}version which has inappropriate security status.`
-    : `This Run is pulling the ${latest ? 'latest ' : ''}version which unfortunately couldn't be run due to security status.`;
-  let notScanned = `The ${latest ? 'latest ' : ''}version shall be scanned for vulnerabilities.`;
-  let vulnerabilitiesNumberExceeds = `The ${latest ? 'latest ' : ''}version vulnerabilities exceed the security threshold.`;
-  let blackListed = `The ${latest ? 'latest ' : ''}version is on the black list.`;
+    ? `This Run is pulling the ${label}version which has inappropriate security status.`
+    : `This Run is pulling the ${label}version which unfortunately couldn't be run due to security status.`;
+  let notScanned = `The ${label}version shall be scanned for vulnerabilities.`;
+  let vulnerabilitiesNumberExceeds = `The ${label}version vulnerabilities exceed the security threshold.`;
+  let blackListed = `The ${label}version is on the black list.`;
   if (!allowedToExecute) {
-    const extra = latest ? 'an older one' : 'another one';
+    const extra = versionLabel === 'latest' ? 'an older one' : 'another one';
     againstSecurityPolicy += ` Try to find ${extra}.`;
     notScanned += ` You can try ${extra}.`;
     vulnerabilitiesNumberExceeds += ` You can try ${extra}.`;

@@ -64,6 +64,8 @@ public class PermissionGrantingStrategyImpl implements PermissionGrantingStrateg
     );
     private static final Set<String> PIPELINE_CLASSES = new HashSet<>(
             Arrays.asList(Pipeline.class.getName(), RunConfiguration.class.getName()));
+    // versioned storages are pipelines as well
+    private static final String PIPELINE_CLASS = Pipeline.class.getName();
 
     private static final Set<String> TOOL_CLASSES = new HashSet<>(
             Arrays.asList(Tool.class.getName(), ToolGroup.class.getName(), DockerRegistry.class.getName()));
@@ -129,7 +131,12 @@ public class PermissionGrantingStrategyImpl implements PermissionGrantingStrateg
             return true;
         }
 
-        if (isScopedReader(acl, sidsByType.get(SidType.ROLE)) && containsRead(permission)) {
+        if (isScopedReader(acl, sidsByType.get(SidType.ROLE)) && containsPermission(permission, AclPermission.READ)) {
+            return true;
+        }
+
+        if (isScopedExecutor(acl, sidsByType.get(SidType.ROLE))
+                && containsPermission(permission, AclPermission.EXECUTE)) {
             return true;
         }
 
@@ -229,13 +236,25 @@ public class PermissionGrantingStrategyImpl implements PermissionGrantingStrateg
     }
 
     private boolean isScopedReader(final Acl acl, final List<Sid> roleSids) {
-        final String objectType = Optional.ofNullable(acl).map(Acl::getObjectIdentity)
-                .map(ObjectIdentity::getType).orElse(null);
-        return STORAGE_CLASSES.contains(objectType) && hasRole(roleSids, DefaultRoles.ROLE_STORAGE_READER);
+        final String objectType = getObjectType(acl);
+        if (STORAGE_CLASSES.contains(objectType)) {
+            return hasRole(roleSids, DefaultRoles.ROLE_STORAGE_READER);
+        } else if (PIPELINE_CLASS.equals(objectType)) {
+            return hasRole(roleSids, DefaultRoles.ROLE_PIPELINE_READER);
+        }
+        return false;
     }
 
-    private static boolean containsRead(final List<Permission> permissions) {
-        return permissions.stream().anyMatch(p -> p.getMask() == AclPermission.READ.getMask());
+    private boolean isScopedExecutor(final Acl acl, final List<Sid> roleSids) {
+        return PIPELINE_CLASS.equals(getObjectType(acl)) && hasRole(roleSids, DefaultRoles.ROLE_PIPELINE_EXECUTOR);
+    }
+
+    private static String getObjectType(final Acl acl) {
+        return Optional.ofNullable(acl).map(Acl::getObjectIdentity).map(ObjectIdentity::getType).orElse(null);
+    }
+
+    private static boolean containsPermission(final List<Permission> permissions, final Permission permission) {
+        return permissions.stream().anyMatch(p -> p.getMask() == permission.getMask());
     }
 
     @Getter

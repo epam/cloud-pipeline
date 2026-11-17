@@ -6,7 +6,7 @@ Test verifies that the HISTORY tab's **View all versions history** shows runs ac
 | :---: | --- | --- |
 | 1 | Open library |  |
 | 2 | Click **+ Create v**, in the appeared list click **Pipeline** item |  |
-| 3 | Specify a valid pipeline name in the appeared window, click **Create** button |  |
+| 3 | Specify a valid pipeline name in the appeared window, click **CREATE** button |  |
 | 4 | Open the created pipeline |  |
 | 5 | Store a version name |  |
 | 6 | Click **RUN** button |  |

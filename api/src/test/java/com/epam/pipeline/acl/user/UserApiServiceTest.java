@@ -28,7 +28,9 @@ import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceCRUDService;
 import com.epam.pipeline.manager.quota.RunLimitsService;
 import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.UsersFileImportManager;
+import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
@@ -84,7 +86,59 @@ public class UserApiServiceTest extends AbstractAclTest {
     private RunLimitsService mockRunLimitsService;
 
     @Autowired
+    private AuthManager mockAuthManager;
+
+    @Autowired
     private PlatformUsageCreditsUserBalanceCRUDService mockPlatformUsageCreditsUserBalanceCRUDService;
+
+    /**
+     * The one hop where the renewal flag becomes a refusal. Without a test here, inverting the
+     * condition would flip the whole feature — every ordinary login refused a token and every
+     * token from the exchange free to renew — and nothing else would notice.
+     */
+    @Test
+    @WithMockUser
+    public void shouldIssueATokenForCurrentUserWhenTheTokenIsRenewable() {
+        doReturn(context(false)).when(mockAuthManager).getUserContext();
+        doReturn(token).when(mockAuthManager).issueTokenForCurrentUser(ID, true);
+
+        assertThat(userApiService.issueTokenForCurrentUser(ID)).isEqualTo(token);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldRefuseToIssueATokenForCurrentUserWhenTheTokenIsNonRenewable() {
+        doReturn(context(true)).when(mockAuthManager).getUserContext();
+
+        assertThrows(AccessDeniedException.class, () -> userApiService.issueTokenForCurrentUser(ID));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldRefuseToIssueANamedTokenForCurrentUserWhenTheTokenIsNonRenewable() {
+        doReturn(context(true)).when(mockAuthManager).getUserContext();
+
+        assertThrows(AccessDeniedException.class,
+            () -> userApiService.issueNamedJwtTokenForCurrentUser(ID, TEST_STRING));
+    }
+
+    /**
+     * An ordinary login carries no such context at all, and must not be refused.
+     */
+    @Test
+    @WithMockUser
+    public void shouldIssueATokenWhenThereIsNoContextToAsk() {
+        doReturn(null).when(mockAuthManager).getUserContext();
+        doReturn(token).when(mockAuthManager).issueTokenForCurrentUser(ID, true);
+
+        assertThat(userApiService.issueTokenForCurrentUser(ID)).isEqualTo(token);
+    }
+
+    private static UserContext context(final boolean nonRenewable) {
+        final UserContext context = new UserContext(ID, TEST_STRING);
+        context.setNonRenewable(nonRenewable);
+        return context;
+    }
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)

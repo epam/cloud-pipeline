@@ -98,7 +98,7 @@ class Event(object):
         self.type = type
         self.owner = owner
         self.status = status
-        str(self) = message
+        self.message = message
 
     def get_object_str(self, api_url):
         if self.type == RUN_TYPE:
@@ -143,7 +143,7 @@ class Notifier(object):
             event_str += EVENT_PATTERN.format(**{'object': object_str,
                                                  'owner': event.owner,
                                                  'status': event.status,
-                                                 'message': str(event)})
+                                                 'message': event.message})
 
         return EMAIL_TEMPLATE.format(**{'events': event_str,
                                         'deploy_name': self.deploy_name})

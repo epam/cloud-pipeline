@@ -90,11 +90,18 @@ class Tool:
         self.tool_id = 0
         self.disk = 0
         self.instanceType = ''
+        """
+         The version launched, if a tool's image is specified without a tag: if it is not set,
+         the 'latest' version is launched.
+        """
+        self.default_version = None
 
     def to_json(self):
         fields = self.__dict__
         if 'tool_id' in fields:
             fields.pop('tool_id', None)
+        if 'default_version' in fields:
+            fields.pop('default_version', None)
         return json.dumps(fields, sort_keys=True, indent=4)
 
 class DataStorageRule:
@@ -446,6 +453,8 @@ class PipelineAPI:
             tool.disk = payload['disk']
         if 'id' in payload:
             tool.tool_id = payload['id']
+        if 'defaultVersion' in payload:
+            tool.default_version = payload['defaultVersion']
         return tool
 
     def load_tool_versions(self, tool_id):

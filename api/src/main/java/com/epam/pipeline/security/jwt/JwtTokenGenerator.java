@@ -16,10 +16,12 @@
 
 package com.epam.pipeline.security.jwt;
 
+import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_AUTHORITIES_SCOPED;
+import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_EXTERNAL;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_GROUPS;
+import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_NON_RENEWABLE;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_ORG_UNIT_ID;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_ROLES;
-import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_EXTERNAL;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_USER_ID;
 
 import java.security.KeyFactory;
@@ -217,12 +219,21 @@ public class JwtTokenGenerator {
             tokenBuilder.withClaim(CLAIM_EXTERNAL, claims.isExternal());
         }
 
+        if (claims.isAuthoritiesScoped()) {
+            tokenBuilder.withClaim(CLAIM_AUTHORITIES_SCOPED, claims.isAuthoritiesScoped());
+        }
+
+        if (claims.isNonRenewable()) {
+            // written only when it withholds something, so an ordinary token carries no such claim
+            // and is renewable by its absence
+            tokenBuilder.withClaim(CLAIM_NON_RENEWABLE, true);
+        }
+
         return tokenBuilder;
     }
 
     private Date toDate(LocalDateTime dateTime) {
         return Date.from(dateTime.atZone(ZoneId.systemDefault()).toInstant());
     }
-
 
 }

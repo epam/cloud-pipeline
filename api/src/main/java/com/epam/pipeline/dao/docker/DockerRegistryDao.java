@@ -155,6 +155,7 @@ public class DockerRegistryDao extends NamedParameterJdbcDaoSupport {
         TOOL_LABELS,
         TOOL_ENDPOINTS,
         TOOL_DEFAULT_COMMAND,
+        TOOL_DEFAULT_VERSION,
         TOOL_OWNER,
         TOOL_ICON_ID,
         TOOL_ALLOW_SENSITIVE,
@@ -287,6 +288,7 @@ public class DockerRegistryDao extends NamedParameterJdbcDaoSupport {
             }
 
             tool.setDefaultCommand(rs.getString(TOOL_DEFAULT_COMMAND.name()));
+            tool.setDefaultVersion(rs.getString(TOOL_DEFAULT_VERSION.name()));
         }
 
         private static void initToolOsVersion(final ResultSet rs, final Tool tool) throws SQLException {

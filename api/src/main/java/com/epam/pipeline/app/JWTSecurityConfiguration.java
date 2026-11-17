@@ -161,7 +161,10 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 "/error",
                 "/error/**",
                 "/restapi/access/token",
-                "/restapi/access/code");
+                "/restapi/access/code",
+                // the token exchange authenticates the caller by the identity provider's token it
+                // carries, so it cannot require a platform token of its own
+                "/restapi/oauth/token");
         return ListUtils.union(excludePaths, ListUtils.emptyIfNull(excludeScripts)).toArray(new String[0]);
     }
 

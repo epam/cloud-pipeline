@@ -55,12 +55,17 @@ public class GrantPermissionManagerTest extends AbstractAclTest {
     private static final String GROUP_2_AUTHORITY = "GROUP_2";
     private static final String ROLE_USER = "ROLE_USER";
     private static final String ROLE_STORAGE_READER = "ROLE_STORAGE_READER";
+    private static final String ROLE_PIPELINE_READER = "ROLE_PIPELINE_READER";
+    private static final String ROLE_PIPELINE_EXECUTOR = "ROLE_PIPELINE_EXECUTOR";
     private static final int SIMPLE_MASK_WRITE = new AclPermission(AclPermission.WRITE.getMask()).getSimpleMask();
     private static final int SIMPLE_MASK_READ = new AclPermission(AclPermission.READ.getMask()).getSimpleMask();
+    private static final int SIMPLE_MASK_EXECUTE =
+            new AclPermission(AclPermission.EXECUTE.getMask()).getSimpleMask();
 
     private final Folder folder = getFolder(ID, null, ANOTHER_SIMPLE_USER);
     private final Folder anotherFolder = getFolder(ID_2, ID, ANOTHER_SIMPLE_USER);
     private final S3bucketDataStorage s3bucket = getS3bucketDataStorage(ID, ANOTHER_SIMPLE_USER);
+    private final Pipeline pipeline = getPipeline(ID, ANOTHER_SIMPLE_USER, null);
 
     @Autowired
     private GrantPermissionManager permissionManager;
@@ -272,6 +277,38 @@ public class GrantPermissionManagerTest extends AbstractAclTest {
 
         int permissionsMask = permissionManager.getPermissionsMask(s3bucket, false, true);
         assertEquals(AclPermission.READ.getMask() | AclPermission.WRITE.getMask(), permissionsMask);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, authorities = {ROLE_PIPELINE_READER, ROLE_PIPELINE_EXECUTOR})
+    public void getPermissionsMaskReturnsExtendedReadAndExecuteMaskForPipelineRolesWhenDenied() {
+        initAclEntity(pipeline, Collections.singletonList(new UserPermission(SIMPLE_USER,
+                AclPermission.NO_READ.getMask() | AclPermission.NO_WRITE.getMask()
+                        | AclPermission.NO_EXECUTE.getMask())));
+        mockAuthUser(SIMPLE_USER);
+
+        assertEquals(AclPermission.READ.getMask() | AclPermission.NO_WRITE.getMask()
+                | AclPermission.EXECUTE.getMask(), (int) permissionManager.getPermissionsMask(pipeline, false, true));
+        assertEquals(SIMPLE_MASK_READ | SIMPLE_MASK_EXECUTE,
+                (int) permissionManager.getPermissionsMask(pipeline, true, true));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, authorities = ROLE_PIPELINE_READER)
+    public void getPermissionsMaskReturnsOnlyReadMaskForPipelineReader() {
+        initAclEntity(pipeline);
+        mockAuthUser(SIMPLE_USER);
+
+        assertEquals(SIMPLE_MASK_READ, (int) permissionManager.getPermissionsMask(pipeline, true, true));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, authorities = ROLE_PIPELINE_EXECUTOR)
+    public void getPermissionsMaskReturnsOnlyExecuteMaskForPipelineExecutor() {
+        initAclEntity(pipeline);
+        mockAuthUser(SIMPLE_USER);
+
+        assertEquals(SIMPLE_MASK_EXECUTE, (int) permissionManager.getPermissionsMask(pipeline, true, true));
     }
 
     @Test

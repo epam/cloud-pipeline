@@ -131,7 +131,7 @@ public class PipelineExecutor {
                               final List<String> endpoints, final String pipelineId,
                               final RunContainerSpec podAssignPolicy, final String secretName, final String clusterId) {
         launchRootPod(command, run, envVars, endpoints, pipelineId, podAssignPolicy,
-                secretName, clusterId, ImagePullPolicy.ALWAYS, Collections.emptyMap(), null, null);
+                secretName, clusterId, ImagePullPolicy.ALWAYS, Collections.emptyMap(), null, null, true);
     }
 
     public void launchRootPod(final String command, final PipelineRun run, final List<EnvVar> envVars,
@@ -139,7 +139,8 @@ public class PipelineExecutor {
                               final RunContainerSpec podAssignPolicy, final String secretName, final String clusterId,
                               final ImagePullPolicy imagePullPolicy, Map<String, String> kubeLabels,
                               final String kubeServiceAccount,
-                              final OSSpecificLaunchCommandTemplate commandTemplate) {
+                              final OSSpecificLaunchCommandTemplate commandTemplate,
+                              final boolean pinImageDigest) {
         try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
             final Map<String, String> labels = new HashMap<>();
             labels.put("spawned_by", "pipeline-api");
@@ -176,12 +177,14 @@ public class PipelineExecutor {
             labels.putAll(getServiceLabels(endpoints));
 
             final OkHttpClient httpClient = HttpClientUtils.createHttpClient(client.getConfiguration());
-            final ObjectMeta metadata = getObjectMeta(run, labels);
+            final Optional<String> pinnedDockerImage = PodSpecMapperHelper.buildPinnedDockerImage(run,
+                    pinImageDigest);
+            final ObjectMeta metadata = getObjectMeta(run, labels, pinnedDockerImage.isPresent());
             final String verifiedKubeServiceAccount = fetchVerifiedKubeServiceAccount(client, kubeServiceAccount);
             boolean assignContainerRequests = podAssignPolicy.isMatch(KubernetesConstants.RUN_ID_LABEL, runIdLabel) ||
                     !podAssignPolicy.isSkipContainerRequests();
             final PodSpec spec = getPodSpec(run, envVars, secretName, nodeSelector, podAssignPolicy.loadTolerances(),
-                    run.getActualDockerImage(), command, imagePullPolicy,
+                    pinnedDockerImage.orElse(run.getActualDockerImage()), command, imagePullPolicy,
                     assignContainerRequests,
                     verifiedKubeServiceAccount, commandTemplate, podAssignPolicy);
             final Pod pod = new Pod("v1", "Pod", metadata, spec, null);
@@ -370,7 +373,7 @@ public class PipelineExecutor {
                                    final List<DockerMount> commonMounts,
                                    final RunContainerSpec policy) {
         Container container = new Container();
-        container.setName("pipeline");
+        container.setName(KubernetesConstants.PIPELINE_CONTAINER_NAME);
         container.setEnv(envVars);
         container.setImage(dockerImage);
         container.setSecurityContext(buildSecurityContext(policy));
@@ -544,10 +547,15 @@ public class PipelineExecutor {
         return mount;
     }
 
-    private ObjectMeta getObjectMeta(PipelineRun run, Map<String, String> labels) {
+    private ObjectMeta getObjectMeta(final PipelineRun run, final Map<String, String> labels,
+                                     final boolean pinnedDockerImage) {
         ObjectMeta metadata = new ObjectMeta();
         metadata.setName(run.getPodId());
         metadata.setLabels(labels);
+        if (pinnedDockerImage) {
+            metadata.setAnnotations(Collections.singletonMap(KubernetesConstants.DOCKER_IMAGE_ANNOTATION,
+                    run.getActualDockerImage()));
+        }
         return metadata;
     }
 

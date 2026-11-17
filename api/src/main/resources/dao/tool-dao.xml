@@ -93,6 +93,16 @@
                 ]]>
             </value>
         </property>
+        <property name="updateDefaultVersionQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.tool SET
+                        default_version = :DEFAULT_VERSION
+                    WHERE
+                        id = :ID
+                ]]>
+            </value>
+        </property>
         <property name="loadAllToolsQuery">
             <value>
                 <![CDATA[
@@ -107,6 +117,7 @@
                         t.registry_id,
                         t.tool_group_id,
                         COALESCE(tl.default_command, t.default_command) AS default_command,
+                        COALESCE(tl.default_version, t.default_version) AS default_version,
                         COALESCE(tl.labels, t.labels) AS labels,
                         COALESCE(tl.endpoints, t.endpoints) AS endpoints,
                         t.owner,
@@ -122,8 +133,8 @@
                         pipeline.tool t
                     INNER JOIN pipeline.docker_registry dr ON (t.registry_id = dr.id)
                     LEFT JOIN pipeline.tool tl ON (t.link = tl.id)
-                    LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = 'latest')
-                    LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = 'latest')
+                    LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = COALESCE(t.default_version, 'latest'))
+                    LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = COALESCE(tl.default_version, 'latest'))
                     WHERE
                         (:REGISTRY_ID IS NULL OR t.registry_id = :REGISTRY_ID)
                     AND
@@ -147,6 +158,7 @@
                         t.registry_id,
                         t.tool_group_id,
                         COALESCE(tl.default_command, t.default_command) AS default_command,
+                        COALESCE(tl.default_version, t.default_version) AS default_version,
                         COALESCE(tl.labels, t.labels) AS labels,
                         COALESCE(tl.endpoints, t.endpoints) AS endpoints,
                         t.owner,
@@ -162,8 +174,8 @@
                         pipeline.tool t
                     INNER JOIN pipeline.docker_registry dr ON (t.registry_id = dr.id)
                     LEFT JOIN pipeline.tool tl ON (t.link = tl.id)
-                    LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = 'latest')
-                    LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = 'latest')
+                    LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = COALESCE(t.default_version, 'latest'))
+                    LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = COALESCE(tl.default_version, 'latest'))
                     WHERE t.id = ?
                 ]]>
             </value>
@@ -182,6 +194,7 @@
                         t.registry_id,
                         t.tool_group_id,
                         COALESCE(tl.default_command, t.default_command) AS default_command,
+                        COALESCE(tl.default_version, t.default_version) AS default_version,
                         COALESCE(tl.labels, t.labels) AS labels,
                         COALESCE(tl.endpoints, t.endpoints) AS endpoints,
                         t.owner,
@@ -197,8 +210,8 @@
                         pipeline.tool t
                     INNER JOIN pipeline.docker_registry dr ON (t.registry_id = dr.id)
                     LEFT JOIN pipeline.tool tl ON (t.link = tl.id)
-                    LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = 'latest')
-                    LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = 'latest')
+                    LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = COALESCE(t.default_version, 'latest'))
+                    LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = COALESCE(tl.default_version, 'latest'))
                     WHERE
                         t.image IN (:list)
                         AND
@@ -227,6 +240,7 @@
                         t.registry_id,
                         t.tool_group_id,
                         COALESCE(tl.default_command, t.default_command) AS default_command,
+                        COALESCE(tl.default_version, t.default_version) AS default_version,
                         COALESCE(tl.labels, t.labels) AS labels,
                         COALESCE(tl.endpoints, t.endpoints) AS endpoints,
                         t.owner,
@@ -242,8 +256,8 @@
                         pipeline.tool t
                     INNER JOIN pipeline.docker_registry dr ON (t.registry_id = dr.id)
                     LEFT JOIN pipeline.tool tl ON (t.link = tl.id)
-                    LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = 'latest')
-                    LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = 'latest')
+                    LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = COALESCE(t.default_version, 'latest'))
+                    LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = COALESCE(tl.default_version, 'latest'))
                     WHERE
                         t.image = :IMAGE
                         AND
@@ -265,6 +279,7 @@
                         t.registry_id,
                         t.tool_group_id,
                         COALESCE(tl.default_command, t.default_command) AS default_command,
+                        COALESCE(tl.default_version, t.default_version) AS default_version,
                         COALESCE(tl.labels, t.labels) AS labels,
                         COALESCE(tl.endpoints, t.endpoints) AS endpoints,
                         t.owner,
@@ -280,8 +295,8 @@
                         pipeline.tool t
                     INNER JOIN pipeline.docker_registry dr ON (t.registry_id = dr.id)
                     LEFT JOIN pipeline.tool tl ON (t.link = tl.id)
-                    LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = 'latest')
-                    LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = 'latest')
+                    LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = COALESCE(t.default_version, 'latest'))
+                    LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = COALESCE(tl.default_version, 'latest'))
                     WHERE
                         t.tool_group_id = ?
                 ]]>
@@ -301,6 +316,7 @@
                         t.registry_id,
                         t.tool_group_id,
                         COALESCE(tl.default_command, t.default_command) AS default_command,
+                        COALESCE(tl.default_version, t.default_version) AS default_version,
                         COALESCE(tl.labels, t.labels) AS labels,
                         COALESCE(tl.endpoints, t.endpoints) AS endpoints,
                         t.owner,
@@ -317,8 +333,8 @@
                         pipeline.tool t
                     INNER JOIN pipeline.docker_registry dr ON (t.registry_id = dr.id)
                     LEFT JOIN pipeline.tool tl ON (t.link = tl.id)
-                    LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = 'latest')
-                    LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = 'latest')
+                    LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = COALESCE(t.default_version, 'latest'))
+                    LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = COALESCE(tl.default_version, 'latest'))
 					LEFT JOIN issue AS i ON i.entity_id = COALESCE(tl.id, t.id) AND i.entity_class = 'TOOL'
                     WHERE
                         t.tool_group_id = ?
@@ -340,6 +356,7 @@
                         t.registry_id,
                         t.tool_group_id,
                         COALESCE(tl.default_command, t.default_command) AS default_command,
+                        COALESCE(tl.default_version, t.default_version) AS default_version,
                         COALESCE(tl.labels, t.labels) AS labels,
                         COALESCE(tl.endpoints, t.endpoints) AS endpoints,
                         t.owner,
@@ -355,8 +372,8 @@
                         pipeline.tool t
                     INNER JOIN pipeline.docker_registry dr ON (t.registry_id = dr.id)
                     LEFT JOIN pipeline.tool tl ON (t.link = tl.id)
-                    LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = 'latest')
-                    LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = 'latest')
+                    LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = COALESCE(t.default_version, 'latest'))
+                    LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = COALESCE(tl.default_version, 'latest'))
                     WHERE
                         t.image = :IMAGE AND dr.path != :REGISTRY
                 ]]>
@@ -376,6 +393,7 @@
                         t.registry_id,
                         t.tool_group_id,
                         COALESCE(tl.default_command, t.default_command) AS default_command,
+                        COALESCE(tl.default_version, t.default_version) AS default_version,
                         COALESCE(tl.labels, t.labels) AS labels,
                         COALESCE(tl.endpoints, t.endpoints) AS endpoints,
                         t.owner,
@@ -391,8 +409,8 @@
                         pipeline.tool t
                     INNER JOIN pipeline.docker_registry dr ON (t.registry_id = dr.id)
                     LEFT JOIN pipeline.tool tl ON (t.link = tl.id)
-                    LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = 'latest')
-                    LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = 'latest')
+                    LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = COALESCE(t.default_version, 'latest'))
+                    LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = COALESCE(tl.default_version, 'latest'))
                     WHERE
                         t.tool_group_id = :TOOL_GROUP_ID
                         AND t.image = :IMAGE

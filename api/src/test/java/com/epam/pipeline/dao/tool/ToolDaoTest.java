@@ -19,6 +19,7 @@ package com.epam.pipeline.dao.tool;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.IssueVO;
 import com.epam.pipeline.dao.docker.DockerRegistryDao;
+import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
@@ -44,6 +45,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -90,6 +93,12 @@ public class ToolDaoTest extends AbstractJdbcTest {
     private static final String INSTANCE_TYPE = "Instance type";
     private static final Long NO_LINK = null;
     private static final byte[] BYTES = getRandomBytes();
+    private static final String LATEST_VERSION = "latest";
+    private static final String DEFAULT_VERSION = "1.0";
+    private static final String LINUX = "linux";
+    private static final String WINDOWS = "windows";
+    private static final String DIGEST_PREFIX = "sha256:";
+    private static final Long SIZE = 1L;
 
     private static byte[] getRandomBytes() {
         final byte[] bytes = new byte[10];
@@ -105,6 +114,8 @@ public class ToolDaoTest extends AbstractJdbcTest {
 
     @Autowired
     private ToolDao toolDao;
+    @Autowired
+    private ToolVersionDao toolVersionDao;
     @Autowired
     private DockerRegistryDao registryDao;
     @Autowired
@@ -402,6 +413,81 @@ public class ToolDaoTest extends AbstractJdbcTest {
         tool.setAllowCommit(false);
         toolDao.updateTool(tool);
         Assert.assertFalse(toolDao.loadTool(toolId).isAllowCommit());
+    }
+
+    @Test
+    @Transactional
+    public void testToolDefaultVersionCanBeLoadedWithAnyAvailableMethod() {
+        final Tool tool = createTool();
+
+        toolDao.updateDefaultVersion(tool.getId(), DEFAULT_VERSION);
+
+        loadToolWithAllTheAvailableMethods(tool.getId(), firstRegistry, library1, TEST_SOURCE_IMAGE)
+                .forEach(loadedTool -> assertThat(loadedTool.getDefaultVersion(), is(DEFAULT_VERSION)));
+        toolDao.loadAllByRegistryAndImageIn(firstRegistry.getId(), Collections.singleton(TEST_SOURCE_IMAGE))
+                .forEach(loadedTool -> assertThat(loadedTool.getDefaultVersion(), is(DEFAULT_VERSION)));
+    }
+
+    @Test
+    @Transactional
+    public void testSymlinkHasDefaultVersionOfItsTool() {
+        final Tool tool = createTool();
+        final Tool symlink = createSymlink(tool);
+
+        toolDao.updateDefaultVersion(tool.getId(), DEFAULT_VERSION);
+
+        loadToolWithAllTheAvailableMethods(symlink.getId(), secondRegistry, userGroup, TEST_SYMLINK_IMAGE)
+                .forEach(loadedSymlink -> assertThat(loadedSymlink.getDefaultVersion(), is(DEFAULT_VERSION)));
+    }
+
+    @Test
+    @Transactional
+    public void testToolDefaultVersionCanBeRemoved() {
+        final Tool tool = createTool();
+        toolDao.updateDefaultVersion(tool.getId(), DEFAULT_VERSION);
+
+        toolDao.updateDefaultVersion(tool.getId(), null);
+
+        assertNull(toolDao.loadTool(tool.getId()).getDefaultVersion());
+    }
+
+    @Test
+    @Transactional
+    public void testUpdateToolDoesNotChangeDefaultVersion() {
+        final Tool tool = createTool();
+        toolDao.updateDefaultVersion(tool.getId(), DEFAULT_VERSION);
+
+        tool.setDefaultVersion(null);
+        toolDao.updateTool(tool);
+
+        assertThat(toolDao.loadTool(tool.getId()).getDefaultVersion(), is(DEFAULT_VERSION));
+    }
+
+    @Test
+    @Transactional
+    public void testToolPlatformIsTakenFromDefaultVersion() {
+        final Tool tool = createTool();
+        final Tool symlink = createSymlink(tool);
+        createToolVersion(tool, LATEST_VERSION, LINUX);
+        createToolVersion(tool, DEFAULT_VERSION, WINDOWS);
+        assertThat(toolDao.loadTool(tool.getId()).getPlatform(), is(LINUX));
+        assertThat(toolDao.loadTool(symlink.getId()).getPlatform(), is(LINUX));
+
+        toolDao.updateDefaultVersion(tool.getId(), DEFAULT_VERSION);
+
+        assertThat(toolDao.loadTool(tool.getId()).getPlatform(), is(WINDOWS));
+        assertThat(toolDao.loadTool(symlink.getId()).getPlatform(), is(WINDOWS));
+    }
+
+    private void createToolVersion(final Tool tool, final String version, final String platform) {
+        toolVersionDao.createToolVersion(ToolVersion.builder()
+                .toolId(tool.getId())
+                .version(version)
+                .digest(DIGEST_PREFIX + version)
+                .size(SIZE)
+                .modificationDate(new Date())
+                .platform(platform)
+                .build());
     }
 
     private Tool createTool() {

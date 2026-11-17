@@ -34,6 +34,8 @@ public class JwtTokenClaims {
     public static final String CLAIM_ROLES = "roles";
     public static final String CLAIM_GROUPS = "groups";
     public static final String CLAIM_EXTERNAL = "external";
+    public static final String CLAIM_AUTHORITIES_SCOPED = "authorities_scoped";
+    public static final String CLAIM_NON_RENEWABLE = "non_renewable";
 
     @JsonProperty("jti")
     private String jwtTokenId;
@@ -52,4 +54,29 @@ public class JwtTokenClaims {
     private List<String> roles;
     private List<String> groups;
     private boolean external;
+
+    /**
+     * Marks a token whose roles were deliberately scoped down when it was issued: the roles it
+     * carries are the whole of what its holder may do, and must not be replaced by whatever the
+     * user happens to hold in the database. Groups are never narrowed, and are refreshed from the
+     * stored user like any other token's.
+     * <p>
+     * Without it, a deployment that turns on {@code jwt.validate.token.user} would reload the
+     * authorities on every request and hand back exactly the rights the token was issued to
+     * withhold.
+     */
+    private boolean authoritiesScoped;
+
+    /**
+     * Whether this token may <em>not</em> be renewed — traded for a fresh platform token through
+     * the platform's own token endpoints.
+     * <p>
+     * Named and held as the negative so that its absence means renewable. Every token the platform
+     * has ever issued carries no such claim and has to keep working, and a token written before
+     * this claim existed has to read back as permitted rather than refused. A token that does
+     * carry it cannot mint a second one, which is how a token's life is kept tied to something
+     * outside the platform: a token from the exchange lives no longer than the identity provider's
+     * token it came from, and renewing it would break that tie.
+     */
+    private boolean nonRenewable;
 }

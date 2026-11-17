@@ -134,6 +134,12 @@ jobs:
             base_image: gitlab/gitlab-ce:17.4.1-ce.0
             tag: git-17-$DOCKERS_VERSION
 
+          - service: cp-git-19
+            context: cp-git
+            dockerfile: cp-git/Dockerfile.19.5
+            base_image: gitlab/gitlab-ce:19.5.3-ce.0
+            tag: git-19-$DOCKERS_VERSION
+
           - service: cp-notifier
             context: cp-notifier
             needs_dist_url: true

@@ -18,6 +18,7 @@ import AWS from 'aws-sdk/index';
 import Credentials from './credentials';
 import DataStorageTagsUpdate from '../dataStorage/tags/DataStorageTagsUpdate';
 import fetchTempCredentials from './fetch-temp-credentials';
+import validateRegion from './validate-region';
 import displaySize from '../../utils/displaySize';
 import auditStorageAccessManager from '../../utils/audit-storage-access';
 import preferences from '../preferences/PreferencesLoad';
@@ -159,7 +160,7 @@ class S3Storage {
       }
       if (this._credentials) {
         AWS.config.update({
-          region: payload.region || this._storage.region,
+          region: validateRegion(payload.region || this._storage.region),
           credentials: this._credentials
         });
       }

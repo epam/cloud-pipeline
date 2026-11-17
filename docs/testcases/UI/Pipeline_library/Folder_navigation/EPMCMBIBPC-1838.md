@@ -10,7 +10,7 @@ Test verifies that a description and custom attributes set on a pipeline are sho
 | 4 | Enter a string into the **Pipeline description** field |  |
 | 5 | Click the **SAVE** button |  |
 | 6 | Click the **display-attributes** button |  |
-| 7 | Click **Show attributes** |  |
+| 7 | Click **Attributes** |  |
 | 8 | Click the **+ Add** button |  |
 | 9 | Enter values into the **Key** and **Value** fields |  |
 | 10 | Click the **Add** button |  |

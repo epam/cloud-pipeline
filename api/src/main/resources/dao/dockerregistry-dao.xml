@@ -93,6 +93,7 @@
                       COALESCE(tl.cpu, t.cpu) AS tool_cpu,
                       COALESCE(tl.ram, t.ram) AS tool_ram,
                       COALESCE(tl.default_command, t.default_command) AS tool_default_command,
+                      COALESCE(tl.default_version, t.default_version) AS tool_default_version,
                       COALESCE(tl.labels, t.labels) AS tool_labels,
                       COALESCE(tl.endpoints, t.endpoints) AS tool_endpoints,
                       NULL AS tool_description,
@@ -107,8 +108,8 @@
                   LEFT JOIN pipeline.tool_group g ON g.registry_id = dr.id
                   LEFT JOIN pipeline.tool t ON t.tool_group_id = g.id
                   LEFT JOIN pipeline.tool tl ON t.link = tl.id
-                  LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = 'latest')
-                  LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = 'latest')
+                  LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = COALESCE(t.default_version, 'latest'))
+                  LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = COALESCE(tl.default_version, 'latest'))
                   WHERE
                       dr.id = ?
                 ]]>
@@ -139,6 +140,7 @@
                       COALESCE(tl.cpu, t.cpu) AS tool_cpu,
                       COALESCE(tl.ram, t.ram) AS tool_ram,
                       COALESCE(tl.default_command, t.default_command) AS tool_default_command,
+                      COALESCE(tl.default_version, t.default_version) AS tool_default_version,
                       COALESCE(tl.labels, t.labels) AS tool_labels,
                       COALESCE(tl.endpoints, t.endpoints) AS tool_endpoints,
                       NULL AS tool_description,
@@ -155,9 +157,9 @@
                   LEFT JOIN pipeline.tool_group g ON g.registry_id = dr.id
                   LEFT JOIN pipeline.tool t ON t.tool_group_id = g.id
                   LEFT JOIN pipeline.tool tl ON t.link = tl.id
-                  LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = 'latest')
-                  LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = 'latest')
-                  LEFT JOIN pipeline.tool_version_scan tvs ON (t.id = tvs.tool_id AND tvs.version = 'latest')
+                  LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = COALESCE(t.default_version, 'latest'))
+                  LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = COALESCE(tl.default_version, 'latest'))
+                  LEFT JOIN pipeline.tool_version_scan tvs ON (t.id = tvs.tool_id AND tvs.version = COALESCE(t.default_version, 'latest'))
                   ORDER BY
                       dr.id
                 ]]>
@@ -185,6 +187,7 @@
                         COALESCE(tl.cpu, t.cpu) AS tool_cpu,
                         COALESCE(tl.ram, t.ram) AS tool_ram,
                         COALESCE(tl.default_command, t.default_command) AS tool_default_command,
+                        COALESCE(tl.default_version, t.default_version) AS tool_default_version,
                         COALESCE(tl.labels, t.labels) AS tool_labels,
                         COALESCE(tl.endpoints, t.endpoints) AS tool_endpoints,
                         COALESCE(tl.description, t.description) AS tool_description,
@@ -197,8 +200,8 @@
                         pipeline.docker_registry dr
                         LEFT JOIN pipeline.tool t ON t.registry_id = dr.id
                         LEFT JOIN pipeline.tool tl ON t.link = tl.id
-                        LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = 'latest')
-                        LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = 'latest')
+                        LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = COALESCE(t.default_version, 'latest'))
+                        LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = COALESCE(tl.default_version, 'latest'))
                     ORDER BY
                         dr.id
                 ]]>
@@ -233,6 +236,7 @@
                         COALESCE(tl.cpu, t.cpu) AS tool_cpu,
                         COALESCE(tl.ram, t.ram) AS tool_ram,
                         COALESCE(tl.default_command, t.default_command) AS tool_default_command,
+                        COALESCE(tl.default_version, t.default_version) AS tool_default_version,
                         COALESCE(tl.labels, t.labels) AS tool_labels,
                         COALESCE(tl.endpoints, t.endpoints) AS tool_endpoints,
                         COALESCE(tl.description, t.description) AS tool_description,
@@ -245,8 +249,8 @@
                         pipeline.docker_registry dr
                         LEFT JOIN pipeline.tool t ON t.registry_id = dr.id
                         LEFT JOIN pipeline.tool tl ON t.link = tl.id
-                        LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = 'latest')
-                        LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = 'latest')
+                        LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = COALESCE(t.default_version, 'latest'))
+                        LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = COALESCE(tl.default_version, 'latest'))
                     WHERE
                         dr.id = ?
                 ]]>
@@ -274,6 +278,7 @@
                         COALESCE(tl.cpu, t.cpu) AS tool_cpu,
                         COALESCE(tl.ram, t.ram) AS tool_ram,
                         COALESCE(tl.default_command, t.default_command) AS tool_default_command,
+                        COALESCE(tl.default_version, t.default_version) AS tool_default_version,
                         COALESCE(tl.labels, t.labels) AS tool_labels,
                         COALESCE(tl.endpoints, t.endpoints) AS tool_endpoints,
                         COALESCE(tl.description, t.description) AS tool_description,
@@ -286,8 +291,8 @@
                         pipeline.docker_registry dr
                         LEFT JOIN pipeline.tool t ON t.registry_id = dr.id
                         LEFT JOIN pipeline.tool tl ON t.link = tl.id
-                        LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = 'latest')
-                        LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = 'latest')
+                        LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = COALESCE(t.default_version, 'latest'))
+                        LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = COALESCE(tl.default_version, 'latest'))
                     WHERE
                         dr.path = ?
                 ]]>
@@ -315,6 +320,7 @@
                         COALESCE(tl.cpu, t.cpu) AS tool_cpu,
                         COALESCE(tl.ram, t.ram) AS tool_ram,
                         COALESCE(tl.default_command, t.default_command) AS tool_default_command,
+                        COALESCE(tl.default_version, t.default_version) AS tool_default_version,
                         COALESCE(tl.labels, t.labels) AS tool_labels,
                         COALESCE(tl.endpoints, t.endpoints) AS tool_endpoints,
                         COALESCE(tl.description, t.description) AS tool_description,
@@ -327,8 +333,8 @@
                         pipeline.docker_registry dr
                         LEFT JOIN pipeline.tool t ON t.registry_id = dr.id
                         LEFT JOIN pipeline.tool tl ON t.link = tl.id
-                        LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = 'latest')
-                        LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = 'latest')
+                        LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = COALESCE(t.default_version, 'latest'))
+                        LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = COALESCE(tl.default_version, 'latest'))
                     WHERE
                         dr.external_url = ?
                 ]]>
@@ -359,6 +365,7 @@
                       COALESCE(tl.cpu, t.cpu) AS tool_cpu,
                       COALESCE(tl.ram, t.ram) AS tool_ram,
                       COALESCE(tl.default_command, t.default_command) AS tool_default_command,
+                      COALESCE(tl.default_version, t.default_version) AS tool_default_version,
                       COALESCE(tl.labels, t.labels) AS tool_labels,
                       COALESCE(tl.endpoints, t.endpoints) AS tool_endpoints,
                       NULL AS tool_description,
@@ -373,8 +380,8 @@
                   LEFT JOIN pipeline.tool_group g ON g.registry_id = dr.id
                   LEFT JOIN pipeline.tool t ON t.tool_group_id = g.id
                   LEFT JOIN pipeline.tool tl ON t.link = tl.id
-                  LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = 'latest')
-                  LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = 'latest')
+                  LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = COALESCE(t.default_version, 'latest'))
+                  LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = COALESCE(tl.default_version, 'latest'))
                   WHERE
                       dr.ca_cert NOTNULL AND length(dr.ca_cert) > 0
                 ]]>
@@ -402,6 +409,7 @@
                         COALESCE(tl.cpu, t.cpu) AS tool_cpu,
                         COALESCE(tl.ram, t.ram) AS tool_ram,
                         COALESCE(tl.default_command, t.default_command) AS tool_default_command,
+                        COALESCE(tl.default_version, t.default_version) AS tool_default_version,
                         COALESCE(tl.labels, t.labels) AS tool_labels,
                         COALESCE(tl.endpoints, t.endpoints) AS tool_endpoints,
                         COALESCE(tl.description, t.description) AS tool_description,
@@ -414,8 +422,8 @@
                         pipeline.docker_registry dr
                         LEFT JOIN pipeline.tool t ON t.registry_id = dr.id
                         LEFT JOIN pipeline.tool tl ON t.link = tl.id
-                        LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = 'latest')
-                        LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = 'latest')
+                        LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = COALESCE(t.default_version, 'latest'))
+                        LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = COALESCE(tl.default_version, 'latest'))
                     WHERE
                         dr.security_scan_enabled
                     ORDER BY

@@ -17,6 +17,7 @@
 # test_syncgit` should both pass. This is the runner gap named by issue #4589's Phase 3 - there
 # was no test in this package before.
 
+import json
 import os
 import sys
 import unittest
@@ -172,6 +173,39 @@ class SyncgitFlowTest(unittest.TestCase):
             servers = list(server.get_distinct_git_servers())
             self.assertEqual(len(servers), 1)
             self.assertTrue(servers[0].initialized)
+
+    def test_generated_ssh_keys_go_to_gitlab_and_to_the_metadata_as_text(self):
+        # GitLab gets the public key in a JSON request body, the platform metadata gets both keys in one: under
+        # Python 3, the bytes that cryptography returns cannot be written there
+        pipeline_server = mock.MagicMock()
+        pipeline_server.get_user_keys.return_value = (None, None)
+
+        with mock.patch('internal.synchronization.git_server.Preference.list', return_value=self.preferences), \
+             mock.patch.object(GitLab, 'list_users', return_value=[self.git_user]), \
+             mock.patch.object(GitLab, 'list_groups', return_value=[]), \
+             mock.patch.object(GitLab, 'get_user_ssh_keys', return_value=[]), \
+             mock.patch.object(GitLab, 'add_user_ssh_key') as add_user_ssh_key:
+            git_server = GitServer('https://git.example.com', pipeline_server)
+            git_server.initialize()
+            git_server.synchronize_ssh_keys(self.user, self.git_user)
+
+        _, _, public_key = add_user_ssh_key.call_args[0]
+        _, private_key, metadata_public_key = pipeline_server.update_user_keys.call_args[0]
+        self.assertEqual(public_key, metadata_public_key)
+        json.dumps({'title': 'key', 'key': public_key})
+        json.dumps({'private': {'value': private_key}, 'public': {'value': public_key}})
+
+
+class GenerateSshKeysTest(unittest.TestCase):
+
+    def test_keys_are_text(self):
+        private_key, public_key = GitServer.generate_ssh_keys()
+
+        # Compares the types only: a failure does not print the key
+        self.assertEqual(str, type(private_key))
+        self.assertEqual(str, type(public_key))
+        self.assertTrue(private_key.startswith('-----BEGIN PRIVATE KEY-----'))
+        self.assertTrue(public_key.startswith('ssh-rsa '))
 
 
 if __name__ == '__main__':

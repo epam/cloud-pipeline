@@ -78,6 +78,7 @@ public class ToolControllerTest extends AbstractControllerTest {
     private static final String ICON_TOOL_URL = TOOL_URL + "/%d/icon";
     private static final String ATTRIBUTES_TOOL_URL = TOOL_URL + "/%d/attributes";
     private static final String SETTINGS_TOOL_URL = TOOL_URL + "/%d/settings";
+    private static final String DEFAULT_VERSION_TOOL_URL = TOOL_URL + "/%d/defaultVersion";
     private static final String SYMLINK_TOOL_URL = TOOL_URL + "/symlink";
 
     private static final String ID_AS_STRING = String.valueOf(ID);
@@ -520,6 +521,41 @@ public class ToolControllerTest extends AbstractControllerTest {
     @Test
     public void shouldFailLoadToolVersionSettings() {
         performUnauthorizedRequest(get(String.format(SETTINGS_TOOL_URL, ID)));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldUpdateToolDefaultVersion() {
+        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add(VERSION, TEST_STRING);
+        doReturn(tool).when(mockToolApiService).updateToolDefaultVersion(ID, TEST_STRING);
+
+        final MvcResult mvcResult = performRequest(post(String.format(DEFAULT_VERSION_TOOL_URL, ID))
+                .params(params));
+
+        verify(mockToolApiService).updateToolDefaultVersion(ID, TEST_STRING);
+        assertResponse(mvcResult, tool, DockerCreatorUtils.TOOL_INSTANCE_TYPE);
+    }
+
+    @Test
+    public void shouldFailUpdateToolDefaultVersion() {
+        performUnauthorizedRequest(post(String.format(DEFAULT_VERSION_TOOL_URL, ID)));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldDeleteToolDefaultVersion() {
+        doReturn(tool).when(mockToolApiService).deleteToolDefaultVersion(ID);
+
+        final MvcResult mvcResult = performRequest(delete(String.format(DEFAULT_VERSION_TOOL_URL, ID)));
+
+        verify(mockToolApiService).deleteToolDefaultVersion(ID);
+        assertResponse(mvcResult, tool, DockerCreatorUtils.TOOL_INSTANCE_TYPE);
+    }
+
+    @Test
+    public void shouldFailDeleteToolDefaultVersion() {
+        performUnauthorizedRequest(delete(String.format(DEFAULT_VERSION_TOOL_URL, ID)));
     }
 
     @Test

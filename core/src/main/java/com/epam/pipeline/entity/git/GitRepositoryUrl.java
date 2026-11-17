@@ -31,8 +31,9 @@ public final class GitRepositoryUrl {
     // For Bitbucket Cloud provider emails shall be supported via URLs. The email shall be encoded: user%40example.com.
     private static final String BITBUCKET_CLOUD_USERNAME_PATTERN =
             "\\$\\{GIT_USER}|[-._A-Za-z0-9]++(?:%40[-._A-Za-z0-9.]++)?";
-    // Password could be either placeholder ${GIT_TOKEN} or a real password
-    private static final String PASS_PATTERN = "\\$\\{GIT_TOKEN}|[-_A-Za-z0-9]++";
+    // Password could be either placeholder ${GIT_TOKEN} or a real password.
+    // Recent GitLab versions issue tokens with dots, e.g. glpat-<payload>.01.<checksum> on GitLab 19.4
+    private static final String PASS_PATTERN = "\\$\\{GIT_TOKEN}|[-._A-Za-z0-9]++";
     private static final String HOST_PATTERN = "[-._A-Za-z0-9]++(?::[0-9]++)?";
     private static final String PATH_PART_PATTERN = "[-_A-Za-z0-9]++";
     private static final String AZURE_DEVOPS_PATH_PATTERN = "[^/]+";

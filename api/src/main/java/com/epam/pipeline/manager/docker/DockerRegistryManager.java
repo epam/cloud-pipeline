@@ -697,7 +697,7 @@ public class DockerRegistryManager implements SecuredEntityManager {
 
     private Set<Long> getGpuToolIds() {
         final Set<String> gpuTypes = getGpuInstanceTypes();
-        return ListUtils.emptyIfNull(toolVersionManager.loadAllLatestToolVersionSettings()).stream()
+        return ListUtils.emptyIfNull(toolVersionManager.loadAllDefaultToolVersionSettings()).stream()
                 .filter(toolVersion -> ListUtils.emptyIfNull(toolVersion.getSettings()).stream()
                         .map(configuration -> Optional.ofNullable(configuration.getConfiguration())
                                 .map(PipelineConfiguration::getInstanceType)

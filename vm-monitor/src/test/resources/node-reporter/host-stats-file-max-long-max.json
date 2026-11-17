@@ -1,0 +1,24 @@
+{
+    "name": "ip-10-0-1-15.ec2.internal",
+    "timestamp": "2026-11-13 10:15:30.125",
+    "processes": [
+        {
+            "pid": 0,
+            "name": "all processes",
+            "limits": {"NOFILE": {"soft_limit": 9223372036854775807, "hard_limit": 9223372036854775807}},
+            "stats": {"NOFILE": {"value": 3520}}
+        },
+        {
+            "pid": 1201,
+            "name": "dockerd",
+            "limits": {"NOFILE": {"soft_limit": 1073741816, "hard_limit": 1073741816}},
+            "stats": {"NOFILE": {"value": 61}}
+        },
+        {
+            "pid": 1034,
+            "name": "containerd",
+            "limits": {"NOFILE": {"soft_limit": 512, "hard_limit": 1024}},
+            "stats": {"NOFILE": {"value": 1000}}
+        }
+    ]
+}

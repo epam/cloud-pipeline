@@ -40,28 +40,50 @@ public class StoragePricingService {
     private Map<String, BigDecimal> defaultPriceGbByStorageClass;
     private StoragePriceListLoader priceListLoader;
 
+    /**
+     * A price list that can't be loaded here doesn't stop the agent: the run billing and the other storage
+     * billings don't need it, and every storage synchronization calls {@link #updatePrices()} again.
+     */
     public StoragePricingService(@NonNull final StoragePriceListLoader priceListLoader) {
         this.priceListLoader = priceListLoader;
-        updatePrices();
+        try {
+            updatePrices();
+        } catch (IllegalStateException e) {
+            log.error("{} It will be loaded again at the next storage billing synchronization.",
+                    e.getMessage(), e);
+        }
     }
 
     public StoragePricingService(final Map<String, StoragePricing> fixedPriceList) {
         this.storagePriceListGb.putAll(fixedPriceList);
-        this.defaultPriceGbByStorageClass = calculateDefaultPriceGb();
+        this.defaultPriceGbByStorageClass = calculateDefaultPriceGb(storagePriceListGb);
     }
 
+    /**
+     * Reloads the price list. If that fails, the previously loaded prices stay in use.
+     *
+     * @throws IllegalStateException if the price list fails to load and no prices were loaded before
+     */
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public void updatePrices() {
+        if (priceListLoader == null) {
+            return;
+        }
         try {
-            if (priceListLoader != null) {
-                final Map<String, StoragePricing> priceList = priceListLoader.loadFullPriceList();
-                storagePriceListGb.putAll(priceList);
-                defaultPriceGbByStorageClass = calculateDefaultPriceGb();
-            }
+            final Map<String, StoragePricing> loadedPriceList = priceListLoader.loadFullPriceList();
+            final Map<String, StoragePricing> updatedPriceList = new HashMap<>(storagePriceListGb);
+            updatedPriceList.putAll(loadedPriceList);
+            final Map<String, BigDecimal> updatedDefaultPrices = calculateDefaultPriceGb(updatedPriceList);
+            storagePriceListGb.putAll(loadedPriceList);
+            defaultPriceGbByStorageClass = updatedDefaultPrices;
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            throw new IllegalStateException(String.format("Can't instantiate %s storage price list!",
-                                                          priceListLoader.getProvider().name()));
+            final String provider = priceListLoader.getProvider().name();
+            if (defaultPriceGbByStorageClass == null) {
+                throw new IllegalStateException(
+                        String.format("Can't instantiate %s storage price list!", provider), e);
+            }
+            log.error(String.format("Can't update %s storage price list, the previously loaded prices are used.",
+                                    provider), e);
         }
     }
 
@@ -79,9 +101,9 @@ public class StoragePricingService {
                 .orElseGet(() -> defaultPriceGbByStorageClass.get(DEFAULT_STORAGE_CLASS));
     }
 
-    private Map<String, BigDecimal> calculateDefaultPriceGb() {
+    private Map<String, BigDecimal> calculateDefaultPriceGb(final Map<String, StoragePricing> priceList) {
         return StreamUtils.grouped(
-                storagePriceListGb.values()
+                priceList.values()
                         .stream()
                         .flatMap(pricing ->
                                 pricing.getStorageClasses().stream()

@@ -5,8 +5,8 @@ Test verifies that the estimated price shown for an On-demand run is non-zero.
 | Steps | Actions | Expected results |
 | :---: | --- | --- |
 | 1 | Create a pipeline |  |
-| 2 | Open its **Configuration** tab |  |
-| 3 | Set **Timeout** to `1` |  |
+| 2 | Open its **CONFIGURATION** tab |  |
+| 3 | Set **Timeout (min)** to `1` |  |
 | 4 | Set the **On-demand** price type |  |
 | 5 | Save the changes |  |
 | 6 | Click **Run** |  |

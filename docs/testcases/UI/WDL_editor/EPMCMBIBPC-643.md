@@ -1,11 +1,11 @@
-# Check code after enabled "Use another docker image"
+# Check code after adding a docker configuration
 
 Test verifies that selecting a different docker image for a task adds the container-init code.
 
 | Steps | Actions | Expected results |
 | :---: | --- | --- |
 | 1 | Perform the [EPMCMBIBPC-608](EPMCMBIBPC-608.md) case |  |
-| 2 | Set the **Use another docker image** checkbox |  |
+| 2 | Expand the **Runtime** collapsed header, click **add docker configuration** link |  |
 | 3 | Click on the appeared field |  |
 | 4 | In the appeared pop-up, select a docker registry, group and tool, click **OK** button |  |
 | 5 | Click **Save** button |  |
