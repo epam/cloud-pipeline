@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-/* This is the scroll port that the storage table's sticky controls row is pinned to - see
-   `.cp-storage-items-table` in themes/styles/layout.less. Scrolling an inner element unsticks it. */
 .table {
   overflow-y: auto;
 }

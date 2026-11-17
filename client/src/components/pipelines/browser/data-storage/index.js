@@ -30,8 +30,7 @@ import {
   Modal,
   Popover,
   Row,
-  Spin,
-  Table
+  Spin
 } from 'antd';
 import Dropdown from 'rc-dropdown';
 import Menu, {MenuItem, Divider} from 'rc-menu';
@@ -102,6 +101,7 @@ import {getStaticResourceUrl} from '../../../../models/static-resources';
 import DataStorageListing from '../../../../models/dataStorage/data-storage-listing';
 import LabelsRenderer from './components/labels-renderer';
 import StoragePagination from './components/storage-pagination';
+import StorageItemsTable from './components/storage-items-table';
 import StorageSharedLinkButton from './components/storage-shared-link-button';
 import DownloadFileButton from './components/download-file-button';
 import DownloadOmicsButton from './components/download-omics-button';
@@ -2812,8 +2812,8 @@ export default class DataStorage extends React.Component {
       );
     };
     return (
-      <Table
-        className={classNames(styles.table, 'cp-storage-items-table')}
+      <StorageItemsTable
+        className={styles.table}
         style={{flex: 1}}
         key="table"
         dataSource={this.items}
