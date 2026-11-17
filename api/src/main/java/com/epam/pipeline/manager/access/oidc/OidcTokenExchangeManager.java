@@ -226,7 +226,7 @@ public class OidcTokenExchangeManager {
                 .groups(groups)
                 .external(strategy.isExternal())
                 .authoritiesScoped(narrowed)
-                .exchangeable(strategy.isExchangeable())
+                .nonRenewable(!strategy.isRenewable())
                 .build();
     }
 
