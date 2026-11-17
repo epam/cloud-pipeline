@@ -51,6 +51,8 @@ public class CapacityReservationTemplatesTest {
     private static final long COMMITMENT_DURATION = 14 * 24 * 3600L;
     private static final long SIX_HOURS = 6 * 3600L;
     private static final String CAPACITY_BLOCK_OFFERING_ID = "cbr-0123456789abcdef0";
+    private static final String FINALIZING_TYPE = "CAPACITY_RESERVATION_FINALIZING";
+    private static final String EXTENSION_MENTION = "can still be extended";
 
     private final TemplateService templateService = new TemplateService();
 
@@ -110,6 +112,32 @@ public class CapacityReservationTemplatesTest {
             assertFalse(type, body.contains(CAPACITY_BLOCK_OFFERING_ID));
             assertFalse(type + " left a reference unrendered", body.contains("$"));
         }
+    }
+
+    @Test
+    public void shouldMentionTheExtensionWhenOneIsStillAvailable() throws IOException {
+        final Map<String, Object> parameters = parameters(null);
+        parameters.put("extensionAvailable", true);
+
+        assertTrue(render(FINALIZING_TYPE, parameters).getBody().contains(EXTENSION_MENTION));
+    }
+
+    @Test
+    public void shouldSayNothingAboutExtensionWhenNoneIsAvailable() throws IOException {
+        final Map<String, Object> parameters = parameters(null);
+        parameters.put("extensionAvailable", false);
+
+        final String body = render(FINALIZING_TYPE, parameters).getBody();
+        assertFalse(body.contains(EXTENSION_MENTION));
+        assertFalse(body.contains("$"));
+    }
+
+    @Test
+    public void shouldSayNothingAboutExtensionWhenTheParameterIsAbsent() throws IOException {
+        final String body = render(FINALIZING_TYPE, parameters(null)).getBody();
+
+        assertFalse(body.contains(EXTENSION_MENTION));
+        assertFalse(body.contains("$"));
     }
 
     @Test

@@ -23,6 +23,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.EnumSet;
 
 /**
  * A request to reserve cloud capacity for a node pool, and what the provider has made of it.
@@ -98,5 +99,27 @@ public class CapacityReservation {
 
     public CapacityReservation copy() {
         return toBuilder().build();
+    }
+
+    public boolean isCapacityBlock() {
+        return CapacityReservationType.CAPACITY_BLOCK == reservationType;
+    }
+
+    /**
+     * AWS only answers extension calls for a block that is still delivering capacity - everything
+     * {@code AwsCapacityReservationService#validateExtensionLeadTime} narrows further on top of this, per the
+     * lead-time window the provider itself allows.
+     */
+    public boolean isWithinExtensionLeadWindow() {
+        return EnumSet.of(CapacityReservationStatus.ACTIVE, CapacityReservationStatus.FINALIZING).contains(status);
+    }
+
+    /**
+     * A pure predicate, no cloud call - what the pre-expiry notification asks to say whether an extension is still
+     * possible at all for this block. Mirrors {@link com.epam.pipeline.entity.cluster.pool.NodePool#isActive}'s
+     * place on its own entity - neither needs a service to answer a question only its own fields decide.
+     */
+    public boolean isExtendable() {
+        return isCapacityBlock() && isWithinExtensionLeadWindow();
     }
 }

@@ -16,7 +16,9 @@
 
 package com.epam.pipeline.manager.cluster.capacityreservation;
 
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockOffering;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
+import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityBlockExtension;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservation;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cluster.capacityreservation.cloud.CapacityReservationCloudService;
@@ -28,6 +30,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.Collections;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
@@ -73,6 +76,32 @@ public class CapacityReservationCloudFacadeTest {
         assertThat(result).isEqualTo(created);
         assertThat(reservation.getClientToken()).isNotBlank();
         verify(awsService, never()).purchaseCapacityBlock(any());
+    }
+
+    @Test
+    public void shouldRouteExtensionOfferingsToTheReservationsProvider() {
+        final CapacityReservation reservation = CapacityReservationCreatorUtils.getCapacityBlockReservation(1L);
+        final int durationHours = 24;
+        final List<CapacityBlockOffering> offerings = Collections.singletonList(CapacityBlockOffering.builder()
+                .build());
+        when(awsService.listCapacityBlockExtensionOfferings(reservation, durationHours)).thenReturn(offerings);
+
+        final List<CapacityBlockOffering> result =
+                facade.listCapacityBlockExtensionOfferings(reservation, durationHours);
+
+        assertThat(result).isEqualTo(offerings);
+    }
+
+    @Test
+    public void shouldRoutePurchaseExtensionToTheReservationsProvider() {
+        final CapacityReservation reservation = CapacityReservationCreatorUtils.getCapacityBlockReservation(1L);
+        final String offeringId = "mock-cbe-1-24h";
+        final CloudCapacityBlockExtension purchased = CloudCapacityBlockExtension.builder().build();
+        when(awsService.purchaseCapacityBlockExtension(reservation, offeringId)).thenReturn(purchased);
+
+        final CloudCapacityBlockExtension result = facade.purchaseCapacityBlockExtension(reservation, offeringId);
+
+        assertThat(result).isEqualTo(purchased);
     }
 
 }

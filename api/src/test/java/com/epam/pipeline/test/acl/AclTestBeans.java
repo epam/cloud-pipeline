@@ -50,6 +50,7 @@ import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.PodsManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
+import com.epam.pipeline.manager.cluster.capacityreservation.CapacityBlockExtensionService;
 import com.epam.pipeline.manager.cluster.capacityreservation.CapacityBlockOfferingService;
 import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationPermissionManager;
 import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationService;
@@ -519,6 +520,9 @@ public class AclTestBeans {
 
     @MockBean
     protected CapacityBlockOfferingService capacityBlockOfferingService;
+
+    @MockBean
+    protected CapacityBlockExtensionService capacityBlockExtensionService;
 
     @MockBean
     protected InfrastructureManager infrastructureManager;
