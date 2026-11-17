@@ -156,12 +156,12 @@ public class CapacityReservationCloudFacade {
     }
 
     public List<CapacityBlockOffering> listCapacityBlockExtensionOfferings(final CapacityReservation reservation,
-                                                                            final int durationHours) {
+                                                                           final int durationHours) {
         return serviceFor(reservation).listCapacityBlockExtensionOfferings(reservation, durationHours);
     }
 
     public CloudCapacityBlockExtension purchaseCapacityBlockExtension(final CapacityReservation reservation,
-                                                                        final String extensionOfferingId) {
+                                                                      final String extensionOfferingId) {
         return serviceFor(reservation).purchaseCapacityBlockExtension(reservation, extensionOfferingId);
     }
 

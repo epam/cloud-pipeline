@@ -182,9 +182,9 @@ public class CapacityReservationApiServiceTest extends AbstractAclTest {
     public void shouldAllowTheOwnerToListExtensionOfferings() {
         ownedReservation();
         doReturn(offerings).when(mockCapacityBlockExtensionService)
-                .listOfferings(RESERVATION_ID, DURATION_HOURS);
+                .listOfferings(RESERVATION_ID, DURATION_HOURS, false);
 
-        assertThat(capacityReservationApiService.listExtensionOfferings(RESERVATION_ID, DURATION_HOURS))
+        assertThat(capacityReservationApiService.listExtensionOfferings(RESERVATION_ID, DURATION_HOURS, false))
                 .isEqualTo(offerings);
     }
 
@@ -195,7 +195,7 @@ public class CapacityReservationApiServiceTest extends AbstractAclTest {
         mockUser("SOME_OTHER_USER");
 
         assertThrows(AccessDeniedException.class,
-            () -> capacityReservationApiService.listExtensionOfferings(RESERVATION_ID, DURATION_HOURS));
+            () -> capacityReservationApiService.listExtensionOfferings(RESERVATION_ID, DURATION_HOURS, false));
     }
 
     @Test

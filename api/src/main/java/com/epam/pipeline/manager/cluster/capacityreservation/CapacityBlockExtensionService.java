@@ -37,6 +37,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -62,12 +64,29 @@ public class CapacityBlockExtensionService {
     private final MessageHelper messageHelper;
     private final AuthManager authManager;
 
-    public List<CapacityBlockOffering> listOfferings(final Long reservationId, final Integer durationHours) {
+    /**
+     * Searches current AWS offerings to extend a purchased capacity block.
+     *
+     * @param reservationId the capacity block reservation to extend
+     * @param durationHours how many hours to extend it by; must be a duration {@link #isValidExtensionDuration}
+     *                       allows
+     * @param findNearestAvailable when {@code true} and AWS has no offering at {@code durationHours} itself, falls
+     *                             back to the longest shorter duration AWS does still offer, instead of returning
+     *                             nothing
+     * @return the offerings found - for {@code durationHours} itself, or, with {@code findNearestAvailable} set,
+     *         for the nearest shorter duration found below it when none exist at {@code durationHours}
+     */
+    public List<CapacityBlockOffering> listOfferings(final Long reservationId, final Integer durationHours,
+                                                      final boolean findNearestAvailable) {
         Assert.notNull(durationHours, messageHelper.getMessage(
                 MessageConstants.ERROR_CAPACITY_BLOCK_EXTENSION_DURATION_REQUIRED));
         final CapacityReservation reservation = reservationService.load(reservationId);
         requireExtendable(reservation, durationHours);
-        return cloudFacade.listCapacityBlockExtensionOfferings(reservation, durationHours);
+        final List<CapacityBlockOffering> offerings =
+                cloudFacade.listCapacityBlockExtensionOfferings(reservation, durationHours);
+        return offerings.isEmpty() && findNearestAvailable
+                ? nearestAvailableOfferings(reservation, durationHours)
+                : offerings;
     }
 
     @Transactional
@@ -209,5 +228,44 @@ public class CapacityBlockExtensionService {
             return requestedHours % HOURS_PER_DAY == 0;
         }
         return requestedHours <= MAX_TOTAL_EXTENSION_HOURS && requestedHours % SEVEN_DAY_STEP_HOURS == 0;
+    }
+
+    private List<CapacityBlockOffering> nearestAvailableOfferings(final CapacityReservation reservation,
+                                                                  final int requestedHours) {
+        final List<Integer> candidates = getAvailableDurationsSeries(requestedHours);
+        List<CapacityBlockOffering> nearest = Collections.emptyList();
+        int lowerBound = 0;
+        int upperBound = candidates.size() - 1;
+        while (lowerBound <= upperBound) {
+            final int midIndex = lowerBound + (upperBound - lowerBound) / 2;
+            final List<CapacityBlockOffering> offerings = cloudFacade.listCapacityBlockExtensionOfferings(
+                    reservation, candidates.get(midIndex));
+            if (offerings.isEmpty()) {
+                upperBound = midIndex - 1;
+            } else {
+                nearest = offerings;
+                lowerBound = midIndex + 1;
+            }
+        }
+        return nearest;
+    }
+
+    /**
+     * The durations below {@code requestedHours} that {@link #isValidExtensionDuration} itself allows, ascending -
+     * the 1-day step up to 14 days followed by the 7-day step up to 182 days,
+     * glued into the one list {@link #nearestAvailableOfferings} searches, so
+     * a search that crosses from one step to the other needs no case of its own.
+     */
+    static List<Integer> getAvailableDurationsSeries(final int requestedHours) {
+        final List<Integer> durations = new ArrayList<>();
+        for (int hours = HOURS_PER_DAY; hours < requestedHours && hours <= MAX_ONE_DAY_STEP_TOTAL_HOURS;
+             hours += HOURS_PER_DAY) {
+            durations.add(hours);
+        }
+        for (int hours = MAX_ONE_DAY_STEP_TOTAL_HOURS + SEVEN_DAY_STEP_HOURS;
+             hours < requestedHours && hours <= MAX_TOTAL_EXTENSION_HOURS; hours += SEVEN_DAY_STEP_HOURS) {
+            durations.add(hours);
+        }
+        return durations;
     }
 }

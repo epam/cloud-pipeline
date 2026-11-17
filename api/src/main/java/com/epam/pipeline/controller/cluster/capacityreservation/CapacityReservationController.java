@@ -114,12 +114,15 @@ public class CapacityReservationController extends AbstractRestController {
     }
 
     @GetMapping("{id}/extension-offerings")
-    @ApiOperation(value = "Searches current offerings to extend a purchased capacity block",
+    @ApiOperation(value = "Searches current offerings to extend a purchased capacity block; with "
+            + "findNearestAvailable set, falls back to the nearest shorter duration AWS still offers when none "
+            + "exist at durationHours itself",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<List<CapacityBlockOffering>> listExtensionOfferings(
-            final @PathVariable Long id, final @RequestParam Integer durationHours) {
-        return Result.success(apiService.listExtensionOfferings(id, durationHours));
+            final @PathVariable Long id, final @RequestParam Integer durationHours,
+            final @RequestParam(defaultValue = "false") boolean findNearestAvailable) {
+        return Result.success(apiService.listExtensionOfferings(id, durationHours, findNearestAvailable));
     }
 
     @PostMapping("{id}/extension")

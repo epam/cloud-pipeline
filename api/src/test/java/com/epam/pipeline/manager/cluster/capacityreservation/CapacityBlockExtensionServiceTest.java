@@ -43,9 +43,13 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -63,6 +67,10 @@ public class CapacityBlockExtensionServiceTest {
     private static final Long OTHER_RESERVATION_ID = 99L;
     private static final int HOURS_PER_DAY = 24;
     private static final int SEVEN_DAY_STEP_HOURS = 7 * HOURS_PER_DAY;
+    private static final int TEN_DAYS_HOURS = 10 * HOURS_PER_DAY;
+    private static final int SEVEN_DAYS_HOURS = SEVEN_DAY_STEP_HOURS;
+    private static final int TWENTY_ONE_DAYS_HOURS = MAX_ONE_DAY_STEP_TOTAL_HOURS + SEVEN_DAY_STEP_HOURS;
+    private static final int TWENTY_EIGHT_DAYS_HOURS = MAX_ONE_DAY_STEP_TOTAL_HOURS + 2 * SEVEN_DAY_STEP_HOURS;
 
     @Mock
     private CapacityReservationService reservationService;
@@ -296,7 +304,7 @@ public class CapacityBlockExtensionServiceTest {
 
     @Test
     public void shouldRejectListingOfferingsWithNoDuration() {
-        assertThatThrownBy(() -> service.listOfferings(RESERVATION_ID, null))
+        assertThatThrownBy(() -> service.listOfferings(RESERVATION_ID, null, false))
                 .isInstanceOf(IllegalArgumentException.class);
         verify(reservationService, never()).load(any());
     }
@@ -335,7 +343,101 @@ public class CapacityBlockExtensionServiceTest {
                 .build());
         when(cloudFacade.listCapacityBlockExtensionOfferings(reservation, DURATION_HOURS)).thenReturn(offerings);
 
-        assertThat(service.listOfferings(RESERVATION_ID, DURATION_HOURS)).isEqualTo(offerings);
+        assertThat(service.listOfferings(RESERVATION_ID, DURATION_HOURS, false)).isEqualTo(offerings);
+    }
+
+    @Test
+    public void shouldNotSearchForAShorterDurationWhenFindNearestAvailableIsFalse() {
+        final CapacityReservation reservation = activeCapacityBlockReservation();
+        when(reservationService.load(RESERVATION_ID)).thenReturn(reservation);
+        when(cloudFacade.listCapacityBlockExtensionOfferings(eq(reservation), anyInt()))
+                .thenReturn(Collections.emptyList());
+
+        assertThat(service.listOfferings(RESERVATION_ID, TEN_DAYS_HOURS, false)).isEmpty();
+        verify(cloudFacade, times(1)).listCapacityBlockExtensionOfferings(any(), anyInt());
+    }
+
+    @Test
+    public void shouldSkipTheSearchWhenOfferingsAlreadyExistAtTheRequestedDuration() {
+        final CapacityReservation reservation = activeCapacityBlockReservation();
+        when(reservationService.load(RESERVATION_ID)).thenReturn(reservation);
+        final List<CapacityBlockOffering> offerings = Collections.singletonList(CapacityBlockOffering.builder()
+                .build());
+        when(cloudFacade.listCapacityBlockExtensionOfferings(reservation, TEN_DAYS_HOURS)).thenReturn(offerings);
+
+        assertThat(service.listOfferings(RESERVATION_ID, TEN_DAYS_HOURS, true)).isEqualTo(offerings);
+        verify(cloudFacade, times(1)).listCapacityBlockExtensionOfferings(any(), anyInt());
+    }
+
+    /**
+     * Below the 14-day ceiling: AWS steps by a single day here, so 10 days asked for with nothing available
+     * past 7 must land exactly on the 7-day offering - the first of the two AWS stepping rules this is meant to
+     * cover.
+     */
+    @Test
+    public void shouldFindTheNearestAvailableDurationWithinTheOneDayStepRegime() {
+        final CapacityReservation reservation = activeCapacityBlockReservation();
+        when(reservationService.load(RESERVATION_ID)).thenReturn(reservation);
+        final List<CapacityBlockOffering> offerings = Collections.singletonList(CapacityBlockOffering.builder()
+                .capacityDurationHours(SEVEN_DAYS_HOURS)
+                .build());
+        when(cloudFacade.listCapacityBlockExtensionOfferings(eq(reservation), anyInt()))
+                .thenAnswer(invocation -> ((int) invocation.getArguments()[1]) <= SEVEN_DAYS_HOURS
+                        ? offerings : Collections.emptyList());
+
+        assertThat(service.listOfferings(RESERVATION_ID, TEN_DAYS_HOURS, true)).isEqualTo(offerings);
+        verify(cloudFacade, atLeastOnce()).listCapacityBlockExtensionOfferings(reservation, SEVEN_DAYS_HOURS);
+        // a binary search over the 9 one-day candidates below 10 days never needs more than a handful of probes
+        verify(cloudFacade, atMost(6)).listCapacityBlockExtensionOfferings(any(), anyInt());
+    }
+
+    /**
+     * Past the 14-day ceiling: AWS steps by 7 days here, so 28 days asked for with nothing available past 21
+     * must land exactly on the 21-day offering - the second of the two AWS stepping rules this is meant to cover.
+     */
+    @Test
+    public void shouldFindTheNearestAvailableDurationWithinTheSevenDayStepRegime() {
+        final CapacityReservation reservation = activeCapacityBlockReservation();
+        when(reservationService.load(RESERVATION_ID)).thenReturn(reservation);
+        final List<CapacityBlockOffering> offerings = Collections.singletonList(CapacityBlockOffering.builder()
+                .capacityDurationHours(TWENTY_ONE_DAYS_HOURS)
+                .build());
+        when(cloudFacade.listCapacityBlockExtensionOfferings(eq(reservation), anyInt()))
+                .thenAnswer(invocation -> ((int) invocation.getArguments()[1]) <= TWENTY_ONE_DAYS_HOURS
+                        ? offerings : Collections.emptyList());
+
+        assertThat(service.listOfferings(RESERVATION_ID, TWENTY_EIGHT_DAYS_HOURS, true)).isEqualTo(offerings);
+        verify(cloudFacade, atLeastOnce())
+                .listCapacityBlockExtensionOfferings(reservation, TWENTY_ONE_DAYS_HOURS);
+    }
+
+    @Test
+    public void shouldReturnEmptyWhenNoShorterDurationIsAvailableEither() {
+        final CapacityReservation reservation = activeCapacityBlockReservation();
+        when(reservationService.load(RESERVATION_ID)).thenReturn(reservation);
+        when(cloudFacade.listCapacityBlockExtensionOfferings(eq(reservation), anyInt()))
+                .thenReturn(Collections.emptyList());
+
+        assertThat(service.listOfferings(RESERVATION_ID, TEN_DAYS_HOURS, true)).isEmpty();
+    }
+
+    @Test
+    public void shouldListGetAvailableDurationsSeriesAscendingAcrossBothSteps() {
+        final List<Integer> durations = CapacityBlockExtensionService.getAvailableDurationsSeries(
+                MAX_ONE_DAY_STEP_TOTAL_HOURS + 2 * SEVEN_DAY_STEP_HOURS);
+
+        assertThat(durations).hasSize(MAX_ONE_DAY_STEP_TOTAL_HOURS / HOURS_PER_DAY + 1);
+        assertThat(durations.get(0)).isEqualTo(HOURS_PER_DAY);
+        assertThat(durations.get(MAX_ONE_DAY_STEP_TOTAL_HOURS / HOURS_PER_DAY - 1))
+                .isEqualTo(MAX_ONE_DAY_STEP_TOTAL_HOURS);
+        assertThat(durations.get(MAX_ONE_DAY_STEP_TOTAL_HOURS / HOURS_PER_DAY))
+                .isEqualTo(MAX_ONE_DAY_STEP_TOTAL_HOURS + SEVEN_DAY_STEP_HOURS);
+        assertThat(durations).isSorted();
+    }
+
+    @Test
+    public void shouldListNoDurationsBelowTheMinimumStep() {
+        assertThat(CapacityBlockExtensionService.getAvailableDurationsSeries(HOURS_PER_DAY)).isEmpty();
     }
 
     @Test

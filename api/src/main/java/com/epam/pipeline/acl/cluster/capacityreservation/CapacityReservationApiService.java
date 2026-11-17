@@ -45,7 +45,7 @@ import java.util.List;
  *   <li>{@link #listCapacityBlockOfferings} and {@link #listCapacityBlockInstanceTypes} - allowed for the same
  *       role that may create a reservation-backed pool. There is no pool yet, so there is nothing to check a
  *       permission against.</li>
- *   <li>{@link #listExtensionOfferings(Long, Integer)} and {@link #requestExtension} - the owner of the
+ *   <li>{@link #listExtensionOfferings(Long, Integer, boolean)} and {@link #requestExtension} - the owner of the
  *       reservation being extended, or an administrator, the same bar as {@link #cancel(Long)}.</li>
  *   <li>{@link #approveExtension(Long)} - administrators only, the same bar as {@link #approve(Long)}: an
  *       extension is as much a non-refundable commitment as the purchase it extends.</li>
@@ -97,8 +97,9 @@ public class CapacityReservationApiService {
     }
 
     @PreAuthorize(AclExpressions.CAPACITY_RESERVATION_ID_OWNER)
-    public List<CapacityBlockOffering> listExtensionOfferings(final Long id, final Integer durationHours) {
-        return extensionService.listOfferings(id, durationHours);
+    public List<CapacityBlockOffering> listExtensionOfferings(final Long id, final Integer durationHours,
+                                                                final boolean findNearestAvailable) {
+        return extensionService.listOfferings(id, durationHours, findNearestAvailable);
     }
 
     @PreAuthorize(AclExpressions.CAPACITY_RESERVATION_ID_OWNER)

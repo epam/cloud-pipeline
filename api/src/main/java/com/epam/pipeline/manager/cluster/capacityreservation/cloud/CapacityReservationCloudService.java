@@ -82,8 +82,8 @@ public interface CapacityReservationCloudService {
     List<CapacityBlockInstanceTypeInfo> listCapacityBlockInstanceTypes(AbstractCloudRegion region);
 
     List<CapacityBlockOffering> listCapacityBlockExtensionOfferings(CapacityReservation reservation,
-                                                                      int durationHours);
+                                                                    int durationHours);
 
     CloudCapacityBlockExtension purchaseCapacityBlockExtension(CapacityReservation reservation,
-                                                                 String extensionOfferingId);
+                                                               String extensionOfferingId);
 }
