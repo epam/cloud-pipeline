@@ -72,7 +72,7 @@
 - [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
 - [Pinning a run to the Docker image digest](#pinning-a-run-to-the-docker-image-digest)
 - [Default version of a tool](#default-version-of-a-tool)
-- [Data storage: the controls row stays visible while scrolling](#data-storage-the-controls-row-stays-visible-while-scrolling)
+- [Data storage: the controls row and the column header stay visible while scrolling](#data-storage-the-controls-row-and-the-column-header-stay-visible-while-scrolling)
 
 ***
 
@@ -2071,11 +2071,9 @@ For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#se
 
 ***
 
-## Data storage: the controls row stays visible while scrolling
+## Data storage: the controls row and the column header stay visible while scrolling
 
-Previously, the controls row of a data storage - **Select page**, the **Selection** actions, **Share current folder**, **Create** and **Upload** - scrolled out of view together with the file list. In a folder with more items than fit the panel, a bulk operation meant selecting the items and then scrolling back to the top to reach the controls.
-
-Now, that row stays at the top of the list at any scroll position. The column header scrolls under it, as before.
+The controls row of a data storage - **Select page**, **Create**, **Upload** and the others - and the column header with its sort and filter controls now stay at the top while the file list is scrolled.
 
 See details in [8. Manage Data Storage](../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage.md#controls).
 
