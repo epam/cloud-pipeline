@@ -20,9 +20,9 @@ instead, and say in the hand-back that the suite did not run.
 ## Running it
 
 `README.md` carries the procedure. `run-e2e.sh` runs on the platform's master node: it needs
-`kubectl` access to the cluster and an administrator's browser session. The environment of the tests
-is `Dockerfile` — Rocky Linux, a VNC desktop, Chrome for Testing with its matching chromedriver, and
-JDK 8; `run.sh` is the entrypoint inside the container.
+`kubectl` access to the cluster and an administrator's browser session, or `--dummy-session` instead of one.
+The environment of the tests is `Dockerfile` — Rocky Linux, a VNC desktop, Chrome for Testing with its matching
+chromedriver, and JDK 8; `run.sh` is the entrypoint inside the container.
 
 `AbstractBfxPipelineTest` hardcodes `/usr/local/bin/chrome` and `/usr/local/bin/chromedriver`, which
 that image provides. Running on a host instead means editing it. `test` depends on `prerequisites`

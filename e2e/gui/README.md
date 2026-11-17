@@ -22,6 +22,12 @@ The platform signs users in with SSO, so the tests use that administrator's brow
 from a token: the API trusts a session created from a JWT for 60 seconds only. The run
 checks the session first (it must belong to an administrator and outlive 65 s), and deletes the file at the end.
 
+**`--dummy-session` replaces steps 1-2 above entirely**, for a run with no human and no SSO sign-in: a dedicated
+account (default name `E2E_ADMIN`, created with `ROLE_ADMIN` if it does not exist yet) gets a session made in the
+API database instead (`scripts/admin-session.sh create`), with the same 60-second limit removed from the start
+rather than extended afterward. Needs `CP_API_JWT_DISABLE_SESSION=false` in the `cp-config-global` config map (real
+deployments already set it; a dev stand may not). Mutually exclusive with `--conf` and `E2E_ADMIN_SESSION`.
+
 A browser session expires after 30 minutes of inactivity. For the run, `scripts/admin-session.sh` sets its expiration
 in the API database (`pipeline.spring_session`, via the `cp-api-db` pod) to 30 days (`E2E_SESSION_EXTENSION_SECONDS`),
 a watcher re-applies it every 5 minutes while the tests run (the API writes the loaded value back on every request),
@@ -146,6 +152,7 @@ Useful options (`./run-e2e.sh --help`):
 | `--cleanup-dry-run` | only print what the cleanup would do |
 | `--min-sso-hours 12` | do not start if the SSO authentication of the admin session ends within these hours (default 12, 2 with `--tests`, `0`: no check); raise it for a full run, whose time on this line is not measured |
 | `--skip-prepare`, `--skip-cleanup` | for debugging: the test users stay unblocked with `--skip-cleanup` |
+| `--dummy-session [--dummy-session-user E2E_ADMIN]` | sign in as a dedicated non-SSO account instead of an administrator's browser session (`E2E_DUMMY_SESSION=true` / `E2E_DUMMY_SESSION_USER`); see above |
 
 To watch the VNC desktop of a run, publish the container ports (`5901` VNC, `6901` noVNC, password `vncpassword`).
 
@@ -162,6 +169,7 @@ Besides the fixtures `platform-prepare.sh` creates, set these before a full run:
 | `cluster.allowed.instance.types` and `cluster.allowed.instance.types.docker` allow the family of `default_instance_type` (`scripts/fixtures.json`, `m5`), and `c6i.*` and `r6i.*` | `PlatformPreferencesTest` (TC-PARAMETERS-4), `LaunchParametersTest` (TC-PARAMETERS-6, 3433) |
 | `launch.capabilities` has a `conda` capability | `LaunchParametersTest` (TC-PARAMETERS-7) |
 | `PIPELINE_RUN_STATUS` email notifications enabled, an SMTP server for the notifier, and an `email` attribute of the admin; the notifier and the VM monitor on the node of `run-e2e.sh` | `RunStatusNotificationTest`, `CertificateExpirationNotificationTest`, `NodeThresholdNotificationTest` |
+| `CP_API_JWT_DISABLE_SESSION=false` in the `cp-config-global` config map | `--dummy-session` |
 
 `scripts/generate-config.sh` warns about the ones it can check. [`docs/config-keys.md`](docs/config-keys.md) section 4
 lists the other prerequisites of the tests.

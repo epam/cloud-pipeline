@@ -59,11 +59,14 @@ In mode C, `RoleBasedAccessControlTest.checkAnonymousAccess` starts **four** Chr
 Per-key consequences (mode C, the recommended one for a platform with SSO):
 * `e2e.ui.login`: the user whose session the `SESSION` cookie carries (must be the same user, `loginAs(admin)` is a
   no-op). Must have `ROLE_ADMIN`. Used as the expected identity everywhere (see table).
-* `e2e.ui.password`: the raw `SESSION` cookie value of an authenticated session of `login`, **from an SSO sign-in in
-  a browser**. It can't be derived from the admin JWT: a session created by a JWT-authenticated
-  request is trusted for 60 s only (`JwtAuthenticationToken.TOKEN_SESSION_TIMEOUT = 60`, the authentication stored in
-  the session reports `isAuthenticated() == false` afterwards), and a JWT in the `HttpAuthorization` cookie does not
-  open the UI pages either (they are behind SAML unless `CP_API_USE_ONLY_JWT_AUTH=true`). A browser session expires
+* `e2e.ui.password`: the raw `SESSION` cookie value of an authenticated session of `login`, ordinarily **from an
+  SSO sign-in in a browser**. A session created by a plain JWT-authenticated request is trusted for 60 s only
+  (`JwtAuthenticationToken.TOKEN_SESSION_TIMEOUT = 60`, the authentication stored in the session reports
+  `isAuthenticated() == false` afterwards), and a JWT in the `HttpAuthorization` cookie does not open the UI pages
+  either (they are behind SAML unless `CP_API_USE_ONLY_JWT_AUTH=true`). `run-e2e.sh --dummy-session` gets a session
+  that outlives this anyway: `admin-session.sh create` makes one from a JWT, then patches that same 60 s deadline,
+  serialized as 8 bytes inside the session's stored `SPRING_SECURITY_CONTEXT`, to a date of its choosing - no SSO
+  sign-in at all, needs `CP_API_JWT_DISABLE_SESSION=false`. A browser session expires
   after `CP_API_SRV_SESSION_TIMEOUT_SEC` (default 1800 s) of **inactivity**; the running tests keep it alive (the
   time of the whole suite on this line is not measured). Check: `curl -sk -b "SESSION=<v>" .../restapi/whoami` must return `login` - also after
   65 s.
@@ -304,7 +307,8 @@ e2e.ui.backup.storage.offset=<hours>
   (`<login lowercased, ._@ -> ->`, e.g. `admin`) in default.registry, with its tools.
 * Edge: `CP_API_SRV_SAML_ALLOW_ANONYMOUS_USER=true`. System logs (ELK `cp-search-elk` API + edge ingest pipelines) must
   work: SystemLoggingTest reads authentication, impersonation, role, permission and edge `[SECURITY]` rows.
-* Mode C needs an administrator's SSO browser session per run (see section 1).
+* Mode C needs an administrator's SSO browser session per run, or `run-e2e.sh --dummy-session` makes one for a
+  dedicated non-SSO account instead (see section 1).
 
 ### 4.2 Registry / tools (all in default.registry)
 * `tests/e2e-endpoints` with tags `latest` and **`test`** (DetachedConfigurationsTest selects `:test`); endpoint on
