@@ -23,7 +23,8 @@ import {Icon, Tooltip} from 'antd';
 const ABOVE_DROPDOWN = 1071;
 
 /**
- * A selection action's hint, behind an info icon.
+ * A selection action's hint - or the reason a disabled one is disabled -
+ * behind an info icon.
  *
  * The tooltip is raised above the dropdown menu the icon sits in. The click is
  * swallowed so it does not reach the menu.
@@ -34,14 +35,21 @@ export default function ActionHint ({id, hint}) {
   }
   return (
     <Tooltip
-      title={hint}
+      title={<div style={{maxWidth: 300}}>{hint}</div>}
       trigger="hover"
       placement="left"
       overlayStyle={{zIndex: ABOVE_DROPDOWN}}
     >
       <span
         id={id}
-        style={{marginLeft: 5, display: 'inline-flex', pointerEvents: 'auto'}}
+        style={{
+          marginLeft: 5,
+          display: 'inline-flex',
+          // Taken back from a disabled item, which turns them off, or the
+          // tooltip never sees a hover. The cursor stays the row's.
+          pointerEvents: 'auto',
+          cursor: 'inherit'
+        }}
         onClick={(event) => event.stopPropagation()}
       >
         <Icon type="info-circle" />

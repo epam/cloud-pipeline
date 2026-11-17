@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {Menu} from 'antd';
 import {render, screen, hover, waitFor} from '@test';
 import ActionHint from './action-hint';
 
@@ -48,4 +49,34 @@ test('raises the tooltip above the dropdown menu', async () => {
   const popup = (await screen.findByText(HINT)).closest('[style*="z-index"]');
   expect(popup).not.toBeNull();
   expect(Number(popup.style.zIndex)).toBeGreaterThan(RC_DROPDOWN_Z_INDEX);
+});
+
+// A disabled menu item gets `pointer-events: none`, which its children
+// inherit, so the hint has to opt back in or it never sees a hover. jsdom does
+// not apply that rule, so these assert the styles rather than the behaviour.
+test('re-enables pointer events, and leaves the cursor to the row', () => {
+  const {container} = render(<ActionHint id="hint" hint={HINT} />);
+
+  const icon = container.querySelector('#hint');
+  expect(icon.style.pointerEvents).toBe('auto');
+  expect(icon.style.cursor).toBe('inherit');
+});
+
+test('opens from inside a disabled menu item', async () => {
+  const {container} = render(
+    <Menu selectedKeys={[]}>
+      <Menu.Item key="extract" disabled>
+        <div style={{display: 'flex', alignItems: 'center'}}>
+          {'Extract archive'}
+          <ActionHint id="hint" hint={HINT} />
+        </div>
+      </Menu.Item>
+    </Menu>
+  );
+
+  await hover(container.querySelector('#hint'));
+
+  await waitFor(() => {
+    expect(screen.getByText(HINT)).toBeInTheDocument();
+  });
 });

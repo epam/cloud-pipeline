@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {fn, restoreMocks, screen, spyOn} from '@test';
+import {click, fn, render, restoreMocks, screen, spyOn} from '@test';
 import {message} from 'antd';
 import handleDownloadArchive, {
   archiveActionAvailable,
@@ -469,10 +469,36 @@ describe('handleDownloadArchive', () => {
     await handleDownloadArchive(asyncTasks, 7, ['a.txt'], 'my archive');
 
     expect(info).toHaveBeenCalledWith(
-      'Archive download has been queued. Follow its progress under "Show downloads".',
+      'Archive download has been queued. Follow its progress under "Show storage tasks".',
       5
     );
     expect(success).not.toHaveBeenCalled();
+  });
+
+  // The plain-string path is covered above, where no `onShowDownloads` is
+  // passed. `mockReturnValue` stands in for the `hide` antd's `message.info`
+  // returns, which the link has to call.
+  test('the queued toast carries a working link when onShowDownloads is given', async () => {
+    const asyncTasks = {startArchiveDownload: fn().mockResolvedValue({id: 1})};
+    const hideQueued = fn();
+    const info = spyOn(message, 'info').mockReturnValue(hideQueued);
+    const onShowDownloads = fn();
+
+    await handleDownloadArchive(asyncTasks, 7, ['a.txt'], 'my archive', onShowDownloads);
+
+    expect(info).toHaveBeenCalledTimes(1);
+    const [content] = info.mock.calls[0];
+    const {container} = render(content);
+    expect(container.textContent).toBe(
+      'Archive download has been queued. Follow its progress under "Show storage tasks".'
+    );
+
+    // No implicit `link` role on an `<a>` with no `href` - queried by text.
+    await click(screen.getByText('Show storage tasks'));
+
+    expect(onShowDownloads).toHaveBeenCalledTimes(1);
+    // Dismissed, so the toast does not sit over the modal it opened.
+    expect(hideQueued).toHaveBeenCalledTimes(1);
   });
 
   test('a failing startArchiveDownload shows an error toast', async () => {

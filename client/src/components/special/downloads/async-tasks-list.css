@@ -77,3 +77,14 @@
   overflow: auto;
   word-break: break-all;
 }
+
+/* Clipped here, read in full from the cell's tooltip. `max-width`, not
+ * `width`: a short path should reserve no space it does not need. */
+.source-link {
+  display: inline-block;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}

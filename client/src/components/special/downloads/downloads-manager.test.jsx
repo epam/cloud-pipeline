@@ -19,6 +19,7 @@ import {observable} from 'mobx';
 import {
   renderWithStores,
   renderWithLocale,
+  renderWithRouter,
   screen,
   within,
   click,
@@ -114,6 +115,10 @@ function filterCalls (api) {
 // the tests below that use it). Scoped to each column's own header cell,
 // because both render the identical default icon under the same title when
 // both are present (an admin user, the default here).
+function typeFilterIcon () {
+  return within(screen.getByText('Type').closest('th')).getByTitle('Filter menu');
+}
+
 function statusFilterIcon () {
   return within(screen.getByText('Status').closest('th')).getByTitle('Filter menu');
 }
@@ -186,7 +191,8 @@ test(
     const call = filterCalls(api)[0];
     expect(call.method).toBe('POST');
     const body = JSON.parse(call.body);
-    expect(body.type).toBe('DOWNLOAD_ARCHIVE');
+    // No `type`: the table lists every kind of archive task by default.
+    expect(body.type).toBeUndefined();
     expect(body.owner).toBe(USER_NAME);
     // The real, visible behaviour change this phase owns: the table hides
     // CANCELLED/EXPIRED by default, because the request now always carries
@@ -200,9 +206,8 @@ test(
   }
 );
 
-// No heading assertion any more: the class itself carries no title - the
-// Modal shell's own `title` prop is what shows "Downloads" now, covered in
-// downloads-modal.test.jsx.
+// No heading assertion: the class carries no title. The Modal shell's own
+// `title` prop shows "Storage tasks", covered in downloads-modal.test.jsx.
 test('renders the rows from its own response', async () => {
   const api = stubApi();
   stubFilter(api, [
@@ -253,9 +258,10 @@ test('resolves the Storage column to the dataStorages singleton\'s name', async 
     }
   ]);
 
-  renderWithStores(<DownloadsManager />, stores());
+  renderWithRouter(<DownloadsManager />, {stores: stores()});
 
-  expect(await screen.findByText('my-storage')).toBeInTheDocument();
+  // `<storage>/<folder>`, and these fixtures carry no paths - so the root.
+  expect(await screen.findByText('my-storage/')).toBeInTheDocument();
 });
 
 test(
@@ -271,14 +277,16 @@ test(
       }
     ]);
 
-    renderWithStores(<DownloadsManager />, {
-      asyncTasks: asyncTasksDouble(),
-      authenticatedUserInfo: authenticatedUserInfoDouble(),
-      dataStorages: dataStoragesDouble({loaded: false, value: []})
+    renderWithRouter(<DownloadsManager />, {
+      stores: {
+        asyncTasks: asyncTasksDouble(),
+        authenticatedUserInfo: authenticatedUserInfoDouble(),
+        dataStorages: dataStoragesDouble({loaded: false, value: []})
+      }
     });
 
     expect(await screen.findByText('archive-one.zip')).toBeInTheDocument();
-    expect(screen.getByText('7')).toBeInTheDocument();
+    expect(screen.getByText('7/')).toBeInTheDocument();
   }
 );
 
@@ -296,17 +304,19 @@ test('shows the storage name once dataStorages loads after the first render', as
   ]);
   const dataStorages = dataStoragesDouble({loaded: false, value: []});
 
-  renderWithStores(<DownloadsManager />, {
-    asyncTasks: asyncTasksDouble(),
-    authenticatedUserInfo: authenticatedUserInfoDouble(),
-    dataStorages
+  renderWithRouter(<DownloadsManager />, {
+    stores: {
+      asyncTasks: asyncTasksDouble(),
+      authenticatedUserInfo: authenticatedUserInfoDouble(),
+      dataStorages
+    }
   });
-  expect(await screen.findByText('7')).toBeInTheDocument();
+  expect(await screen.findByText('7/')).toBeInTheDocument();
 
   dataStorages.value = [{id: 7, name: 'my-storage'}];
   dataStorages.loaded = true;
 
-  expect(await screen.findByText('my-storage')).toBeInTheDocument();
+  expect(await screen.findByText('my-storage/')).toBeInTheDocument();
 });
 
 // The cap hint this component used to render is gone, and so is the store
@@ -1160,9 +1170,9 @@ test(
 
     await waitFor(() => expect(filterCalls(api).length).toBe(1));
     expect(screen.queryByText('Owner')).not.toBeInTheDocument();
-    // Only the Status column's own default filter icon remains - no second
-    // one for an Owner column that was never rendered at all.
-    expect(screen.getAllByTitle('Filter menu')).toHaveLength(1);
+    // Type and Status keep theirs - no third one for an Owner column that was
+    // never rendered at all.
+    expect(screen.getAllByTitle('Filter menu')).toHaveLength(2);
     // The seeded owner is still sent - the column controls visibility only,
     // never the request itself.
     expect(JSON.parse(filterCalls(api)[0].body).owner).toBe(USER_NAME);
@@ -1250,3 +1260,38 @@ test(
     expect(screen.queryByText('Owner')).not.toBeInTheDocument();
   }
 );
+
+// The other half of the Type column: async-tasks-list.test.jsx stops at
+// `onTypeFilterChange` being called, so without this a broken handler here
+// would pass both suites.
+test('choosing a type sends it, and Reset filters drops it again', async () => {
+  const api = stubApi();
+  stubFilter(api, []);
+
+  const utils = renderWithLocale(<DownloadsManager />, {stores: stores()});
+
+  await waitFor(() => expect(filterCalls(api).length).toBe(1));
+  expect(JSON.parse(filterCalls(api)[0].body).type).toBeUndefined();
+  expect(screen.queryByRole('button', {name: /reset filters/i})).not.toBeInTheDocument();
+
+  await click(typeFilterIcon());
+  const extractRadio = screen.getByRole('radio', {name: 'Extract archive'});
+  await click(extractRadio);
+  await click(within(extractRadio.closest('.filterPopoverContainer')).getByText('OK'));
+
+  await waitFor(() => expect(filterCalls(api).length).toBe(2));
+  const filtered = JSON.parse(filterCalls(api)[1].body);
+  expect(filtered.type).toBe('UNPACK_ARCHIVE');
+  // Changing a filter goes back to page 1.
+  expect(filtered.page).toBe(1);
+
+  // A committed type is a changed filter, so the reset control appears.
+  expect(screen.getByRole('button', {name: /reset filters/i})).toBeInTheDocument();
+  expect(utils.container.querySelector('.headingRow')).toBeInTheDocument();
+
+  await click(screen.getByRole('button', {name: /reset filters/i}));
+
+  await waitFor(() => expect(filterCalls(api).length).toBe(3));
+  expect(JSON.parse(filterCalls(api)[2].body).type).toBeUndefined();
+  expect(screen.queryByRole('button', {name: /reset filters/i})).not.toBeInTheDocument();
+});

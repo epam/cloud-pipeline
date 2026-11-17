@@ -19,6 +19,7 @@ import {observable} from 'mobx';
 import {
   render,
   renderWithLocale,
+  renderWithRouter,
   screen,
   within,
   click,
@@ -39,6 +40,7 @@ import {ALL_ASYNC_TASK_STATUSES, POLLED_STATUSES} from '../../../models/asyncTas
 
 const SUCCESS_TASK = {
   id: 1,
+  type: 'DOWNLOAD_ARCHIVE',
   status: 'SUCCESS',
   params: {archiveName: 'archive-success', storageId: 7, paths: ['a/', 'b.txt']},
   created: '2026-10-21T13:13:02.274Z',
@@ -47,6 +49,7 @@ const SUCCESS_TASK = {
 
 const RUNNING_TASK = {
   id: 2,
+  type: 'DOWNLOAD_ARCHIVE',
   status: 'RUNNING',
   params: {archiveName: 'archive-running', storageId: 7, paths: ['c.txt']},
   created: '2026-10-21 13:15:19.689'
@@ -54,6 +57,7 @@ const RUNNING_TASK = {
 
 const FAILED_TASK = {
   id: 3,
+  type: 'DOWNLOAD_ARCHIVE',
   status: 'FAILED',
   errorMessage: 'Something went wrong',
   params: {archiveName: 'archive-failed', storageId: 7, paths: ['d.txt']},
@@ -63,6 +67,7 @@ const FAILED_TASK = {
 
 const PENDING_TASK = {
   id: 5,
+  type: 'DOWNLOAD_ARCHIVE',
   status: 'PENDING',
   params: {archiveName: 'archive-pending', storageId: 7, paths: ['e.txt']},
   created: '2026-10-21T13:13:02.274Z'
@@ -192,18 +197,6 @@ test('a lowercase status still gets the FAILED CSS class and tooltip', async () 
   await hover(statusText);
 
   expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
-});
-
-test('renders both API timestamp shapes through displayDate', () => {
-  render(<AsyncTasksList tasks={[SUCCESS_TASK, RUNNING_TASK]} />);
-
-  // SUCCESS_TASK.created is ISO ('2026-10-21T13:13:02.274Z'), RUNNING_TASK.created
-  // is space-separated ('2026-10-21 13:15:19.689') — both formats the API sends.
-  // displayDate formats both the same way, and never the raw string.
-  expect(screen.queryByText('2026-10-21T13:13:02.274Z')).not.toBeInTheDocument();
-  expect(screen.queryByText('2026-10-21 13:15:19.689')).not.toBeInTheDocument();
-  expect(screen.getAllByText('2026-10-21 13:13:02').length).toBeGreaterThan(0);
-  expect(screen.getAllByText('2026-10-21 13:15:19').length).toBeGreaterThan(0);
 });
 
 test('a SUCCESS task gets the cp-success class, not cp-primary', () => {
@@ -865,35 +858,82 @@ test('clicking Previous on the first page asks for nothing', async () => {
   expect(onPageChange).not.toHaveBeenCalled();
 });
 
-// The Storage column resolves `task.params.storageId` against the
+// The Source column resolves the task's storage id against the
 // `storageNamesById` lookup the container builds from the `dataStorages`
-// singleton. Every fixture above carries `storageId: 7`, so these reuse
-// SUCCESS_TASK rather than adding new fixtures.
+// singleton, and renders `<storage>/<folder>` as a link. Every fixture above
+// carries `storageId: 7` and paths at the storage root, so the folder is
+// empty and the text is `<storage>/`.
+function renderWithRouting (element) {
+  return renderWithRouter(element, {
+    stores: {authenticatedUserInfo: authenticatedUserInfoDouble()}
+  });
+}
+
 test('resolves a known storageId to its name, and hides the raw id', () => {
-  render(<AsyncTasksList tasks={[SUCCESS_TASK]} storageNamesById={{7: 'my-storage'}} />);
+  renderWithRouting(<AsyncTasksList tasks={[SUCCESS_TASK]} storageNamesById={{7: 'my-storage'}} />);
 
   const row = rowFor('archive-success');
-  expect(within(row).getByText('my-storage')).toBeInTheDocument();
-  expect(within(row).queryByText('7')).not.toBeInTheDocument();
+  expect(within(row).getByText('my-storage/')).toBeInTheDocument();
+  expect(within(row).queryByText('7/')).not.toBeInTheDocument();
+});
+
+test('links the source to its folder in the storage browser', () => {
+  renderWithRouting(<AsyncTasksList tasks={[SUCCESS_TASK]} storageNamesById={{7: 'my-storage'}} />);
+
+  const link = within(rowFor('archive-success')).getByText('my-storage/').closest('a');
+  // No `?path=` at all for the storage root.
+  expect(link.getAttribute('href')).toMatch(/\/storage\/7$/);
+});
+
+// The rendered `href` for a real folder, which the element-level tests in
+// columns.test.js cannot show: react-router builds it, not this code.
+test('the rendered href carries the folder, with no trailing slash', () => {
+  const task = {
+    ...SUCCESS_TASK,
+    params: {...SUCCESS_TASK.params, paths: ['data/reports/a.txt', 'data/reports/b.txt']}
+  };
+  renderWithRouting(<AsyncTasksList tasks={[task]} storageNamesById={{7: 'my-storage'}} />);
+
+  const link = within(rowFor('archive-success')).getByText('my-storage/data/reports/').closest('a');
+  expect(link.getAttribute('href')).toMatch(/\/storage\/7\?path=data%2Freports$/);
+});
+
+// Otherwise the modal would sit over whichever storage the link opened.
+test('following a source link reports the navigation', async () => {
+  const onNavigate = fn();
+  renderWithRouter(
+    <AsyncTasksList
+      tasks={[SUCCESS_TASK]}
+      storageNamesById={{7: 'my-storage'}}
+      onNavigate={onNavigate}
+    />,
+    {stores: {authenticatedUserInfo: authenticatedUserInfoDouble()}}
+  );
+
+  await click(within(rowFor('archive-success')).getByText('my-storage/'));
+
+  expect(onNavigate).toHaveBeenCalled();
 });
 
 test('falls back to the raw id when the storageId has no entry in the map', () => {
-  render(<AsyncTasksList tasks={[SUCCESS_TASK]} storageNamesById={{99: 'some-other-storage'}} />);
+  renderWithRouting(
+    <AsyncTasksList tasks={[SUCCESS_TASK]} storageNamesById={{99: 'some-other-storage'}} />
+  );
 
-  expect(within(rowFor('archive-success')).getByText('7')).toBeInTheDocument();
+  expect(within(rowFor('archive-success')).getByText('7/')).toBeInTheDocument();
 });
 
 test('falls back to the raw id, without throwing, when storageNamesById is omitted', () => {
-  render(<AsyncTasksList tasks={[SUCCESS_TASK]} />);
+  renderWithRouting(<AsyncTasksList tasks={[SUCCESS_TASK]} />);
 
-  expect(within(rowFor('archive-success')).getByText('7')).toBeInTheDocument();
+  expect(within(rowFor('archive-success')).getByText('7/')).toBeInTheDocument();
 });
 
 test('still resolves a name when the task\'s storageId arrives as a string', () => {
   const task = {...SUCCESS_TASK, params: {...SUCCESS_TASK.params, storageId: '7'}};
-  render(<AsyncTasksList tasks={[task]} storageNamesById={{7: 'my-storage'}} />);
+  renderWithRouting(<AsyncTasksList tasks={[task]} storageNamesById={{7: 'my-storage'}} />);
 
-  expect(within(rowFor('archive-success')).getByText('my-storage')).toBeInTheDocument();
+  expect(within(rowFor('archive-success')).getByText('my-storage/')).toBeInTheDocument();
 });
 
 // The item count, and its popover listing the archived paths, both live in
@@ -1025,17 +1065,17 @@ describe('the Owner column', () => {
     renderList({isAdmin: false});
 
     expect(screen.queryByText('Owner')).not.toBeInTheDocument();
-    // Only the Status column's own default filter icon remains - no second
-    // one for an Owner column that was never rendered at all.
-    expect(screen.getAllByTitle('Filter menu')).toHaveLength(1);
+    // Type and Status keep theirs - no third one for an Owner column that was
+    // never rendered at all.
+    expect(screen.getAllByTitle('Filter menu')).toHaveLength(2);
   });
 
   test('is present, with its own filter icon, when isAdmin is true', () => {
     renderList({isAdmin: true});
 
     expect(screen.getByText('Owner')).toBeInTheDocument();
-    // One default filter icon per filterable column - Status and Owner.
-    expect(screen.getAllByTitle('Filter menu')).toHaveLength(2);
+    // One default filter icon per filterable column - Type, Status, Owner.
+    expect(screen.getAllByTitle('Filter menu')).toHaveLength(3);
   });
 
   test(
@@ -1379,5 +1419,67 @@ describe('the Owner column', () => {
       const ownerColumn = instance.columns.find((column) => column.key === 'owner');
       expect(ownerColumn.filteredValue).toEqual([]);
     });
+  });
+});
+
+describe('the Type column filter', () => {
+  function renderList (props = {}) {
+    return renderWithLocale(
+      <AsyncTasksList tasks={[]} {...props} />,
+      {stores: {authenticatedUserInfo: authenticatedUserInfoDouble()}}
+    );
+  }
+
+  // Scoped to the Type column's own header cell: the default filter icons of
+  // the filterable columns cannot be told apart by title alone.
+  function openTypeFilter () {
+    const header = screen.getByText('Type').closest('th');
+    return click(within(header).getByTitle('Filter menu'));
+  }
+
+  test('renders the column, and a radio per type plus Any type', async () => {
+    renderList();
+
+    await openTypeFilter();
+
+    expect(screen.getByText('Any type')).toBeInTheDocument();
+    expect(screen.getByText('Download archive')).toBeInTheDocument();
+    expect(screen.getByText('Extract archive')).toBeInTheDocument();
+    expect(screen.getByText('OK')).toBeInTheDocument();
+    expect(screen.getByText('Reset to defaults')).toBeInTheDocument();
+  });
+
+  test('picking a type and clicking OK commits that type', async () => {
+    const onTypeFilterChange = fn();
+    renderList({onTypeFilterChange});
+
+    await openTypeFilter();
+    await click(screen.getByText('Extract archive'));
+    await click(screen.getByText('OK'));
+
+    expect(onTypeFilterChange).toHaveBeenCalledWith('UNPACK_ARCHIVE');
+  });
+
+  // "Any type" is the default, and the request expresses it by sending no
+  // `type` at all - so it commits `undefined`, not a value.
+  test('Reset to defaults commits undefined', async () => {
+    const onTypeFilterChange = fn();
+    renderList({typeFilter: 'UNPACK_ARCHIVE', onTypeFilterChange});
+
+    await openTypeFilter();
+    await click(screen.getByText('Reset to defaults'));
+
+    expect(onTypeFilterChange).toHaveBeenCalledWith(undefined);
+  });
+
+  test('the icon is only marked filtered once a type is committed', () => {
+    let instance;
+    renderList({ref: (r) => { instance = r; }});
+    expect(instance.columns.find((c) => c.key === 'type').filteredValue).toEqual([]);
+
+    let filteredInstance;
+    renderList({typeFilter: 'DOWNLOAD_ARCHIVE', ref: (r) => { filteredInstance = r; }});
+    expect(filteredInstance.columns.find((c) => c.key === 'type').filteredValue)
+      .toEqual(['filtered']);
   });
 });

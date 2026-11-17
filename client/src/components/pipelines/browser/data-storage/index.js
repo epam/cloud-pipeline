@@ -118,7 +118,14 @@ import handleDownloadArchive, {
 } from './utils/download-archive';
 import DownloadArchiveModal from './components/download-archive-modal';
 import ActionHint from './components/action-hint';
+import {
+  extractionBlockedBy,
+  extractionSelectionAvailable,
+  handleExtractArchives,
+  selectedArchivePaths
+} from './utils/extract-archives';
 import DownloadsModal from '../../../special/downloads/downloads-modal';
+import {SHOW_DOWNLOADS_LABEL} from '../../../special/downloads/queued-task-message';
 import JobList from './components/imported-jobs';
 import styles from '../Browser.css';
 import {SizeFilter, DateFilter, InputFilter, FILTER_FIELDS} from './components/filters';
@@ -202,6 +209,7 @@ export default class DataStorage extends React.Component {
   state = {
     editDialogVisible: false,
     downloadArchiveModalVisible: false,
+    extractionLimitCheck: undefined,
     downloadsModalVisible: false,
     restoreDialogVisible: false,
     lifeCycleRestoreMode: undefined,
@@ -1090,7 +1098,7 @@ export default class DataStorage extends React.Component {
     try {
       allowed = await archiveDownloadAllowed(asyncTasks);
     } catch (error) {
-      console.warn('Could not check the active-download limit', error);
+      console.warn('Could not check the active archive-task limit', error);
     }
     if (allowed) {
       this.setState({downloadArchiveModalVisible: true});
@@ -1101,8 +1109,60 @@ export default class DataStorage extends React.Component {
     this.setState({downloadArchiveModalVisible: false});
   };
 
+  // The one way the Storage tasks modal opens: the presentation dropdown's
+  // action, and the queued-task toasts' link.
+  showDownloadsModal = () => {
+    this.setState({downloadsModalVisible: true});
+  };
+
   closeDownloadsModal = () => {
     this.setState({downloadsModalVisible: false});
+  };
+
+  get extractionActionAvailable () {
+    const {selectedItems = []} = this.state;
+    return this.archiveStorageTypeSupported &&
+      this.currentFolderWriteAllowed &&
+      extractionSelectionAvailable(selectedItems);
+  }
+
+  // Refreshed when the selection dropdown opens: the menu is transient, so a
+  // stale answer only costs one click the server would refuse anyway.
+  checkExtractionLimit = () => {
+    const {asyncTasks} = this.props;
+    if (
+      !this.extractionActionAvailable ||
+      !asyncTasks ||
+      typeof asyncTasks.checkActiveTasksLimit !== 'function'
+    ) {
+      return;
+    }
+    asyncTasks.checkActiveTasksLimit()
+      .then((extractionLimitCheck) => this.setState({extractionLimitCheck}))
+      .catch((error) => {
+        console.warn('Could not check the active archive-task limit', error);
+      });
+  };
+
+  // Why "Extract archive" is unavailable for the current selection.
+  get extractionDisabledReason () {
+    const {selectedItems = []} = this.state;
+    return extractionBlockedBy(
+      selectedArchivePaths(selectedItems).length,
+      this.state.extractionLimitCheck
+    );
+  }
+
+  extractSelectedArchives = () => {
+    const {asyncTasks, storageId} = this.props;
+    const {selectedItems = []} = this.state;
+    void handleExtractArchives(
+      asyncTasks,
+      storageId,
+      selectedArchivePaths(selectedItems),
+      undefined,
+      this.showDownloadsModal
+    );
   };
 
   // Throws when the request fails.
@@ -1113,7 +1173,8 @@ export default class DataStorage extends React.Component {
       asyncTasks,
       storageId,
       archivePathsFromSelection(selectedItems),
-      name
+      name,
+      this.showDownloadsModal
     );
   };
 
@@ -2387,6 +2448,7 @@ export default class DataStorage extends React.Component {
       removeAll: 'remove-all',
       download: 'download',
       downloadArchive: 'download-archive',
+      extractArchive: 'extract-archive',
       restoreOmics: 'restoreOmics',
       downloadOmics: 'downloadOmics',
       permissions: 'permissions',
@@ -2408,8 +2470,19 @@ export default class DataStorage extends React.Component {
     const downloadArchiveAction = {
       key: Keys.downloadArchive,
       title: 'Download archive',
-      icon: 'download',
+      // Not `download`: the plain Download item above already uses it.
+      icon: 'inbox',
       available: archiveSupported && archiveActionAvailable(selectedItems)
+    };
+    const extractionDisabledReason = this.extractionDisabledReason;
+    // Needs write access - it writes.
+    const extractArchiveAction = {
+      key: Keys.extractArchive,
+      title: 'Extract archive',
+      icon: 'folder-add',
+      available: this.extractionActionAvailable,
+      disabled: !!extractionDisabledReason,
+      disabledHint: extractionDisabledReason
     };
     const downloadOmicsAction = {
       key: Keys.downloadOmics,
@@ -2478,7 +2551,8 @@ export default class DataStorage extends React.Component {
     const copyPathsAction = {
       key: Keys.copyPaths,
       title: 'Copy Paths',
-      icon: 'link',
+      // Not `link`: Generate URL above is the one that produces a link.
+      icon: 'copy',
       available: this.clearSelectionVisible
     };
     const removeAllAction = {
@@ -2515,6 +2589,7 @@ export default class DataStorage extends React.Component {
     appendAction(copyPathsAction);
     appendAction(downloadAction);
     appendAction(downloadArchiveAction);
+    appendAction(extractArchiveAction);
     appendAction(downloadOmicsAction);
     if (this.userCanChangeStorageItemsPermissions) {
       appendAction(permissionsAction);
@@ -2530,7 +2605,7 @@ export default class DataStorage extends React.Component {
       return null;
     }
     const doAction = (action, event) => {
-      if (!action) {
+      if (!action || action.disabled) {
         return;
       }
       switch (action.key) {
@@ -2558,6 +2633,9 @@ export default class DataStorage extends React.Component {
         case Keys.downloadArchive:
           this.openDownloadArchiveModal();
           break;
+        case Keys.extractArchive:
+          this.extractSelectedArchives();
+          break;
         case Keys.copyPaths:
           this.copyPathsToClipboard(selectedItems);
           break;
@@ -2573,16 +2651,29 @@ export default class DataStorage extends React.Component {
     };
     if (actions.length === 1) {
       const action = actions[0];
-      return (
+      const button = (
         <Button
           size="small"
           id={`selection-action-${action.key}`}
+          disabled={action.disabled}
           onClick={(event) => doAction(action, event)}
           style={{lineHeight: 1}}
         >
           {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
           {action.title}
         </Button>
+      );
+      if (!action.disabledHint) {
+        return button;
+      }
+      return (
+        <span style={{display: 'inline-flex', alignItems: 'center'}}>
+          {button}
+          <ActionHint
+            id={`selection-action-${action.key}-disabled-hint`}
+            hint={action.disabledHint}
+          />
+        </span>
       );
     }
     const title = selectedItems && selectedItems.length > 0
@@ -2598,14 +2689,32 @@ export default class DataStorage extends React.Component {
         <MenuItem
           id={`selection-action-${action.key}`}
           key={action.key}
-          className={classNames(action.className, `selection-action-${action.key}`)}
+          disabled={action.disabled}
+          className={classNames(
+            action.className,
+            `selection-action-${action.key}`,
+            {'cp-text-not-important': action.disabled}
+          )}
         >
-          <div style={{display: 'flex', alignItems: 'center'}}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              // A disabled item is not hit-tested, so its cursor falls back to
+              // the menu's own `pointer`. rc-menu binds no onClick to one, so
+              // taking the events back cannot make it clickable.
+              ...(action.disabled ? {pointerEvents: 'auto', cursor: 'not-allowed'} : {})
+            }}
+          >
             {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
             {action.title}
             <ActionHint
               id={`selection-action-${action.key}-hint`}
               hint={action.hint}
+            />
+            <ActionHint
+              id={`selection-action-${action.key}-disabled-hint`}
+              hint={action.disabledHint}
             />
           </div>
         </MenuItem>
@@ -2615,6 +2724,7 @@ export default class DataStorage extends React.Component {
       <Dropdown
         placement="bottomRight"
         trigger={['click']}
+        onVisibleChange={(visible) => visible && this.checkExtractionLimit()}
         overlayClassName="selection-actions-dropdown"
         overlay={
           <Menu
@@ -2765,6 +2875,12 @@ export default class DataStorage extends React.Component {
                   path={this.props.path}
                   storageInfo={this.storage.info}
                   region={this.regionName}
+                  // The download-archive gate stands in for the extract one,
+                  // which the worker does not expose yet. Change this if the
+                  // two ever diverge.
+                  extractArchivesAvailable={this.archiveStorageTypeSupported}
+                  asyncTasks={this.props.asyncTasks}
+                  onShowDownloads={this.showDownloadsModal}
                   // synchronous
                   uploadToS3={/^s3$/i.test(type)}
                   uploadToNFS={/^nfs$/i.test(type)}
@@ -2886,7 +3002,7 @@ export default class DataStorage extends React.Component {
     };
     const downloadsAction = {
       key: 'downloads',
-      title: 'Show downloads',
+      title: SHOW_DOWNLOADS_LABEL,
       available: true
     };
     const doAction = (action) => {
@@ -2898,7 +3014,7 @@ export default class DataStorage extends React.Component {
         case 'jobs': this.onToggleJobs(); break;
         case 'archive': this.showArchivedFilesChanged(!this.showArchives); break;
         case 'version': this.showFilesVersionsChanged(!this.showVersions); break;
-        case 'downloads': this.setState({downloadsModalVisible: true}); break;
+        case 'downloads': this.showDownloadsModal(); break;
         default:
           break;
       }
