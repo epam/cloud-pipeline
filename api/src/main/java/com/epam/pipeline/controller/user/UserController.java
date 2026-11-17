@@ -88,7 +88,7 @@ public class UserController extends AbstractRestController {
                                            @RequestParam(required = false) String name) {
         return Result.success(StringUtils.isNotBlank(name)
                 ? userApiService.issueToken(name, expiration)
-                : authManager.issueTokenForCurrentUser(expiration));
+                : userApiService.issueTokenForCurrentUser(expiration));
     }
 
     @RequestMapping(value = "/whoami", method = RequestMethod.GET)

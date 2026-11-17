@@ -48,6 +48,7 @@
 - [Amazon Linux 2023 node images built with Packer](#amazon-linux-2023-node-images-built-with-packer)
 - [A run can ask for a new node](#a-run-can-ask-for-a-new-node)
 - [WDL and Luigi pipelines are no longer supported](#wdl-and-luigi-pipelines-are-no-longer-supported)
+- [OIDC token exchange](#oidc-token-exchange)
 
 ***
 
@@ -961,6 +962,31 @@ The **Nextflow** pipeline template now sets `"language": "other"` instead of `"w
 
 The code in the GUI and the API that supports these pipelines is still there. The **GRAPH** tab is still shown for a pipeline whose `config.json` sets `"language": "wdl"` or `"language": "luigi"`, and the **PipelineBuilder** still edits a WDL main file. The API still reads the graph of a Luigi pipeline, and the `pipeline` package still has its Luigi task classes (`pipeline.Pipeline`, `pipeline.HelperTask`). A WDL pipeline needs a `docker_image` that has Cromwell to run.  
 For more details see [here](../../manual/06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder.md).
+
+## OIDC token exchange
+
+An application that calls the Cloud Pipeline API for its signed-in users previously needed a Cloud Pipeline token issued from the platform side - in practice a long-lived one, copied into the application's configuration, and often a single token shared by all of its users. The API could then not tell which user was really acting.
+
+In the current version, such an application can trade a user's own access token, issued by the corporate identity provider, for a short-lived Cloud Pipeline token for that same user, as [RFC 8693](https://www.rfc-editor.org/rfc/rfc8693) describes:
+
+```
+POST /restapi/oauth/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=urn:ietf:params:oauth:grant-type:token-exchange
+subject_token=<the user's access token>
+subject_token_type=urn:ietf:params:oauth:token-type:access_token
+```
+
+So the application stores no static token from Cloud Pipeline, every call is made and audited as the real user with that user's own permissions, and blocking a user takes effect within one token lifetime. The issued token is an ordinary platform token, which the API, the edge and `pipe` accept as any other.
+
+The exchange is off by default, and is enabled by the `oidc.token.exchange.enabled` property of the API service (the `CP_API_OIDC_TOKEN_EXCHANGE_ENABLED` environment variable of `cp-api-srv`) - until then the endpoint is not registered at all. The administrator then configures the trusted identity providers in the **`system.oidc.token.exchange.issuers`** preference. Each provider holds a list of **clients** - the callers trusted under it, because one provider issues tokens for many callers: every repository on github.com shares one issuer, as does every application in an Entra ID tenant. A client is identified by conditions on the token's claims, and says which user it may act as: a user named by a claim of the token, or a fixed service account for a CI job. A client can also narrow the roles its tokens carry, so an application can be given read-only access to the API on behalf of users who have more.
+
+The exchange never creates a user: the user has to exist in Cloud Pipeline already, and the usual blocking checks apply. The issued token lives no longer than the provider's token it came from, so ending a user's session at the provider ends their Cloud Pipeline access, and it cannot be renewed into a longer-lived one through `GET /restapi/user/token` unless the client is configured to allow it.
+
+> **_Note_**: upgrading removes the stored web sessions. The security context is held in the database with Java serialization, and it gained fields for this feature, which makes a session written by an earlier version unreadable - so clearing them avoids an error on the first request after the upgrade. A signed-in GUI user is sent through the sign-in of the identity provider again on the next request; where their session at the identity provider is still valid, that needs no input from them. Three things to know when planning the upgrade: restart the API service with the old replicas out of service, because a rolling upgrade lets an old replica keep writing sessions the new one cannot read; clear the sessions by hand if the service is ever rolled back, since the migration runs only once; and expect the platform usage report to show no online users for the interval covering the upgrade, as that figure is derived from the stored sessions.
+
+For more details see [here](../../manual/12_Manage_Settings/12.16._OIDC_token_exchange.md).
 
 ***
 
