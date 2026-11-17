@@ -29,9 +29,12 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserEvent;
 import com.epam.pipeline.entity.user.RunnerSid;
 import com.epam.pipeline.manager.quota.RunLimitsService;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.AclMaskList;
+import com.epam.pipeline.security.UserContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -42,6 +45,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static com.epam.pipeline.security.acl.AclExpressions.*;
 
@@ -62,6 +66,9 @@ public class UserApiService {
 
     @Autowired
     private RunLimitsService runLimitsService;
+
+    @Autowired
+    private AuthManager authManager;
 
     /**
      * Registers a new user
@@ -225,6 +232,32 @@ public class UserApiService {
     @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public JwtRawToken issueToken(final String userName, final Long expiration) {
         return userManager.issueToken(userName, expiration);
+    }
+
+    /**
+     * Generates a JWT token for the current user
+     * @param expiration token expiration time (seconds)
+     * @return generated token
+     */
+    public JwtRawToken issueTokenForCurrentUser(final Long expiration) {
+        assertTokenRenewable();
+        return authManager.issueTokenForCurrentUser(expiration);
+    }
+
+    /**
+     * A token may say that it must not be renewed.
+     * <p>
+     * Every token is renewable unless it says otherwise, so this changes nothing for an ordinary
+     * login. It matters for a token whose life is deliberately tied to something outside the
+     * platform: renewing it would give the holder one with its own, longer life, and they could
+     * keep doing so long after whatever vouched for them stopped. A client that needs a fresh
+     * token obtains one the same way it obtained the first.
+     */
+    private void assertTokenRenewable() {
+        final UserContext context = authManager.getUserContext();
+        if (Objects.nonNull(context) && context.isNonRenewable()) {
+            throw new AccessDeniedException("This token cannot be used to issue another token");
+        }
     }
 
     @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)

@@ -37,6 +37,7 @@ import com.epam.pipeline.acl.cluster.InfrastructureApiService;
 import com.epam.pipeline.acl.cluster.pool.NodePoolApiService;
 import com.epam.pipeline.acl.cluster.pool.NodeScheduleApiService;
 import com.epam.pipeline.manager.access.UnsecuredAccessService;
+import com.epam.pipeline.manager.access.oidc.OidcTokenExchangeManager;
 import com.epam.pipeline.manager.app.ApplicationInfoManager;
 import com.epam.pipeline.manager.cluster.ClusterApiService;
 import com.epam.pipeline.manager.configuration.RunConfigurationApiService;
@@ -274,4 +275,7 @@ public class ControllerTestBeans {
 
     @MockBean
     protected UnsecuredAccessService unsecuredAccessService;
+
+    @MockBean
+    protected OidcTokenExchangeManager oidcTokenExchangeManager;
 }

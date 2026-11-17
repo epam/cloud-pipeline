@@ -31,6 +31,8 @@ import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.monitoring.NetworkConsumingRunAction;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
+import com.epam.pipeline.security.oidc.OidcIssuer;
+import com.epam.pipeline.security.oidc.OidcIssuerValidator;
 import com.epam.pipeline.utils.PipelineStringUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -262,6 +264,11 @@ public final class PreferenceValidators {
                     return Files.exists(Paths.get(e.getMetadataPath()));
                 });
             });
+
+    public static final BiPredicate<String, Map<String, Preference>> isValidOidcTokenExchangeIssuers =
+        isNullOrValidJson(new TypeReference<List<OidcIssuer>>() {})
+            .and((pref, dependencies) -> OidcIssuerValidator.isValid(
+                    JsonMapper.parseData(pref, new TypeReference<List<OidcIssuer>>() {})));
 
     public static final BiPredicate<String, Map<String, Preference>> isDockerSecurityScanGroupValid =
         (pref, dependencies) -> !Boolean.valueOf(pref) ||
