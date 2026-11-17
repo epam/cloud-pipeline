@@ -615,10 +615,11 @@ function configure_package_manager {
                               /etc/apt/sources.list.d/tensorRT.list
 
                         # todo: Remove these dependencies because their installation requires internet access
-                        if ! check_installed curl || ! check_installed gpg; then
+                        # apt before 1.5 (Ubuntu 16.04, Debian 9) has no https method without apt-transport-https
+                        if ! check_installed curl || [ ! -e /usr/lib/apt/methods/https ]; then
                             echo "Installing additional dependencies using default apt repos..."
                             apt-get update -qq -y --allow-insecure-repositories && \
-                            apt-get install curl apt-transport-https gnupg -y -qq
+                            apt-get install curl apt-transport-https -y -qq
                         fi
 
                         if check_cp_cap CP_CAP_OFFLINE; then
@@ -628,14 +629,18 @@ function configure_package_manager {
                         fi
 
                         echo "Enabling Cloud Pipeline apt repo..."
-                        sed -i "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list && \
-                        curl -sk "${CP_REPO_BASE_URL_DEFAULT}/cloud-pipeline.key" | apt-key add - && \
-                        sed -i "1 i\deb ${CP_REPO_BASE_URL} stable main" /etc/apt/sources.list && \
+                        # The repo is trusted rather than checked with a key: apt 2.9+ (Ubuntu 25.10+) has no apt-key,
+                        # and most capability scripts install from the repo without --allow-unauthenticated.
+                        # The older runs put it into /etc/apt/sources.list, which a committed image may still carry
+                        { [ ! -f /etc/apt/sources.list ] || sed -i "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list; } && \
+                        mkdir -p /etc/apt/sources.list.d && \
+                        echo "deb [trusted=yes] ${CP_REPO_BASE_URL} stable main" > /etc/apt/sources.list.d/cloud-pipeline.list && \
                         apt-get update -qq -y --allow-insecure-repositories
 
                         if [ $? -ne 0 ]; then
                             echo "[ERROR] (attempt: $_CP_REPO_RETRY_ITER) Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
-                            sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
+                            rm -f /etc/apt/sources.list.d/cloud-pipeline.list
+                            [ ! -f /etc/apt/sources.list ] || sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
                         else
                             echo "Using apt repo $CP_REPO_BASE_URL..."
                             break

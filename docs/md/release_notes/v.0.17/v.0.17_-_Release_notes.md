@@ -2433,3 +2433,18 @@ Now:
 - On the RPM-based images, NICE DCV takes the build of the major OS version: el7 for 7, el8 for 8, and `nice-dcv-2024.0-19030-el9-x86_64` for 9 and later. If the major version cannot be resolved, the el8 build is used, as before. The run log names the build. The new `CP_CAP_DCV_DISTRIBUTION` parameter names another build for these images, e.g. `nice-dcv-2024.0-19030-el9-x86_64`: the setup downloads `<build>.tgz` from the `tools/dcv` folder of the global distribution, or from `CP_CAP_DCV_DISTRO_URL`. `libXvMC` and `mesa-libxatracker` are installed where the repositories have them. Otherwise, the run log gets a warning, and the setup goes on. Ubuntu images get the same builds as before.
 - SGE installs `gridengine`, `gridengine-devel`, `gridengine-drmaa4ruby`, `gridengine-execd`, `gridengine-qmaster` and `gridengine-qmon`. The `sge_setup_sbm_host` script, which added a run as an SGE submission host, is removed: nothing in the platform called it. The scripts of `pipe-common` are on the `PATH` of a run, so a user's own script that calls `sge_setup_sbm_host` now fails with "command not found".
 - systemd is set up only when `CP_CAP_SYSTEMD_CONTAINER` or `CP_CAP_KUBE` is `true`, the image has `systemctl`, and the OS is CentOS, Rocky Linux or RHEL. The systemd setup used to install `procps` (`procps-ng`), which has `sysctl`. The NFS events observer, which raises the inotify limits with `sysctl`, now installs `procps` itself if the image has no `sysctl`.
+### Ubuntu 25.10 and later: runs do not add the Cloud Pipeline apt repository
+
+[#4875](https://github.com/epam/cloud-pipeline/issues/4875)
+
+Previously, a run imported the key of the Cloud Pipeline apt repository with `apt-key`, and Docker in Docker on a GPU node imported the key of NVIDIA's apt repository the same way. apt 2.9 and later has no `apt-key`, e.g. on Ubuntu 25.10 and 26.04. So runs from such images removed the Cloud Pipeline repository after three failed attempts, and could not install SGE, LizardFS, Singularity or blobfuse, which need it. Docker in Docker got no `nvidia` runtime there, nor on Ubuntu 24.10 and 25.04, as NVIDIA has no list for the Ubuntu releases after 22.04. Also:
+
+- most capabilities install from the Cloud Pipeline repository without `--allow-unauthenticated`. So they failed when the repository was unsigned, or its key did not match
+- a run from an image without `/etc/apt/sources.list` failed to add the repository
+
+Now:
+
+- the run adds the Cloud Pipeline repository as a trusted repository, in `/etc/apt/sources.list.d/cloud-pipeline.list`, and imports no key. So the repository may be unsigned, or signed with a key that the run does not have. For a signed repository, such as the public one, apt prints a `W:` line about the signature (`NO_PUBKEY`) at each refresh of the package lists, and uses the repository anyway. The line that an older run added to `/etc/apt/sources.list` is removed, and `gnupg` is no longer installed for the key
+- Docker in Docker puts NVIDIA's key into `/etc/apt/keyrings/nvidia-docker.asc`, which its list names, and uses NVIDIA's 22.04 list for the Ubuntu releases after 22.04. With an apt older than 1.4 (Ubuntu 16.04), it imports the key with `apt-key`, as before
+
+Please note: a run adds the Cloud Pipeline repository only if the distribution has one for its OS version. The public distribution has Ubuntu 16.04 to 22.04 and Debian 8 to 10. So with the public distribution URL, runs on Ubuntu 24.04 and later still get no Cloud Pipeline repository. A deployment that needs it there has to host `tools/repos/ubuntu/<version>` of its own distribution URL.
