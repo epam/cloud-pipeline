@@ -20,6 +20,7 @@ import com.epam.pipeline.app.TestApplicationWithAclSecurity;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.cluster.pool.NodePoolType;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.AbstractManagerTest;
@@ -122,6 +123,7 @@ public class NodePoolAclSyncTest extends AbstractManagerTest {
         vo.setInstanceDisk(INSTANCE_DISK);
         vo.setPriceType(PriceType.ON_DEMAND);
         vo.setCount(1);
+        vo.setPoolType(NodePoolType.STANDARD);
         return vo;
     }
 }

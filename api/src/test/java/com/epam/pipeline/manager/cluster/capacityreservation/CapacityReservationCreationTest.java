@@ -628,6 +628,27 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     }
 
     @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldLetAReservationPoolSwitchTypeWithoutGivingUpItsReservation() {
+        final NodePool created = poolManager.create(reservationPoolVO());
+        final CapacityReservation reservation = reservationDao.findByNodePoolId(created.getId())
+                .orElseThrow(AssertionError::new);
+        final NodePoolVO edit = editOf(created.getId());
+        edit.setPoolType(NodePoolType.SHAREABLE_NODE);
+
+        poolManager.update(created.getId(), edit);
+
+        final NodePool pool = poolDao.find(created.getId()).orElseThrow(AssertionError::new);
+        assertThat(pool.getPoolType()).isEqualTo(NodePoolType.SHAREABLE_NODE);
+        assertThat(pool.isCapacityReservation()).isTrue();
+        assertThat(pool.getLaunchConfig()).isNotNull();
+        final CapacityReservation stillThere = reservationDao.findByNodePoolId(created.getId())
+                .orElseThrow(AssertionError::new);
+        assertThat(stillThere.getId()).isEqualTo(reservation.getId());
+        assertThat(stillThere.getStatus()).isEqualTo(reservation.getStatus());
+    }
+
+    @Test
     @WithMockUser(username = OWNER)
     public void shouldRefuseResizingAReservationPoolStillAwaitingApproval() {
         final NodePool created = poolManager.create(reservationPoolVO());
@@ -1044,6 +1065,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         vo.setInstanceDisk(INSTANCE_DISK);
         vo.setPriceType(PriceType.ON_DEMAND);
         vo.setCount(INSTANCE_COUNT);
+        vo.setPoolType(NodePoolType.STANDARD);
         return vo;
     }
 

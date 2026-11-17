@@ -98,7 +98,8 @@
                         scale_step = :POOL_SCALE_STEP,
                         kube_labels = :POOL_KUBE_LABELS,
                         launch_config = :POOL_LAUNCH_CONFIG,
-                        ami_configuration = :POOL_AMI_CONFIGURATION
+                        ami_configuration = :POOL_AMI_CONFIGURATION,
+                        pool_type = :POOL_TYPE
                     WHERE
                         id = :POOL_ID
                 ]]>

@@ -108,6 +108,9 @@ public class NodePoolValidator {
         Assert.isTrue(vo.getInstanceDisk() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_INVALID_DISK_SIZE));
 
+        Assert.notNull(vo.getPoolType(),
+                messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_MISSING_POOL_TYPE));
+
         Assert.isTrue(vo.getCount() >= 0,
                 messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_INVALID_COUNT));
 
