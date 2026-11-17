@@ -22,8 +22,10 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CapacityReservationTest {
 
@@ -71,5 +73,34 @@ public class CapacityReservationTest {
         reservation.setInstancePlatform(null);
 
         assertNull(reservation.copy().getInstancePlatform());
+    }
+
+    @Test
+    public void shouldBeExtendableWhenActiveOrFinalizingAndACapacityBlock() {
+        assertTrue(capacityBlock(CapacityReservationStatus.ACTIVE).isExtendable());
+        assertTrue(capacityBlock(CapacityReservationStatus.FINALIZING).isExtendable());
+    }
+
+    @Test
+    public void shouldNotBeExtendableWhenNotACapacityBlock() {
+        final CapacityReservation reservation = CapacityReservation.builder()
+                .reservationType(CapacityReservationType.FUTURE_DATED)
+                .status(CapacityReservationStatus.ACTIVE)
+                .build();
+
+        assertFalse(reservation.isExtendable());
+    }
+
+    @Test
+    public void shouldNotBeExtendableWhenNotActiveOrFinalizing() {
+        assertFalse(capacityBlock(CapacityReservationStatus.SCHEDULED).isExtendable());
+        assertFalse(capacityBlock(CapacityReservationStatus.REQUIRED_APPROVE).isExtendable());
+    }
+
+    private static CapacityReservation capacityBlock(final CapacityReservationStatus status) {
+        return CapacityReservation.builder()
+                .reservationType(CapacityReservationType.CAPACITY_BLOCK)
+                .status(status)
+                .build();
     }
 }

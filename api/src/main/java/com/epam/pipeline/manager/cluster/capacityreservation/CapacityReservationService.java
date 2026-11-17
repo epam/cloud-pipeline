@@ -56,11 +56,13 @@ import java.util.Set;
  *
  * <p>A reservation is created only as part of the pool it backs, in that pool's transaction, and
  * {@link CapacityReservationApprovalService} decides the status it starts in. From then on the reservation drives
- * the pool, which is what the three pool methods are for:
+ * the pool, which is what the pool methods are for:
  * <ul>
  *   <li>{@link #schedulePool} - gives the pool the window it is usable in and the reservation's target, zone and
  *       subnet, and leaves its size alone, which at that point is still no nodes.</li>
  *   <li>{@link #activatePool} - sizes the pool to the reserved instance count, once the capacity is live.</li>
+ *   <li>{@link #extendPoolEndDate} - moves the pool's own end date out to match a capacity block extension,
+ *       without touching anything else {@link #schedulePool} sets, since an extension changes nothing else.</li>
  *   <li>{@link #deactivatePool} - takes all of that back off the pool, leaving a pool of no nodes, which
  *       {@link NodePool#isActive} reports as inactive whatever its dates say.</li>
  * </ul>
@@ -150,12 +152,7 @@ public class CapacityReservationService {
         final Map<String, Object> launchSpecification = launchSpecificationOf(reservation);
         final String zone = reservation.getAvailabilityZone();
         final String subnet = allowedNetworks(regionCodeOf(reservation)).get(zone);
-        // The pool stops taking new runs once the reservation is finalizing, so a job is not started on capacity that
-        // ends shortly after; runs already on its nodes keep running until the reservation itself ends.
-        final LocalDateTime poolEndDate = Optional.ofNullable(reservation.getEndDate())
-                .map(end -> end.minusHours(preferenceManager.getPreference(
-                        SystemPreferences.CLUSTER_CAPACITY_RESERVATION_MONITOR_SETTINGS).getFinalizingLeadHours()))
-                .orElse(null);
+        final LocalDateTime poolEndDate = getPoolEndDate(reservation);
         poolManager.applyReservationState(reservation.getNodePoolId(), pool -> {
             pool.setStartDate(reservation.getStartDate());
             pool.setEndDate(poolEndDate);
@@ -163,6 +160,25 @@ public class CapacityReservationService {
         });
         log.debug("Prepared node pool {} for capacity reservation {} from {} to {}",
                 reservation.getNodePoolId(), reservation.getId(), reservation.getStartDate(), reservation.getEndDate());
+    }
+
+    /**
+     * Kept separate from {@link #schedulePool} so that method stays free to grow logic later that an extension has
+     * no business re-running.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void extendPoolEndDate(final CapacityReservation reservation) {
+        final LocalDateTime poolEndDate = getPoolEndDate(reservation);
+        poolManager.applyReservationState(reservation.getNodePoolId(), pool -> pool.setEndDate(poolEndDate));
+        log.debug("Extended node pool {} end date to {} for capacity reservation {}",
+                reservation.getNodePoolId(), poolEndDate, reservation.getId());
+    }
+
+    private LocalDateTime getPoolEndDate(final CapacityReservation reservation) {
+        return Optional.ofNullable(reservation.getEndDate())
+                .map(end -> end.minusHours(preferenceManager.getPreference(
+                        SystemPreferences.CLUSTER_CAPACITY_RESERVATION_MONITOR_SETTINGS).getFinalizingLeadHours()))
+                .orElse(null);
     }
 
     @Transactional
@@ -207,6 +223,13 @@ public class CapacityReservationService {
         return statusService.transition(reservation, CapacityReservationStatus.APPROVED,
                 messageHelper.getMessage(MessageConstants.INFO_CAPACITY_RESERVATION_APPROVED_BY_USER,
                         authManager.getAuthorizedUser()));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void recordExtendedEndDate(final CapacityReservation reservation) {
+        reservation.setUpdated(DateUtils.nowUTC());
+        reservationDao.update(reservation);
+        extendPoolEndDate(reservation);
     }
 
     @Transactional

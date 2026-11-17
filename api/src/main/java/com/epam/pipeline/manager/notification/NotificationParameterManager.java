@@ -140,6 +140,9 @@ public class NotificationParameterManager {
         parameters.put("availabilityZone", reservation.getAvailabilityZone());
         parameters.put("owner", reservation.getOwner());
         parameters.put("capacityBlockOfferingId", reservation.getCapacityBlockOfferingId());
+        if (NotificationType.CAPACITY_RESERVATION_FINALIZING == type) {
+            parameters.put("extensionAvailable", reservation.isExtendable());
+        }
         return parameters;
     }
 

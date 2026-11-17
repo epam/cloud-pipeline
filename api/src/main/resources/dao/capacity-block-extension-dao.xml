@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~ http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.cluster.capacityreservation.CapacityBlockExtensionDao"
+          id="capacityBlockExtensionDao" autowire="byName">
+        <constructor-arg>
+            <value>
+                <!--insertCapacityBlockExtensionQuery-->
+                <![CDATA[
+                    INSERT INTO pipeline.capacity_block_extension (
+                        reservation_id,
+                        origin_id,
+                        extension_offering_id,
+                        duration_hours,
+                        upfront_fee_amount,
+                        upfront_fee_currency,
+                        status,
+                        status_reason,
+                        requested_by,
+                        created,
+                        updated,
+                        start_date,
+                        end_date
+                        )
+                    VALUES (
+                        :RESERVATION_ID,
+                        :ORIGIN_ID,
+                        :EXTENSION_OFFERING_ID,
+                        :DURATION_HOURS,
+                        :UPFRONT_FEE_AMOUNT,
+                        :UPFRONT_FEE_CURRENCY,
+                        :STATUS,
+                        :STATUS_REASON,
+                        :REQUESTED_BY,
+                        :CREATED,
+                        :UPDATED,
+                        :START_DATE,
+                        :END_DATE)
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--updateCapacityBlockExtensionQuery-->
+                <![CDATA[
+                    UPDATE pipeline.capacity_block_extension SET
+                        duration_hours = :DURATION_HOURS,
+                        status = :STATUS,
+                        status_reason = :STATUS_REASON,
+                        updated = :UPDATED,
+                        start_date = :START_DATE,
+                        end_date = :END_DATE
+                    WHERE
+                        id = :ID
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--loadCapacityBlockExtensionQuery-->
+                <![CDATA[
+                    SELECT
+                        e.id AS ID,
+                        e.reservation_id AS RESERVATION_ID,
+                        e.origin_id AS ORIGIN_ID,
+                        e.extension_offering_id AS EXTENSION_OFFERING_ID,
+                        e.duration_hours AS DURATION_HOURS,
+                        e.upfront_fee_amount AS UPFRONT_FEE_AMOUNT,
+                        e.upfront_fee_currency AS UPFRONT_FEE_CURRENCY,
+                        e.status AS STATUS,
+                        e.status_reason AS STATUS_REASON,
+                        e.requested_by AS REQUESTED_BY,
+                        e.created AS CREATED,
+                        e.updated AS UPDATED,
+                        e.start_date AS START_DATE,
+                        e.end_date AS END_DATE
+                    FROM
+                        pipeline.capacity_block_extension AS e
+                    WHERE
+                        e.id = ?
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--loadCapacityBlockExtensionsByReservationQuery-->
+                <![CDATA[
+                    SELECT
+                        e.id AS ID,
+                        e.reservation_id AS RESERVATION_ID,
+                        e.origin_id AS ORIGIN_ID,
+                        e.extension_offering_id AS EXTENSION_OFFERING_ID,
+                        e.duration_hours AS DURATION_HOURS,
+                        e.upfront_fee_amount AS UPFRONT_FEE_AMOUNT,
+                        e.upfront_fee_currency AS UPFRONT_FEE_CURRENCY,
+                        e.status AS STATUS,
+                        e.status_reason AS STATUS_REASON,
+                        e.requested_by AS REQUESTED_BY,
+                        e.created AS CREATED,
+                        e.updated AS UPDATED,
+                        e.start_date AS START_DATE,
+                        e.end_date AS END_DATE
+                    FROM
+                        pipeline.capacity_block_extension AS e
+                    WHERE
+                        e.reservation_id = ?
+                    ORDER BY
+                        e.id
+                ]]>
+            </value>
+        </constructor-arg>
+    </bean>
+</beans>

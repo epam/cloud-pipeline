@@ -24,6 +24,7 @@ import com.epam.pipeline.dao.cluster.ClusterDao;
 import com.epam.pipeline.dao.cluster.InstanceOfferDao;
 import com.epam.pipeline.dao.cluster.NatGatewayDao;
 import com.epam.pipeline.dao.cluster.NodeDiskDao;
+import com.epam.pipeline.dao.cluster.capacityreservation.CapacityBlockExtensionDao;
 import com.epam.pipeline.dao.cluster.capacityreservation.CapacityReservationDao;
 import com.epam.pipeline.dao.cluster.pool.NodePoolDao;
 import com.epam.pipeline.dao.cluster.pool.NodeScheduleDao;
@@ -377,6 +378,9 @@ public class AspectTestBeans {
 
     @MockBean
     public CapacityReservationDao mockCapacityReservationDao;
+
+    @MockBean
+    public CapacityBlockExtensionDao mockCapacityBlockExtensionDao;
 
     @MockBean
     public NodeScheduleDao nodeScheduleDao;

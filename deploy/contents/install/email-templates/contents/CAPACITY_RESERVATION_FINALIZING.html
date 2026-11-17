@@ -39,6 +39,9 @@
 #if( ${CP_DOLLAR}templateParameters.get("statusReason") )
 <p>Reason: ${CP_DOLLAR}templateParameters.get("statusReason")</p>
 #end
+#if( ${CP_DOLLAR}templateParameters.get("extensionAvailable") )
+<p>This capacity block can still be extended before it ends - see the node pool to request an extension.</p>
+#end
 <table>
     <tr>
         <td>Reservation</td>
