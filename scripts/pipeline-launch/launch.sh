@@ -738,16 +738,20 @@ EOF
                               /etc/apt/sources.list.d/nvidia-ml.list \
                               /etc/apt/sources.list.d/tensorRT.list
 
+                        # The repo is trusted rather than checked with a key: apt 2.9+ (Ubuntu 25.10+) has no apt-key,
+                        # and most capability scripts install from the repo without --allow-unauthenticated.
+                        # The older runs put it into /etc/apt/sources.list, which a committed image may still carry
                         run_pkg_manager_update apt-get update -qq -y --allow-insecure-repositories && \
-                        run_pkg_manager_install apt-get install curl apt-transport-https gnupg -y -qq && \
-                        sed -i "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list && \
-                        curl -sk "${CP_REPO_BASE_URL_DEFAULT}/cloud-pipeline.key" | apt-key add - && \
-                        sed -i "1 i\deb ${CP_REPO_BASE_URL} stable main" /etc/apt/sources.list && \
+                        run_pkg_manager_install apt-get install curl apt-transport-https -y -qq && \
+                        { [ ! -f /etc/apt/sources.list ] || sed -i "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list; } && \
+                        mkdir -p /etc/apt/sources.list.d && \
+                        echo "deb [trusted=yes] ${CP_REPO_BASE_URL} stable main" > /etc/apt/sources.list.d/cloud-pipeline.list && \
                         run_pkg_manager_update apt-get update -qq -y --allow-insecure-repositories
 
                         if [ $? -ne 0 ]; then
                               echo "[ERROR] (attempt: $_CP_REPO_RETRY_ITER) Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
-                              sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
+                              rm -f /etc/apt/sources.list.d/cloud-pipeline.list
+                              [ ! -f /etc/apt/sources.list ] || sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
                         else
                               # Any specific handling might be needed here, like for the Centos
                               break

@@ -108,6 +108,31 @@ rm -f docker.tgz
 
 pipe_log_info "Docker installed" "$DIND_SETUP_TASK"
 
+NVIDIA_DOCKER_APT_LIST="/etc/apt/sources.list.d/nvidia-docker.list"
+NVIDIA_DOCKER_APT_KEYRING="/etc/apt/keyrings/nvidia-docker.asc"
+
+# Adds the apt repository of the NVIDIA container runtime for a distribution such as "ubuntu22.04".
+# NVIDIA lists no Ubuntu release after 22.04, so the newer ones use the 22.04 list.
+# The key goes into a keyring that the list names with signed-by: apt 2.9+ (Ubuntu 25.10+) has no apt-key.
+# apt before 1.4 (Ubuntu 16.04) reads no armored keyrings, and imports the key with apt-key
+function add_nvidia_docker_apt_repo {
+    local _distribution="$1"
+    if [[ "$_distribution" == ubuntu* ]] && dpkg --compare-versions "${_distribution#ubuntu}" gt 22.04; then
+        _distribution="ubuntu22.04"
+    fi
+    if dpkg --compare-versions "$(dpkg-query -W -f '${Version}' apt 2>/dev/null)" lt 1.4; then
+        curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | apt-key add -
+        curl -s -L "https://nvidia.github.io/nvidia-docker/$_distribution/nvidia-docker.list" \
+        | tee "$NVIDIA_DOCKER_APT_LIST"
+    else
+        mkdir -p "$(dirname "$NVIDIA_DOCKER_APT_KEYRING")"
+        curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey > "$NVIDIA_DOCKER_APT_KEYRING"
+        curl -s -L "https://nvidia.github.io/nvidia-docker/$_distribution/nvidia-docker.list" \
+        | sed "s|^deb |deb [signed-by=$NVIDIA_DOCKER_APT_KEYRING] |" \
+        | tee "$NVIDIA_DOCKER_APT_LIST"
+    fi
+}
+
 nvidia-smi &> /dev/null
 REQUIRES_GPU_DIND=$?
 if [ $REQUIRES_GPU_DIND -eq 0 ]; then
@@ -124,21 +149,15 @@ if [ $REQUIRES_GPU_DIND -eq 0 ]; then
         _DIND_NVIDIA_DEP_INSTALL_RESULT=$?
         find /etc/yum.repos.d -type f \( -name "*nvidia*" -o -name "*docker*" \)  -exec rm -f {} \;
     else
-        # Hacky way to make Ubuntu 24.04 DIND work with GPU
-        if [ "$distribution" == "ubuntu24.04" ]; then
-            distribution="ubuntu22.04"
-        fi
         export CP_CAP_DIND_GPU_VERSION="${CP_CAP_DIND_GPU_VERSION:-3.13.0-1}"
         if [ "$CP_CAP_DIND_GPU_VERSION_DEB" ]; then
             CP_CAP_DIND_GPU_VERSION="$CP_CAP_DIND_GPU_VERSION_DEB"
         fi
-        curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | apt-key add -
-        curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list \
-        | tee /etc/apt/sources.list.d/nvidia-docker.list
+        add_nvidia_docker_apt_repo "$distribution"
         apt-get update -yq && \
         apt-get install -yq nvidia-container-runtime=$CP_CAP_DIND_GPU_VERSION
         _DIND_NVIDIA_DEP_INSTALL_RESULT=$?
-        rm /etc/apt/sources.list.d/nvidia-docker.list
+        rm -f "$NVIDIA_DOCKER_APT_LIST" "$NVIDIA_DOCKER_APT_KEYRING"
     fi
     if [ $_DIND_NVIDIA_DEP_INSTALL_RESULT -ne 0 ]; then
         pipe_log_info "Unable to install NVIDIA DIND, 'nvidia' runtime will not be available" "$DIND_SETUP_TASK"

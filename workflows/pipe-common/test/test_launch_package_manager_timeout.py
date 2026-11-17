@@ -15,6 +15,7 @@
 # The time limits of the apt-get, yum and apk calls of scripts/pipeline-launch/launch.sh: the wrappers, the install and
 # upgrade commands, configure_package_manager (the Debian 8 refresh, and the Cloud Pipeline repo setup on Ubuntu 22.04
 # and Rocky Linux 8.7) with a package manager call that hangs, and a check that every downloading call has a limit.
+# Also how configure_package_manager adds the Cloud Pipeline apt repo, with no apt-key on the host.
 # Runs the shell code with bash and stub package managers that hang, with the absolute paths replaced with temporary
 # ones. Needs bash and GNU coreutils. A test that hangs takes 2-4 s. Runs on Python 2.7 and 3.
 
@@ -62,6 +63,17 @@ TIMEOUT_BUSYBOX_STUB = '#!/bin/bash\n[ "$1" == "-k" ] && exit 1\n"%s" "$@"\nrc=$
 
 APT_UPDATE_CALL = 'update -qq -y --allow-insecure-repositories | DEBIAN_FRONTEND='
 
+# Logs its arguments, and fails a refresh while the CP_APT_LIST_FILE list exists, as with an unreachable repo
+APT_GET_REPO_UNREACHABLE_STUB = """#!/bin/bash
+echo "$* | DEBIAN_FRONTEND=$DEBIAN_FRONTEND" >> "$STUB_LOG"
+if [ "$1" == "update" ] && [ -f "$CP_APT_LIST_FILE" ]; then
+    exit 100
+fi
+"""
+
+# apt 2.9+ (Ubuntu 25.10+) has no apt-key
+APT_KEY_MISSING_STUB = '#!/bin/bash\necho "apt-key: command not found" >&2\nexit 127\n'
+
 # A yum or an apk: logs its arguments, and hangs as many times as the STUB_HANGS file says, on the calls with
 # STUB_HANG_ON in them
 PKG_MANAGER_STUB = """#!/bin/bash
@@ -75,7 +87,11 @@ fi
 YUM_PRIORITIES_CALL = '--disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y -q'
 
 DIST_URL = 'https://dist.example/'
+# The line that the older runs added to /etc/apt/sources.list, and the list file that is used now
 CP_APT_SOURCE = 'deb https://dist.example/tools/repos/ubuntu/22.04 stable main\n'
+CP_APT_LIST = '/etc/apt/sources.list.d/cloud-pipeline.list'
+CP_APT_TRUSTED_SOURCE = 'deb [trusted=yes] https://dist.example/tools/repos/ubuntu/22.04 stable main\n'
+APT_INSTALL_DEPS_CALL = 'install curl apt-transport-https -y -qq | DEBIAN_FRONTEND='
 UBUNTU_SOURCES = 'deb http://archive.ubuntu.com/ubuntu/ jammy main restricted\n'
 CLOUD_PIPELINE_REPO = '[cloud-pipeline]\nname=Cloud Pipeline\nbaseurl=https://dist.example/tools/repos/rocky/8.7\n' \
                       'enabled=1\ngpgcheck=0\n'
@@ -328,34 +344,60 @@ class ConfigurePackageManagerTestCase(PackageManagerShellTestCase):
 
 
 class ConfigurePackageManagerUbuntuTest(ConfigurePackageManagerTestCase):
-    # An attempt of the Cloud Pipeline repo setup refreshes the package lists, installs curl, apt-transport-https and
-    # gnupg, adds the repo and refreshes the package lists again
+    # An attempt of the Cloud Pipeline repo setup refreshes the package lists, installs curl and apt-transport-https,
+    # adds the repo as trusted in its own list file and refreshes the package lists again. It imports no key, so the
+    # apt-key stub fails as on Ubuntu 25.10+
 
     def setUp(self):
         super(ConfigurePackageManagerUbuntuTest, self).setUp()
+        self.write_sources_list(UBUNTU_SOURCES)
+        _stub(self.stub_bin, 'apt-key', APT_KEY_MISSING_STUB)
+
+    def write_sources_list(self, text):
         with open(self.path('/etc/apt/sources.list'), 'w') as f:
-            f.write(UBUNTU_SOURCES)
-        _stub(self.stub_bin, 'apt-key', '#!/bin/bash\ncat > /dev/null\n')
-        _stub(self.stub_bin, 'curl', '#!/bin/bash\necho KEY\n')
+            f.write(text)
+
+    def assert_repo_set_up(self, proc):
+        self.assertEqual(0, proc.returncode, proc.stderr)
+        self.assertNotIn('Failed to configure', proc.stdout)
+        self.assertEqual(CP_APT_TRUSTED_SOURCE, _read(self.path(CP_APT_LIST)))
 
     def test_the_cloud_pipeline_repo_is_set_up_when_the_first_refresh_hangs_once(self):
         proc = self.configure('ubuntu', '22.04', hangs=1, CP_PKG_MANAGER_UPDATE_TIMEOUT_SEC='2')
-        self.assertEqual(0, proc.returncode, proc.stderr)
-        self.assertEqual([APT_UPDATE_CALL, APT_UPDATE_CALL,
-                          'install curl apt-transport-https gnupg -y -qq | DEBIAN_FRONTEND=',
-                          APT_UPDATE_CALL], self.calls())
-        self.assertNotIn('Failed to configure', proc.stdout)
-        self.assertEqual(CP_APT_SOURCE + UBUNTU_SOURCES, _read(self.path('/etc/apt/sources.list')))
+        self.assert_repo_set_up(proc)
+        self.assertEqual([APT_UPDATE_CALL, APT_UPDATE_CALL, APT_INSTALL_DEPS_CALL, APT_UPDATE_CALL], self.calls())
+        self.assertEqual(UBUNTU_SOURCES, _read(self.path('/etc/apt/sources.list')))
 
     def test_an_attempt_fails_when_the_refresh_hangs_twice_and_the_next_one_sets_the_repo_up(self):
         proc = self.configure('ubuntu', '22.04', hangs=2, CP_PKG_MANAGER_UPDATE_TIMEOUT_SEC='2')
         self.assertEqual(0, proc.returncode, proc.stderr)
-        self.assertEqual([APT_UPDATE_CALL] * 3
-                         + ['install curl apt-transport-https gnupg -y -qq | DEBIAN_FRONTEND=', APT_UPDATE_CALL],
-                         self.calls())
+        self.assertEqual([APT_UPDATE_CALL] * 3 + [APT_INSTALL_DEPS_CALL, APT_UPDATE_CALL], self.calls())
         self.assertEqual(1, proc.stdout.count('Failed to configure'))
         self.assertIn('[ERROR] (attempt: 1) Failed to configure', proc.stdout)
-        self.assertEqual(CP_APT_SOURCE + UBUNTU_SOURCES, _read(self.path('/etc/apt/sources.list')))
+        self.assertEqual(CP_APT_TRUSTED_SOURCE, _read(self.path(CP_APT_LIST)))
+        self.assertEqual(UBUNTU_SOURCES, _read(self.path('/etc/apt/sources.list')))
+
+    def test_the_line_that_an_older_run_added_to_sources_list_is_removed(self):
+        self.write_sources_list(CP_APT_SOURCE + UBUNTU_SOURCES)
+        proc = self.configure('ubuntu', '22.04')
+        self.assert_repo_set_up(proc)
+        self.assertEqual(UBUNTU_SOURCES, _read(self.path('/etc/apt/sources.list')))
+
+    def test_the_repo_is_set_up_when_the_image_has_no_sources_list(self):
+        os.remove(self.path('/etc/apt/sources.list'))
+        proc = self.configure('ubuntu', '22.04')
+        self.assert_repo_set_up(proc)
+        self.assertFalse(os.path.exists(self.path('/etc/apt/sources.list')))
+
+    def test_the_repo_is_removed_when_its_refresh_fails(self):
+        _stub(self.stub_bin, 'apt-get', APT_GET_REPO_UNREACHABLE_STUB)
+        self.write_sources_list(CP_APT_SOURCE + UBUNTU_SOURCES)
+        proc = self.configure('ubuntu', '22.04', CP_REPO_RETRY_COUNT='2', CP_APT_LIST_FILE=self.path(CP_APT_LIST))
+        self.assertEqual(0, proc.returncode, proc.stderr)
+        self.assertEqual(2, proc.stdout.count('Failed to configure'))
+        self.assertEqual([APT_UPDATE_CALL, APT_INSTALL_DEPS_CALL, APT_UPDATE_CALL] * 2, self.calls())
+        self.assertFalse(os.path.exists(self.path(CP_APT_LIST)))
+        self.assertEqual(UBUNTU_SOURCES, _read(self.path('/etc/apt/sources.list')))
 
 
 class ConfigurePackageManagerDebian8Test(ConfigurePackageManagerTestCase):
