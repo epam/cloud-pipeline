@@ -101,7 +101,24 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     @Override
     public ToolSettings open() {
         click(SETTINGS);
-        return click(EXEC_ENVIRONMENT);
+        return expandExecEnvironment();
+    }
+
+    /**
+     * Opens the EXECUTION ENVIRONMENT section unless it is open already: a click on an open section's header would
+     * close it. A new form starts with the section collapsed (openedPanels, client/.../tools/forms/EditToolForm.js),
+     * and each click on SETTINGS loads the tool again and draws a new form (client/.../tools/Tool.js), so after a
+     * step that opened the tab again its fields (cmd template, instance and price type, disk, sensitive storages,
+     * limit mounts) can't be typed into or clicked. The old form can still be shown right after that click, so the
+     * setters of these fields call this again just before they use them.
+     */
+    public ToolSettings expandExecEnvironment() {
+        final SelenideElement section = get(EXEC_ENVIRONMENT).shouldBe(visible).closest(".ant-collapse-item");
+        if (!section.has(cssClass("ant-collapse-item-active"))) {
+            click(EXEC_ENVIRONMENT);
+            section.shouldHave(cssClass("ant-collapse-item-active"));
+        }
+        return this;
     }
 
     public ToolSettings addEndpoint(final String endpoint) {
@@ -187,6 +204,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     }
 
     public ToolSettings setDefaultCommand(final String command) {
+        expandExecEnvironment();
         SelenideElement defaultCommand = get(DEFAULT_COMMAND);
         Utils.clearTextField(defaultCommand);
         Utils.clickAndSendKeysWithSlashes(defaultCommand, command);
@@ -194,6 +212,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     }
 
     public ToolSettings disableAllowSensitiveStorage() {
+        expandExecEnvironment();
         if (get(SENSITIVE_STORAGE).has(cssClass("ant-checkbox-checked"))) {
             click(SENSITIVE_STORAGE);
         }
@@ -201,6 +220,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     }
 
     public ToolSettings enableAllowSensitiveStorage() {
+        expandExecEnvironment();
         if (!get(SENSITIVE_STORAGE).has(cssClass("ant-checkbox-checked"))) {
             click(SENSITIVE_STORAGE);
         }
@@ -208,6 +228,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     }
 
     public ToolSettings doNotMountStoragesSelect (boolean isSelected) {
+        expandExecEnvironment();
         if ((!get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && isSelected) ||
                 (get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && !isSelected)) {
             click(DO_NOT_MOUNT_STORAGES);
@@ -216,7 +237,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     }
 
     public ToolSettings setDisk(final String disk) {
-        return setValue(DISK, disk);
+        return expandExecEnvironment().setValue(DISK, disk);
     }
 
     public ToolSettings setEndpoint(final String port) {
@@ -224,14 +245,14 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     }
 
     public ToolSettings setInstanceType(final String instanceType) {
-        click(INSTANCE_TYPE);
+        expandExecEnvironment().click(INSTANCE_TYPE);
         $(PipelineSelectors.visible(byClassName("ant-select-dropdown-menu"))).find(withText(instanceType))
                 .shouldBe(visible).click();
         return this;
     }
 
     public ToolSettings setPriceType(final String priceType) {
-        click(PRICE_TYPE);
+        expandExecEnvironment().click(PRICE_TYPE);
         $(PipelineSelectors.visible(byClassName("ant-select-dropdown-menu")))
                 .find(withText(priceType))
                 .shouldBe(visible)
@@ -293,7 +314,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     }
 
     public SelectLimitMountsPopupAO<ToolSettings> selectDataStoragesToLimitMounts() {
-        click(LIMIT_MOUNTS);
+        expandExecEnvironment().click(LIMIT_MOUNTS);
         return  new SelectLimitMountsPopupAO<>(this).sleep(2, SECONDS);
     }
 }
