@@ -2087,6 +2087,8 @@ The exchange never creates a user: the user has to exist in Cloud Pipeline alrea
 
 > **_Note_**: upgrading removes the stored web sessions. The security context is held in the database with Java serialization, and it gained fields for this feature, which makes a session written by an earlier version unreadable - so clearing them avoids an error on the first request after the upgrade. Most users will not notice: a GUI session with a valid `bearer` cookie is re-established on the next request, and only a user without one is asked to sign in again. Three things to know when planning the upgrade: restart the API service with the old replicas out of service, because a rolling upgrade lets an old replica keep writing sessions the new one cannot read; clear the sessions by hand if the service is ever rolled back, since the migration runs only once; and expect the platform usage report to show no online users for the interval covering the upgrade, as that figure is derived from the stored sessions.
 
+Ready-made GitHub Actions ship with the platform under `deploy/integrations/oidc/github-actions/`, so a workflow obtains a token with one step and no stored secret: `fetch-api-token` performs the exchange, `configure-pipe-cli` additionally installs the `pipe` CLI the deployment serves and leaves it authenticated, and `configure-docker-registry` logs the runner's docker client into the deployment's registry.
+
 For more details see [here](../../manual/12_Manage_Settings/12.16._OIDC_token_exchange.md).
 
 ## Cloud Pipeline apt repository for Ubuntu 24.04 and later
