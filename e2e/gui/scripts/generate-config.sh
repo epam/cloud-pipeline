@@ -248,7 +248,8 @@ _set e2e.ui.valid.endpoint "$_endpoint_port" "endpoint port of tests/e2e-endpoin
 _set e2e.ui.tool.without.default.settings tests/e2e-empty "deploy/docker/cp-tests/e2e-empty"
 _set e2e.ui.another.group library "tool group of the base images"
 _set e2e.ui.another.testing.tool rstudio "library/rstudio (the group is prepended by the tests)"
-_set e2e.ui.test.docker.image centos "library/centos (the group is prepended by the tests)"
+_set e2e.ui.test.docker.image rockylinux "library/rockylinux (the group is prepended by the tests)"
+_set e2e.ui.dind.docker.image rockylinux/rockylinux:9.8 "Docker Hub image the DinD and Singularity cases pull in a run"
 
 # --- instances, prices, cloud -------------------------------------------------------------------------------------------
 _allowed="$(_pref cluster.allowed.instance.types)"

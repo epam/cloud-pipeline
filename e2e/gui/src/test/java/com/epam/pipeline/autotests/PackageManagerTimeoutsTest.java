@@ -85,7 +85,7 @@ public class PackageManagerTimeoutsTest extends AbstractSeveralPipelineRunningTe
     private final String anotherGroup = C.ANOTHER_GROUP;
     private final String rockyTool = C.TESTING_TOOL_NAME;
     private final String ubuntuTool = format("%s/ubuntu", anotherGroup);
-    private final String centosTool = format("%s/%s", anotherGroup, C.TEST_DOCKER_IMAGE);
+    private final String rockylinuxTool = format("%s/%s", anotherGroup, C.TEST_DOCKER_IMAGE);
     private ObjectNode originalPreference;
     private ObjectNode originalValue;
     private String restoreValue;
@@ -189,7 +189,7 @@ public class PackageManagerTimeoutsTest extends AbstractSeveralPipelineRunningTe
         // The case's prerequisite: the preference has no hang-once entries
         restorePreference();
         checkUsualRunStart(ubuntuTool, "ubuntu");
-        checkUsualRunStart(centosTool, C.TEST_DOCKER_IMAGE);
+        checkUsualRunStart(rockylinuxTool, C.TEST_DOCKER_IMAGE);
     }
 
     private void checkUsualRunStart(final String tool, final String toolSelfName) {

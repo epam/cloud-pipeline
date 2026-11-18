@@ -1,6 +1,6 @@
 # e2e GUI `default.conf` keys: semantics, format, prerequisites, derivation
 
-Sources: `e2e/gui/src/test/java/com/epam/pipeline/autotests/utils/C.java` (83 keys), every usage in the test code, and
+Sources: `e2e/gui/src/test/java/com/epam/pipeline/autotests/utils/C.java` (84 keys), every usage in the test code, and
 the client/api/deploy sources of this repo.
 "EXEC" = used by a method that runs (enabled and selected by `testng.xml`), or by a `@Before*/@After*` method or helper
 of a class that has such methods. "notexec" = used only by methods that do not run.
@@ -147,7 +147,8 @@ Legend for "pre-exist": what must exist on the platform before the run. "Derive"
 | `e2e.ui.tool.without.default.settings` | TOOL_WITHOUT_DEFAULT_SETTINGS | EXEC: `ToolsTest` `@BeforeClass validateDeleteTool` (**deletes the tool**) + `validateEnableTool` (re-enables it from the registry), `toolCustomSettingsRunWithoutDefaults` (expects no disk/instance/command, launches with `sleep infinity`, timeout 1, expects FAILURE), `ObjectMetadataToolTest.checkMetadataForTool`; notexec ToolsScan | `group/tool` in default.group: `tests/e2e-empty` | image with `latest` tag in the registry under default.group | `loadTree` |
 | `e2e.ui.another.group` | ANOTHER_GROUP | EXEC: RunsTest (rstudio + hard-coded `ubuntu`), DataStoragesCLITest, LaunchLimitMountsTest lifecycle, `Launch_InstanceConfigTest`; notexec LaunchClusterTest | group name only: `library` | contains test.docker.image, another.testing.tool and `ubuntu` | - |
 | `e2e.ui.another.testing.tool` | ANOTHER_TESTING_TOOL_NAME | EXEC `RunsTest.platformUsageInfo/Tools` (as another.login, default launch options, stopped after 3 min, must offer RERUN); `Launch_InstanceConfigTest` (`<registry.ip>/<another.group>/<v>` written to config.json; launch form docker image `value()` contains it); notexec LaunchClusterTest | **tool name only**, the group is prepended: `rstudio` | `library/rstudio:latest` runnable by another.login | - |
-| `e2e.ui.test.docker.image` | TEST_DOCKER_IMAGE | EXEC: `DataStoragesCLITest` (`yum install attr`, xattrs on `/cloud-data/<prefix><storage>`), `LaunchLimitMountsTest` lifecycle (unticks "Allow sensitive storages"); notexec RunToolsInSandBox DinD/Singularity | **tool name only** (another.group prepended): `centos` | `library/centos:latest`, yum works | - |
+| `e2e.ui.test.docker.image` | TEST_DOCKER_IMAGE | EXEC: `DataStoragesCLITest` (`yum install attr`, xattrs on `/cloud-data/<prefix><storage>`), `LaunchLimitMountsTest` lifecycle (unticks "Allow sensitive storages"); `PackageManagerTimeoutsTest` (4781_3) | **tool name only** (another.group prepended): `rockylinux` | `library/rockylinux:latest`, yum works | - |
+| `e2e.ui.dind.docker.image` | DIND_DOCKER_IMAGE | EXEC: RunToolsInSandBox DinD (`docker pull`/`create`, its repository and tag in `docker image ls`) and Singularity (`singularity build <name>.sif docker://<image>`, without the run's registry credentials) | a Docker Hub image as `repository[:tag]` (no tag: `latest`): `rockylinux/rockylinux:9.8` | pullable from the run's node (Docker Hub limits anonymous pulls per IP; the two cases pull it twice), CMD `/bin/bash`; a missing key fails these two cases only | - |
 
 ### 2.4 Instances, price types, cloud
 
@@ -257,7 +258,8 @@ e2e.ui.valid.endpoint=<8081, from the tool endpoint>
 e2e.ui.tool.without.default.settings=tests/e2e-empty
 e2e.ui.another.group=library
 e2e.ui.another.testing.tool=rstudio
-e2e.ui.test.docker.image=centos
+e2e.ui.test.docker.image=rockylinux
+e2e.ui.dind.docker.image=rockylinux/rockylinux:9.8
 e2e.ui.default.instance.type=m6i.xlarge
 e2e.ui.another.instance.type=m6i.2xlarge
 e2e.ui.default.instance.family.name=m6i
@@ -321,8 +323,9 @@ e2e.ui.backup.storage.offset=<hours>
   another.login and clean.history.login. It gets a new tag `test_tag_913_<n>` per run (see 5).
 * `tests/e2e-empty:latest` image in the registry (the tool is deleted and re-enabled each run), built from
   `deploy/docker/cp-tests/e2e-empty` (`rockylinux/rockylinux:8.7`).
-* `library/centos:latest` (test.docker.image; also hard-coded `CP_CAP_AUTOSCALE_INSTANCE_IMAGE=/library/centos:latest`
-  for the SGE hybrid child, `LaunchParametersTest`), `library/centos:7` (SHELL/PYTHON/DEFAULT templates),
+* `library/rockylinux:latest` (test.docker.image; also hard-coded
+  `CP_CAP_AUTOSCALE_INSTANCE_IMAGE=/library/rockylinux:latest` for the SGE hybrid child, `LaunchParametersTest`),
+  `library/centos:7` (the SHELL/PYTHON/DEFAULT pipeline templates of the platform),
   `library/ubuntu:latest` (hard-coded in RunsTest, "Welcome to Ubuntu" in SSH), `library/rstudio:latest`.
 * default.registry ACL: RoleModelTest (572, 573) removes the entries of `role.user` and clean.history.login and restores the recorded values;
   clean.history.login must see only this one registry.
@@ -396,7 +399,7 @@ e2e.ui.backup.storage.offset=<hours>
 * **New docker tag** `tests/e2e-endpoints:test_tag_913_<random>` committed by
   `LaunchParametersTest.addSupportForAutoscalingFilesystemForAWS`, never deleted.
 * **`tests/e2e-empty` tool deleted and re-enabled** (new tool id; settings, metadata, ACL, icon, description lost).
-* **`library/centos`** (another.group/test.docker.image): "Allow sensitive storages" unticked (LaunchLimitMountsTest
+* **`library/rockylinux`** (another.group/test.docker.image): "Allow sensitive storages" unticked (LaunchLimitMountsTest
   before and after).
 * **Registry ACL**: the entry of role.user is deleted and, only if it existed, recreated as R allow/W deny/E allow
   (original mask not kept); the entry of clean.history.login on the registry is deleted; clean.history.login keeps
