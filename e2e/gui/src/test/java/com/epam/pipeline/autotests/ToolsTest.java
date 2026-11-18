@@ -221,9 +221,9 @@ public class ToolsTest
         final String fullDescription = "full description";
         tools().performWithin(defaultRegistry, defaultGroup, testingTool, tool ->
                 tool.addShortDescription(shortDescription)
-                        .ensure(SHORT_DESCRIPTION, text(shortDescription))
+                        .ensure(SHORT_DESCRIPTION, exactText(shortDescription))
                         .addFullDescription(fullDescription)
-                        .ensure(FULL_DESCRIPTION, text(fullDescription))
+                        .ensure(FULL_DESCRIPTION, exactText(fullDescription))
         );
     }
 
@@ -404,7 +404,7 @@ public class ToolsTest
                 .setDisk("11")
                 .click(SAVE)
                 .description()
-                .ensure(FULL_DESCRIPTION, text(description))
+                .ensure(FULL_DESCRIPTION, exactText(description))
         );
     }
 

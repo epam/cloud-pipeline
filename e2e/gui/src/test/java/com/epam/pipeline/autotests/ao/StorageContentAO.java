@@ -770,9 +770,15 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
             super(StorageContentAO.this);
         }
 
+        /**
+         * Types over the selected old name and checks it: Selenide's setValue clears only the page's text of the
+         * controlled input, and a redraw before the typing would put the old name in front of the new one.
+         */
         @Override
         public ElementEditPopupAO typeInField(String newName) {
-            $(byId("name")).shouldBe(visible).setValue(newName);
+            final SelenideElement nameField = $(byId("name")).shouldBe(visible);
+            setValue(nameField, newName);
+            nameField.shouldHave(exactValue(newName));
             return this;
         }
     }

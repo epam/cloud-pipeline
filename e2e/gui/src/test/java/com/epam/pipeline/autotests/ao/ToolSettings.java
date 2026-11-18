@@ -29,6 +29,7 @@ import org.openqa.selenium.WebElement;
 import static com.codeborne.selenide.Condition.appear;
 import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.enabled;
+import static com.codeborne.selenide.Condition.exactValue;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byAttribute;
@@ -125,16 +126,29 @@ public class ToolSettings extends ToolTab<ToolSettings> {
         return this;
     }
 
+    /**
+     * Replaces the port of the first endpoint. The input is a controlled one that already has the port: Selenide's
+     * setValue clears only the page's text, so a redraw before the typing puts the old port back and the new one is
+     * typed after it. Selecting the text and typing over it changes the value as a user does; the check stops the
+     * test here if the value is still another.
+     */
     public ToolSettings changeEndpointPort(final String port) {
-        get(PORT).find(byClassName("ant-input")).should(appear).setValue(port);
+        final SelenideElement portField = get(PORT).find(byClassName("ant-input")).should(appear);
+        setValue(portField, port);
+        portField.shouldHave(exactValue(port));
         return this;
     }
 
+    /**
+     * Replaces the name of the first endpoint: typed over the selected old name and checked, as in
+     * {@link #changeEndpointPort(String)}.
+     */
     public ToolSettings changeEndpointName(final String name) {
-        $(byText("Name:")).parent()
+        final SelenideElement nameField = $(byText("Name:")).parent()
                 .$(byClassName("ant-input"))
-                .should(appear)
-                .setValue(name);
+                .should(appear);
+        setValue(nameField, name);
+        nameField.shouldHave(exactValue(name));
         return this;
     }
     

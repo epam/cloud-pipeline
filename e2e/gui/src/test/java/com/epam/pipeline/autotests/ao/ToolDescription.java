@@ -23,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 
 import static com.codeborne.selenide.Condition.appears;
+import static com.codeborne.selenide.Condition.exactValue;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
@@ -57,16 +58,27 @@ public class ToolDescription extends ToolTab<ToolDescription> {
 
     public ToolDescription addShortDescription(final String description) {
         context().find(editButtonFor(SHORT_DESCRIPTION)).shouldBe(visible).click();
-        context().find(byId("short-description-input")).shouldBe(visible).setValue(description);
+        typeDescription(context().find(byId("short-description-input")), description);
         context().find(byId("short-description-edit-save-button")).shouldBe(visible).click();
         return this;
     }
 
     public ToolDescription addFullDescription(final String description) {
         context().find(editButtonFor(FULL_DESCRIPTION)).shouldBe(visible).click();
-        context().find(byId("description-input")).shouldBe(visible).setValue(description);
+        typeDescription(context().find(byId("description-input")), description);
         context().find(byId("description-edit-save-button")).shouldBe(visible).click();
         return this;
+    }
+
+    /**
+     * The edit mode opens with the tool's current description in a controlled input. Selenide's setValue clears
+     * only the page's text, so a redraw before the typing puts the old description back and the new one is typed
+     * after it. Selecting the text and typing over it changes the value as a user does; the check stops the test
+     * here if the value is still another.
+     */
+    private void typeDescription(final SelenideElement field, final String description) {
+        setValue(field, description);
+        field.shouldHave(exactValue(description));
     }
 
     public ToolDescription showMetadata(final Consumer<MetadataSectionAO> action) {

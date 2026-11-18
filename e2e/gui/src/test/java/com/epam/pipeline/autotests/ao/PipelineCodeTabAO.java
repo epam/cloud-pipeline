@@ -37,6 +37,7 @@ import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.CollectionCondition.sizeGreaterThan;
 import static com.codeborne.selenide.Condition.appear;
 import static com.codeborne.selenide.Condition.exactText;
+import static com.codeborne.selenide.Condition.exactValue;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
@@ -395,10 +396,16 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
             super(PipelineCodeTabAO.this);
         }
 
+        /**
+         * Types over the selected text and checks it: on a rename the controlled input has the old name, Selenide's
+         * setValue clears only the page's text, and a redraw before the typing would put the old name in front.
+         */
         @Override
         public EditFilePopupAO typeInField(String value) {
             sleep(1, SECONDS);
-            $$(byClassName("ant-modal-content")).findBy(visible).find(byId("name")).setValue(value);
+            final SelenideElement nameField = $$(byClassName("ant-modal-content")).findBy(visible).find(byId("name"));
+            setValue(nameField, value);
+            nameField.shouldHave(exactValue(value));
             return this;
         }
     }
