@@ -34,12 +34,12 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
-import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -83,7 +83,6 @@ public class PackageManagerTimeoutsTest extends AbstractSeveralPipelineRunningTe
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
     private final String anotherGroup = C.ANOTHER_GROUP;
-    private final String rockyTool = C.TESTING_TOOL_NAME;
     private final String ubuntuTool = format("%s/ubuntu", anotherGroup);
     private final String rockylinuxTool = format("%s/%s", anotherGroup, C.TEST_DOCKER_IMAGE);
     private ObjectNode originalPreference;
@@ -136,7 +135,7 @@ public class PackageManagerTimeoutsTest extends AbstractSeveralPipelineRunningTe
                     "TEST_APT_HANG_ONCE", "CP_PKG_MANAGER_UPDATE_TIMEOUT_SEC");
             runId = getLastRunId();
             final List<String> log = consoleLog(run.waitForSshLink());
-            assertHangOnceCommandRan(log, "ubuntu:22.04", "TEST_APT_HANG_ONCE");
+            final String version = assertHangOnceCommandRan(log, "ubuntu", "TEST_APT_HANG_ONCE");
             // A refresh that hung again would make the repo setup fail, with "Failed to configure": the log rows
             // are read as a set, so the "once" of the case is checked by that row being absent
             assertLogContains(log, format("[WARN] '%s' did not finish in %s seconds and was stopped",
@@ -147,8 +146,8 @@ public class PackageManagerTimeoutsTest extends AbstractSeveralPipelineRunningTe
             run.sshInNewTab(shell -> shell
                     .waitUntilTextAppears(sshRunId)
                     .executeAndWaitForPrompt(APT_CHECK, format("pipeline-%s", sshRunId))
-                    .assertOutputOfLastCommandMatches(APT_CHECK,
-                            "/tmp/test-apt-hung\\s*deb \\S+/ubuntu/22\\.04 stable main"));
+                    .assertOutputOfLastCommandMatches(APT_CHECK, format("/tmp/test-apt-hung\\s*deb \\S+/ubuntu/%s stable main",
+                            Pattern.quote(version))));
         } finally {
             stopRun(runId);
         }
@@ -160,16 +159,17 @@ public class PackageManagerTimeoutsTest extends AbstractSeveralPipelineRunningTe
         assertNoOtherCommands("rocky", YUM_COMMAND);
         String runId = null;
         try {
-            final LogAO run = launchWithParameters(group, rockyTool, nameWithoutGroup(rockyTool),
+            // the Rocky Linux test image: the testing tool's image is not Rocky Linux on every deployment
+            final LogAO run = launchWithParameters(anotherGroup, rockylinuxTool, C.TEST_DOCKER_IMAGE,
                     "TEST_YUM_HANG_ONCE", "CP_PKG_MANAGER_INSTALL_TIMEOUT_SEC");
             runId = getLastRunId();
             final List<String> log = consoleLog(run.waitForSshLink());
-            assertHangOnceCommandRan(log, "rocky:8.7", "TEST_YUM_HANG_ONCE");
+            final String version = assertHangOnceCommandRan(log, "rocky", "TEST_YUM_HANG_ONCE");
             assertLogContains(log,
                     "[WARN] (attempt: 1) yum did not finish in time and was stopped, see /var/log/yum.cp.log");
             assertTrue(log.stream().anyMatch(row -> row.contains("[ERROR] (attempt: 1) Failed to configure ")
-                            && row.contains("/rocky/8.7 for the yum, removing the repo")),
-                    "No '[ERROR] (attempt: 1) Failed to configure <repo url>/rocky/8.7 ...' row in the log");
+                            && row.contains(format("/rocky/%s for the yum, removing the repo", version))),
+                    format("No '[ERROR] (attempt: 1) Failed to configure <repo url>/rocky/%s ...' row in the log", version));
             assertLogDoesNotContain(log, "(attempt: 2)");
             assertLogDoesNotContain(log, "(attempt: 3)");
             final String sshRunId = runId;
@@ -268,13 +268,19 @@ public class PackageManagerTimeoutsTest extends AbstractSeveralPipelineRunningTe
      * entry "ln -s /etc/ssl/certs/ca-bundle.crt /etc/cp-certs.pem" for Rocky Linux fails on a test tool whose image
      * already has /etc/cp-certs.pem ("N-1 out of N").
      */
-    private static void assertHangOnceCommandRan(final List<String> log, final String os, final String hangParameter) {
-        final Pattern found = Pattern.compile("\\d+ additional commands were found for " + Pattern.quote(os));
-        assertTrue(log.stream().anyMatch(message -> found.matcher(message).find()),
-                format("No '<N> additional commands were found for %s' row", os));
+    private static String assertHangOnceCommandRan(final List<String> log, final String os, final String hangParameter) {
+        // launch.sh names the distribution and its version as it detected them (e.g. ubuntu:16.04, rocky:8.7)
+        final Pattern found = Pattern.compile("\\d+ additional commands were found for " + Pattern.quote(os) + ":(\\S+)");
+        final String version = log.stream()
+                .map(found::matcher)
+                .filter(Matcher::find)
+                .map(matcher -> matcher.group(1))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(format("No '<N> additional commands were found for %s:<version>' row", os)));
         assertFalse(log.stream().anyMatch(message -> message.contains("[WARN] '") && message.contains(hangParameter)
                         && message.contains("command done with exit code")),
                 format("The hang-once command of %s failed: it has a 'command done with exit code' row", hangParameter));
+        return version;
     }
 
     private static void assertLogContains(final List<String> log, final String message) {
