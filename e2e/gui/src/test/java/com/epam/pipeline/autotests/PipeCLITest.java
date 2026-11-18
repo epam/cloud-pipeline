@@ -100,6 +100,7 @@ public class PipeCLITest extends AbstractSeveralPipelineRunningTest
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setPriceType(ON_DEMAND)
+                .withoutMounts()
                 .launchTool(this, nameWithoutGroup(tool))
                 .showLog(getLastRunId())
                 .waitForSshLink()

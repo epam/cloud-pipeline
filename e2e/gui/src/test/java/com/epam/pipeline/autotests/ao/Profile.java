@@ -27,6 +27,7 @@ import org.openqa.selenium.By;
 
 import static com.codeborne.selenide.Condition.and;
 import static com.codeborne.selenide.Condition.attribute;
+import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Selectors.by;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
@@ -40,6 +41,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CLOUD_REGION;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
+import static com.epam.pipeline.autotests.ao.Primitive.DO_NOT_MOUNT_STORAGES;
 import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATE_PRICE;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE;
@@ -87,6 +89,8 @@ public class Profile implements AccessObject<Profile> {
                 entry(INSTANCE_TYPE, context().find(comboboxOf(fieldWithLabel("Node type")))),
                 entry(PRICE_TYPE, context().find(comboboxOf(fieldWithLabel("Price type")))),
                 entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input"))),
+                entry(DO_NOT_MOUNT_STORAGES, context().find(
+                        byXpath(".//span[.='Do not mount storages']/preceding-sibling::span"))),
                 entry(CLOUD_REGION, context().find(byXpath(".//*[contains(text(), 'Cloud Region')]"))
                         .closest(".ant-row").find(by("role", "combobox")))
         );
@@ -139,6 +143,21 @@ public class Profile implements AccessObject<Profile> {
     public Profile selectDockerImage(final Consumer<DockerImageSelection> dockerImage) {
         click(Configuration.image());
         dockerImage.accept(new DockerImageSelection(this));
+        return this;
+    }
+
+    /**
+     * The runs of the profile mount no data storage (CP_CAP_LIMIT_MOUNTS=None, "Do not mount storages"), as
+     * {@link PipelineRunFormAO#withoutMounts()} sets it on the launch form: for a test that checks nothing about the
+     * storages mounted in a run. A detached configuration is launched with its saved profile, so the profile is saved
+     * after this. The field is in the ADVANCED panel, which is opened first.
+     */
+    public Profile withoutMounts() {
+        expandTab(ADVANCED_PANEL);
+        if (!get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked"))) {
+            click(DO_NOT_MOUNT_STORAGES);
+        }
+        get(DO_NOT_MOUNT_STORAGES).shouldHave(cssClass("ant-checkbox-checked"));
         return this;
     }
 

@@ -68,6 +68,13 @@ public class SelectLimitMountsPopupAO<PARENT_TYPE>
         return click(OK).parent();
     }
 
+    /**
+     * Clears the selection if there is one: the dialog draws "Clear selection" only while some storage is selected.
+     */
+    public SelectLimitMountsPopupAO<PARENT_TYPE> clearSelectionIfAny() {
+        return get(CLEAR_SELECTION).is(visible) ? clearSelection() : this;
+    }
+
     public SelectLimitMountsPopupAO<PARENT_TYPE> clearSelection() {
         return click(CLEAR_SELECTION).sleep(1, SECONDS);
     }

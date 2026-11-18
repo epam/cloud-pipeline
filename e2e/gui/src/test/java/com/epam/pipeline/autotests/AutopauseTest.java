@@ -132,6 +132,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
                 .setLaunchOptions(diskSize, instanceType, null)
                 .setPriceType(priceType)
                 .ensure(AUTO_PAUSE, autoPause)
+                .withoutMounts()
                 .launchTool(this, Utils.nameWithoutGroup(tool));
         return getLastRunId();
     }

@@ -179,6 +179,7 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
                     .inputSystemParameterValue("CP_CAP_SHARE_FS_THROUGHPUT", "500")
                     .inputSystemParameterValue("CP_CAP_SHARE_FS_SIZE", "1200")
                     .inputSystemParameterValue("CP_CAP_SHARE_FS_DEPLOYMENT_TYPE", "PERSISTENT_2")
+                    .withoutMounts()
                     .launch(this);
             lustreRunId = getLastRunId();
             final LogAO logAO = runs
@@ -230,6 +231,7 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
                     .inputSystemParameterValue("CP_CAP_SHARE_FS_SIZE", "1200")
                     .inputSystemParameterValue("CP_CAP_SHARE_FS_DEPLOYMENT_TYPE", "PERSISTENT_2")
                     .inputSystemParameterValue("CP_CAP_SHARE_FS_IOPS", "1500")
+                    .withoutMounts()
                     .launch(this);
             lustreRunId = getLastRunId();
             final LogAO logAO = runs

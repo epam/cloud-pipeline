@@ -79,6 +79,7 @@ public class Launch_JsonOutputFileTest extends AbstractAutoRemovingPipelineRunni
             .setPriceType(ON_DEMAND)
             .validateThereIsParameterOfType(parameterName, pathToFile, ParameterType.OUTPUT, true)
             .waitUntilLaunchButtonAppear()
+            .withoutMounts()
             .launchAndWaitUntilFinished(this);
     }
 

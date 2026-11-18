@@ -206,6 +206,7 @@ public class DockerCommitTest
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setDefaultLaunchOptions()
+                .withoutMounts()
                 .launchTool(this, Utils.nameWithoutGroup(tool))
                 .showLog(getLastRunId())
                 .waitForCommitButton()
@@ -229,6 +230,7 @@ public class DockerCommitTest
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setDefaultLaunchOptions()
+                .withoutMounts()
                 .launchTool(this, Utils.nameWithoutGroup(tool))
                 .showLog(getLastRunId())
                 .waitForCommitButton()
@@ -251,6 +253,7 @@ public class DockerCommitTest
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setDefaultLaunchOptions()
+                .withoutMounts()
                 .launchTool(this, Utils.nameWithoutGroup(tool))
                 .showLog(getLastRunId())
                 .shouldHaveRunningStatus();

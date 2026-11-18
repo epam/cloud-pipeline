@@ -120,6 +120,7 @@ public class RunAsTest extends AbstractSeveralPipelineRunningTest implements Nav
                 .firstVersion()
                 .runPipeline()
 		.setPriceType(ON_DEMAND)
+                .withoutMounts()
                 .launch();
         runsMenu()
                 .activeRuns()
@@ -211,6 +212,7 @@ public class RunAsTest extends AbstractSeveralPipelineRunningTest implements Nav
                 .clickOnPipeline(pipeline1)
                 .firstVersion()
                 .runPipeline()
+                .withoutMounts()
                 .launchWithoutErrorMessages();
         runsMenu()
                 .activeRuns()

@@ -22,6 +22,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Set;
 
 import static com.epam.pipeline.autotests.utils.Privilege.*;
@@ -86,17 +87,28 @@ public class RunToolsInSandboxCheckDataStorageTest
     @TestCase(value = {"EPMCMBIBPC-498"})
     public void checkToolAccessToDataStorage() {
         giveUserPermissionForTool();
-        logout();
-        loginAs(user);
-        final Set<String> log =
-                tools()
-                        .perform(registry, group, tool, tool -> tool.run(this))
-                        .showLog(getRunId())
-                        .clickMountBuckets()
-                        .logMessages().collect(toSet());
+        // The run asks for both buckets, through the tool's settings (the user's own limit dialog lists only the
+        // storages the user can read): the user may read bucket1 only, so the run must mount that one alone. Without
+        // a limit the run would mount every storage the user sees, one after another, which takes long; the fixture
+        // tools mount none (run-e2e.sh). The tool's version settings are put back as they were afterwards.
+        final JsonNode toolSettings = ToolVersionSettings.save(tool);
+        tools().performWithin(registry, group, tool, description ->
+                description.settings().limitMountsTo(bucket1, bucket2).save());
+        try {
+            logout();
+            loginAs(user);
+            final Set<String> log =
+                    tools()
+                            .perform(registry, group, tool, tool -> tool.run(this))
+                            .showLog(getRunId())
+                            .clickMountBuckets()
+                            .logMessages().collect(toSet());
 
-        assertTrue(logContainsMessageWith(log, bucket1));
-        assertFalse(logContainsMessageWith(log, bucket2));
+            assertTrue(logContainsMessageWith(log, bucket1));
+            assertFalse(logContainsMessageWith(log, bucket2));
+        } finally {
+            loginAsAdminAndPerform(() -> ToolVersionSettings.restore(toolSettings));
+        }
     }
 
     private boolean logContainsMessageWith(final Set<String> log, final String bucket) {
