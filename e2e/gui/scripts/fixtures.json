@@ -16,7 +16,10 @@
         "  synchronization service of the deployment: set it, or set e2e.ui.sync.storage.* in the overrides) with a",
         "  permission of a group matching 'permission_pattern' (regex, case-insensitive).",
         "deactivate_blocking_notifications: blocking system notifications cover the UI in every fresh test browser:",
-        "  they are deactivated for the run (state only, the creation date is kept) and activated back afterwards."
+        "  they are deactivated for the run (state only, the creation date is kept) and activated back afterwards.",
+        "mute_user_notifications: the GUI shows a user's unread in-app notifications as cards over the top right of every",
+        "  page, where they take the tests' clicks: the test users and the anonymous user get the metadata key",
+        "  ui.notifications.mute for the run (only the GUI reads it, emails are still sent), restored afterwards."
     ],
     "tool_groups": [
         {
@@ -85,5 +88,6 @@
         "permission_pattern": "TEST"
     },
     "deactivate_blocking_notifications": true,
+    "mute_user_notifications": true,
     "preferences": []
 }

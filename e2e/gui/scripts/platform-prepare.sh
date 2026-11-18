@@ -32,9 +32,12 @@
 #     after the run.
 #   - active blocking system notifications (e.g. a disclaimer) are deactivated, as they cover the UI in every fresh
 #     test browser (fixtures.json "deactivate_blocking_notifications": false keeps them)
+#   - the in-app notifications of the test users and of the anonymous user are muted for the run, as the GUI shows the
+#     unread ones over the top right of every page (fixtures.json "mute_user_notifications": false keeps them)
 # revert:  removes what prepare created or took over (registered tools are unregistered, their registry images are
 #          kept; a tool group taken over is deleted only if it is empty), restores the settings of the other tools,
-#          activates the deactivated notifications back, restores the permissions and preferences it changed. The test users it created are kept (blocked) for the next runs.
+#          activates the deactivated notifications back, restores the permissions, preferences and notification
+#          mutes it changed. The test users it created are kept (blocked) for the next runs.
 
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
@@ -98,6 +101,24 @@ if [ "$_CMD" == "revert" ]; then
             _errors=$((_errors + 1))
         fi
     done <<< "$(jq -c '.notifications[]?' "$_RECORD")"
+    while read -r _m; do
+        [ "$_m" ] || continue
+        _mbody="$(jq -c '{entity: {entityId: .id, entityClass: "PIPELINE_USER"}, data: {(.key): (.previous // {value: "", type: "string"})}}' <<< "$_m")"
+        if [ "$(jq -r '.previous == null' <<< "$_m")" == "true" ]; then
+            # deleteKeys refuses a key that is not there any more
+            _cur="$(cp_api_payload POST metadata/load "[$(jq -c '{entityId: .id, entityClass: "PIPELINE_USER"}' <<< "$_m")]" \
+                2> /dev/null | jq -c --arg k "$(jq -r '.key' <<< "$_m")" '.[0].data[$k] // null')"
+            if [ "$_cur" == "null" ]; then
+                e2e_log "The $(jq -r '"\(.key) of \(.userName)"' <<< "$_m") is removed already"
+                continue
+            fi
+            e2e_log "Unmuting the in-app notifications of $(jq -r '.userName' <<< "$_m") (its $(jq -r '.key' <<< "$_m") is removed)"
+            cp_api DELETE metadata/deleteKeys "$_mbody" > /dev/null || { e2e_warn "Failed"; _errors=$((_errors + 1)); }
+        else
+            e2e_log "Restoring $(jq -r '"\(.key) of \(.userName)"' <<< "$_m")"
+            cp_api POST metadata/updateKeys "$_mbody" > /dev/null || { e2e_warn "Failed"; _errors=$((_errors + 1)); }
+        fi
+    done <<< "$(jq -c '.user_metadata[]?' "$_RECORD")"
     while read -r _u; do
         [ "$_u" ] || continue
         e2e_log "Deleting the fixture user $(jq -r '.userName' <<< "$_u")"
@@ -175,7 +196,7 @@ fi
 
 [ -f "$_FIXTURES" ] || e2e_die "Fixtures file is not found: $_FIXTURES"
 [ -f "$_RECORD" ] && e2e_die "$_RECORD exists: the previous preparation was not reverted (run: $0 revert --state $_STATE)"
-echo '{"users": [], "fixture_users": [], "tool_groups": [], "tools": [], "tool_settings": [], "roles": [], "memberships": [], "grants": [], "notifications": [], "preferences": []}' > "$_RECORD"
+echo '{"users": [], "fixture_users": [], "tool_groups": [], "tools": [], "tool_settings": [], "roles": [], "memberships": [], "grants": [], "notifications": [], "preferences": [], "user_metadata": []}' > "$_RECORD"
 _ERRORS=0
 
 # 1. Test users
@@ -423,6 +444,45 @@ while read -r _p; do
     e2e_log "Preference $_name is set to $(jq -r '.value' <<< "$_p") (was: $(jq -r '.value' <<< "$_current"))"
     _record preferences "$(jq -c '{name, value, type, preferenceGroup, visible}' <<< "$_current")"
 done <<< "$(jq -c '.preferences[]?' "$_FIXTURES")"
+
+# 7. In-app notifications of the test users and of the anonymous user: the GUI shows a user's unread ones as cards over
+#    the top right of every page, where they take the clicks meant for the Run button of a tool, the Create button of
+#    the library and the buttons of the user management. Test users kept between runs collect them (the run status
+#    notifications of their runs, and of other runs while they are admins). They are muted for the run with the
+#    user's metadata key ui.notifications.mute, which only the GUI reads (emails are still sent), and revert puts the
+#    previous value back. The account of a --dummy-session is muted by admin-session.sh; the admin of an SSO session
+#    (a person) is not. "by" marks the value as the run's own (the GUI reads "muted" only), so a mute that an earlier
+#    run left behind (a killed runner, --skip-cleanup) is removed by this run's revert. A mute that fails is warned
+#    about only: the run can still go, and its cards show where they cover something.
+_MUTE_KEY="ui.notifications.mute"
+_MUTED='{"muted":true,"by":"e2e"}'
+if [ "$(jq -r '.mute_user_notifications != false' "$_FIXTURES")" == "true" ]; then
+    for _user in "${_USER_LIST[@]}" $_anonymous; do
+        _uid="$(cp_user_id "$_user")"
+        [ "$_uid" ] || { e2e_warn "User $_user is not found: its in-app notifications are not muted"; continue; }
+        _entity="$(jq -cn --argjson id "$_uid" '{entityId: $id, entityClass: "PIPELINE_USER"}')"
+        _meta="$(cp_api_payload POST metadata/load "[$_entity]")" || \
+            { e2e_warn "Unable to read the metadata of $_user: its in-app notifications are not muted"; continue; }
+        _previous="$(jq -c --arg k "$_MUTE_KEY" '.[0].data[$k] // null' <<< "$_meta")"
+        if [ "$(jq -r --arg m "$_MUTED" '.value? == $m' <<< "$_previous")" == "true" ]; then
+            e2e_log "In-app notifications of $_user are muted by an earlier run that was not reverted: unmuted after this one"
+            _record user_metadata "$(jq -cn --argjson id "$_uid" --arg u "$_user" --arg k "$_MUTE_KEY" \
+                '{id: $id, userName: $u, key: $k, previous: null}')"
+            continue
+        fi
+        # muted by the user: "true", or the JSON the GUI writes
+        if [ "$(jq -r 'if . == null then false else (.value | . == "true" or ((try fromjson catch {}) | type == "object" and .muted == true)) end' \
+                <<< "$_previous")" == "true" ]; then
+            continue
+        fi
+        cp_api POST metadata/updateKeys "$(jq -cn --argjson e "$_entity" --arg k "$_MUTE_KEY" --arg v "$_MUTED" \
+                '{entity: $e, data: {($k): {value: $v, type: "string"}}}')" > /dev/null || \
+            { e2e_warn "Unable to mute the in-app notifications of $_user: their cards can cover what the tests click"; continue; }
+        e2e_log "In-app notifications of $_user are muted for the run ($_MUTE_KEY)"
+        _record user_metadata "$(jq -cn --argjson id "$_uid" --arg u "$_user" --arg k "$_MUTE_KEY" --argjson p "$_previous" \
+            '{id: $id, userName: $u, key: $k, previous: $p}')"
+    done
+fi
 
 if [ $_ERRORS -gt 0 ]; then
     e2e_err "Platform preparation finished with $_ERRORS error(s); what was created is recorded in $_RECORD"

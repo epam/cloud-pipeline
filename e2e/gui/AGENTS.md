@@ -8,10 +8,11 @@ The Selenide/TestNG suite that drives the platform GUI in a browser. Run it for 
   permissions. What a failing test leaves behind stays behind.
 - Those runs are billed cloud instances, and an abandoned suite keeps them running.
 - `run-e2e.sh` also changes the platform around the tests: it creates and unblocks the test users,
-  registers the fixture tools, deactivates blocking system notifications, extends the admin's session
-  in the API database and acts on the nodes of test runs. It reverts all that when it exits, also on
-  Ctrl-C; a killed runner leaves it in place. `--dummy-session` leaves a standing `ROLE_ADMIN` account
-  in place on purpose, blocked between runs, with the `email` attribute `--dummy-session-email` gave it.
+  registers the fixture tools, deactivates blocking system notifications, mutes the test accounts' in-app
+  notifications, extends the admin's session in the API database and acts on the nodes of test runs. It
+  reverts all that when it exits, also on Ctrl-C; a killed runner leaves it in place. `--dummy-session`
+  leaves a standing `ROLE_ADMIN` account in place on purpose, blocked between runs, with the `email`
+  attribute `--dummy-session-email` gave it and its in-app notifications muted.
   When the run creates it, the platform's preferences may also give it a home storage and a personal
   tool group. It refuses an existing account it did not create (no `e2e-dummy-session` attribute).
 - The time of the whole `testng.xml` on this line is not measured: a narrower selection took 10-12 hours, and it

@@ -38,6 +38,10 @@ rather than extended afterward. Mutually exclusive with `--conf` and `E2E_ADMIN_
 - TC-NOTIFICATION-01 needs an `email` attribute on the account. Only an SSO sign-in sets one, so
   `--dummy-session-email <address>` writes it in the API database, replacing the one there; the account keeps it
   after the run.
+- The account's in-app notifications are muted (its metadata key `ui.notifications.mute`), as their cards would cover
+  the buttons the tests click; it stays muted after the run, whatever `"mute_user_notifications"` says. Without
+  `--dummy-session` the admin of the SSO session, a person, is not muted: mark its notifications read, or mute them,
+  before a run.
 - These checks, and the one below, run before anything else is done (`scripts/admin-session.sh precheck`).
 - Needs `CP_API_JWT_DISABLE_SESSION` not to be `true` in the `cp-config-global` config map. Without the key the API
   image defaults it to `false` (`deploy/docker/cp-api-srv/config/application.properties`); an API run outside that
@@ -81,7 +85,12 @@ class after that at its first page. So:
    [Images used by the tests](#images-used-by-the-tests)). Active **blocking system notifications** (e.g. a disclaimer) are deactivated for the run:
    they cover the UI in every fresh test browser. Only their state is changed (in the database: an API update would
    reset the creation date and every user would have to confirm the disclaimer again); they are activated back in
-   step 7. `"deactivate_blocking_notifications": false` in `scripts/fixtures.json` keeps them.
+   step 7. `"deactivate_blocking_notifications": false` in `scripts/fixtures.json` keeps them. The **in-app
+   notifications** of the test users and of the anonymous user are muted for the run (their metadata key
+   `ui.notifications.mute`, which only the GUI reads: emails are still sent), as the GUI shows the unread ones as cards
+   over the top right of every page, where they take the clicks meant for the buttons there; the previous value is
+   restored in step 7, and a mute an earlier run left behind is removed. `"mute_user_notifications": false` keeps
+   them. The account of `--dummy-session` is muted for good, the admin of an SSO session is not (see above).
 3. generates the tests config from the live deployment (`scripts/generate-config.sh`, see below)
 4. TC-TEST-ENVIRONMENT-1: unblocks the test users (`scripts/test-users.sh unblock`)
 5. records the platform state (`scripts/platform-state.sh snapshot`): preferences, library, tools, registry catalog,
