@@ -1,0 +1,599 @@
+.content {
+  background-color: rgba(40, 44, 52, 0.25);
+  border-radius: 5px;
+  padding: 5px 10px;
+  line-height: 18pt;
+}
+
+.content.loading {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.content.loading-progress {
+  display: flex;
+  flex-direction: column;
+}
+
+.content.loading-progress .row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.content.loading-progress .progress-row {
+  margin-top: 10px;
+  width: min(400px, 50vw);
+  height: 4px;
+  background-color: rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+}
+
+.content.loading-progress .progress-row .progress-value {
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.75);
+  border-radius: 5px;
+}
+
+.content.loading-progress .progress-message {
+  font-size: small;
+  width: min(400px, 50vw);
+  line-height: 1;
+}
+
+.content.error {
+  margin-top: 5px;
+  max-width: calc(100vw - 360px);
+}
+
+.content.error .header {
+  font-size: 16pt;
+  color: #fff;
+}
+
+.content.error .description {
+  font-size: 10pt;
+  color: #aaa;
+  max-width: 50vw;
+}
+
+.content.error .description .raw {
+  font-family: monospace;
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 5px;
+  line-height: 18pt;
+}
+
+.apps {
+  width: calc(100vw - 360px);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.apps.folder-apps {
+  width: calc(100vw - 30px);
+}
+
+.apps.folder-apps + .apps.folder-apps {
+  margin-top: 20px;
+}
+
+.app {
+  background-color: rgba(0, 0, 0, 0.25);
+  border-radius: 5px;
+  padding: 5px 10px;
+  line-height: unset;
+  color: #aaa;
+  margin: 10px;
+  width: 25vw;
+  min-width: 360px;
+  min-height: 150px;
+  cursor: pointer;
+  font-size: 12pt;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.apps.with-latest .app:not(.latest) {
+  width: 20vw;
+  min-width: 200px;
+  min-height: 90px;
+  font-size: 10pt;
+  padding: 10px;
+}
+
+.app.disabled {
+  cursor: not-allowed;
+}
+
+.app.dark {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.app .background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-size: cover;
+  opacity: 0.15;
+  display: none;
+}
+
+.app:hover .background {
+  display: block;
+}
+
+.app .header {
+  font-size: 24pt;
+  height: 40px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin: 10px 0;
+}
+
+.apps.with-latest .app:not(.latest) .header {
+  font-size: 16pt;
+  height: 28px;
+  margin: 5px 0;
+}
+
+.app .header .name {
+  color: #ccc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app.app-folder {
+  padding: 10px;
+  min-height: 100px;
+  height: unset;
+}
+
+.apps.with-latest .app.app-folder:not(.latest) {
+  min-height: 75px;
+  padding: 10px 5px;
+}
+
+.app:not(.app-folder).disabled,
+.app:not(.app-folder).hidden {
+  background-color: rgba(0, 0, 0, 0.15)!important;
+}
+
+.app:not(.app-folder).dark.disabled,
+.app:not(.app-folder).dark.hidden {
+  background-color: rgba(0, 0, 0, 0.3)!important;
+}
+
+.app.app-folder.error {
+  background-color: rgba(0, 0, 0, 0.05)!important;
+}
+
+.app.app-folder.dark.error {
+  background-color: rgba(0, 0, 0, 0.25)!important;
+}
+
+.app.app-folder .header .name {
+  flex: 1;
+  font-size: smaller;
+}
+
+.app .header .icon {
+  max-height: 45px;
+  margin: 0 10px;
+  height: 100%;
+}
+
+.app.app-folder .layout {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  position: relative;
+}
+
+.app.app-folder .layout .icon {
+  margin: 0 10px 0 0;
+  max-height: 100px;
+  border-radius: 5px;
+}
+
+.apps.with-latest .app.app-folder:not(.latest) .layout .icon {
+  margin: 0 10px 0 0;
+  max-height: 60px;
+  border-radius: 2px;
+}
+
+.app.error .layout {
+  opacity: 0.25;
+}
+
+.app.dark.error .layout {
+  opacity: 0.5;
+}
+
+.app.app-folder .layout .layout-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  overflow: auto;
+}
+
+.app.app-folder .layout .layout-column .header {
+  margin: 0;
+}
+
+.app.app-folder .layout .layout-column .header .name {
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.app.app-folder .application-type,
+.app.app-folder .tags .tag {
+  margin: 2px;
+  padding: 1px 2px;
+  font-size: x-small;
+  background-color: rgba(0, 0, 0, 0.75);
+  border-radius: 5px;
+  text-transform: uppercase;
+}
+
+.app.app-folder .tags {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  font-size: x-small;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  max-width: calc(100% - 100px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app.app-folder .deprecated {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  padding: 4px;
+  font-size: x-small;
+  color: #e44d4d;
+  background-color: rgba(0, 0, 0, 0.75);
+  border-radius: 0 5px 0 5px;
+  text-transform: uppercase;
+}
+
+.app .version {
+  margin-left: 5px;
+  font-size: 12pt;
+  margin-top: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.apps.with-latest .app:not(.latest) .version {
+  font-size: 10pt;
+  margin-top: 8px;
+}
+
+.app .labels {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  padding: 4px;
+  font-size: x-small;
+  background-color: rgba(0, 0, 0, 0.75);
+  border-radius: 0 5px 0 5px;
+  text-transform: uppercase;
+}
+
+.app .labels .deprecated {
+  color: #e44d4d;
+}
+
+.app .labels .hidden-label {
+  color: #aaa;
+}
+
+.app .labels > *:not(:last-child)::after {
+  content: '/';
+  color: #666666;
+  margin: 0 2px;
+}
+
+.app:hover {
+  background-color: rgba(0, 0, 0, 0.5);
+  color: #ddd;
+}
+
+.app.dark:hover {
+  background-color: rgba(0, 0, 0, 0.75);
+}
+
+.app:hover .header .name {
+  color: #fff;
+}
+
+.app .app-description {
+  font-size: 11pt;
+  color: #ddd;
+}
+
+.apps.with-latest .app:not(.latest) .app-description {
+  font-size: 8pt;
+}
+
+.app.app-folder .app-description {
+  line-height: 1rem;
+  max-height: 2rem;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.app .app-owner {
+  font-size: small;
+  margin: 5px 0 0;
+  color: #aaa;
+}
+
+.app .app-owner .attributes {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.app .app-owner .attributes .user-attribute {
+  margin-right: 5px;
+}
+
+.app .description {
+  font-size: 10pt;
+  color: #aaa;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  flex: 1;
+}
+
+.app-info {
+  position: relative;
+  max-width: calc(100vw - 360px);
+  display: flex;
+  flex-direction: column;
+}
+
+.app .app-settings {
+  position: absolute;
+  right: 5px;
+  top: 5px;
+}
+
+.app-info .header {
+  font-size: 24pt;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  line-height: 60px;
+}
+
+.app-info .header .icon {
+  height: 60px;
+  margin-right: 5px;
+}
+
+.app-info .header .name {
+
+}
+
+.app-info .header .version {
+  font-size: 14pt;
+  margin-top: 10px;
+  color: #aaa;
+  margin-left: 5px;
+}
+
+.app-info .header .version-deprecated {
+  font-size: 12pt;
+  margin-top: 12px;
+  color: #e44d4d;
+  margin-left: 5px;
+}
+
+.app-info > * {
+  margin: 10px 0;
+}
+
+.timer {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  font-size: 50px;
+  line-height: 70px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.button {
+  background-color: rgba(0, 0, 0, 0.25);
+  border-radius: 5px;
+  padding: 10px 20px;
+  color: #eee;
+  line-height: unset;
+  cursor: pointer;
+}
+
+.button:hover {
+  background-color: rgba(0, 0, 0, 0.5);
+  color: #fff;
+}
+
+.content.stop-run {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100px;
+  padding: 10px;
+  max-width: 33vw;
+}
+
+.content.stop-run .description {
+  margin: 0 0 10px 0;
+}
+
+.stop-run-actions {
+  width: auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+}
+
+.stop-run-actions .button {
+  min-width: 100px;
+  text-align: center;
+}
+
+.settings-main-divider {
+  height: 1px;
+  background-color: #777;
+  margin: 3px 1px;
+}
+
+.no-link {
+  text-decoration: none;
+}
+
+.app.app-folder:not(.published) {
+  background-color: rgba(0, 0, 0, 0.125);
+}
+
+.app.dark.app-folder:not(.published) {
+  background-color: rgba(0, 0, 0, 0.25);
+}
+
+.app-folder .folder-app-actions-container {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+}
+
+.app-folder .folder-app-actions-container .folder-app-action {
+  color: #999;
+  display: block;
+  cursor: pointer;
+}
+
+.app-folder .folder-app-actions-container .folder-app-action:hover {
+  color: #ddd;
+}
+
+.app-folder .folder-app-actions-container .folder-app-action svg {
+  stroke: currentColor;
+}
+
+.app-folder .folder-app-actions-container .folder-app-action.exclamation {
+  color: #c24949;
+  cursor: pointer;
+}
+
+.app .app-action {
+  color: #999;
+  display: block;
+  cursor: pointer;
+}
+
+.app .app-action.app-star {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+}
+
+.app .app-action:hover {
+  color: #ddd;
+}
+
+.app .app-action svg {
+  stroke: currentColor;
+}
+
+.app .app-action.exclamation {
+  color: #c24949;
+  cursor: pointer;
+}
+
+.app-folder .folder-app-gear {
+  fill: currentColor;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.app-folder .folder-app-gear:hover {
+  text-decoration: underline;
+}
+
+.app-folder .folder-app-star > svg,
+.app .app-star > svg,
+.app-folder .folder-app-hide > svg,
+.app .app-hide > svg {
+  stroke: currentColor;
+  fill: rgba(255, 255, 255, 0.15);
+}
+
+.app-folder .folder-app-star:hover,
+.app .app-star:hover,
+.app-folder .folder-app-hide:hover,
+.app .app-hide:hover {
+  color: #ccc;
+}
+
+.app-folder .folder-app-star.favourite,
+.app .app-star.favourite {
+  color: goldenrod;
+}
+
+.app-folder .folder-app-star.favourite:hover,
+.app .app-star.favourite:hover {
+  color: gold;
+}
+
+.app-folder .folder-app-star.favourite > svg,
+.app .app-star.favourite > svg {
+  fill: rgba(255, 162, 0, 0.5);
+}
+
+.app-folder .folder-app-star.favourite:hover > svg,
+.app .app-star.favourite:hover > svg {
+  fill: rgba(255, 162, 0, 0.75);
+}
+
+.redirect-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: white;
+  z-index: 103;
+  margin: 0!important;
+  color: rgba(0, 0, 0, 0.65);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
