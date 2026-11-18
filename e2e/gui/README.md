@@ -90,7 +90,13 @@ class after that at its first page. So:
    `ui.notifications.mute`, which only the GUI reads: emails are still sent), as the GUI shows the unread ones as cards
    over the top right of every page, where they take the clicks meant for the buttons there; the previous value is
    restored in step 7, and a mute an earlier run left behind is removed. `"mute_user_notifications": false` keeps
-   them. The account of `--dummy-session` is muted for good, the admin of an SSO session is not (see above).
+   them. The account of `--dummy-session` is muted for good, the admin of an SSO session is not (see above). The
+   fixture tools get `CP_CAP_LIMIT_MOUNTS=None` in the settings of their latest version for the run (restored in
+   step 7): a run without a limit mounts every data storage its user can see, one after another, which takes many
+   minutes on a platform with many storages, and a run with default settings takes the limit only from there or from
+   the user's own `CP_CAP_LIMIT_MOUNTS` attribute. The
+   tests set the limit on every launch form themselves: none, or the storages a test checks in the run.
+   `"tools_limit_mounts"` in `scripts/fixtures.json` sets another value; empty keeps the tools' settings.
 3. generates the tests config from the live deployment (`scripts/generate-config.sh`, see below)
 4. TC-TEST-ENVIRONMENT-1: unblocks the test users (`scripts/test-users.sh unblock`)
 5. records the platform state (`scripts/platform-state.sh snapshot`): preferences, library, tools, registry catalog,
