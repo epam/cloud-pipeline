@@ -18,25 +18,34 @@ package com.epam.pipeline.manager.cluster.capacityreservation;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.cluster.CapacitySpecification;
 import com.epam.pipeline.controller.vo.cluster.capacityreservation.CapacityBlockOfferingRequest;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockInstanceTypeInfo;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockOffering;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockResourceType;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Lets a user search the capacity blocks AWS has for sale. It works before any node pool or reservation request
  * exists.
  *
- * <p>{@link #listOfferings} takes a concrete search - instance type, count, duration and the date to start looking
- * from. It answers with the offerings, zones and up-front prices AWS sells today. {@link #listInstanceTypes}
+ * <p>{@link #listOfferings} takes a concrete search - a list of candidate instance types, each with its own
+ * count, a duration and the date to start looking from. Each candidate is one AWS search; if AWS fails for any
+ * one of them, the whole search fails, rather than answering with a partial result. The offerings of every
+ * candidate that did come back are merged into a single list, sorted by {@link CapacityBlockOffering#getStartDate()}
+ * ascending - the nearest offering first, regardless of which candidate it came from. {@link #listInstanceTypes}
  * answers the first question such a search needs: which instance types a region sells as capacity blocks at all.
  * Most instance types never are.
  *
@@ -50,11 +59,15 @@ public class CapacityBlockOfferingService {
     private final CloudRegionManager regionManager;
     private final CapacityReservationCloudFacade cloudFacade;
     private final MessageHelper messageHelper;
+    private final PreferenceManager preferenceManager;
 
     public List<CapacityBlockOffering> listOfferings(final CapacityBlockOfferingRequest request) {
         validate(request);
         final AbstractCloudRegion region = regionManager.load(request.getRegionId());
-        return cloudFacade.listCapacityBlockOfferings(region, request);
+        return request.getCandidates().stream()
+                .flatMap(candidate -> cloudFacade.listCapacityBlockOfferings(region, request, candidate).stream())
+                .sorted(Comparator.comparing(CapacityBlockOffering::getStartDate))
+                .collect(Collectors.toList());
     }
 
     public List<CapacityBlockInstanceTypeInfo> listInstanceTypes(final Long regionId) {
@@ -67,10 +80,14 @@ public class CapacityBlockOfferingService {
     private void validate(final CapacityBlockOfferingRequest request) {
         Assert.notNull(request.getRegionId(),
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_BLOCK_OFFERING_REGION_REQUIRED));
-        Assert.isTrue(StringUtils.isNotBlank(request.getInstanceType()),
-                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_BLOCK_OFFERING_INSTANCE_TYPE_REQUIRED));
-        Assert.isTrue(request.getInstanceCount() != null && request.getInstanceCount() >= 1,
-                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_BLOCK_OFFERING_INSTANCE_COUNT_REQUIRED));
+        Assert.isTrue(CollectionUtils.isNotEmpty(request.getCandidates()),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_BLOCK_OFFERING_CANDIDATES_REQUIRED));
+        final int maxCandidates = preferenceManager.getPreference(
+                SystemPreferences.CLUSTER_CAPACITY_BLOCK_OFFERING_CANDIDATES_MAX_COUNT);
+        Assert.isTrue(maxCandidates == -1 || request.getCandidates().size() <= maxCandidates,
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_BLOCK_OFFERING_CANDIDATES_EXCEEDS_LIMIT,
+                        request.getCandidates().size(), maxCandidates));
+        request.getCandidates().forEach(this::validateCandidate);
         Assert.notNull(request.getCapacityDurationHours(),
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_BLOCK_OFFERING_DURATION_REQUIRED));
         Assert.notNull(request.getStartDateRange(),
@@ -80,5 +97,12 @@ public class CapacityBlockOfferingService {
         Assert.isTrue(resourceType == null || CapacityBlockResourceType.INSTANCE == resourceType,
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_BLOCK_RESOURCE_TYPE_NOT_SUPPORTED,
                         resourceType));
+    }
+
+    private void validateCandidate(final CapacitySpecification candidate) {
+        Assert.isTrue(StringUtils.isNotBlank(candidate.getInstanceType()),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_BLOCK_OFFERING_INSTANCE_TYPE_REQUIRED));
+        Assert.isTrue(candidate.getInstanceCount() != null && candidate.getInstanceCount() >= 1,
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_BLOCK_OFFERING_INSTANCE_COUNT_REQUIRED));
     }
 }

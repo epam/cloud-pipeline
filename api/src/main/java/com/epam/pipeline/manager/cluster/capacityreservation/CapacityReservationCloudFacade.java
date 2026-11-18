@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cluster.capacityreservation;
 
+import com.epam.pipeline.controller.vo.cluster.CapacitySpecification;
 import com.epam.pipeline.controller.vo.cluster.capacityreservation.CapacityBlockOfferingRequest;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockInstanceTypeInfo;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockOffering;
@@ -147,8 +148,9 @@ public class CapacityReservationCloudFacade {
      * provider from, so the provider of the region is used instead.
      */
     public List<CapacityBlockOffering> listCapacityBlockOfferings(final AbstractCloudRegion region,
-                                                                   final CapacityBlockOfferingRequest request) {
-        return serviceFor(region.getProvider()).listCapacityBlockOfferings(region, request);
+                                                                   final CapacityBlockOfferingRequest request,
+                                                                   final CapacitySpecification candidate) {
+        return serviceFor(region.getProvider()).listCapacityBlockOfferings(region, request, candidate);
     }
 
     public List<CapacityBlockInstanceTypeInfo> listCapacityBlockInstanceTypes(final AbstractCloudRegion region) {

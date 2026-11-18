@@ -845,6 +845,10 @@ public final class MessageConstants {
             "error.capacity.block.offering.duration.required";
     public static final String ERROR_CAPACITY_BLOCK_OFFERING_START_DATE_REQUIRED =
             "error.capacity.block.offering.start.date.required";
+    public static final String ERROR_CAPACITY_BLOCK_OFFERING_CANDIDATES_REQUIRED =
+            "error.capacity.block.offering.candidates.required";
+    public static final String ERROR_CAPACITY_BLOCK_OFFERING_CANDIDATES_EXCEEDS_LIMIT =
+            "error.capacity.block.offering.candidates.exceeds.limit";
     public static final String ERROR_CAPACITY_BLOCK_RESOURCE_TYPE_NOT_SUPPORTED =
             "error.capacity.block.resource.type.not.supported";
     public static final String ERROR_CAPACITY_BLOCK_EXTENSION_NOT_FOUND =

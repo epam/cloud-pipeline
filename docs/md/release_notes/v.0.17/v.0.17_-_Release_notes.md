@@ -1010,6 +1010,8 @@ A run can also be bound to one of these pools exclusively, rather than merely be
 
 For the full behaviour - including how a pool backed by either kind can be edited, cancelled or deleted - see [Pools backed by a capacity reservation](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#pools-backed-by-a-capacity-reservation) and [Pools backed by a capacity block](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#pools-backed-by-a-capacity-block).
 
+Searching for a capacity block offering can now ask about several candidate instance types - each with its own count - in a single request, rather than one search per type, so a user can compare a primary instance type against whatever fallback types they would also accept before deciding which offering to buy. The response merges every candidate's offerings into one list, sorted by start date, nearest first. See [Browsing capacity block offerings](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#browsing-capacity-block-offerings).
+
 ## FS quotas
 
 In some cases, users may store lots of extra files that are not needed more for them in FS storages.  
