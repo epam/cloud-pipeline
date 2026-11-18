@@ -64,7 +64,10 @@ public class PackageManagerTimeoutsTest extends AbstractSeveralPipelineRunningTe
     private static final String CONSOLE = "Console";
     private static final String TIME_LIMIT = "300";
     private static final String APT_UPDATE = "apt-get update -qq -y --allow-insecure-repositories";
-    private static final String APT_CHECK = "ls /tmp/test-apt-hung && head -1 /etc/apt/sources.list";
+    // The repo line of the run's version: launch.sh writes "deb [trusted=yes] <url> stable main" into
+    // /etc/apt/sources.list.d/cloud-pipeline.list, an older launch.sh "deb <url> stable main" into /etc/apt/sources.list
+    private static final String APT_CHECK = "ls /tmp/test-apt-hung && grep -h -F '/ubuntu/%s stable main' "
+            + "/etc/apt/sources.list.d/cloud-pipeline.list /etc/apt/sources.list 2>/dev/null";
     private static final String YUM_CHECK =
             "ls /etc/yum.repos.d/cloud-pipeline.repo && grep -c 'did not finish' /var/log/yum.cp.log";
     private static final String[] TIME_LIMIT_WARNINGS =
@@ -81,7 +84,6 @@ public class PackageManagerTimeoutsTest extends AbstractSeveralPipelineRunningTe
     private static final ObjectMapper JSON = new ObjectMapper();
 
     private final String registry = C.DEFAULT_REGISTRY;
-    private final String group = C.DEFAULT_GROUP;
     private final String anotherGroup = C.ANOTHER_GROUP;
     private final String ubuntuTool = format("%s/ubuntu", anotherGroup);
     private final String rockylinuxTool = format("%s/%s", anotherGroup, C.TEST_DOCKER_IMAGE);
@@ -145,9 +147,10 @@ public class PackageManagerTimeoutsTest extends AbstractSeveralPipelineRunningTe
             final String sshRunId = runId;
             run.sshInNewTab(shell -> shell
                     .waitUntilTextAppears(sshRunId)
-                    .executeAndWaitForPrompt(APT_CHECK, format("pipeline-%s", sshRunId))
-                    .assertOutputOfLastCommandMatches(APT_CHECK, format("/tmp/test-apt-hung\\s*deb \\S+/ubuntu/%s stable main",
-                            Pattern.quote(version))));
+                    .executeAndWaitForPrompt(format(APT_CHECK, version), format("pipeline-%s", sshRunId))
+                    .assertOutputOfLastCommandMatches(format(APT_CHECK, version),
+                            format("/tmp/test-apt-hung\\s*deb (\\[trusted=yes\\] )?\\S+/ubuntu/%s stable main",
+                                    Pattern.quote(version))));
         } finally {
             stopRun(runId);
         }
