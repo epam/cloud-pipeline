@@ -110,13 +110,12 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     /**
      * Opens the EXECUTION ENVIRONMENT section unless it is open already: a click on an open section's header would
      * close it. A new form starts with the section collapsed (openedPanels, client/.../tools/forms/EditToolForm.js),
-     * and each click on SETTINGS loads the tool again and draws a new form (client/.../tools/Tool.js), so after a
-     * step that opened the tab again its fields (cmd template, instance and price type, disk, sensitive storages,
-     * limit mounts) can't be typed into or clicked. The old form can still be shown right after that click, so the
-     * setters of these fields call this again just before they use them. And the form can close the section once
-     * more when it finishes loading: EditToolForm.rebuildComponent keeps this.state, awaits its requests and then
-     * sets it back, with the openedPanels it read before them. So the section has to be still open a second after a
-     * click; otherwise its header is clicked again, up to EXEC_ENVIRONMENT_CLICKS times.
+     * and each click on SETTINGS loads the tool again and draws a new form (client/.../tools/Tool.js). The form can
+     * also close the section once more when it finishes loading: EditToolForm.rebuildComponent keeps this.state,
+     * awaits its requests and then sets it back, with the openedPanels it read before them. So the section has to be
+     * still open a second after a click, otherwise its header is clicked again, up to EXEC_ENVIRONMENT_CLICKS times;
+     * and the setters of its fields (cmd template, instance and price type, disk, sensitive storages, limit mounts)
+     * call this again just before they use them.
      */
     public ToolSettings expandExecEnvironment() {
         final SelenideElement section = get(EXEC_ENVIRONMENT).shouldBe(visible).closest(".ant-collapse-item");
