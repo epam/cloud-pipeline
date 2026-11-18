@@ -76,8 +76,8 @@ class after that at its first page. So:
    proxy that inspects TLS, go to `certs/` (see `certs/README.md`). Docker's proxy settings are passed to the build.
 2. prepares the platform (`scripts/platform-prepare.sh`), creating only what is missing: test users from
    `e2e/prerequisites/users.json` (created blocked), the fixtures of `scripts/fixtures.json` (tool group `tests`, the
-   tools of the e2e images, the group of the test users `ROLE_TEST_USER` with its registry permission, a user with
-   `ROLE_ANONYMOUS_USER`). A tool which is registered already gets the settings of its fixture anyway (see
+   tools of the e2e images, the group of the test users `ROLE_TEST_USER` with its registry permission, the user
+   `E2E_ANONYMOUS_USER` with `ROLE_ANONYMOUS_USER`: other users with that role are never used, they may be people). A tool which is registered already gets the settings of its fixture anyway (see
    [Images used by the tests](#images-used-by-the-tests)). Active **blocking system notifications** (e.g. a disclaimer) are deactivated for the run:
    they cover the UI in every fresh test browser. Only their state is changed (in the database: an API update would
    reset the creation date and every user would have to confirm the disclaimer again); they are activated back in
