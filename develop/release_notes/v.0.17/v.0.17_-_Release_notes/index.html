@@ -278,6 +278,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#oidc-token-exchange">OIDC token exchange</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#cloud-pipeline-apt-repository-for-ubuntu-2404-and-later">Cloud Pipeline apt repository for Ubuntu 24.04 and later</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#notable-bug-fixes">Notable Bug fixes</a>
         <ul>
     <li class="toctree-l3"><a class="reference internal" href="#nextflow-run-view-some-tasks-stay-running-after-the-run-finishes">Nextflow run view: some tasks stay RUNNING after the run finishes</a>
@@ -799,6 +801,7 @@
 <li><a href="#nice-dcv-desktop-no-wallpaper-a-keyboard-layout-switcher-ubuntu-2404">NICE DCV desktop: no wallpaper, a keyboard layout switcher, Ubuntu 24.04</a></li>
 <li><a href="#retries-of-a-failed-scratch-lustre-file-system">Retries of a failed scratch Lustre file system</a></li>
 <li><a href="#oidc-token-exchange">OIDC token exchange</a></li>
+<li><a href="#cloud-pipeline-apt-repository-for-ubuntu-2404-and-later">Cloud Pipeline apt repository for Ubuntu 24.04 and later</a></li>
 </ul>
 <hr />
 <ul>
@@ -2439,6 +2442,15 @@ subject_token_type=urn:ietf:params:oauth:token-type:access_token
 <p><strong><em>Note</em></strong>: upgrading removes the stored web sessions. The security context is held in the database with Java serialization, and it gained fields for this feature, which makes a session written by an earlier version unreadable - so clearing them avoids an error on the first request after the upgrade. Most users will not notice: a GUI session with a valid <code>bearer</code> cookie is re-established on the next request, and only a user without one is asked to sign in again. Three things to know when planning the upgrade: restart the API service with the old replicas out of service, because a rolling upgrade lets an old replica keep writing sessions the new one cannot read; clear the sessions by hand if the service is ever rolled back, since the migration runs only once; and expect the platform usage report to show no online users for the interval covering the upgrade, as that figure is derived from the stored sessions.</p>
 </blockquote>
 <p>For more details see <a href="../../../manual/12_Manage_Settings/12.16._OIDC_token_exchange/">here</a>.</p>
+<h2 id="cloud-pipeline-apt-repository-for-ubuntu-2404-and-later">Cloud Pipeline apt repository for Ubuntu 24.04 and later</h2>
+<p>Runs add the Cloud Pipeline apt repository of their Ubuntu release from <code>tools/repos/ubuntu/&lt;version&gt;</code> of the distribution URL, if there is one. The public distribution has it for Ubuntu 16.04 to 22.04 only. So on newer releases, runs could not install SGE, LizardFS, the Singularity prerequisites and blobfuse 1, which need it.</p>
+<p>In <strong><code>v0.17</code></strong>, <code>deploy/repos/build-ubuntu-repo.sh</code> builds this repository for an Ubuntu release from 20.04 on, e.g. 24.04 or 26.04, in docker containers:</p>
+<ul>
+<li>the packages of the 22.04 repository, with the names of the newer release</li>
+<li>SGE, LizardFS and blobfuse 1 in the versions that the platform scripts install, from the previous repository, with the old libraries that they need</li>
+<li>gcsfuse and blobfuse2</li>
+</ul>
+<p>The repository can be signed with the key of the deployment. A deployment uploads it to <code>tools/repos/ubuntu/&lt;version&gt;</code> of its distribution URL. For more details see the <a href="https://github.com/epam/cloud-pipeline/blob/develop/deploy/repos/README.md">README</a> of <code>deploy/repos</code>.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
 <h3 id="nextflow-run-view-some-tasks-stay-running-after-the-run-finishes">Nextflow run view: some tasks stay <code>RUNNING</code> after the run finishes</h3>
@@ -2685,7 +2697,7 @@ Now, the autoscaler keeps no free node for such a run. The node expires as any o
 <li>the run adds the Cloud Pipeline repository as a trusted repository, in <code>/etc/apt/sources.list.d/cloud-pipeline.list</code>, and imports no key. So the repository may be unsigned, or signed with a key that the run does not have. For a signed repository, such as the public one, apt prints a <code>W:</code> line about the signature (<code>NO_PUBKEY</code>) at each refresh of the package lists, and uses the repository anyway. The line that an older run added to <code>/etc/apt/sources.list</code> is removed, and <code>gnupg</code> is no longer installed for the key</li>
 <li>Docker in Docker puts NVIDIA's key into <code>/etc/apt/keyrings/nvidia-docker.asc</code>, which its list names, and uses NVIDIA's 22.04 list for the Ubuntu releases after 22.04. With an apt older than 1.4 (Ubuntu 16.04), it imports the key with <code>apt-key</code>, as before</li>
 </ul>
-<p>Please note: a run adds the Cloud Pipeline repository only if the distribution has one for its OS version. The public distribution has Ubuntu 16.04 to 22.04 and Debian 8 to 10. So with the public distribution URL, runs on Ubuntu 24.04 and later still get no Cloud Pipeline repository. A deployment that needs it there has to host <code>tools/repos/ubuntu/&lt;version&gt;</code> of its own distribution URL.</p>
+<p>Please note: a run adds the Cloud Pipeline repository only if the distribution has one for its OS version. The public distribution has Ubuntu 16.04 to 22.04 and Debian 8 to 10. So with the public distribution URL, runs on Ubuntu 24.04 and later still get no Cloud Pipeline repository. A deployment that needs it there has to host <code>tools/repos/ubuntu/&lt;version&gt;</code> of its own distribution URL. See <a href="#cloud-pipeline-apt-repository-for-ubuntu-2404-and-later">Cloud Pipeline apt repository for Ubuntu 24.04 and later</a>.</p>
               
             </div>
           </div><footer>
