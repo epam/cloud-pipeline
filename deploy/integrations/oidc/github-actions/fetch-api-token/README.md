@@ -48,11 +48,12 @@ steps require no further configuration. To use the token directly instead:
         "${{ steps.cp.outputs.api-url }}/whoami"
 ```
 
-## Input
+## Inputs
 
 | Name | Required | Description |
 |---|---|---|
 | `api-url` | yes | The Cloud Pipeline URL, which must be `https`. Either the API root as `pipe` expects it in `API` — `https://host/pipeline/restapi` — or just the host, in which case `/pipeline/restapi` is appended. The resolved value is printed at the start of the step. |
+| `insecure-tls` | no | Skip TLS verification on the Cloud Pipeline requests, for a self-signed certificate the runner does not trust. Off by default, and never applied to the request to GitHub. |
 
 **The resolved value is also the audience requested from GitHub**, so it has to match one of the
 `audiences` of the issuer entry configured on the deployment. A mismatch there is the most common
@@ -114,6 +115,30 @@ full, see
    `ignoreSubjectTokenLifetime` is needed because a GitHub token expires minutes after it is issued;
    without it the Cloud Pipeline token is capped at whatever is left of it and a long transfer dies
    midway.
+
+## A self-signed Cloud Pipeline certificate
+
+A deployment serving a certificate the runner does not trust fails every request here with
+`curl: (60) SSL certificate problem`. The fix in order of preference:
+
+1. **trust the CA on the runner** — add it to the image's trust store. The actions then need no
+   option, and nothing is sent over an unverified connection;
+2. **`insecure-tls: true`** where that is not possible.
+
+```yaml
+  - uses: epam/cloud-pipeline/deploy/integrations/oidc/github-actions/fetch-api-token@develop
+    with:
+      api-url: https://cloud-pipeline.example.com
+      insecure-tls: true
+```
+
+It applies **only to the Cloud Pipeline requests**. The request to GitHub keeps verifying, because
+that certificate is publicly trusted and skipping it would expose the OIDC token for no benefit.
+
+Understand what you give up: the platform token is sent over a connection whose certificate is not
+checked, so anything on the network path between the runner and the API can read it, and a host that
+answers for that address cannot be told from the real one. The action prints a warning in the log
+whenever it is on. It does not weaken what the API will accept — only what this runner checks.
 
 ## Requirements
 

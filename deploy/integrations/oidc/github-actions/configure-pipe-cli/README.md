@@ -29,6 +29,7 @@ steps:
 |---|---|---|
 | `api-url` | yes | The Cloud Pipeline URL, which must be `https`. Either the API root — `https://host/pipeline/restapi` — or just the host, in which case `/pipeline/restapi` is appended. |
 | `install-dir` | no | Where to put the binary. Defaults to `$HOME/.local/bin`, created if missing and added to `PATH`. |
+| `insecure-tls` | no | Skip TLS verification on the Cloud Pipeline requests, for a self-signed certificate the runner does not trust. Off by default, and never applied to the request to GitHub. |
 
 ## Outputs
 

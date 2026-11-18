@@ -13,6 +13,14 @@ inputs:
       GitHub, so it has to match an entry of the deployment's
       system.oidc.token.exchange.issuers preference.
     required: true
+  insecure-tls:
+    description: >-
+      Skip TLS certificate verification on the Cloud Pipeline requests, for a deployment serving a
+      self-signed certificate that the runner does not trust. Off by default. It never applies to
+      the request to GitHub, whose certificate is publicly trusted. Prefer trusting the CA on the
+      runner; this is the fallback where that is not possible.
+    required: false
+    default: 'false'
 
 outputs:
   token:
@@ -32,4 +40,5 @@ runs:
       shell: bash
       env:
         INPUT_API_URL: ${{ inputs.api-url }}
+        INPUT_INSECURE_TLS: ${{ inputs.insecure-tls }}
       run: bash "$GITHUB_ACTION_PATH/../_lib/exchange-token.sh"

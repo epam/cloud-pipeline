@@ -13,6 +13,14 @@ inputs:
       GitHub, so it has to match an entry of the deployment's
       system.oidc.token.exchange.issuers preference.
     required: true
+  insecure-tls:
+    description: >-
+      Skip TLS certificate verification on the Cloud Pipeline requests, for a deployment serving a
+      self-signed certificate that the runner does not trust. Off by default. It never applies to
+      the request to GitHub, whose certificate is publicly trusted. Prefer trusting the CA on the
+      runner; this is the fallback where that is not possible.
+    required: false
+    default: 'false'
   install-dir:
     description: >-
       Where to put the `pipe` binary. Defaults to $HOME/.local/bin, which is created if missing
@@ -41,6 +49,7 @@ runs:
       shell: bash
       env:
         INPUT_API_URL: ${{ inputs.api-url }}
+        INPUT_INSECURE_TLS: ${{ inputs.insecure-tls }}
       run: bash "$GITHUB_ACTION_PATH/../_lib/exchange-token.sh"
 
     # No `pipe configure` here. The CLI counts itself configured when API and
@@ -50,6 +59,7 @@ runs:
       shell: bash
       env:
         INPUT_INSTALL_DIR: ${{ inputs.install-dir }}
+        INPUT_INSECURE_TLS: ${{ inputs.insecure-tls }}
       run: |
         set -euo pipefail
 
@@ -91,8 +101,15 @@ runs:
         PIPE_URL="${API_ROOT%/restapi}/pipe"
         PIPE_PATH="$INSTALL_DIR/pipe"
 
+        # only the download needs this: the CLI itself does not verify the API's certificate
+        INSECURE=""
+        case "${INPUT_INSECURE_TLS:-false}" in
+          true|TRUE|True|yes|1) INSECURE="--insecure" ;;
+        esac
+
         echo "Downloading $PIPE_URL"
-        STATUS="$(curl -sS -L -o "$PIPE_PATH" -w '%{http_code}' "$PIPE_URL")" || fail \
+        STATUS="$(curl -sS -L ${INSECURE:+"$INSECURE"} \
+            -o "$PIPE_PATH" -w '%{http_code}' "$PIPE_URL")" || fail \
           "Could not reach $PIPE_URL." \
           "A GitHub-hosted runner is on the public internet, so a deployment with a private API" \
           "needs a self-hosted runner inside the network."

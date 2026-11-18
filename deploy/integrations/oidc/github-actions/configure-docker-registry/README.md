@@ -32,6 +32,7 @@ later steps without repeating the exchange.
 |---|---|---|
 | `api-url` | yes | The Cloud Pipeline URL, which must be `https`. Either the API root — `https://host/pipeline/restapi` — or just the host, in which case `/pipeline/restapi` is appended. |
 | `registry` | no | The registry to log into, as `host:port`. By default the deployment is asked. |
+| `insecure-tls` | no | Skip TLS verification on the Cloud Pipeline requests, for a self-signed certificate the runner does not trust. Off by default, and never applied to the request to GitHub. |
 
 ## Outputs
 
@@ -71,6 +72,11 @@ stock deployment `docker login` fails here with:
 ```
 x509: certificate signed by unknown authority
 ```
+
+`insecure-tls: true` does **not** fix this. It covers the action's own `curl` calls to the API, so
+the registry lookup succeeds, but `docker login` is run by the docker daemon, which takes neither
+that input nor a `curl` flag. The daemon needs the CA in `/etc/docker/certs.d/<registry>/ca.crt`, or
+the registry in its `insecure-registries` list.
 
 Trusting that CA is the runner's job, not this action's. Installing it per job would mean writing to
 `/etc/docker/certs.d/` — outside the workspace, needing root or passwordless `sudo`, and persisting

@@ -13,6 +13,14 @@ inputs:
       GitHub, so it has to match an entry of the deployment's
       system.oidc.token.exchange.issuers preference.
     required: true
+  insecure-tls:
+    description: >-
+      Skip TLS certificate verification on the Cloud Pipeline requests, for a deployment serving a
+      self-signed certificate that the runner does not trust. Off by default. It never applies to
+      the request to GitHub, whose certificate is publicly trusted. Prefer trusting the CA on the
+      runner; this is the fallback where that is not possible.
+    required: false
+    default: 'false'
   registry:
     description: >-
       The registry to log into, as host:port. Optional: by default the deployment is asked, and
@@ -42,12 +50,14 @@ runs:
       shell: bash
       env:
         INPUT_API_URL: ${{ inputs.api-url }}
+        INPUT_INSECURE_TLS: ${{ inputs.insecure-tls }}
       run: bash "$GITHUB_ACTION_PATH/../_lib/exchange-token.sh"
 
     - id: login
       shell: bash
       env:
         INPUT_REGISTRY: ${{ inputs.registry }}
+        INPUT_INSECURE_TLS: ${{ inputs.insecure-tls }}
       run: |
         set -euo pipefail
 
@@ -66,6 +76,11 @@ runs:
 
         API_ROOT="${API%/}"
 
+        CP_INSECURE=""
+        case "${INPUT_INSECURE_TLS:-false}" in
+          true|TRUE|True|yes|1) CP_INSECURE="insecure" ;;
+        esac
+
         WANT="$INPUT_REGISTRY"
         case "$WANT" in
           *[[:space:]]*) fail "The registry input contains whitespace: '$WANT'." ;;
@@ -83,6 +98,7 @@ runs:
           response="$(printf '%s\n' \
             "url = \"$API_ROOT/$path\"" \
             "header = \"Authorization: Bearer $API_TOKEN\"" \
+            "$CP_INSECURE" \
             | curl -sS -w '\n%{http_code}' --config - )" || fail \
               "Could not reach $API_ROOT/$path."
           status="${response##*$'\n'}"

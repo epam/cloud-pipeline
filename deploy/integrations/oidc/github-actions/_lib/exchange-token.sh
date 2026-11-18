@@ -17,7 +17,8 @@
 # Shared by every action here, called through $GITHUB_ACTION_PATH. Internal: no
 # workflow uses this path directly.
 #
-# Reads   INPUT_API_URL, ACTIONS_ID_TOKEN_REQUEST_URL, ACTIONS_ID_TOKEN_REQUEST_TOKEN
+# Reads   INPUT_API_URL, INPUT_INSECURE_TLS,
+#         ACTIONS_ID_TOKEN_REQUEST_URL, ACTIONS_ID_TOKEN_REQUEST_TOKEN
 # Writes  $GITHUB_OUTPUT  token, api-url, expires-in
 #         $GITHUB_ENV     API, API_TOKEN
 
@@ -66,6 +67,18 @@ case "$API_URL" in
 esac
 echo "Cloud Pipeline API: $API_URL"
 
+# Applies to the Cloud Pipeline requests only. GitHub's certificate is publicly trusted, so
+# skipping verification there would expose the OIDC token for nothing.
+CP_INSECURE=""
+case "${INPUT_INSECURE_TLS:-false}" in
+  true|TRUE|True|yes|1)
+    CP_INSECURE="insecure"
+    echo "::warning::TLS verification is off for $API_URL. The token is sent over a"
+    echo "connection whose certificate is not checked, so anything on the network path"
+    echo "between this runner and the API can read it."
+    ;;
+esac
+
 if [ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ] || [ -z "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" ]; then
   fail \
     "No OIDC token is available to this job." \
@@ -97,6 +110,7 @@ RESPONSE="$(printf '%s\n' \
   'data-urlencode = "grant_type=urn:ietf:params:oauth:grant-type:token-exchange"' \
   "data-urlencode = \"subject_token=$GITHUB_OIDC_TOKEN\"" \
   'data-urlencode = "subject_token_type=urn:ietf:params:oauth:token-type:jwt"' \
+  "$CP_INSECURE" \
   | curl -sS -w '\n%{http_code}' --config - )" || fail \
     "Could not reach $API_URL to exchange the token." \
     "A GitHub-hosted runner is on the public internet, so a deployment with a private API" \
