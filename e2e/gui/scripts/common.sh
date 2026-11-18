@@ -125,7 +125,8 @@ function cp_db_sql {
 }
 
 # Prints the id of a user, nothing if the user does not exist
-# (GET /user?name= answers status OK with an empty payload for an unknown user)
+# (GET /user?name= answers an error "User with identifier not found" for an unknown user, status OK with an empty
+# payload on some versions: nothing is printed either way)
 function cp_user_id {
     cp_api GET "user?name=$1" 2> /dev/null | jq -r '.payload.id // empty' 2> /dev/null
 }

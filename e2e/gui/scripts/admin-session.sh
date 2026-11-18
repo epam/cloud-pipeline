@@ -209,7 +209,7 @@ function _set_marker {
 # The checks of "create" that change nothing. Sets _USER_URI, _ACCOUNT (the user as the API returns it, null if it
 # does not exist) and, for a user to create, _ROLE_ID (of ROLE_ADMIN)
 function _check_account {
-    local _jwt_no_session _marked
+    local _jwt_no_session _marked _response
     # Spring reads true, on, yes and 1 as true; without the key the API image's own default applies, false
     _jwt_no_session="$(cp_config CP_API_JWT_DISABLE_SESSION | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')"
     if [[ "$_jwt_no_session" =~ ^(true|on|yes|1)$ ]]; then
@@ -217,8 +217,16 @@ function _check_account {
             "JWT-authenticated request creates no session there, so a database-made session can't be built"
     fi
     _USER_URI="$(jq -rn --arg u "$_USER" '$u | @uri')"
-    # GET /user?name= answers status OK with an empty payload for an unknown user
-    _ACCOUNT="$(cp_api_payload GET "user?name=$_USER_URI")" || e2e_die "Unable to look up the user $_USER"
+    # An unknown user: GET /user?name= answers an error "User with identifier not found" (UserManager.loadByNameOrId),
+    # status OK with an empty payload on some versions. Any other answer stops here.
+    _response="$(cp_api GET "user?name=$_USER_URI" 2> /dev/null)"
+    if [ "$(jq -r '.status // empty' <<< "$_response" 2> /dev/null)" == "OK" ]; then
+        _ACCOUNT="$(jq '.payload' <<< "$_response")"
+    elif jq -e '(.message // "") | test("not found"; "i")' <<< "$_response" > /dev/null 2>&1; then
+        _ACCOUNT="null"
+    else
+        e2e_die "Unable to look up the user $_USER: $(jq -r '.message // .' <<< "$_response" 2> /dev/null | head -c 300)"
+    fi
     if [ "$(jq -r '.id // empty' <<< "$_ACCOUNT")" ]; then
         _marked="$(_marker "$(jq -r '.id' <<< "$_ACCOUNT")")" || \
             e2e_die "Unable to read the attributes of the user $_USER"
