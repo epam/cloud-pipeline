@@ -71,6 +71,7 @@
 - [NICE DCV desktop: no wallpaper, a keyboard layout switcher, Ubuntu 24.04](#nice-dcv-desktop-no-wallpaper-a-keyboard-layout-switcher-ubuntu-2404)
 - [Retries of a failed scratch Lustre file system](#retries-of-a-failed-scratch-lustre-file-system)
 - [OIDC token exchange](#oidc-token-exchange)
+- [Cloud Pipeline apt repository for Ubuntu 24.04 and later](#cloud-pipeline-apt-repository-for-ubuntu-2404-and-later)
 
 ***
 
@@ -2086,6 +2087,18 @@ The exchange never creates a user: the user has to exist in Cloud Pipeline alrea
 
 For more details see [here](../../manual/12_Manage_Settings/12.16._OIDC_token_exchange.md).
 
+## Cloud Pipeline apt repository for Ubuntu 24.04 and later
+
+Runs add the Cloud Pipeline apt repository of their Ubuntu release from `tools/repos/ubuntu/<version>` of the distribution URL, if there is one. The public distribution has it for Ubuntu 16.04 to 22.04 only. So on newer releases, runs could not install SGE, LizardFS, the Singularity prerequisites and blobfuse 1, which need it.
+
+In **`v0.17`**, `deploy/repos/build-ubuntu-repo.sh` builds this repository for an Ubuntu release from 20.04 on, e.g. 24.04 or 26.04, in docker containers:
+
+- the packages of the 22.04 repository, with the names of the newer release
+- SGE, LizardFS and blobfuse 1 in the versions that the platform scripts install, from the previous repository, with the old libraries that they need
+- gcsfuse and blobfuse2
+
+The repository can be signed with the key of the deployment. A deployment uploads it to `tools/repos/ubuntu/<version>` of its distribution URL. For more details see the [README](https://github.com/epam/cloud-pipeline/blob/develop/deploy/repos/README.md) of `deploy/repos`.
+
 ***
 
 ## Notable Bug fixes
@@ -2447,4 +2460,4 @@ Now:
 - the run adds the Cloud Pipeline repository as a trusted repository, in `/etc/apt/sources.list.d/cloud-pipeline.list`, and imports no key. So the repository may be unsigned, or signed with a key that the run does not have. For a signed repository, such as the public one, apt prints a `W:` line about the signature (`NO_PUBKEY`) at each refresh of the package lists, and uses the repository anyway. The line that an older run added to `/etc/apt/sources.list` is removed, and `gnupg` is no longer installed for the key
 - Docker in Docker puts NVIDIA's key into `/etc/apt/keyrings/nvidia-docker.asc`, which its list names, and uses NVIDIA's 22.04 list for the Ubuntu releases after 22.04. With an apt older than 1.4 (Ubuntu 16.04), it imports the key with `apt-key`, as before
 
-Please note: a run adds the Cloud Pipeline repository only if the distribution has one for its OS version. The public distribution has Ubuntu 16.04 to 22.04 and Debian 8 to 10. So with the public distribution URL, runs on Ubuntu 24.04 and later still get no Cloud Pipeline repository. A deployment that needs it there has to host `tools/repos/ubuntu/<version>` of its own distribution URL.
+Please note: a run adds the Cloud Pipeline repository only if the distribution has one for its OS version. The public distribution has Ubuntu 16.04 to 22.04 and Debian 8 to 10. So with the public distribution URL, runs on Ubuntu 24.04 and later still get no Cloud Pipeline repository. A deployment that needs it there has to host `tools/repos/ubuntu/<version>` of its own distribution URL. See [Cloud Pipeline apt repository for Ubuntu 24.04 and later](#cloud-pipeline-apt-repository-for-ubuntu-2404-and-later).
