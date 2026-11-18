@@ -49,6 +49,7 @@
 - [A run can ask for a new node](#a-run-can-ask-for-a-new-node)
 - [WDL and Luigi pipelines are no longer supported](#wdl-and-luigi-pipelines-are-no-longer-supported)
 - [OIDC token exchange](#oidc-token-exchange)
+- [NICE DCV on Rocky Linux 10](#nice-dcv-on-rocky-linux-10)
 
 ***
 
@@ -987,6 +988,18 @@ The exchange never creates a user: the user has to exist in Cloud Pipeline alrea
 > **_Note_**: upgrading removes the stored web sessions. The security context is held in the database with Java serialization, and it gained fields for this feature, which makes a session written by an earlier version unreadable - so clearing them avoids an error on the first request after the upgrade. A signed-in GUI user is sent through the sign-in of the identity provider again on the next request; where their session at the identity provider is still valid, that needs no input from them. Three things to know when planning the upgrade: restart the API service with the old replicas out of service, because a rolling upgrade lets an old replica keep writing sessions the new one cannot read; clear the sessions by hand if the service is ever rolled back, since the migration runs only once; and expect the platform usage report to show no online users for the interval covering the upgrade, as that figure is derived from the stored sessions.
 
 For more details see [here](../../manual/12_Manage_Settings/12.16._OIDC_token_exchange.md).
+
+***
+
+## NICE DCV on Rocky Linux 10
+
+Rocky Linux 10, RHEL 10 and CentOS Stream 10 have no X server and no Xfce, also not in EPEL. So the NICE DCV desktop (`CP_CAP_DCV`) previously failed to install on them: "Cannot install system prerequisites for DCV".
+
+In the current version, DCV runs the GNOME desktop on Wayland there, with the el10 build of Amazon DCV 2026.0 (`nice-dcv-2026.0-25174-el10-x86_64` in `tools/dcv` of the distribution URL), which supports these releases. A DCV session opens at the GDM login screen, which lists the owner of the run: the user selects the name, and no password is asked, in the web and in the desktop DCV client alike. As the Xfce desktop, it has no wallpaper and the keyboard layouts of `CP_DCV_XKB_LAYOUTS` (`us`, `fr` and `de` by default). It has no screen lock either. Rocky Linux 8 and 9 keep Xfce on X11.
+
+On Wayland, a user can have one DCV session, and DCV does not run an initialization script for it (`CP_DCV_INIT_SCRIPT`).
+
+For more details see [here](../../manual/10_Manage_Tools/10.3._Add_a_Tool.md#supported-os-families).
 
 ***
 
