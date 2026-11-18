@@ -227,15 +227,15 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**4570_1**](Data_storages/4570/4570_1.md) | "Download"/"Download archive" selection items depend on what is selected | |
 | [**4570_2**](Data_storages/4570/4570_2.md) | "Download archive" name pop-up: defaults and validation | |
 | [**4570_3**](Data_storages/4570/4570_3.md) | Queue, track and download an archive | |
-| [**4570_4**](Data_storages/4570/4570_4.md) | Downloads window: cancel a task, paging | |
-| [**4570_5**](Data_storages/4570/4570_5.md) | Downloads window: the Owner column is admin/ROLE_STORAGE_ADMIN-only | |
+| [**4570_4**](Data_storages/4570/4570_4.md) | Storage tasks window: cancel a task, paging | |
+| [**4570_5**](Data_storages/4570/4570_5.md) | Storage tasks window: the Owner column is admin/ROLE_STORAGE_ADMIN-only | |
 | [**4570_6**](Data_storages/4570/4570_6.md) | The per-user archive-download task cap blocks queueing | |
 | [**4570_7**](Data_storages/4570/4570_7.md) | An archive download fails once the selection exceeds the `maxFilesCount` configured in `system.async.tasks.config` | |
 | [**4570_8**](Data_storages/4570/4570_8.md) | An archive download fails once the selection exceeds the `maxSizeBytes` configured in `system.async.tasks.config` | |
 | [**4570_9**](Data_storages/4570/4570_9.md) | [MANUAL] A finished archive expires once the `ttlDays` configured in `system.async.tasks.config` has passed | |
-| [**4570_10**](Data_storages/4570/4570_10.md) | Downloads window: the Status filter's select-all box and "Reset to defaults" | |
-| [**4570_11**](Data_storages/4570/4570_11.md) | Downloads window: clearing the Owner filter by hand, and "Reset to defaults" | |
-| [**4570_12**](Data_storages/4570/4570_12.md) | Downloads window: the Owner filter takes a user picked from its suggestion list | |
+| [**4570_10**](Data_storages/4570/4570_10.md) | Storage tasks window: the Status filter's select-all box and "Reset to defaults" | |
+| [**4570_11**](Data_storages/4570/4570_11.md) | Storage tasks window: clearing the Owner filter by hand, and "Reset to defaults" | |
+| [**4570_12**](Data_storages/4570/4570_12.md) | Storage tasks window: the Owner filter takes a user picked from its suggestion list | |
 | [**4570_13**](Data_storages/4570/4570_13.md) | A user with read-only access can select a folder and download it as an archive | |
 | [**4570_14**](Data_storages/4570/4570_14.md) | A storage that allows no downloads offers no "Download archive" either | |
 | [**4570_15**](Data_storages/4570/4570_15.md) | Remove deletes only the selected items the user may write to | |
