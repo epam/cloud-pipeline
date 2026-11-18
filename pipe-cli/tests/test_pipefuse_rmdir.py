@@ -59,6 +59,7 @@ except (ImportError, EnvironmentError):
 
 from cachetools import TTLCache  # noqa: E402
 from pipefuse import fuseutils  # noqa: E402
+from pipefuse.archived import ArchivedFilesFilterFileSystemClient  # noqa: E402
 from pipefuse.cache import CachingListingFileSystemClient, ListingCache  # noqa: E402
 from pipefuse.fsclient import File, ForbiddenOperationException, NotEmptyOperationException  # noqa: E402
 from pipefuse.gcp import GoogleStorageLowLevelFileSystemClient  # noqa: E402
@@ -91,8 +92,9 @@ def _file(name, is_dir=False):
 class FakeS3(object):
     """In-memory AWS S3 client: list_objects_v2 with a delimiter, put_object and delete_object."""
 
-    def __init__(self, keys):
+    def __init__(self, keys, storage_classes=None):
         self.keys = set(keys)
+        self.storage_classes = storage_classes or {}
         self.deleted = []
 
     def get_paginator(self, name):
@@ -109,7 +111,8 @@ class FakeS3(object):
             if Delimiter and Delimiter in rest:
                 prefixes.add(Prefix + rest.split(Delimiter)[0] + Delimiter)
             else:
-                contents.append({'Key': key, 'Size': 0, 'LastModified': MODIFIED, 'StorageClass': 'STANDARD'})
+                contents.append({'Key': key, 'Size': 0, 'LastModified': MODIFIED,
+                                 'StorageClass': self.storage_classes.get(key, 'STANDARD')})
         page = {'IsTruncated': False}
         if contents:
             page['Contents'] = contents
@@ -175,12 +178,18 @@ class FakeGcs(object):
         return FakeGcsBlobs(blobs, prefixes)
 
 
-def _s3_client(keys):
-    s3 = FakeS3(keys)
+def _s3_client(keys, storage_classes=None, show_archived=True):
+    s3 = FakeS3(keys, storage_classes)
     with patch.object(S3StorageLowLevelClient, '_generate_s3_client', return_value=s3):
         low_level_client = S3StorageLowLevelClient('bucket', bucket_object=MagicMock(), pipe=MagicMock(),
                                                    chunk_size=10)
-    return StorageHighLevelFileSystemClient(low_level_client), s3
+    client = low_level_client
+    if not show_archived:
+        # As pipe-fuse.py builds the client of an S3 bucket without --show-archived: nothing is restored.
+        pipe = MagicMock()
+        pipe.get_storage_lifecycle.return_value = []
+        client = ArchivedFilesFilterFileSystemClient(client, pipe=pipe, bucket=low_level_client.bucket_object)
+    return StorageHighLevelFileSystemClient(client), s3
 
 
 def _gcs_client(names):
@@ -278,6 +287,25 @@ class TestObjectStorageRmdir(object):
 
         assert removed == ['/C/repo/.git/worktrees/wt/logs']
         assert s3.keys == set(keys) - {'C/repo/.git/worktrees/wt/logs/HEAD'}
+
+    def test_ignores_archived_files_that_the_mount_does_not_show(self):
+        keys = ['A/' + MARKER, 'A/old.dat']
+        client, s3 = _s3_client(keys, storage_classes={'A/old.dat': 'GLACIER'}, show_archived=False)
+
+        client.rmdir('/A')
+
+        assert s3.deleted == ['A/' + MARKER]
+        assert s3.keys == {'A/old.dat'}
+
+    def test_refuses_folder_with_archived_files_that_the_mount_shows(self):
+        keys = ['A/' + MARKER, 'A/old.dat']
+        client, s3 = _s3_client(keys, storage_classes={'A/old.dat': 'GLACIER'}, show_archived=True)
+
+        with pytest.raises(NotEmptyOperationException):
+            client.rmdir('/A')
+
+        assert s3.deleted == []
+        assert s3.keys == set(keys)
 
     def test_deletes_macos_service_files_of_folder_that_looks_empty_on_macos(self):
         client, s3 = _s3_client(['A/' + MARKER, 'A/._keep.txt', 'A/.localized', 'B/keep.txt'])
