@@ -281,8 +281,12 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return this;
     }
 
+    /**
+     * Checks the owner shown in the run's row, in any case: this client shows a user without name attributes by the
+     * account name as it is stored (e.g. USER2), the callers pass the login in lower case.
+     */
     public RunsMenuAO validatePipelineOwner(String id, String owner) {
-        $(byClassName(format("run-%s", id))).shouldHave(matchText(owner));
+        $(byClassName(format("run-%s", id))).shouldHave(matchText("(?i)" + Pattern.quote(owner)));
         return this;
     }
 

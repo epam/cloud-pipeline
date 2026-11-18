@@ -106,7 +106,12 @@
 
     <test name="LaunchParametersTest">
         <classes>
-            <class name="com.epam.pipeline.autotests.LaunchParametersTest"/>
+            <class name="com.epam.pipeline.autotests.LaunchParametersTest">
+                <methods>
+                    <!-- TC-PARAMETERS-7: ported from a deployment whose conda capability loads conda from a shared EFS file system; a general deployment has neither -->
+                    <exclude name="checkCondaRunCapability"/>
+                </methods>
+            </class>
         </classes>
     </test>
 
