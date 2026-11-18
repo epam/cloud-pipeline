@@ -41,6 +41,8 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
     private final String testTool = format("%s/%s", anotherGroup, C.TEST_DOCKER_IMAGE);
     private final String rootHost = "root@pipeline";
     private final String testStorage = format("test-storage-2847-%s", Utils.randomSuffix());
+    // where a run mounts it: storage.object.prefix + its name
+    private final String testStoragePath = Utils.storagePath(testStorage);
     private final String testFile = "testFile";
 
     @AfterClass(alwaysRun = true)
@@ -54,12 +56,12 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
     public void introduceExtendedAttributesSupportInPipeFuse() {
         String[] commands = {
                 "yum install attr -y",
-                format("setfattr -n user.key1 -v value1 /cloud-data/%s/%s", testStorage, testFile),
-                format("setfattr -n user.key2 -v value2 /cloud-data/%s/%s", testStorage, testFile),
-                format("getfattr /cloud-data/%s/%s", testStorage, testFile),
-                format("getfattr -n user.key1 /cloud-data/%s/%s", testStorage, testFile),
-                format("setfattr -n another.key1 -v value1 /cloud-data/%s/%s", testStorage, testFile),
-                format("getfattr -n another.key1 /cloud-data/%s/%s", testStorage, testFile)
+                format("setfattr -n user.key1 -v value1 /cloud-data/%s/%s", testStoragePath, testFile),
+                format("setfattr -n user.key2 -v value2 /cloud-data/%s/%s", testStoragePath, testFile),
+                format("getfattr /cloud-data/%s/%s", testStoragePath, testFile),
+                format("getfattr -n user.key1 /cloud-data/%s/%s", testStoragePath, testFile),
+                format("setfattr -n another.key1 -v value1 /cloud-data/%s/%s", testStoragePath, testFile),
+                format("getfattr -n another.key1 /cloud-data/%s/%s", testStoragePath, testFile)
         };
         library()
                 .createStorage(testStorage)
@@ -83,21 +85,21 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
                             .assertNextStringIsVisible(commands[2], rootHost)
                             .execute(commands[3])
                             .assertNextStringIsVisible(commands[3], rootHost)
-                            .assertPageAfterCommandContainsStrings(format("file: cloud-data/%s/%s", testStorage, testFile),
+                            .assertPageAfterCommandContainsStrings(format("file: cloud-data/%s/%s", testStoragePath, testFile),
                                     "user.key1", "user.key2")
                             .execute(commands[4])
                             .assertNextStringIsVisible(commands[4], rootHost)
                             .assertPageAfterCommandContainsStrings(commands[4],
-                                    format("file: cloud-data/%s/%s", testStorage, testFile), "user.key1=\"value1\"")
+                                    format("file: cloud-data/%s/%s", testStoragePath, testFile), "user.key1=\"value1\"")
                             .execute(commands[5])
                             .assertNextStringIsVisible(commands[5], rootHost)
                             // the error line may show the path with or without its leading "/"
                             .assertPageAfterCommandContainsStrings(commands[5],
-                                    format("cloud-data/%s/%s: Operation not supported", testStorage, testFile))
+                                    format("cloud-data/%s/%s: Operation not supported", testStoragePath, testFile))
                             .execute(commands[6])
                             .assertNextStringIsVisible(commands[6], rootHost)
                             .assertPageAfterCommandContainsStrings(commands[6],
-                                    format("cloud-data/%s/%s", testStorage, testFile), "Operation not supported");
+                                    format("cloud-data/%s/%s", testStoragePath, testFile), "Operation not supported");
                 });
     }
 }

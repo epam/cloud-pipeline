@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Selenide;
+import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
 import static com.epam.pipeline.autotests.utils.C.LOGIN_DELAY_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Utils;
@@ -39,9 +40,14 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class NavigationMenuAO {
 
     public PipelinesLibraryAO library() {
-        final By pipelinesPageSelector = byId("navigation-button-pipelines");
+        // the GUI names the page "library" (client ui-navigation Pages), and may show its tree collapsed
+        final By pipelinesPageSelector = byId("navigation-button-library");
         $(pipelinesPageSelector).shouldBe(visible).click();
         $(pipelinesPageSelector).shouldBe(selectedMenuItem);
+        final SelenideElement expandButton = $(byId("expand-collapse-library-tree-button"));
+        if (expandButton.$x("./i").has(cssClass("anticon-right"))) {
+            expandButton.click();
+        }
         $(byXpath(".//*[.//*[text()[contains(.,'Library')]] and contains(@id, 'pipelines-library-content')]"))
                 .shouldBe(visible, ofMillis(5000));
         return new PipelinesLibraryAO();

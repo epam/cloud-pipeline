@@ -61,7 +61,7 @@ public class Launch_OutputParameterTest extends AbstractAutoRemovingPipelineRunn
     @Test(dependsOnMethods = {"preparePipeline"})
     @TestCase(value = {"EPMCMBIBPC-362"})
     public void launchPipelineWithNewParameter() {
-        final String pathToFile = String.format("%s://%s/%s/%s/", C.STORAGE_PREFIX, storage, STORAGE_FOLDER,
+        final String pathToFile = String.format("%s://%s/%s/%s/", C.STORAGE_PREFIX, Utils.storagePath(storage), STORAGE_FOLDER,
                 getPipelineName());
         new PipelineCodeTabAO(getPipelineName())
             .runPipeline()

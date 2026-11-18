@@ -190,7 +190,10 @@ for _user in "${_USER_LIST[@]}"; do
     fi
     _spec="$(jq -c --arg u "$_user" '.[] | select(.username == $u)' "$_USERS_FILE")"
     [ "$_spec" ] || { e2e_err "Test user $_user does not exist and is not described in $_USERS_FILE"; _ERRORS=$((_ERRORS + 1)); continue; }
-    _role_ids="$(jq -c --argjson roles "$_ALL_ROLES" '[.roles[] as $r | $roles[] | select(.name == $r) | .id]' <<< "$_spec")"
+    # All the roles through stdin, the one user as the argument: the roles of a platform can pass the 128 KiB a single
+    # argument may have on Linux
+    _role_ids="$(jq -c --argjson spec "$_spec" '. as $roles | [$spec.roles[] as $r | $roles[] | select(.name == $r) | .id]' \
+        <<< "$_ALL_ROLES")"
     _created="$(cp_api_payload POST user "$(jq -cn --arg u "$_user" --argjson r "$_role_ids" '{userName: $u, roleIds: $r}')")" || \
         { e2e_err "Unable to create the test user $_user"; _ERRORS=$((_ERRORS + 1)); continue; }
     _uid="$(jq -r '.id' <<< "$_created")"
@@ -367,13 +370,14 @@ if [ "$_group" ]; then
     fi
 fi
 
-# 4. A user with ROLE_ANONYMOUS_USER (the anonymous access check)
+# 4. The anonymous user of the tests (the anonymous access check): the account of fixtures.json, with ROLE_ANONYMOUS_USER,
+#    created if it is missing. Other accounts with that role are never used: they may belong to people.
 _anonymous="$(jq -r '.anonymous_user.name // empty' "$_FIXTURES")"
 if [ "$_anonymous" ]; then
     _arole="$(jq -r '.[] | select(.name == "ROLE_ANONYMOUS_USER") | .id' <<< "$_ALL_ROLES")"
     _ausers="$(cp_api_payload GET "role/$_arole" | jq -r '[.users[]?.userName] | join(",")')"
-    if [ "$_ausers" ]; then
-        e2e_log "Users with ROLE_ANONYMOUS_USER exist: $_ausers"
+    if [[ ",${_ausers^^}," == *",${_anonymous^^},"* ]]; then
+        e2e_log "User $_anonymous with ROLE_ANONYMOUS_USER exists"
     elif [ "$(cp_user_id "$_anonymous")" ]; then
         e2e_err "User $_anonymous exists, but has no ROLE_ANONYMOUS_USER"
         _ERRORS=$((_ERRORS + 1))

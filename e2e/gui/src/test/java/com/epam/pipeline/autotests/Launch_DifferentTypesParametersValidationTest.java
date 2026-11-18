@@ -90,6 +90,6 @@ public class Launch_DifferentTypesParametersValidationTest extends AbstractAutoR
     }
 
     private String folderPath(final String folder) {
-        return String.format("%s://%s/%s", C.STORAGE_PREFIX, storage, folder);
+        return String.format("%s://%s/%s", C.STORAGE_PREFIX, Utils.storagePath(storage), folder);
     }
 }

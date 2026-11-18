@@ -170,7 +170,7 @@ public interface Authorization extends Navigation {
         // so the Library button is watched for as long as a check that it appears would wait for it
         final long deadline = System.currentTimeMillis() + C.DEFAULT_TIMEOUT;
         do {
-            $(byId("navigation-button-pipelines")).shouldNot(exist);
+            $(byId("navigation-button-library")).shouldNot(exist);
             sleep(1000);
         } while (System.currentTimeMillis() < deadline);
     }

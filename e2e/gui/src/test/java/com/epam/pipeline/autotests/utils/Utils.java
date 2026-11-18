@@ -22,6 +22,7 @@ import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.RunPipelineTest;
 import com.epam.pipeline.autotests.mixins.Navigation;
+import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
@@ -314,6 +315,15 @@ public class Utils {
 
     public static long randomSuffix() {
         return Double.doubleToLongBits(Math.random());
+    }
+
+    /**
+     * The cloud path of an object storage created with {@code path} (e.g. {@code createStorage(name)}): the API puts
+     * the preference {@code storage.object.prefix} (e2e.ui.storage.name.prefix) in front of it, and a run mounts the
+     * storage at {@code /cloud-data/<that path>}. Its name in the library stays {@code path}.
+     */
+    public static String storagePath(final String path) {
+        return StringUtils.trimToEmpty(C.STORAGE_NAME_PREFIX) + path;
     }
 
     public static File createTempFile() throws RuntimeException {

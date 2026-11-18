@@ -215,10 +215,15 @@ _set e2e.ui.another.admin.token "$(_token "$_another_admin")" "JWT of $_another_
 _anonymous="$(jq -r '.anonymous_user.name // empty' "$_FIXTURES")"
 _anonymous_role_users="$(cp_api_payload GET "role/$(jq -r '.[] | select(.name == "ROLE_ANONYMOUS_USER") | .id' <<< "$_ROLES")" \
     | jq -r '[.users[]?.userName] | join(",")')"
-if [[ ",$_anonymous_role_users," != *",$_anonymous,"* ]]; then
-    _first="${_anonymous_role_users%%,*}"
-    [ "$_first" ] || _warn "No user has ROLE_ANONYMOUS_USER (run platform-prepare.sh): the anonymous access check fails"
-    _anonymous="$_first"
+# Only the account of fixtures.json: other users with ROLE_ANONYMOUS_USER may be people, and the tests would act as them
+# (a token of theirs) and the cleanup would delete what they create during the run
+if [ -z "$_anonymous" ] || [[ ",${_anonymous_role_users^^}," != *",${_anonymous^^},"* ]]; then
+    _warn "User ${_anonymous:-<no anonymous_user.name in fixtures.json>} has no ROLE_ANONYMOUS_USER (run" \
+        "platform-prepare.sh): the anonymous access check fails (other users with that role are not used)"
+    _anonymous=""
+else
+    # The API's spelling (it upper-cases a new user): the test compares it with the token's sub, case-sensitive
+    _anonymous="${_anonymous^^}"
 fi
 _set e2e.ui.anonymous.name "$_anonymous" "user with ROLE_ANONYMOUS_USER"
 _set e2e.ui.anonymous.token "$([ "$_anonymous" ] && _token "$_anonymous")" "JWT of $_anonymous, ${_TOKEN_TTL}s"
@@ -346,9 +351,10 @@ _set e2e.ui.launch.system.parameters.path "$_FILES_DIR_NAME/launch_system_parame
 _os="Windows"
 _install="$(_pref ui.pipe.cli.install.template | jq -r --arg os "$_os" '.[$os] // empty' 2> /dev/null)"
 [ "$_install" ] || _warn "ui.pipe.cli.install.template has no $_os installation"
-_install="$(jq -rn --arg t "$_install" --argjson prefs "$_PREFS" \
-    'reduce $prefs[] as $p ($t; gsub("\\$\\{" + ($p.name | gsub("\\."; "\\.")) + "\\}"; ($p.value // "" | tostring)))' \
-    | sed -E 's#\[/?[uU][rR][lL]\]##g')"
+# The preferences through stdin: as an argument they can pass the 128 KiB a single argument may have on Linux
+_install="$(jq -r --arg t "$_install" \
+    'reduce .[] as $p ($t; gsub("\\$\\{" + ($p.name | gsub("\\."; "\\.")) + "\\}"; ($p.value // "" | tostring)))' \
+    <<< "$_PREFS" | sed -E 's#\[/?[uU][rR][lL]\]##g')"
 printf '%s\n' "$_install" > "$_FILES_DIR/pipe_install_${_os}.txt"
 _set e2e.ui.pipe.operation.system "$_os" "an OS of ui.pipe.cli.install.template"
 _set e2e.ui.pipe.installation.content "$_FILES_DIR_NAME/pipe_install_${_os}.txt" \

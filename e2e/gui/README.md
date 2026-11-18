@@ -76,8 +76,8 @@ class after that at its first page. So:
    proxy that inspects TLS, go to `certs/` (see `certs/README.md`). Docker's proxy settings are passed to the build.
 2. prepares the platform (`scripts/platform-prepare.sh`), creating only what is missing: test users from
    `e2e/prerequisites/users.json` (created blocked), the fixtures of `scripts/fixtures.json` (tool group `tests`, the
-   tools of the e2e images, the group of the test users `ROLE_TEST_USER` with its registry permission, a user with
-   `ROLE_ANONYMOUS_USER`). A tool which is registered already gets the settings of its fixture anyway (see
+   tools of the e2e images, the group of the test users `ROLE_TEST_USER` with its registry permission, the user
+   `E2E_ANONYMOUS_USER` with `ROLE_ANONYMOUS_USER`: other users with that role are never used, they may be people). A tool which is registered already gets the settings of its fixture anyway (see
    [Images used by the tests](#images-used-by-the-tests)). Active **blocking system notifications** (e.g. a disclaimer) are deactivated for the run:
    they cover the UI in every fresh test browser. Only their state is changed (in the database: an API update would
    reset the creation date and every user would have to confirm the disclaimer again); they are activated back in
@@ -181,7 +181,7 @@ Besides the fixtures `platform-prepare.sh` creates, set these before a full run:
 | `sync_storage.owner` in `scripts/fixtures.json`: the user of the storage synchronization service, or `e2e.ui.sync.storage.*` in the overrides | `StorageSynchronizationTest` |
 | `e2e.ui.nfs.prefix` in the overrides: the path prefix of a new NFS storage, e.g. `<NFS host>:/` | `NfsDataStorageTest` |
 | `CP_EDGE_DNS_RECORD_FORMAT={job_name}` in the `cp-config-global` config map (the edge default is `{job_name}.{region_name}`), with the edge restarted | `DNSrecordForRunsTest` (1615_1, 1615_2) |
-| `cluster.allowed.instance.types` and `cluster.allowed.instance.types.docker` allow the family of `default_instance_type` (`scripts/fixtures.json`, `m5`), and `c6i.*` and `r6i.*` | `PlatformPreferencesTest` (TC-PARAMETERS-4), `LaunchParametersTest` (TC-PARAMETERS-6, 3433) |
+| `cluster.allowed.instance.types` and `cluster.allowed.instance.types.docker` allow the family of `default_instance_type` (`scripts/fixtures.json`, `m6i`, which the 0.16 default `m5.*,c5.*,r4.*,t2.*` does not), and `c6i.*` and `r6i.*` | `PlatformPreferencesTest` (TC-PARAMETERS-4), `LaunchParametersTest` (TC-PARAMETERS-6, 3433) |
 | `launch.capabilities` has a `conda` capability | `LaunchParametersTest` (TC-PARAMETERS-7) |
 | `PIPELINE_RUN_STATUS` email notifications enabled, an SMTP server for the notifier, and an `email` attribute of the admin (with `--dummy-session`: `--dummy-session-email`); the notifier and the VM monitor on the node of `run-e2e.sh` | `RunStatusNotificationTest`, `CertificateExpirationNotificationTest`, `NodeThresholdNotificationTest` |
 | `CP_API_JWT_DISABLE_SESSION` not `true` in the `cp-config-global` config map (without the key the API image defaults it to `false`) | `--dummy-session` |

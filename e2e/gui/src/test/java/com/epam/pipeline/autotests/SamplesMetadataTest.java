@@ -736,7 +736,8 @@ public class SamplesMetadataTest
     }
 
     private String path(final String... folders) {
-        return String.format("%s://%s", C.STORAGE_PREFIX, String.join("/", folders));
+        // the first folder is the storage, whose path starts with storage.object.prefix
+        return String.format("%s://%s", C.STORAGE_PREFIX, Utils.storagePath(String.join("/", folders)));
     }
 
     private MetadataSelection metadataSelection() {

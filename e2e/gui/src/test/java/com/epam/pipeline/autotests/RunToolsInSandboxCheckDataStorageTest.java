@@ -101,7 +101,8 @@ public class RunToolsInSandboxCheckDataStorageTest
 
     private boolean logContainsMessageWith(final Set<String> log, final String bucket) {
         final String substring = "%s mounted to /cloud-data/%s";
-        return log.stream().anyMatch(message -> message.contains(String.format(substring, bucket, bucket)));
+        final String path = Utils.storagePath(bucket);
+        return log.stream().anyMatch(message -> message.contains(String.format(substring, path, path)));
     }
 
     private void giveUserPermissionForTool() {
