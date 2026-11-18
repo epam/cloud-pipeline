@@ -16,12 +16,11 @@
 What every file source and every file destination has to provide.
 
 The workers know only these two interfaces, so a new storage type means a module next to `s3.py` and
-a branch in `open_source` and `open_destination`, and nothing else.
+a branch in `open_source` and `open_destination`.
 
-Reading and writing are separate interfaces rather than one, because they are not equally safe: a
-source is opened for every task and a destination only for a task that writes. On a share that
-difference is the mount option - a source mounts read-only, which is the property an extraction
-deliberately relaxes for its destination alone.
+Reading and writing are separate interfaces because they are not equally safe. A source is opened
+for every task, a destination only for a task that writes. On a share that difference is the mount
+option: a source mounts read-only.
 """
 
 from __future__ import annotations
@@ -49,9 +48,8 @@ class EntryKind(StrEnum):
     """
     What a destination already holds at a path.
 
-    Three answers and not two, because a file and a folder of the same name is a conflict of its own:
-    an object storage allows it, a share does not, and every tool that mounts or downloads the
-    storage then fails the way the share does. So an extraction refuses it on both.
+    Three answers, not two: a file and a folder of one name is a conflict of its own. S3 allows it,
+    a share does not, and tools that mount or download the storage then fail the way the share does.
     """
 
     MISSING = 'missing'
@@ -96,11 +94,10 @@ class FileSource(abc.ABC):
         """
         The one file at this path, or `None` when the path holds no file.
 
-        Apart from `list_files` because a caller that was given one path - the archive of an unpack
-        task - must be able to tell "not a file" from "a folder of that name", instead of receiving
-        the folder's content expanded.
+        Apart from `list_files` because a caller given one path - the archive of an unpack task -
+        must be able to tell "not a file" from "a folder of that name".
 
-        A file that exists and cannot be read comes back with a `skip_reason` set, as in `list_files`.
+        A file that exists and cannot be read comes back with a `skip_reason`, as in `list_files`.
         """
 
     @abc.abstractmethod
@@ -115,11 +112,10 @@ class FileSource(abc.ABC):
     @abc.abstractmethod
     def open_stream(self, source_file: SourceFile) -> BinaryIO:
         """
-        A readable, seekable file-like object over the file, for reading parts of it where it lies.
+        A readable, seekable file over the file, for reading parts of it where it lies.
 
-        What `archive_probe` is handed: the index of an archive is in its tail, so a few hundred bytes
-        read at the right offsets answer what an archive holds without fetching it. The caller closes
-        the object.
+        What `archive_probe` is handed: an archive keeps its index in its tail, so a few hundred
+        bytes answer what it holds without fetching it. The caller closes the object.
         """
 
     def close(self) -> None:
@@ -137,20 +133,19 @@ class FileDestination(abc.ABC):
     """
     A place files are written to, addressed by storage-relative keys.
 
-    No permission check happens here and none may be added: this service has no user identity and
-    runs with a role of the storage's cloud region, so a check it invented would be a check against
-    itself. The API authorized the destination *folder* when the task was created, and nothing per
-    entry - see the README. What a destination does owe is the refusals a caller cannot make
-    for it: a collision, and a path that is not where it claims to be.
+    No permission check happens here. This service has no user identity and runs with a role of the
+    storage's cloud region, so a check it invented would be a check against itself. The API
+    authorized the destination folder, and nothing per entry. What a destination owes is the
+    refusals a caller cannot make for it: a collision, and a path that is not where it claims.
     """
 
     @abc.abstractmethod
     def assert_writable(self, prefix: str) -> None:
         """
-        Checks that the folder an extraction is about to write into is there and can be written.
+        Checks that the folder an extraction will write into is there.
 
-        Called once, before the first upload. A share needs it - a missing folder is a typo, and
-        creating it would hide one - while an object storage has no folder to find.
+        Called once, before the first upload. A share needs it; an object storage has no folder to
+        find.
         """
 
     @abc.abstractmethod
@@ -163,20 +158,17 @@ class FileDestination(abc.ABC):
         """
         Writes one local file under the key and answers its size in bytes.
 
-        With `overwrite` false the write itself must refuse an existing key - `DestinationConflict` -
-        rather than checking first and writing after: between a check and a write somebody else may
-        create the file, and the whole point of the flag is that such a file is not replaced.
+        With `overwrite` false the write itself must refuse a taken key, rather than checking first:
+        between a check and a write somebody else may create the file.
         """
 
     @abc.abstractmethod
     def create_folder(self, key: str) -> None:
         """
-        Makes sure a folder of the archive exists in the destination.
+        Makes sure an empty folder of the archive exists in the destination.
 
-        Only called for a folder the archive holds and no file of its own lands in - an empty one, in
-        other words. A folder with files in it needs nothing: writing the files creates it, on both
-        backends. On an object storage there is no folder to create at all, which is why this is the
-        destination's decision and not the worker's.
+        A folder with files in it needs nothing: writing the files creates it on both backends. On an
+        object storage there is no folder to create at all, so this is the destination's decision.
         """
 
     @abc.abstractmethod

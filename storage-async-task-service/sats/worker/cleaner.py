@@ -27,9 +27,9 @@ Four cleanups, once per round of the main loop, in this order:
     3. an archive past its time to live   SUCCESS older than ttlDays -> EXPIRED
     4. scratch directories nobody owns    deleted
 
-The first two apply to every task type this service runs; the third is the download type's alone,
+The first two apply to every task type this service runs. The third is the download type's alone,
 and that filter is load-bearing - see `_expire_finished_tasks`. None of them removes anything an
-extraction wrote: there is no rollback in this service, by design.
+extraction wrote.
 
 "Stuck" is measured by the API's clock on its own `status_changed` column, so a restart of this
 service resets nobody's timer and two replicas would agree.
@@ -62,21 +62,16 @@ ORPHAN_GRACE_MINUTES = 30
 # through all of it in one round would hold up the claiming of new tasks.
 CLEANUP_PAGE_SIZE = 200
 
-# The task types this cleaner finishes. Every type this service runs has to be here, or a task whose
-# worker died would stay `RUNNING` for ever: the filter is by type, so nothing else would ever look
-# at it.
-#
-# It repeats `worker.SUPPORTED_TASK_TYPES` rather than reading it, because `worker/__init__` imports
-# this module. `test_cleaner` asserts that the two agree, which is what keeps them in step.
+# Every type this service runs has to be here, or a task whose worker died stays `RUNNING` for ever:
+# the cleanups filter by type, so nothing else would look at it. The list repeats
+# `worker.SUPPORTED_TASK_TYPES` because `worker/__init__` imports this module; `test_cleaner` keeps
+# the two in step.
 CLEANED_TASK_TYPES: tuple[AsyncTaskType, ...] = (AsyncTaskType.DOWNLOAD_ARCHIVE,
                                                  AsyncTaskType.UNPACK_ARCHIVE)
 
-# The types whose task owns an artifact the platform has to remove when the task ends badly or
-# expires.
-#
-# An extraction owns none: its content belongs to the destination storage the caller chose, so there
-# is nothing of the platform's to delete - and `_delete_archive` on an unpack task would fall back to
-# the configured download destination and delete a key that was never written there.
+# The types whose task owns an artifact the platform has to remove. An extraction owns none: its
+# content belongs to the storage the caller chose. `_delete_archive` on an unpack task would fall
+# back to the configured download destination and delete a key that was never written there.
 TYPES_WITH_ARTIFACT: tuple[AsyncTaskType, ...] = (AsyncTaskType.DOWNLOAD_ARCHIVE,)
 
 
@@ -132,9 +127,8 @@ class Cleaner:
         `CANCELLED` and not `FAILED`, because the user did ask for it. Two calls, because the task
         model has no direct `CANCEL_REQUESTED -> CANCELLED` edge.
 
-        One pass per type, because the filter takes one type and only the types this service runs may
-        be touched. What the type decides is the cleanup itself: a download task's archive is deleted,
-        an unpack task's destination is not touched at all - there is nothing of the platform's in it.
+        One pass per type, because the filter takes one type. The type decides the cleanup: a
+        download task's archive is deleted, an unpack task's destination is not touched.
         """
         for task_type in CLEANED_TASK_TYPES:
             stale = self._api.filter_tasks(
@@ -167,9 +161,8 @@ class Cleaner:
         report `SUCCESS` meanwhile; then the `FAILED` move is refused and the user keeps a working
         download. Deleting first would leave that task `SUCCESS` with its archive gone.
 
-        For an unpack task there is nothing to delete and the destination is left exactly as the dead
-        worker left it: what it wrote stays, which is the same policy a worker's own failure follows.
-        Its scratch directory is removed by `_remove_orphan_directories`.
+        For an unpack task there is nothing to delete, and the destination is left as the dead worker
+        left it. Its scratch directory is removed by `_remove_orphan_directories`.
         """
         for task_type in CLEANED_TASK_TYPES:
             stuck = self._api.filter_tasks(
@@ -201,13 +194,11 @@ class Cleaner:
 
         `EXPIRED` is also what makes the API stop offering a download link.
 
-        **The type filter is load-bearing, and it is the one cleanup that keeps it.** `EXPIRED` does
-        not mean "the record is old", it means "the artifact is gone" - and an unpack task owns no
-        artifact, so there is nothing for the status to express and nothing to delete. Without the
-        filter this sweep would delete a key in the *download* destination on behalf of a task that
-        never wrote there, and it would hide a succeeded extraction from the GUI, which announces a
-        finished task only for `SUCCESS` and `FAILED`. A successful extraction therefore stays
-        `SUCCESS` for good; pruning old rows is a different concern, for every type at once.
+        The type filter is load-bearing. `EXPIRED` does not mean "the record is old", it means "the
+        artifact is gone", and an unpack task owns no artifact. Without the filter this sweep would
+        delete a key in the *download* destination on behalf of a task that never wrote there, and
+        would hide a finished extraction from the GUI, which announces only `SUCCESS` and `FAILED`.
+        A successful extraction stays `SUCCESS` for good.
         """
         download = configs.download
         expired = self._api.filter_tasks(
@@ -294,8 +285,8 @@ class Cleaner:
         """
         The moment a status change has to predate for its task to count as stuck.
 
-        One threshold for every type, because it governs this cleaner rather than a task type - which
-        is why it must exceed the larger of the sections' time limits.
+        One threshold for every type: it governs the cleaner, not a task type, so it must exceed the
+        larger of the sections' time limits.
         """
         return utc_now() - datetime.timedelta(minutes=configs.stuck_tasks_threshold_minutes)
 

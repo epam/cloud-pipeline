@@ -72,9 +72,7 @@ def open_destination(api: CloudPipelineApi, storage: Storage,
     """
     Opens a writer for the storage a task extracts into.
 
-    Apart from `open_source` and not a flag on it: on a share the difference is the mount mode, and
-    a destination is opened only for a task that writes. The caller uses the result in a `with`
-    block.
+    Any other storage type is refused. The caller uses the result in a `with` block.
     """
     match storage.type:
         case StorageType.S3:

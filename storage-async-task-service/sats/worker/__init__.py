@@ -45,9 +45,8 @@ _WORKERS: dict[AsyncTaskType, type[AsyncTaskWorker]] = {
     for worker in (ArchivePreparationWorker, UnpackArchiveWorker)
 }
 
-# The types this service runs. The orchestrator asks the API for all of them in one call, so a task
-# of a type no worker here claims is never handed over - and the oldest task wins across the types
-# rather than one type waiting behind another.
+# The types this service runs. The orchestrator asks for all of them in one call, so the oldest task
+# wins across the types rather than one type waiting behind another.
 SUPPORTED_TASK_TYPES: tuple[AsyncTaskType, ...] = tuple(_WORKERS)
 
 
@@ -56,11 +55,7 @@ def worker_for(api: CloudPipelineApi, service_config: ServiceConfig, configs: As
     """
     The worker for a claimed task, with the preference section of its own type.
 
-    A worker is given its section and never the whole preference, so one task type cannot read
-    another's limits by accident.
-
-    An unknown type means this service and the API disagree about what was claimed, which is worth a
-    message rather than a bare `KeyError`.
+    A worker gets its own section, never the whole preference, so one type cannot read another's limits.
     """
     worker = _WORKERS.get(task.type)
     if worker is None:

@@ -141,11 +141,8 @@ class Orchestrator:
         """
         The types this service both runs and has usable settings for.
 
-        The intersection is made here, because the two halves belong to different places: which
-        types have a worker is `worker/__init__`'s to say, and whether a type's section is filled in
-        is the preference's. Per type and not for the service as a whole, so a download section with
-        no destination does not stop extractions and an unfilled unpack section does not stop
-        downloads.
+        Per type, not for the service as a whole: a download section with no destination must not
+        stop extractions, and an unfilled unpack section must not stop downloads.
         """
         return tuple(task_type for task_type in SUPPORTED_TASK_TYPES
                      if configs.is_usable(task_type))

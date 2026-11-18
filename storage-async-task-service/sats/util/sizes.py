@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Byte counts as a person reads them. Shared, because every limit message needs the same shape."""
+"""Byte counts as a person reads them. Shared by every limit message."""
 
 from __future__ import annotations
 

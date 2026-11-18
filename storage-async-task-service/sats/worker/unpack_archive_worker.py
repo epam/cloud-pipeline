@@ -13,34 +13,24 @@
 # limitations under the License.
 
 """
-One extraction, from the moment the task was claimed to the status it ends in.
+One extraction, from the claimed task to the status it ends in.
 
-The order of the steps is the whole design, and each one is placed so that a refusal costs as little
-as possible and leaves as little behind as possible:
+The order of operations is designed as making less job before it could meet some limit.
 
-    1. check, before downloading   the archive is a file, within the size limit, of a format we open,
-                                   and declares no more than the limits allow - all from its tail
+    1. check, before downloading   a file, within the size limit, of a format we open, declaring no
+                                   more than the limits allow - all read from its tail
     2. extract locally             into `<task_id>/extracted/`, counting bytes and checking names
     3. the collision pass          one look at the destination, over the archive's own keys only
     4. upload                      key = destinationPath + the path inside the archive
     5. report, then delete         SUCCESS first, the source archive after it
 
-**Why this order.** A 400 GB archive is refused without fetching it. A bad entry name or a breached
-limit is found while the destination is still untouched. A collision found at entry 500 would
-otherwise leave 499 files written - so the pass comes before the first upload. And the source is
-deleted last, because until the upload has finished the archive is all the user has.
+A 400 GB archive is refused without fetching it. A bad name or a breached limit is found while the
+destination is untouched. A collision found at entry 500 would otherwise leave 499 files written, so
+the pass comes before the first upload. The source is deleted last, because until the upload has
+finished the archive is all the user has.
 
-**What a failure leaves.** The files already uploaded, exactly where they are. There is no rollback
-and deliberately so: it would need a journal of written keys, retries, a rule for files that were
-replaced, and the same logic again in the cleaner - and none of that brings back the content an
-overwrite replaced. So a task that fails or is cancelled is reported with the number of files it
-wrote, and a new run with `overwrite=false` will refuse those files until the user removes them.
-
-**No permission check happens here, and none may be added.** The API checked READ on the source and
-WRITE on the destination *folder* under the caller's identity when the task was created; this service
-has no user identity and works through a role of each storage's cloud region, so a check it invented
-would be a check against itself. What it does owe is keeping a crafted archive inside the destination
-- that is `archive_extractor`'s job, and a different guarantee.
+A failure leaves the files it had already uploaded. There is no rollback.
+So a failed task reports how many files it wrote.
 """
 
 from __future__ import annotations
@@ -67,8 +57,7 @@ from .task_stop_watcher import TaskStopWatcher
 
 LOG = get_logger(__name__)
 
-# Where the archive is downloaded to, and where it is opened into. Both inside the task's own
-# directory, so one `rmtree` is the whole cleanup.
+# Both inside the task's own directory, so one `rmtree` is the whole cleanup.
 LOCAL_ARCHIVE_NAME = 'archive'
 EXTRACTED_DIRECTORY = 'extracted'
 
@@ -81,9 +70,8 @@ class UnpackArchiveWorker(AsyncTaskWorker):
     """
     Extracts the archive of one task into the destination the caller named.
 
-    Everything it touches is derived from the task: the scratch directory is named after the task id,
-    and both storages are loaded by the ids the task carries. Only the API client and the mounted
-    shares are shared with other workers.
+    Everything it touches comes from the task: the scratch directory is named after the task id, and
+    both storages are loaded by the ids the task carries.
     """
 
     TASK_TYPE = AsyncTaskType.UNPACK_ARCHIVE
@@ -107,8 +95,8 @@ class UnpackArchiveWorker(AsyncTaskWorker):
         """
         Runs the task to one of its end states. Never raises.
 
-        Every path ends in a status report or an explained decision not to report one, and the
-        `finally` removes the scratch directory on all of them.
+        Every path ends in a status report or an explained decision not to report one. The `finally`
+        removes the scratch directory on all of them.
         """
         threading.current_thread().name = f'unpack-{self._task.id[:8]}'
         started = time.monotonic()
@@ -122,8 +110,7 @@ class UnpackArchiveWorker(AsyncTaskWorker):
         except StopRequested as stop:
             self._finish_stopped(stop.reason)
         except ThresholdExceeded as exceeded:
-            # The archive is bigger than the platform allows, so a warning rather than an error, and
-            # the message goes to the user unchanged.
+            # The user asked for too much, so a warning rather than an error.
             LOG.warning('Task %s rejected: %s', self._task.id, exceeded)
             self._finish_failed(str(exceeded))
         except (UnsupportedArchive, UnsafeArchiveEntry, DestinationConflict,
@@ -134,12 +121,10 @@ class UnpackArchiveWorker(AsyncTaskWorker):
             LOG.warning('Task %s cannot be executed: %s', self._task.id, unsupported)
             self._finish_failed(str(unsupported))
         except ApiRejected as rejected:
-            # The task is no longer ours, so reporting a failure would be refused too. Whatever was
-            # uploaded stays - there is no rollback, by design.
+            # The task is no longer ours, so a failure report would be refused too.
             LOG.warning('Task %s was refused by the API (%s), dropping the work', self._task.id,
                         rejected)
         except Exception as error:
-            # `LOG.exception` adds the traceback; the user gets the short form.
             LOG.exception('Task %s failed unexpectedly', self._task.id)
             self._finish_failed(f'Internal error of the storage task service: {error}')
         finally:
@@ -174,11 +159,10 @@ class UnpackArchiveWorker(AsyncTaskWorker):
 
     def _assert_executable(self) -> UnpackParams:
         """
-        Checks that the task carries the four things an extraction cannot be guessed without.
+        Checks the four things an extraction cannot be guessed without.
 
-        The API refuses a request without them, so reaching this means a task written directly into
-        the queue - or this service and the API disagreeing about the payload. Either way it fails
-        here with the reason named instead of further down with an `AttributeError`.
+        The API refuses a request without them, so reaching this means a task written straight into
+        the queue. It fails here with the reason named instead of further down as an `AttributeError`.
         """
         params = self._params
         if params is None:
@@ -194,9 +178,8 @@ class UnpackArchiveWorker(AsyncTaskWorker):
         """
         Loads one of the task's storages.
 
-        The task carries ids only, and the type, the bucket, the region and the mount are the API's
-        to answer - copying them into the task when it was created would let them go stale. A storage
-        deleted after that fails the task here, with the reason named.
+        The task carries ids only. The type, the bucket, the region and the mount are the API's to
+        answer: copying them into the task would let them go stale.
         """
         try:
             return self._api.load_storage(storage_id)
@@ -208,8 +191,7 @@ class UnpackArchiveWorker(AsyncTaskWorker):
         """
         Finds the archive and checks its own size, before a byte of it is fetched.
 
-        The size check is the cheapest refusal this service has: a 400 GB archive is refused from the
-        storage listing alone.
+        The cheapest refusal there is: the size comes from the storage listing.
         """
         archive = source.stat(params.source_path)
         if archive is None:
@@ -231,9 +213,8 @@ class UnpackArchiveWorker(AsyncTaskWorker):
         """
         Reads what the archive declares about itself, and refuses it on that where it can.
 
-        A few hundred bytes read where the archive lies - see `archive_probe`. What a format does not
-        declare comes back as `None` and is enforced while extracting instead, which is also the only
-        guard `tar.bz2` ever gets.
+        A format that declares nothing comes back as `None`, and its limits are enforced while
+        extracting instead. That is the only guard `tar.bz2` ever gets.
         """
         with source.open_stream(archive) as stream:
             probe = probe_archive(stream, archive.size)
@@ -263,12 +244,8 @@ class UnpackArchiveWorker(AsyncTaskWorker):
         Checks the scratch directory against the archive plus its content, before downloading.
 
         The content is counted at what the archive declares, and at `maxSizeBytes` where the format
-        declares nothing - the byte counter stops the extraction at that size anyway, so it is a true
-        upper bound. With no limit configured there is nothing to reserve for the content, and a full
-        disk is what reports the problem instead.
-
-        A declared total that lies ends the same way: `ENOSPC` fails the task with a message saying
-        so, rather than damaging anything.
+        declares nothing - the byte counter stops the extraction at that size anyway. A declared
+        total that lies ends as `ENOSPC`, which fails the task with a message saying so.
         """
         content = probe.total_bytes
         if content is None:
@@ -292,10 +269,9 @@ class UnpackArchiveWorker(AsyncTaskWorker):
         """
         Detects the format again, on the downloaded file.
 
-        The probe read the same bytes remotely and its answer is the same in every ordinary case.
-        It is read again here because the remote read is the one that can be short - a ranged request
-        that answered fewer bytes than asked would make a perfectly good archive look unknown - and
-        because this is the copy that is about to be opened.
+        The remote read is the one that can come back short, and a ranged request that answered
+        fewer bytes than asked would make a good archive look unknown. This is also the copy that is
+        about to be opened.
         """
         with local_archive.open('rb') as stream:
             return detect_format(stream, local_archive.stat().st_size)
@@ -307,25 +283,19 @@ class UnpackArchiveWorker(AsyncTaskWorker):
         """
         One pass over the destination, over the archive's own keys and nothing else.
 
-        Three refusals, and all of them before the first upload so that the destination is left
-        exactly as it was:
+        Three refusals, all before the first upload, so the destination is left as it was:
 
-          * **a key that is taken**, with `overwrite=false`. One collision refuses the whole task;
-          * **a file where the archive holds a folder, or a folder where it holds a file** - refused
-            even with `overwrite=true`, and on both backends. A share cannot do it at all; S3 can,
-            and then the GUI shows a file and a folder of one name while `pipe mount` and a download
-            to disk fail the way the share does. One behaviour for both is worth more than the one
-            case S3 would allow;
-          * **the archive's own path**, refused even with `overwrite=true`. Replacing the archive
-            with a file from inside it makes two things go wrong: a failure afterwards leaves the
-            user without the archive, and `deleteSourceOnSuccess` then deletes the extracted file
-            instead of the archive. Another `destinationPath` works around it.
+          * a key that is taken, with `overwrite=false`. One collision refuses the whole task;
+          * a file where the archive holds a folder, or the reverse. Refused even with
+            `overwrite=true`: a share cannot hold both, and on S3 the GUI would show a file and a
+            folder of one name while `pipe mount` and a download to disk fail;
+          * the archive's own path, refused even with `overwrite=true`. Otherwise a later failure
+            leaves the user without the archive, and `deleteSourceOnSuccess` deletes the extracted
+            file instead of the archive.
 
-        The cost is one or two requests per entry on an object storage, and a local `lstat` per entry
-        on a share. The alternative on S3 - listing the archive's top-level prefixes once and
-        comparing sets - is cheaper for a large archive and needs a cache with a cap and a fallback;
-        the pass as written is proportionate, because uploading the same entries costs a request each
-        anyway.
+        One or two requests per entry on S3, one `lstat` per entry on a share. Listing the archive's
+        top-level prefixes instead would be cheaper for a large archive, and needs a cache with a cap
+        and a fallback.
         """
         archive_key = self._archive_key_in_destination(params, source_storage)
         for found in extraction.files:
@@ -341,8 +311,8 @@ class UnpackArchiveWorker(AsyncTaskWorker):
                     f'The destination already holds a folder at {key}, and the archive holds a file '
                     f'of that name. Rename one of them, or extract into another folder.')
             if kind is EntryKind.FILE and not params.overwrite:
-                # What is in the destination is not stated here: `_written_note` appends it to every
-                # failure, and it is the only thing that knows the count.
+                # The state of the destination is not named here: `_written_note` appends it to
+                # every failure, and only it knows the count.
                 raise DestinationConflict(
                     f'{key} already exists in the destination. Ask for the extraction again with '
                     f'"overwrite": true to replace it, or remove it first.')
@@ -358,12 +328,11 @@ class UnpackArchiveWorker(AsyncTaskWorker):
         """
         Writes the extracted files into the destination, counting them as it goes.
 
-        A counter and not a journal: nothing is ever deleted from the destination, so what a failure
-        needs to report is how many files it wrote, not which.
+        A counter and not a journal: nothing is ever deleted from the destination, so a failure needs
+        to report how many files it wrote, not which.
 
-        With `overwrite=false` the write itself refuses a key that is taken, so a file created
-        between the collision pass and now is refused rather than replaced - see
-        `FileDestination.upload`.
+        With `overwrite=false` the write itself refuses a taken key, so a file created after the
+        collision pass is refused rather than replaced.
         """
         for found in extraction.files:
             self._watcher.check()
@@ -372,12 +341,9 @@ class UnpackArchiveWorker(AsyncTaskWorker):
                 destination.upload(found.path, key, self._watcher.check,
                                    overwrite=params.overwrite)
             except (StopRequested, DestinationConflict):
-                # A cancellation, or the key being taken after the collision pass. Both are already
-                # the right answer with the right message.
                 raise
             except Exception as error:
-                # Not an internal error of this service: the storage refused the write, or went
-                # away. Named, so the user knows which file and how far the extraction got.
+                # Not an internal error: the storage refused the write, or went away.
                 raise DestinationWriteFailed(
                     f'{key} could not be written to the destination: {error}. Try the extraction '
                     f'again once the storage is reachable.') from error
@@ -393,22 +359,18 @@ class UnpackArchiveWorker(AsyncTaskWorker):
         """
         The key one entry lands under: the destination folder, then the entry's own path.
 
-        A concatenation and nothing more. `destination_path` arrives from the API as a folder prefix -
-        it ends in a slash, or it is empty for the root of the storage - so there is no decision to
-        make here, and the archive's internal structure is preserved without a level of this
-        service's own.
+        A concatenation and nothing more. `destination_path` arrives from the API as a folder prefix,
+        ending in a slash or empty for the root, so there is no decision to make here.
         """
         return f'{params.destination_path}{entry_key}'
 
     @staticmethod
     def _archive_key_in_destination(params: UnpackParams, source_storage: Storage) -> str | None:
         """
-        The archive's own path as a key of the destination, or `None` when the two are not the same
-        storage.
+        The archive's own path as a key of the destination, or `None` when the storages differ.
 
-        Both paths are storage-relative, so they are comparable only when the storage is the same
-        one. Extracting into the archive's own folder is otherwise perfectly safe: the archive is
-        deleted after the success is reported, never before.
+        Both paths are storage-relative, so they are comparable only within one storage. Extracting
+        into the archive's own folder is otherwise safe: the archive is deleted after the report.
         """
         if source_storage.id != params.destination_storage_id:
             return None
@@ -420,10 +382,9 @@ class UnpackArchiveWorker(AsyncTaskWorker):
         """
         Reports success.
 
-        Whether the report arrives does not matter to the content: nothing rolls the destination
-        back, so a lost `SUCCESS` costs a wrong status and nothing else - the cleaner will later fail
-        the task while its content stays complete in the destination. That is also why this is
-        reported before the source is deleted.
+        Whether the report arrives does not change the content: nothing rolls the destination back,
+        so a lost `SUCCESS` costs a wrong status and nothing else. That is why it is reported before
+        the source is deleted.
         """
         result = {
             # Jackson selects `UnpackArchiveResult` by this, and refuses the report without it.
@@ -446,13 +407,11 @@ class UnpackArchiveWorker(AsyncTaskWorker):
         """
         Removes the archive, if the task asked for it, after the success was reported.
 
-        Last of everything, and never part of the extraction: until the content is in the destination
-        the archive is all the user has. A failure to delete is a warning and not a failed task - the
-        extraction did succeed, and the leftover archive is something a person can remove.
+        Last of everything: until the content is in the destination the archive is all the user has.
+        A failure to delete is a warning, not a failed task - the extraction did succeed.
 
-        The deletion is a write on the source storage, which the API authorized as one when the task
-        was created, and it goes through a destination opened on the source - on a share that is what
-        gives it a read-write mount.
+        Deleting is a write on the source storage, so it goes through a destination opened on the
+        source. On a share that is what gives it a read-write mount.
         """
         if not params.delete_source_on_success:
             return
@@ -469,13 +428,11 @@ class UnpackArchiveWorker(AsyncTaskWorker):
         Ends a task that was going fine until it was asked to stop, or ran out of time.
 
         `ABANDONED` reports nothing: the task is already terminal, so every transition is refused.
-        The other two go through `STOPPING` first, which is not required and worth the extra call -
-        a user watching the task sees why it is not finished, and the cleaner's stuck window starts
-        again rather than running out mid-cleanup.
+        The other two go through `STOPPING` first, so a user watching the task sees why it stopped
+        and the cleaner's stuck window starts again.
 
-        Nothing is removed from the destination on any of the three paths. A `CANCELLED` task cannot
-        even say how many files it left, because the API accepts an error message only with `FAILED`;
-        the number is in the log above.
+        Nothing is removed from the destination. A `CANCELLED` task cannot say how many files it
+        left, because the API accepts an error message only with `FAILED`; the number is in the log.
         """
         if reason == StopReason.ABANDONED:
             LOG.warning('Task %s is already finished on the API side, dropping the work; the %s '
@@ -499,14 +456,14 @@ class UnpackArchiveWorker(AsyncTaskWorker):
         """
         Ends a task that cannot succeed.
 
-        The message carries the number of files already written, because that is what decides what
-        the user has to do next: with `overwrite=false` a new run will refuse exactly those files.
+        The message carries the number of files already written, because that decides what the user
+        does next: with `overwrite=false` a new run refuses exactly those files.
         """
         full = f'{message} {self._written_note()}'.strip()
         self._try_report(TaskStatus.FAILED, error_message=full[:MAX_ERROR_MESSAGE])
 
     def _written_note(self) -> str:
-        """One sentence about what is already in the destination, or nothing when there is nothing."""
+        """One sentence about what is already in the destination."""
         if not self._files_written:
             return 'Nothing was written to the destination.'
         return (f'{self._files_written} file(s) had already been written to the destination and stay '
@@ -516,8 +473,8 @@ class UnpackArchiveWorker(AsyncTaskWorker):
         """
         Reports a status and swallows whatever comes back.
 
-        Called only from paths that are already ending the task. A task left in a non-terminal status
-        by a failure here is the cleaner's to finish.
+        Called only from paths that are already ending the task. One left in a non-terminal status by
+        a failure here is the cleaner's to finish.
         """
         try:
             self._api.report_status(self._task.id, status, error_message=error_message)
@@ -528,7 +485,7 @@ class UnpackArchiveWorker(AsyncTaskWorker):
 
     def _remove_task_dir(self) -> None:
         """
-        Removes the scratch directory with everything in it: the archive and what came out of it.
+        Removes the scratch directory with the archive and everything that came out of it.
 
         `ignore_errors=True` because this is the last thing a worker does. Directories left by
         workers that never got here are the cleaner's.

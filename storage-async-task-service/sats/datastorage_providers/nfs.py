@@ -22,11 +22,9 @@ The share is mounted and its files are then read or written as local files. Four
   * **every call that touches the mount has a timeout** - a dead NFS server blocks in the kernel for
     ever, and a worker thread stuck there cannot be killed. So `mount` and the liveness check run as
     subprocesses;
-  * **reading and writing get separate mounts** - a source is mounted read-only, as it always was,
-    and only a destination is mounted read-write. The mode is a directory level of the mount point,
-    because one share may be needed both ways at once and a single mount point would hand a reader
-    whichever mode happened to be there first. A share the administrator marked `ro` is never
-    mounted writable at all - the task fails instead.
+  * **reading and writing get separate mounts** - a source read-only, a destination read-write. The
+    mode is a directory level of the mount point, because one share may be needed both ways at once.
+    A share the administrator marked `ro` is never mounted writable: the task fails instead.
 
 Only `MountType.NFS` is handled. SMB and Lustre need the arguments the platform derives in
 `NFSHelper`, and guessing them could mount the wrong path.
@@ -58,22 +56,18 @@ _MOUNT_LOCK = threading.Lock()
 # Characters allowed in the directory name derived from a share.
 _UNSAFE_IN_PATH = re.compile(r'[^A-Za-z0-9._-]+')
 
-# Options dropped from whatever the platform configured, so that the mode this service asked for is
-# the mode it gets rather than whatever the platform configured for job containers. `ro` is also the
-# one option that is honoured rather than overridden - see `_ShareMount`.
+# Dropped from what the platform configured, so the mode this service asked for is the mode it gets.
+# `ro` is the one option honoured rather than overridden - see `_ShareMount`.
 _MODE_OPTIONS = frozenset({'rw', 'ro'})
 _READ_ONLY_OPTION = 'ro'
 
 # What tells a read-write mount point from a read-only one. Both modes of one share may be needed at
-# the same time - extracting inside a single storage does exactly that - and `mount` would otherwise
-# be asked to put two modes on one directory.
+# once - extracting inside a single storage does that - and `mount` cannot put two modes on one
+# directory.
 #
-# **A directory level and not a suffix on the share's own name.** A suffix cannot be made safe: `-`
-# and `_` are legal in the normalised name, so a read-only mount of a share called `.../team-rw` and
-# a read-write mount of `.../team` would land on one directory - and `_is_mounted` compares the mount
-# point alone, so the second caller would find the share "already mounted" and read or write through
-# the first one's mount, across a storage boundary. A level cannot collide, because the normalised
-# name never holds a slash.
+# A directory level, not a suffix on the share's name. A suffix cannot be made safe: `-` and `_` are
+# legal in the normalised name, so the read-only mount of `.../team-rw` and the read-write mount of
+# `.../team` would land on one directory. A level cannot collide, because the name holds no slash.
 _READ_ONLY_DIRECTORY = 'ro'
 _WRITABLE_DIRECTORY = 'rw'
 
@@ -88,10 +82,10 @@ _HOST_DELIMITER = ':/'
 
 class _ShareMount:
     """
-    One share mounted in one mode, and everything that keeps that mount honest.
+    One share mounted in one mode.
 
-    Shared by the source and the destination so that the mounting rules - the lock, the timeouts, the
-    liveness check - exist once. The mode is part of the mount point, so the two never collide.
+    Shared by the source and the destination, so the lock, the timeouts and the liveness check exist
+    once. The mode is part of the mount point, so the two never collide.
     """
 
     def __init__(self, storage: Storage, share: FileShare, mount_root: Path, timeout_seconds: int,
@@ -101,9 +95,8 @@ class _ShareMount:
                 f'Storage {storage.name} is on a {share.mount_type} share, and this service mounts '
                 f'only NFS. Mounting it needs the arguments the platform derives in NFSHelper.')
         if writable and _READ_ONLY_OPTION in _configured_options(share):
-            # The administrator marked the export read-only. The API's WRITE check is about the
-            # storage's ACL and knows nothing about the share, so this is the only place that can
-            # honour the setting - and overriding it would make a share-level decision inert.
+            # The API's WRITE check is about the storage's ACL and knows nothing about the share, so
+            # this is the only place that can honour `ro` on the export.
             raise UnsupportedSource(
                 f'The file share {share.mount_root} is configured read-only (mount options '
                 f'"{share.mount_options}"), so nothing can be written into storage {storage.name}. '
@@ -165,7 +158,7 @@ class _ShareMount:
         """
         Mounts the share in our mode, creating the mount point first.
 
-        `sudo` only when not already root: a container runs as root and may not have sudo at all.
+        `sudo` only when not already root: a container runs as root and may not have sudo.
         """
         self.mount_point.mkdir(parents=True, exist_ok=True)
         source = _mount_source(self._share)
@@ -277,11 +270,7 @@ class NfsSource(FileSource):
                           locator=str(entry))
 
     def stat(self, path: str) -> SourceFile | None:
-        """
-        The one file at a storage-relative path, or `None` when the path is not a file.
-
-        A folder answers `None` rather than its content: the caller asked for a file.
-        """
+        """The one file at a storage-relative path, or `None`. A folder answers `None` too."""
         target = self._root / path.strip('/')
         if not is_inside(target, self._root):
             raise UnsupportedSource(f'Path {path} leads outside storage {self._storage.name}')
@@ -313,15 +302,13 @@ class NfsSource(FileSource):
 
 class NfsDestination(FileDestination):
     """
-    Writes files into an NFS storage, through a **read-write** mount of its share.
+    Writes files into an NFS storage, through a read-write mount of its share.
 
-    The one place in this service that mounts a share writable, and the only thing an extraction
-    relaxes about the read-only rule the sources follow. It is narrow on purpose: a separate mount
-    point, taken only for a task that writes, and nothing reads through it.
+    The only place in this service that mounts a share writable: a separate mount point, taken only
+    for a task that writes.
 
-    No permission check happens here - see `FileDestination`. Note what path permissions do *not*
-    give on a share: they require S3, so for an NFS destination the only authorization that ever
-    happened is storage-level WRITE, checked by the API when the task was created.
+    Path permissions require S3, so for an NFS destination the only authorization that ever happened
+    is storage-level WRITE, checked by the API when the task was created.
     """
 
     def __init__(self, storage: Storage, share: FileShare, mount_root: Path,
@@ -345,9 +332,8 @@ class NfsDestination(FileDestination):
         """
         Checks that the folder the extraction will write into is there.
 
-        Not created: the caller named a folder, and creating a folder that is not there would turn a
-        typo in the path into a new folder nobody asked for, in a storage where nothing says the name
-        was meant.
+        Not created: creating it would turn a typo in the path into a folder nobody asked for. The
+        folders the archive itself names are created - see `upload`.
         """
         target = self._resolve(prefix)
         if not target.is_dir():
@@ -356,7 +342,7 @@ class NfsDestination(FileDestination):
                 f'it first, or ask for a folder that is already there.')
 
     def kind(self, key: str) -> EntryKind:
-        """What is at the key on the share. A symlink counts as what it is, not as what it points at."""
+        """What is at the key. A symlink counts as what it is, not as what it points at."""
         target = self._resolve(key)
         if target.is_dir():
             return EntryKind.FOLDER
@@ -370,11 +356,10 @@ class NfsDestination(FileDestination):
         """
         Copies a local file onto the share, creating the folders of the key on the way.
 
-        `'xb'` is what refuses an existing file, and it refuses it in the same system call that
-        creates it - so a file that appeared since the collision pass is refused rather than replaced.
+        `'xb'` refuses an existing file in the same system call that creates it, so a file that
+        appeared since the collision pass is refused rather than replaced.
 
-        The folders are created because a write without them fails; they are the archive's own
-        structure, not a level this service invents.
+        The folders are the archive's own structure, not a level this service invents.
         """
         target = self._resolve(key)
         mode = 'wb' if overwrite else 'xb'
@@ -385,7 +370,7 @@ class NfsDestination(FileDestination):
                     out.write(chunk)
                     heartbeat()
         except FileExistsError as taken:
-            # From the open with `'xb'`, or from a folder of the key being an existing file.
+            # From the `'xb'` open, or from a folder of the key being an existing file.
             raise DestinationConflict(f'{target} already exists') from taken
         except NotADirectoryError as taken:
             raise DestinationConflict(f'{target} cannot be created, a file is in the way') from taken
@@ -393,10 +378,9 @@ class NfsDestination(FileDestination):
 
     def create_folder(self, key: str) -> None:
         """
-        Creates an empty folder the archive holds, which a share can represent and S3 cannot.
+        Creates an empty folder of the archive, which a share can hold and S3 cannot.
 
-        `exist_ok` because the collision pass already refused a *file* at this path; a folder that is
-        already there is what the archive asked for.
+        `exist_ok` because the collision pass already refused a file at this path.
         """
         target = self._resolve(key)
         try:
@@ -415,11 +399,10 @@ class NfsDestination(FileDestination):
         """
         The local path of a storage-relative key, refusing anything that leaves the storage.
 
-        **This is the guard the whole extraction rests on, and it has to be the last word.** The
-        entry names come out of the archive, and `../../../../etc/cron.d/x` joined onto the mount
-        root resolves to a path outside it; this container runs as root and holds the roles of every
-        storage on the platform. `is_inside` resolves symlinks before comparing, so neither `..` in
-        the name nor a symlink already on the share redirects a write.
+        The guard the whole extraction rests on. Entry names come out of the archive, and
+        `../../../../etc/cron.d/x` joined onto the mount root resolves outside it; this container
+        runs as root and holds the roles of every storage. `is_inside` resolves symlinks first, so
+        neither `..` in the name nor a symlink on the share redirects a write.
         """
         trimmed = key.strip('/')
         target = self._root / trimmed if trimmed else self._root
@@ -437,9 +420,8 @@ def _mount_options(share: FileShare, writable: bool = False) -> str:
     """
     The `-o` argument: what the platform configured, minus its mode, plus the mode we asked for.
 
-    The mode goes last, because options are applied left to right - so what the platform configured
-    for job containers cannot decide whether this service may write. A share configured `ro` never
-    reaches here with `writable`: `_ShareMount` refuses that instead of overriding it.
+    The mode goes last, because options apply left to right. A share configured `ro` never reaches
+    here with `writable`: `_ShareMount` refuses that instead of overriding it.
     """
     kept = [option for option in _configured_options(share) if option not in _MODE_OPTIONS]
     return ','.join(kept + ['rw' if writable else 'ro'])
@@ -449,20 +431,16 @@ def _share_directory_name(mount_root: str) -> str:
     """
     One directory name per share: `10.0.0.1:/export/data` gives `10.0.0.1_export_data.<digest>`.
 
-    **The digest is what makes the name unique, and it is not decoration.** The readable half
-    replaces every character a directory name may not hold with `_`, and `_` is itself a legal
-    character - so `10.0.0.1:/export/data` and `10.0.0.1:/export_data` both read as
-    `10.0.0.1_export_data`. Two different shares would then share a mount point, and `_is_mounted`
-    compares the mount point alone: the second task would find the share "already mounted" and read
-    or write through the first one's export, across a storage boundary. The digest is taken from the
-    untouched mount root, so two roots that differ anywhere differ here.
+    The digest is what makes the name unique. The readable half replaces every character a directory
+    name may not hold with `_`, and `_` is legal there - so `10.0.0.1:/export/data` and
+    `10.0.0.1:/export_data` both read as `10.0.0.1_export_data`. Two shares would then share a mount
+    point, and `_is_mounted` compares the mount point alone. The digest comes from the untouched
+    mount root, so two roots that differ anywhere differ here.
 
-    The mode is not part of the name either - it is the directory above it, for the same reason. See
-    `_WRITABLE_DIRECTORY`.
+    The mode is the directory above, for the same reason - see `_WRITABLE_DIRECTORY`.
 
-    Deliberately not `NFSHelper.normalizeMountPath`: that one builds the path a job container sees,
-    which is part of the platform's contract. This directory is private to this container, which is
-    why its shape can carry a digest at all.
+    Deliberately not `NFSHelper.normalizeMountPath`: that builds the path a job container sees, which
+    is part of the platform's contract. This directory is private to this container.
     """
     readable = _UNSAFE_IN_PATH.sub('_', mount_root).strip('_')
     digest = hashlib.sha256(mount_root.encode()).hexdigest()[:SHARE_DIGEST_LENGTH]

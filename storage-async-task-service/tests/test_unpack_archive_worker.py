@@ -12,18 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Tests of one extraction end to end, with the storages faked and real archives in between.
-
-What is asserted here is the order of the steps, because that is what decides how much a refusal
-costs:
-
-  * a refusal **before the download** leaves the storage untouched and fetches nothing;
-  * a refusal **in the collision pass** leaves the destination exactly as it was;
-  * a failure **during the upload** leaves what it wrote, says how much, and removes nothing.
-
-The source archive is deleted last of everything, so a failure always leaves the user their archive.
-"""
+"""Tests of one extraction end to end, with the storages faked and real archives in between."""
 
 import io
 import tarfile
@@ -58,8 +47,6 @@ def _zip_bytes(content=None) -> bytes:
 
 
 def _tar_bz2_bytes(content) -> bytes:
-    # The one format that declares neither an entry count nor a total, so its limits can only be
-    # enforced while it is being extracted.
     buffer = io.BytesIO()
     with tarfile.open(fileobj=buffer, mode='w:bz2') as archive:
         for name, value in content.items():
@@ -119,13 +106,9 @@ def _failure(api: FakeApi) -> str:
     return failures[0]
 
 
-# ---------------------------------------------------------------- the happy path
-
 def test_extracts_into_the_destination_folder_and_reports_what_it_wrote(tmp_path, monkeypatch):
     api, _, destination, _ = _run(tmp_path, monkeypatch)
 
-    # The key is the destination folder plus the path inside the archive: the archive's structure is
-    # preserved and no folder of this service's own is added.
     assert sorted(destination.written) == ['out/data/values.csv', 'out/notes.txt']
     assert api.statuses == [TaskStatus.SUCCESS]
     result = api.reports[0][1]
@@ -134,8 +117,6 @@ def test_extracts_into_the_destination_folder_and_reports_what_it_wrote(tmp_path
 
 
 def test_an_empty_destination_path_is_the_root_of_the_storage(tmp_path, monkeypatch):
-    # The API records the root as the empty string, and the key is a concatenation - so this is the
-    # one case where the worker writes at the top level of the storage.
     _, _, destination, _ = _run(tmp_path, monkeypatch, params=_params(destination_path=''))
 
     assert sorted(destination.written) == ['data/values.csv', 'notes.txt']
@@ -148,8 +129,6 @@ def test_the_destination_folder_is_checked_before_the_first_upload(tmp_path, mon
 
 
 def test_a_destination_folder_that_is_not_there_fails_the_task(tmp_path, monkeypatch):
-    # A share cannot be written into a folder that does not exist, and creating one would turn a typo
-    # in the path into a folder nobody asked for.
     api, _, destination, _ = _run(tmp_path, monkeypatch,
                                   destination=FakeDestination(missing_prefix=True))
 
@@ -163,8 +142,6 @@ def test_the_scratch_directory_is_gone_afterwards(tmp_path, monkeypatch):
     assert not (tmp_path / TASK_ID).exists()
 
 
-# ---------------------------------------------------------------- refused before the download
-
 def test_an_archive_that_is_not_a_file_fails_without_fetching_anything(tmp_path, monkeypatch):
     api, source, destination, _ = _run(tmp_path, monkeypatch,
                                        source=FakeSource({'other.zip': _zip_bytes()}))
@@ -175,8 +152,6 @@ def test_an_archive_that_is_not_a_file_fails_without_fetching_anything(tmp_path,
 
 
 def test_an_archive_over_the_size_limit_is_refused_before_it_is_fetched(tmp_path, monkeypatch):
-    # The cheapest refusal there is: the size comes from the storage listing, so a 400 GB archive
-    # costs nothing to turn down.
     api, source, _, _ = _run(tmp_path, monkeypatch,
                              unpack=unpack_config(max_archive_size_bytes=10))
 
@@ -185,8 +160,6 @@ def test_an_archive_over_the_size_limit_is_refused_before_it_is_fetched(tmp_path
 
 
 def test_a_declared_entry_count_over_the_limit_is_refused_before_the_download(tmp_path, monkeypatch):
-    # A zip keeps its index at the end of the file, so the count is known for the price of a few
-    # ranged reads.
     api, source, _, _ = _run(tmp_path, monkeypatch, unpack=unpack_config(max_files_count=1))
 
     assert source.heartbeats == 0
@@ -208,8 +181,6 @@ def test_a_format_this_service_cannot_open_is_refused_before_the_download(tmp_pa
 
 
 def test_real_content_over_the_limit_is_stopped_while_extracting(tmp_path, monkeypatch):
-    # A tar.bz2 declares neither a count nor a total, so nothing could be refused up front: the byte
-    # counter during the extraction is the only guard, and nothing reaches the destination.
     archive = _tar_bz2_bytes({'big.bin': b'x' * 5000})
     params = _params(source_path='incoming/data.tar.bz2')
 
@@ -220,11 +191,7 @@ def test_real_content_over_the_limit_is_stopped_while_extracting(tmp_path, monke
     assert 'content' in _failure(api)
 
 
-# ---------------------------------------------------------------- the collision pass
-
 def test_a_collision_leaves_the_destination_completely_untouched(tmp_path, monkeypatch):
-    # One collision refuses the whole task, and the refusal comes before the first upload - so the
-    # entry that would not have collided is not written either.
     destination = FakeDestination(existing={'out/notes.txt': b'older'})
 
     api, _, destination, _ = _run(tmp_path, monkeypatch, destination=destination)
@@ -250,8 +217,6 @@ def test_overwrite_replaces_the_colliding_entries_and_nothing_else(tmp_path, mon
 
 @pytest.mark.parametrize('overwrite', [False, True])
 def test_a_folder_where_the_archive_holds_a_file_fails_either_way(tmp_path, monkeypatch, overwrite):
-    # A share cannot hold both; S3 can, and then the GUI shows a file and a folder of one name while
-    # `pipe mount` and a download to disk fail the way the share does. One behaviour for both.
     destination = FakeDestination(folders={'out/notes.txt'})
 
     api, _, destination, _ = _run(tmp_path, monkeypatch, destination=destination,
@@ -278,9 +243,6 @@ def test_a_file_where_the_archive_holds_a_folder_fails(tmp_path, monkeypatch):
 @pytest.mark.parametrize('overwrite', [False, True])
 def test_an_entry_landing_on_the_archive_itself_fails_even_with_overwrite(
         tmp_path, monkeypatch, overwrite):
-    # Replacing the archive with a file from inside it makes two things go wrong: a later failure
-    # leaves the user without the archive, and `deleteSourceOnSuccess` then deletes the extracted
-    # file instead of the archive.
     params = _params(source_storage_id=1, destination_storage_id=1, destination_path='incoming/',
                      overwrite=overwrite)
     archive = _zip_bytes({'data.zip': b'inner', 'notes.txt': b'hello'})
@@ -295,8 +257,6 @@ def test_an_entry_landing_on_the_archive_itself_fails_even_with_overwrite(
 
 
 def test_extracting_into_the_archives_own_folder_is_otherwise_allowed(tmp_path, monkeypatch):
-    # Source and destination may be the same storage, and the same folder: the archive is deleted
-    # after the success is reported, never before.
     params = _params(source_storage_id=1, destination_storage_id=1, destination_path='incoming/')
 
     api, _, destination, _ = _run(tmp_path, monkeypatch, params=params)
@@ -306,9 +266,6 @@ def test_extracting_into_the_archives_own_folder_is_otherwise_allowed(tmp_path, 
 
 
 def test_a_file_that_appeared_after_the_collision_pass_fails_the_task(tmp_path, monkeypatch):
-    # The write itself refuses a key that is taken, rather than a check before it: between the pass
-    # and the upload somebody may create the file, and the whole point of the flag is that such a
-    # file is not replaced.
     destination = FakeDestination(appearing={'out/notes.txt'})
 
     api, _, destination, _ = _run(tmp_path, monkeypatch, destination=destination)
@@ -326,14 +283,11 @@ def test_an_empty_folder_of_the_archive_is_asked_for_in_the_destination(tmp_path
     assert destination.created_folders == ['out/empty']
 
 
-# ---------------------------------------------------------------- the source archive
-
 def test_the_source_archive_is_deleted_after_a_success_when_asked(tmp_path, monkeypatch):
     api, _, destination, _ = _run(tmp_path, monkeypatch,
                                   params=_params(delete_source_on_success=True))
 
     assert api.statuses == [TaskStatus.SUCCESS]
-    # After the report, and through a destination opened on the source storage - deleting is a write.
     assert destination.deleted == [ARCHIVE_PATH]
 
 
@@ -347,13 +301,8 @@ def test_the_source_archive_stays_after_a_failure(tmp_path, monkeypatch):
     assert destination.deleted == []
 
 
-# ---------------------------------------------------------------- failures and stopping
-
 def test_a_failed_upload_keeps_what_it_wrote_and_says_how_much(tmp_path, monkeypatch):
-    # No rollback, by design - so the message has to say what is in the destination, because that is
-    # what decides what the user does next.
     destination = FakeDestination()
-    # The second entry of the archive, so that one file is already in the destination when it fails.
     destination.fail_upload_of = 'out/data/values.csv'
 
     api, _, destination, _ = _run(tmp_path, monkeypatch, destination=destination)
@@ -370,7 +319,6 @@ def test_a_cancellation_ends_as_cancelled_and_removes_nothing(tmp_path, monkeypa
     uploaded = destination.upload
 
     def upload_then_cancel(local_path, key, heartbeat, overwrite=False):
-        # A cancel noticed between two files, which is where the real watcher raises it.
         size = uploaded(local_path, key, heartbeat, overwrite=overwrite)
         if len(destination.written) == 1:
             raise StopRequested(StopReason.CANCELLED)
@@ -381,14 +329,11 @@ def test_a_cancellation_ends_as_cancelled_and_removes_nothing(tmp_path, monkeypa
     api, _, destination, _ = _run(tmp_path, monkeypatch, destination=destination)
 
     assert api.statuses == [TaskStatus.STOPPING, TaskStatus.CANCELLED]
-    # What it had written stays: a cancellation is not a rollback.
     assert len(destination.written) == 1
     assert destination.deleted == []
 
 
 def test_a_task_already_finished_elsewhere_reports_nothing(tmp_path, monkeypatch):
-    # The cleaner failed it as stuck while this worker was still going. Nothing it reported would be
-    # accepted, so it only stops.
     api = FakeApi(_task(_params(), status=TaskStatus.FAILED))
 
     api, _, destination, _ = _run(tmp_path, monkeypatch, api=api, status_poll_seconds=0)
@@ -398,8 +343,6 @@ def test_a_task_already_finished_elsewhere_reports_nothing(tmp_path, monkeypatch
 
 
 def test_a_task_without_parameters_fails_with_the_reason(tmp_path, monkeypatch):
-    # The API refuses such a request, so this is a task written straight into the queue - or this
-    # service and the API disagreeing about the payload.
     api = FakeApi(_task(_params()))
     api.storages = {1: SOURCE_STORAGE, 2: DESTINATION_STORAGE}
     monkeypatch.setattr('sats.worker.unpack_archive_worker.open_source',
@@ -425,8 +368,6 @@ def test_a_storage_deleted_after_the_task_was_created_fails_the_task(tmp_path, m
 
 
 def test_a_crafted_entry_name_fails_the_task_before_anything_is_written(tmp_path, monkeypatch):
-    # The whole of the extraction's safety in one assertion: the API never opened the archive, so
-    # this name was checked by this service alone.
     archive = _zip_bytes({'../../../../etc/cron.d/evil': b'* * * * * root sh -c evil'})
 
     api, _, destination, _ = _run(tmp_path, monkeypatch, archive=archive)
@@ -437,9 +378,6 @@ def test_a_crafted_entry_name_fails_the_task_before_anything_is_written(tmp_path
 
 
 def test_a_failure_says_what_is_in_the_destination_exactly_once(tmp_path, monkeypatch):
-    # Two places used to say it: the refusal that knows why, and the note that knows the count. The
-    # user saw "Nothing was written. Nothing was written to the destination." The note is the one
-    # that stays, because it is the only one that can report a number.
     destination = FakeDestination(existing={'out/notes.txt': b'older'})
 
     api, _, _, _ = _run(tmp_path, monkeypatch, destination=destination)

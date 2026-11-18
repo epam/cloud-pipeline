@@ -43,8 +43,8 @@ LIST_PAGE_SIZE = 1000
 PRECONDITION_FAILED_STATUS = 412
 PRECONDITION_FAILED_CODE = 'PreconditionFailed'
 
-# Calls of this service's own plumbing rather than of the object a task asked about. botocore assumes
-# the storage's role inside the signing path, so one of these can fail in the middle of an S3 call.
+# Calls of this service's own plumbing, not of the object a task asked about. botocore assumes the
+# storage's role inside the signing path, so one of these can fail in the middle of an S3 call.
 CREDENTIAL_OPERATIONS = frozenset({'AssumeRole', 'AssumeRoleWithWebIdentity', 'GetCallerIdentity'})
 
 # Restore header of an archived object. "true" means the restore is still running and the object
@@ -62,12 +62,9 @@ def assert_not_a_credentials_failure(error: ClientError) -> None:
     """
     Re-raises a credentials failure as one, before its 403 is read as "you may not read that file".
 
-    botocore assumes the storage's role inside the signing path, so a rejected `AssumeRole` comes out
-    of whichever S3 call triggered it - carrying status 403, which is exactly what an object the
-    caller may not read answers. The two are told apart by the operation that actually failed.
-
-    Without this an expired node role tells every user "access denied" on their own files, and the
-    real cause - that this service has no usable credentials - appears in nobody's message.
+    A rejected `AssumeRole` comes out of whichever S3 call triggered it, carrying status 403 - the
+    same answer as an object the caller may not read. They are told apart by the failed operation.
+    Without this an expired node role tells every user "access denied" on their own files.
     """
     if error.operation_name in CREDENTIAL_OPERATIONS:
         raise CredentialsUnavailable(
@@ -199,8 +196,8 @@ class S3Source(FileSource):
         """
         A HEAD that answers `None` instead of raising.
 
-        A credentials failure is the exception: swallowed here it would come back as "stored in
-        GLACIER and not restored", which names the wrong cause entirely.
+        A credentials failure is the exception: swallowed, it would come back as "stored in GLACIER
+        and not restored".
         """
         try:
             return self._client.head_object(Bucket=self._bucket, Key=key)
@@ -213,14 +210,12 @@ class S3Source(FileSource):
         """
         One object by its storage-relative path, or `None` when there is no such object.
 
-        A prefix with objects under it answers `None` as well: the caller asked for a file, and this
-        is the method that tells it there is none - `list_files` would expand the folder instead.
+        A prefix with objects under it answers `None` too: the caller asked for a file.
         """
         found, unreadable = self._head_file(path)
         if found is not None:
             return found
         if unreadable:
-            # It is there and we may not read it. Named, so the task's message says which.
             return SourceFile(path=path, size=0, locator=self._absolute(path),
                               skip_reason=unreadable)
         return None
@@ -264,16 +259,11 @@ class RangedObjectReader(io.RawIOBase):
     """
     A seekable, read-only file over an S3 object: one ranged `GetObject` per read.
 
-    What lets `zipfile` open an archive that stays in the bucket. A zip's index is at the end of the
-    file, so a few seeks answer what the archive holds without fetching it: measured on a test
-    archive, `zipfile` read 437 bytes of 1322 in three requests, and the cost does not grow with the
-    archive - a 500 GB zip answers in the same three.
+    What lets `zipfile` open an archive that stays in the bucket. A zip keeps its index at the end,
+    so a few seeks answer what the archive holds in three requests, whatever its size.
 
-    `io.RawIOBase` rather than a file object written by hand, so `read`, `readall` and the context
-    manager come from the standard library and only the three primitives below are ours.
-
-    **Not for reading a whole file.** One read is one request, so a download through this would cost
-    a request per block; `S3Source.download` is the method for that.
+    Not for reading a whole file: one read is one request. `S3Source.download` is the method for
+    that.
     """
 
     def __init__(self, client, bucket: str, key: str, size: int):
@@ -283,8 +273,7 @@ class RangedObjectReader(io.RawIOBase):
         self._key = key
         self._size = size
         self._position = 0
-        # How many requests this object has cost, so a test can assert that probing an archive is
-        # cheap rather than merely correct.
+        # Counted so a test can assert that probing an archive is cheap, not merely correct.
         self.requests = 0
 
     def readable(self) -> bool:
@@ -306,8 +295,7 @@ class RangedObjectReader(io.RawIOBase):
                 target = self._size + offset
             case _:
                 raise ValueError(f'Unsupported whence {whence} for an S3 object reader')
-        # Clamped at zero and not at the end: seeking past the end of a file is legal, and a read
-        # there answers nothing, which is what `zipfile` expects.
+        # Clamped at zero only: seeking past the end is legal, and a read there answers nothing.
         self._position = max(0, target)
         return self._position
 
@@ -315,8 +303,8 @@ class RangedObjectReader(io.RawIOBase):
         """
         Fills the buffer from the current position with one ranged request.
 
-        The loop drains the response rather than trusting one `read`: a short read is legal for a
-        stream, and callers like `zipfile` ask for an exact number of bytes.
+        The loop drains the response: a short read is legal for a stream, and `zipfile` asks for an
+        exact number of bytes.
         """
         wanted = len(buffer)
         if wanted == 0 or self._position >= self._size:
@@ -341,12 +329,10 @@ class S3Bucket:
     """
     Uploads to and deletes from one bucket, by absolute key.
 
-    One instance and one client per worker: boto3 clients are thread-safe, sessions are not. The
-    client is required, for the same reason as in `S3Source`.
+    One instance and one client per worker: boto3 clients are thread-safe, sessions are not.
 
-    It knows nothing about what it is moving - it was the archive bucket of the download tasks first
-    and is now also what an extraction writes its files through, which is why the name is the bucket
-    rather than the archive.
+    It knows nothing about what it is moving, which is why the name is the bucket and not the
+    archive.
     """
 
     def __init__(self, bucket: str, part_size_bytes: int, client):
@@ -361,9 +347,9 @@ class S3Bucket:
 
         A file that fits in one part is sent with a single `put_object`.
 
-        `refuse_existing` turns the write into a conditional one - `IfNoneMatch: *`, which S3 answers
-        with 412 when the key is taken. The condition is the write itself rather than a HEAD before
-        it, so a key created in between is refused too, which is the whole promise of the flag.
+        `refuse_existing` makes the write conditional - `IfNoneMatch: *`, answered with 412 when the
+        key is taken. The condition is the write itself, not a HEAD before it, so a key created in
+        between is refused too.
         """
         size = path.stat().st_size
         LOG.info('Uploading %s bytes to s3://%s/%s', size, self._bucket, key)
@@ -381,9 +367,7 @@ class S3Bucket:
         """
         Whether the key is an object. A refusal is raised rather than read as absence.
 
-        The credentials check is the same one `S3Source` makes: this is the call the collision pass
-        goes through, so without it an expired role reaches the user as an internal error of this
-        service rather than as "no usable credentials".
+        The collision pass goes through this call, so an expired role has to be named here too.
         """
         try:
             self._client.head_object(Bucket=self._bucket, Key=key)
@@ -395,11 +379,7 @@ class S3Bucket:
             raise
 
     def has_children(self, key: str) -> bool:
-        """
-        Whether anything lies under the key as a folder would.
-
-        One listing of at most one key: the question is existence, not content.
-        """
+        """Whether anything lies under the key. One listing of at most one key."""
         response = self._client.list_objects_v2(Bucket=self._bucket, Prefix=f'{key}/', MaxKeys=1)
         return bool(response.get('Contents'))
 
@@ -415,12 +395,11 @@ class S3Bucket:
 
         The part size is raised when the configured one would need more than `MAX_PARTS`.
 
-        The conditional guard goes on the completion and not on the parts: parts are not objects, so
-        nothing is visible in the bucket until the upload completes, and that is where the key is
-        taken or not.
+        The conditional guard goes on the completion, not on the parts: nothing is visible in the
+        bucket until the upload completes.
 
-        `BaseException` so that a `KeyboardInterrupt` or `SystemExit` mid-upload also aborts: an
-        upload that is neither completed nor aborted leaves chargeable parts in the bucket.
+        `BaseException` so a `KeyboardInterrupt` or `SystemExit` mid-upload also aborts: an upload
+        that is neither completed nor aborted leaves chargeable parts in the bucket.
         """
         part_size = max(self._part_size, math.ceil(size / MAX_PARTS))
         if part_size != self._part_size:
@@ -443,8 +422,7 @@ class S3Bucket:
         """
         Runs a write and turns S3's 412 into the refusal the caller asked for.
 
-        Without the translation the failure arrives as a `ClientError` and reads to the user as an
-        internal error of this service rather than as "that file is already there".
+        Left as a `ClientError` it would read as an internal error of this service.
         """
         try:
             return write()
@@ -491,9 +469,8 @@ class S3Destination(FileDestination):
     """
     Writes files into an S3 storage, addressed by storage-relative keys.
 
-    The storage's own folder is added here and nowhere else, which is the same split as in
-    `S3Source`: everything outside this class speaks in paths relative to the storage root, so a
-    storage that is a prefix of a bucket behaves like one that is a whole bucket.
+    The storage's own folder is added here and nowhere else, as in `S3Source`, so a storage that is a
+    prefix of a bucket behaves like one that is a whole bucket.
     """
 
     def __init__(self, storage: Storage, part_size_bytes: int, client):
@@ -505,18 +482,15 @@ class S3Destination(FileDestination):
         """
         Nothing to check, and that is not an omission.
 
-        An object storage has no folders: a key with slashes in it is one key, so there is no folder
-        to find missing and nothing to create. Whether this service may write at all is answered by
-        the first upload, with the region's role - and whether the *caller* may was answered by the
-        API when the task was created.
+        An object storage has no folders: a key with slashes is one key, so there is no folder to
+        find missing. Whether this service may write is answered by the first upload.
         """
 
     def kind(self, key: str) -> EntryKind:
         """
         What lies at the key: an object, something underneath it, or nothing.
 
-        Two calls at most, and the second only when the first found no object - so the common case
-        of an empty destination costs one HEAD per entry.
+        Two calls at most, the second only when the first found no object.
         """
         absolute = absolute_key(self._prefix, key)
         if self._bucket.exists(absolute):
@@ -534,11 +508,9 @@ class S3Destination(FileDestination):
         """
         Nothing is created, and the empty folder is logged as skipped.
 
-        An object storage has no folders, so an empty one cannot be represented: the alternative - a
-        zero-length object whose key ends in a slash - is a convention some tools draw as a folder
-        and others as a strange file, and this service does not invent storage content. Logged
-        rather than reported, because an archive may hold thousands of them and a count would not
-        tell a user what to do about it.
+        An object storage cannot hold an empty folder. The alternative - a zero-length key ending in
+        a slash - is a convention some tools draw as a folder and others as a strange file, and this
+        service does not invent storage content.
         """
         LOG.info('The archive holds the empty folder %s, which an object storage cannot represent: '
                  'skipping it', key)

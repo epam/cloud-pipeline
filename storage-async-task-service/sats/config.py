@@ -20,14 +20,11 @@ command line and the environment.
 
 `AsyncTasksConfig` is the platform's: the buckets, the thresholds, the time limits. Read from the
 `system.async.tasks.config` preference on every round, so a change in the UI applies without a
-restart. Its field names mirror the Java classes the preference is read into.
+restart. Its field names mirror the Java classes.
 
-That preference holds a section per task type, so the values this service needs come from two levels
-of it: a task type's own from its section, and the two that belong to the service rather than to a
-task type from the top. `AsyncTasksConfig` is the whole of it; the per-type sections are
-`StorageDownloadArchiveTaskConfig` and `StorageUnpackArchiveTaskConfig`, and each is parsed and
-validated on its own, so a task type whose section is missing is simply not claimed while the other
-one keeps running.
+The preference holds a section per task type plus two shared values at the top.
+`AsyncTasksConfig` is the whole of it; each section is parsed and validated on its own, so a type
+whose section is missing is not claimed while the other keeps running.
 """
 
 from __future__ import annotations
@@ -60,9 +57,8 @@ DEFAULT_MAX_USER_TASKS = 3
 DEFAULT_WORKER_MAX_RUNNING_MINUTES = 240
 DEFAULT_STUCK_TASKS_THRESHOLD_MINUTES = 360
 
-# The unpack section's own. `maxSizeBytes` and `maxFilesCount` mean something different here than in
-# the download section - the uncompressed size and the entry count of one archive, rather than the
-# size and the file count of a selection - so they have defaults of their own.
+# `maxSizeBytes` and `maxFilesCount` mean something different here than in the download section: the
+# uncompressed size and the entry count of one archive, not the size and file count of a selection.
 DEFAULT_UNPACK_MAX_ARCHIVE_SIZE_BYTES = 53687091200  # 50 GiB
 DEFAULT_UNPACK_MAX_SIZE_BYTES = 214748364800  # 200 GiB
 DEFAULT_UNPACK_MAX_FILES_COUNT = 100000
@@ -72,11 +68,9 @@ def _as_object(raw: str | dict[str, Any] | None) -> dict[str, Any]:
     """
     The preference as a dictionary, whichever way it arrived.
 
-    The API answers `payload.value` as a string, because the platform stores every preference as
-    text; a caller that has already parsed it passes the dictionary. Anything that is valid JSON but
-    not an object - a list, a number - is read as unset rather than reaching an attribute lookup.
-    `json.loads` raising is left to the caller: a preference somebody saved as broken JSON is worth
-    skipping a round over.
+    The API answers `payload.value` as a string; a caller that parsed it already passes the
+    dictionary. Valid JSON that is not an object - a list, a number - is read as unset. `json.loads`
+    raising is left to the caller, who skips the round.
     """
     if raw is None:
         return {}
@@ -148,11 +142,9 @@ class StorageDownloadArchiveTaskConfig:
     """
     Everything this service reads out of the preference, flattened into one object.
 
-    Mirror of `com.epam.pipeline.entity.async.StorageDownloadArchiveTaskConfig`, plus the two fields
-    the platform keeps one level above the section - `max_user_tasks` and
-    `stuck_tasks_threshold_minutes`, which are `AsyncTasksConfig`'s on both sides because they govern
-    the service rather than one task type. They are kept here so this section can warn about its own
-    time limit; read them from `AsyncTasksConfig`.
+    Mirror of `com.epam.pipeline.entity.async.StorageDownloadArchiveTaskConfig`, plus the two shared
+    fields the platform keeps above the section. They are kept here so this section can warn about
+    its own time limit; read them from `AsyncTasksConfig`.
 
     `None` in either threshold means "no limit", which is the platform's meaning: an administrator
     removing the value is removing the limit.
@@ -238,25 +230,21 @@ class StorageUnpackArchiveTaskConfig:
     The `storageUnpackArchive` section: the three limits of one extraction, and its time limit.
 
     Mirror of `com.epam.pipeline.entity.async.StorageUnpackArchiveTaskConfig`. It names no
-    destination and no time to live, and that is the whole difference from the download section: an
-    extraction writes into the storage the caller named, so the platform owns no artifact afterwards
-    and there is nothing to expire.
+    destination and no time to live: an extraction writes into the storage the caller named, so the
+    platform owns no artifact to expire.
 
-    `None` in a limit means "no limit", which is the platform's meaning. `configured` is not a field
-    of the preference - see `from_preference`.
+    `None` in a limit means no limit. `configured` is not a field of the preference.
     """
 
-    # The archive object itself, checked against the storage listing before a byte of it is fetched.
+    # The archive object itself, checked from the storage listing before a byte of it is fetched.
     max_archive_size_bytes: int | None
-    # The total *uncompressed* size that may be written. Checked against what the archive declares,
-    # where the format reveals it, and again against the bytes actually written.
+    # The total uncompressed size. Checked against what the archive declares, and again against the
+    # bytes actually written.
     max_size_bytes: int | None
-    # The number of entries one archive may hold.
     max_files_count: int | None
     worker_max_running_minutes: int
-    # Whether the section is in the preference at all. An absent section means the limits were never
-    # reviewed by an administrator, so the service claims no unpack task rather than extracting
-    # under invented ones - the same stance as a download task with no destination.
+    # Whether the section is in the preference at all. An absent section means nobody reviewed the
+    # limits, so no unpack task is claimed rather than extracting under invented ones.
     configured: bool
 
     @classmethod
@@ -266,8 +254,8 @@ class StorageUnpackArchiveTaskConfig:
         tasks = _section(shared, TASKS_SECTION)
         unpack = _section(tasks, UNPACK_SECTION)
         return cls(
-            # `get(key, DEFAULT)` rather than `get(key) or DEFAULT`: a key present as `null` means
-            # unlimited, and only an absent key falls back.
+            # `get(key, DEFAULT)`, so a key present as `null` means unlimited and only an absent key
+            # falls back.
             max_archive_size_bytes=unpack.get('maxArchiveSizeBytes',
                                               DEFAULT_UNPACK_MAX_ARCHIVE_SIZE_BYTES),
             max_size_bytes=unpack.get('maxSizeBytes', DEFAULT_UNPACK_MAX_SIZE_BYTES),
@@ -292,7 +280,7 @@ class StorageUnpackArchiveTaskConfig:
             found.append(f'Preference {section}.maxArchiveSizeBytes is not set, archive size is not '
                          f'limited')
         if self.max_size_bytes is None:
-            # The one limit counted while writing, so without it a crafted archive is unbounded.
+            # The only limit counted while writing, so without it a crafted archive is unbounded.
             found.append(f'Preference {section}.maxSizeBytes is not set, extracted size is not '
                          f'limited')
         if self.max_files_count is None:
@@ -304,16 +292,14 @@ class StorageUnpackArchiveTaskConfig:
 @dataclass(frozen=True, slots=True)
 class AsyncTasksConfig:
     """
-    The whole preference: the two values shared by every task type, and a section per type.
+    The whole preference: the two shared values, and a section per task type.
 
-    This is what the orchestrator reads and hands around. The shared values live here because there
-    can only be one of each: `max_user_tasks` is one budget across packing and extracting, and
-    `stuck_tasks_threshold_minutes` governs the cleaner rather than a task type, so it must exceed
-    the *larger* of the sections' `worker_max_running_minutes`.
+    The shared values live here because there can only be one of each. `max_user_tasks` is one
+    budget across packing and extracting. `stuck_tasks_threshold_minutes` governs the cleaner, not a
+    task type, so it must exceed the larger of the sections' `worker_max_running_minutes`.
 
-    `StorageDownloadArchiveTaskConfig` keeps its own copy of both, read from the same top level, so
-    that section can warn about its own time limit. The two cannot disagree - they are parsed from
-    one dictionary - and this class is the one to read them from.
+    The download section keeps its own copy of both, parsed from the same dictionary. Read them from
+    here.
     """
 
     download: StorageDownloadArchiveTaskConfig
@@ -323,12 +309,7 @@ class AsyncTasksConfig:
 
     @classmethod
     def from_preference(cls, raw: str | dict[str, Any] | None) -> AsyncTasksConfig:
-        """
-        Parses the preference once and hands the same object to every section.
-
-        Parsed once because the value arrives as a JSON string and a section parsing it again would
-        make two readings of one preference possible.
-        """
+        """Parses the preference once and hands the same dictionary to every section."""
         shared = _as_object(raw)
         return cls(
             download=StorageDownloadArchiveTaskConfig.from_preference(shared),
@@ -339,12 +320,7 @@ class AsyncTasksConfig:
         )
 
     def section_for(self, task_type: AsyncTaskType):
-        """
-        The section a task of this type is executed under.
-
-        A worker is given its own section and never the whole preference, so one task type cannot
-        read another's limits by accident.
-        """
+        """The section a task of this type runs under. A worker never gets the whole preference."""
         match task_type:
             case AsyncTaskType.DOWNLOAD_ARCHIVE:
                 return self.download
@@ -356,12 +332,11 @@ class AsyncTasksConfig:
 
     def is_usable(self, task_type: AsyncTaskType) -> bool:
         """
-        Whether a task of this type can be executed with the preference as it is.
+        Whether a task of this type can run with the preference as it is.
 
-        Per type on purpose: a download section with no destination must not stop extractions, and
-        an absent unpack section must not stop downloads. A type that is not usable is left
-        unclaimed, so its tasks stay `PENDING` until the preference is filled in - filling it in
-        then makes the backlog run, while failing the tasks would lose work over a fixable mistake.
+        Per type: a download section with no destination must not stop extractions, and an absent
+        unpack section must not stop downloads. An unusable type is left unclaimed, so its tasks stay
+        `PENDING` until the preference is filled in.
         """
         match task_type:
             case AsyncTaskType.DOWNLOAD_ARCHIVE:
@@ -375,8 +350,8 @@ class AsyncTasksConfig:
         """Everything wrong with the preference, section by section, plus the shared rules."""
         found = self.download.warnings() + self.unpack.warnings()
         if self.stuck_tasks_threshold_minutes <= self.unpack.worker_max_running_minutes:
-            # The download section raises the same objection about its own limit. Both are reported,
-            # because each names the section whose value has to change.
+            # The download section raises the same objection about its own limit. Both are reported:
+            # each names the section whose value has to change.
             found.append(
                 f'Preference {PREFERENCE_KEY}: stuckTasksThresholdMinutes '
                 f'({self.stuck_tasks_threshold_minutes}) should exceed '
