@@ -51,10 +51,10 @@ public class Launch_InputDataValidationTest extends AbstractAutoRemovingPipeline
     private final String inFile = "in.txt";
     private final String nonCopiedFile = "nonCopied.txt";
     private final String fileText = "editable file text " + Utils.randomSuffix();
-    private final String outputPath = String.format("%s://%s/%s", PREFIX, storage, outFolder);
-    private final String inputPath = String.format("%s://%s/%s/%s", PREFIX, storage, inFolder, inFile);
-    private final String commonPath = String.format("%s://%s/%s, %s://%s/%s/%s", PREFIX, storage, commonFolder,
-            PREFIX, storage, commonFolder2, commonFile3);
+    private final String outputPath = String.format("%s://%s/%s", PREFIX, Utils.storagePath(storage), outFolder);
+    private final String inputPath = String.format("%s://%s/%s/%s", PREFIX, Utils.storagePath(storage), inFolder, inFile);
+    private final String commonPath = String.format("%s://%s/%s, %s://%s/%s/%s", PREFIX, Utils.storagePath(storage), commonFolder,
+            PREFIX, Utils.storagePath(storage), commonFolder2, commonFile3);
 
     @BeforeClass
     public void createInitialResources() {

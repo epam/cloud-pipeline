@@ -341,7 +341,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .openSearchResultItem(storageFile)
                 .ensure(TITLE, text(storageFile))
                 .ensure(HIGHLIGHTS, text("Found in storage_name"))
-                .ensure(INFO, text(storage), text(String.format("s3://%s%s", storage, storageFile)))
+                .ensure(INFO, text(storage), text(String.format("s3://%s%s", Utils.storagePath(storage), storageFile)))
                 .ensure(ATTRIBUTES, text(LOGIN))
                 .ensure(PREVIEW, text(storageFileContent))
                 .parent()
@@ -376,7 +376,8 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .ensure(HIGHLIGHTS, text("Found in name"))
                 .ensure(PREVIEW, text(storageFolder), text(storageFile))
                 .parent()
-                .search(storage.toLowerCase())
+                // the path of the storage starts with storage.object.prefix, and is indexed as a whole
+                .search(Utils.storagePath(storage).toLowerCase())
                 .enter()
                 .sleep(2, SECONDS)
                 .hover(SEARCH_RESULT)
@@ -404,7 +405,8 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
         home().sleep(C.SEARCH_TIMEOUT, MINUTES);
         search()
                 .click(RUNS)
-                .search(storage)
+                // the mount line of the log names the storage path, storage.object.prefix included
+                .search(Utils.storagePath(storage).toLowerCase())
                 .enter()
                 .sleep(2, SECONDS)
                 .hover(SEARCH_RESULT)
@@ -412,7 +414,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .ensure(TITLE, Status.SUCCESS.reached, text(getLastRunId()), text(pipeline), text(draftVersionName))
                 .checkTags(configurationDisk, configurationNodeType)
                 .ensure(HIGHLIGHTS, text("Found in logs"),
-                        text(storage.toLowerCase() + " mounted to"));
+                        text(Utils.storagePath(storage).toLowerCase() + " mounted to"));
     }
 
     @Test(dependsOnMethods = {"searchForStorageWithChangedName"})
@@ -427,7 +429,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .openSearchResultItemWithText(storageFile)
                 .ensure(TITLE, text(storageFile))
                 .ensure(HIGHLIGHTS, text("Found in path"))
-                .ensure(INFO, text(storageAlias), text(String.format("s3://%s%s", storage, storageFile)))
+                .ensure(INFO, text(storageAlias), text(String.format("s3://%s%s", Utils.storagePath(storage), storageFile)))
                 .ensure(ATTRIBUTES, text(LOGIN))
                 .ensure(PREVIEW, text(storageFileContent))
                 .parent()

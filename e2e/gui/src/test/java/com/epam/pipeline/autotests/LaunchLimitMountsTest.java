@@ -406,7 +406,7 @@ public class LaunchLimitMountsTest
                 .createFileWithContent(testFile, testFileContent);
         String[] logMessages = {
                 format("Run is launched with mount limits (%s,%s) Only 2 storages will be mounted",
-                        storage5ID, storage6.toLowerCase()),
+                        storage5ID, Utils.storagePath(storage6).toLowerCase()),
                 mountStorageMessage(storage5),
                 mountStorageMessage(storage6)
         };
@@ -419,7 +419,8 @@ public class LaunchLimitMountsTest
                 .editFile(transferringJsonToObject(profiles -> {
                     final ConfigurationProfile profile = selectProfileWithName("default", profiles);
                     profile.configuration.parameters.put(CP_CAP_LIMIT_MOUNTS,
-                            Parameter.optional("string", format("%s,%s", storage5ID, storage6.toLowerCase())));
+                            Parameter.optional("string", format("%s,%s", storage5ID,
+                                    Utils.storagePath(storage6).toLowerCase())));
                     return profiles;
                 }))
                 .saveAndCommitWithMessage("test: Add instance image")
@@ -438,7 +439,8 @@ public class LaunchLimitMountsTest
     }
 
     private String mountStorageMessage(String storage) {
-        return format("%s mounted to /cloud-data/%s", storage.toLowerCase(), storage.toLowerCase());
+        final String path = Utils.storagePath(storage).toLowerCase();
+        return format("%s mounted to /cloud-data/%s", path, path);
     }
 
     private void checkOOMwarningMessage(String storageMountsPerGBratio,
