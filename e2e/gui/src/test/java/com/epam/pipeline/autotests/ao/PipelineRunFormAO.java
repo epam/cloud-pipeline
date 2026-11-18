@@ -473,8 +473,19 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return this;
     }
 
+    /**
+     * Replaces the value of an added system parameter. An added parameter gets its default value from the preference
+     * launch.system.parameters (e.g. "lfs" for CP_CAP_SHARE_FS_TYPE), and the input is a controlled one of the launch
+     * form. Selenide's setValue clears the input with WebElement.clear() and a blur, which don't change the form's
+     * value: a redraw before the typing puts the default back, and the value is typed after it (3676 then launched
+     * CP_CAP_SHARE_FS_TYPE=lfslustre, so its cluster got no Lustre FS). Selecting the text and typing over it changes
+     * the value as a user does; the check stops the test here if the value is still another.
+     */
     public PipelineRunFormAO inputSystemParameterValue(String parameter, String value) {
-        $(ParameterFieldAO.parameterByName(parameter).valueInput).shouldBe(enabled).setValue(value);
+        // the 0.16 launch form's value input of the parameter; typed over its default (see above)
+        final SelenideElement valueField = $(ParameterFieldAO.parameterByName(parameter).valueInput);
+        setValue(valueField, value);
+        valueField.shouldHave(exactValue(value));
         return this;
     }
 
