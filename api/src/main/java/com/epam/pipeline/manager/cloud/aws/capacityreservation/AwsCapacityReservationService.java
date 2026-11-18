@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud.aws.capacityreservation;
 
+import com.epam.pipeline.controller.vo.cluster.CapacitySpecification;
 import com.epam.pipeline.controller.vo.cluster.capacityreservation.CapacityBlockOfferingRequest;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockInstanceTypeInfo;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockOffering;
@@ -437,14 +438,15 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
      */
     @Override
     public List<CapacityBlockOffering> listCapacityBlockOfferings(final AbstractCloudRegion region,
-                                                                  final CapacityBlockOfferingRequest request) {
+                                                                  final CapacityBlockOfferingRequest request,
+                                                                  final CapacitySpecification candidate) {
         validateCapacityBlockDuration(request.getCapacityDurationHours());
-        validateCapacityBlockInstanceCount(request.getInstanceCount());
+        validateCapacityBlockInstanceCount(candidate.getInstanceCount());
         validateCapacityBlockStartDateRange(request.getStartDateRange());
         final DescribeCapacityBlockOfferingsRequest.Builder awsRequest = DescribeCapacityBlockOfferingsRequest
                 .builder()
-                .instanceType(request.getInstanceType())
-                .instanceCount(request.getInstanceCount())
+                .instanceType(candidate.getInstanceType())
+                .instanceCount(candidate.getInstanceCount())
                 .capacityDurationHours(request.getCapacityDurationHours())
                 .startDateRange(toInstant(request.getStartDateRange()));
         Optional.ofNullable(request.getEndDateRange())

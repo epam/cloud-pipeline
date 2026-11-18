@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cluster.capacityreservation.cloud;
 
+import com.epam.pipeline.controller.vo.cluster.CapacitySpecification;
 import com.epam.pipeline.controller.vo.cluster.capacityreservation.CapacityBlockOfferingRequest;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockInstanceTypeInfo;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockOffering;
@@ -54,7 +55,9 @@ import java.util.Optional;
  *
  * <p>{@link #listCapacityBlockOfferings} and {@link #listCapacityBlockInstanceTypes} are different from the rest.
  * They search a catalogue before any {@link CapacityReservation} exists, so they take a region directly instead
- * of a reservation.
+ * of a reservation. {@link #listCapacityBlockOfferings} is called once per candidate instance type a
+ * {@code CapacityBlockOfferingRequest} carries - fanning out across candidates is the caller's job, not this
+ * method's.
  */
 public interface CapacityReservationCloudService {
 
@@ -77,7 +80,8 @@ public interface CapacityReservationCloudService {
     Optional<CloudCapacityReservation> findByClientToken(CapacityReservation reservation, String clientToken);
 
     List<CapacityBlockOffering> listCapacityBlockOfferings(AbstractCloudRegion region,
-                                                            CapacityBlockOfferingRequest request);
+                                                            CapacityBlockOfferingRequest request,
+                                                            CapacitySpecification candidate);
 
     List<CapacityBlockInstanceTypeInfo> listCapacityBlockInstanceTypes(AbstractCloudRegion region);
 

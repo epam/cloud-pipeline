@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.controller.vo.cluster.capacityreservation;
 
+import com.epam.pipeline.controller.vo.cluster.CapacitySpecification;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockOffering;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockResourceType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,6 +25,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Search criteria for the capacity block offerings AWS sells now. No reservation exists at this point. This is
@@ -43,8 +46,12 @@ public class CapacityBlockOfferingRequest {
 
     private CapacityBlockResourceType resourceType;
 
-    private String instanceType;
-    private Integer instanceCount;
+    /**
+     * The instance types to search, each with its own count - one AWS call per entry. At least one is
+     * required. The response is a single list sorted by {@link CapacityBlockOffering#getStartDate()}
+     * ascending, regardless of which entry an offering came from.
+     */
+    private List<CapacitySpecification> candidates;
 
     /**
      * The date to start looking from. Required, unlike {@link #endDateRange}: AWS cannot answer a search that

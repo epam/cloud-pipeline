@@ -690,6 +690,16 @@ public class SystemPreferences {
                     new CapacityReservationMonitorSettings(1),
                     new TypeReference<CapacityReservationMonitorSettings>() {}, CLUSTER_GROUP,
                     isValidCapacityReservationMonitorSettings, true);
+
+    /**
+     * How many instance types a single capacity block offering search
+     * ({@code POST /cluster/capacity-reservation/offerings}) may ask about at once. {@code -1} disables the
+     * limit.
+     */
+    public static final IntPreference CLUSTER_CAPACITY_BLOCK_OFFERING_CANDIDATES_MAX_COUNT = new IntPreference(
+            "cluster.capacity.block.offering.candidates.max.count", 5,
+            CLUSTER_GROUP, isGreaterThan(0).or(isEquals(-1)));
+
     /**
      * How long, in seconds, the autoscaler waits for a run bound with CP_CAP_POOL_ID while its pool is taken by
      * another run. {@code 0} means wait without a limit. Default: 86400 (24 hours).
