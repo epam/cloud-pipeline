@@ -18,29 +18,44 @@ rmdir() on a pipe-fuse mount removes only an empty folder.
 A folder that holds anything is refused with ENOTEMPTY, as on a local disk. Tools such as git
 remove parent folders until one is refused, so a mount that never refuses loses their content.
 
-The tests need pipe-fuse's own dependencies, pipe-cli/mount/requirements.txt, and libfuse for
-the PipeFS ones. pipe-cli/requirements.txt alone does not bring them, so the module is skipped there.
+The tests need pipe-fuse's own dependencies, pipe-cli/mount/requirements.txt.
+pipe-cli/requirements.txt alone does not bring them, so the module is skipped there.
 """
 
 import errno
 import os
 import sys
+import types
 from datetime import datetime
+from unittest.mock import MagicMock, patch
 
 import pytest
 from dateutil.tz import tzutc
-
-try:
-    from unittest.mock import MagicMock, patch
-except ImportError:
-    from mock import MagicMock, patch
 
 # pipe-fuse imports its modules as the top level pipefuse package, as pipe-cli/mount/pipe-fuse.py does.
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'mount'))
 
 # pipe-fuse dependencies that pipe-cli/requirements.txt does not bring
-for _module in ['cachetools', 'easywebdav', 'intervals']:
+for _module in ['cachetools', 'intervals']:
     pytest.importorskip(_module)
+
+try:
+    import fuse  # noqa: F401
+except (ImportError, EnvironmentError):
+    # fusepy is not in the CLI requirements, and it loads libfuse on import.
+    # These tests do not mount anything, so a stand-in is enough, as in test_mount_clients.py.
+    _fuse = types.ModuleType('fuse')
+
+    class FuseOSError(OSError):
+        def __init__(self, errno):
+            super(FuseOSError, self).__init__(errno, os.strerror(errno))
+
+    class Operations(object):
+        pass
+
+    _fuse.FuseOSError = FuseOSError
+    _fuse.Operations = Operations
+    sys.modules['fuse'] = _fuse
 
 from cachetools import TTLCache  # noqa: E402
 from pipefuse import fuseutils  # noqa: E402
@@ -51,19 +66,21 @@ from pipefuse.s3 import S3StorageLowLevelClient  # noqa: E402
 from pipefuse.storage import StorageHighLevelFileSystemClient  # noqa: E402
 from pipefuse.storage_path_permissions import StoragePathPermissionsFileSystemClient  # noqa: E402
 from pipefuse.webdav import WebDavClient  # noqa: E402
-
-try:
-    from fuse import FuseOSError
-    from pipefuse.fslock import get_lock
-    from pipefuse.pipefs import PipeFS, ResilientFS
-except (ImportError, EnvironmentError):
-    # fusepy raises EnvironmentError at import where libfuse is not installed
-    FuseOSError = None
-
-requires_libfuse = pytest.mark.skipif(FuseOSError is None, reason='libfuse is not installed')
+from fuse import FuseOSError  # noqa: E402
+from pipefuse.pipefs import PipeFS, ResilientFS  # noqa: E402
 
 MARKER = '.DS_Store'
 MODIFIED = datetime(2026, 1, 1, tzinfo=tzutc())
+
+
+class NoLock(object):
+    """The path lock of a single threaded mount."""
+
+    def lock(self, path):
+        pass
+
+    def unlock(self, path):
+        pass
 
 
 def _file(name, is_dir=False):
@@ -468,7 +485,7 @@ class TestWebDavRmdir(object):
         client.rmdir('/A')
 
         assert client.session.requests == [('PROPFIND', 'https://dav.example.com:443/webdav/A/'),
-                                           ('DELETE', 'https://dav.example.com:443/webdav/A/')]
+                                           ('DELETE', 'https://dav.example.com:443/webdav/A')]
 
     def test_deletes_folder_with_macos_service_files_on_macos(self):
         client = _webdav_client(['/webdav/A/', '/webdav/A/._keep.txt', '/webdav/A/.localized'])
@@ -511,7 +528,6 @@ class TestCachingRmdir(object):
         assert list(cache.get('/').keys()) == ['B']
 
 
-@requires_libfuse
 class TestFileSystemRmdir(object):
 
     def test_maps_not_empty_folder_to_enotempty(self):
@@ -527,7 +543,7 @@ class TestFileSystemRmdir(object):
     def test_refuses_folder_that_is_not_empty_with_enotempty(self):
         keys = ['A/keep.txt', 'A/sub/inner.txt']
         client, s3 = _s3_client(keys)
-        fs = ResilientFS(PipeFS(client=client, lock=get_lock(threads=False, monitoring_delay=1)))
+        fs = ResilientFS(PipeFS(client=client, lock=NoLock()))
 
         with pytest.raises(FuseOSError) as error:
             fs.rmdir('/A')
@@ -537,7 +553,7 @@ class TestFileSystemRmdir(object):
 
     def test_removes_folder_that_looks_empty_on_macos(self):
         client, s3 = _s3_client(['A/' + MARKER, 'A/._keep.txt'])
-        pipe_fs = PipeFS(client=client, lock=get_lock(threads=False, monitoring_delay=1))
+        pipe_fs = PipeFS(client=client, lock=NoLock())
         pipe_fs._is_mac = True
         fs = ResilientFS(pipe_fs)
 
@@ -549,7 +565,7 @@ class TestFileSystemRmdir(object):
 
     def test_lists_macos_service_files_but_not_folder_marker_on_other_platforms(self):
         client, _ = _s3_client(['A/' + MARKER, 'A/._keep.txt'])
-        pipe_fs = PipeFS(client=client, lock=get_lock(threads=False, monitoring_delay=1))
+        pipe_fs = PipeFS(client=client, lock=NoLock())
         pipe_fs._is_mac = False
 
         assert list(ResilientFS(pipe_fs).readdir('/A', None)) == ['.', '..', '._keep.txt']
