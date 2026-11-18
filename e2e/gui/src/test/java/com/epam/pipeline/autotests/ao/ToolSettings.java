@@ -69,6 +69,9 @@ import static java.util.stream.Collectors.toList;
 
 public class ToolSettings extends ToolTab<ToolSettings> {
 
+    // clicks on the EXECUTION ENVIRONMENT header until the section stays open (expandExecEnvironment)
+    private static final int EXEC_ENVIRONMENT_CLICKS = 3;
+
     private final Map<Primitive, SelenideElement> elements;
 
     public ToolSettings(final ToolGroup toolGroup, final String toolName) {
@@ -110,13 +113,23 @@ public class ToolSettings extends ToolTab<ToolSettings> {
      * and each click on SETTINGS loads the tool again and draws a new form (client/.../tools/Tool.js), so after a
      * step that opened the tab again its fields (cmd template, instance and price type, disk, sensitive storages,
      * limit mounts) can't be typed into or clicked. The old form can still be shown right after that click, so the
-     * setters of these fields call this again just before they use them.
+     * setters of these fields call this again just before they use them. And the form can close the section once
+     * more when it finishes loading: EditToolForm.rebuildComponent keeps this.state, awaits its requests and then
+     * sets it back, with the openedPanels it read before them. So the section has to be still open a second after a
+     * click; otherwise its header is clicked again, up to EXEC_ENVIRONMENT_CLICKS times.
      */
     public ToolSettings expandExecEnvironment() {
         final SelenideElement section = get(EXEC_ENVIRONMENT).shouldBe(visible).closest(".ant-collapse-item");
-        if (!section.has(cssClass("ant-collapse-item-active"))) {
+        for (int click = 1; !section.has(cssClass("ant-collapse-item-active")); click++) {
+            if (click > EXEC_ENVIRONMENT_CLICKS) {
+                section.shouldHave(cssClass("ant-collapse-item-active"));
+            }
+            if (click > 1) {
+                System.out.printf("[WARN] EXECUTION ENVIRONMENT is closed after click %d of %d on it, clicking it again%n",
+                        click - 1, EXEC_ENVIRONMENT_CLICKS);
+            }
             click(EXEC_ENVIRONMENT);
-            section.shouldHave(cssClass("ant-collapse-item-active"));
+            sleep(1, SECONDS);
         }
         return this;
     }
@@ -205,7 +218,8 @@ public class ToolSettings extends ToolTab<ToolSettings> {
 
     public ToolSettings setDefaultCommand(final String command) {
         expandExecEnvironment();
-        SelenideElement defaultCommand = get(DEFAULT_COMMAND);
+        // in a closed section the editor stays in the page with no size, and the mouse can't be moved to it
+        SelenideElement defaultCommand = get(DEFAULT_COMMAND).shouldBe(visible);
         Utils.clearTextField(defaultCommand);
         Utils.clickAndSendKeysWithSlashes(defaultCommand, command);
         return this;
