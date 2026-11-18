@@ -427,7 +427,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     }
 
     private void dashboardShouldAppear() {
-        $(byId("navigation-button-home")).shouldBe(selectedMenuItem);
+        $(byId("navigation-button-dashboard")).shouldBe(selectedMenuItem);
         $(byClassName("home-page__global-container")).shouldBe(visible);
     }
 

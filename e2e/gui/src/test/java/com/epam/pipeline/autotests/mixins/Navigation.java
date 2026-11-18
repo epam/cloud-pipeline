@@ -48,14 +48,14 @@ public interface Navigation {
     Duration STOP_IMPERSONATION_TIMEOUT = Duration.ofSeconds(30);
 
     default NavigationMenuAO navigationMenu() {
-        final By pipelinesPageSelector = byId("navigation-button-pipelines");
+        final By pipelinesPageSelector = byId("navigation-button-library");
         $(pipelinesPageSelector).shouldBe(visible).click();
         $(pipelinesPageSelector).shouldBe(selectedMenuItem);
         return new NavigationMenuAO();
     }
 
     default NavigationHomeAO home() {
-        final By homePageSelector = byId("navigation-button-home");
+        final By homePageSelector = byId("navigation-button-dashboard");
         $(homePageSelector).shouldBe(visible).click();
         $(homePageSelector).shouldBe(selectedMenuItem);
         return new NavigationHomeAO();
