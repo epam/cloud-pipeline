@@ -425,22 +425,14 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     /**
      * Opens a storage from the "All storages" list. A click on the list can be lost: the list stays on the screen
      * and the storage page never opens (seen in TC-DATASTORAGES-2). The storage page has the URL
-     * {@code /storage/<id>}, so the storage is clicked again until it is shown, up to 3 times.
+     * {@code /storage/<id>}, so the storage is clicked again until it is shown, up to 3 times
+     * (Utils.clickUntilShown).
      */
     public StorageContentAO openStorageFromTable(String name) {
-        final SelenideElement storage = $(byXpath(
-                format(".//span[@class='object-name browser__object-name-bold'][.='%s']", name)));
-        for (int attempt = 1; ; attempt++) {
-            storage.shouldBe(visible).click();
-            try {
-                webdriver().shouldHave(urlContaining("/storage/"), ofSeconds(10));
-                return new StorageContentAO();
-            } catch (AssertionError e) {
-                if (attempt == 3) {
-                    throw e;
-                }
-            }
-        }
+        Utils.clickUntilShown(
+                $(byXpath(format(".//span[@class='object-name browser__object-name-bold'][.='%s']", name))),
+                () -> webdriver().shouldHave(urlContaining("/storage/"), ofSeconds(10)), 3);
+        return new StorageContentAO();
     }
 
     public PipelinesLibraryAO validateStoragePictogram(final String storage) {

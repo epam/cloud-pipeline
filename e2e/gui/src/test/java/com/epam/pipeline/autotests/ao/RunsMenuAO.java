@@ -29,6 +29,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -50,6 +51,7 @@ import static com.epam.pipeline.autotests.utils.C.ENDPOINT_INITIALIZATION_TIMEOU
 import static com.epam.pipeline.autotests.utils.C.SSH_APPEARING_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.elementWithText;
+import static com.epam.pipeline.autotests.utils.Utils.clickUntilShown;
 import static java.lang.String.format;
 import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -63,6 +65,12 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     private static final String GET_LOGS_ERROR = "get_logs_error";
     private static final long APPEARING_TIMEOUT = C.SSH_APPEARING_TIMEOUT;
+    // A run's STOP, PAUSE and RESUME links in the table open a confirmation right on the click: STOP a Modal.confirm,
+    // PAUSE and RESUME dialogs of their own, which load their data inside (client/.../run-table/columns/
+    // column-pause-resume.js, actions/pause-confirmation.js, resume-confirmation.js). A click can be lost while the
+    // table is redrawn, so a link is clicked again if its confirmation isn't shown after CONFIRMATION_WAIT.
+    private static final Duration CONFIRMATION_WAIT = Duration.ofSeconds(5);
+    private static final int CONFIRMATION_CLICKS = 3;
 
     private final Condition tableIsEmpty = new Condition("table is empty") {
         @Override
@@ -110,14 +118,18 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return new RunsMenuAO();
     }
 
+    /**
+     * Stops the run from the runs table: its STOP link opens a confirmation, and the STOP button of the confirmation
+     * stops the run. The link is clicked again if the confirmation isn't shown after CONFIRMATION_WAIT
+     * (Utils.clickUntilShown): a click can be lost if the table redraws during it. Before, the second click
+     * depended on isEnabled() of the confirmation's button, which threw ElementNotFound after 30 s when there was no
+     * confirmation (PauseResumeTest.stopRuns, right after two other runs were stopped).
+     */
     public RunsMenuAO stopRun(String runId) {
-        final SelenideElement runStopButton = $("#run-" + runId + "-stop-button");
-        runStopButton.shouldBe(enabled, ofMillis(DEFAULT_TIMEOUT)).click();
-        sleep(3, SECONDS);
-        if (!$(button("STOP")).isEnabled()) {
-            runStopButton.shouldBe(enabled, ofMillis(DEFAULT_TIMEOUT)).click();
-        }
-        $(button("STOP")).click();
+        final SelenideElement confirmationStopButton = $(button("STOP"));
+        clickUntilShown($("#run-" + runId + "-stop-button"),
+                () -> confirmationStopButton.shouldBe(visible, CONFIRMATION_WAIT), CONFIRMATION_CLICKS);
+        confirmationStopButton.click();
         return this;
     }
 
@@ -462,10 +474,13 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
      * name of a tool without its group and tag (client/src/components/runs/actions/pause-confirmation.js,
      * resume-confirmation.js, run-display-name.js). The confirm button stays disabled while the dialog loads its data:
      * the layers and commit checks of the run to pause, the instance types of the run to resume.
+     * A click on the PAUSE link can be lost while the table is redrawn: it is clicked again if the confirmation isn't
+     * shown after CONFIRMATION_WAIT, as in stopRun (EPMCMBIBPC-2632).
      */
     public RunsMenuAO pause(final String runId, final String pipelineName) {
-        $("#run-" + runId + "-pause-button").shouldBe(visible).click();
-        $(byClassName("ause-confirmation__body")).shouldBe(visible);
+        clickUntilShown($("#run-" + runId + "-pause-button"),
+                () -> $(byClassName("ause-confirmation__body")).shouldBe(visible, CONFIRMATION_WAIT),
+                CONFIRMATION_CLICKS);
         ensure(byClassName("ause-confirmation__title"), confirmationTitle("Do you want to pause", pipelineName))
                 .sleep(1, SECONDS)
                 .click(button("PAUSE"));
@@ -481,9 +496,14 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return this;
     }
 
+    /**
+     * Resumes the run from the runs table. The RESUME link is clicked again if its confirmation isn't shown after
+     * CONFIRMATION_WAIT, as in stopRun (EPMCMBIBPC-2632).
+     */
     public RunsMenuAO resume(final String runId, final String pipelineName) {
-        $("#run-" + runId + "-resume-button").shouldBe(visible).click();
-        $(byClassName("esume-confirmation__body")).shouldBe(visible);
+        clickUntilShown($("#run-" + runId + "-resume-button"),
+                () -> $(byClassName("esume-confirmation__body")).shouldBe(visible, CONFIRMATION_WAIT),
+                CONFIRMATION_CLICKS);
         ensure(byClassName("esume-confirmation__title"), confirmationTitle("Do you want to resume", pipelineName))
                 .sleep(1, SECONDS)
                 .click(button("RESUME"));
