@@ -86,7 +86,15 @@ function remove_nm {
 
 function install_nm {
   nm_version=$1
-  if [[ "$IS_RPM_BASED" = 0 ]]; then
+  if [ "$CP_NM_GNOME_DESKTOP" == "true" ]; then
+    # Rocky Linux 10 and later: GNOME on X11 in the NoMachine virtual display. GNOME has no X11 login session there,
+    # but runs on the X server of NoMachine
+    CP_NM_DEFAULT_DESKTOP_COMMAND="${CP_NM_DEFAULT_DESKTOP_COMMAND_EL10:-/bin/dbus-run-session gnome-session --session=gnome}"
+    gnome_desktop_setup install "$NOMACHINE_INSTALL_TASK" && \
+    wget -q "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/nomachine_${nm_version}_x86_64.rpm" -O nomachine.rpm && \
+    yum install -y nomachine.rpm && \
+    rm -f nomachine.rpm || return 1
+  elif [[ "$IS_RPM_BASED" = 0 ]]; then
     os_ver=$(. /etc/os-release;echo $ID-${VERSION_ID//.})
     CP_NM_DEFAULT_DESKTOP_COMMAND="${CP_NM_DEFAULT_DESKTOP_COMMAND_RPM:-/usr/bin/startxfce4}"
     wget -q "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/xfce4-$os_ver.tar.gz" -O xfcedesktop.tar.gz && \
@@ -157,7 +165,15 @@ function install_nm_extras {
 }
 
 function run_nomachine() {
-    su -l "$OWNER" bash -c "cp -rT /etc/nomachine/xfce/ \$HOME/"
+    if [ "$CP_NM_GNOME_DESKTOP" == "true" ]; then
+        # The GNOME defaults (incl. the keyboard layouts) are set before the desktop session starts. GDM is not used:
+        # GNOME runs in the NoMachine display. It is enabled by the GNOME packages, and would start with an image,
+        # committed from the run
+        gnome_desktop_setup configure "$NOMACHINE_INSTALL_TASK"
+        systemctl mask --now gdm.service
+    else
+        su -l "$OWNER" bash -c "cp -rT /etc/nomachine/xfce/ \$HOME/"
+    fi
 
     mkdir -p /home/${OWNER}/Desktop
     chown ${OWNER} /home/${OWNER}/Desktop
@@ -168,14 +184,19 @@ function run_nomachine() {
     sed -i '/#CreateDisplay/c\CreateDisplay 1' /usr/NX/etc/server.cfg
     sed -i "/#DisplayOwner/c\DisplayOwner $OWNER" /usr/NX/etc/server.cfg
 
-    sed -i '/#UserScriptAfterSessionStart/c\UserScriptAfterSessionStart "/etc/nomachine/set_xkb.sh"' /usr/NX/etc/node.cfg
+    if [ "$CP_NM_GNOME_DESKTOP" == "true" ]; then
+        # GNOME installs firewall-cmd, but firewalld does not run in a container: NoMachine would wait for it
+        sed -i '/#EnableFirewallConfiguration/c\EnableFirewallConfiguration 0' /usr/NX/etc/server.cfg
+    else
+        sed -i '/#UserScriptAfterSessionStart/c\UserScriptAfterSessionStart "/etc/nomachine/set_xkb.sh"' /usr/NX/etc/node.cfg
 
-    cat >/etc/nomachine/set_xkb.sh <<'EOL'
+        cat >/etc/nomachine/set_xkb.sh <<'EOL'
 #!/bin/sh
 DISPLAY=:1001.0
 XAUTHORITY=/home/$2/.Xauthority /usr/bin/setxkbmap -model pc105 -layout us,fr,de -option grp:ctrl_shift_toggle -display $DISPLAY
 EOL
-    chmod +x /etc/nomachine/set_xkb.sh
+        chmod +x /etc/nomachine/set_xkb.sh
+    fi
 
     CP_VNC_CAPS_FILE="/caps.sh"
     if [ -f $CP_VNC_CAPS_FILE ]; then
@@ -196,6 +217,18 @@ EOL
 /usr/bin/rpm -q -f /usr/bin/rpm >/dev/null 2>&1
 IS_RPM_BASED=$?
 
+# Rocky Linux, RHEL and CentOS 10 and later have no Xfce: the GNOME desktop is used there (see gnome_desktop_setup),
+# with NoMachine 9.8.2, as the earlier versions do not offer its display. NoMachine cannot start its node there without
+# systemd as PID 1
+if gnome_desktop_setup applies; then
+    export CP_NM_GNOME_DESKTOP="true"
+    NM_TARGET_VERSION="${CP_CAP_DESKTOP_NM_VERSION_EL10:-9.8.2_1}"
+    if [ "$(cat /proc/1/comm 2>/dev/null)" != "systemd" ]; then
+        pipe_log_fail "NoMachine on ${CP_OS} ${CP_VER} needs systemd: enable the SystemD capability (CP_CAP_SYSTEMD_CONTAINER) for the run" "$NOMACHINE_INSTALL_TASK"
+        exit 1
+    fi
+fi
+
 export LANG="en_US.UTF-8"
 export LANGUAGE=en_US
 if [[ "$IS_RPM_BASED" -ne 0 ]]; then
@@ -213,7 +246,8 @@ IS_NM_INSTALLED=$?
 if [ $IS_NM_INSTALLED -eq 0 ]; then
     NOMACHINE_REPAIR_LOG="/var/log/nomachine_repair.log"
     NM_CURRENT_VERSION=$(get_installed_nm_version)
-    if [ "$NM_CURRENT_VERSION" == "$NM_TARGET_VERSION" ]; then
+    # The package reports e.g. 9.8.2-1 for the version 9.8.2_1 of its file name
+    if [ "$NM_CURRENT_VERSION" == "${NM_TARGET_VERSION//_/-}" ]; then
         pipe_log_info "--> NoMachine installed already" "$NOMACHINE_INSTALL_TASK"
     else
         pipe_log_info "--> NoMachine installed, but version found [$NM_CURRENT_VERSION] differs from the target one [$NM_TARGET_VERSION]" "$NOMACHINE_INSTALL_TASK"
