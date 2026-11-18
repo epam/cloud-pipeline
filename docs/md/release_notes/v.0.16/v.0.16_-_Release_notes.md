@@ -49,6 +49,7 @@
 - [A run can ask for a new node](#a-run-can-ask-for-a-new-node)
 - [WDL and Luigi pipelines are no longer supported](#wdl-and-luigi-pipelines-are-no-longer-supported)
 - [OIDC token exchange](#oidc-token-exchange)
+- [NoMachine on Rocky Linux 10](#nomachine-on-rocky-linux-10)
 
 ***
 
@@ -987,6 +988,20 @@ The exchange never creates a user: the user has to exist in Cloud Pipeline alrea
 > **_Note_**: upgrading removes the stored web sessions. The security context is held in the database with Java serialization, and it gained fields for this feature, which makes a session written by an earlier version unreadable - so clearing them avoids an error on the first request after the upgrade. A signed-in GUI user is sent through the sign-in of the identity provider again on the next request; where their session at the identity provider is still valid, that needs no input from them. Three things to know when planning the upgrade: restart the API service with the old replicas out of service, because a rolling upgrade lets an old replica keep writing sessions the new one cannot read; clear the sessions by hand if the service is ever rolled back, since the migration runs only once; and expect the platform usage report to show no online users for the interval covering the upgrade, as that figure is derived from the stored sessions.
 
 For more details see [here](../../manual/12_Manage_Settings/12.16._OIDC_token_exchange.md).
+
+***
+
+## NoMachine on Rocky Linux 10
+
+Rocky Linux 10, RHEL 10 and CentOS Stream 10 have no Xfce, also not in EPEL, and `tools/nomachine` of the distribution URL has no Xfce bundle for them. So the NoMachine desktop (`CP_CAP_DESKTOP_NM`) previously failed to install on them: "Failed to install NoMachine".
+
+In the current version, NoMachine runs the GNOME desktop there, on X11 in the virtual display of NoMachine 9.8.2 (`nomachine_9.8.2_1_x86_64.rpm` in `tools/nomachine` of the distribution URL). As the Xfce desktop, it has no wallpaper and the keyboard layouts `us`, `fr` and `de`. It has no screen lock either. Rocky Linux 8 and 9 keep Xfce.
+
+Such a run needs the **SystemD** capability (`CP_CAP_SYSTEMD_CONTAINER`) together with **NoMachine**, as NoMachine cannot start a desktop there without systemd. Without it, the `NoMachineInitialization` task of the run fails at once: "NoMachine on rocky 10.2 needs systemd", and the run goes on without a desktop.
+
+Also, on any distribution, a run whose image has NoMachine already, e.g. an image committed from a NoMachine run, no longer installs the same version again at each start. Previously, a version set as in the package file name (e.g. `CP_CAP_DESKTOP_NM_VERSION=8.4.2_1`) never matched the installed one (`8.4.2-1`), so the run downloaded and installed it again.
+
+For more details see [here](../../manual/10_Manage_Tools/10.3._Add_a_Tool.md#supported-os-families).
 
 ***
 
