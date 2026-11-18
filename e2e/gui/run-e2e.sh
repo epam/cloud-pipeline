@@ -50,8 +50,11 @@
 #
 # --dummy-session skips all of that: a dedicated account (created with ROLE_ADMIN if it does not exist yet, default
 # name E2E_ADMIN) gets a session made in the API database instead of an SSO sign-in (scripts/admin-session.sh
-# create), with no browser and no human needed. Needs CP_API_JWT_DISABLE_SESSION=false in the cp-config-global
-# config map; real deployments already set it, a dev stand may not.
+# create), with no browser and no human needed. The session is made after the platform preparation and lasts the
+# --timeout plus 2 hours (E2E_DUMMY_SESSION_SECONDS overrides it); it is deleted at the end, and the account is
+# blocked. An existing account is used only if --dummy-session made it (user attribute e2e-dummy-session). Needs
+# CP_API_JWT_DISABLE_SESSION not to be true in the cp-config-global config map (without the key the API image
+# defaults it to false). These are checked before anything else is done (admin-session.sh precheck).
 #
 # The run takes many hours (the full suite is not timed on this line): run it detached, e.g.
 #   nohup ./run-e2e.sh > e2e-run.out 2>&1 &
@@ -75,6 +78,8 @@
 #   --dummy-session        Sign in as a dedicated non-SSO account instead of an administrator's browser session
 #                          (E2E_DUMMY_SESSION=true; mutually exclusive with --conf and E2E_ADMIN_SESSION)
 #   --dummy-session-user <name>  Account --dummy-session uses (default: E2E_ADMIN; E2E_DUMMY_SESSION_USER)
+#   --dummy-session-email <address>  "email" attribute set on that account, read by TC-NOTIFICATION-01
+#                          (E2E_DUMMY_SESSION_EMAIL; default: none, the account keeps the one it has)
 #   -h|--help
 
 set -o pipefail
@@ -98,6 +103,7 @@ _TIMEOUT_HOURS=24
 _MIN_SSO_HOURS=""
 _DUMMY_SESSION="${E2E_DUMMY_SESSION:-false}"
 _DUMMY_SESSION_USER="${E2E_DUMMY_SESSION_USER:-E2E_ADMIN}"
+_DUMMY_SESSION_EMAIL="${E2E_DUMMY_SESSION_EMAIL:-}"
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -117,13 +123,20 @@ while [ $# -gt 0 ]; do
         --min-sso-hours) _MIN_SSO_HOURS="$2"; shift 2 ;;
         --dummy-session) _DUMMY_SESSION="true"; shift ;;
         --dummy-session-user) _DUMMY_SESSION_USER="$2"; shift 2 ;;
-        -h|--help) sed -n '17,78p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        --dummy-session-email) _DUMMY_SESSION_EMAIL="$2"; shift 2 ;;
+        -h|--help) sed -n '17,83p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) e2e_die "Unknown option $1 (see --help)" ;;
     esac
 done
 if [ "$_DUMMY_SESSION" == "true" ]; then
     { [ -z "$_CONF" ] && [ -z "$E2E_ADMIN_SESSION" ]; } || \
         e2e_die "--dummy-session is mutually exclusive with --conf and E2E_ADMIN_SESSION"
+    # The session is a ROLE_ADMIN one a killed runner leaves behind: it lasts the tests' timeout plus 2 hours (the
+    # tests config, the users unblocking and the platform state snapshot run between its creation and the tests)
+    [[ "$_TIMEOUT_HOURS" =~ ^[0-9]+$ ]] && [ "$_TIMEOUT_HOURS" -gt 0 ] || \
+        e2e_die "--dummy-session needs a --timeout of 1 hour or more: its session lasts that plus 2 hours"
+    _DUMMY_SESSION_SECONDS="${E2E_DUMMY_SESSION_SECONDS:-$(( (_TIMEOUT_HOURS + 2) * 3600 ))}"
+    [[ "$_DUMMY_SESSION_SECONDS" =~ ^[0-9]+$ ]] || e2e_die "E2E_DUMMY_SESSION_SECONDS must be a number of seconds"
 fi
 
 e2e_require_tools docker kubectl curl jq
@@ -150,9 +163,14 @@ _WHOAMI="$(cp_api_payload GET whoami)" || e2e_die "The platform API is not acces
 [ "$(jq -r '.admin' <<< "$_WHOAMI")" == "true" ] || e2e_die "The API token does not belong to an administrator"
 
 # The admin browser session the tests sign in with (SSO sign-in; see scripts/generate-config.sh), unless
-# --dummy-session makes one for a dedicated non-SSO account instead: that happens in step 3 below, together with
-# its extension (admin-session.sh create does both in one step), so the checks here - that it outlives 60 s, that
-# its SSO authentication does not end soon - apply only to a human-supplied session, which --dummy-session has none of
+# --dummy-session makes one for a dedicated non-SSO account instead: that happens after the platform preparation in
+# step 3 below, together with its extension (admin-session.sh create does both in one step), so the checks here -
+# that it outlives 60 s, that its SSO authentication does not end soon - apply only to a human-supplied session,
+# which --dummy-session has none of. What can be checked of --dummy-session is checked here instead.
+if [ "$_DUMMY_SESSION" == "true" ]; then
+    bash "$E2E_SCRIPTS_DIR/admin-session.sh" precheck --user "$_DUMMY_SESSION_USER" \
+        ${_DUMMY_SESSION_EMAIL:+--email "$_DUMMY_SESSION_EMAIL"} || e2e_die "--dummy-session can't be used as given"
+fi
 _ADMIN_SESSION_FILE="${E2E_ADMIN_SESSION_FILE:-$HOME/.cp-e2e/admin-session}"
 export E2E_ADMIN_SESSION_FILE="$_ADMIN_SESSION_FILE"
 if [ "$_DUMMY_SESSION" != "true" ] && [ -z "$E2E_ADMIN_SESSION" ] && [ -z "$_CONF" ]; then
@@ -384,17 +402,8 @@ trap 'e2e_warn "Interrupted"; exit 130' INT TERM
 
 # The admin session must not expire while the tests run (default inactivity timeout 30 min): extended in the API
 # database for the run (E2E_SESSION_EXTENSION_SECONDS, default 30 days), restored at the end. --dummy-session makes
-# and extends its own session here instead (admin-session.sh create), rather than extending a human-supplied one.
-if [ "$_DUMMY_SESSION" == "true" ]; then
-    _SESSION_EXTENDED="true"
-    bash "$E2E_SCRIPTS_DIR/admin-session.sh" create --state "$_PRIVATE_DIR/session" --user "$_DUMMY_SESSION_USER" \
-        --seconds "${E2E_SESSION_EXTENSION_SECONDS:-2592000}" 2>&1 | tee "$_ARTIFACTS_DIR/admin-session.log" \
-        || e2e_die "Unable to create a database-made session for $_DUMMY_SESSION_USER"
-    E2E_ADMIN_SESSION="$(jq -r '.session' "$_PRIVATE_DIR/session/admin-session.json")"
-    # Already patched past the 60 s deadline: generate-config.sh's own outlive check (gated on this variable) would
-    # otherwise re-prove that with a pointless extra 65 s wait on every run.
-    export E2E_ADMIN_SESSION E2E_ADMIN_SESSION_CHECKED="$_DUMMY_SESSION_USER"
-elif [ -z "$_CONF" ]; then
+# and extends its own session after the preparation instead, rather than extending a human-supplied one.
+if [ "$_DUMMY_SESSION" != "true" ] && [ -z "$_CONF" ]; then
     _SESSION_EXTENDED="true"
     bash "$E2E_SCRIPTS_DIR/admin-session.sh" extend --state "$_PRIVATE_DIR/session" \
         --seconds "${E2E_SESSION_EXTENSION_SECONDS:-2592000}" 2>&1 | tee "$_ARTIFACTS_DIR/admin-session.log" \
@@ -406,6 +415,21 @@ if [ "$_SKIP_PREPARE" != "true" ]; then
     _PREPARED="true"
     bash "$E2E_SCRIPTS_DIR/platform-prepare.sh" prepare --state "$_PRIVATE_DIR/prepare" --users "$_TEST_USERS" \
         2>&1 | tee "$_ARTIFACTS_DIR/platform-prepare.log" || e2e_die "Platform preparation failed"
+fi
+
+# Made only now, so that its lifetime (_DUMMY_SESSION_SECONDS) counts from close to the start of the tests; deleted at
+# the end, together with blocking the account (admin-session.sh restore)
+if [ "$_DUMMY_SESSION" == "true" ]; then
+    _SESSION_EXTENDED="true"
+    bash "$E2E_SCRIPTS_DIR/admin-session.sh" create --state "$_PRIVATE_DIR/session" --user "$_DUMMY_SESSION_USER" \
+        --seconds "$_DUMMY_SESSION_SECONDS" ${_DUMMY_SESSION_EMAIL:+--email "$_DUMMY_SESSION_EMAIL"} \
+        2>&1 | tee "$_ARTIFACTS_DIR/admin-session.log" \
+        || e2e_die "Unable to create a database-made session for $_DUMMY_SESSION_USER"
+    E2E_ADMIN_SESSION="$(jq -r '.session' "$_PRIVATE_DIR/session/admin-session.json")"
+    # Already patched past the 60 s deadline and checked: generate-config.sh's own outlive check (skipped when this
+    # variable names the session user, in the API's spelling) would only add a 65 s wait
+    E2E_ADMIN_SESSION_CHECKED="$(jq -r '.principal' "$_PRIVATE_DIR/session/admin-session.json")"
+    export E2E_ADMIN_SESSION E2E_ADMIN_SESSION_CHECKED
 fi
 
 # --- 4. tests config (after the preparation: the tokens of the fixture users carry their roles) -------------------------
