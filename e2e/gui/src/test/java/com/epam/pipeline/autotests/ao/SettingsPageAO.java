@@ -780,8 +780,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                  * Opens the user dialog and waits until it has opened. Its antd 2 Modal zooms in for 0.2 s, from the
                  * point of the click that opened it, so a button of the dialog moves meanwhile. A click sent then
                  * can land where the button was, on the dialog's background, and do nothing: the most likely
-                 * cause of an EPMCMBIBPC-3167 failure that clicked DELETE right after the dialog opened. The callers click at once, for example DELETE, BLOCK, UNBLOCK, CONFIGURE (Run as),
-                 * the role selector, a role's delete button, the price type field and IMPERSONATE.
+                 * cause of an EPMCMBIBPC-3167 failure that clicked DELETE right after the dialog opened. The
+                 * callers click at once, for example DELETE, BLOCK, UNBLOCK, CONFIGURE (Run as), the role
+                 * selector, a role's delete button, the price type field and IMPERSONATE.
                  */
                 public EditUserPopup edit() {
                     click(EDIT);
@@ -891,8 +892,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                      * Clicks the DELETE, BLOCK or UNBLOCK button of the dialog and confirms. The button opens its
                      * confirmation at once (Modal.confirm in client/.../settings/forms/EditUserRolesDialog/index.js),
                      * but a click can still be lost: EPMCMBIBPC-3167 once clicked DELETE right after the dialog
-                     * opened, most likely while it zoomed in (see UserEntry.edit, which now waits for that). No confirmation came, no delete request reached the API, and ensureTitleIs failed after
-                     * its timeout. The button is clicked again if the confirmation isn't shown after
+                     * opened, most likely while it zoomed in (see UserEntry.edit, which now waits for that). No
+                     * confirmation came, no delete request reached the API, and ensureTitleIs failed after its
+                     * timeout. The button is clicked again if the confirmation isn't shown after
                      * USER_CONFIRMATION_WAIT (Utils.clickUntilShown).
                      */
                     private void clickAndConfirm(final Primitive button, final String title) {
