@@ -118,7 +118,17 @@ function cp_db_sql {
     local _pod="${CP_API_DB_POD:-}"
     [ "$_pod" ] || _pod="$(kubectl get po -n "$CP_KUBE_NAMESPACE" -l cloud-pipeline/cp-api-db=true \
         --field-selector=status.phase=Running -o jsonpath='{.items[0].metadata.name}' 2> /dev/null)"
-    [ "$_pod" ] || { e2e_err "The API database pod is not found (label cloud-pipeline/cp-api-db=true)"; return 1; }
+    # Else the pod behind the service the API connects to (PSG_HOST), e.g. a database deployed with its version in the
+    # name (cp-api-db-16, label cloud-pipeline/cp-api-db-16=true), which an older one may still run beside
+    if [ -z "$_pod" ]; then
+        local _svc
+        _svc="$(cp_config PSG_HOST)"
+        _svc="${_svc%%.*}"
+        [ "$_svc" ] && _pod="$(kubectl get endpoints -n "$CP_KUBE_NAMESPACE" "$_svc" \
+            -o jsonpath='{.subsets[0].addresses[0].targetRef.name}' 2> /dev/null)"
+    fi
+    [ "$_pod" ] || { e2e_err "The API database pod is not found (label cloud-pipeline/cp-api-db=true, or behind the" \
+        "service of PSG_HOST; CP_API_DB_POD names it)"; return 1; }
     local _user="$(cp_config PSG_USER)" _db="$(cp_config PSG_DB)"
     kubectl exec -i -n "$CP_KUBE_NAMESPACE" "$_pod" -- \
         psql -U "${_user:-pipeline}" -d "${_db:-pipeline}" -v ON_ERROR_STOP=1 -At -F $'\t' -q -f -

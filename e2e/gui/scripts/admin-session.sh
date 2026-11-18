@@ -43,8 +43,8 @@
 # by "extend" and "sso"; "watch" and "restore" (and "sso" with --state) use the copy kept in <dir> (0700). "create"
 # needs none of that: it mints the session itself and is the one command that writes <dir> from scratch.
 # It is a row of the API database table pipeline.spring_session (Spring Session JDBC): the update is done with psql in
-# the API database pod (label cloud-pipeline/cp-api-db=true, CP_API_DB_POD overrides it), the session id is passed
-# through stdin, never on a command line.
+# the API database pod (label cloud-pipeline/cp-api-db=true, else the pod behind the service of PSG_HOST, such as
+# cp-api-db-16; CP_API_DB_POD overrides both), the session id is passed through stdin, never on a command line.
 #
 # The SSO authentication has an end of its own that no session extension changes: the API signs in with Spring SAML,
 # whose authentication stops being valid at the earliest SessionNotOnOrAfter of the SAML assertion

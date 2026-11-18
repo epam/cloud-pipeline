@@ -97,17 +97,33 @@ function _tools {
         (.tools[]? | {type: "tool", id, name: .image, owner, createdDate, registry: $r.path})]'
 }
 
-# Repositories of each registry: ["<registry path>/<repository>"]
+# Repositories of each registry: ["<registry path>/<repository>"], or null when a registry does not list them (no
+# catalog token, or an answer that is not a catalog, e.g. HTTP 502 from a registry behind a proxy): the cleanup then
+# keeps the registry images of every tool it deletes, as it can't tell which images the tests pushed
 function _catalog {
-    local _user="$(cp_api_payload GET whoami | jq -r '.userName')"
-    local _registry _token
+    local _user _registry _token _answer _code _repos _lines=""
+    _user="$(cp_api_payload GET whoami | jq -r '.userName')"
     for _registry in $(cp_api_payload GET dockerRegistry/loadTree | jq -r '.registries[].path'); do
         _token="$(curl -s -k --noproxy "${_registry%%:*}" -u "$_user:$CP_API_TOKEN" \
-            "$CP_API_URL/dockerRegistry/oauth?service=$_registry&scope=registry:catalog:*" | jq -r '.token // empty')"
-        [ "$_token" ] || { e2e_err "Unable to get a catalog token for $_registry"; return 1; }
-        curl -s -k --noproxy "${_registry%%:*}" -H "Authorization: Bearer $_token" "https://$_registry/v2/_catalog?n=100000" \
-            | jq -r --arg r "$_registry" '.repositories[]? | "\($r)/\(.)"' || return 1
-    done | jq -R . | jq -s '.'
+            "$CP_API_URL/dockerRegistry/oauth?service=$_registry&scope=registry:catalog:*" | jq -r '.token // empty' 2> /dev/null)"
+        if [ -z "$_token" ]; then
+            e2e_warn "No catalog token for the registry $_registry: the cleanup keeps the registry images of the tools"
+            echo null
+            return 0
+        fi
+        _answer="$(curl -s -k --noproxy "${_registry%%:*}" -w '\n%{http_code}' -H "Authorization: Bearer $_token" \
+            "https://$_registry/v2/_catalog?n=100000")"
+        _code="${_answer##*$'\n'}"
+        if [ "$_code" != "200" ] || \
+                ! _repos="$(jq -r --arg r "$_registry" '.repositories[]? | "\($r)/\(.)"' <<< "${_answer%$'\n'*}" 2> /dev/null)"; then
+            e2e_warn "The registry $_registry does not list its repositories (HTTP $_code): the cleanup keeps the" \
+                "registry images of the tools"
+            echo null
+            return 0
+        fi
+        _lines+="${_repos:+$_repos$'\n'}"
+    done
+    printf '%s' "$_lines" | jq -R . | jq -s '.'
 }
 
 function _preferences {
@@ -279,8 +295,10 @@ _NEW_TOOLS="$(jq -r --argjson owners "$_OWNERS_JSON" --slurpfile old "$_DIR/tool
     | "\(.type)\t\(.id)\t\(.name)\t\(.registry)"' "$_NOW/tools.json")"
 while IFS=$'\t' read -r _type _id _name _reg; do
     [ "$_id" ] && [ "$_type" == "tool" ] || continue
-    if jq -e --arg r "$_reg/$_name" 'index($r) != null' "$_DIR/catalog.json" > /dev/null; then
-        _do "Delete tool $_reg/$_name (the image existed before the tests and is kept)" DELETE "tool/delete?registry=$_reg&image=$_name&hard=false"
+    # A catalog of null (not listed by the registry) keeps every image
+    if jq -e --arg r "$_reg/$_name" '. == null or index($r) != null' "$_DIR/catalog.json" > /dev/null; then
+        _do "Delete tool $_reg/$_name (the image existed before the tests, or the registry does not list its images: it is kept)" \
+            DELETE "tool/delete?registry=$_reg&image=$_name&hard=false"
     else
         _do "Delete tool $_reg/$_name with its registry images" DELETE "tool/delete?registry=$_reg&image=$_name&hard=true"
     fi
