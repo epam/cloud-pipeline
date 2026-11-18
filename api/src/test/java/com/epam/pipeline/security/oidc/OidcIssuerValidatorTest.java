@@ -36,6 +36,8 @@ public class OidcIssuerValidatorTest {
     private static final String CLAIM = "repository_id";
     private static final String CLAIM_VALUE = "456789";
     private static final String USER_NAME = "GITHUB_CI_DEPLOY";
+    private static final String OWNER_CLAIM = "repository_owner";
+    private static final String OWNER_KEY = "github_owner";
     private static final String USER_CLAIM = "preferred_username";
     private static final String ROLE_USER = "ROLE_USER";
     private static final String JWKS_URI = "https://provider.local/keys";
@@ -451,5 +453,83 @@ public class OidcIssuerValidatorTest {
         final Map<String, Object> keySet = new HashMap<>();
         keySet.put(KEYS_FIELD, Collections.singletonList(key));
         return keySet;
+    }
+
+    private static OidcAssumeStrategy mappedUser() {
+        final OidcAssumeStrategy strategy = new OidcAssumeStrategy();
+        strategy.setType(OidcAssumeStrategyType.MAPPED_USER);
+        strategy.setUserMapping(mapping(OWNER_CLAIM, OWNER_KEY));
+        return strategy;
+    }
+
+    private static OidcUserMapping mapping(final String claim, final String metadataKey) {
+        final OidcUserMapping mapping = new OidcUserMapping();
+        mapping.setClaim(claim);
+        mapping.setMetadataKey(metadataKey);
+        return mapping;
+    }
+
+    @Test
+    public void shouldAcceptMappedUserStrategy() {
+        assertThat(isValid(withStrategy(mappedUser()))).isTrue();
+    }
+
+    @Test
+    public void shouldAcceptMappedUserStrategyWithUserLists() {
+        final OidcAssumeStrategy strategy = mappedUser();
+        strategy.setAllowedUsers(Collections.singletonList(USER_NAME));
+        strategy.setDeniedUsers(Collections.singletonList("SOMEBODY_ELSE"));
+        assertThat(isValid(withStrategy(strategy))).isTrue();
+    }
+
+    @Test
+    public void shouldRejectMappedUserStrategyWithoutAMapping() {
+        final OidcAssumeStrategy strategy = mappedUser();
+        strategy.setUserMapping(null);
+        assertThat(isValid(withStrategy(strategy))).isFalse();
+    }
+
+    @Test
+    public void shouldRejectMappedUserStrategyWithoutItsClaim() {
+        final OidcAssumeStrategy withoutClaim = mappedUser();
+        withoutClaim.setUserMapping(mapping(null, OWNER_KEY));
+        assertThat(isValid(withStrategy(withoutClaim))).isFalse();
+
+        final OidcAssumeStrategy blankClaim = mappedUser();
+        blankClaim.setUserMapping(mapping(" ", OWNER_KEY));
+        assertThat(isValid(withStrategy(blankClaim))).isFalse();
+    }
+
+    @Test
+    public void shouldRejectMappedUserStrategyWithoutItsMetadataKey() {
+        final OidcAssumeStrategy withoutKey = mappedUser();
+        withoutKey.setUserMapping(mapping(OWNER_CLAIM, null));
+        assertThat(isValid(withStrategy(withoutKey))).isFalse();
+
+        final OidcAssumeStrategy blankKey = mappedUser();
+        blankKey.setUserMapping(mapping(OWNER_CLAIM, " "));
+        assertThat(isValid(withStrategy(blankKey))).isFalse();
+    }
+
+    @Test
+    public void shouldRejectMappedUserStrategyCarryingTheOtherTypesFields() {
+        final OidcAssumeStrategy withUser = mappedUser();
+        withUser.setUser(USER_NAME);
+        assertThat(isValid(withStrategy(withUser))).isFalse();
+
+        final OidcAssumeStrategy withUserClaim = mappedUser();
+        withUserClaim.setUserClaim(USER_CLAIM);
+        assertThat(isValid(withStrategy(withUserClaim))).isFalse();
+    }
+
+    @Test
+    public void shouldRejectTheOtherStrategyTypesCarryingAMapping() {
+        final OidcAssumeStrategy specific = specificUser();
+        specific.setUserMapping(mappedUser().getUserMapping());
+        assertThat(isValid(withStrategy(specific))).isFalse();
+
+        final OidcAssumeStrategy requested = requestedUser();
+        requested.setUserMapping(mappedUser().getUserMapping());
+        assertThat(isValid(withStrategy(requested))).isFalse();
     }
 }

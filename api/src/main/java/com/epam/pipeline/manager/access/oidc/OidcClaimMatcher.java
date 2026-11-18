@@ -118,7 +118,7 @@ public final class OidcClaimMatcher {
      * {@code aud} into a list of one, and an administrator identifying a caller by its audience
      * will write the obvious condition and would otherwise never match anything.
      */
-    private static String asText(final Object value) {
+    static String asText(final Object value) {
         if (value instanceof String) {
             return (String) value;
         }
