@@ -114,6 +114,7 @@
     - [Git synchronization: a new GitLab 9 user has to confirm the email](#git-synchronization-a-new-gitlab-9-user-has-to-confirm-the-email)
     - [Autoscaler keeps a free node for a waiting run that may not get it](#autoscaler-keeps-a-free-node-for-a-waiting-run-that-may-not-get-it)
     - [Rocky Linux and RHEL runs: NICE DCV and SGE fail to install on Rocky Linux 9, and systemd is set up when it is not requested](#rocky-linux-and-rhel-runs-nice-dcv-and-sge-fail-to-install-on-rocky-linux-9-and-systemd-is-set-up-when-it-is-not-requested)
+    - [`pipe storage mount`: removing a folder that is not empty deletes all its content](#pipe-storage-mount-removing-a-folder-that-is-not-empty-deletes-all-its-content)
 
 ***
 
@@ -2465,3 +2466,11 @@ Now:
 - Docker in Docker puts NVIDIA's key into `/etc/apt/keyrings/nvidia-docker.asc`, which its list names, and uses NVIDIA's 22.04 list for the Ubuntu releases after 22.04. With an apt older than 1.4 (Ubuntu 16.04), it imports the key with `apt-key`, as before
 
 Please note: a run adds the Cloud Pipeline repository only if the distribution has one for its OS version. The public distribution has Ubuntu 16.04 to 22.04 and Debian 8 to 10. So with the public distribution URL, runs on Ubuntu 24.04 and later still get no Cloud Pipeline repository. A deployment that needs it there has to host `tools/repos/ubuntu/<version>` of its own distribution URL. See [Cloud Pipeline apt repository for Ubuntu 24.04 and later](#cloud-pipeline-apt-repository-for-ubuntu-2404-and-later).
+
+### `pipe storage mount`: removing a folder that is not empty deletes all its content
+
+[#4886](https://github.com/epam/cloud-pipeline/issues/4886)
+
+Previously, on a storage mounted by `pipe` FUSE - an object storage that a run mounts into `/cloud-data`, or a storage mounted by `pipe storage mount` - `rmdir` of a folder that is not empty deleted every file in the folder and in its subfolders, and succeeded. On a local disk, `rmdir` fails with "Directory not empty" for such a folder. This was so for object storages (S3, GCS) and for file storages mounted over WebDAV. Tools that rely on this error lost data. For example, after git removes a file, it removes the parent folders one by one, until one of them is not empty. On a mounted storage, no folder was refused. So a `git rm` or a `git rebase` in a repository on a mounted storage could delete untracked files, the whole repository and the folders next to it, up to the mount point.
+
+Now, `rmdir` of a folder that holds any file or folder fails with "Directory not empty" (`ENOTEMPTY`), and deletes nothing, as on a local disk. Files that the user has no permissions for count too, even though the mount does not show them. An empty folder is removed as before, also one made by `mkdir`, and `rm -r` still removes a folder with all its content. See [14.3. Manage Storage via CLI](../../manual/14_CLI/14.3._Manage_Storage_via_CLI.md#mounting-of-storages).
