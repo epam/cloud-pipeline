@@ -1,0 +1,121 @@
+name: Fetch a Cloud Pipeline token
+description: >-
+  Exchanges this workflow run's GitHub OIDC token for a short-lived Cloud Pipeline API token,
+  and exports it as API_TOKEN for the steps that follow.
+
+inputs:
+  api-url:
+    description: >-
+      The Cloud Pipeline URL. Either the API root, as `pipe` expects it in API
+      (https://cloud-pipeline.example.com/pipeline/restapi), or just the host
+      (https://cloud-pipeline.example.com), in which case /pipeline/restapi is appended.
+      Whatever it resolves to is both the endpoint called and the audience requested from
+      GitHub, so it has to match an entry of the deployment's
+      system.oidc.token.exchange.issuers preference.
+    required: true
+
+outputs:
+  token:
+    description: The Cloud Pipeline API token. Masked in the log, but treat it as a secret.
+    value: ${{ steps.exchange.outputs.token }}
+  api-url:
+    description: The API root the token was issued by, after the input was resolved.
+    value: ${{ steps.exchange.outputs.api-url }}
+  expires-in:
+    description: How long the token is valid for, in seconds.
+    value: ${{ steps.exchange.outputs.expires-in }}
+
+runs:
+  using: composite
+  steps:
+    - id: exchange
+      shell: bash
+      env:
+        INPUT_API_URL: ${{ inputs.api-url }}
+      run: |
+        set -euo pipefail
+
+        if ! command -v jq >/dev/null 2>&1; then
+          echo "::error::jq is required and was not found on this runner." \
+               "GitHub-hosted runners have it; a self-hosted runner may need it installed."
+          exit 1
+        fi
+
+        # Accept either the API root or the bare host, so the caller does not have to remember
+        # which one this wants. The resolved value is printed, because it is also the audience
+        # and a mismatch there is the most common reason for a refusal.
+        API_URL="${INPUT_API_URL%/}"
+        case "$API_URL" in
+          */restapi) ;;
+          *) API_URL="$API_URL/pipeline/restapi" ;;
+        esac
+        echo "Cloud Pipeline API: $API_URL"
+
+        if [ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ] || [ -z "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" ]; then
+          echo "::error::No OIDC token is available to this job." \
+               "Add 'permissions: { id-token: write }' to the workflow or the job."
+          exit 1
+        fi
+
+        GITHUB_OIDC_TOKEN="$(curl -sS --fail-with-body \
+          -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+          "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${API_URL}" | jq -r '.value // empty')"
+
+        if [ -z "$GITHUB_OIDC_TOKEN" ]; then
+          echo "::error::GitHub returned no OIDC token for audience $API_URL."
+          exit 1
+        fi
+
+        BODY="$(mktemp)"
+        trap 'rm -f "$BODY"' EXIT
+        STATUS="$(curl -sS -o "$BODY" -w '%{http_code}' \
+          -X POST "$API_URL/oauth/token" \
+          -H 'Content-Type: application/x-www-form-urlencoded' \
+          --data-urlencode 'grant_type=urn:ietf:params:oauth:grant-type:token-exchange' \
+          --data-urlencode "subject_token=$GITHUB_OIDC_TOKEN" \
+          --data-urlencode 'subject_token_type=urn:ietf:params:oauth:token-type:jwt')"
+
+        TOKEN="$(jq -r '.access_token // empty' <"$BODY" 2>/dev/null || true)"
+
+        if [ "$STATUS" != "200" ] || [ -z "$TOKEN" ]; then
+          ERROR="$(jq -r '.error // empty' <"$BODY" 2>/dev/null || true)"
+          echo "::error::Cloud Pipeline refused the exchange (HTTP $STATUS${ERROR:+, $ERROR})."
+          # The response says no more than this by design: the endpoint needs no platform token,
+          # so a caller must not be able to learn which check refused them. The reason is in the
+          # API log, one line per attempt with the issuer, subject, matched client and user.
+          case "${ERROR:-$STATUS}" in
+            404)
+              echo "The endpoint is not registered. The exchange is off." ;;
+            unsupported_grant_type|invalid_request)
+              echo "The request was malformed. This is a fault of the action, not the setup;" \
+                   "please report it." ;;
+            unauthorized_client)
+              echo "No configured client matched this run. Check the claim conditions of the" \
+                   "client: the repository info, and the ref or environment it is pinned to." ;;
+            invalid_grant)
+              echo "The token was not accepted, or the user it names cannot be acted as." \
+                   "Most often the configured audience does not match $API_URL, or the" \
+                   "platform user named by the client does not exist." ;;
+            *)
+              echo "See the Cloud Pipeline API log for the reason." ;;
+          esac
+          exit 1
+        fi
+
+        echo "::add-mask::$TOKEN"
+
+        EXPIRES_IN="$(jq -r '.expires_in // empty' <"$BODY")"
+        echo "Issued a token valid for ${EXPIRES_IN:-an unreported number of} seconds"
+
+        {
+          echo "token=$TOKEN"
+          echo "api-url=$API_URL"
+          echo "expires-in=$EXPIRES_IN"
+        } >>"$GITHUB_OUTPUT"
+
+        # exported so that `pipe` and plain curl work in the steps that follow with no further
+        # configuration: these are the two variables the CLI reads
+        {
+          echo "API=$API_URL/"
+          echo "API_TOKEN=$TOKEN"
+        } >>"$GITHUB_ENV"
