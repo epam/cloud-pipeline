@@ -29,6 +29,7 @@ import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +55,11 @@ import static org.testng.Assert.assertTrue;
 
 public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> implements AccessObject<SettingsPageAO>,
         Authorization {
+
+    // How long a click on the DELETE, BLOCK or UNBLOCK button of the user dialog may take to show its confirmation,
+    // and how often the button is clicked (UsersTabAO.UserEntry.EditUserPopup.clickAndConfirm)
+    private static final Duration USER_CONFIRMATION_WAIT = Duration.ofSeconds(5);
+    private static final int USER_CONFIRMATION_CLICKS = 3;
 
     protected PipelinesLibraryAO parentAO;
 
@@ -770,9 +776,16 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     return parentAO;
                 }
 
+                /**
+                 * Opens the user dialog and waits until it has opened. Its antd 2 Modal zooms in for 0.2 s, from the
+                 * point of the click that opened it, so a button of the dialog moves meanwhile. A click sent then
+                 * can land where the button was, on the dialog's background, and do nothing: the most likely
+                 * cause of an EPMCMBIBPC-3167 failure that clicked DELETE right after the dialog opened. The callers click at once, for example DELETE, BLOCK, UNBLOCK, CONFIGURE (Run as),
+                 * the role selector, a role's delete button, the price type field and IMPERSONATE.
+                 */
                 public EditUserPopup edit() {
                     click(EDIT);
-                    return new EditUserPopup(parentAO);
+                    return new EditUserPopup(parentAO).waitUntilOpened();
                 }
 
                 public class EditUserPopup extends PopupAO<EditUserPopup, UsersTabAO> implements AccessObject<EditUserPopup> {
@@ -847,27 +860,49 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     }
 
                     public EditUserPopup blockUser(final String user) {
-                        click(BLOCK);
-                        new ConfirmationPopupAO(this)
-                                .ensureTitleIs(format("Are you sure you want to block user %s?", user))
-                                .ok();
+                        clickAndConfirm(BLOCK, format("Are you sure you want to block user %s?", user));
                         return this;
                     }
 
                     public EditUserPopup unblockUser(final String user) {
-                        click(UNBLOCK);
-                        new ConfirmationPopupAO(this)
-                                .ensureTitleIs(format("Are you sure you want to unblock user %s?", user))
-                                .ok();
+                        clickAndConfirm(UNBLOCK, format("Are you sure you want to unblock user %s?", user));
                         return this;
                     }
 
                     public UsersTabAO deleteUser(final String user) {
-                        click(DELETE);
-                        new ConfirmationPopupAO(this)
-                                .ensureTitleIs(format("Are you sure you want to delete user %s?", user))
-                                .ok();
+                        clickAndConfirm(DELETE, format("Are you sure you want to delete user %s?", user));
                         return parentAO;
+                    }
+
+                    /**
+                     * Waits until the dialog has zoomed in: the Modal's ".ant-modal" element carries rc-animate's
+                     * "zoom-appear" class (or "zoom-enter") from the moment it is mounted until the animation ends.
+                     * The OK button is awaited first because shouldNotHave also passes for an element that isn't in
+                     * the page yet.
+                     */
+                    private EditUserPopup waitUntilOpened() {
+                        final SelenideElement dialog = get(OK).shouldBe(visible).closest(".ant-modal");
+                        dialog.shouldNotHave(cssClass("zoom-appear"));
+                        dialog.shouldNotHave(cssClass("zoom-enter"));
+                        return this;
+                    }
+
+                    /**
+                     * Clicks the DELETE, BLOCK or UNBLOCK button of the dialog and confirms. The button opens its
+                     * confirmation at once (Modal.confirm in client/.../settings/forms/EditUserRolesDialog/index.js),
+                     * but a click can still be lost: EPMCMBIBPC-3167 once clicked DELETE right after the dialog
+                     * opened, most likely while it zoomed in (see UserEntry.edit, which now waits for that). No confirmation came, no delete request reached the API, and ensureTitleIs failed after
+                     * its timeout. The button is clicked again if the confirmation isn't shown after
+                     * USER_CONFIRMATION_WAIT (Utils.clickUntilShown).
+                     */
+                    private void clickAndConfirm(final Primitive button, final String title) {
+                        clickUntilShown(get(button),
+                                () -> $(byClassName("ant-confirm-title"))
+                                        .shouldHave(text(title), USER_CONFIRMATION_WAIT),
+                                USER_CONFIRMATION_CLICKS);
+                        new ConfirmationPopupAO(this)
+                                .ensureTitleIs(title)
+                                .ok();
                     }
 
                     public EditUserPopup addAllowedLaunchOptions(final String option, final String mask) {
