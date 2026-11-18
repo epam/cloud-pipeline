@@ -74,6 +74,34 @@ public class OidcIssuerPreferenceValidationTest {
             + "  }]\n"
             + "}]";
 
+    /**
+     * The configuration the manual documents for MAPPED_USER, so that the example an
+     * administrator copies is known to parse. userMapping is the first nested object in a
+     * strategy, and an unrecognised field anywhere in it refuses the whole preference.
+     */
+    private static final String MAPPED = "[{\n"
+            + "  \"issuer\": \"https://token.actions.githubusercontent.com\",\n"
+            + "  \"audiences\": [\"https://cloud-pipeline.local/pipeline/restapi\"],\n"
+            + "  \"algorithms\": [\"RS256\"],\n"
+            + "  \"clients\": [{\n"
+            + "    \"id\": \"github-mapped\",\n"
+            + "    \"rules\": [\n"
+            + "      { \"claim\": \"repository_owner\", \"operator\": \"EQUALS\", \"value\": \"octo-org\" }\n"
+            + "    ],\n"
+            + "    \"assumeStrategy\": {\n"
+            + "      \"type\": \"MAPPED_USER\",\n"
+            + "      \"userMapping\": {\n"
+            + "        \"claim\": \"repository_owner\",\n"
+            + "        \"metadataKey\": \"github_owner\"\n"
+            + "      },\n"
+            + "      \"rolesToKeep\": [\"ROLE_USER\"],\n"
+            + "      \"ignoreSubjectTokenLifetime\": true\n"
+            + "    }\n"
+            + "  }]\n"
+            + "}]";
+
+    private static final String CLAIM_LINE = "\"claim\": \"repository_owner\",";
+
     @Before
     public void initMapper() {
         // the mapper is a Spring singleton published by @PostConstruct, and this test has no context
@@ -115,5 +143,22 @@ public class OidcIssuerPreferenceValidationTest {
 
     private static boolean isValid(final String preference) {
         return PreferenceValidators.isValidOidcTokenExchangeIssuers.test(preference, null);
+    }
+
+    @Test
+    public void shouldAcceptTheDocumentedMappedUserConfiguration() {
+        assertThat(isValid(MAPPED)).isTrue();
+    }
+
+    @Test
+    public void shouldRejectAnUnrecognisedFieldInsideAUserMapping() {
+        assertThat(isValid(MAPPED.replace("metadataKey", "metadata_key"))).isFalse();
+        assertThat(isValid(MAPPED.replace(CLAIM_LINE, "\"claimName\": \"repository_owner\","))).isFalse();
+    }
+
+    @Test
+    public void shouldRejectAMappedUserConfigurationMissingHalfItsMapping() {
+        assertThat(isValid(MAPPED.replace("\"github_owner\"", "\"\""))).isFalse();
+        assertThat(isValid(MAPPED.replace(CLAIM_LINE, "\"claim\": \"\","))).isFalse();
     }
 }

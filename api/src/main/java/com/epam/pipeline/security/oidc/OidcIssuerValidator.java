@@ -210,6 +210,8 @@ public final class OidcIssuerValidator {
                 return isValidSpecificUserStrategy(strategy);
             case REQUESTED_USER:
                 return isValidRequestedUserStrategy(strategy);
+            case MAPPED_USER:
+                return isValidMappedUserStrategy(strategy);
             default:
                 return false;
         }
@@ -218,6 +220,7 @@ public final class OidcIssuerValidator {
     private static boolean isValidSpecificUserStrategy(final OidcAssumeStrategy strategy) {
         return StringUtils.isNotBlank(strategy.getUser())
                 && StringUtils.isBlank(strategy.getUserClaim())
+                && Objects.isNull(strategy.getUserMapping())
                 && Objects.isNull(strategy.getAllowedUsers())
                 && Objects.isNull(strategy.getDeniedUsers());
     }
@@ -225,8 +228,23 @@ public final class OidcIssuerValidator {
     private static boolean isValidRequestedUserStrategy(final OidcAssumeStrategy strategy) {
         return StringUtils.isNotBlank(strategy.getUserClaim())
                 && StringUtils.isBlank(strategy.getUser())
+                && Objects.isNull(strategy.getUserMapping())
                 && isAbsentOrWithoutBlanks(strategy.getAllowedUsers())
                 && isAbsentOrWithoutBlanks(strategy.getDeniedUsers());
+    }
+
+    private static boolean isValidMappedUserStrategy(final OidcAssumeStrategy strategy) {
+        return StringUtils.isBlank(strategy.getUser())
+                && StringUtils.isBlank(strategy.getUserClaim())
+                && isValidUserMapping(strategy.getUserMapping())
+                && isAbsentOrWithoutBlanks(strategy.getAllowedUsers())
+                && isAbsentOrWithoutBlanks(strategy.getDeniedUsers());
+    }
+
+    private static boolean isValidUserMapping(final OidcUserMapping mapping) {
+        return Objects.nonNull(mapping)
+                && StringUtils.isNotBlank(mapping.getClaim())
+                && StringUtils.isNotBlank(mapping.getMetadataKey());
     }
 
     private static boolean isValidLifetime(final Long lifetime) {
