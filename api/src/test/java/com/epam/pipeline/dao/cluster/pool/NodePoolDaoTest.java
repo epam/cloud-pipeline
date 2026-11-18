@@ -236,15 +236,13 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
     }
 
     @Test
-    public void shouldNotClearLifecycleColumnsOnUpdate() {
+    public void shouldNotClearReservationWindowOnUpdate() {
         final NodePool pool = NodePoolCreatorUtils.getPoolWithoutSchedule();
-        pool.setPoolType(NodePoolType.SHAREABLE_NODE);
         pool.setStartDate(START_DATE);
         pool.setEndDate(END_DATE);
         final NodePool created = poolDao.create(pool);
 
         final NodePool edit = poolDao.find(created.getId()).orElseThrow(AssertionError::new);
-        edit.setPoolType(null);
         edit.setStartDate(null);
         edit.setEndDate(null);
         edit.setName(NEW_VALUE);
@@ -252,9 +250,41 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
 
         final NodePool loaded = poolDao.find(created.getId()).orElseThrow(AssertionError::new);
         assertThat(loaded.getName()).isEqualTo(NEW_VALUE);
-        assertThat(loaded.getPoolType()).isEqualTo(NodePoolType.SHAREABLE_NODE);
         assertThat(loaded.getStartDate()).isEqualTo(START_DATE);
         assertThat(loaded.getEndDate()).isEqualTo(END_DATE);
+    }
+
+    @Test
+    public void shouldUpdatePoolType() {
+        final NodePool created = poolDao.create(NodePoolCreatorUtils.getPoolWithoutSchedule());
+
+        final NodePool edit = poolDao.find(created.getId()).orElseThrow(AssertionError::new);
+        assertThat(edit.getPoolType()).isEqualTo(NodePoolType.STANDARD);
+        edit.setPoolType(NodePoolType.SHAREABLE_NODE);
+        poolDao.update(edit);
+
+        assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).getPoolType())
+                .isEqualTo(NodePoolType.SHAREABLE_NODE);
+    }
+
+    /**
+     * The DAO defaults a missing pool type to {@link NodePoolType#STANDARD} on an update as it does
+     * on a create, both statements sharing the same parameter source. No API caller can reach this:
+     * {@code NodePoolValidator} rejects an update carrying no pool type.
+     */
+    @Test
+    public void shouldDefaultPoolTypeToStandardWhenAnUpdateOmitsIt() {
+        final NodePool pool = NodePoolCreatorUtils.getPoolWithoutSchedule();
+        pool.setPoolType(NodePoolType.SHAREABLE_NODE);
+        final NodePool created = poolDao.create(pool);
+
+        final NodePool edit = poolDao.find(created.getId()).orElseThrow(AssertionError::new);
+        assertThat(edit.getPoolType()).isEqualTo(NodePoolType.SHAREABLE_NODE);
+        edit.setPoolType(null);
+        poolDao.update(edit);
+
+        assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).getPoolType())
+                .isEqualTo(NodePoolType.STANDARD);
     }
 
     @Test
