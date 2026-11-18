@@ -28,6 +28,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.CREATE_GROUP;
 import static com.epam.pipeline.autotests.ao.Primitive.EDIT_REGISTRY;
 import static com.epam.pipeline.autotests.ao.Primitive.GROUP;
 import static com.epam.pipeline.autotests.ao.Primitive.GROUPS_LIST;
+import static com.epam.pipeline.autotests.ao.Primitive.GROUPS_SEARCH;
 import static com.epam.pipeline.autotests.ao.Primitive.GROUP_SETTINGS;
 import static com.epam.pipeline.autotests.ao.Primitive.REGISTRY_SETTINGS;
 import static com.epam.pipeline.autotests.ao.Primitive.SETTINGS;
@@ -59,6 +60,10 @@ public class Registry implements AccessObject<Registry> {
         sleep(1, SECONDS);
         if (!get(GROUP).getText().equals(groupName)) {
             click(GROUP);
+            // With tool filters shown (the default "Top used" one is enough), the groups sit in an "All groups"
+            // panel that opens collapsed, so their buttons are not rendered. A search opens that panel and narrows
+            // it to the matching groups (and the personal one); without filters it just narrows the list.
+            setValue(GROUPS_SEARCH, groupName);
             get(GROUPS_LIST).find(button(groupName)).shouldBe(visible).click();
             ensure(GROUP, text(groupName));
         }
