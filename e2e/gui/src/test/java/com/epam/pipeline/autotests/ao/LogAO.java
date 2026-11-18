@@ -391,16 +391,24 @@ public class LogAO implements AccessObject<LogAO> {
         return this;
     }
 
+    /**
+     * Reloads the page until a line of the log matches the regular expression (found anywhere in the line, as
+     * matchText finds it), and fails if no line does after 70 reloads, about 23 min. The whole log is read each time
+     * ({@link #logMessages} adds the earlier lines of a long log first). It used to end the wait without an error,
+     * so a line that never came failed a later step instead, or none.
+     */
     public LogAO waitForLog(final String message) {
-        for (int i = 0; i < 70; i++) {
+        final int reloads = 70;
+        final Pattern pattern = Pattern.compile(message);
+        for (int reload = 1; reload <= reloads; reload++) {
             refresh();
             sleep(10, SECONDS);
-            if ($(log()).shouldBe(visible).is(matchText(message))) {
-                break;
+            if (logMessages().anyMatch(line -> pattern.matcher(line).find())) {
+                return this;
             }
             sleep(10, SECONDS);
         }
-        return this;
+        throw new AssertionError(format("No line of the log matches {%s} after %d reloads", message, reloads));
     }
 
     public LogAO waitForTask(final String task) {
