@@ -15,21 +15,33 @@
 # limitations under the License.
 
 # Keeps the admin browser session the GUI tests sign in with alive for the whole run, and resets it afterwards.
+# Can also make that session itself, for a dummy admin instead of an SSO sign-in.
 #
 #   admin-session.sh extend  --state <dir> [--seconds <s>]   sets the session expiration (inactivity) to <s>
 #                                                           (default 2592000 = 30 days), saves the original value
+#   admin-session.sh precheck --user <name> [--email <address>]
+#                                                           the checks "create" makes before it changes anything
+#   admin-session.sh create  --state <dir> --user <name> [--seconds <s>] [--email <address>]
+#                                                           makes a session for <name> (created with ROLE_ADMIN if
+#                                                           it does not exist yet, unblocked if it is blocked) that
+#                                                           lasts <s> (default 93600 = 26 h: the 24 h tests timeout of
+#                                                           run-e2e.sh plus 2 h), with no SSO sign-in at all; sets the
+#                                                           "email" attribute of <name> to <address>
 #   admin-session.sh watch   --state <dir> [--interval <s>] [--pid <pid>]
 #                                                           re-applies the extension every <s> (default 300) while
 #                                                           <pid> is alive: a request that was in flight during the
 #                                                           update writes the old value back (Spring Session saves
 #                                                           MAX_INACTIVE_INTERVAL on every request)
-#   admin-session.sh restore --state <dir>                  sets the original expiration back (1800 if unknown)
+#   admin-session.sh restore --state <dir>                  sets the original expiration back (1800 if unknown), or,
+#                                                           for a session "create" made, deletes it and blocks <name>
 #   admin-session.sh sso     [--state <dir>] [--min-hours <h>]
 #                                                           prints when the SSO authentication of the session ends;
-#                                                           exit code 3 if it ends within <h> hours, 2 if unknown
+#                                                           exit code 3 if it ends within <h> hours, 2 if unknown (also
+#                                                           a session "create" made: it holds no SAML assertion)
 #
 # The session is read from E2E_ADMIN_SESSION or from the file E2E_ADMIN_SESSION_FILE (default ~/.cp-e2e/admin-session)
-# by "extend" and "sso"; "watch" and "restore" (and "sso" with --state) use the copy kept in <dir> (0700).
+# by "extend" and "sso"; "watch" and "restore" (and "sso" with --state) use the copy kept in <dir> (0700). "create"
+# needs none of that: it mints the session itself and is the one command that writes <dir> from scratch.
 # It is a row of the API database table pipeline.spring_session (Spring Session JDBC): the update is done with psql in
 # the API database pod (label cloud-pipeline/cp-api-db=true, CP_API_DB_POD overrides it), the session id is passed
 # through stdin, never on a command line.
@@ -44,17 +56,44 @@
 # does not end; if no AuthnStatement is found or a time does not parse, the end is unknown (exit code 2).
 # "watch" logs that end when it starts and, with --container, stops that container (the tests) when the session no
 # longer authenticates (HTTP 401 on two checks 30 s apart): the following tests would only fail at their first page.
+#
+# "create" has no SSO authentication to outlive: a session it makes holds a JwtAuthenticationToken, not a SAML
+# principal, so its authentication would otherwise stop after 60 s (JwtAuthenticationToken.TOKEN_SESSION_TIMEOUT) -
+# the one check that rejects it then (401) also wipes its stored SPRING_SECURITY_CONTEXT outright, not just leaves
+# it stale. So "create" patches the Date Java serializes for that 60 s deadline, inside the same attribute, to <s>
+# seconds away, in one sequence with no call in between that could fail: mint a JWT for <name> (which needs no
+# SSO), call /whoami with it once - the one call that creates the session row - then find the deadline's 8 bytes by
+# searching the window around the row's own creation time for the one value int8send() of it matches (die if that
+# is not exactly one match, rather than patch the wrong field), overwrite them in place, read them back, set the
+# expiration (inactivity) of the row to <s> as well, and call /whoami once with the session. The token is made
+# before the session (by the JWT filter; the row is written when the response is committed), at most the 60 s curl
+# allows /whoami earlier, so its deadline falls within 60 s after the row's creation; the window ends 2 s later, as
+# a margin. The session id is saved in <dir> as soon as /whoami returns it, so "restore" deletes the session also
+# when a later step fails. Needs CP_API_JWT_DISABLE_SESSION not to be
+# true in the cp-config-global config map: with true a JWT-authenticated request creates no session to patch.
+# Without the key the API image's own default applies, false (deploy/docker/cp-api-srv/config/application.properties);
+# the code default, true, applies only to an API run outside that image, e.g. on a dev sandbox.
+#
+# <name> must be an account that "create" made itself: it carries the user attribute (metadata) e2e-dummy-session.
+# Any other existing account is refused, so a person's account is never blocked or given another email; give an
+# account that attribute (any value) to let the runs use it. "restore" blocks <name> after every run, so a run
+# whose "restore" never ran (a killed runner) is made good by the next one. An existing account without ROLE_ADMIN
+# is not given it: "create" stops instead. The API keeps the "email" attribute of a user in pipeline.user.attributes, which only an
+# SSO sign-in fills: --email writes it there (replacing one in any other case), the notifier reads it
+# (TC-NOTIFICATION-01). The account keeps it after the run.
 
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 _CMD="$1"
 shift
 _STATE=""
-_SECONDS=2592000
+_SECONDS=""
 _INTERVAL=300
 _PID=""
 _MIN_HOURS=0
 _CONTAINER=""
+_USER=""
+_EMAIL=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --state) _STATE="$2"; shift 2 ;;
@@ -63,12 +102,21 @@ while [ $# -gt 0 ]; do
         --pid) _PID="$2"; shift 2 ;;
         --min-hours) _MIN_HOURS="$2"; shift 2 ;;
         --container) _CONTAINER="$2"; shift 2 ;;
+        --user) _USER="$2"; shift 2 ;;
+        --email) _EMAIL="$2"; shift 2 ;;
         *) e2e_die "Unknown option $1" ;;
     esac
 done
-[[ "$_CMD" =~ ^(extend|watch|restore|sso)$ ]] && { [ "$_STATE" ] || [ "$_CMD" == "sso" ]; } || \
-    e2e_die "Usage: $0 extend|watch|restore|sso --state <dir> [--seconds <s>] [--interval <s>] [--pid <pid>]" \
-        "[--container <name>] [--min-hours <h>]"
+[[ "$_CMD" =~ ^(extend|precheck|create|watch|restore|sso)$ ]] && \
+    { [ "$_STATE" ] || [[ "$_CMD" =~ ^(sso|precheck)$ ]]; } || \
+    e2e_die "Usage: $0 extend|precheck|create|watch|restore|sso --state <dir> [--seconds <s>] [--interval <s>]" \
+        "[--pid <pid>] [--container <name>] [--min-hours <h>] [--user <name>] [--email <address>]"
+[[ ! "$_CMD" =~ ^(precheck|create)$ ]] || [ "$_USER" ] || e2e_die "$_CMD needs --user <name>"
+if [ -z "$_SECONDS" ]; then
+    [ "$_CMD" == "create" ] && _SECONDS=93600 || _SECONDS=2592000
+fi
+# Written into SQL as a literal: these characters only
+[ -z "$_EMAIL" ] || [[ "$_EMAIL" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+$ ]] || e2e_die "--email $_EMAIL is not an address"
 [[ "$_SECONDS" =~ ^[0-9]+$ ]] && [[ "$_INTERVAL" =~ ^[0-9]+$ ]] && [[ "$_MIN_HOURS" =~ ^[0-9]+$ ]] || \
     e2e_die "--seconds, --interval and --min-hours must be integers"
 
@@ -108,6 +156,113 @@ function _session_status {
 
 function _session_user {
     _session_status "$1" | cut -f2
+}
+
+# Prints the id of a role by its exact name (e.g. ROLE_ADMIN), nothing if it is not defined
+function _role_id {
+    cp_api_payload GET role/loadAll 2> /dev/null | jq -r --arg n "$1" '.[] | select(.name == $n) | .id' 2> /dev/null \
+        | head -n 1
+}
+
+# Calls /whoami with a bearer JWT (not the platform admin token cp_api uses), the one call that creates a session
+# for it unless CP_API_JWT_DISABLE_SESSION is true. Prints "<HTTP code>,<new session id, empty if none was
+# created>,<user name>,<admin: true or false>" (the last two as /whoami answers them), separated by the unit
+# separator 0x1f, not a tab: "read" would merge empty tab-separated fields.
+function _create_session {
+    local _jwt="$1" _headers _body _code _sid _name _admin
+    _headers="$(mktemp)" || return 1
+    _body="$(curl -s -k --noproxy "$CP_API_HOST" --max-time 60 -H "Authorization: Bearer $_jwt" \
+        -D "$_headers" -w '\n%{http_code}' "$CP_API_URL/whoami")" || { rm -f "$_headers"; return 1; }
+    _code="${_body##*$'\n'}"
+    _sid="$(grep -oiE '^set-cookie:[[:space:]]*SESSION=[^;]*' "$_headers" | head -n 1 | sed -E 's/^[^=]*=//')"
+    rm -f "$_headers"
+    _name="$(jq -r '.payload.userName // empty' <<< "${_body%$'\n'*}" 2> /dev/null)"
+    _admin="$(jq -r '.payload.admin == true' <<< "${_body%$'\n'*}" 2> /dev/null)"
+    printf '%s\x1f%s\x1f%s\x1f%s\n' "${_code:-000}" "$_sid" "$_name" "${_admin:-false}"
+}
+
+# Writes the state of "create" (<session id>, empty before /whoami made one): "restore" deletes that session and
+# blocks the user _USER_ID
+function _save_created {
+    ( umask 077; jq -n --arg s "$1" --arg p "$_PRINCIPAL" --argjson u "$_USER_ID" --argjson n "$_SECONDS" \
+        '{session: $s, principal: $p, user_id: $u, block_after: true, extended: $n, created: true}' > "$_STATE_FILE" )
+}
+
+# The user attribute (metadata) that marks an account "create" made, and so may block and change
+_MARKER="e2e-dummy-session"
+
+# Prints true if a user (id) has the marker attribute, whatever its value, false if not; fails if the API does not
+# answer
+function _marker {
+    local _meta
+    _meta="$(cp_api_payload POST metadata/load "[{\"entityId\": $1, \"entityClass\": \"PIPELINE_USER\"}]")" || return 1
+    jq -r --arg k "$_MARKER" '(.[0].data // {}) | has($k)' <<< "$_meta"
+}
+
+function _set_marker {
+    cp_api_payload POST metadata/updateKeys "$(jq -cn --argjson u "$1" --arg k "$_MARKER" \
+        --arg v "account of e2e/gui run-e2e.sh --dummy-session, blocked between runs" \
+        '{entity: {entityId: $u, entityClass: "PIPELINE_USER"}, data: {($k): {value: $v, type: "string"}}}')" \
+        > /dev/null
+}
+
+# The checks of "create" that change nothing. Sets _USER_URI, _ACCOUNT (the user as the API returns it, null if it
+# does not exist) and, for a user to create, _ROLE_ID (of ROLE_ADMIN)
+function _check_account {
+    local _jwt_no_session _marked
+    # Spring reads true, on, yes and 1 as true; without the key the API image's own default applies, false
+    _jwt_no_session="$(cp_config CP_API_JWT_DISABLE_SESSION | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')"
+    if [[ "$_jwt_no_session" =~ ^(true|on|yes|1)$ ]]; then
+        e2e_die "CP_API_JWT_DISABLE_SESSION is $_jwt_no_session in the cp-config-global config map: a" \
+            "JWT-authenticated request creates no session there, so a database-made session can't be built"
+    fi
+    _USER_URI="$(jq -rn --arg u "$_USER" '$u | @uri')"
+    # GET /user?name= answers status OK with an empty payload for an unknown user
+    _ACCOUNT="$(cp_api_payload GET "user?name=$_USER_URI")" || e2e_die "Unable to look up the user $_USER"
+    if [ "$(jq -r '.id // empty' <<< "$_ACCOUNT")" ]; then
+        _marked="$(_marker "$(jq -r '.id' <<< "$_ACCOUNT")")" || \
+            e2e_die "Unable to read the attributes of the user $_USER"
+        [ "$_marked" == "true" ] || e2e_die "The user $_USER exists, but was not made by run-e2e.sh" \
+            "--dummy-session (it has no $_MARKER attribute): pick another account (--user), or give this one that" \
+            "attribute (any value) to let the runs use it - they block it after each run and may change its email"
+        jq -e 'any(.roles[]?; .name == "ROLE_ADMIN")' <<< "$_ACCOUNT" > /dev/null || \
+            e2e_die "The user $_USER exists without ROLE_ADMIN: an existing account is not given it here, pick" \
+                "another one (--user)"
+    else
+        _ROLE_ID="$(_role_id ROLE_ADMIN)"
+        [ "$_ROLE_ID" ] || e2e_die "ROLE_ADMIN is not defined on this platform"
+    fi
+}
+
+# Sets the "email" attribute of a user (id) in pipeline.user.attributes, replacing one in any other case
+function _set_email {
+    printf "update pipeline.user set attributes = coalesce((select jsonb_object_agg(e.key, e.value) from jsonb_each(coalesce(attributes, '{}'::jsonb)) as e where lower(e.key) <> 'email'), '{}'::jsonb) || jsonb_build_object('email', '%s') where id = %d returning id;\n" \
+        "$2" "$1" | _sql
+}
+
+# Finds the single 8 bytes of the session's own JwtAuthenticationToken.tokenExpiration (a java.util.Date, Java
+# serializes it as a plain 8-byte big-endian long of epoch milliseconds, the same bytes int8send() of a bigint
+# gives) inside its stored SPRING_SECURITY_CONTEXT, by searching the window of milliseconds the token's own 60 s
+# deadline falls in, from the row's own creation time to 62 s after it. Dies rather than patch the wrong field if
+# that is not exactly one match. Overwrites those bytes with <new ms>, so the deadline is <new ms> instead of 60 s
+# after creation, and fails unless <new ms> is then read back at the same place.
+function _patch_token_expiration {
+    local _session="$1" _new_ms="$2" _found _count _pos _written
+    _valid_id "$_session" || { e2e_err "Invalid session id, not patching it"; return 1; }
+    [[ "$_new_ms" =~ ^[0-9]+$ ]] || { e2e_err "Invalid new token expiration $_new_ms, not patching it"; return 1; }
+    _found="$(printf "with s as (select creation_time, (select attribute_bytes from %s_attributes where session_id = '%s' and attribute_name = 'SPRING_SECURITY_CONTEXT') as b from %s where session_id = '%s'), m as (select position(int8send(ms) in b) as pos from s, generate_series(s.creation_time, s.creation_time + 62000) as ms where b is not null and position(int8send(ms) in b) > 0) select count(*), coalesce(max(pos), 0) from m;\n" \
+        "$_TABLE" "$_session" "$_TABLE" "$_session" | _sql)" || return 1
+    IFS=$'\t' read -r _count _pos <<< "$_found"
+    if [ "$_count" != "1" ]; then
+        e2e_err "Found $_count candidates for the token expiration field of the session, expected exactly 1: not patching it"
+        return 1
+    fi
+    _written="$(printf "update %s_attributes set attribute_bytes = overlay(attribute_bytes placing int8send(%d::bigint) from %d for 8) where session_id = '%s' and attribute_name = 'SPRING_SECURITY_CONTEXT' returning position(int8send(%d::bigint) in attribute_bytes);\n" \
+        "$_TABLE" "$_new_ms" "$_pos" "$_session" "$_new_ms" | _sql)" || return 1
+    if [ "$_written" != "$_pos" ]; then
+        e2e_err "The token expiration field of the session reads back at '${_written:-no row}', expected $_pos"
+        return 1
+    fi
 }
 
 # The session of E2E_ADMIN_SESSION or of the file E2E_ADMIN_SESSION_FILE
@@ -168,6 +323,83 @@ case "$_CMD" in
         _new="$(_set_interval "$_session" "$_SECONDS")" || e2e_die "Unable to update the session expiration"
         [ "$_new" == "$_SECONDS" ] || e2e_die "The session expiration was not updated"
         e2e_log "Admin session of $_principal: expiration (inactivity) is set to ${_SECONDS}s (was ${_original}s, last access $_last UTC)"
+        ;;
+    precheck)
+        _check_account
+        if [ "$(jq -r '.id // empty' <<< "$_ACCOUNT")" ]; then
+            e2e_log "The user $(jq -r '.userName' <<< "$_ACCOUNT") (made by run-e2e.sh --dummy-session) gets the" \
+                "database-made session"
+        else
+            e2e_log "The user $_USER does not exist: it is created with ROLE_ADMIN for the database-made session"
+        fi
+        ;;
+    create)
+        _check_account
+        mkdir -p "$_STATE" && chmod 700 "$_STATE"
+        rm -f "$_STATE/admin-session.stop"
+        _created_user="false"
+        if [ -z "$(jq -r '.id // empty' <<< "$_ACCOUNT")" ]; then
+            _ACCOUNT="$(cp_api_payload POST user \
+                "$(jq -cn --arg u "$_USER" --argjson r "$_ROLE_ID" '{userName: $u, roleIds: [$r]}')")" || \
+                e2e_die "Unable to create the user $_USER"
+            _created_user="true"
+        fi
+        # The API's own spelling of the name (it upper-cases a new one), as /whoami answers it
+        _USER_ID="$(jq -r '.id // empty' <<< "$_ACCOUNT")"
+        _PRINCIPAL="$(jq -r '.userName // empty' <<< "$_ACCOUNT")"
+        [[ "$_USER_ID" =~ ^[0-9]+$ ]] && [ "$_PRINCIPAL" ] || e2e_die "Unexpected API answer for the user $_USER"
+        # Saved before the user is changed: "restore" blocks it also when a step below fails
+        _save_created ""
+        if [ "$_created_user" == "true" ]; then
+            _set_marker "$_USER_ID" || e2e_die "Unable to give the new user $_PRINCIPAL the $_MARKER attribute: the" \
+                "next run refuses it until it has one"
+            e2e_log "Created the user $_PRINCIPAL with ROLE_ADMIN and the $_MARKER attribute for the database-made" \
+                "session (blocked after each run)"
+        elif [ "$(jq -r '.blocked' <<< "$_ACCOUNT")" == "true" ]; then
+            cp_api_payload PUT "user/$_USER_ID/block?blockStatus=false" > /dev/null || \
+                e2e_die "Unable to unblock the user $_PRINCIPAL"
+            e2e_log "Unblocked the user $_PRINCIPAL for the run (blocked again after it)"
+        else
+            e2e_warn "The user $_PRINCIPAL was not blocked (a run that did not finish?): it is blocked after this one"
+        fi
+        if [ "$_EMAIL" ]; then
+            [ "$(_set_email "$_USER_ID" "$_EMAIL")" == "$_USER_ID" ] || \
+                e2e_die "Unable to set the email attribute of $_PRINCIPAL"
+            e2e_log "The email attribute of $_PRINCIPAL is set to $_EMAIL"
+        elif [ -z "$(jq -r '[(.attributes // {}) | to_entries[] | select(.key | ascii_downcase == "email") | .value]
+                | first // empty' <<< "$_ACCOUNT")" ]; then
+            e2e_warn "The user $_PRINCIPAL has no email attribute: TC-NOTIFICATION-01 fails (--email sets one)"
+        fi
+        _jwt="$(cp_api_payload GET "user/token?name=$_USER_URI&expiration=300" 2> /dev/null \
+            | jq -r '.token // empty' 2> /dev/null)"
+        [ "$_jwt" ] || e2e_die "Unable to mint a token for $_PRINCIPAL"
+        IFS=$'\x1f' read -r _code _session _name _admin <<< "$(_create_session "$_jwt")"
+        if [ "$_session" ]; then
+            _valid_id "$_session" || e2e_die "The session id from the Set-Cookie header looks wrong"
+            # Saved at once: "restore" deletes the session also when a check below fails
+            _save_created "$_session"
+        fi
+        [ "$_code" == "200" ] && [ "$_session" ] || \
+            e2e_die "whoami for $_PRINCIPAL returned HTTP $_code and created no session: expected 200 and a new" \
+                "SESSION cookie (is CP_API_JWT_DISABLE_SESSION true in the environment of the API?)"
+        [ "$_name" == "$_PRINCIPAL" ] && [ "$_admin" == "true" ] || \
+            e2e_die "whoami with a token of $_PRINCIPAL answered user '$_name', admin $_admin: expected" \
+                "$_PRINCIPAL, admin true"
+        # From here on nothing may call the API with this session before it is patched: a single failed
+        # authentication attempt on it wipes its stored SPRING_SECURITY_CONTEXT outright, not just leaves it stale.
+        _new_ms="$(( $(date -u +%s) * 1000 + _SECONDS * 1000 ))"
+        _patch_token_expiration "$_session" "$_new_ms" || \
+            e2e_die "Unable to extend the token expiration stored in the new session for $_PRINCIPAL: it may" \
+                "still only last 60s"
+        # Its expiration (inactivity) too, before the request below: Spring Session writes back the value it loaded.
+        # "watch" keeps it at that only from the start of the tests on.
+        [ "$(_set_interval "$_session" "$_SECONDS")" == "$_SECONDS" ] || \
+            e2e_die "Unable to set the expiration (inactivity) of the new session for $_PRINCIPAL"
+        IFS=$'\t' read -r _code _name <<< "$(_session_status "$_session")"
+        [ "$_code" == "200" ] && [ "$_name" == "$_PRINCIPAL" ] || \
+            e2e_die "The patched session answers whoami with HTTP $_code, user '$_name': expected 200 and $_PRINCIPAL"
+        e2e_log "Created a database-made session for $_PRINCIPAL (no SSO sign-in): its token expiration is set" \
+            "${_SECONDS}s away, and its expiration (inactivity) to ${_SECONDS}s"
         ;;
     watch)
         [ -f "$_STATE_FILE" ] || e2e_die "The session was not extended: $_STATE_FILE not found"
@@ -284,15 +516,47 @@ case "$_CMD" in
         _session="$(jq -r '.session' "$_STATE_FILE")"
         _original="$(jq -r '.original // 1800' "$_STATE_FILE")"
         _principal="$(jq -r '.principal' "$_STATE_FILE")"
-        _valid_id "$_session" || e2e_die "Invalid session in $_STATE_FILE"
+        _created="$(jq -r '.created // false' "$_STATE_FILE")"
         touch "$_STATE/admin-session.stop"
-        _row="$(_session_row "$_session")" || e2e_die "Unable to query the session in the API database"
-        if [ -z "$_row" ]; then
-            e2e_log "The admin session of $_principal does not exist anymore, nothing to restore"
+        if [ "$_created" == "true" ]; then
+            # Both steps are tried whatever the other did; the state is kept for a re-run if one failed
+            _failed="false"
+            if [ -z "$_session" ]; then
+                e2e_log "No database-made session of $_principal was created, nothing to delete"
+            elif ! _valid_id "$_session"; then
+                e2e_err "Invalid session in $_STATE_FILE, not deleting it"
+                _failed="true"
+            # The attributes first: Spring Session, not Flyway, creates the tables, so the foreign key between them
+            # may lack ON DELETE CASCADE
+            elif printf "delete from %s_attributes where session_id = '%s'; delete from %s where session_id = '%s';\n" \
+                    "$_TABLE" "$_session" "$_TABLE" "$_session" | _sql > /dev/null; then
+                e2e_log "Database-made session of $_principal: deleted (it was created for this run, not an SSO" \
+                    "sign-in to restore)"
+            else
+                e2e_err "Unable to delete the database-made session of $_principal"
+                _failed="true"
+            fi
+            if [ "$(jq -r '.block_after // false' "$_STATE_FILE")" == "true" ]; then
+                _user_id="$(jq -r '.user_id // empty' "$_STATE_FILE")"
+                if [[ "$_user_id" =~ ^[0-9]+$ ]] && \
+                        cp_api_payload PUT "user/$_user_id/block?blockStatus=true" > /dev/null; then
+                    e2e_log "The user $_principal is blocked again"
+                else
+                    e2e_err "Unable to block the user $_principal again"
+                    _failed="true"
+                fi
+            fi
+            [ "$_failed" == "false" ] || exit 1
         else
-            _new="$(_set_interval "$_session" "$_original")" || e2e_die "Unable to restore the session expiration"
-            [ "$_new" == "$_original" ] || e2e_die "The session expiration was not restored"
-            e2e_log "Admin session of $_principal: expiration is restored to ${_original}s"
+            _valid_id "$_session" || e2e_die "Invalid session in $_STATE_FILE"
+            _row="$(_session_row "$_session")" || e2e_die "Unable to query the session in the API database"
+            if [ -z "$_row" ]; then
+                e2e_log "The admin session of $_principal does not exist anymore, nothing to restore"
+            else
+                _new="$(_set_interval "$_session" "$_original")" || e2e_die "Unable to restore the session expiration"
+                [ "$_new" == "$_original" ] || e2e_die "The session expiration was not restored"
+                e2e_log "Admin session of $_principal: expiration is restored to ${_original}s"
+            fi
         fi
         rm -f "$_STATE_FILE"
         ;;

@@ -10,7 +10,10 @@ The Selenide/TestNG suite that drives the platform GUI in a browser. Run it for 
 - `run-e2e.sh` also changes the platform around the tests: it creates and unblocks the test users,
   registers the fixture tools, deactivates blocking system notifications, extends the admin's session
   in the API database and acts on the nodes of test runs. It reverts all that when it exits, also on
-  Ctrl-C; a killed runner leaves it in place.
+  Ctrl-C; a killed runner leaves it in place. `--dummy-session` leaves a standing `ROLE_ADMIN` account
+  in place on purpose, blocked between runs, with the `email` attribute `--dummy-session-email` gave it.
+  When the run creates it, the platform's preferences may also give it a home storage and a personal
+  tool group. It refuses an existing account it did not create (no `e2e-dummy-session` attribute).
 - The time of the whole `testng.xml` on this line is not measured: a narrower selection took 10-12 hours, and it
   runs many more classes now. Run the classes the change touches.
 
@@ -20,9 +23,9 @@ instead, and say in the hand-back that the suite did not run.
 ## Running it
 
 `README.md` carries the procedure. `run-e2e.sh` runs on the platform's master node: it needs
-`kubectl` access to the cluster and an administrator's browser session. The environment of the tests
-is `Dockerfile` — Rocky Linux, a VNC desktop, Chrome for Testing with its matching chromedriver, and
-JDK 8; `run.sh` is the entrypoint inside the container.
+`kubectl` access to the cluster and an administrator's browser session, or `--dummy-session` instead of one.
+The environment of the tests is `Dockerfile` — Rocky Linux, a VNC desktop, Chrome for Testing with its matching
+chromedriver, and JDK 8; `run.sh` is the entrypoint inside the container.
 
 `AbstractBfxPipelineTest` hardcodes `/usr/local/bin/chrome` and `/usr/local/bin/chromedriver`, which
 that image provides. Running on a host instead means editing it. `test` depends on `prerequisites`
