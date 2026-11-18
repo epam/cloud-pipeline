@@ -797,6 +797,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             entry(SEARCH_INPUT, element.find(By.className("ant-select-search__field"))),
                             entry(ADD_KEY, context().find(By.id("add-role-button"))),
                             entry(OK, context().find(By.id("close-edit-user-form"))),
+                            entry(CANCEL, context().$(button("CANCEL"))),
                             entry(BLOCK, context().$(button("BLOCK"))),
                             entry(UNBLOCK, context().$(button("UNBLOCK"))),
                             entry(DELETE, context().$(byId("delete-user-button"))),
@@ -816,9 +817,20 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                         return elements;
                     }
 
+                    /**
+                     * Closes the dialog. OK saves the changes of the form and is disabled while there is none
+                     * (client/.../settings/forms/EditUserRolesDialog/index.js), e.g. after BLOCK or UNBLOCK, which act
+                     * at once: CANCEL closes the dialog then, as develop's test does. A click on a disabled OK left the
+                     * dialog over the page, and the next steps' clicks went to it (EPMCMBIBPC-3016).
+                     */
                     @Override
                     public UsersTabAO ok() {
-                        click(OK);
+                        if (get(OK).isEnabled()) {
+                            click(OK);
+                        } else {
+                            click(CANCEL);
+                        }
+                        get(OK).shouldNotBe(visible);
                         return parentAO;
                     }
 

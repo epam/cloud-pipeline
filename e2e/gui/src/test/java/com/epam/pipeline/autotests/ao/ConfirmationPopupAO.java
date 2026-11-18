@@ -88,6 +88,18 @@ public class ConfirmationPopupAO<PARENT_AO> extends PopupAO<ConfirmationPopupAO<
         return this;
     }
 
+    /**
+     * Checks the question of a run confirmation (client/.../runs/actions/run.js, renderModalTitle): it is shown in the
+     * dialog's content, as "cp-run-name-title", with the run name in it, and the dialog's own title is empty. That
+     * element is a flex row, so its text has line breaks between the question and the run name, and no spaces (they are
+     * CSS ones): put \\s* there in the regex.
+     */
+    public ConfirmationPopupAO<PARENT_AO> ensureRunTitleMatches(final String regex) {
+        element.find(className("cp-run-name-title")).shouldBe(visible).should(matchText(regex));
+        this.messageIsChecked = true;
+        return this;
+    }
+
     public ConfirmationPopupAO<PARENT_AO> ensureTitleContains(String expectedTitle) throws RuntimeException {
         title.should(matchText(expectedTitle));
         this.messageIsChecked = true;
