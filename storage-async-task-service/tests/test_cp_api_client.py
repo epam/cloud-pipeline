@@ -21,7 +21,7 @@ import datetime
 
 import pytest
 
-from sats.api import CloudPipelineApi
+from sats.cp_api_client import CloudPipelineApi
 from sats.util.errors import ApiError, ApiRejected
 from sats.model import AsyncTaskType, MountType, TaskStatus
 
@@ -102,7 +102,7 @@ def test_builds_the_claiming_client_with_a_single_attempt(monkeypatch):
     # The property the module leans on hardest: a retried claim takes a second task and orphans the
     # first. Nothing else asserts it, because the two clients are injected everywhere else.
     built = []
-    monkeypatch.setattr('sats.api.build_client',
+    monkeypatch.setattr('sats.cp_api_client.build_client',
                         lambda url, token, attempts, backoff, timeout: built.append(attempts))
 
     CloudPipelineApi('https://api.example.com/pipeline/restapi', 'token', attempts=3)

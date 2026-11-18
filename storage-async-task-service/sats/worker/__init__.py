@@ -16,8 +16,8 @@
 The workers, and the one place that says which worker runs which kind of task.
 
     base.py                        what a worker has to be
-    archive_preparation_worker.py  DOWNLOAD_ARCHIVE: build the ZIP and upload it
-    unpack_archive_worker.py       UNPACK_ARCHIVE: extract an archive into a storage
+    archive/                       DOWNLOAD_ARCHIVE: build the ZIP and upload it
+    unpack/                        UNPACK_ARCHIVE: extract an archive into a storage
     task_stop_watcher.py           how any worker learns that it must give up
     cleaner.py                     not a worker: it finishes tasks whose workers are gone
 
@@ -27,14 +27,14 @@ task is a module here and one line in `_WORKERS`.
 
 from __future__ import annotations
 
-from ..api import CloudPipelineApi
+from ..cp_api_client import CloudPipelineApi
 from ..config import AsyncTasksConfig, ServiceConfig
 from ..model import ArchiveTask, AsyncTaskType
-from .archive_preparation_worker import ArchivePreparationWorker
+from .archive.archive_preparation_worker import ArchivePreparationWorker
 from .base import AsyncTaskWorker
 from .cleaner import Cleaner
 from .task_stop_watcher import TaskStopWatcher
-from .unpack_archive_worker import UnpackArchiveWorker
+from .unpack.unpack_archive_worker import UnpackArchiveWorker
 
 __all__ = ['ArchivePreparationWorker', 'AsyncTaskWorker', 'Cleaner', 'TaskStopWatcher',
            'UnpackArchiveWorker', 'SUPPORTED_TASK_TYPES', 'worker_for']

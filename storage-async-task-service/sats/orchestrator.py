@@ -36,7 +36,7 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-from .api import CloudPipelineApi
+from .cp_api_client import CloudPipelineApi
 from .config import PREFERENCE_KEY, AsyncTasksConfig, ServiceConfig
 from .util.errors import ApiError, ApiRejected
 from .util.log import get_logger

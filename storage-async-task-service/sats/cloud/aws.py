@@ -50,7 +50,7 @@ from ..model import CloudRegion, Storage
 if TYPE_CHECKING:
     # Read only by a type checker, so the annotation costs no import at runtime. `api.py` must stay
     # unaware of this module.
-    from ..api import CloudPipelineApi
+    from ..cp_api_client import CloudPipelineApi
 
 LOG = get_logger(__name__)
 

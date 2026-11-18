@@ -31,7 +31,7 @@ UNPACK_ARCHIVE     head the archive and read its tail for an entry count and a t
 ```
 
 Inside the archive a file is named without the folders the selection has in common above the items
-it names - `archive_preparation_worker._archive_root`. One folder picked deep in a tree is unpacked
+it names - `worker/archive/archive_preparation_worker._archive_root`. One folder picked deep in a tree is unpacked
 under its own name (`sub1/sub2/folder` gives `folder/...`), and a selection spread across folders
 keeps as much of the tree as it takes to tell its items apart (`sub1/sub2/folder` and
 `sub1/sub3/folder` give `sub2/folder/...` and `sub3/folder/...`). One prefix for the whole selection,
@@ -60,7 +60,7 @@ content an overwrite replaced.
 Permissions are never evaluated here. The API does that once, when the task is created - READ on the
 source, WRITE on the destination folder, and WRITE on the source as well for
 `deleteSourceOnSuccess`. **The entry names inside an archive are checked by nothing but this
-service** (`sats/archive_extractor.py`): the API never opens the archive, this container runs as root
+service** (`sats/worker/unpack/archive_extractor.py`): the API never opens the archive, this container runs as root
 and its node holds a role of every storage on the platform, so a name leading out of the destination
 is code execution. That is what every rule in `safe_entry_path` and every `is_inside` call is for.
 

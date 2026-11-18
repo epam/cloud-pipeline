@@ -25,7 +25,7 @@ from pathlib import Path
 
 import pytest
 
-from sats.archive_probe import ArchiveFormat, detect_format, probe_archive
+from sats.util.archive_probe import ArchiveFormat, detect_format, probe_archive
 
 CONTENT = {'notes.txt': b'a' * 1000, 'data/values.csv': b'1,2,3\n' * 500}
 TOTAL = sum(len(value) for value in CONTENT.values())

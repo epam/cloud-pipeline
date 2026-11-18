@@ -311,7 +311,7 @@ class FakeSource(FileSource):
         destination.write_bytes(self._files[source_file.path])
 
     def open_stream(self, source_file: SourceFile):
-        # `BytesIO` is seekable and readable, which is all `archive_probe` asks of a stream.
+        # `BytesIO` is seekable and readable, which is all `util.archive_probe` asks of a stream.
         return io.BytesIO(self._files[source_file.path])
 
     def close(self) -> None:

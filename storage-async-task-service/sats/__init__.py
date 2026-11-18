@@ -26,11 +26,13 @@ Module map, which is also the reading order:
 
     model.py                the task, the storage, the share - plain data
     config.py               our settings, and the ones from the preference
-    api.py                  the layer over pipeline.PipelineAPI
-    util/                   logging, exception types, version
+    cp_api_client.py        the layer over pipeline.PipelineAPI
+    util/                   logging, exception types, paths, sizes, the archive probe
     cloud/                  which role is assumed, and the client that results
     datastorage_providers/  reading a storage, and writing the archive
     worker/                 one task start to finish, plus the cleaner
+      archive/              DOWNLOAD_ARCHIVE
+      unpack/               UNPACK_ARCHIVE, and the extraction it drives
     orchestrator.py         the loop that claims tasks and hands them to workers
     app.py                  command line and entry point
 """

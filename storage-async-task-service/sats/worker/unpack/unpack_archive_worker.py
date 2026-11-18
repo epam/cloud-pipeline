@@ -40,20 +40,20 @@ import threading
 import time
 from pathlib import Path, PurePosixPath
 
-from ..api import CloudPipelineApi
-from ..archive_extractor import ExtractionLimits, extract
-from ..archive_probe import ArchiveFormat, ArchiveProbe, detect_format, probe_archive
-from ..config import ServiceConfig, StorageUnpackArchiveTaskConfig
-from ..datastorage_providers import EntryKind, FileDestination, FileSource, open_destination, \
+from ...cp_api_client import CloudPipelineApi
+from .archive_extractor import ExtractionLimits, extract
+from ...util.archive_probe import ArchiveFormat, ArchiveProbe, detect_format, probe_archive
+from ...config import ServiceConfig, StorageUnpackArchiveTaskConfig
+from ...datastorage_providers import EntryKind, FileDestination, FileSource, open_destination, \
     open_source
-from ..model import ArchiveTask, AsyncTaskType, Storage, TaskStatus, UnpackParams
-from ..util.errors import ApiError, ApiRejected, CredentialsUnavailable, DestinationConflict, \
+from ...model import ArchiveTask, AsyncTaskType, Storage, TaskStatus, UnpackParams
+from ...util.errors import ApiError, ApiRejected, CredentialsUnavailable, DestinationConflict, \
     DestinationWriteFailed, InvalidTask, StopReason, StopRequested, ThresholdExceeded, \
     UnsafeArchiveEntry, UnsupportedArchive, UnsupportedSource
-from ..util.log import get_logger
-from ..util.sizes import human_bytes
-from .base import AsyncTaskWorker
-from .task_stop_watcher import TaskStopWatcher
+from ...util.log import get_logger
+from ...util.sizes import human_bytes
+from ..base import AsyncTaskWorker
+from ..task_stop_watcher import TaskStopWatcher
 
 LOG = get_logger(__name__)
 

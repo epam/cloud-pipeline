@@ -44,7 +44,7 @@ import shutil
 import uuid
 from collections.abc import Callable
 
-from ..api import CloudPipelineApi
+from ..cp_api_client import CloudPipelineApi
 from ..datastorage_providers.s3 import S3Bucket, absolute_key, archive_key
 from ..cloud.aws import build_s3_client
 from ..config import AsyncTasksConfig, ServiceConfig, StorageDownloadArchiveTaskConfig

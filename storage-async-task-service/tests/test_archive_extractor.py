@@ -26,8 +26,8 @@ from pathlib import Path
 
 import pytest
 
-from sats.archive_extractor import ExtractionLimits, extract, safe_entry_path
-from sats.archive_probe import detect_format
+from sats.worker.unpack.archive_extractor import ExtractionLimits, extract, safe_entry_path
+from sats.util.archive_probe import detect_format
 from sats.util.errors import StopReason, StopRequested, ThresholdExceeded, \
     UnsafeArchiveEntry, UnsupportedArchive
 

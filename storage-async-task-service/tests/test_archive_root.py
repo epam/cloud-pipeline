@@ -22,7 +22,7 @@ worker actually packs under them is `test_archive_preparation_worker.py`.
 
 import pytest
 
-from sats.worker.archive_preparation_worker import _UNUSABLE_NAMES, _archive_name, _archive_root, \
+from sats.worker.archive.archive_preparation_worker import _UNUSABLE_NAMES, _archive_name, _archive_root, \
     _is_under
 
 

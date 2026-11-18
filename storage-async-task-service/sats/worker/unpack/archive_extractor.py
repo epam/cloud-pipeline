@@ -30,12 +30,12 @@ import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 
-from .archive_probe import ArchiveFormat
-from .datastorage_providers.base import DOWNLOAD_BLOCK_BYTES, Heartbeat
-from .util.errors import StopRequested, ThresholdExceeded, UnsafeArchiveEntry, UnsupportedArchive
-from .util.log import get_logger
-from .util.paths import is_inside
-from .util.sizes import human_bytes
+from ...util.archive_probe import ArchiveFormat
+from ...datastorage_providers.base import DOWNLOAD_BLOCK_BYTES, Heartbeat
+from ...util.errors import StopRequested, ThresholdExceeded, UnsafeArchiveEntry, UnsupportedArchive
+from ...util.log import get_logger
+from ...util.paths import is_inside
+from ...util.sizes import human_bytes
 
 LOG = get_logger(__name__)
 

@@ -24,7 +24,7 @@ import pytest
 from sats.config import ServiceConfig
 from sats.model import ArchiveTask, AsyncTaskType, Storage, StorageType, TaskStatus, UnpackParams
 from sats.util.errors import StopReason, StopRequested
-from sats.worker.unpack_archive_worker import UnpackArchiveWorker
+from sats.worker.unpack.unpack_archive_worker import UnpackArchiveWorker
 
 from .fakes import FakeApi, FakeDestination, FakeSource, unpack_config
 
@@ -87,9 +87,9 @@ def _run(tmp_path, monkeypatch, params=None, archive=None, unpack=None, destinat
     destination = destination if destination is not None else FakeDestination()
     api = api or FakeApi(_task(params))
     api.storages = {1: SOURCE_STORAGE, 2: DESTINATION_STORAGE}
-    monkeypatch.setattr('sats.worker.unpack_archive_worker.open_source',
+    monkeypatch.setattr('sats.worker.unpack.unpack_archive_worker.open_source',
                         lambda _api, _storage, _config: source)
-    monkeypatch.setattr('sats.worker.unpack_archive_worker.open_destination',
+    monkeypatch.setattr('sats.worker.unpack.unpack_archive_worker.open_destination',
                         lambda _api, _storage, _config: destination)
     worker = UnpackArchiveWorker(api, _service_config(tmp_path, status_poll_seconds),
                                  unpack or unpack_config(), _task(params))
@@ -345,9 +345,9 @@ def test_a_task_already_finished_elsewhere_reports_nothing(tmp_path, monkeypatch
 def test_a_task_without_parameters_fails_with_the_reason(tmp_path, monkeypatch):
     api = FakeApi(_task(_params()))
     api.storages = {1: SOURCE_STORAGE, 2: DESTINATION_STORAGE}
-    monkeypatch.setattr('sats.worker.unpack_archive_worker.open_source',
+    monkeypatch.setattr('sats.worker.unpack.unpack_archive_worker.open_source',
                         lambda *_args: FakeSource({}))
-    monkeypatch.setattr('sats.worker.unpack_archive_worker.open_destination',
+    monkeypatch.setattr('sats.worker.unpack.unpack_archive_worker.open_destination',
                         lambda *_args: FakeDestination())
     task = ArchiveTask(id=TASK_ID, status=TaskStatus.RUNNING, owner='USER', storage_id=None,
                        type=AsyncTaskType.UNPACK_ARCHIVE, unpack=None)

@@ -47,18 +47,18 @@ import time
 import zipfile
 from pathlib import Path
 
-from ..api import CloudPipelineApi
-from ..datastorage_providers.s3 import S3Bucket, absolute_key, archive_key
-from ..cloud.aws import build_s3_client
-from ..config import ServiceConfig, StorageDownloadArchiveTaskConfig
-from ..util.errors import ApiError, ApiRejected, CredentialsUnavailable, InvalidTask, StopReason, \
+from ...cp_api_client import CloudPipelineApi
+from ...datastorage_providers.s3 import S3Bucket, absolute_key, archive_key
+from ...cloud.aws import build_s3_client
+from ...config import ServiceConfig, StorageDownloadArchiveTaskConfig
+from ...util.errors import ApiError, ApiRejected, CredentialsUnavailable, InvalidTask, StopReason, \
     StopRequested, ThresholdExceeded, UnsupportedSource
-from ..util.log import get_logger
-from ..util.sizes import human_bytes
-from ..model import ArchiveTask, AsyncTaskType, StorageType, TaskStatus
-from ..datastorage_providers import FileSource, SourceFile, open_source
-from .base import AsyncTaskWorker
-from .task_stop_watcher import TaskStopWatcher
+from ...util.log import get_logger
+from ...util.sizes import human_bytes
+from ...model import ArchiveTask, AsyncTaskType, StorageType, TaskStatus
+from ...datastorage_providers import FileSource, SourceFile, open_source
+from ..base import AsyncTaskWorker
+from ..task_stop_watcher import TaskStopWatcher
 
 LOG = get_logger(__name__)
 
