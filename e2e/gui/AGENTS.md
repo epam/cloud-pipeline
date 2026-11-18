@@ -10,9 +10,10 @@ The Selenide/TestNG suite that drives the platform GUI in a browser. Run it for 
 - `run-e2e.sh` also changes the platform around the tests: it creates and unblocks the test users,
   registers the fixture tools, deactivates blocking system notifications, extends the admin's session
   in the API database and acts on the nodes of test runs. It reverts all that when it exits, also on
-  Ctrl-C; a killed runner leaves it in place. `--dummy-session` makes one more lasting change it never
-  reverts: a standing `ROLE_ADMIN` account (the session itself is still deleted on exit, same as any
-  other).
+  Ctrl-C; a killed runner leaves it in place. `--dummy-session` leaves a standing `ROLE_ADMIN` account
+  in place on purpose, blocked between runs, with the `email` attribute `--dummy-session-email` gave it.
+  When the run creates it, the platform's preferences may also give it a home storage and a personal
+  tool group. It refuses an existing account it did not create (no `e2e-dummy-session` attribute).
 - The time of the whole `testng.xml` on this line is not measured: a narrower selection took 10-12 hours, and it
   runs many more classes now. Run the classes the change touches.
 

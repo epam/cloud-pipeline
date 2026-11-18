@@ -66,7 +66,8 @@ Per-key consequences (mode C, the recommended one for a platform with SSO):
   either (they are behind SAML unless `CP_API_USE_ONLY_JWT_AUTH=true`). `run-e2e.sh --dummy-session` gets a session
   that outlives this anyway: `admin-session.sh create` makes one from a JWT, then patches that same 60 s deadline,
   serialized as 8 bytes inside the session's stored `SPRING_SECURITY_CONTEXT`, to a date of its choosing - no SSO
-  sign-in at all, needs `CP_API_JWT_DISABLE_SESSION=false`. A browser session expires
+  sign-in at all, needs `CP_API_JWT_DISABLE_SESSION` not to be `true` (the API image's default is `false`), and
+  lasts the `--timeout` of the run plus 2 hours. A browser session expires
   after `CP_API_SRV_SESSION_TIMEOUT_SEC` (default 1800 s) of **inactivity**; the running tests keep it alive (the
   time of the whole suite on this line is not measured). Check: `curl -sk -b "SESSION=<v>" .../restapi/whoami` must return `login` - also after
   65 s.
