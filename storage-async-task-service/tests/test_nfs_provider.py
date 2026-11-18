@@ -24,7 +24,7 @@ from pathlib import Path
 
 import pytest
 
-from sats.util.errors import DestinationConflict, InvalidTask, UnsupportedSource
+from sats.util.errors import DestinationConflict, DestinationWriteFailed, UnsupportedSource
 from sats.model import FileShare, MountType, Storage, StorageType
 from sats.datastorage_providers.base import EntryKind
 from sats.datastorage_providers.nfs import NfsDestination, NfsSource, _ShareMount, \
@@ -251,16 +251,41 @@ def test_an_empty_folder_is_created_on_a_share(tmp_path, monkeypatch):
     assert (destination._root / 'out/empty').is_dir()
 
 
-def test_a_missing_destination_folder_is_refused_rather_than_created(tmp_path, monkeypatch):
-    # The caller named a folder, and creating one would turn a typo in the path into a folder nobody
-    # asked for, in a storage where nothing says the name was meant.
+def test_a_missing_destination_folder_is_created_with_its_parents(tmp_path, monkeypatch):
+    # The same request needs no folder at all on an object storage, and the GUI always names a new
+    # folder beside the archive - so a missing one is created rather than refused.
     destination = _destination(tmp_path, monkeypatch)
 
-    with pytest.raises(InvalidTask):
-        destination.assert_writable('out/')
+    destination.ensure_destination_folder('out/nested/')
 
-    (destination._root / 'out').mkdir()
-    destination.assert_writable('out/')
+    assert (destination._root / 'out/nested').is_dir()
+    # Called again on the folder it just created, as a retry of the same task would.
+    destination.ensure_destination_folder('out/nested/')
+
+
+@pytest.mark.parametrize('prefix', ['out/', 'out/nested/'])
+def test_a_file_in_the_way_of_the_destination_folder_is_refused(tmp_path, monkeypatch, prefix):
+    # Two different errors out of one `mkdir`: the file is the folder itself (`FileExistsError`), or
+    # a parent of it (`NotADirectoryError`).
+    destination = _destination(tmp_path, monkeypatch)
+    (destination._root / 'out').write_bytes(b'x')
+
+    with pytest.raises(DestinationConflict):
+        destination.ensure_destination_folder(prefix)
+
+
+def test_a_share_that_refuses_the_folder_is_not_an_internal_error(tmp_path, monkeypatch):
+    # `root_squash` on the export is the common one, and it reaches the user as the task's own error
+    # rather than as a stack trace.
+    destination = _destination(tmp_path, monkeypatch)
+
+    def _refuse(*_args, **_kwargs):
+        raise PermissionError('access denied by server')
+
+    monkeypatch.setattr(Path, 'mkdir', _refuse)
+
+    with pytest.raises(DestinationWriteFailed):
+        destination.ensure_destination_folder('out/')
 
 
 @pytest.mark.parametrize('key', ['../escaped.txt', 'out/../../escaped.txt'])

@@ -478,12 +478,13 @@ class S3Destination(FileDestination):
         self._prefix = storage.prefix
         self._bucket = S3Bucket(storage.root, part_size_bytes, client)
 
-    def assert_writable(self, prefix: str) -> None:
+    def ensure_destination_folder(self, prefix: str) -> None:
         """
-        Nothing to check, and that is not an omission.
+        Nothing to create, and that is not an omission.
 
-        An object storage has no folders: a key with slashes is one key, so there is no folder to
-        find missing. Whether this service may write is answered by the first upload.
+        An object storage has no folders: a key with slashes is one key. So an extraction that
+        writes nothing leaves no trace of the folder the caller named, while a share keeps it.
+        Whether this service may write is answered by the first upload.
         """
 
     def kind(self, key: str) -> EntryKind:

@@ -29,7 +29,7 @@ from botocore.exceptions import ClientError
 
 from sats.config import AsyncTasksConfig, StorageDownloadArchiveTaskConfig, \
     StorageUnpackArchiveTaskConfig
-from sats.util.errors import ApiRejected, DestinationConflict, InvalidTask
+from sats.util.errors import ApiRejected, DestinationConflict
 from sats.model import ArchiveTask, AsyncTaskType, CloudRegion, FileShare, Storage, StorageType, \
     TaskStatus
 from sats.datastorage_providers.base import EntryKind, FileDestination, FileSource, SourceFile
@@ -329,23 +329,24 @@ class FakeDestination(FileDestination):
 
     def __init__(self, existing: dict[str, bytes] | None = None,
                  folders: set[str] | None = None, appearing: set[str] | None = None,
-                 missing_prefix: bool = False):
+                 file_at_prefix: bool = False):
         self.existing = dict(existing or {})
         self.folders = set(folders or ())
         self.appearing = set(appearing or ())
-        self.missing_prefix = missing_prefix
+        self.file_at_prefix = file_at_prefix
         self.written: list[str] = []
         self.created_folders: list[str] = []
         self.deleted: list[str] = []
         self.checked: list[str] = []
         self.closed = False
-        self.asserted_prefix: str | None = None
+        self.prepared_prefix: str | None = None
         self.fail_upload_of: str | None = None
 
-    def assert_writable(self, prefix: str) -> None:
-        self.asserted_prefix = prefix
-        if self.missing_prefix:
-            raise InvalidTask(f'The folder {prefix or "/"} does not exist in storage fake')
+    def ensure_destination_folder(self, prefix: str) -> None:
+        self.prepared_prefix = prefix
+        if self.file_at_prefix:
+            raise DestinationConflict(
+                f'The folder {prefix or "/"} cannot be created in storage fake, a file is in the way')
 
     def kind(self, key: str) -> EntryKind:
         self.checked.append(key)

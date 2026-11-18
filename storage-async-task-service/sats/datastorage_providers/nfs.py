@@ -42,7 +42,7 @@ from pathlib import Path
 from typing import BinaryIO
 
 from .base import DOWNLOAD_BLOCK_BYTES, EntryKind, FileDestination, FileSource, Heartbeat, SourceFile
-from ..util.errors import DestinationConflict, InvalidTask, UnsupportedSource
+from ..util.errors import DestinationConflict, DestinationWriteFailed, UnsupportedSource
 from ..util.log import get_logger
 from ..util.paths import is_inside
 from ..model import FileShare, MountType, Storage
@@ -328,18 +328,32 @@ class NfsDestination(FileDestination):
                 f'{self._root} under the mounted share {self._share.mount_root}, and that path does '
                 f'not exist')
 
-    def assert_writable(self, prefix: str) -> None:
+    def ensure_destination_folder(self, prefix: str) -> None:
         """
-        Checks that the folder the extraction will write into is there.
+        Creates the folder the extraction will write into, with its parents.
 
-        Not created: creating it would turn a typo in the path into a folder nobody asked for. The
-        folders the archive itself names are created - see `upload`.
+        The caller named this folder, so a missing one is created rather than refused: the same
+        request needs no folder at all on an object storage, and the GUI always names a new folder
+        beside the archive. A file at that path is a conflict - a share cannot hold both.
+
+        Created with this container's umask and owned by root, where the API sets the mode of a
+        folder it creates from `data.storage.nfs.default.umask` - group-writable by default. So a
+        user may be unable to write into it, exactly as they may be unable to overwrite the files
+        this service wrote.
         """
         target = self._resolve(prefix)
-        if not target.is_dir():
-            raise InvalidTask(
-                f'The folder {prefix or "/"} does not exist in storage {self._storage.name}. Create '
-                f'it first, or ask for a folder that is already there.')
+        try:
+            target.mkdir(parents=True, exist_ok=True)
+        except (FileExistsError, NotADirectoryError) as taken:
+            raise DestinationConflict(
+                f'The folder {prefix or "/"} cannot be created in storage {self._storage.name}, a '
+                f'file is in the way. Extract into another folder, or remove that file.') from taken
+        except OSError as error:
+            # Not an internal error: the share refused the write. `root_squash` on the export is the
+            # common one, since this service is root and root is then the share's anonymous user.
+            raise DestinationWriteFailed(
+                f'The folder {prefix or "/"} could not be created in storage {self._storage.name}: '
+                f'{error}. Try the extraction again once the storage accepts writes.') from error
 
     def kind(self, key: str) -> EntryKind:
         """What is at the key. A symlink counts as what it is, not as what it points at."""

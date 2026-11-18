@@ -20,7 +20,8 @@ The order of operations is designed as making less job before it could meet some
     1. check, before downloading   a file, within the size limit, of a format we open, declaring no
                                    more than the limits allow - all read from its tail
     2. extract locally             into `<task_id>/extracted/`, counting bytes and checking names
-    3. the collision pass          one look at the destination, over the archive's own keys only
+    3. the destination             the folder the caller named, created where it is missing, then
+                                   one collision pass over the archive's own keys only
     4. upload                      key = destinationPath + the path inside the archive
     5. report, then delete         SUCCESS first, the source archive after it
 
@@ -29,8 +30,8 @@ destination is untouched. A collision found at entry 500 would otherwise leave 4
 the pass comes before the first upload. The source is deleted last, because until the upload has
 finished the archive is all the user has.
 
-A failure leaves the files it had already uploaded. There is no rollback.
-So a failed task reports how many files it wrote.
+A failure leaves the files it had already uploaded, and the destination folder. There is no
+rollback. So a failed task reports how many files it wrote.
 """
 
 from __future__ import annotations
@@ -151,7 +152,7 @@ class UnpackArchiveWorker(AsyncTaskWorker):
                                               self._unpack_config.max_size_bytes),
                              self._watcher.check)
         with open_destination(self._api, destination_storage, self._config) as destination:
-            destination.assert_writable(params.destination_path)
+            destination.ensure_destination_folder(params.destination_path)
             self._assert_no_collisions(destination, extraction, params, source_storage)
             self._upload(destination, extraction, params)
         self._finish_succeeded(params)

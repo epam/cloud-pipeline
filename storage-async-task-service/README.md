@@ -26,8 +26,8 @@ Between the second and the third line the two types differ:
 DOWNLOAD_ARCHIVE   read the selection, check the thresholds, download file by file into a ZIP,
                    upload the ZIP to the archive bucket
 UNPACK_ARCHIVE     head the archive and read its tail for an entry count and a total, extract it
-                   locally while counting bytes and checking every entry name, look once at the
-                   destination for collisions, then upload entry by entry
+                   locally while counting bytes and checking every entry name, create the
+                   destination folder and look once at it for collisions, then upload entry by entry
 ```
 
 Inside the archive a file is named without the folders the selection has in common above the items
@@ -49,6 +49,15 @@ the archive with it.
 
 A cancelled task stops within `--status-poll-seconds`. A task whose worker was killed is finished by
 the cleaner, which also expires archives past `ttlDays`.
+
+**An extraction creates the folder it was asked to write into.** The caller named it, so a folder
+that is not there yet is created with its parents rather than refused - the GUI always names a new
+folder beside the archive. A file already at that path is refused instead, because a share cannot
+hold both. On an object storage there is no folder to create at all, so an extraction that writes
+nothing leaves no trace of the folder, while a share keeps it. On a share the folder is created with
+this container's umask and owned by root, while the API sets the mode of a folder it creates from
+`data.storage.nfs.default.umask` - group-writable by default. So a user may be unable to write into
+a folder an extraction created, exactly as they may be unable to overwrite the files it wrote.
 
 **A download task's archive is deleted when its task ends badly; an extraction's content is not.**
 There is no rollback: a failed or cancelled extraction leaves the files it had already written where

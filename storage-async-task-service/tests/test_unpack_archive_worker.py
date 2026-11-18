@@ -122,18 +122,18 @@ def test_an_empty_destination_path_is_the_root_of_the_storage(tmp_path, monkeypa
     assert sorted(destination.written) == ['data/values.csv', 'notes.txt']
 
 
-def test_the_destination_folder_is_checked_before_the_first_upload(tmp_path, monkeypatch):
+def test_the_destination_folder_is_prepared_before_the_first_upload(tmp_path, monkeypatch):
     _, _, destination, _ = _run(tmp_path, monkeypatch)
 
-    assert destination.asserted_prefix == 'out/'
+    assert destination.prepared_prefix == 'out/'
 
 
-def test_a_destination_folder_that_is_not_there_fails_the_task(tmp_path, monkeypatch):
+def test_a_file_in_the_way_of_the_destination_folder_fails_the_task(tmp_path, monkeypatch):
     api, _, destination, _ = _run(tmp_path, monkeypatch,
-                                  destination=FakeDestination(missing_prefix=True))
+                                  destination=FakeDestination(file_at_prefix=True))
 
     assert destination.written == []
-    assert 'does not exist' in _failure(api)
+    assert 'a file is in the way' in _failure(api)
 
 
 def test_the_scratch_directory_is_gone_afterwards(tmp_path, monkeypatch):

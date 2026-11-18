@@ -135,17 +135,18 @@ class FileDestination(abc.ABC):
 
     No permission check happens here. This service has no user identity and runs with a role of the
     storage's cloud region, so a check it invented would be a check against itself. The API
-    authorized the destination folder, and nothing per entry. What a destination owes is the
-    refusals a caller cannot make for it: a collision, and a path that is not where it claims.
+    authorized the destination folder, and nothing per entry. What a destination owes is the folder
+    the caller named, and the refusals a caller cannot make for it: a collision, and a path that is
+    not where it claims.
     """
 
     @abc.abstractmethod
-    def assert_writable(self, prefix: str) -> None:
+    def ensure_destination_folder(self, prefix: str) -> None:
         """
-        Checks that the folder an extraction will write into is there.
+        Makes sure the folder an extraction writes into is there, creating it where it is missing.
 
-        Called once, before the first upload. A share needs it; an object storage has no folder to
-        find.
+        Called once, before the first upload. A share creates it; an object storage has no folder to
+        create.
         """
 
     @abc.abstractmethod

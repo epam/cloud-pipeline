@@ -79,8 +79,9 @@ class DestinationConflict(Exception):
     """
     Something is already where the extraction would write, and the task did not ask to replace it.
 
-    Always answered the same way: refuse before the first upload, so the destination is left as it
-    was.
+    Always answered the same way: refuse before the first upload, so the destination holds none of
+    the archive's content. On a share it may hold the destination folder, which is created before
+    the collision pass.
     """
 
 
@@ -97,8 +98,8 @@ class InvalidTask(Exception):
     """
     The task describes work that cannot be carried out as written.
 
-    No storage, no paths, a storage deleted after the task was created, or a destination folder that
-    is not on the share.
+    No storage, no paths, a storage deleted after the task was created, or an archive path naming
+    something that is not a readable file.
     """
 
 
