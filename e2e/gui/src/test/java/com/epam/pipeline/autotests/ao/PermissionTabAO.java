@@ -27,6 +27,7 @@ import static com.codeborne.selenide.Selenide.*;
 import static com.epam.pipeline.autotests.utils.Permission.permissionsTable;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.tagName;
 
@@ -63,12 +64,18 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
         return this;
     }
 
+    /**
+     * Adds the user to the form, unless it is listed already (adding it again would reset its permissions to the
+     * default ones). The change is saved by {@link #closeAll()}, which clicks APPLY.
+     */
     public PermissionTabAO addNewUser(String userName) {
-        UserAdditionPopupAO userAdditionPopupAO = clickAddNewUser()
-                .typeInField(userName);
-        $(visible(byText("Select user"))).click();
-        return userAdditionPopupAO
-            .ok();
+        if (getRowByExactName(userName).exists()) {
+            return this;
+        }
+        return clickAddNewUser()
+                .typeInField(userName)
+                .selectUser(userName)
+                .ok();
     }
 
     public PermissionTabAO validateDeleteButtonIsDisplayedOppositeTo(String name) {
@@ -175,8 +182,23 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
         return getElementByNameInUpperCase(userOrGroup).is(visible);
     }
 
+    /**
+     * Saves the changes, then closes. The permissions form (client/.../roleModel/PermissionsForm.js) keeps added,
+     * removed and changed entries in the dialog until APPLY is clicked. While the save runs, APPLY is disabled and
+     * "Updating permissions..." is shown; once that message is gone, APPLY stays disabled only if the save worked,
+     * so a failed save fails here. A read-only form has no APPLY. The form is always in a dialog, so a button of the
+     * page underneath is not taken for it.
+     */
     @Override
     public void closeAll() {
+        final SelenideElement apply = $$(byXpath("//div[contains(@class, 'ant-modal-content')]//button[.='APPLY']"))
+                .findBy(visible);
+        if (apply.exists() && apply.isEnabled()) {
+            apply.click();
+            $(byXpath("//div[contains(@class, 'ant-message-notice')][contains(., 'Updating permissions')]"))
+                    .shouldNot(exist, ofMillis(C.DEFAULT_TIMEOUT * 2));
+            apply.shouldBe(disabled);
+        }
         clickOnInfoTabIfItIsVisible();
         parentAO.closeAll();
     }
@@ -247,9 +269,30 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
             super(parentAO);
         }
 
+        /**
+         * Opens the dialog's Select, then types. Its search input stays hidden (display: none) until the dropdown
+         * opens, and a click does nothing while the dialog still zooms in, or while the Select is disabled, which it
+         * is until the users are loaded.
+         */
         @Override
         public UserAdditionPopupAO typeInField(String value) {
+            final SelenideElement dialog = context().shouldBe(visible).closest(".ant-modal");
+            dialog.shouldNotHave(cssClass("zoom-appear"));
+            dialog.shouldNotHave(cssClass("zoom-enter"));
+            context().find(byClassName("ant-select-enabled")).shouldBe(visible)
+                    .find(byClassName("ant-select-selection")).click();
             context().find(tagName("input")).shouldBe(visible).setValue(value);
+            return this;
+        }
+
+        /**
+         * Chooses the user's option: the dialog keeps a user only when an option is chosen, typing alone selects
+         * nothing. The options appear once three characters are typed, and show the user's display name, which is
+         * the account name for a user without name attributes (exactText ignores the case).
+         */
+        public UserAdditionPopupAO selectUser(String userName) {
+            $$(byClassName("ant-select-dropdown-menu-item")).filterBy(visible).findBy(exactText(userName))
+                    .shouldBe(visible).click();
             return this;
         }
 
@@ -273,7 +316,8 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
         }
 
         private GroupAdditionPopupAO selectGroup(String name) {
-            $(byClassName("ant-select-dropdown-menu-root")).$(byText(name)).shouldBe(visible).click();
+            // the visible menu: a user dropdown opened before (selectUser) stays in the page, hidden
+            $$(byClassName("ant-select-dropdown-menu-root")).findBy(visible).$(byText(name)).shouldBe(visible).click();
             return this;
         }
     }
