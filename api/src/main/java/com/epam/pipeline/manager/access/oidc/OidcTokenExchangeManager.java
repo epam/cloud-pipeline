@@ -16,9 +16,12 @@
 
 package com.epam.pipeline.manager.access.oidc;
 
+import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.entity.security.JwtTokenClaims;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.user.UserManager;
@@ -27,6 +30,7 @@ import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.oidc.OidcAssumeStrategy;
 import com.epam.pipeline.security.oidc.OidcAssumeStrategyType;
 import com.epam.pipeline.security.oidc.OidcClient;
+import com.epam.pipeline.security.oidc.OidcUserMapping;
 import com.nimbusds.jwt.JWTClaimsSet;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +40,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -65,6 +70,7 @@ public class OidcTokenExchangeManager {
     private final OidcTokenVerifier tokenVerifier;
     private final OidcClientResolver clientResolver;
     private final UserManager userManager;
+    private final MetadataManager metadataManager;
     private final UserAccessService userAccessService;
     private final JwtTokenGenerator jwtTokenGenerator;
     private final PreferenceManager preferenceManager;
@@ -145,6 +151,9 @@ public class OidcTokenExchangeManager {
         if (OidcAssumeStrategyType.SPECIFIC_USER == strategy.getType()) {
             return normalize(strategy.getUser());
         }
+        if (OidcAssumeStrategyType.MAPPED_USER == strategy.getType()) {
+            return mappedUserNameOf(verified, client, strategy);
+        }
         final Object claim = verified.getClaims().getClaim(strategy.getUserClaim());
         if (!(claim instanceof String) || StringUtils.isBlank((String) claim)) {
             throw new OidcTokenVerificationException(String.format(
@@ -152,6 +161,61 @@ public class OidcTokenExchangeManager {
                     strategy.getUserClaim(), client.getId()));
         }
         return normalize((String) claim);
+    }
+
+    /**
+     * Finds the user carrying the claim's value in the configured metadata attribute, and gives
+     * back its name so the user itself is loaded the same way as for every other strategy.
+     * <p>
+     * Exactly one user may match. A mapping picking out several describes a configuration or a
+     * data state nobody intended, and choosing among them would hand out a token for an account
+     * that was never meant to be reachable, so none is acted as.
+     */
+    private String mappedUserNameOf(final OidcVerifiedToken verified, final OidcClient client,
+                                    final OidcAssumeStrategy strategy) {
+        final OidcUserMapping mapping = strategy.getUserMapping();
+        // both halves, so a configuration written past the validator is reported as a client
+        // fault rather than as a token the identity provider got wrong
+        if (Objects.isNull(mapping) || StringUtils.isBlank(mapping.getClaim())
+                || StringUtils.isBlank(mapping.getMetadataKey())) {
+            throw new OidcClientNotAuthorizedException(String.format(
+                    "Client %s says nothing about how to map a user", client.getId()));
+        }
+        final List<Long> ids = ListUtils.emptyIfNull(metadataManager.searchMetadataByClassAndKeyValue(
+                        AclClass.PIPELINE_USER, mapping.getMetadataKey(),
+                        claimTextOf(verified, mapping, client)))
+                .stream()
+                .map(EntityVO::getEntityId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        // loaded together rather than one by one, so metadata left behind by a deleted user drops
+        // out here instead of failing the exchange
+        final List<PipelineUser> users = ids.isEmpty()
+                ? Collections.emptyList()
+                : new ArrayList<>(userManager.loadUsersById(ids));
+        if (users.isEmpty()) {
+            throw new OidcTokenVerificationException(String.format(
+                    "No user has %s of the token presented through client %s in its %s metadata",
+                    mapping.getClaim(), client.getId(), mapping.getMetadataKey()));
+        }
+        if (users.size() > 1) {
+            throw new OidcTokenVerificationException(String.format(
+                    "The mapping of client %s matches %d users, so none is acted as",
+                    client.getId(), users.size()));
+        }
+        return normalize(users.get(0).getUserName());
+    }
+
+    private String claimTextOf(final OidcVerifiedToken verified, final OidcUserMapping mapping,
+                               final OidcClient client) {
+        final String text = OidcClaimMatcher.asText(verified.getClaims().getClaim(mapping.getClaim()));
+        if (StringUtils.isBlank(text)) {
+            throw new OidcTokenVerificationException(String.format(
+                    "Claim %s of the token presented through client %s has no value to map a user by",
+                    mapping.getClaim(), client.getId()));
+        }
+        return text;
     }
 
     private void checkUserAllowed(final String userName, final OidcClient client,

@@ -26,7 +26,7 @@ Gradle build. The version is declared in the root `build.gradle`.
 | `core` | `entity/`, `dto/`, `vo/`, `utils/` shared by `api` and `notifier:smtp` — no service logic |
 | `data-sharing-service` | a separate Spring Boot API (`api`) and React GUI (`client`) over data storages, deployed as `cp-share-srv`. Package `com.epam.pipeline.external.datastorage` — no WebDAV in it |
 | `data-transfer-service` | "DTS" — the service run on-premise, moving data between local filesystems and cloud storages, and reporting to `api` |
-| `deploy` | a `cp-*` Dockerfile per platform component — including third-party ones (Clair, GitLab, the IdP) and `deploy/docker/cp-tools/`, the end-user tool images — plus the `pipectl` installer and CI helper scripts (the workflows themselves are in `.github/workflows/`) |
+| `deploy` | a `cp-*` Dockerfile per platform component — including third-party ones (Clair, GitLab, the IdP) and `deploy/docker/cp-tools/`, the end-user tool images — plus the `pipectl` installer, CI helper scripts (the workflows themselves are in `.github/workflows/`) and `deploy/integrations/`, the actions other repositories call |
 | `docker-comp-scan` | scans a container image with OWASP dependency-check and reports its packages — Python, R, OS and NVIDIA/CUDA are the enabled analyzers |
 | `e2e` | `cli` (pytest), `gui` (its own Gradle wrapper, and its own `AGENTS.md`) and `load`. Long-running; `cli` and `load` are never yours to launch |
 | `elasticsearch-agent` | Spring Boot; indexes platform entities into Elasticsearch, and `api` serves the searches over that index |
@@ -73,6 +73,15 @@ Names that mislead, or hide a coupling:
 - **`deploy/docker/cp-edge`** — the nginx+Lua (OpenResty) reverse proxy that routes users into
   running job containers. It owns the proxy rules, but the endpoint URLs it serves are built in `api`
   (`EdgeServiceManager`, `PipelineRunServiceUrlManager`), so a routing change often needs both.
+- **`deploy/integrations/`** — not deployment code, and not run from this repository at all. A
+  directory holding an `action.yml` is a composite GitHub Action another repository calls as
+  `uses: epam/cloud-pipeline/deploy/integrations/<path>@<ref>`. A consumer pinned to a tag or a
+  commit keeps whatever that ref held, but every example here pins `@develop`, so renaming a
+  directory breaks those workflows at once and makes any ref bump fail with "can't find
+  action.yml". Renaming an **input** is the quiet one: GitHub only warns about an input it does not
+  know, so the action runs with the default and the workflow does the wrong thing without failing.
+  Add an input rather than rename one. An `_`-prefixed sibling is shared internals, called through
+  `$GITHUB_ACTION_PATH` — free to move, but only together with every action that calls it.
 - **`data-transfer-service`** and **`data-sharing-service`** are unrelated despite the near-identical
   names.
 
