@@ -20,6 +20,7 @@ import com.epam.pipeline.dto.async.AsyncTaskStatus;
 import com.epam.pipeline.dto.async.AsyncTaskType;
 import com.epam.pipeline.dto.async.DownloadArchiveParams;
 import com.epam.pipeline.dto.async.DownloadArchiveResult;
+import com.epam.pipeline.dto.async.UnpackArchiveParams;
 import com.epam.pipeline.entity.async.AsyncTaskEntity;
 import com.epam.pipeline.test.repository.AbstractJpaTest;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 public class AsyncTaskRepositoryTest extends AbstractJpaTest {
 
     private static final String TYPE = AsyncTaskType.DOWNLOAD_ARCHIVE.name();
+    private static final String UNPACK_TYPE = AsyncTaskType.UNPACK_ARCHIVE.name();
     private static final String FOREIGN_TYPE = "SOMETHING_ELSE";
     private static final String OWNER = "USER";
     private static final String ANOTHER_OWNER = "ANOTHER_USER";
@@ -121,7 +123,19 @@ public class AsyncTaskRepositoryTest extends AbstractJpaTest {
         save(AsyncTaskStatus.SUCCESS, OWNER, LONG_AGO);
         entityManager.flush();
 
-        assertEquals(oldestPending, repository.lockNextPending(TYPE).orElse(null));
+        assertEquals(oldestPending, repository.lockNextPending(List.of(TYPE)).orElse(null));
+    }
+
+    @Test
+    public void shouldLockTheOldestPendingTaskAcrossEveryTypeAsked() {
+        // One queue across the types an executor handles: the oldest wins whatever its type, so the
+        // tasks of one type never wait behind another's.
+        save(AsyncTaskStatus.PENDING, OWNER, LATER);
+        final String oldestPending = saveUnpack(AsyncTaskStatus.PENDING, EARLIER).getId();
+        entityManager.flush();
+
+        assertEquals(oldestPending,
+                repository.lockNextPending(List.of(TYPE, UNPACK_TYPE)).orElse(null));
     }
 
     @Test
@@ -130,17 +144,25 @@ public class AsyncTaskRepositoryTest extends AbstractJpaTest {
         save(AsyncTaskStatus.SUCCESS, OWNER, LATER);
         entityManager.flush();
 
-        assertFalse(repository.lockNextPending(TYPE).isPresent());
+        assertFalse(repository.lockNextPending(List.of(TYPE)).isPresent());
     }
 
     @Test
     public void shouldLockNothingOfAnotherType() {
-        // The queue is per type, and a worker asks for its own. Only one type exists today, so the type
-        // that has to be skipped is named as the literal the query would be given.
+        // The queue is filtered to the types asked for, and an executor asks for its own: a task it
+        // cannot run would be marked RUNNING and then abandoned.
         save(AsyncTaskStatus.PENDING, OWNER, EARLIER);
         entityManager.flush();
 
-        assertFalse(repository.lockNextPending(FOREIGN_TYPE).isPresent());
+        assertFalse(repository.lockNextPending(List.of(FOREIGN_TYPE)).isPresent());
+    }
+
+    @Test
+    public void shouldLockNothingOfATypeThatWasNotAsked() {
+        saveUnpack(AsyncTaskStatus.PENDING, EARLIER);
+        entityManager.flush();
+
+        assertFalse(repository.lockNextPending(List.of(TYPE)).isPresent());
     }
 
     @Test
@@ -288,6 +310,22 @@ public class AsyncTaskRepositoryTest extends AbstractJpaTest {
                         .storageId(STORAGE_ID)
                         .paths(List.of(PATH))
                         .archiveName(ARCHIVE_NAME)
+                        .build())
+                .created(created)
+                .statusChanged(created)
+                .build());
+    }
+
+    private AsyncTaskEntity saveUnpack(final AsyncTaskStatus status, final LocalDateTime created) {
+        return repository.save(AsyncTaskEntity.builder()
+                .type(AsyncTaskType.UNPACK_ARCHIVE)
+                .owner(OWNER)
+                .status(status)
+                .params(UnpackArchiveParams.builder()
+                        .sourceStorageId(STORAGE_ID)
+                        .sourcePath(ARCHIVE_NAME)
+                        .destinationStorageId(STORAGE_ID)
+                        .destinationPath(PATH)
                         .build())
                 .created(created)
                 .statusChanged(created)

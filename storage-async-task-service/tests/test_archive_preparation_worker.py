@@ -24,7 +24,7 @@ import zipfile
 from sats.datastorage_providers.s3 import archive_key
 from sats.config import StorageDownloadArchiveTaskConfig, ServiceConfig
 from sats.model import ArchiveTask, Storage, StorageType, TaskStatus
-from sats.worker.archive_preparation_worker import ArchivePreparationWorker
+from sats.worker.archive.archive_preparation_worker import ArchivePreparationWorker
 
 from .fakes import FakeApi, FakeBucket, FakeSource
 
@@ -70,7 +70,7 @@ def _run(tmp_path, monkeypatch, source, api=None, archive_config=None, bucket=No
     archive_config = archive_config or _archive_config()
     bucket = bucket or FakeBucket()
     config = service_config or _service_config(tmp_path)
-    monkeypatch.setattr('sats.worker.archive_preparation_worker.open_source', lambda *_args: source)
+    monkeypatch.setattr('sats.worker.archive.archive_preparation_worker.open_source', lambda *_args: source)
     ArchivePreparationWorker(api, config, archive_config, api.task, bucket=bucket).run()
     return api, bucket
 
@@ -176,7 +176,7 @@ def test_keeps_the_users_own_readme_when_the_prefix_leaves_it_at_the_root(tmp_pa
 
     api = FakeApi(_task(paths=('sub1/sub2/README.txt',)))
     bucket = FakeBucket()
-    monkeypatch.setattr('sats.worker.archive_preparation_worker.open_source', lambda *_args: source)
+    monkeypatch.setattr('sats.worker.archive.archive_preparation_worker.open_source', lambda *_args: source)
     captured = {}
 
     def capture(path, key, heartbeat):
@@ -224,7 +224,7 @@ def test_the_archive_note_says_why_each_file_is_missing(tmp_path, monkeypatch):
 
     api = FakeApi(_task())
     bucket = FakeBucket()
-    monkeypatch.setattr('sats.worker.archive_preparation_worker.open_source', lambda *_args: source)
+    monkeypatch.setattr('sats.worker.archive.archive_preparation_worker.open_source', lambda *_args: source)
 
     # This one needs the archive itself rather than its listing, so the upload is captured by hand.
     captured = {}
@@ -250,7 +250,7 @@ def test_the_note_names_a_missing_file_by_its_storage_path(tmp_path, monkeypatch
 
     api = FakeApi(_task(paths=(selected,)))
     bucket = FakeBucket()
-    monkeypatch.setattr('sats.worker.archive_preparation_worker.open_source', lambda *_args: source)
+    monkeypatch.setattr('sats.worker.archive.archive_preparation_worker.open_source', lambda *_args: source)
     captured = {}
 
     def capture(path, key, heartbeat):
@@ -371,7 +371,7 @@ def test_keeps_the_users_own_readme_and_renames_the_note(tmp_path, monkeypatch):
 
     api = FakeApi(_task())
     bucket = FakeBucket()
-    monkeypatch.setattr('sats.worker.archive_preparation_worker.open_source', lambda *_args: source)
+    monkeypatch.setattr('sats.worker.archive.archive_preparation_worker.open_source', lambda *_args: source)
     captured = {}
 
     def capture(path, key, heartbeat):
@@ -440,10 +440,10 @@ def test_builds_the_destination_client_from_the_destination_storages_region(tmp_
     # which returns before this happens.
     source = FakeSource({'a.txt': b'hello'})
     api = FakeApi(_task())
-    monkeypatch.setattr('sats.worker.archive_preparation_worker.open_source', lambda *_args: source)
+    monkeypatch.setattr('sats.worker.archive.archive_preparation_worker.open_source', lambda *_args: source)
     # The real `build_s3_client` runs - that is what is under test - while the bucket around it is
     # replaced, so nothing is uploaded.
-    monkeypatch.setattr('sats.worker.archive_preparation_worker.ArchiveBucket',
+    monkeypatch.setattr('sats.worker.archive.archive_preparation_worker.S3Bucket',
                         lambda _bucket, _part_size, _client: FakeBucket())
 
     ArchivePreparationWorker(api, _service_config(tmp_path), _archive_config(), api.task).run()
@@ -460,7 +460,7 @@ def test_fails_the_task_when_the_destination_is_not_an_object_storage(tmp_path, 
     source = FakeSource({'a.txt': b'hello'})
     api = FakeApi(_task())
     api.storage = Storage(id=9, name='shared-fs', type=StorageType.NFS, path='10.0.0.1:/export')
-    monkeypatch.setattr('sats.worker.archive_preparation_worker.open_source', lambda *_args: source)
+    monkeypatch.setattr('sats.worker.archive.archive_preparation_worker.open_source', lambda *_args: source)
 
     ArchivePreparationWorker(api, _service_config(tmp_path), _archive_config(), api.task).run()
 
@@ -472,7 +472,7 @@ def test_fails_the_task_when_the_destinations_region_cannot_be_read(tmp_path, mo
     source = FakeSource({'a.txt': b'hello'})
     api = FakeApi(_task())
     api.region_missing = True
-    monkeypatch.setattr('sats.worker.archive_preparation_worker.open_source', lambda *_args: source)
+    monkeypatch.setattr('sats.worker.archive.archive_preparation_worker.open_source', lambda *_args: source)
 
     ArchivePreparationWorker(api, _service_config(tmp_path), _archive_config(), api.task).run()
 

@@ -27,6 +27,10 @@ Four cleanups, once per round of the main loop, in this order:
     3. an archive past its time to live   SUCCESS older than ttlDays -> EXPIRED
     4. scratch directories nobody owns    deleted
 
+The first two apply to every task type this service runs. The third is the download type's alone,
+and that filter is load-bearing - see `_expire_finished_tasks`. None of them removes anything an
+extraction wrote.
+
 "Stuck" is measured by the API's clock on its own `status_changed` column, so a restart of this
 service resets nobody's timer and two replicas would agree.
 
@@ -40,10 +44,10 @@ import shutil
 import uuid
 from collections.abc import Callable
 
-from ..api import CloudPipelineApi
-from ..datastorage_providers.s3 import ArchiveBucket, absolute_key, archive_key
+from ..cp_api_client import CloudPipelineApi
+from ..datastorage_providers.s3 import S3Bucket, absolute_key, archive_key
 from ..cloud.aws import build_s3_client
-from ..config import ServiceConfig, StorageDownloadArchiveTaskConfig
+from ..config import AsyncTasksConfig, ServiceConfig, StorageDownloadArchiveTaskConfig
 from ..util.errors import ApiError, ApiRejected
 from ..util.log import get_logger
 from ..model import ArchiveTask, AsyncTaskType, Storage, TaskStatus, utc_now
@@ -58,6 +62,18 @@ ORPHAN_GRACE_MINUTES = 30
 # through all of it in one round would hold up the claiming of new tasks.
 CLEANUP_PAGE_SIZE = 200
 
+# Every type this service runs has to be here, or a task whose worker died stays `RUNNING` for ever:
+# the cleanups filter by type, so nothing else would look at it. The list repeats
+# `worker.SUPPORTED_TASK_TYPES` because `worker/__init__` imports this module; `test_cleaner` keeps
+# the two in step.
+CLEANED_TASK_TYPES: tuple[AsyncTaskType, ...] = (AsyncTaskType.DOWNLOAD_ARCHIVE,
+                                                 AsyncTaskType.UNPACK_ARCHIVE)
+
+# The types whose task owns an artifact the platform has to remove. An extraction owns none: its
+# content belongs to the storage the caller chose. `_delete_archive` on an unpack task would fall
+# back to the configured download destination and delete a key that was never written there.
+TYPES_WITH_ARTIFACT: tuple[AsyncTaskType, ...] = (AsyncTaskType.DOWNLOAD_ARCHIVE,)
+
 
 class Cleaner:
     """
@@ -70,15 +86,15 @@ class Cleaner:
     """
 
     def __init__(self, api: CloudPipelineApi, config: ServiceConfig,
-                 bucket_factory: Callable[[Storage], ArchiveBucket] | None = None):
+                 bucket_factory: Callable[[Storage], S3Bucket] | None = None):
         self._api = api
         self._config = config
         self._bucket_factory = bucket_factory or _default_bucket_factory(api, config)
         # Caches, so that a page of two hundred tasks does not cost two hundred `load_storage` calls.
         self._storages: dict[int, Storage] = {}
-        self._buckets: dict[int, ArchiveBucket] = {}
+        self._buckets: dict[int, S3Bucket] = {}
 
-    def cleanup(self, archive_config: StorageDownloadArchiveTaskConfig, active_ids: set[str]) -> None:
+    def cleanup(self, configs: AsyncTasksConfig, active_ids: set[str]) -> None:
         """
         One pass of all four cleanups.
 
@@ -87,9 +103,9 @@ class Cleaner:
         dead one's.
         """
         cleanups = (
-            lambda: self._finish_unconfirmed_cancellations(archive_config),
-            lambda: self._fail_stuck_tasks(archive_config),
-            lambda: self._expire_finished_tasks(archive_config),
+            lambda: self._finish_unconfirmed_cancellations(configs),
+            lambda: self._fail_stuck_tasks(configs),
+            lambda: self._expire_finished_tasks(configs),
             lambda: self._remove_orphan_directories(active_ids),
         )
         for cleanup in cleanups:
@@ -101,7 +117,7 @@ class Cleaner:
 
     # ------------------------------------------------------------------ cleanup 1
 
-    def _finish_unconfirmed_cancellations(self, archive_config: StorageDownloadArchiveTaskConfig) -> None:
+    def _finish_unconfirmed_cancellations(self, configs: AsyncTasksConfig) -> None:
         """
         Finishes a cancellation whose worker never came back.
 
@@ -110,55 +126,65 @@ class Cleaner:
 
         `CANCELLED` and not `FAILED`, because the user did ask for it. Two calls, because the task
         model has no direct `CANCEL_REQUESTED -> CANCELLED` edge.
+
+        One pass per type, because the filter takes one type. The type decides the cleanup: a
+        download task's archive is deleted, an unpack task's destination is not touched.
         """
-        stale = self._api.filter_tasks(
-            task_type=AsyncTaskType.DOWNLOAD_ARCHIVE,
-            statuses=[TaskStatus.CANCEL_REQUESTED],
-            status_changed_before=self._stuck_before(archive_config),
-            page_size=CLEANUP_PAGE_SIZE)
-        for task in stale:
-            LOG.warning('Task %s has been waiting to be cancelled since %s, finishing it here',
-                        task.id, task.status_changed)
-            if not self._move(task, TaskStatus.STOPPING):
-                continue
-            self._delete_archive(archive_config, task)
-            self._move(task, TaskStatus.CANCELLED)
+        for task_type in CLEANED_TASK_TYPES:
+            stale = self._api.filter_tasks(
+                task_type=task_type,
+                statuses=[TaskStatus.CANCEL_REQUESTED],
+                status_changed_before=self._stuck_before(configs),
+                page_size=CLEANUP_PAGE_SIZE)
+            for task in stale:
+                LOG.warning('Task %s has been waiting to be cancelled since %s, finishing it here',
+                            task.id, task.status_changed)
+                if not self._move(task, TaskStatus.STOPPING):
+                    continue
+                if task_type in TYPES_WITH_ARTIFACT:
+                    self._delete_archive(configs.download, task)
+                self._move(task, TaskStatus.CANCELLED)
 
     # ------------------------------------------------------------------ cleanup 2
 
-    def _fail_stuck_tasks(self, archive_config: StorageDownloadArchiveTaskConfig) -> None:
+    def _fail_stuck_tasks(self, configs: AsyncTasksConfig) -> None:
         """
         Fails a task whose status has not changed for longer than `stuckTasksThresholdMinutes`.
 
         `RUNNING` and `STOPPING` each get their own window, since the threshold runs from the last
         status change: a worker deleting a large archive after announcing `STOPPING` is not stuck.
 
-        This is why the threshold must exceed `workerMaxRunningMinutes` by a margin - see
-        `StorageDownloadArchiveTaskConfig.warnings`.
+        This is why the threshold must exceed the larger of the sections' `workerMaxRunningMinutes`
+        by a margin - see `AsyncTasksConfig.warnings`.
 
         The transition is reported before the archive is deleted. A worker that was only slow may
         report `SUCCESS` meanwhile; then the `FAILED` move is refused and the user keeps a working
         download. Deleting first would leave that task `SUCCESS` with its archive gone.
+
+        For an unpack task there is nothing to delete, and the destination is left as the dead worker
+        left it. Its scratch directory is removed by `_remove_orphan_directories`.
         """
-        stuck = self._api.filter_tasks(
-            task_type=AsyncTaskType.DOWNLOAD_ARCHIVE,
-            statuses=[TaskStatus.RUNNING, TaskStatus.STOPPING],
-            status_changed_before=self._stuck_before(archive_config),
-            page_size=CLEANUP_PAGE_SIZE)
-        for task in stuck:
-            LOG.warning('Task %s has been %s since %s with nothing reported, failing it', task.id,
-                        task.status, task.status_changed)
-            moved = self._move(task, TaskStatus.FAILED,
-                               error_message=f'The archive service stopped working on this task '
-                                             f'without reporting a result, and no progress was made '
-                                             f'for {archive_config.stuck_tasks_threshold_minutes} minutes. '
-                                             f'Please try again.')
-            if moved:
-                self._delete_archive(archive_config, task)
+        for task_type in CLEANED_TASK_TYPES:
+            stuck = self._api.filter_tasks(
+                task_type=task_type,
+                statuses=[TaskStatus.RUNNING, TaskStatus.STOPPING],
+                status_changed_before=self._stuck_before(configs),
+                page_size=CLEANUP_PAGE_SIZE)
+            for task in stuck:
+                LOG.warning('Task %s has been %s since %s with nothing reported, failing it',
+                            task.id, task.status, task.status_changed)
+                moved = self._move(
+                    task, TaskStatus.FAILED,
+                    error_message=f'The storage task service stopped working on this task without '
+                                  f'reporting a result, and no progress was made for '
+                                  f'{configs.stuck_tasks_threshold_minutes} minutes. Please try '
+                                  f'again.')
+                if moved and task_type in TYPES_WITH_ARTIFACT:
+                    self._delete_archive(configs.download, task)
 
     # ------------------------------------------------------------------ cleanup 3
 
-    def _expire_finished_tasks(self, archive_config: StorageDownloadArchiveTaskConfig) -> None:
+    def _expire_finished_tasks(self, configs: AsyncTasksConfig) -> None:
         """
         Deletes archives older than `ttlDays` and marks their tasks `EXPIRED`.
 
@@ -167,16 +193,23 @@ class Cleaner:
         repeat, since deleting an absent object succeeds.
 
         `EXPIRED` is also what makes the API stop offering a download link.
+
+        The type filter is load-bearing. `EXPIRED` does not mean "the record is old", it means "the
+        artifact is gone", and an unpack task owns no artifact. Without the filter this sweep would
+        delete a key in the *download* destination on behalf of a task that never wrote there, and
+        would hide a finished extraction from the GUI, which announces only `SUCCESS` and `FAILED`.
+        A successful extraction stays `SUCCESS` for good.
         """
+        download = configs.download
         expired = self._api.filter_tasks(
             task_type=AsyncTaskType.DOWNLOAD_ARCHIVE,
             statuses=[TaskStatus.SUCCESS],
-            finished_before=utc_now() - datetime.timedelta(days=archive_config.ttl_days),
+            finished_before=utc_now() - datetime.timedelta(days=download.ttl_days),
             page_size=CLEANUP_PAGE_SIZE)
         for task in expired:
             LOG.info('Archive of task %s finished at %s, past its %s day lifetime', task.id,
-                     task.finished, archive_config.ttl_days)
-            if self._delete_archive(archive_config, task, uploaded=True):
+                     task.finished, download.ttl_days)
+            if self._delete_archive(download, task, uploaded=True):
                 self._move(task, TaskStatus.EXPIRED)
 
     # ------------------------------------------------------------------ cleanup 4
@@ -235,7 +268,7 @@ class Cleaner:
             self._storages[storage_id] = self._api.load_storage(storage_id)
         return self._storages[storage_id]
 
-    def _bucket_for(self, storage: Storage) -> ArchiveBucket:
+    def _bucket_for(self, storage: Storage) -> S3Bucket:
         """
         The archive bucket of a destination storage, built once per storage per process.
 
@@ -248,9 +281,14 @@ class Cleaner:
         return self._buckets[storage.id]
 
     @staticmethod
-    def _stuck_before(archive_config: StorageDownloadArchiveTaskConfig) -> datetime.datetime:
-        """The moment a status change has to predate for its task to count as stuck."""
-        return utc_now() - datetime.timedelta(minutes=archive_config.stuck_tasks_threshold_minutes)
+    def _stuck_before(configs: AsyncTasksConfig) -> datetime.datetime:
+        """
+        The moment a status change has to predate for its task to count as stuck.
+
+        One threshold for every type: it governs the cleaner, not a task type, so it must exceed the
+        larger of the sections' time limits.
+        """
+        return utc_now() - datetime.timedelta(minutes=configs.stuck_tasks_threshold_minutes)
 
     def _move(self, task: ArchiveTask, status: TaskStatus,
               error_message: str | None = None) -> bool:
@@ -323,13 +361,13 @@ def _looks_like_task_id(name: str) -> bool:
 
 
 def _default_bucket_factory(api: CloudPipelineApi,
-                            config: ServiceConfig) -> Callable[[Storage], ArchiveBucket]:
+                            config: ServiceConfig) -> Callable[[Storage], S3Bucket]:
     """
     Builds the function that makes an archive bucket for a destination storage.
 
     Each call reads the storage's region and assumes its role, so the cleaner calls it once per
     storage and keeps the result.
     """
-    def factory(storage: Storage) -> ArchiveBucket:
-        return ArchiveBucket(storage.root, config.part_size_bytes, build_s3_client(api, storage))
+    def factory(storage: Storage) -> S3Bucket:
+        return S3Bucket(storage.root, config.part_size_bytes, build_s3_client(api, storage))
     return factory

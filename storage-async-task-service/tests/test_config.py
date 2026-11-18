@@ -24,9 +24,12 @@ import json
 
 import pytest
 
-from sats.config import DEFAULT_DESTINATION_PREFIX, DEFAULT_MAX_FILES_COUNT, \
+from sats.config import AsyncTasksConfig, DEFAULT_DESTINATION_PREFIX, DEFAULT_MAX_FILES_COUNT, \
     DEFAULT_MAX_SIZE_BYTES, DEFAULT_MAX_USER_TASKS, DEFAULT_STUCK_TASKS_THRESHOLD_MINUTES, \
-    DEFAULT_TTL_DAYS, StorageDownloadArchiveTaskConfig, normalise_prefix
+    DEFAULT_TTL_DAYS, DEFAULT_UNPACK_MAX_ARCHIVE_SIZE_BYTES, DEFAULT_UNPACK_MAX_FILES_COUNT, \
+    DEFAULT_UNPACK_MAX_SIZE_BYTES, StorageDownloadArchiveTaskConfig, \
+    StorageUnpackArchiveTaskConfig, normalise_prefix
+from sats.model import AsyncTaskType
 
 
 def _preference(download=None, **shared):
@@ -215,3 +218,141 @@ def test_a_fully_configured_preference_warns_about_nothing():
     }, maxUserTasks=3, stuckTasksThresholdMinutes=360))
 
     assert config.warnings() == []
+
+
+# ---------------------------------------------------------------- the unpack section
+
+def _preference_with(download=None, unpack=None, **shared):
+    value = dict(shared)
+    tasks = {}
+    if download is not None:
+        tasks['storageDownloadAsArchive'] = download
+    if unpack is not None:
+        tasks['storageUnpackArchive'] = unpack
+    if tasks:
+        value['tasks'] = tasks
+    return value
+
+
+def test_reads_the_unpack_limits_from_its_own_section():
+    config = StorageUnpackArchiveTaskConfig.from_preference(_preference_with(unpack={
+        'maxArchiveSizeBytes': 100,
+        'maxSizeBytes': 1000,
+        'maxFilesCount': 10,
+        'workerMaxRunningMinutes': 60,
+    }))
+
+    assert config.max_archive_size_bytes == 100
+    assert config.max_size_bytes == 1000
+    assert config.max_files_count == 10
+    assert config.worker_max_running_minutes == 60
+    assert config.is_usable
+
+
+def test_an_absent_unpack_section_means_no_extraction_is_claimed():
+    # The same stance as a download section with no destination: the limits were never reviewed by an
+    # administrator, so tasks stay pending rather than being extracted under invented ones. Filling
+    # the section in then makes the backlog run.
+    config = StorageUnpackArchiveTaskConfig.from_preference(_preference_with(download={}))
+
+    assert not config.is_usable
+    assert any('is not set' in warning for warning in config.warnings())
+
+
+def test_an_empty_unpack_section_is_usable_on_its_defaults():
+    config = StorageUnpackArchiveTaskConfig.from_preference(_preference_with(unpack={}))
+
+    assert config.is_usable
+    assert config.max_size_bytes == DEFAULT_UNPACK_MAX_SIZE_BYTES
+    assert config.max_files_count == DEFAULT_UNPACK_MAX_FILES_COUNT
+    assert config.max_archive_size_bytes == DEFAULT_UNPACK_MAX_ARCHIVE_SIZE_BYTES
+
+
+def test_an_unpack_limit_set_to_null_means_no_limit():
+    config = StorageUnpackArchiveTaskConfig.from_preference(_preference_with(
+        unpack={'maxSizeBytes': None, 'maxFilesCount': None, 'maxArchiveSizeBytes': None}))
+
+    assert config.max_size_bytes is None
+    assert config.max_files_count is None
+    assert config.max_archive_size_bytes is None
+    # And all three are reported: an unlimited extraction is worth a line in the log even though it
+    # is what the administrator asked for.
+    assert len(config.warnings()) == 3
+
+
+def test_an_unpack_setting_written_in_the_download_section_is_not_picked_up():
+    config = StorageUnpackArchiveTaskConfig.from_preference(
+        _preference_with(download={'maxArchiveSizeBytes': 99}))
+
+    assert not config.is_usable
+    assert config.max_archive_size_bytes == DEFAULT_UNPACK_MAX_ARCHIVE_SIZE_BYTES
+
+
+# ---------------------------------------------------------------- the whole preference
+
+def test_each_task_type_is_usable_on_its_own_section():
+    # Per type and not for the service as a whole: a download section with no destination must not
+    # stop extractions, and an unfilled unpack section must not stop downloads.
+    only_download = AsyncTasksConfig.from_preference(
+        _preference_with(download={'destinationStorageId': 9}))
+
+    assert only_download.is_usable(AsyncTaskType.DOWNLOAD_ARCHIVE)
+    assert not only_download.is_usable(AsyncTaskType.UNPACK_ARCHIVE)
+
+    only_unpack = AsyncTasksConfig.from_preference(_preference_with(download={}, unpack={}))
+
+    assert not only_unpack.is_usable(AsyncTaskType.DOWNLOAD_ARCHIVE)
+    assert only_unpack.is_usable(AsyncTaskType.UNPACK_ARCHIVE)
+
+
+def test_a_type_with_no_section_is_not_usable():
+    configs = AsyncTasksConfig.from_preference(_preference_with(download={}, unpack={}))
+
+    assert not configs.is_usable('SOMETHING_ELSE')
+
+
+def test_hands_each_type_its_own_section():
+    configs = AsyncTasksConfig.from_preference(_preference_with(download={}, unpack={}))
+
+    assert configs.section_for(AsyncTaskType.DOWNLOAD_ARCHIVE) is configs.download
+    assert configs.section_for(AsyncTaskType.UNPACK_ARCHIVE) is configs.unpack
+    with pytest.raises(ValueError):
+        configs.section_for('SOMETHING_ELSE')
+
+
+def test_the_shared_values_are_read_once_from_the_top_level():
+    configs = AsyncTasksConfig.from_preference(_preference_with(
+        download={'destinationStorageId': 9}, unpack={},
+        maxUserTasks=7, stuckTasksThresholdMinutes=600))
+
+    # One budget across packing and extracting: the quota exists to stop one person occupying the
+    # service, and it is the same service whichever task they queued.
+    assert configs.max_user_tasks == 7
+    assert configs.stuck_tasks_threshold_minutes == 600
+
+
+def test_warns_when_the_stuck_threshold_does_not_exceed_the_unpack_time_limit():
+    # One cleaner, one threshold, and it has to exceed the larger of the two sections - otherwise it
+    # fails tasks whose workers are alive and about to finish by themselves.
+    configs = AsyncTasksConfig.from_preference(_preference_with(
+        download={'destinationStorageId': 9, 'workerMaxRunningMinutes': 60},
+        unpack={'workerMaxRunningMinutes': 240},
+        stuckTasksThresholdMinutes=120))
+
+    warnings = configs.warnings()
+
+    assert any('storageUnpackArchive.workerMaxRunningMinutes' in warning for warning in warnings)
+    # And not about the download one, whose limit the threshold does exceed.
+    assert not any('storageDownloadAsArchive.workerMaxRunningMinutes' in warning
+                   for warning in warnings)
+
+
+def test_a_fully_configured_preference_warns_about_nothing_in_either_section():
+    configs = AsyncTasksConfig.from_preference(_preference_with(
+        download={'destinationStorageId': 9, 'maxSizeBytes': 1, 'maxFilesCount': 1,
+                  'workerMaxRunningMinutes': 240},
+        unpack={'maxArchiveSizeBytes': 1, 'maxSizeBytes': 1, 'maxFilesCount': 1,
+                'workerMaxRunningMinutes': 240},
+        maxUserTasks=3, stuckTasksThresholdMinutes=360))
+
+    assert configs.warnings() == []

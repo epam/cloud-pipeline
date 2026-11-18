@@ -15,9 +15,9 @@
  */
 
 import React from 'react';
+import {Link} from 'react-router';
 import {Button, Icon, Tooltip, Popover} from 'antd';
 import classNames from 'classnames';
-import displayDate from '../../../utils/displayDate';
 import displaySize from '../../../utils/displaySize';
 import {
   ASYNC_TASK_STATUSES,
@@ -25,8 +25,11 @@ import {
   taskIsActive,
   taskCanBeCancelled,
   taskArchiveIsAvailable,
+  taskIsUnpackArchive,
+  displayTaskType,
   normalizeStatus,
-  archiveNameOf
+  archiveNameOf,
+  extractedArchiveNameOf
 } from '../../../models/asyncTask/statuses';
 import styles from './async-tasks-list.css';
 
@@ -60,8 +63,12 @@ function statusClassName (status) {
   return STATUS_CLASS_NAMES[normalizeStatus(status)];
 }
 
+// `archiveSizeBytes` for a download archive, `bytesWritten` for an
+// extraction (DownloadArchiveResult / UnpackArchiveResult). Both are reported
+// on SUCCESS only, so every other row has no size either way.
 function archiveSizeOf (task) {
-  const bytes = task.result && task.result.archiveSizeBytes;
+  const result = task.result || {};
+  const bytes = taskIsUnpackArchive(task) ? result.bytesWritten : result.archiveSizeBytes;
   if (bytes === undefined || bytes === null || Number.isNaN(Number(bytes))) {
     return undefined;
   }
@@ -80,6 +87,49 @@ function displayArchiveNameOf (task) {
   }
   const value = `${name}`;
   return /\.zip$/i.test(value) ? value : `${value}.zip`;
+}
+
+// The folders above each path: `a/b/c` and `a/b/c/` both give `['a','b']`.
+function parentSegmentsOf (path) {
+  const segments = `${path}`.replace(/\/+$/, '').split('/');
+  segments.pop();
+  return segments;
+}
+
+// One selected folder is its own source. Anything else is what the selection
+// has in common above its items - the folder it was made in. Compared folder
+// by folder, never by characters: `sub2` and `sub20` share four characters and
+// no folder. Mirrors `_archive_root` in the archive worker.
+function sourceFolderOf (task) {
+  const params = task.params || {};
+  const paths = (taskIsUnpackArchive(task)
+    ? [params.sourcePath]
+    : (params.paths || [])).filter(Boolean);
+  // A folder's path ends with `/`; an extraction's source never does.
+  if (paths.length === 1 && `${paths[0]}`.endsWith('/')) {
+    return `${paths[0]}`;
+  }
+  let common;
+  paths.forEach((path) => {
+    const folders = parentSegmentsOf(path);
+    if (common === undefined) {
+      common = folders;
+      return;
+    }
+    let kept = 0;
+    while (kept < common.length && kept < folders.length && common[kept] === folders[kept]) {
+      kept += 1;
+    }
+    common = common.slice(0, kept);
+  });
+  return common && common.length ? `${common.join('/')}/` : '';
+}
+
+// An extraction's destination is the storage it read from, so its source id
+// is the whole answer.
+function sourceStorageIdOf (task) {
+  const params = task.params || {};
+  return taskIsUnpackArchive(task) ? params.sourceStorageId : params.storageId;
 }
 
 // Neither filterable column below supplies a custom `filterIcon` - on
@@ -127,7 +177,12 @@ export default function buildColumns ({
   statusesFilterDropdown,
   statusesFilterVisible,
   onStatusesFilterVisibleChange,
-  statusesFiltered
+  statusesFiltered,
+  typeFilterDropdown,
+  typeFilterVisible,
+  onTypeFilterVisibleChange,
+  typeFiltered,
+  onNavigate
 }) {
   // Admin-only, and omitted from the array entirely (not merely hidden)
   // when `isAdmin` is false - a non-admin must see neither the column nor
@@ -143,22 +198,42 @@ export default function buildColumns ({
     onFilterDropdownVisibleChange: onOwnerFilterVisibleChange,
     filteredValue: ownerFiltered ? ['filtered'] : []
   } : null;
+  const followSource = (event) => {
+    const modified = event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
+    // react-router runs this before its own modified-click guard, so without
+    // this a cmd-click would open a tab and close the modal behind it.
+    if (onNavigate && !modified && event.button === 0 && !event.defaultPrevented) {
+      onNavigate();
+    }
+  };
   return [
+    {
+      title: 'Type',
+      key: 'type',
+      // Single-select: `AsyncTaskFilterVO.type` is one enum server-side, not
+      // a list, so this cannot be a checkbox filter like Status.
+      filterDropdown: typeFilterDropdown,
+      filterDropdownVisible: typeFilterVisible,
+      onFilterDropdownVisibleChange: onTypeFilterVisibleChange,
+      filteredValue: typeFiltered ? ['filtered'] : [],
+      render: (task) => displayTaskType(task.type)
+    },
     {
       title: 'Archive',
       key: 'archive',
       // The archive's name, and how many items went into it:
       // `my-archive.zip (2 items)`, with the count's own popover listing the
-      // archived paths on hover. The count used to be a column of its own; it
-      // belongs here, where it reads as a property of the archive rather than
-      // as a bare number under a heading. Singular for one, matching the way
+      // archived paths on hover. Singular for one, matching the way
       // `data-storage/index.js` words its own item counts.
       //
       // A task with nothing to list renders the bare name - no count in
-      // brackets and no popover at all. The same guard the count itself
-      // already applied: an empty popover that opens on hover and shows
-      // nothing would be worse than no affordance.
+      // brackets and no popover at all.
       render: (task) => {
+        if (taskIsUnpackArchive(task)) {
+          // No `.zip` appended and no count: the archive is one file the user
+          // uploaded, named exactly as it is on the storage.
+          return extractedArchiveNameOf(task);
+        }
         const name = displayArchiveNameOf(task);
         const paths = (task.params && task.params.paths) || [];
         // `displayArchiveNameOf` hands back a falsy name untouched, so that an
@@ -185,24 +260,38 @@ export default function buildColumns ({
       }
     },
     {
-      title: 'Storage',
-      key: 'storage',
-      // Resolves the id to the storage's name via the lookup the container
-      // builds from the `dataStorages` singleton, falling back to the raw
-      // id when the storage is unknown (deleted, or the list has not
-      // loaded yet) - never nothing, and never a throw either way. The
-      // `Number(...)` coercion is defensive, not load-bearing against a
-      // plain object (whose keys stringify either way): a task's
-      // storageId may arrive as a string or a number, and coercing first
-      // keeps the lookup correct if `storageNamesById` is ever built as a
-      // `Map`, where a numeric and a string key are genuinely distinct.
+      title: 'Source',
+      key: 'source',
+      // `<storage>/<folder>`, linking there. Clipped by CSS, with the whole
+      // value in the tooltip - a path can be long.
       render: (task) => {
-        const storageId = task.params && task.params.storageId;
+        const storageId = sourceStorageIdOf(task);
         if (storageId === undefined || storageId === null) {
           return storageId;
         }
+        // `Number(...)`: an id may arrive as a string, and this still holds if
+        // `storageNamesById` ever becomes a `Map`.
         const name = storageNamesById ? storageNamesById[Number(storageId)] : undefined;
-        return name || storageId;
+        const folder = sourceFolderOf(task);
+        const text = `${name || storageId}/${folder}`;
+        // No trailing slash and no empty `?path=`: that is the shape the
+        // storage browser's own links use, and a trailing one reaches the
+        // breadcrumbs as an extra empty folder.
+        const query = folder.replace(/\/+$/, '');
+        const url = query
+          ? `/storage/${storageId}?path=${encodeURIComponent(query)}`
+          : `/storage/${storageId}`;
+        return (
+          <Tooltip title={text} mouseEnterDelay={0.5}>
+            <Link
+              className={styles.sourceLink}
+              to={url}
+              onClick={followSource}
+            >
+              {text}
+            </Link>
+          </Tooltip>
+        );
       }
     },
     {
@@ -259,16 +348,6 @@ export default function buildColumns ({
       }
     },
     ownerColumn,
-    {
-      title: 'Created',
-      key: 'created',
-      render: (task) => displayDate(task.created)
-    },
-    {
-      title: 'Finished',
-      key: 'finished',
-      render: (task) => displayDate(task.finished)
-    },
     {
       title: 'Actions',
       key: 'actions',

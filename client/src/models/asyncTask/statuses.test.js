@@ -26,7 +26,15 @@ import {
   normalizeStatus,
   archiveNameOf,
   statusesAreFiltered,
-  ownerIsFiltered
+  ownerIsFiltered,
+  ASYNC_TASK_TYPES,
+  normalizeType,
+  typeOf,
+  displayTaskType,
+  taskIsDownloadArchive,
+  taskIsUnpackArchive,
+  extractedArchiveNameOf,
+  typeIsFiltered
 } from './statuses';
 
 describe('taskIsActive', () => {
@@ -84,17 +92,25 @@ describe('taskCanBeCancelled', () => {
 });
 
 describe('taskArchiveIsAvailable', () => {
-  test('true for SUCCESS', () => {
-    expect(taskArchiveIsAvailable({status: 'SUCCESS'})).toBe(true);
+  test('true for a successful download archive', () => {
+    expect(taskArchiveIsAvailable({type: 'DOWNLOAD_ARCHIVE', status: 'SUCCESS'})).toBe(true);
   });
   test('false for FAILED', () => {
-    expect(taskArchiveIsAvailable({status: 'FAILED'})).toBe(false);
+    expect(taskArchiveIsAvailable({type: 'DOWNLOAD_ARCHIVE', status: 'FAILED'})).toBe(false);
+  });
+  // `/async-task/{id}/consume` throws for an extraction, so a successful one
+  // still has nothing to hand over.
+  test('false for a successful extraction', () => {
+    expect(taskArchiveIsAvailable({type: 'UNPACK_ARCHIVE', status: 'SUCCESS'})).toBe(false);
   });
   test('false for undefined', () => {
     expect(taskArchiveIsAvailable(undefined)).toBe(false);
   });
   test('false for a task with no status', () => {
-    expect(taskArchiveIsAvailable({id: 1})).toBe(false);
+    expect(taskArchiveIsAvailable({type: 'DOWNLOAD_ARCHIVE', id: 1})).toBe(false);
+  });
+  test('false for a task with no type', () => {
+    expect(taskArchiveIsAvailable({status: 'SUCCESS'})).toBe(false);
   });
 });
 
@@ -231,5 +247,77 @@ describe('ownerIsFiltered', () => {
   });
   test('true when owner is cleared but defaultOwner is known', () => {
     expect(ownerIsFiltered(undefined, 'current-user')).toBe(true);
+  });
+});
+
+describe('normalizeType', () => {
+  // The same defence `normalizeStatus` has: the server's own casing is not
+  // something the comparisons below should depend on.
+  test('upper-cases, and leaves nothing for a falsy type', () => {
+    expect(normalizeType('unpack_archive')).toBe('UNPACK_ARCHIVE');
+    expect(normalizeType('UNPACK_ARCHIVE')).toBe('UNPACK_ARCHIVE');
+    expect(normalizeType(undefined)).toBeUndefined();
+    expect(normalizeType('')).toBeUndefined();
+  });
+});
+
+describe('typeOf', () => {
+  test('reads the task\'s type, normalized', () => {
+    expect(typeOf({type: 'download_archive'})).toBe('DOWNLOAD_ARCHIVE');
+    expect(typeOf({})).toBeUndefined();
+    expect(typeOf(undefined)).toBeUndefined();
+  });
+});
+
+describe('displayTaskType', () => {
+  test('names the known types', () => {
+    expect(displayTaskType(ASYNC_TASK_TYPES.DOWNLOAD_ARCHIVE)).toBe('Download archive');
+    expect(displayTaskType(ASYNC_TASK_TYPES.UNPACK_ARCHIVE)).toBe('Extract archive');
+    expect(displayTaskType('unpack_archive')).toBe('Extract archive');
+  });
+
+  // Rather than an empty cell for a type this GUI does not know yet.
+  test('falls back to the raw value for an unknown type', () => {
+    expect(displayTaskType('SOMETHING_ELSE')).toBe('SOMETHING_ELSE');
+    expect(displayTaskType(undefined)).toBeUndefined();
+  });
+});
+
+describe('taskIsDownloadArchive / taskIsUnpackArchive', () => {
+  test.each([
+    ['DOWNLOAD_ARCHIVE', true, false],
+    ['download_archive', true, false],
+    ['UNPACK_ARCHIVE', false, true],
+    ['SOMETHING_ELSE', false, false]
+  ])('%s', (type, isDownload, isUnpack) => {
+    expect(taskIsDownloadArchive({type})).toBe(isDownload);
+    expect(taskIsUnpackArchive({type})).toBe(isUnpack);
+  });
+
+  test('a task with no type is neither', () => {
+    expect(taskIsDownloadArchive({})).toBe(false);
+    expect(taskIsUnpackArchive(undefined)).toBe(false);
+  });
+});
+
+describe('extractedArchiveNameOf', () => {
+  test('is the leaf of sourcePath', () => {
+    expect(extractedArchiveNameOf({params: {sourcePath: 'a/b/data.tar.gz'}})).toBe('data.tar.gz');
+    expect(extractedArchiveNameOf({params: {sourcePath: 'data.zip'}})).toBe('data.zip');
+  });
+
+  // An extraction has no `archiveName`, so the id is all that is left.
+  test('falls back to the task id', () => {
+    expect(extractedArchiveNameOf({id: 'task-1', params: {}})).toBe('task-1');
+    expect(extractedArchiveNameOf({id: 'task-1'})).toBe('task-1');
+  });
+});
+
+describe('typeIsFiltered', () => {
+  // The default is every type, which the request expresses by sending none.
+  test('only a set type counts as filtered', () => {
+    expect(typeIsFiltered('UNPACK_ARCHIVE')).toBe(true);
+    expect(typeIsFiltered(undefined)).toBe(false);
+    expect(typeIsFiltered('')).toBe(false);
   });
 });

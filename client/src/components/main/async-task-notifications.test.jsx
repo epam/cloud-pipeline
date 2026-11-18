@@ -39,6 +39,11 @@ function newFakeStore () {
   };
 }
 
+// Both messages are download-shaped, so the handler announces that type only.
+function downloadTaskFixture (task) {
+  return {type: 'DOWNLOAD_ARCHIVE', status: 'SUCCESS', ...task};
+}
+
 function newFakeMessageApi () {
   return {
     // antd's `message.success` returns a hide function
@@ -75,7 +80,7 @@ describe('startAsyncTaskNotifications', () => {
     const messageApi = newFakeMessageApi();
     start(store, messageApi);
 
-    store.handler({id: 1, status: 'SUCCESS', params: {archiveName: 'my-archive'}});
+    store.handler(downloadTaskFixture({id: 1, params: {archiveName: 'my-archive'}}));
 
     expect(messageApi.success).toHaveBeenCalledTimes(1);
     renderToast(messageApi.success.mock.calls[0][0]);
@@ -92,7 +97,7 @@ describe('startAsyncTaskNotifications', () => {
     const messageApi = newFakeMessageApi();
     start(store, messageApi);
 
-    store.handler({id: 1, status: 'SUCCESS', params: {archiveName: 'my-archive'}});
+    store.handler(downloadTaskFixture({id: 1, params: {archiveName: 'my-archive'}}));
 
     expect(messageApi.success.mock.calls[0][1]).toBe(0);
   });
@@ -104,7 +109,7 @@ describe('startAsyncTaskNotifications', () => {
     const messageApi = newFakeMessageApi();
     start(store, messageApi, fn());
 
-    store.handler({id: 8, status: 'SUCCESS', params: {archiveName: 'my-archive'}});
+    store.handler(downloadTaskFixture({id: 8, params: {archiveName: 'my-archive'}}));
     renderToast(messageApi.success.mock.calls[0][0]);
 
     expect(screen.queryByText(/Downloads page/)).not.toBeInTheDocument();
@@ -120,7 +125,7 @@ describe('startAsyncTaskNotifications', () => {
     const messageApi = newFakeMessageApi();
     start(store, messageApi, fn());
 
-    store.handler({id: 1, status: 'SUCCESS', params: {archiveName: 'my-archive'}});
+    store.handler(downloadTaskFixture({id: 1, params: {archiveName: 'my-archive'}}));
     const hide = messageApi.success.mock.results[0].value;
     renderToast(messageApi.success.mock.calls[0][0]);
     await click(screen.getByText(/my-archive/));
@@ -136,7 +141,7 @@ describe('startAsyncTaskNotifications', () => {
     const messageApi = newFakeMessageApi();
     const downloadTask = fn();
     start(store, messageApi, downloadTask);
-    const task = {id: 7, status: 'SUCCESS', params: {archiveName: 'my-archive'}};
+    const task = downloadTaskFixture({id: 7, params: {archiveName: 'my-archive'}});
 
     store.handler(task);
     const hide = messageApi.success.mock.results[0].value;
@@ -159,7 +164,7 @@ describe('startAsyncTaskNotifications', () => {
     const messageApi = newFakeMessageApi();
     start(store, messageApi);
 
-    store.handler({id: 9, status: 'SUCCESS', params: {archiveName: 'my-archive'}});
+    store.handler(downloadTaskFixture({id: 9, params: {archiveName: 'my-archive'}}));
     renderToast(messageApi.success.mock.calls[0][0]);
     await click(screen.getByText('Download it'));
 
@@ -171,12 +176,12 @@ describe('startAsyncTaskNotifications', () => {
     const messageApi = newFakeMessageApi();
     start(store, messageApi);
 
-    store.handler({
+    store.handler(downloadTaskFixture({
       id: 2,
       status: 'FAILED',
       params: {archiveName: 'broken-archive'},
       errorMessage: 'disk is full'
-    });
+    }));
 
     expect(messageApi.error).toHaveBeenCalledTimes(1);
     const [text] = messageApi.error.mock.calls[0];
@@ -185,12 +190,62 @@ describe('startAsyncTaskNotifications', () => {
     expect(messageApi.success).not.toHaveBeenCalled();
   });
 
+  // Named by the leaf of `sourcePath`: an extraction has no `archiveName`.
+  it('announces a finished extraction, with no download link', () => {
+    const store = newFakeStore();
+    const messageApi = newFakeMessageApi();
+    start(store, messageApi);
+
+    store.handler({
+      id: 7,
+      type: 'UNPACK_ARCHIVE',
+      status: 'SUCCESS',
+      params: {sourcePath: 'folder/a.zip'}
+    });
+
+    expect(messageApi.success).toHaveBeenCalledTimes(1);
+    const [content, duration] = messageApi.success.mock.calls[0];
+    // A plain string, not a node: there is nothing to click.
+    expect(content).toBe('Archive "a.zip" has been extracted.');
+    // Not 0: unlike a ready download, this toast has no action to wait for.
+    expect(duration).toBe(5);
+  });
+
+  it('reports a failed extraction, with its reason', () => {
+    const store = newFakeStore();
+    const messageApi = newFakeMessageApi();
+    start(store, messageApi);
+
+    store.handler({
+      id: 8,
+      type: 'UNPACK_ARCHIVE',
+      status: 'FAILED',
+      errorMessage: 'boom',
+      params: {sourcePath: 'a.zip'}
+    });
+
+    expect(messageApi.error).toHaveBeenCalledWith('Extraction of "a.zip" has failed. boom', 5);
+    expect(messageApi.success).not.toHaveBeenCalled();
+  });
+
+  // Neither message is download-shaped, so no link is ever offered for one.
+  it('calls neither for a task of an unknown type', () => {
+    const store = newFakeStore();
+    const messageApi = newFakeMessageApi();
+    start(store, messageApi);
+
+    store.handler({id: 9, type: 'SOMETHING_ELSE', status: 'SUCCESS'});
+
+    expect(messageApi.success).not.toHaveBeenCalled();
+    expect(messageApi.error).not.toHaveBeenCalled();
+  });
+
   it('calls neither for an active status', () => {
     const store = newFakeStore();
     const messageApi = newFakeMessageApi();
     start(store, messageApi);
 
-    store.handler({id: 3, status: 'RUNNING'});
+    store.handler(downloadTaskFixture({id: 3, status: 'RUNNING'}));
 
     expect(messageApi.success).not.toHaveBeenCalled();
     expect(messageApi.error).not.toHaveBeenCalled();
@@ -201,7 +256,7 @@ describe('startAsyncTaskNotifications', () => {
     const messageApi = newFakeMessageApi();
     start(store, messageApi);
 
-    expect(() => store.handler({id: 4, status: 'SUCCESS'})).not.toThrow();
+    expect(() => store.handler(downloadTaskFixture({id: 4}))).not.toThrow();
 
     expect(messageApi.success).toHaveBeenCalledTimes(1);
     renderToast(messageApi.success.mock.calls[0][0]);

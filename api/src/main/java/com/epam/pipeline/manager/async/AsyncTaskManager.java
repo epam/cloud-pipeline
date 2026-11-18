@@ -34,6 +34,7 @@ import com.epam.pipeline.repository.async.AsyncTaskRepository;
 import com.epam.pipeline.repository.async.AsyncTaskSpecification;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -47,7 +48,9 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -143,15 +146,22 @@ public class AsyncTaskManager {
     }
 
     /**
-     * Hands out the oldest pending task of the type and marks it running. The row is locked before it
-     * is updated, so one task never goes to two callers.
+     * Hands out the oldest pending task of any of the types and marks it running. The row is locked
+     * before it is updated, so one task never goes to two callers.
      *
-     * @return the claimed task, empty when the queue holds nothing of that type
+     * @return the claimed task, empty when the queue holds nothing of those types
      */
     @Transactional(propagation = Propagation.REQUIRED)
-    public Optional<AsyncTask> claimNext(final AsyncTaskType type) {
-        Assert.notNull(type, messageHelper.getMessage(MessageConstants.ERROR_ASYNC_TASK_TYPE_REQUIRED));
-        return repository.lockNextPending(type.name())
+    public Optional<AsyncTask> claimNext(final List<AsyncTaskType> types) {
+        Assert.isTrue(CollectionUtils.isNotEmpty(types),
+                messageHelper.getMessage(MessageConstants.ERROR_ASYNC_TASK_TYPE_REQUIRED));
+        final Set<String> names = types.stream()
+                .filter(Objects::nonNull)
+                .map(AsyncTaskType::name)
+                .collect(Collectors.toSet());
+        Assert.isTrue(!names.isEmpty(),
+                messageHelper.getMessage(MessageConstants.ERROR_ASYNC_TASK_TYPE_REQUIRED));
+        return repository.lockNextPending(names)
                 .filter(id -> repository.moveStatus(id, AsyncTaskStatus.PENDING.name(),
                         AsyncTaskStatus.RUNNING.name(), null, null, DateUtils.nowUTC()) == 1)
                 .flatMap(repository::findById)

@@ -47,17 +47,18 @@ import time
 import zipfile
 from pathlib import Path
 
-from ..api import CloudPipelineApi
-from ..datastorage_providers.s3 import ArchiveBucket, absolute_key, archive_key
-from ..cloud.aws import build_s3_client
-from ..config import ServiceConfig, StorageDownloadArchiveTaskConfig
-from ..util.errors import ApiError, ApiRejected, CredentialsUnavailable, InvalidTask, StopReason, \
+from ...cp_api_client import CloudPipelineApi
+from ...datastorage_providers.s3 import S3Bucket, absolute_key, archive_key
+from ...cloud.aws import build_s3_client
+from ...config import ServiceConfig, StorageDownloadArchiveTaskConfig
+from ...util.errors import ApiError, ApiRejected, CredentialsUnavailable, InvalidTask, StopReason, \
     StopRequested, ThresholdExceeded, UnsupportedSource
-from ..util.log import get_logger
-from ..model import ArchiveTask, AsyncTaskType, StorageType, TaskStatus
-from ..datastorage_providers import FileSource, SourceFile, open_source
-from .base import AsyncTaskWorker
-from .task_stop_watcher import TaskStopWatcher
+from ...util.log import get_logger
+from ...util.sizes import human_bytes
+from ...model import ArchiveTask, AsyncTaskType, StorageType, TaskStatus
+from ...datastorage_providers import FileSource, SourceFile, open_source
+from ..base import AsyncTaskWorker
+from ..task_stop_watcher import TaskStopWatcher
 
 LOG = get_logger(__name__)
 
@@ -93,7 +94,7 @@ class ArchivePreparationWorker(AsyncTaskWorker):
 
     def __init__(self, api: CloudPipelineApi, service_config: ServiceConfig,
                  archive_config: StorageDownloadArchiveTaskConfig, task: ArchiveTask,
-                 bucket: ArchiveBucket | None = None):
+                 bucket: S3Bucket | None = None):
         self._api = api
         self._config = service_config
         self._archive_config = archive_config
@@ -184,8 +185,8 @@ class ArchivePreparationWorker(AsyncTaskWorker):
                               f'to')
         # The destination's own region and role, which may be neither the source's region nor its
         # role. A region that cannot be read ends the task as `CredentialsUnavailable`.
-        self._bucket = ArchiveBucket(storage.root, self._config.part_size_bytes,
-                                     build_s3_client(self._api, storage))
+        self._bucket = S3Bucket(storage.root, self._config.part_size_bytes,
+                                build_s3_client(self._api, storage))
         self._key = absolute_key(storage.prefix, self._relative_key)
 
     def _open_source(self) -> FileSource:
@@ -250,7 +251,7 @@ class ArchivePreparationWorker(AsyncTaskWorker):
         limit_size = self._archive_config.max_size_bytes
         if limit_size is not None and total > limit_size:
             raise ThresholdExceeded(
-                f'The selection is larger than {_human(limit_size)}, which is the maximum one archive '
+                f'The selection is larger than {human_bytes(limit_size)}, which is the maximum one archive '
                 f'may contain. Ask for fewer or smaller files at a time.')
 
     def _assert_fits_locally(self, files: list[SourceFile], total: int) -> None:
@@ -264,8 +265,8 @@ class ArchivePreparationWorker(AsyncTaskWorker):
         free = shutil.disk_usage(self._config.work_dir).free
         if free < needed:
             raise ThresholdExceeded(
-                f'The archive service has {_human(free)} of local space free and needs about '
-                f'{_human(needed)} for this selection. Ask for fewer files at a time, or ask an '
+                f'The archive service has {human_bytes(free)} of local space free and needs about '
+                f'{human_bytes(needed)} for this selection. Ask for fewer files at a time, or ask an '
                 f'administrator to give the service more space.')
 
     def _pack(self, source: FileSource, files: list[SourceFile],
@@ -568,13 +569,3 @@ def _skipped_note(unreadable: list[SourceFile], failed: list[tuple[str, str]]) -
     lines.append('')
     lines.append('Everything else you asked for is here.')
     return '\n'.join(lines)
-
-
-def _human(size: int) -> str:
-    """Formats a byte count for a user: `1.5 GiB` rather than `1610612736`."""
-    value = float(size)
-    for unit in ('B', 'KiB', 'MiB', 'GiB'):
-        if abs(value) < 1024:
-            return f'{value:.1f} {unit}' if unit != 'B' else f'{int(value)} {unit}'
-        value /= 1024
-    return f'{value:.1f} TiB'

@@ -19,7 +19,7 @@ One round:
 
     1. read `system.async.tasks.config`            so a change applies without a restart
     2. run the four cleaner cleanups               before claiming, so a stuck task is out of the way
-    3. claim tasks while slots are free            one call per task
+    3. claim tasks while slots are free            one call per task, over every type it runs
     4. sleep until the next round                  interruptibly
 
 **One task per claim, and the slot taken before the claim.** `/async-task/next` marks a task `RUNNING`
@@ -36,8 +36,8 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-from .api import CloudPipelineApi
-from .config import PREFERENCE_KEY, ServiceConfig, StorageDownloadArchiveTaskConfig
+from .cp_api_client import CloudPipelineApi
+from .config import PREFERENCE_KEY, AsyncTasksConfig, ServiceConfig
 from .util.errors import ApiError, ApiRejected
 from .util.log import get_logger
 from .model import ArchiveTask, AsyncTaskType
@@ -122,18 +122,30 @@ class Orchestrator:
     # ------------------------------------------------------------------ one round
 
     def _round(self, pool: ThreadPoolExecutor) -> None:
-        archive_config = self._load_archive_config()
-        if archive_config is None:
+        configs = self._load_task_configs()
+        if configs is None:
             return
         if self._cleanup_due():
-            self._cleaner.cleanup(archive_config, self._active_ids())
+            self._cleaner.cleanup(configs, self._active_ids())
         if self._shutdown.is_set():
             return
-        if not archive_config.is_usable:
+        claimable = self._claimable_types(configs)
+        if not claimable:
             # Tasks stay pending, which is the right place for them: filling the preference in makes
             # the backlog run, while failing them here would lose work over a fixable mistake.
             return
-        self._claim_while_free(pool, archive_config)
+        self._claim_while_free(pool, configs, claimable)
+
+    @staticmethod
+    def _claimable_types(configs: AsyncTasksConfig) -> tuple[AsyncTaskType, ...]:
+        """
+        The types this service both runs and has usable settings for.
+
+        Per type, not for the service as a whole: a download section with no destination must not
+        stop extractions, and an unfilled unpack section must not stop downloads.
+        """
+        return tuple(task_type for task_type in SUPPORTED_TASK_TYPES
+                     if configs.is_usable(task_type))
 
     def _cleanup_due(self) -> bool:
         """
@@ -152,7 +164,7 @@ class Orchestrator:
         self._next_cleanup = now + interval
         return True
 
-    def _load_archive_config(self) -> StorageDownloadArchiveTaskConfig | None:
+    def _load_task_configs(self) -> AsyncTasksConfig | None:
         """
         Reads and parses the preference. `None` when it cannot be read.
 
@@ -164,25 +176,25 @@ class Orchestrator:
             LOG.warning('Cannot read preference %s (%s), skipping this round', PREFERENCE_KEY, error)
             return None
         try:
-            archive_config = StorageDownloadArchiveTaskConfig.from_preference(raw)
+            configs = AsyncTasksConfig.from_preference(raw)
         except ValueError as error:
             # `JSONDecodeError` is a `ValueError`: somebody saved something that is not JSON.
             LOG.error('Preference %s does not parse (%s), skipping this round', PREFERENCE_KEY, error)
             return None
-        self._report_warnings(archive_config)
-        return archive_config
+        self._report_warnings(configs)
+        return configs
 
-    def _report_warnings(self, archive_config: StorageDownloadArchiveTaskConfig) -> None:
+    def _report_warnings(self, configs: AsyncTasksConfig) -> None:
         """Logs what is wrong with the preference, once per change rather than once per round."""
-        warnings = tuple(archive_config.warnings())
+        warnings = tuple(configs.warnings())
         if warnings == self._reported_warnings:
             return
         self._reported_warnings = warnings
         for warning in warnings:
             LOG.warning('%s', warning)
 
-    def _claim_while_free(self, pool: ThreadPoolExecutor,
-                          archive_config: StorageDownloadArchiveTaskConfig) -> None:
+    def _claim_while_free(self, pool: ThreadPoolExecutor, configs: AsyncTasksConfig,
+                          claimable: tuple[AsyncTaskType, ...]) -> None:
         """
         Claims tasks one at a time while there is a slot and the queue is not empty.
 
@@ -197,31 +209,23 @@ class Orchestrator:
                 return
             handed_over = False
             try:
-                task = self._claim()
+                task = self._claim(claimable)
                 if task is None:
                     return
-                handed_over = self._start(pool, archive_config, task)
+                handed_over = self._start(pool, configs, task)
             finally:
                 if not handed_over:
                     self._slots.release()
 
-    def _claim(self) -> ArchiveTask | None:
+    def _claim(self, claimable: tuple[AsyncTaskType, ...]) -> ArchiveTask | None:
         """
-        Takes the next task of any type this service runs, or `None` if there is none.
+        Takes the next task of any of the types, or `None` if there is none or the call failed.
 
-        One call per type: `/async-task/next` has no "give me anything" form. With more than one type,
-        the first in `SUPPORTED_TASK_TYPES` gets a free slot first.
+        One call for the whole list: the API orders by creation across it, so the oldest task wins
+        and the tasks of one type never wait behind another's.
         """
-        for task_type in SUPPORTED_TASK_TYPES:
-            task = self._claim_type(task_type)
-            if task is not None:
-                return task
-        return None
-
-    def _claim_type(self, task_type: AsyncTaskType) -> ArchiveTask | None:
-        """Takes the next task of one type, or `None` if there is none or the call failed."""
         try:
-            return self._api.claim_next(task_type)
+            return self._api.claim_next(claimable)
         except (ApiError, ApiRejected) as error:
             LOG.warning('Cannot claim a task (%s), skipping the rest of this round', error)
             return None
@@ -231,7 +235,7 @@ class Orchestrator:
             LOG.error('Claimed a task that cannot be read (%s); the cleaner will clean it up', error)
             return None
 
-    def _start(self, pool: ThreadPoolExecutor, archive_config: StorageDownloadArchiveTaskConfig,
+    def _start(self, pool: ThreadPoolExecutor, configs: AsyncTasksConfig,
                task: ArchiveTask) -> bool:
         """
         Hands a claimed task to the pool. Returns whether the pool has taken it.
@@ -245,7 +249,7 @@ class Orchestrator:
         """
         self._track(task.id)
         try:
-            future = pool.submit(self._run_worker, archive_config, task)
+            future = pool.submit(self._run_worker, configs, task)
         except RuntimeError as error:
             # The pool is shutting down and the task is already RUNNING: the cleaner's business.
             LOG.error('Cannot start task %s (%s); the cleaner will clean it up', task.id, error)
@@ -254,7 +258,7 @@ class Orchestrator:
         future.add_done_callback(lambda _, task_id=task.id: self._release(task_id))
         return True
 
-    def _run_worker(self, archive_config: StorageDownloadArchiveTaskConfig, task: ArchiveTask) -> None:
+    def _run_worker(self, configs: AsyncTasksConfig, task: ArchiveTask) -> None:
         """
         The body of a pool thread: the worker for whatever type was claimed.
 
@@ -262,7 +266,7 @@ class Orchestrator:
         in a future nobody reads and vanish without a line in the log.
         """
         try:
-            worker_for(self._api, self._config, archive_config, task).run()
+            worker_for(self._api, self._config, configs, task).run()
         except Exception as error:
             LOG.exception('Worker of task %s crashed (%s)', task.id, error)
 

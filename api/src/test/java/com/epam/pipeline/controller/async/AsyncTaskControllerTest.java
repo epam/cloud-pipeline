@@ -227,12 +227,29 @@ public class AsyncTaskControllerTest extends AbstractControllerTest {
     public void shouldHandOutTheNextTaskOfTheTypeAsked() throws Exception {
         final AsyncTask expected = task(AsyncTaskStatus.RUNNING);
         doReturn(Optional.of(expected)).when(mockAsyncTaskApiService)
-                .claimNext(AsyncTaskType.DOWNLOAD_ARCHIVE);
+                .claimNext(List.of(AsyncTaskType.DOWNLOAD_ARCHIVE));
 
         final MvcResult result = performRequest(
                 post(NEXT_URL).param(TYPE_PARAM, AsyncTaskType.DOWNLOAD_ARCHIVE.name()));
 
-        verify(mockAsyncTaskApiService).claimNext(AsyncTaskType.DOWNLOAD_ARCHIVE);
+        verify(mockAsyncTaskApiService).claimNext(List.of(AsyncTaskType.DOWNLOAD_ARCHIVE));
+        assertAnswer(result, expected);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldHandOutTheNextTaskOfAnyTypeAskedFor() throws Exception {
+        // The parameter is repeated rather than replaced, which is what keeps the single-value call of
+        // an executor built before the second type existed working.
+        final AsyncTask expected = task(AsyncTaskStatus.RUNNING);
+        final List<AsyncTaskType> types = List.of(AsyncTaskType.DOWNLOAD_ARCHIVE, AsyncTaskType.UNPACK_ARCHIVE);
+        doReturn(Optional.of(expected)).when(mockAsyncTaskApiService).claimNext(types);
+
+        final MvcResult result = performRequest(post(NEXT_URL)
+                .param(TYPE_PARAM, AsyncTaskType.DOWNLOAD_ARCHIVE.name())
+                .param(TYPE_PARAM, AsyncTaskType.UNPACK_ARCHIVE.name()));
+
+        verify(mockAsyncTaskApiService).claimNext(types);
         assertAnswer(result, expected);
     }
 
@@ -241,12 +258,12 @@ public class AsyncTaskControllerTest extends AbstractControllerTest {
     public void shouldAnswerNextWithoutAPayloadWhenTheQueueIsEmpty() throws Exception {
         // An empty queue is the ordinary answer rather than an error: a worker polls this endpoint in
         // a loop, and must get a success with nothing in it instead of something to handle.
-        doReturn(Optional.empty()).when(mockAsyncTaskApiService).claimNext(AsyncTaskType.DOWNLOAD_ARCHIVE);
+        doReturn(Optional.empty()).when(mockAsyncTaskApiService).claimNext(List.of(AsyncTaskType.DOWNLOAD_ARCHIVE));
 
         final MvcResult result = performRequest(
                 post(NEXT_URL).param(TYPE_PARAM, AsyncTaskType.DOWNLOAD_ARCHIVE.name()));
 
-        verify(mockAsyncTaskApiService).claimNext(AsyncTaskType.DOWNLOAD_ARCHIVE);
+        verify(mockAsyncTaskApiService).claimNext(List.of(AsyncTaskType.DOWNLOAD_ARCHIVE));
         assertAnswer(result, null);
     }
 

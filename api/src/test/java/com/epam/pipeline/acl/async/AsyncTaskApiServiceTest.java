@@ -84,16 +84,16 @@ public class AsyncTaskApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLetAdminClaimTask() {
-        asyncTaskApiService.claimNext(AsyncTaskType.DOWNLOAD_ARCHIVE);
+        asyncTaskApiService.claimNext(List.of(AsyncTaskType.DOWNLOAD_ARCHIVE));
 
-        verify(mockAsyncTaskManager).claimNext(AsyncTaskType.DOWNLOAD_ARCHIVE);
+        verify(mockAsyncTaskManager).claimNext(List.of(AsyncTaskType.DOWNLOAD_ARCHIVE));
     }
 
     @Test
     @WithMockUser
     public void shouldRefuseClaimFromRegularUser() {
         assertThrows(AccessDeniedException.class,
-            () -> asyncTaskApiService.claimNext(AsyncTaskType.DOWNLOAD_ARCHIVE));
+            () -> asyncTaskApiService.claimNext(List.of(AsyncTaskType.DOWNLOAD_ARCHIVE)));
     }
 
     @Test
@@ -279,7 +279,7 @@ public class AsyncTaskApiServiceTest extends AbstractAclTest {
         mockSecurityContext();
 
         assertThrows(AccessDeniedException.class,
-            () -> asyncTaskApiService.claimNext(AsyncTaskType.DOWNLOAD_ARCHIVE));
+            () -> asyncTaskApiService.claimNext(List.of(AsyncTaskType.DOWNLOAD_ARCHIVE)));
         assertThrows(AccessDeniedException.class,
             () -> asyncTaskApiService.updateStatus(TASK_ID, statusReport()));
     }

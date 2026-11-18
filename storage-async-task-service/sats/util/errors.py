@@ -57,8 +57,50 @@ class UnsupportedSource(Exception):
     """The storage is of a kind this service cannot read."""
 
 
+class UnsupportedArchive(Exception):
+    """
+    The file is not an archive this service can open: unknown format, encrypted, or damaged.
+
+    Raised once for the archive, not per entry: an encrypted one would otherwise fail on every file
+    and say nothing about the cause.
+    """
+
+
+class UnsafeArchiveEntry(Exception):
+    """
+    An entry inside the archive is named in a way this service refuses to write.
+
+    The archive is readable; one name in it is not acceptable. The task fails on the first such name,
+    before anything is written.
+    """
+
+
+class DestinationConflict(Exception):
+    """
+    Something is already where the extraction would write, and the task did not ask to replace it.
+
+    Always answered the same way: refuse before the first upload, so the destination holds none of
+    the archive's content. On a share it may hold the destination folder, which is created before
+    the collision pass.
+    """
+
+
+class DestinationWriteFailed(Exception):
+    """
+    One file could not be written into the destination, and it is not a collision.
+
+    Not an internal error: the storage refused the write, or went away. One file failing fails the
+    task - skipping it would leave a half-extracted archive that looks complete.
+    """
+
+
 class InvalidTask(Exception):
-    """The task describes no work - no storage, or no paths."""
+    """
+    The task describes work that cannot be carried out as written.
+
+    No storage, no paths, a storage deleted after the task was created, or an archive path naming
+    something that is not a readable file.
+    """
 
 
 class CredentialsUnavailable(Exception):

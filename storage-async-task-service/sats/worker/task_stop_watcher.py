@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import time
 
-from ..api import CloudPipelineApi
+from ..cp_api_client import CloudPipelineApi
 from ..util.errors import ApiError, ApiRejected, StopReason, StopRequested
 from ..util.log import get_logger
 from ..model import TaskStatus

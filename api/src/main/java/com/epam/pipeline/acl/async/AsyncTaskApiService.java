@@ -80,8 +80,8 @@ public class AsyncTaskApiService {
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public Optional<AsyncTask> claimNext(final AsyncTaskType type) {
-        return asyncTaskManager.claimNext(type);
+    public Optional<AsyncTask> claimNext(final List<AsyncTaskType> types) {
+        return asyncTaskManager.claimNext(types);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)

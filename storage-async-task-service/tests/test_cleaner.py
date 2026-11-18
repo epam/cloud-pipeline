@@ -19,9 +19,10 @@ Tests of the four cleanups - the only place a killed worker is exercised at all.
 import datetime
 import os
 
-from sats.config import StorageDownloadArchiveTaskConfig, ServiceConfig
+from sats.config import AsyncTasksConfig, ServiceConfig, StorageDownloadArchiveTaskConfig, \
+    StorageUnpackArchiveTaskConfig
 from sats.worker.cleaner import ORPHAN_GRACE_MINUTES, Cleaner
-from sats.model import ArchiveTask, TaskStatus
+from sats.model import ArchiveTask, AsyncTaskType, TaskStatus, UnpackParams
 
 from .fakes import FakeApi, FakeBucket
 
@@ -31,10 +32,16 @@ def _service_config(tmp_path):
 
 
 def _archive_config():
-    return StorageDownloadArchiveTaskConfig(
-        destination_storage_id=9, destination_prefix='archives/', max_size_bytes=None,
-        max_files_count=None, ttl_days=7, max_user_tasks=3, worker_max_running_minutes=240,
-        stuck_tasks_threshold_minutes=360)
+    """The whole preference, as the cleaner now reads it: the shared values and both sections."""
+    return AsyncTasksConfig(
+        download=StorageDownloadArchiveTaskConfig(
+            destination_storage_id=9, destination_prefix='archives/', max_size_bytes=None,
+            max_files_count=None, ttl_days=7, max_user_tasks=3, worker_max_running_minutes=240,
+            stuck_tasks_threshold_minutes=360),
+        unpack=StorageUnpackArchiveTaskConfig(
+            max_archive_size_bytes=None, max_size_bytes=None, max_files_count=None,
+            worker_max_running_minutes=240, configured=True),
+        max_user_tasks=3, stuck_tasks_threshold_minutes=360)
 
 
 def _task(task_id, status):
@@ -278,7 +285,7 @@ def test_builds_its_client_from_the_destination_storages_region(tmp_path, monkey
     api.filtered = {TaskStatus.SUCCESS: [expired]}
     # The real client is built - that is what is under test - and the bucket around it is replaced, so
     # nothing is sent anywhere.
-    monkeypatch.setattr('sats.worker.cleaner.ArchiveBucket',
+    monkeypatch.setattr('sats.worker.cleaner.S3Bucket',
                         lambda _bucket, _part_size, _client: FakeBucket())
 
     Cleaner(api, _service_config(tmp_path)).cleanup(_archive_config(), active_ids=set())
@@ -291,3 +298,60 @@ def _age(directory):
     past = (datetime.datetime.now(datetime.UTC)
             - datetime.timedelta(minutes=ORPHAN_GRACE_MINUTES + 10)).timestamp()
     os.utime(directory, (past, past))
+
+
+# ---------------------------------------------------------------- the second task type
+
+def _unpack_task(task_id, status):
+    return ArchiveTask(id=task_id, status=status, owner='USER', storage_id=None,
+                       type=AsyncTaskType.UNPACK_ARCHIVE,
+                       unpack=UnpackParams(source_storage_id=1, source_path='in/data.zip',
+                                           destination_storage_id=2, destination_path='out/'))
+
+
+def test_fails_an_extraction_whose_worker_vanished(tmp_path):
+    # Every type this service runs has to be covered, or a task whose worker died stays RUNNING for
+    # ever: the cleanups filter by type, so nothing else would ever look at it.
+    api = FakeApi(_unpack_task('stuck-u1', TaskStatus.RUNNING))
+    api.filtered = {TaskStatus.RUNNING: [_unpack_task('stuck-u1', TaskStatus.RUNNING)]}
+    bucket = FakeBucket()
+
+    _cleaner(tmp_path, api, bucket).cleanup(_archive_config(), active_ids=set())
+
+    assert api.statuses == [TaskStatus.FAILED]
+    # And nothing is deleted. An extraction owns no artifact of the platform's, and `_delete_archive`
+    # on one would fall back to the configured download destination and delete a key that was never
+    # written there.
+    assert bucket.deleted == []
+
+
+def test_finishes_an_extractions_unconfirmed_cancellation_without_deleting_anything(tmp_path):
+    api = FakeApi(_unpack_task('cancel-u1', TaskStatus.CANCEL_REQUESTED))
+    api.filtered = {
+        TaskStatus.CANCEL_REQUESTED: [_unpack_task('cancel-u1', TaskStatus.CANCEL_REQUESTED)]}
+    bucket = FakeBucket()
+
+    _cleaner(tmp_path, api, bucket).cleanup(_archive_config(), active_ids=set())
+
+    assert api.statuses == [TaskStatus.STOPPING, TaskStatus.CANCELLED]
+    # What the dead worker had already written stays in the destination: the same policy a worker's
+    # own cancellation follows, and there is no journal to roll anything back with.
+    assert bucket.deleted == []
+
+
+def test_an_extraction_is_never_expired_however_old_it_gets(tmp_path):
+    # `EXPIRED` does not mean "the record is old", it means "the artifact is gone" - and an extraction
+    # owns no artifact. The type filter on the sweep is what keeps that true; without it a succeeded
+    # extraction would delete a key in the download destination and vanish from the GUI, which
+    # announces a finished task only for SUCCESS and FAILED.
+    old_download = _task('old-d', TaskStatus.SUCCESS)
+    old_unpack = _unpack_task('old-u', TaskStatus.SUCCESS)
+    api = FakeApi(old_download)
+    api.filtered = {TaskStatus.SUCCESS: [old_download, old_unpack]}
+    bucket = FakeBucket()
+
+    _cleaner(tmp_path, api, bucket).cleanup(_archive_config(), active_ids=set())
+
+    # The download task of the same age does expire, which is what shows the filter is doing the work.
+    assert api.statuses == [TaskStatus.EXPIRED]
+    assert bucket.deleted == ['archives/old-d.zip']

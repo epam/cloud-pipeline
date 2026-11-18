@@ -105,17 +105,21 @@ public class AsyncTaskController extends AbstractRestController {
     @PostMapping("/next")
     @ResponseBody
     @Operation(
-            summary = "Hands out the oldest pending task of the given type.",
-            description = "Hands out the oldest pending task of the given type and marks it running. "
-                    + "Returns an empty payload when the queue holds nothing of that type, which is "
+            summary = "Hands out the oldest pending task of the given types.",
+            description = "Hands out the oldest pending task of the given types and marks it running. "
+                    + "Returns an empty payload when the queue holds nothing of those types, which is "
                     + "the ordinary answer rather than an error. "
+                    + "The parameter may be repeated - 'type=DOWNLOAD_ARCHIVE&type=UNPACK_ARCHIVE' - "
+                    + "so that an executor service which handles several types drains them through one "
+                    + "queue instead of letting the tasks of one type wait behind another's; the "
+                    + "oldest task wins across the whole list. A single value is still a valid call. "
                     + "One task per call, by design: between the moment a task is marked running and "
                     + "the moment an executor actually picks it up, nobody is working on it, and a "
                     + "crash in that window leaves it hanging until it times out. Claim one, hand it "
                     + "to a worker, then claim the next - so at most one task is ever exposed to that "
                     + "window.")
     @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
-    public Result<AsyncTask> next(@RequestParam final AsyncTaskType type) {
+    public Result<AsyncTask> next(@RequestParam final List<AsyncTaskType> type) {
         return Result.success(asyncTaskApiService.claimNext(type).orElse(null));
     }
 

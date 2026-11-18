@@ -31,7 +31,7 @@ import signal
 import sys
 from pathlib import Path
 
-from .api import CloudPipelineApi
+from .cp_api_client import CloudPipelineApi
 from .config import ServiceConfig
 from .util.log import DEFAULT_BACKUP_DAYS, configure_logging, get_logger
 from .orchestrator import Orchestrator

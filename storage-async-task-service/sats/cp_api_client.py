@@ -36,6 +36,7 @@ expires. The second client exists for that one call and has a single attempt.
 from __future__ import annotations
 
 import datetime
+from collections.abc import Sequence
 from typing import Any
 
 from .util.errors import ApiError, ApiRejected
@@ -105,15 +106,26 @@ class CloudPipelineApi:
 
     # ------------------------------------------------------------------ tasks
 
-    def claim_next(self, task_type: AsyncTaskType) -> ArchiveTask | None:
+    def claim_next(self,
+                   task_types: AsyncTaskType | Sequence[AsyncTaskType]) -> ArchiveTask | None:
         """
-        Takes the oldest pending task of the type and moves it to `RUNNING`, atomically.
+        Takes the oldest pending task of any of the types and moves it to `RUNNING`, atomically.
+
+        Every type in one call, not a call per type: the API orders by creation across the whole
+        list, so the oldest task wins and the tasks of one type never wait behind another's.
+
+        One type may be passed on its own, and that is not mere convenience: `AsyncTaskType` is a
+        `StrEnum`, so a single value handed to a sequence parameter would iterate into its
+        characters and the service would ask for sixteen task types named `D`, `O`, `W`...  Checking
+        for a string is what makes that impossible.
 
         `None` means the queue is empty, which is the ordinary answer. Goes through the single-attempt
         client - see the module docstring.
         """
+        wanted = [task_types] if isinstance(task_types, str) else list(task_types)
         payload = self._call('the next task',
-                             lambda: self._claim_client.claim_next_async_task(str(task_type)))
+                             lambda: self._claim_client.claim_next_async_task(
+                                 [str(task_type) for task_type in wanted]))
         if not payload:
             return None
         return ArchiveTask.from_api(payload)
