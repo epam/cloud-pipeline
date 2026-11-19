@@ -86,7 +86,10 @@ import CreateLinkForm from './forms/CreateLinkForm';
 import HiddenObjects from '../../utils/hidden-objects';
 import {withCurrentUserAttributes} from '../../utils/current-user-attributes';
 import Markdown from '../special/markdown';
-import {applyUserCapabilities} from '../pipelines/launch/form/utilities/run-capabilities';
+import {
+  applyUserCapabilities,
+  getCapabilitiesPlatformInfo
+} from '../pipelines/launch/form/utilities/run-capabilities';
 import ToolHistory from './ToolHistory';
 import {fillUserTagsWithDefaultValues, getVisibleUserTags} from '../runs/run-tags/utilities';
 
@@ -1647,9 +1650,21 @@ export default class Tool extends localization.LocalizedReactComponent {
         </span>
       ]);
       const info = this.getVersionRunningInformation(version || this.defaultTag);
+      // The OS of the tool and the cloud of the run decide, e.g., if NICE DCV is available. The OS
+      // is the one of the version that runs: the default one, if no version is chosen
+      const osTag = version || this.defaultTag;
+      const platformInfo = await getCapabilitiesPlatformInfo(
+        {
+          ...payload,
+          dockerImage: osTag ? `${this.dockerImageWithoutVersion}:${osTag}` : payload.dockerImage
+        },
+        undefined,
+        this.props.awsRegions
+      );
       payload.params = await applyUserCapabilities(
         payload.params || {},
-        this.props.preferences
+        this.props.preferences,
+        platformInfo
       );
       const visibility = await getVisibleUserTags(payload);
       const tags = await fillUserTagsWithDefaultValues(

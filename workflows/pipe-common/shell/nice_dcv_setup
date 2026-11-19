@@ -510,6 +510,12 @@ function run_dcv {
     # as it would start all the services of the desktop, so only GDM is started
     systemctl mask --now $CP_DCV_WAYLAND_MASKED_UNITS
     systemctl start dbus
+    # The NoMachine server of an image committed from a NoMachine run starts at the boot, with a GNOME session of its
+    # display owner: NICE DCV and NoMachine cannot run the GNOME desktop together (see nomachine_setup)
+    if [ -f /usr/lib/systemd/system/nxserver.service ] || [ -f /etc/systemd/system/nxserver.service ]; then
+      pipe_log_warn "[WARNING] The NoMachine server of the image is stopped and disabled: NICE DCV and NoMachine cannot run the desktop together on ${CP_OS} ${CP_VER}" "$DCV_INSTALL_TASK"
+      systemctl disable --now nxserver.service
+    fi
     if ! systemctl start gdm; then
       pipe_log_warn "[WARNING] GDM cannot be started, DCV sessions will not have a desktop. See: journalctl -u gdm" "$DCV_INSTALL_TASK"
     fi

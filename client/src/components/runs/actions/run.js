@@ -54,6 +54,7 @@ import RunCapabilities, {
   RUN_CAPABILITIES_MODE,
   getEnabledCapabilities,
   updateCapabilities,
+  getCapabilitiesPlatformInfo,
   applyCustomCapabilitiesParameters,
   CapabilitiesDisclaimer,
   checkRequiredCapabilitiesErrors
@@ -398,7 +399,12 @@ function runFn (
       delete payload.scheduleRules;
     }
     for (const p of payloadsArray) {
-      p.params = applyCustomCapabilitiesParameters(p.params, stores.preferences);
+      // The OS of the tool and the cloud of the run decide, e.g., if NICE DCV is available
+      p.params = applyCustomCapabilitiesParameters(
+        p.params,
+        stores.preferences,
+        await getCapabilitiesPlatformInfo(p, undefined, stores.awsRegions)
+      );
     }
     await ensureValidReservationParametersForLaunchPayloads(payloadsArray);
     const launchFn = async () => {
@@ -520,16 +526,25 @@ function runFn (
             console.log(`launch payload ${launchPostfix || ''}:`, singlePayload);
             let runNameAlias = singlePayload.runNameAlias;
             if (component) {
+              // The capabilities may come from the parameters of the run, unfiltered: the OS of
+              // the tool and the cloud of the run decide, e.g., if NICE DCV is available
+              const platformInfo = await getCapabilitiesPlatformInfo(
+                singlePayload,
+                undefined,
+                stores.awsRegions
+              );
               if (component.state.runCapabilities) {
                 singlePayload.params = updateCapabilities(
                   singlePayload.params,
                   component.state.runCapabilities,
-                  stores.preferences
+                  stores.preferences,
+                  platformInfo
                 );
               }
               singlePayload.params = applyCustomCapabilitiesParameters(
                 singlePayload.params,
-                stores.preferences
+                stores.preferences,
+                platformInfo
               );
               if (
                 checkRequiredCapabilitiesErrors(

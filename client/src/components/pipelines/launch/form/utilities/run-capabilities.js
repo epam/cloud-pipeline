@@ -21,6 +21,10 @@ import fetchToolDefaultParameters from './fetch-tool-default-parameters';
 import {getReservationParametersConfig} from '../components/reservation-parameters/utilities';
 import styles from './run-capabilities.css';
 import parseCapabilityCloudSetting from './capabilities-utilities/parse-cloud-setting';
+import {
+  excludeNoMachineWithDcv,
+  keepOneDesktopParameter
+} from './capabilities-utilities/exclusive-desktops';
 import {defaultSorter} from '../../../../../utils/sorting';
 
 export {RUN_CAPABILITIES};
@@ -423,16 +427,9 @@ class RunCapabilities extends React.Component {
         reservationConfig
       }
     );
-    let filtered = (values || [])
-      .filter(v => capabilities.find(o => o.value === v));
-    const dcv = RUN_CAPABILITIES.dcv;
-    const noMachine = RUN_CAPABILITIES.noMachine;
-    if (filtered.includes(dcv) && filtered.includes(noMachine)) {
-      console.warn(
-        'cannot enable both NICE DCV and NoMachine - switching off NICE DCV capability'
-      );
-      filtered = filtered.filter((o) => o !== dcv);
-    }
+    const filtered = excludeNoMachineWithDcv(
+      (values || []).filter(v => capabilities.find(o => o.value === v))
+    );
     onChange && onChange(filtered);
   };
 
@@ -895,6 +892,45 @@ export function correctRequiredCapabilities (capabilities, preferences) {
   return result;
 }
 
+// The platform of the tool (a string), or the platform, the OS of the tool and the cloud provider
+// of the run ({platform, os, provider}, see getCapabilitiesPlatformInfo)
+function toPlatformInfo (platform) {
+  if (platform && typeof platform === 'object') {
+    return platform;
+  }
+  return {platform};
+}
+
+/**
+ * The platform, the OS of the tool and the cloud provider of a launch, for the capabilities that
+ * depend on them (e.g. NICE DCV). The OS or the provider is undefined, if it cannot be determined
+ * @param {{dockerImage: string, cloudRegionId: number|string}} payload - the launch payload
+ * @param {string} platform - the platform of the tool
+ * @param {Object} cloudRegions - the cloud regions store
+ * @returns {Promise<{platform: string, os: string, provider: string}>}
+ */
+export async function getCapabilitiesPlatformInfo (payload = {}, platform, cloudRegions) {
+  let os;
+  let provider;
+  try {
+    os = await fetchToolOS(payload.dockerImage);
+  } catch (_) {
+    os = undefined;
+  }
+  if (cloudRegions) {
+    try {
+      await cloudRegions.fetchIfNeededOrWait();
+      const regions = cloudRegions.value || [];
+      const region = regions.find((r) => `${r.id}` === `${payload.cloudRegionId}`) ||
+        regions.find((r) => r.default);
+      provider = region ? region.provider : undefined;
+    } catch (_) {
+      provider = undefined;
+    }
+  }
+  return {platform, os, provider};
+}
+
 export function applyCapabilities (parameters, capabilities = [], preferences, platform) {
   if (!parameters) {
     parameters = {};
@@ -905,7 +941,13 @@ export function applyCapabilities (parameters, capabilities = [], preferences, p
       value: true
     };
   };
-  const platformSpecificCapabilities = getPlatformSpecificCapabilities(preferences, {platform});
+  const platformInfo = toPlatformInfo(platform);
+  // The capabilities are taken for the platform, as the selection of the launch form has the ones
+  // for the OS of the tool and the cloud of the run already. These decide the remote desktop only
+  const platformSpecificCapabilities = getPlatformSpecificCapabilities(
+    preferences,
+    {platform: platformInfo.platform}
+  );
   capabilities
     .map(capability => platformSpecificCapabilities.find(psc => psc.value === capability))
     .filter(Boolean)
@@ -919,13 +961,19 @@ export function applyCapabilities (parameters, capabilities = [], preferences, p
         : (CAPABILITIES_DEPENDENCIES[capability.value] || []);
       dependencies.forEach(dependency => enable(dependency));
     });
-  return normalizeCapabilities(correctParametersForRequiredCapabilities(parameters, preferences));
+  const dcvAvailable = getPlatformSpecificCapabilities(preferences, platformInfo)
+    .some((capability) => capability.value === RUN_CAPABILITIES.dcv);
+  return normalizeCapabilities(
+    correctParametersForRequiredCapabilities(parameters, preferences),
+    {dcvAvailable}
+  );
 }
 
-export function normalizeCapabilities (parameters) {
+export function normalizeCapabilities (parameters, options = {}) {
   if (!parameters) {
     parameters = {};
   }
+  const {dcvAvailable = true} = options;
   const disable = (parameter) => {
     parameters[parameter] = {
       type: 'boolean',
@@ -934,13 +982,7 @@ export function normalizeCapabilities (parameters) {
   };
   const isEnabled = (parameter) => parameters[parameter] &&
     `${parameters[parameter].value}`.toLowerCase() === 'true';
-  if (
-    isEnabled(RUN_CAPABILITIES_PARAMETERS[RUN_CAPABILITIES.dcv]) &&
-    isEnabled(RUN_CAPABILITIES_PARAMETERS[RUN_CAPABILITIES.noMachine])
-  ) {
-    console.warn('cannot enable both NICE DCV and NoMachine - switching off NICE DCV capability');
-    disable(RUN_CAPABILITIES_PARAMETERS[RUN_CAPABILITIES.dcv]);
-  }
+  keepOneDesktopParameter(parameters, dcvAvailable);
   const disableParameterIfNotEnabled = (param) => {
     if (!isEnabled(param)) {
       disable(param); // explicitly set to false so that it is not overridden by tool defaults
@@ -988,7 +1030,9 @@ export async function applyUserCapabilities (parameters, preferences, platform) 
   );
 }
 
-export function applyCustomCapabilitiesParameters (parameters, preferences) {
+// platform: the platform of the tool, or {platform, os, provider} (getCapabilitiesPlatformInfo),
+// which decides the remote desktop of the run, if the parameters have both
+export function applyCustomCapabilitiesParameters (parameters, preferences, platform) {
   const customCapabilities = getEnabledCapabilities(parameters)
     .map(capability => getCustomCapability(capability, preferences))
     .filter(Boolean);
@@ -1025,7 +1069,9 @@ export function applyCustomCapabilitiesParameters (parameters, preferences) {
       }
     }
   }
-  return normalizeCapabilities(result);
+  const dcvAvailable = getPlatformSpecificCapabilities(preferences, toPlatformInfo(platform))
+    .some((capability) => capability.value === RUN_CAPABILITIES.dcv);
+  return normalizeCapabilities(result, {dcvAvailable});
 }
 
 export function hasPlatformSpecificCapabilities (platform, preferences) {

@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+# Copyright 2026 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# The GNOME desktop of the remote desktop capabilities on Rocky Linux, RHEL and CentOS 10 and later: these releases
+# have no Xfce (also not in EPEL 10), so GNOME ("Server with GUI") is used there instead.
+#
+# Usage: gnome_desktop_setup applies|install|configure [log task]
+#   applies   - succeeds, if the OS of the run is one of the releases above
+#   install   - installs the GNOME desktop
+#   configure - sets the GNOME defaults for all the users and stops the services of the desktop, which shall not run
+#               in a container of a run. Shall be called before a desktop session starts
+
+_command="$1"
+_task="${2:-GnomeDesktopSetup}"
+
+CP_GNOME_DESKTOP_OS="rocky rhel centos"
+CP_GNOME_DESKTOP_MIN_OS_MAJOR=10
+CP_GNOME_DESKTOP_KEYBOARD_LAYOUTS="${CP_DESKTOP_KEYBOARD_LAYOUTS:-us,fr,de}"
+# Services of the "Server with GUI" group, which shall not run in a (privileged) container of a run: they manage the
+# network, the clock and the kernel tuning of the node, or are not needed for a desktop. The sleep targets are masked
+# as well, so that an idle desktop cannot suspend the node
+CP_GNOME_DESKTOP_MASKED_UNITS="NetworkManager.service firewalld.service chronyd.service tuned.service \
+                               irqbalance.service ModemManager.service wpa_supplicant.service \
+                               cups.service cups.socket cups.path avahi-daemon.service avahi-daemon.socket \
+                               bluetooth.service \
+                               sleep.target suspend.target hibernate.target hybrid-sleep.target \
+                               suspend-then-hibernate.target"
+
+function gnome_desktop_applies {
+    /usr/bin/rpm -q -f /usr/bin/rpm &> /dev/null || return 1
+    # The major version of the distribution, e.g. 10 for "rocky:10.2"
+    local _os_major="${CP_VER_MAJOR:-${CP_VER%%.*}}"
+    [[ "$_os_major" =~ ^[0-9]+$ ]] && \
+    [[ " $CP_GNOME_DESKTOP_OS " == *" $CP_OS "* ]] && \
+    [ "$_os_major" -ge "$CP_GNOME_DESKTOP_MIN_OS_MAJOR" ]
+}
+
+function gnome_desktop_install {
+    # The "Server with GUI" group requires the full coreutils, while the images often have coreutils-single.
+    # A kernel is not needed in a container
+    if rpm -q coreutils-single &> /dev/null; then
+        yum -y install --allowerasing coreutils || \
+        yum -y install --allowerasing --disablerepo=cloud-pipeline coreutils
+    fi
+    local _group_exclusions=(--exclude=kernel --exclude=kernel-core '--exclude=kernel-modules*'
+                             '--exclude=kernel-tools*' --exclude=kmod-kvdo '--exclude=*-firmware' --exclude=vdo)
+    yum -y groupinstall "${_group_exclusions[@]}" "Server with GUI" || \
+    yum -y groupinstall --disablerepo=cloud-pipeline "${_group_exclusions[@]}" "Server with GUI"
+    if [ $? -ne 0 ]; then
+        pipe_log_fail "[ERROR] Cannot install the GNOME desktop (\"Server with GUI\")" "$_task"
+        return 1
+    fi
+}
+
+function gnome_desktop_configure {
+    systemctl mask --now $CP_GNOME_DESKTOP_MASKED_UNITS
+
+    # The defaults of the GNOME desktop for all the users (a system dconf database): no wallpaper, the keyboard
+    # layouts of CP_DESKTOP_KEYBOARD_LAYOUTS, no screen lock, no welcome tour and no suspend when idle
+    local _input_sources=""
+    local _layout
+    local _layouts
+    IFS=',' read -ra _layouts <<< "$CP_GNOME_DESKTOP_KEYBOARD_LAYOUTS"
+    for _layout in "${_layouts[@]}"; do
+        _input_sources="${_input_sources:+$_input_sources, }('xkb', '$_layout')"
+    done
+
+    # The databases of a profile take precedence in their order, so the local one goes right after the user's one
+    mkdir -p /etc/dconf/db/local.d /etc/dconf/profile
+    if [ ! -f /etc/dconf/profile/user ]; then
+        printf 'user-db:user\nsystem-db:local\n' > /etc/dconf/profile/user
+    elif ! grep -qx 'system-db:local' /etc/dconf/profile/user; then
+        if grep -q '^user-db:' /etc/dconf/profile/user; then
+            sed -i '0,/^user-db:/{/^user-db:/a system-db:local
+}' /etc/dconf/profile/user
+        else
+            sed -i '1i system-db:local' /etc/dconf/profile/user
+        fi
+    fi
+
+cat <<EOF >/etc/dconf/db/local.d/00-cloud-pipeline
+[org/gnome/desktop/background]
+picture-uri=''
+picture-uri-dark=''
+color-shading-type='solid'
+primary-color='#2e3436'
+
+[org/gnome/desktop/input-sources]
+sources=[$_input_sources]
+
+[org/gnome/desktop/screensaver]
+lock-enabled=false
+
+[org/gnome/desktop/session]
+idle-delay=uint32 0
+
+[org/gnome/shell]
+welcome-dialog-last-shown-version='999'
+
+[org/gnome/settings-daemon/plugins/power]
+sleep-inactive-ac-type='nothing'
+sleep-inactive-battery-type='nothing'
+EOF
+    dconf update
+    if [ $? -ne 0 ]; then
+        pipe_log_warn "[WARNING] Cannot apply the GNOME defaults (dconf update), a default GNOME look and feel will be used" "$_task"
+    fi
+}
+
+case "$_command" in
+    applies)
+        gnome_desktop_applies
+        ;;
+    install)
+        gnome_desktop_install
+        ;;
+    configure)
+        gnome_desktop_configure
+        ;;
+    *)
+        echo "Usage: gnome_desktop_setup applies|install|configure [log task]"
+        exit 2
+        ;;
+esac

@@ -127,7 +127,9 @@ def nice_dcv_setup(tmpdir, root):
             .replace('/etc/dcv/', str(root.join('etc', 'dcv')) + '/') \
             .replace('/etc/dconf', str(root.join('etc', 'dconf'))) \
             .replace('/opt/dcv/extras', str(root.join('opt', 'dcv', 'extras'))) \
-            .replace('/var/log/', str(root.join('var', 'log')) + '/')
+            .replace('/var/log/', str(root.join('var', 'log')) + '/') \
+            .replace('/usr/lib/systemd/system/', str(root.join('usr', 'lib', 'systemd', 'system')) + '/') \
+            .replace('/etc/systemd/system/', str(root.join('etc', 'systemd', 'system')) + '/')
 
     def run(os_version, has_coreutils_single=False, dcv_installed=False, **extra_env):
         if calls.exists():
@@ -344,6 +346,29 @@ def test_rocky_10_starts_gdm_without_the_other_services_of_the_desktop(nice_dcv_
     assert exit_code == 0
     assert _calls_of(calls, 'systemctl') == GNOME_SERVICES
     assert _calls_of(calls, 'nice_dcv_create_session') == [[]]
+
+
+@pytest.mark.parametrize('unit_dir', [('usr', 'lib', 'systemd', 'system'), ('etc', 'systemd', 'system')])
+def test_rocky_10_stops_the_nomachine_server_of_the_image(nice_dcv_setup, root, unit_dir):
+    # An image committed from a NoMachine run: its server starts a GNOME session of its display owner at the boot
+    root.ensure(*(unit_dir + ('nxserver.service',)))
+
+    exit_code, calls = nice_dcv_setup(ROCKY_10, dcv_installed=True)
+
+    assert exit_code == 0
+    systemctl = _calls_of(calls, 'systemctl')
+    assert ['disable', '--now', 'nxserver.service'] in systemctl
+    assert systemctl.index(['disable', '--now', 'nxserver.service']) < systemctl.index(['start', 'gdm'])
+    assert [warning for warning in _warnings(calls) if 'NoMachine server of the image is stopped' in warning]
+
+
+def test_rocky_9_keeps_the_nomachine_server_of_the_image(nice_dcv_setup, root):
+    root.ensure('usr', 'lib', 'systemd', 'system', 'nxserver.service')
+
+    exit_code, calls = nice_dcv_setup(ROCKY_9, dcv_installed=True)
+
+    assert exit_code == 0
+    assert not [args for args in _calls_of(calls, 'systemctl') if 'nxserver.service' in args]
 
 
 def test_rocky_10_reports_gdm_which_cannot_be_started(nice_dcv_setup):
