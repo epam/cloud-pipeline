@@ -184,8 +184,11 @@ public class ToolManager implements SecuredEntityManager {
         try {
             List<String> tags = dockerRegistryManager.loadImageTags(registry, tool.getImage());
             for (String tag : tags) {
-                String digest = dockerRegistryManager.getDockerClient(registry, tool.getImage())
-                        .getVersionAttributes(registry, tool.getImage(), tag).getDigest();
+                final DockerClient dockerClient = dockerRegistryManager.getDockerClient(registry, tool.getImage());
+                final String digest = dockerClient.getVersionAttributes(registry, tool.getImage(), tag).getDigest();
+                toolVersionManager.updateOrCreateToolVersion(
+                        tool.getId(), tag, tool.getImage(), registry, dockerClient
+                );
                 updateToolVersionScanStatus(tool.getId(), ToolScanStatus.NOT_SCANNED,
                         DateUtils.now(), tag, null, digest, new HashMap<>(), null, null);
             }

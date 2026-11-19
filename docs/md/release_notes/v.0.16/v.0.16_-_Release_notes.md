@@ -118,6 +118,7 @@
     - [A new install points the API at the transport port of the search Elasticsearch](#a-new-install-points-the-api-at-the-transport-port-of-the-search-elasticsearch)
     - [`pipe storage mount`: removing a folder that is not empty deletes all its content](#pipe-storage-mount-removing-a-folder-that-is-not-empty-deletes-all-its-content)
     - [Rocky Linux 9 and 10 runs: the default repos stay next to the repos mirror](#rocky-linux-9-and-10-runs-the-default-repos-stay-next-to-the-repos-mirror)
+    - [Enabling a tool does not register its versions: its custom launch form has no Docker image](#enabling-a-tool-does-not-register-its-versions-its-custom-launch-form-has-no-docker-image)
 
 ***
 
@@ -1519,3 +1520,10 @@ Now, `rmdir` of a folder that holds any file or folder fails with "Directory not
 
 Previously, a Rocky Linux run with the extra repositories mirror (`CP_REPO_EXTRA_ENABLED`) and `CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS_ROCKY` (or `CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS`) set to `true` removed the default repo files of the image by their name, `Rocky-*.repo`. That is how Rocky Linux 8 names them. Rocky Linux 9 and 10 name them `rocky*.repo`, so they stayed. Their `baseos`, `appstream`, `extras` and some other repos were then defined twice, by them and by the mirror file `cloud-pipeline-extra.repo`, and each `dnf` call said "Repository baseos is listed more than once in the configuration". The name pattern also removed the repo files of the Rocky SIGs, e.g. `Rocky-SIG-Storage-Squid-9.repo`, on any Rocky Linux.
 Now, the run removes the repo files of the image's `rocky-repos` package, on Rocky Linux 8, 9 and 10 alike, and keeps the other repo files, e.g. of EPEL and of the Rocky SIGs. If the image has no such package, it removes the `Rocky-*.repo` and `rocky*.repo` files. The warning is gone. As on Rocky Linux 8, this also removes the image's repos that the mirror file does not have, which the stock images keep disabled, e.g. `devel`, and on Rocky Linux 9 and 10 `crb` and `security` as well: a command that names `crb` (e.g. `dnf --enablerepo=crb`) fails. The mirror's `powertools` repo has the CRB packages, if the mirror has them in its `PowerTools` folder. Without the setting, the default repos of the image are kept, as before. See [10.3. Add a Tool](../../manual/10_Manage_Tools/10.3._Add_a_Tool.md#supported-os-families).
+
+### Enabling a tool does not register its versions: its custom launch form has no Docker image
+
+[#4287](https://github.com/epam/cloud-pipeline/issues/4287)
+
+Previously, enabling a tool in a tool group (**Enable tool**) did not register the versions of its image. A version was registered later: by a scheduled security scan of the tool that completed, by a push of the image to the registry, or when the version settings were saved. Until then, the tool had no version settings, and the launch form that **Run** → **Custom settings** opens for it had an empty **Docker image** field ("Docker image is required") and no tool name in its header.
+Now, enabling a tool registers a version for each tag of its image in the registry, as a completed scan does, so the launch form gets the tool's image at once. A tool enabled before the update gets its versions in the same ways as before.
