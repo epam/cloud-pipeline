@@ -27,5 +27,6 @@ public enum NotificationGroup {
     USER,
     NODE_POOL,
     DATASTORAGE_LIFECYCLE,
-    USAGE_CREDITS
+    USAGE_CREDITS,
+    CAPACITY_RESERVATION
 }

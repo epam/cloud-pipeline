@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.model;
 
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 /**
  * Model analysis.
@@ -26,6 +27,7 @@ import lombok.Value;
  */
 @Value
 @Builder
+@Jacksonized
 public class Analysis {
     private final AnalysisStatus status;
     private final AnalysisResult result;

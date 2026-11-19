@@ -35,6 +35,7 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.Revision;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -54,8 +55,8 @@ import java.util.stream.Stream;
 import static com.epam.pipeline.elasticsearchagent.service.EventToRequestConverter.INDEX_TYPE;
 
 @Data
-@Service
 @Slf4j
+@Service
 @ConditionalOnProperty(value = "sync.pipeline.disable", matchIfMissing = true, havingValue = "false")
 public class PipelineSynchronizer implements ElasticsearchSynchronizer {
 
@@ -245,9 +246,10 @@ public class PipelineSynchronizer implements ElasticsearchSynchronizer {
     }
 
     @Data
-    @AllArgsConstructor
     @Builder
-    private static class PipelineDocRequests {
+    @Jacksonized
+    @AllArgsConstructor
+    private static final class PipelineDocRequests {
 
         private List<DocWriteRequest> pipelineRequests;
         private List<DocWriteRequest> codeRequests;

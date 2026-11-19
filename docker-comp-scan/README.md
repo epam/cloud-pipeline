@@ -14,10 +14,10 @@ Provides information about docker container installed packages:
 
 Run command
 ~~~
-./gradlew docker-comp-scan::bootRepackage
+./gradlew :docker-comp-scan:bootJar
 ~~~
 
-and jar will be available as `build/libs/docker-comp-scan-1.0.jar`
+and jar will be available as `build/libs/docker-comp-scan.jar`
 
 ### Application properties
 

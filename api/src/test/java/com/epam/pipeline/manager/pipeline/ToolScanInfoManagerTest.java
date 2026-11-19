@@ -21,8 +21,8 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -53,9 +53,9 @@ public class ToolScanInfoManagerTest {
     @InjectMocks
     private final ToolScanInfoManager toolScanInfoManager = new ToolScanInfoManager();
 
-    @Before
+    @BeforeEach
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test

@@ -73,7 +73,7 @@ public class ConfigurationScheduleJob implements Job {
         final String action = context.getMergedJobDataMap().getString("Action");
         if (RunScheduledAction.RUN.name().equals(action)) {
             log.debug("Execute a configuration with id: {}", configurationId);
-            configurationRunner.runConfiguration(null, configuration, null);
+            configurationRunner.runConfiguration(configuration, null);
         } else {
             log.error("Wrong type of action for scheduling configuration, allowed RUN, actual: {}", action);
         }

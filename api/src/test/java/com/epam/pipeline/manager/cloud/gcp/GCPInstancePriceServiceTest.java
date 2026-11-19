@@ -30,8 +30,8 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.utils.CommonUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.Arrays;
@@ -43,13 +43,13 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -115,8 +115,7 @@ public class GCPInstancePriceServiceTest {
         return new GCPInstancePriceService(preferenceManager, instanceOfferDao, Arrays.asList(extractors), priceLoader);
     }
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         when(predefinedMachinesExtractor.extract(any())).thenReturn(predefinedMachines);
         when(customMachinesExtractor.extract(any())).thenReturn(customMachines);
         when(diskExtractor.extract(any())).thenReturn(disks);

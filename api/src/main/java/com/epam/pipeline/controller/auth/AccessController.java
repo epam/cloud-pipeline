@@ -23,10 +23,10 @@ import com.epam.pipeline.dto.auth.AccessCode;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.manager.access.UnsecuredAccessService;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
@@ -36,7 +36,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
-@Api(value = "Methods to support applications (like pipe-cli) login via authorization code.")
+@Tag(name = "access-controller",
+     description = "Methods to support applications (like pipe-cli) login via authorization code.")
 @RequestMapping(value = "/access")
 public class AccessController extends AbstractRestController {
 
@@ -54,8 +55,8 @@ public class AccessController extends AbstractRestController {
     }
 
     @GetMapping("/auth")
-    @ApiOperation(value = "Initiates user authentication.", produces = MediaType.TEXT_HTML_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(summary = "Initiates user authentication.", description = MediaType.TEXT_HTML_VALUE)
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public String auth(@RequestParam("code_challenge") final String codeChallenge,
                        @RequestParam("code_challenge_method") final CodeChallengeMethod codeChallengeMethod) {
         accessService.start(codeChallenge, codeChallengeMethod);
@@ -64,16 +65,16 @@ public class AccessController extends AbstractRestController {
     }
 
     @GetMapping("/code")
-    @ApiOperation(value = "Returns code if exists.", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(summary = "Returns code if exists.", description = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     @ResponseBody
     public Result<AccessCode> code(@RequestParam("code_challenge") final String codeChallenge) {
         return Result.success(unsecuredAccessService.findCode(codeChallenge));
     }
 
     @GetMapping("/token")
-    @ApiOperation(value = "Exchanges the code for a token.", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(summary = "Exchanges the code for a token.", description = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     @ResponseBody
     public Result<JwtRawToken> token(@RequestParam("code") final String code,
                                      @RequestParam("code_verifier") final String codeVerifier) {

@@ -5,8 +5,8 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.utils.condition.ConditionExpression;
 import com.epam.pipeline.utils.condition.ConditionType;
 import com.epam.pipeline.utils.condition.field.PipelineRunField;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -14,8 +14,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConditionExpressionEvaluatorTest {
 
@@ -27,7 +27,7 @@ public class ConditionExpressionEvaluatorTest {
 
     private ConditionExpressionEvaluator<PipelineRun> evaluator;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         final Map<String, EntityConditionEvaluationStrategy<PipelineRun>> registry = new HashMap<>();
         final StringFieldEvaluationStrategy<PipelineRun> strategy =

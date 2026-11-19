@@ -122,15 +122,15 @@ public class GCPMachine extends AbstractGCPObject {
     public long totalPrice(final List<GCPResourcePrice> prices) {
         return prices.stream()
                 .mapToLong(price -> {
-                    switch (price.getRequest().getType()) {
+                    switch (price.request().type()) {
                         case CPU:
-                            return cpu * price.getNanos();
+                            return cpu * price.nanos();
                         case RAM:
-                            return Math.round(ram * price.getNanos());
+                            return Math.round(ram * price.nanos());
                         case EXTENDED_RAM:
-                            return Math.round(extendedRam * price.getNanos());
+                            return Math.round(extendedRam * price.nanos());
                         case GPU:
-                            return gpu * price.getNanos();
+                            return gpu * price.nanos();
                         default:
                             return 0;
                     }

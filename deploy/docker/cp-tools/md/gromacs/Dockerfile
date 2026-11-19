@@ -18,7 +18,7 @@
 #
 # How to build:
 #
-# docker build --build-arg BASE_IMAGE=quay.io/lifescience/cloud-pipeline:tools-base-ubuntu-18.04-cuda11-0.17 \
+# docker build --build-arg BASE_IMAGE=quay.io/lifescience/cloud-pipeline:tools-base-ubuntu-18.04-cuda11-0.25 \
 #              -t library/gromacs:2022 \
 #              .
 #
@@ -28,7 +28,7 @@
 # cd gmx_tutorial_1/results/
 # gmx mdrun -nt $(grep -c processor /proc/cpuinfo) -deffnm npt
 
-ARG BASE_IMAGE=quay.io/lifescience/cloud-pipeline:tools-base-ubuntu-18.04-cuda11-0.17
+ARG BASE_IMAGE=quay.io/lifescience/cloud-pipeline:tools-base-ubuntu-18.04-cuda11-0.25
 
 ##### COMPILE STAGE
 

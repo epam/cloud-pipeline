@@ -22,8 +22,8 @@ import com.epam.pipeline.entity.credits.PlatformUsageCreditsUserBalanceEntity;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.test.repository.AbstractJpaTest;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.data.domain.Page;
@@ -67,7 +67,7 @@ public class PlatformUsageCreditsUserBalanceRepositoryTest extends AbstractJpaTe
     private PipelineUser user1;
     private PipelineUser user2;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         user1 = userDao.createUser(getPipelineUser(USER1), Collections.emptyList());
         user2 = userDao.createUser(getPipelineUser(USER2), Collections.emptyList());
@@ -116,7 +116,7 @@ public class PlatformUsageCreditsUserBalanceRepositoryTest extends AbstractJpaTe
         entityManager.flush();
         entityManager.clear();
 
-        repository.delete(entity.getId());
+        repository.deleteById(entity.getId());
         entityManager.flush();
         entityManager.clear();
 
@@ -150,7 +150,7 @@ public class PlatformUsageCreditsUserBalanceRepositoryTest extends AbstractJpaTe
                 Collections.singletonList(user1.getId()), null, null);
         final Page<PlatformUsageCreditsUserBalanceEntity> page =
                 repository.findAll(PlatformUsageCreditsUserBalanceSpecification.build(filter),
-                        new PageRequest(0, 10));
+                        PageRequest.of(0, 10));
 
         assertThat(page.getTotalElements(), is(1L));
         assertThat(page.getContent().get(0).getUserId(), is(user1.getId()));
@@ -166,7 +166,7 @@ public class PlatformUsageCreditsUserBalanceRepositoryTest extends AbstractJpaTe
         final PlatformUsageCreditsUserBalanceFilterVO filter = filterVO(null, VALUE_LOW, ">");
         final Page<PlatformUsageCreditsUserBalanceEntity> page =
                 repository.findAll(PlatformUsageCreditsUserBalanceSpecification.build(filter),
-                        new PageRequest(0, 10));
+                        PageRequest.of(0, 10));
 
         assertThat(page.getTotalElements(), is(1L));
         assertThat(page.getContent().get(0).getCurrentValue(), is(VALUE_HIGH));
@@ -182,7 +182,7 @@ public class PlatformUsageCreditsUserBalanceRepositoryTest extends AbstractJpaTe
         final PlatformUsageCreditsUserBalanceFilterVO filter = filterVO(null, VALUE_HIGH, "<");
         final Page<PlatformUsageCreditsUserBalanceEntity> page =
                 repository.findAll(PlatformUsageCreditsUserBalanceSpecification.build(filter),
-                        new PageRequest(0, 10));
+                        PageRequest.of(0, 10));
 
         assertThat(page.getTotalElements(), is(1L));
         assertThat(page.getContent().get(0).getCurrentValue(), is(VALUE_LOW));
@@ -198,7 +198,7 @@ public class PlatformUsageCreditsUserBalanceRepositoryTest extends AbstractJpaTe
         final PlatformUsageCreditsUserBalanceFilterVO filter = filterVO(null, VALUE_HIGH, "=");
         final Page<PlatformUsageCreditsUserBalanceEntity> page =
                 repository.findAll(PlatformUsageCreditsUserBalanceSpecification.build(filter),
-                        new PageRequest(0, 10));
+                        PageRequest.of(0, 10));
 
         assertThat(page.getTotalElements(), is(1L));
         assertThat(page.getContent().get(0).getCurrentValue(), is(VALUE_HIGH));
@@ -215,7 +215,7 @@ public class PlatformUsageCreditsUserBalanceRepositoryTest extends AbstractJpaTe
                 Collections.singletonList(user1.getId()), VALUE_LOW, ">");
         final Page<PlatformUsageCreditsUserBalanceEntity> page =
                 repository.findAll(PlatformUsageCreditsUserBalanceSpecification.build(filter),
-                        new PageRequest(0, 10));
+                        PageRequest.of(0, 10));
 
         assertThat(page.getTotalElements(), is(1L));
         assertThat(page.getContent().get(0).getUserId(), is(user1.getId()));
@@ -231,7 +231,7 @@ public class PlatformUsageCreditsUserBalanceRepositoryTest extends AbstractJpaTe
         final PlatformUsageCreditsUserBalanceFilterVO filter = filterVO(null, null, null);
         final Page<PlatformUsageCreditsUserBalanceEntity> page =
                 repository.findAll(PlatformUsageCreditsUserBalanceSpecification.build(filter),
-                        new PageRequest(0, 10));
+                        PageRequest.of(0, 10));
 
         assertThat(page.getTotalElements(), is(2L));
     }
@@ -276,14 +276,14 @@ public class PlatformUsageCreditsUserBalanceRepositoryTest extends AbstractJpaTe
         final PlatformUsageCreditsUserBalanceFilterVO filter = filterVO(null, null, null);
         final Page<PlatformUsageCreditsUserBalanceEntity> firstPage =
                 repository.findAll(PlatformUsageCreditsUserBalanceSpecification.build(filter),
-                        new PageRequest(0, 1));
+                        PageRequest.of(0, 1));
 
         assertThat(firstPage.getTotalElements(), is(2L));
         assertThat(firstPage.getContent().size(), is(1));
 
         final Page<PlatformUsageCreditsUserBalanceEntity> secondPage =
                 repository.findAll(PlatformUsageCreditsUserBalanceSpecification.build(filter),
-                        new PageRequest(1, 1));
+                        PageRequest.of(1, 1));
 
         assertThat(secondPage.getContent().size(), is(1));
     }
@@ -299,7 +299,7 @@ public class PlatformUsageCreditsUserBalanceRepositoryTest extends AbstractJpaTe
                 Arrays.asList(user1.getId(), user2.getId()), null, null);
         final Page<PlatformUsageCreditsUserBalanceEntity> page =
                 repository.findAll(PlatformUsageCreditsUserBalanceSpecification.build(filter),
-                        new PageRequest(0, 10));
+                        PageRequest.of(0, 10));
 
         assertThat(page.getTotalElements(), is(2L));
     }

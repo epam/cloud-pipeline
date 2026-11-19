@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cp-storage-async-task-service
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-storage-async-task-service: "true"
+  replicas: 1
+  template:
+    metadata:
+      name: cp-storage-async-task-service
+      namespace: default
+      labels:
+        cloud-pipeline/cp-storage-async-task-service: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-storage-async-task-service: "true"
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      containers:
+        - name: cp-storage-async-task-service
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:storage-async-task-service-$CP_VERSION
+          imagePullPolicy: "Always"
+          securityContext:
+            privileged: true
+          command: ["/start.sh"]
+          envFrom:
+            - configMapRef:
+                name: cp-config-global
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness.sh
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 4
+          # No node directory here, so the logs go on the shared system claim, as the lifecycle
+          # service's own awsn spec does with its logs.
+          #
+          # The scratch space does not: cp-api-srv, the registry, the GitLab database and the search
+          # cluster all sit on cp-system-pvc, and writing an archive through it would cost them
+          # throughput and be slower than a local disk. An `emptyDir` keeps it on the node.
+          volumeMounts:
+            - mountPath: /opt/cp-sats/logs
+              subPath: cp-sats/logs
+              name: cp-system
+            - mountPath: /opt/cp-sats/work
+              name: cp-sats-work
+      volumes:
+        - name: cp-system
+          persistentVolumeClaim:
+            claimName: cp-system-pvc
+        - name: cp-sats-work
+          emptyDir: {}
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

@@ -25,6 +25,7 @@
 - [`pipe storage mount` waits for the mount point](#pipe-storage-mount-waits-for-the-mount-point)
 - [Parallel mounting of data storages](#parallel-mounting-of-data-storages)
 - [Hot node pools](#hot-node-pools)
+- [Node pools backed by an AWS capacity reservation or capacity block](#node-pools-backed-by-an-aws-capacity-reservation-or-capacity-block)
 - [FS quotas](#fs-quotas)
 - [Pause/resume runs via `pipe`](#pauseresume-runs-via-pipe)
 - [Home storage for each user](#home-storage-for-each-user)
@@ -41,6 +42,8 @@
 - [NAT gateway](#nat-gateway)
 - [Custom Run capabilities](#custom-run-capabilities)
 - [Storage lifecycle management](#storage-lifecycle-management)
+- [Download storage contents as an archive](#download-storage-contents-as-an-archive)
+- [Upload and extract archives](#upload-and-extract-archives)
 - [Image history and generating of Dockerfile](#image-history-and-generating-of-dockerfile)
 - [Environments synchronization via `pipectl`](#environments-synchronization-via-pipectl)
 - [Data access audit](#data-access-audit)
@@ -60,6 +63,8 @@
 - [Python 3 support for backend services](#python-3-support-for-backend-services)
 - [Self-contained Python 3.12 distribution](#self-contained-python-312-distribution)
 - [Run controls for an unavailable node](#run-controls-for-an-unavailable-node)
+- [Capacity blocks sourced from node pools](#capacity-blocks-sourced-from-node-pools)
+- [Node pool managers can edit and delete the pools they own](#node-pool-managers-can-edit-and-delete-the-pools-they-own)
 - [Priority of group GUI settings](#priority-of-group-gui-settings)
 - [Show optional parameters per pipeline or tool](#show-optional-parameters-per-pipeline-or-tool)
 - [Read and launch access to all pipelines](#read-and-launch-access-to-all-pipelines)
@@ -67,7 +72,13 @@
 - [Rocky Linux 9.8 for the proxy and the backup workers](#rocky-linux-98-for-the-proxy-and-the-backup-workers)
 - [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
 - [Pinning a run to the Docker image digest](#pinning-a-run-to-the-docker-image-digest)
+- [Data storage: the controls row and the column header stay visible while scrolling](#data-storage-the-controls-row-and-the-column-header-stay-visible-while-scrolling)
 - [Default version of a tool](#default-version-of-a-tool)
+- [NICE DCV desktop: no wallpaper, a keyboard layout switcher, Ubuntu 24.04](#nice-dcv-desktop-no-wallpaper-a-keyboard-layout-switcher-ubuntu-2404)
+- [Retries of a failed scratch Lustre file system](#retries-of-a-failed-scratch-lustre-file-system)
+- [OIDC token exchange](#oidc-token-exchange)
+- [Cloud Pipeline apt repository for Ubuntu 24.04 and later](#cloud-pipeline-apt-repository-for-ubuntu-2404-and-later)
+- [Extracting an archive that lies in a data storage](#extracting-an-archive-that-lies-in-a-data-storage)
 
 ***
 
@@ -75,6 +86,7 @@
     - [Nextflow run view: some tasks stay `RUNNING` after the run finishes](#nextflow-run-view-some-tasks-stay-running-after-the-run-finishes)
     - [GUI: library versions with security advisories](#gui-library-versions-with-security-advisories)
     - [Users export: the names of the date columns depend on the API time zone](#users-export-the-names-of-the-date-columns-depend-on-the-api-time-zone)
+    - [Data storage: "Select page" is enabled when no item on the page can be selected](#data-storage-select-page-is-enabled-when-no-item-on-the-page-can-be-selected)
     - [A committed image of a user with a large UID writes hundreds of GB to the disk](#a-committed-image-of-a-user-with-a-large-uid-writes-hundreds-of-gb-to-the-disk)
     - [Detached configuration: the old name stays in the Library after a rename](#detached-configuration-the-old-name-stays-in-the-library-after-a-rename)
     - [NICE DCV setup reports a failure only after 30 minutes, with no reason](#nice-dcv-setup-reports-a-failure-only-after-30-minutes-with-no-reason)
@@ -109,6 +121,7 @@
     - [The VM monitor does not check the open files on Amazon Linux 2023 nodes and other hosts with systemd 240 or later](#the-vm-monitor-does-not-check-the-open-files-on-amazon-linux-2023-nodes-and-other-hosts-with-systemd-240-or-later)
     - [Git synchronization: a new GitLab 9 user has to confirm the email](#git-synchronization-a-new-gitlab-9-user-has-to-confirm-the-email)
     - [Autoscaler keeps a free node for a waiting run that may not get it](#autoscaler-keeps-a-free-node-for-a-waiting-run-that-may-not-get-it)
+    - [Rocky Linux and RHEL runs: NICE DCV and SGE fail to install on Rocky Linux 9, and systemd is set up when it is not requested](#rocky-linux-and-rhel-runs-nice-dcv-and-sge-fail-to-install-on-rocky-linux-9-and-systemd-is-set-up-when-it-is-not-requested)
 
 ***
 
@@ -1002,6 +1015,23 @@ If the user starts a job in this time (_pool's schedule(s)_) and the instance re
 
 For more details and examples see [here](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md).
 
+## Node pools backed by an AWS capacity reservation or capacity block
+
+A node pool can now be backed by a cloud provider's own capacity reservation, so its nodes are guaranteed rather than subject to the usual on-demand availability. An administrator, or a user with the **ROLE_NODE_POOL_MANAGER** role, creates such a pool with its reservation request alongside the usual pool settings; whether it then needs an administrator's approval is decided by the **`cluster.capacity.reservation.policies`** system preference.
+
+Two kinds of reservation are supported, both AWS-only for now:
+
+- a **future-dated** reservation, for a date and zone the platform searches for and reserves on the requester's behalf, sliding to the next candidate on a refusal
+- an **AWS Capacity Block for ML**, bought whole for an exact, already-searched window - the highest-guarantee capacity AWS sells, with no cancelling it once bought
+
+The pool takes no nodes before its reservation is active, and stops taking new runs once the reservation is ending; jobs already running keep running until it actually ends. The owner is notified as the reservation's status changes.
+
+A pool's type (`STANDARD` or `SHAREABLE_NODE`) can now be changed by an update request, including for a pool backed by a capacity reservation - so a pool created with the wrong type no longer has to be recreated, and a reservation it already holds isn't given up and re-requested just to fix that.
+
+A run can also be bound to one of these pools exclusively, rather than merely becoming eligible for it: setting the `CP_CAP_POOL_ID` parameter to the pool's ID restricts the run to that pool's own free nodes only. If the pool has no free node yet - because it is not yet active or its nodes are busy - the run waits up to **`cluster.occupied.node.pool.wait.sec`** seconds (default 86400, i.e. 24 h; `0` = indefinite). Where the pool's own node already exists and is free but still cannot take the run - its instance type or disk doesn't match, the pool's own filter rejects the run, the reservation backing the pool has already ended, or the pool's end date has passed - the run fails right away instead of waiting, naming the reason and the pool. A launch naming an unknown pool, or an instance type or region the pool doesn't itself provide, is rejected immediately instead of waiting for that. Naming a shareable pool this way reuses that pool's own node selector automatically, the same one its launch form picker already applies - see [Guaranteeing a run's capacity](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#guaranteeing-a-runs-capacity).
+
+For the full behaviour - including how a pool backed by either kind can be edited, cancelled or deleted - see [Pools backed by a capacity reservation](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#pools-backed-by-a-capacity-reservation) and [Pools backed by a capacity block](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#pools-backed-by-a-capacity-block).
+
 ## FS quotas
 
 In some cases, users may store lots of extra files that are not needed more for them in FS storages.  
@@ -1548,6 +1578,26 @@ _Data restoring_ can be applied to previously archived files. Separate files or 
 
 For more details see [here](../../manual/08_Manage_Data_Storage/8.10._Storage_lifecycle.md#restoring).
 
+## Download storage contents as an archive
+
+Previously, selecting several files in the Storage browser and downloading them fetched the files one by one, and any selected folder was silently skipped.
+
+In **`v0.17`**, a selection of files **and** folders can be downloaded as a single `ZIP` archive instead, from AWS S3 storages and NFS storages on an NFS share. The archive is built by the platform in the background: the user names it from the **Download archive** item, which sits in the same selection menu as **Download** (on those storages, the plain **Download** item is itself offered only where one to three of the selected files can be downloaded, any selected folders not counted, and four files or more are covered by **Download archive** alone - while **Download archive** is in turn not offered for a single selected file, which **Download** already covers), and later tracks, cancels or fetches it from the **Storage tasks** window, opened from the storage view's own presentation dropdown rather than from a page of its own. The window shows each task's status and archive size, can be filtered by status and (for an administrator, and for a **ROLE_STORAGE_ADMIN**) by owner, is paged, and keeps itself up to date while it is open. A notification announces each archive as it finishes, including one that finished while the application was closed, or one queued on another computer; unlike most notifications, the one for a finished archive stays on screen until it is clicked, rather than disappearing on its own. The number of archive downloads a user may have in progress at once is capped by the platform, and that cap is counted against the server each time an archive is asked for.
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8.2._Upload_Download_data.md#download-as-archive).
+
+## Upload and extract archives
+
+Previously, uploading a batch of files that included an archive uploaded the archive like any other file, with no way to unpack it on the platform's side.
+
+In **`v0.17`**, uploading a batch that includes an archive - one of `ZIP`, `TAR`, `TAR.GZ`, `TGZ`, `TAR.BZ2`, `TAR.XZ`, `GZ`, `BZ2` or `XZ` - on a data storage on AWS S3, or on an NFS storage whose share is mounted as NFS, pauses the upload with a pop-up that lists the selected files and offers a choice: **Upload**, which uploads everything exactly as before, or **Upload and extract**, which uploads everything and then queues one background task per archive that uploaded successfully, closing the pop-up the same way an ordinary upload does. Each archive is extracted into a new folder beside it, named after the archive without its extension - `data/reports.tar.gz` into `data/reports/` - and the archive itself is kept. A message confirms how many extractions have been queued, and its **Show storage tasks** is a link that opens the **Storage tasks** window.
+
+The **Storage tasks** window now lists every kind of archive task rather than downloads alone, with a new **Type** column naming each one - **Download archive** or **Extract archive** - and a filter on that column to show one kind at a time. Its **Storage** column has become **Source**, reading `<storage name>/<folder>` and linking to the folder the task was queued from, shortened to fit the column with the whole path on hover; the **Created** and **Finished** columns are gone. An extraction task is cancelled from the same window as a download, counts towards the same per-user allowance of active archive tasks, and offers no **Download** button, since it writes into the storage itself. An archive already in a storage is extracted the same way from the storage's own selection menu, via a new **Extract archive** item below **Download archive**, with no pop-up in between. That item takes one archive at a time, so that a bulk extraction cannot be started by accident - **Select page** takes a whole listing in one click - so it is offered only for a selection of exactly one archive. Uploading is unchanged: there the user picked the files, so **Upload and extract** still takes the whole batch.
+
+One archive is one task, counted against the per-user allowance of active archive tasks that archive downloads already use. Where a user does not have enough of it left for every archive they picked, the action is unavailable and says why - the upload pop-up greys **Upload and extract** out and shows the reason, and the selection menu greys its item out with an information icon beside it. The pop-up keeps checking while it is open, so the button becomes available again as soon as one of the user's tasks finishes, with no need to pick the files afresh. A finished extraction raises a notification of its own, like a finished download.
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8.2._Upload_Download_data.md#upload-data).
+
 ## Image history and generating of Dockerfile
 
 **Cloud Pipeline** performs scanning of the Docker images on a regular basis. This is used to grab the information on:
@@ -1903,6 +1953,28 @@ For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#contr
 
 ***
 
+## Capacity blocks sourced from node pools
+
+Previously, the GUI learned about capacity blocks - reserved compute capacity that a node type can draw on at launch - from the `launch.reservation.parameters` system preference, a map keyed by an instance-type pattern. That preference is no longer read by the GUI.
+
+In the current version, the GUI reads capacity blocks directly off the node pools that back them. The node type list leads with a **Reserved capacity blocks** group, one entry per pool: only picking an entry there launches the run on the reservation, and a plain instance type launches without one. The launch form also lists the reserved capacity available right now for the selected **Cloud Region**. Configurations, launch profiles and tool settings do not offer capacity blocks.
+
+A run on a node pool, or with reservation requests, no longer shows an estimated price: a pool node outlives a single run, so a per-run price would mislead.
+
+For more details see [6. Manage Pipeline](../../manual/06_Manage_Pipeline/6._Manage_Pipeline.md#configuration) and [9.1. Hot node pools](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#future-dated-node-pools).
+
+## Node pool managers can edit and delete the pools they own
+
+Previously, a **ROLE_NODE_POOL_MANAGER** could create a **Future dated** node pool but never reach it again - viewing, editing and removing an existing pool was restricted to administrators and **ROLE_RUN_ADMIN**.
+
+In the current version, such a user may also open, edit and remove a pool it owns - the one it created. A pool owned by somebody else, or managed only by an administrator, stays out of reach.
+
+Deleting a **Future dated** pool whose capacity reservation is still open - any status but _Requires approval_, _Finished_, _Purchase failed_, _Failed_ or _Cancelled_ - now also shows a warning in the delete confirmation: the reservation is given up too, and the cloud provider may still charge for the capacity it already committed. The **DELETE** button stays disabled until a **Force deletion** checkbox is ticked, for an administrator exactly as much as for the pool's owner.
+
+For more details see [9.1. Hot node pools](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#delete-existing-pool).
+
+***
+
 ## Priority of group GUI settings
 
 The **`misc.groups.ui.preferences`** system preference sets GUI settings per group or role. In **`v0.17`**, each group's settings accept a `priority` number: if a user is in several of the listed groups, each setting comes from the group with the highest `priority` that sets it.  
@@ -2002,6 +2074,14 @@ For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system
 
 ***
 
+## Data storage: the controls row and the column header stay visible while scrolling
+
+The controls row of a data storage - **Select page**, **Create**, **Upload** and the others - and the column header with its sort and filter controls now stay at the top while the file list is scrolled.
+
+See details in [8. Manage Data Storage](../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage.md#controls).
+
+***
+
 ## Default version of a tool
 
 Previously, the version of a tool, which was used if a version was not specified, was always the `latest` one. To make another version the default one, it had to be pushed again with the `latest` tag, and when a version was deleted, `latest` could still point to an old image.
@@ -2017,6 +2097,102 @@ In **`v0.17`**, any version of a tool can be set as its default version. The def
 Users with the **WRITE** permission for a tool set and unset the default version at the **Versions** tab of the tool. Until a default version is set, and once it is unset or deleted, the `latest` version is used, as before. The default version can also be managed via the API: `POST /tool/{id}/defaultVersion?version=<version>` sets it, `DELETE /tool/{id}/defaultVersion` removes it, and the tool returns it as the `defaultVersion` field.
 
 For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#set-a-default-version).
+
+***
+
+## NICE DCV desktop: no wallpaper, a keyboard layout switcher, Ubuntu 24.04
+
+[#4861](https://github.com/epam/cloud-pipeline/issues/4861)
+
+Previously, the Xfce desktop of a NICE DCV session started with the default Xfce panel and wallpaper, and with one keyboard layout.
+
+In **`v0.17`**:
+
+- the desktop has no wallpaper: a solid color is used instead
+- the panel has a keyboard layout switcher, with the `us`, `fr` and `de` layouts. **Ctrl+Shift** switches them. The run parameters `CP_DCV_XKB_LAYOUTS` (e.g. `us,ru`), `CP_DCV_XKB_MODEL` (`pc105` by default) and `CP_DCV_XKB_TOGGLE` (an XKB option, `grp:ctrl_shift_toggle` by default) change them
+- the switcher needs the `xfce4-xkb-plugin` package. The session also sets the layouts with `setxkbmap` (the `setxkbmap` or `xorg-x11-xkb-utils` package in RPM-based images, `x11-xkb-utils` in Ubuntu images); without it, Xfce sets them on its own. When the DCV setup installs NICE DCV, it also installs these packages where the repositories have them, and logs a warning in the run log for each one it cannot install. Without `xfce4-xkb-plugin`, the session starts with one layout and no switcher
+- the desktop is set up this way also in the images that have NICE DCV installed already. There, the switcher is shown only if the image has `xfce4-xkb-plugin`
+
+NICE DCV is also supported in the Ubuntu 24.04 images: the setup installs the `nice-dcv-2024.0-19030-ubuntu2404-x86_64` build. Previously, on an Ubuntu version that has no DCV build, e.g. 24.04, the setup installed no DCV and ran `rm -rf *` in the folder above its working folder. Only then did it fail, when it configured DCV. Now, such a version fails the setup with "Unsupported Ubuntu version", before DCV is downloaded.
+
+***
+
+## Retries of a failed scratch Lustre file system
+
+[#4861](https://github.com/epam/cloud-pipeline/issues/4861)
+
+A cluster run with `CP_CAP_SHARE_FS_TYPE=lustre` creates an FSx for Lustre file system as its shared scratch space.  
+Previously, if the file system ended up `FAILED`, e.g. because the cloud provider was out of capacity, the run failed. If it turned `FAILED` while it was being created, the run waited for it for 20 minutes (`CP_CAP_LUSTRE_WAIT_ATTEMPTS`), and then tried to mount it anyway.
+
+Now, the master run deletes a `FAILED` file system, waits until it is gone, and creates it again:
+
+- `CP_CAP_LUSTRE_CREATE_RETRIES` is the number of attempts in all, the first one included (`3` by default, i.e. up to 2 more), and they are `CP_CAP_LUSTRE_CREATE_RETRY_SLEEP` seconds apart (`60` by default)
+- for a deletion, it waits up to `CP_CAP_LUSTRE_DELETE_WAIT_ATTEMPTS` checks, 5 seconds apart (`60` by default, i.e. 5 minutes)
+- an empty answer of the API is retried too, after the same pause, and a file system that is still being deleted from an earlier attempt is waited for
+- if the file system is not `AVAILABLE` after `CP_CAP_LUSTRE_WAIT_ATTEMPTS` checks, the run fails, and the mount is not tried
+
+The workers of the cluster do not create the file system. Previously, a worker failed at once only if the first answer of the API was `FAILED`. If the file system was being deleted, or turned `FAILED` later, the worker waited for 20 minutes and then tried to mount it. Now, a worker fails at once in all these cases.
+
+Please note: the workers wait for the master's `InitializeSharedFS` task for about 20 minutes (`CP_CLUSTER_WAIT_FOR_NODE_ATTEMPTS`, `120` checks, 10 seconds apart). One attempt of the master can take up to `CP_CAP_LUSTRE_WAIT_ATTEMPTS` × 5 seconds (20 minutes by default), plus the deletion wait and the pause. So if the master retries, its workers may fail with "Failed to attach to master node" before the file system is ready.
+
+***
+
+## OIDC token exchange
+
+An application that calls the Cloud Pipeline API for its signed-in users previously needed a Cloud Pipeline token issued from the platform side - in practice a long-lived one, copied into the application's configuration, and often a single token shared by all of its users. The API could then not tell which user was really acting.
+
+In **`v0.17`**, such an application can trade a user's own access token, issued by the corporate identity provider, for a short-lived Cloud Pipeline token for that same user, as [RFC 8693](https://www.rfc-editor.org/rfc/rfc8693) describes:
+
+```
+POST /restapi/oauth/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=urn:ietf:params:oauth:grant-type:token-exchange
+subject_token=<the user's access token>
+subject_token_type=urn:ietf:params:oauth:token-type:access_token
+```
+
+So the application stores no static token from Cloud Pipeline, every call is made and audited as the real user with that user's own permissions, and blocking a user takes effect within one token lifetime. The issued token is an ordinary platform token, which the API, the edge and `pipe` accept as any other.
+
+The exchange is off by default, and is enabled by the `oidc.token.exchange.enabled` property of the API service - until then the endpoint is not registered at all. The administrator then configures the trusted identity providers in the **`system.oidc.token.exchange.issuers`** preference. Each provider holds a list of **clients** - the callers trusted under it, because one provider issues tokens for many callers: every repository on github.com shares one issuer, as does every application in an Entra ID tenant. A client is identified by conditions on the token's claims, and says which user it may act as: a user named by a claim of the token, or a fixed service account for a CI job. A client can also narrow the roles its tokens carry, so an application can be given read-only access to the API on behalf of users who have more.
+
+A client can also pick the user by **metadata** instead of by name. An `assumeStrategy` of type `MAPPED_USER` names a claim and a user metadata attribute - `{"claim": "repository_owner", "metadataKey": "github_owner"}` - and the token is issued for the user whose `github_owner` attribute holds the value of the token's `repository_owner` claim. That maps a caller whose identity the platform does not keep on the user - a GitHub organisation, a workload identity, an employee number - without renaming anybody. Exactly one user has to match: if several carry the same value, no token is issued at all.
+
+The exchange never creates a user: the user has to exist in Cloud Pipeline already, and the usual blocking checks apply. The issued token lives no longer than the provider's token it came from, so ending a user's session at the provider ends their Cloud Pipeline access, and it cannot be renewed into a longer-lived one unless the client is configured to allow it.
+
+> **_Note_**: upgrading removes the stored web sessions. The security context is held in the database with Java serialization, and it gained fields for this feature, which makes a session written by an earlier version unreadable - so clearing them avoids an error on the first request after the upgrade. Most users will not notice: a GUI session with a valid `bearer` cookie is re-established on the next request, and only a user without one is asked to sign in again. Three things to know when planning the upgrade: restart the API service with the old replicas out of service, because a rolling upgrade lets an old replica keep writing sessions the new one cannot read; clear the sessions by hand if the service is ever rolled back, since the migration runs only once; and expect the platform usage report to show no online users for the interval covering the upgrade, as that figure is derived from the stored sessions.
+
+Ready-made GitHub Actions ship with the platform under `deploy/integrations/oidc/github-actions/`, so a workflow obtains a token with one step and no stored secret: `fetch-api-token` performs the exchange, `configure-pipe-cli` additionally installs the `pipe` CLI the deployment serves and leaves it authenticated, and `configure-docker-registry` logs the runner's docker client into the deployment's registry.
+
+For more details see [here](../../manual/12_Manage_Settings/12.16._OIDC_token_exchange.md).
+
+## Cloud Pipeline apt repository for Ubuntu 24.04 and later
+
+Runs add the Cloud Pipeline apt repository of their Ubuntu release from `tools/repos/ubuntu/<version>` of the distribution URL, if there is one. The public distribution has it for Ubuntu 16.04 to 22.04 only. So on newer releases, runs could not install SGE, LizardFS, the Singularity prerequisites and blobfuse 1, which need it.
+
+In **`v0.17`**, `deploy/repos/build-ubuntu-repo.sh` builds this repository for an Ubuntu release from 20.04 on, e.g. 24.04 or 26.04, in docker containers:
+
+- the packages of the 22.04 repository, with the names of the newer release
+- SGE, LizardFS and blobfuse 1 in the versions that the platform scripts install, from the previous repository, with the old libraries that they need
+- gcsfuse and blobfuse2
+
+The repository can be signed with the key of the deployment. A deployment uploads it to `tools/repos/ubuntu/<version>` of its distribution URL. For more details see the [README](https://github.com/epam/cloud-pipeline/blob/develop/deploy/repos/README.md) of `deploy/repos`.
+
+***
+
+## Extracting an archive that lies in a data storage
+
+Previously, an archive stored in a data storage could only be unpacked by hand: download it, extract it locally, upload the content back. For a large archive that is two transfers of the whole thing over the user's own connection, and the files arrive in the storage one by one.
+
+In **`v0.17`**, the platform extracts such an archive itself. The request names the archive - a storage and a path - and where its content shall go, again a storage and a folder, and the two may be the same storage. It is recorded as an asynchronous task, like an [archive download](#download-storage-contents-as-an-archive), and performed in the background by the storage task service; the task is visible, cancellable and reports what it wrote. Both ends are checked against the requesting user's own permissions: **READ** on the source and **WRITE** on the destination folder, plus **WRITE** on the source as well when the request asks for the archive to be deleted after a successful extraction.
+
+`ZIP`, `TAR`, `TAR.GZ`, `TGZ`, `TAR.BZ2`, `TAR.XZ`, `GZ`, `BZ2` and `XZ` are supported, and the format is taken from the content of the file rather than from its name - a `.zip` that is really a tar extracts, and a file that is neither fails with a reason. The archive's own folder structure is preserved under the requested folder, and no folder is added on top of it: a caller who wants the content in a folder named after the archive asks for that folder. **Extraction is one level deep** - an archive found inside the archive is written out as a file, with its name unchanged and its content untouched, and extracting that one is a second request.
+
+By default nothing in the destination is replaced: a single entry whose name is already taken refuses the whole task, before anything is written, and the request has to ask for replacement explicitly. A task that fails or is cancelled part way through **leaves the files it had already written** - there is no rollback - and says how many in its error message; a new request over the same folder then needs replacement allowed, or those files removed.
+
+AWS S3 storages and NFS storages on an NFS share are supported as both the source and the destination. How large an archive may be, how much it may be extracted into, how many entries it may hold and how long one extraction may take are set by an administrator in the `tasks.storageUnpackArchive` section of the **`system.async.tasks.config`** preference.
+
+For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md).
 
 ***
 
@@ -2059,6 +2235,14 @@ Also, the GUI checks that the region of an AWS S3 storage is a valid part of a h
 Previously, the users export named its date columns after the default time zone of the API server, while the dates are written in UTC. So with another zone set for the API, the names did not match the data, e.g. `registrationDate Europe/Berlin`. And on an API image whose system names the zone `Etc/UTC`, as Rocky Linux 9 does, a script that looks for `registrationDate UTC` did not find the column.
 Now, the columns are always named `registrationDate UTC` and `firstLoginDate UTC`.
 See details in [12. Manage Settings](../../manual/12_Manage_Settings/12._Manage_Settings.md#export-users).
+
+### Data storage: "Select page" is enabled when no item on the page can be selected
+
+[#4846](https://github.com/epam/cloud-pipeline/issues/4846)
+
+Previously, the **Select page** control of a data storage was enabled whenever the current page listed any item, even when none of those items had a checkbox - e.g. a page of folders in a storage the user may only read, or a sensitive storage with no download allowed. Clicking the control selected nothing, with no message.
+Now, **Select page** is disabled unless the page holds an item that can be selected and is not selected yet.
+See details in [8. Manage Data Storage](../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage.md#select-page).
 
 ### A committed image of a user with a large UID writes hundreds of GB to the disk
 
@@ -2349,3 +2533,34 @@ Now, the autoscaler keeps no free node for such a run. The node expires as any o
 When the cluster has reached `cluster.max.size`, and `cluster.kill.not.matching.nodes` is `true`, the autoscaler scales down a free node that the waiting run does not take, to make room for a new node. Previously, it could pick a free node of a hot node pool or of a local cluster. Such a node has no run ID, so the autoscaler failed to scale it down, and the waiting run was not processed until the next check, where the same could happen again. Now, these nodes are not scaled down this way: the pools keep their nodes.
 
 Also, a run whose parameter list or tags are not set is handled as a run with none. Previously, the autoscaler failed on such a run with an error in the API log. With no parameter list, each check of the autoscaler stopped there, so no waiting run got a node, and no free node was scaled down. With no tags, a waiting run did not get the `NODE_PENDING` tag when the cluster was full.
+
+### Rocky Linux and RHEL runs: NICE DCV and SGE fail to install on Rocky Linux 9, and systemd is set up when it is not requested
+
+[#4859](https://github.com/epam/cloud-pipeline/issues/4859)
+
+Previously, three steps of the run setup did not handle Rocky Linux 9, and one of them also affected the other Rocky Linux and RHEL runs:
+
+- **NICE DCV**: the setup chose the DCV build by a `7` anywhere in the OS version. A Rocky Linux 9 run got the el8 build (`nice-dcv-2021.2-11445-el8-x86_64`), and a version such as `8.7` or `9.7` got the el7 build. The setup also required the `libXvMC` and `mesa-libxatracker` packages, which Rocky Linux 9 does not have. So the install of the DCV prerequisites failed, and the `NiceDCVInitialization` task failed with "Cannot install system prerequisites for DCV".
+- **SGE**: the setup of the master and the workers installed `gridengine-debuginfo` and `gridengine-guiinst` too. The Cloud Pipeline repository for Rocky Linux 9.8 does not have them, so `yum` failed the whole install, and the SGE setup failed.
+- **systemd**: the launch script set up systemd for every Rocky Linux and RHEL run, also when neither `CP_CAP_SYSTEMD_CONTAINER` nor `CP_CAP_KUBE` was set, and when the image had no `systemctl`. It removed the systemd unit links of the image (e.g. `/etc/systemd/system/*.wants/*`) and started a `systemd` process that was not PID 1.
+
+Now:
+
+- On the RPM-based images, NICE DCV takes the build of the major OS version: el7 for 7, el8 for 8, and `nice-dcv-2024.0-19030-el9-x86_64` for 9 and later. If the major version cannot be resolved, the el8 build is used, as before. The run log names the build. The new `CP_CAP_DCV_DISTRIBUTION` parameter names another build for these images, e.g. `nice-dcv-2024.0-19030-el9-x86_64`: the setup downloads `<build>.tgz` from the `tools/dcv` folder of the global distribution, or from `CP_CAP_DCV_DISTRO_URL`. `libXvMC` and `mesa-libxatracker` are installed where the repositories have them. Otherwise, the run log gets a warning, and the setup goes on. Ubuntu images get the same builds as before.
+- SGE installs `gridengine`, `gridengine-devel`, `gridengine-drmaa4ruby`, `gridengine-execd`, `gridengine-qmaster` and `gridengine-qmon`. The `sge_setup_sbm_host` script, which added a run as an SGE submission host, is removed: nothing in the platform called it. The scripts of `pipe-common` are on the `PATH` of a run, so a user's own script that calls `sge_setup_sbm_host` now fails with "command not found".
+- systemd is set up only when `CP_CAP_SYSTEMD_CONTAINER` or `CP_CAP_KUBE` is `true`, the image has `systemctl`, and the OS is CentOS, Rocky Linux or RHEL. The systemd setup used to install `procps` (`procps-ng`), which has `sysctl`. The NFS events observer, which raises the inotify limits with `sysctl`, now installs `procps` itself if the image has no `sysctl`.
+### Ubuntu 25.10 and later: runs do not add the Cloud Pipeline apt repository
+
+[#4875](https://github.com/epam/cloud-pipeline/issues/4875)
+
+Previously, a run imported the key of the Cloud Pipeline apt repository with `apt-key`, and Docker in Docker on a GPU node imported the key of NVIDIA's apt repository the same way. apt 2.9 and later has no `apt-key`, e.g. on Ubuntu 25.10 and 26.04. So runs from such images removed the Cloud Pipeline repository after three failed attempts, and could not install SGE, LizardFS, Singularity or blobfuse, which need it. Docker in Docker got no `nvidia` runtime there, nor on Ubuntu 24.10 and 25.04, as NVIDIA has no list for the Ubuntu releases after 22.04. Also:
+
+- most capabilities install from the Cloud Pipeline repository without `--allow-unauthenticated`. So they failed when the repository was unsigned, or its key did not match
+- a run from an image without `/etc/apt/sources.list` failed to add the repository
+
+Now:
+
+- the run adds the Cloud Pipeline repository as a trusted repository, in `/etc/apt/sources.list.d/cloud-pipeline.list`, and imports no key. So the repository may be unsigned, or signed with a key that the run does not have. For a signed repository, such as the public one, apt prints a `W:` line about the signature (`NO_PUBKEY`) at each refresh of the package lists, and uses the repository anyway. The line that an older run added to `/etc/apt/sources.list` is removed, and `gnupg` is no longer installed for the key
+- Docker in Docker puts NVIDIA's key into `/etc/apt/keyrings/nvidia-docker.asc`, which its list names, and uses NVIDIA's 22.04 list for the Ubuntu releases after 22.04. With an apt older than 1.4 (Ubuntu 16.04), it imports the key with `apt-key`, as before
+
+Please note: a run adds the Cloud Pipeline repository only if the distribution has one for its OS version. The public distribution has Ubuntu 16.04 to 22.04 and Debian 8 to 10. So with the public distribution URL, runs on Ubuntu 24.04 and later still get no Cloud Pipeline repository. A deployment that needs it there has to host `tools/repos/ubuntu/<version>` of its own distribution URL. See [Cloud Pipeline apt repository for Ubuntu 24.04 and later](#cloud-pipeline-apt-repository-for-ubuntu-2404-and-later).

@@ -21,19 +21,24 @@ import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.StopServerlessRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@MockitoSettings(strictness = Strictness.LENIENT)
+@ExtendWith(MockitoExtension.class)
 public class ServerlessRunMonitorTest {
 
     private static final long RUN_ID = 42L;
@@ -45,9 +50,8 @@ public class ServerlessRunMonitorTest {
 
     private ServerlessRunMonitor monitor;
 
-    @Before
+    @BeforeEach
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
         when(preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_STOP_TIMEOUT))
                 .thenReturn(GLOBAL_TIMEOUT_MIN);
         monitor = new ServerlessRunMonitor(pipelineRunManager, stopServerlessRunManager, preferenceManager);

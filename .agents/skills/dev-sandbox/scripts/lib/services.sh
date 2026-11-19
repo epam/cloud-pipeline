@@ -13,12 +13,12 @@ DB_NAME=pipeline
 DB_USER=pipeline
 DB_PASSWORD=pipeline
 DB_WAIT_SECONDS=120
-GRADLE_IMAGE=eclipse-temurin:8-jdk
+GRADLE_IMAGE=eclipse-temurin:21-jdk
 # Gradle's home and cache, in the local state root, which the developer owns.
 GRADLE_HOME_DIR_NAME=.gradle-home
 # The lightest build that gives a runnable API jar, which serves launch.sh and init.sh from the
 # checkout, and the tool that mints the API's tokens.
-GRADLE_TASKS=":api:bootRepackage :jwt-generator:shadowJar"
+GRADLE_TASKS=":api:bootJar :jwt-generator:shadowJar"
 API_JAR=api/build/libs/pipeline.jar
 JWT_GENERATOR_JAR=jwt-generator/build/libs/jwt-generator.jar
 API_JAVA_OPTIONS="-Xmx2g -Djava.security.egd=file:/dev/./urandom"

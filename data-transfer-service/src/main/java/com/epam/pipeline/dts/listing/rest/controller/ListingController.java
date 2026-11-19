@@ -22,25 +22,21 @@ import com.epam.pipeline.dts.listing.rest.dto.ItemsListingRequestDTO;
 import com.epam.pipeline.dts.listing.rest.dto.ListingItemsPagingDTO;
 import com.epam.pipeline.dts.listing.rest.mapper.ListingItemsPagingMapper;
 import com.epam.pipeline.dts.listing.service.ListingService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import static com.epam.pipeline.dts.common.rest.controller.AbstractRestController.API_STATUS_DESCRIPTION;
-import static com.epam.pipeline.dts.common.rest.controller.AbstractRestController.HTTP_STATUS_OK;
 
 @RequestMapping("list")
-@Api(value = "Listing transfer items management")
-@ApiResponses(
-        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-        })
+@Tag(name = "Listing transfer items management")
+@ApiResponses(@ApiResponse(description = API_STATUS_DESCRIPTION))
 @RestController
 @AllArgsConstructor
 public class ListingController extends AbstractRestController {
@@ -48,10 +44,9 @@ public class ListingController extends AbstractRestController {
     private ListingItemsPagingMapper listingItemsPagingMapper;
 
     @PostMapping
-    @ApiOperation(
-            value = "Returns storage content specified by path. " +
-                    "If paging is specified returns content with required restrictions.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns storage content specified by path. " +
+                    "If paging is specified returns content with required restrictions.")
     public Result<ListingItemsPagingDTO> getListing(@RequestBody final ItemsListingRequestDTO request) {
         return Result.success(listingItemsPagingMapper.modelToDTO(listingService.list(request)));
     }

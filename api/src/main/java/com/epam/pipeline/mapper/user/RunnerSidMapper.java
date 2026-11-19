@@ -31,8 +31,8 @@ import java.util.stream.Collectors;
 @Mapper(componentModel = "spring")
 public interface RunnerSidMapper {
 
-    @Mapping(target = "pipelines", ignore = true)
-    @Mapping(target = "tools", ignore = true)
+    @Mapping(target = "pipelinesList", ignore = true)
+    @Mapping(target = "toolsList", ignore = true)
     RunnerSid toEntity(RunnerSidVO vo);
 
     @AfterMapping

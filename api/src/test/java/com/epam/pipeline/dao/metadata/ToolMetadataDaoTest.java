@@ -30,8 +30,8 @@ import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,8 +42,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.when;
 
 public class ToolMetadataDaoTest extends AbstractJdbcTest {
@@ -84,8 +84,7 @@ public class ToolMetadataDaoTest extends AbstractJdbcTest {
     @Autowired
     private AuthManager authManager;
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         firstRegistry = new DockerRegistry();
         firstRegistry.setPath(TEST_REPO);
         firstRegistry.setOwner(TEST_USER);

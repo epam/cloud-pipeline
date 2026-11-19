@@ -23,8 +23,8 @@ import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
+import com.epam.pipeline.dao.tool.ToolDao;
 import com.epam.pipeline.entity.pipeline.Tool;
-import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +45,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ToolVersionManager {
     private final ToolVersionDao toolVersionDao;
-    private final ToolManager toolManager;
+    private final ToolDao toolDao;
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
 
@@ -175,7 +175,7 @@ public class ToolVersionManager {
     }
 
     private void validateToolExistsAndCanBeModified(final Long toolId) {
-        final Tool tool = toolManager.load(toolId);
+        final Tool tool = toolDao.loadTool(toolId);
         validateToolNotNull(tool, toolId);
         validateToolCanBeModified(tool);
     }

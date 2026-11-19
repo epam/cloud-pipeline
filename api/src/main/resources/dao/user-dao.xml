@@ -119,7 +119,7 @@
                       r.owner as role_owner,
                       CASE
                         WHEN EXISTS (
-                          SELECT 1 FROM pipeline.spring_session s
+                          SELECT 1 FROM pipeline.spring_3_session s
                           WHERE s.principal_name = u.name
                             AND (? - s.last_access_time) / 1000 < s.max_inactive_interval
                         ) THEN true ELSE false
@@ -160,7 +160,7 @@
                     WHERE
                       CASE
                         WHEN EXISTS (
-                          SELECT 1 FROM pipeline.spring_session s
+                          SELECT 1 FROM pipeline.spring_3_session s
                           WHERE s.principal_name = u.name
                             AND (? - s.last_access_time) / 1000 < s.max_inactive_interval
                         ) THEN true ELSE false

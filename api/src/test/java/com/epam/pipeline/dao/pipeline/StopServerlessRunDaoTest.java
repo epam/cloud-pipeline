@@ -21,17 +21,18 @@ import com.epam.pipeline.entity.pipeline.StopServerlessRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Transactional
 public class StopServerlessRunDaoTest extends AbstractJdbcTest {
@@ -48,7 +49,7 @@ public class StopServerlessRunDaoTest extends AbstractJdbcTest {
         final PipelineRun pipelineRun = pipelineRun();
         pipelineRunDao.createPipelineRun(pipelineRun);
 
-        final LocalDateTime firstUpdate = LocalDateTime.now();
+        final LocalDateTime firstUpdate = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS);
         final StopServerlessRun stopServerlessRun = StopServerlessRun.builder()
                 .runId(pipelineRun.getId())
                 .lastUpdate(firstUpdate)
