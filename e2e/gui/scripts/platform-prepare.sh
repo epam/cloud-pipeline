@@ -34,10 +34,12 @@
 #     test browser (fixtures.json "deactivate_blocking_notifications": false keeps them)
 #   - the in-app notifications of the test users and of the anonymous user are muted for the run, as the GUI shows the
 #     unread ones over the top right of every page (fixtures.json "mute_user_notifications": false keeps them)
+#   - the fixture tools' runs mount no data storage by default (CP_CAP_LIMIT_MOUNTS=None in the settings of their latest
+#     version), as a run without a limit mounts every storage its user can see (fixtures.json "tools_limit_mounts")
 # revert:  removes what prepare created or took over (registered tools are unregistered, their registry images are
 #          kept; a tool group taken over is deleted only if it is empty), restores the settings of the other tools,
-#          activates the deactivated notifications back, restores the permissions, preferences and notification
-#          mutes it changed. The test users it created are kept (blocked) for the next runs.
+#          activates the deactivated notifications back, restores the permissions, preferences, notification
+#          mutes and tool version settings it changed. The test users it created are kept (blocked) for the next runs.
 
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
@@ -140,6 +142,21 @@ if [ "$_CMD" == "revert" ]; then
         e2e_log "Deleting role $(jq -r '.name' <<< "$_r")"
         cp_api DELETE "role/$(jq -r '.id' <<< "$_r")" > /dev/null || { e2e_warn "Failed"; _errors=$((_errors + 1)); }
     done <<< "$(jq -c '.roles[]?' "$_RECORD")"
+    while read -r _v; do
+        [ "$_v" ] || continue
+        _name="$(jq -r '"\(.registry)/\(.image)"' <<< "$_v")"
+        # A test may delete a tool and register it again (ToolsTest): the new one has another id and no settings
+        _now_id="$(cp_api_payload GET "tool/load?registry=$(jq -r '.registry' <<< "$_v")&image=$(jq -r '.image' <<< "$_v")" \
+            2> /dev/null | jq -r '.id // empty')"
+        if [ "$_now_id" != "$(jq -r '.id' <<< "$_v")" ]; then
+            [ "$_now_id" ] && _state="registered again (id $_now_id)" || _state="not registered any more"
+            e2e_log "Tool $_name is $_state: the settings of its $(jq -r '.version' <<< "$_v") version are not restored"
+            continue
+        fi
+        e2e_log "Restoring the settings of the $(jq -r '.version' <<< "$_v") version of tool $_name"
+        cp_api POST "tool/$_now_id/settings?version=$(jq -r '.version' <<< "$_v")&allowCommit=$(jq -r '.allowCommit' <<< "$_v")" \
+            "$(jq -c '.previous' <<< "$_v")" > /dev/null || { e2e_warn "Failed"; _errors=$((_errors + 1)); }
+    done <<< "$(jq -c '.version_settings[]?' "$_RECORD")"
     while read -r _s; do
         [ "$_s" ] || continue
         _name="$(jq -r '"\(.registry)/\(.image)"' <<< "$_s")"
@@ -196,7 +213,7 @@ fi
 
 [ -f "$_FIXTURES" ] || e2e_die "Fixtures file is not found: $_FIXTURES"
 [ -f "$_RECORD" ] && e2e_die "$_RECORD exists: the previous preparation was not reverted (run: $0 revert --state $_STATE)"
-echo '{"users": [], "fixture_users": [], "tool_groups": [], "tools": [], "tool_settings": [], "roles": [], "memberships": [], "grants": [], "notifications": [], "preferences": [], "user_metadata": []}' > "$_RECORD"
+echo '{"users": [], "fixture_users": [], "tool_groups": [], "tools": [], "tool_settings": [], "roles": [], "memberships": [], "grants": [], "notifications": [], "preferences": [], "user_metadata": [], "version_settings": []}' > "$_RECORD"
 _ERRORS=0
 
 # 1. Test users
@@ -264,7 +281,7 @@ function _apply_tool_settings {
     _settings="$(jq -c '.settings // {}' <<< "$4")"
     # Taken over only if the tool is exactly what DockerRegistryManager.buildTool registers for a pushed image: cpu
     # "0mi", ram "0Gi" and nothing else set, so a tool an admin configured is never unregistered after the run. Without
-    # settings in the fixture (library/centos, library/ubuntu) a tool is never taken over.
+    # settings in the fixture (library/rockylinux, library/ubuntu) a tool is never taken over.
     _bare="$(jq -r --argjson s "$_settings" '
         def empty_value: . == null or . == "" or . == [] or . == 0;
         ($s | length > 0) and .cpu == "0mi" and .ram == "0Gi"
@@ -482,6 +499,40 @@ if [ "$(jq -r '.mute_user_notifications != false' "$_FIXTURES")" == "true" ]; th
         _record user_metadata "$(jq -cn --argjson id "$_uid" --arg u "$_user" --arg k "$_MUTE_KEY" --argjson p "$_previous" \
             '{id: $id, userName: $u, key: $k, previous: $p}')"
     done
+fi
+
+# 8. Mounts of the fixture tools' runs: a run without CP_CAP_LIMIT_MOUNTS mounts every data storage its user can see,
+#    one after another, which takes many minutes on a platform with many storages. A run with default settings (a
+#    tool's Run, without the launch form) takes the limit from the settings of the tool's default version or from the
+#    user's own CP_CAP_LIMIT_MOUNTS attribute only, so the fixture tools get CP_CAP_LIMIT_MOUNTS=None in the settings
+#    of their latest version for the run; the launch form starts with it too, and a version without settings of its
+#    own (a committed one) falls back to these. The tests that check mounted storages choose them, LaunchLimitMountsTest
+#    clears this for its own checks, and revert puts the previous settings back (not on a tool a test deleted and
+#    registered again). fixtures.json "tools_limit_mounts" sets another value; an empty one keeps the settings.
+_LIMIT_MOUNTS="$(jq -r 'if has("tools_limit_mounts") then (.tools_limit_mounts // "") else "None" end' "$_FIXTURES")"
+if [ "$_LIMIT_MOUNTS" ]; then
+    while read -r _t; do
+        [ "$_t" ] || continue
+        _reg="$(jq -r --arg d "$_DEFAULT_REGISTRY" '.registry // $d' <<< "$_t")"
+        _image="$(jq -r '.image' <<< "$_t")"
+        _tid="$(cp_api_payload GET "tool/load?registry=$_reg&image=$_image" 2> /dev/null | jq -r '.id // empty')"
+        [ "$_tid" ] || { e2e_warn "Tool $_reg/$_image is not found: the mounts of its runs are not limited"; continue; }
+        _version="$(cp_api_payload GET "tool/$_tid/settings?version=latest" 2> /dev/null)" || \
+            { e2e_warn "Unable to read the settings of $_reg/$_image: the mounts of its runs are not limited"; continue; }
+        _version="$(jq -c '[.[]? | select(.version == "latest")][0] // null' <<< "$_version")"
+        _previous="$(jq -c '.settings // []' <<< "$_version")"
+        _allow_commit="$(jq -r 'if . == null or .allowCommit == null then true else .allowCommit end' <<< "$_version")"
+        _current="$(jq -r '.[0].configuration.parameters.CP_CAP_LIMIT_MOUNTS.value // empty' <<< "$_previous")"
+        [ "$_current" == "$_LIMIT_MOUNTS" ] && continue
+        _settings="$(jq -c --arg v "$_LIMIT_MOUNTS" 'if length == 0 then [{name: "default", default: true}] else . end
+            | .[0].configuration = ((.[0].configuration // {})
+                | .parameters = ((.parameters // {}) + {CP_CAP_LIMIT_MOUNTS: {value: $v, type: "string"}}))' <<< "$_previous")"
+        cp_api POST "tool/$_tid/settings?version=latest&allowCommit=$_allow_commit" "$_settings" > /dev/null || \
+            { e2e_warn "Unable to limit the mounts of the runs of $_reg/$_image"; continue; }
+        e2e_log "Runs of tool $_reg/$_image mount $_LIMIT_MOUNTS by default (CP_CAP_LIMIT_MOUNTS of its latest version, was: ${_current:-not set})"
+        _record version_settings "$(jq -cn --argjson id "$_tid" --arg r "$_reg" --arg i "$_image" --argjson p "$_previous" \
+            --argjson a "$_allow_commit" '{id: $id, registry: $r, image: $i, version: "latest", allowCommit: $a, previous: $p}')"
+    done <<< "$(jq -c '.tools[]?' "$_FIXTURES")"
 fi
 
 if [ $_ERRORS -gt 0 ]; then

@@ -364,6 +364,7 @@ public class ToolsTest
                 .ensure(DISK, attribute("value", disk))
                 .setPriceType(priceType)
                 .setTimeOut(timeout)
+                .withoutMounts()
                 .launchTool(this, Utils.nameWithoutGroup(testingTool))
                 .showLogForce(getRunId())
                 .shouldHaveRunningStatus()
@@ -467,6 +468,7 @@ public class ToolsTest
                 .setPriceType(priceType)
                 .setTimeOut("1")
                 .setCommand("sleep infinity")
+                .withoutMounts()
                 .launchTool(this, Utils.nameWithoutGroup(toolWithoutDefaultSettings))
                 .log(getRunId(), log ->
                         log

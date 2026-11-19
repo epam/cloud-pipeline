@@ -45,6 +45,7 @@ public class ClusterNodeTest extends AbstractAutoRemovingPipelineRunningTest {
             .firstVersion()
             .runPipeline()
             .setPriceType(ON_DEMAND)
+            .withoutMounts()
             .launch(this);
 
         nodeName = clusterMenu()

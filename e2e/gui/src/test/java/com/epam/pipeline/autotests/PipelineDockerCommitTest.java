@@ -95,6 +95,7 @@ public class PipelineDockerCommitTest
                 .runPipeline()
                 .setLaunchOptions(diskSize, instanceType, null)
                 .setPriceType(priceType)
+                .withoutMounts()
                 .launch(this)
                 .showLog(getLastRunId())
                 .waitForCommitButton()

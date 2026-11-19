@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -65,7 +66,10 @@ public class PackageManagerTimeoutsTest extends AbstractSeveralPipelineRunningTe
     private static final String CONSOLE = "Console";
     private static final String TIME_LIMIT = "300";
     private static final String APT_UPDATE = "apt-get update -qq -y --allow-insecure-repositories";
-    private static final String APT_CHECK = "ls /tmp/test-apt-hung && head -1 /etc/apt/sources.list";
+    // The repo line of the run's version: launch.sh writes "deb [trusted=yes] <url> stable main" into
+    // /etc/apt/sources.list.d/cloud-pipeline.list, an older launch.sh "deb <url> stable main" into /etc/apt/sources.list
+    private static final String APT_CHECK = "ls /tmp/test-apt-hung && grep -h -F '/ubuntu/%s stable main' "
+            + "/etc/apt/sources.list.d/cloud-pipeline.list /etc/apt/sources.list 2>/dev/null";
     private static final String YUM_CHECK =
             "ls /etc/yum.repos.d/cloud-pipeline.repo && grep -c 'did not finish' /var/log/yum.cp.log";
     private static final String[] TIME_LIMIT_WARNINGS =
@@ -86,7 +90,7 @@ public class PackageManagerTimeoutsTest extends AbstractSeveralPipelineRunningTe
     private final String anotherGroup = C.ANOTHER_GROUP;
     private final String rockyTool = C.TESTING_TOOL_NAME;
     private final String ubuntuTool = format("%s/ubuntu", anotherGroup);
-    private final String centosTool = format("%s/%s", anotherGroup, C.TEST_DOCKER_IMAGE);
+    private final String rockylinuxTool = format("%s/%s", anotherGroup, C.TEST_DOCKER_IMAGE);
     private ObjectNode originalPreference;
     private ObjectNode originalValue;
     private String restoreValue;
@@ -137,7 +141,7 @@ public class PackageManagerTimeoutsTest extends AbstractSeveralPipelineRunningTe
                     "TEST_APT_HANG_ONCE", "CP_PKG_MANAGER_UPDATE_TIMEOUT_SEC");
             runId = getLastRunId();
             final List<String> log = consoleLog(run.waitForSshLink());
-            assertHangOnceCommandRan(log, "ubuntu:22.04", "TEST_APT_HANG_ONCE");
+            final String version = assertHangOnceCommandRan(log, "ubuntu", "TEST_APT_HANG_ONCE");
             // A refresh that hung again would make the repo setup fail, with "Failed to configure": the log rows
             // are read as a set, so the "once" of the case is checked by that row being absent
             assertLogContains(log, format("[WARN] '%s' did not finish in %s seconds and was stopped",
@@ -147,9 +151,10 @@ public class PackageManagerTimeoutsTest extends AbstractSeveralPipelineRunningTe
             final String sshRunId = runId;
             run.sshInNewTab(shell -> shell
                     .waitUntilTextAppears(sshRunId)
-                    .executeAndWaitForPrompt(APT_CHECK, format("pipeline-%s", sshRunId))
-                    .assertOutputOfLastCommandMatches(APT_CHECK,
-                            "/tmp/test-apt-hung\\s*deb \\S+/ubuntu/22\\.04 stable main"));
+                    .executeAndWaitForPrompt(format(APT_CHECK, version), format("pipeline-%s", sshRunId))
+                    .assertOutputOfLastCommandMatches(format(APT_CHECK, version),
+                            format("/tmp/test-apt-hung\\s*deb (\\[trusted=yes\\] )?\\S+/ubuntu/%s stable main",
+                                    Pattern.quote(version))));
         } finally {
             stopRun(runId);
         }
@@ -161,16 +166,17 @@ public class PackageManagerTimeoutsTest extends AbstractSeveralPipelineRunningTe
         assertNoOtherCommands("rocky", YUM_COMMAND);
         String runId = null;
         try {
+            // the testing tool: tests/e2e-endpoints, Rocky Linux (deploy/docker/cp-tests/e2e-endpoints)
             final LogAO run = launchWithParameters(group, rockyTool, nameWithoutGroup(rockyTool),
                     "TEST_YUM_HANG_ONCE", "CP_PKG_MANAGER_INSTALL_TIMEOUT_SEC");
             runId = getLastRunId();
             final List<String> log = consoleLog(run.waitForSshLink());
-            assertHangOnceCommandRan(log, "rocky:8.7", "TEST_YUM_HANG_ONCE");
+            final String version = assertHangOnceCommandRan(log, "rocky", "TEST_YUM_HANG_ONCE");
             assertLogContains(log,
                     "[WARN] (attempt: 1) yum did not finish in time and was stopped, see /var/log/yum.cp.log");
             assertTrue(log.stream().anyMatch(row -> row.contains("[ERROR] (attempt: 1) Failed to configure ")
-                            && row.contains("/rocky/8.7 for the yum, removing the repo")),
-                    "No '[ERROR] (attempt: 1) Failed to configure <repo url>/rocky/8.7 ...' row in the log");
+                            && row.contains(format("/rocky/%s for the yum, removing the repo", version))),
+                    format("No '[ERROR] (attempt: 1) Failed to configure <repo url>/rocky/%s ...' row in the log", version));
             assertLogDoesNotContain(log, "(attempt: 2)");
             assertLogDoesNotContain(log, "(attempt: 3)");
             final String sshRunId = runId;
@@ -190,7 +196,7 @@ public class PackageManagerTimeoutsTest extends AbstractSeveralPipelineRunningTe
         // The case's prerequisite: the preference has no hang-once entries
         restorePreference();
         checkUsualRunStart(ubuntuTool, "ubuntu");
-        checkUsualRunStart(centosTool, C.TEST_DOCKER_IMAGE);
+        checkUsualRunStart(rockylinuxTool, C.TEST_DOCKER_IMAGE);
     }
 
     private void checkUsualRunStart(final String tool, final String toolSelfName) {
@@ -272,13 +278,19 @@ public class PackageManagerTimeoutsTest extends AbstractSeveralPipelineRunningTe
      * entry "ln -s /etc/ssl/certs/ca-bundle.crt /etc/cp-certs.pem" for Rocky Linux fails on a test tool whose image
      * already has /etc/cp-certs.pem ("N-1 out of N").
      */
-    private static void assertHangOnceCommandRan(final List<String> log, final String os, final String hangParameter) {
-        final Pattern found = Pattern.compile("\\d+ additional commands were found for " + Pattern.quote(os));
-        assertTrue(log.stream().anyMatch(message -> found.matcher(message).find()),
-                format("No '<N> additional commands were found for %s' row", os));
+    private static String assertHangOnceCommandRan(final List<String> log, final String os, final String hangParameter) {
+        // launch.sh names the distribution and its version as it detected them (e.g. ubuntu:16.04, rocky:8.7)
+        final Pattern found = Pattern.compile("\\d+ additional commands were found for " + Pattern.quote(os) + ":(\\S+)");
+        final String version = log.stream()
+                .map(found::matcher)
+                .filter(Matcher::find)
+                .map(matcher -> matcher.group(1))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(format("No '<N> additional commands were found for %s:<version>' row", os)));
         assertFalse(log.stream().anyMatch(message -> message.contains("[WARN] '") && message.contains(hangParameter)
                         && message.contains("command done with exit code")),
                 format("The hang-once command of %s failed: it has a 'command done with exit code' row", hangParameter));
+        return version;
     }
 
     private static void assertLogContains(final List<String> log, final String message) {

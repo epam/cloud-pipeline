@@ -115,6 +115,7 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                         .runUnscannedTool(UNSCANNED_MESSAGE)
                         .setDefaultLaunchOptions()
                         .setCommand("sleep infinity")
+                        .withoutMounts()
                         .launch(this)
                         .activeRuns()
                         .shouldContainRun("pipeline", getRunId())

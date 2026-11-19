@@ -148,6 +148,7 @@ public class ParallelLoadTests extends AbstractSeveralPipelineRunningTest implem
             tools()
                     .perform(C.DEFAULT_REGISTRY, C.DEFAULT_GROUP, C.TESTING_TOOL_NAME, ToolTab::runWithCustomSettings)
                     .setTimeOut("3")
+                    .withoutMounts()
                     .launch(this)
                     .showLog(runId = getLastRunId())
                     .shouldHaveRunningStatus();

@@ -70,6 +70,9 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
         tools()
                 .perform(registry, anotherGroup, testTool, ToolTab::runWithCustomSettings)
                 .setPriceType(ON_DEMAND)
+                // only the storage the xattrs are set on: mounting every storage takes long, and the run's SSH
+                // opens before the mounting has reached this one
+                .withMountsOf(testStorage)
                 .launch(this)
                 .showLog(getLastRunId())
                 .waitForSshLink()

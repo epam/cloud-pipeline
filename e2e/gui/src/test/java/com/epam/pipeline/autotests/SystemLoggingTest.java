@@ -243,6 +243,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .sleep(2, SECONDS)
                 .setDefaultLaunchOptions()
+                .withoutMounts()
                 .launchTool(this, nameWithoutGroup(tool))
                 .showLog(getLastRunId())
                 .waitForEndpointLink()

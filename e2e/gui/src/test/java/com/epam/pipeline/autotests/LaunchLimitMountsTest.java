@@ -27,6 +27,8 @@ import static com.epam.pipeline.autotests.utils.Json.selectProfileWithName;
 import static com.epam.pipeline.autotests.utils.Json.transferringJsonToObject;
 import com.epam.pipeline.autotests.utils.Parameter;
 import com.epam.pipeline.autotests.utils.TestCase;
+import com.epam.pipeline.autotests.utils.ToolVersionSettings;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.epam.pipeline.autotests.utils.Utils;
 import static com.epam.pipeline.autotests.utils.Utils.removeStorages;
 import org.testng.annotations.AfterClass;
@@ -77,6 +79,9 @@ public class LaunchLimitMountsTest
     private final String group = C.DEFAULT_GROUP;
     private final String anotherGroup = C.ANOTHER_GROUP;
     private final String testSensitiveTool = format("%s/%s", anotherGroup, C.TEST_DOCKER_IMAGE);
+    // the version settings of both tools before the class (put back by removeEntities; null if not saved)
+    private JsonNode toolSettings;
+    private JsonNode sensitiveToolSettings;
     private final String mountDataStoragesTask = "MountDataStorages";
     private String storageID = "";
     private String sensitiveStorageID = "";
@@ -104,10 +109,22 @@ public class LaunchLimitMountsTest
                 .validateHeader(storageSensitive);
 
         sensitiveStorageID = Utils.entityIDfromURL();
+        // The cases check the launch form's default, "All available non-sensitive storages", on both tools: run-e2e.sh
+        // makes the fixture tools mount no storage, which would be the default instead. Cleared for the class; the
+        // version settings of both tools are saved first and put back as they were by removeEntities.
+        sensitiveToolSettings = ToolVersionSettings.save(testSensitiveTool);
+        toolSettings = ToolVersionSettings.save(tool);
         tools()
                 .performWithin(registry, anotherGroup, testSensitiveTool, tool ->
                         tool.settings()
                                 .disableAllowSensitiveStorage()
+                                .doNotMountStoragesSelect(false)
+                                .performIf(SAVE, enabled, ToolSettings::save)
+                );
+        tools()
+                .performWithin(registry, group, tool, description ->
+                        description.settings()
+                                .doNotMountStoragesSelect(false)
                                 .performIf(SAVE, enabled, ToolSettings::save)
                 );
     }
@@ -130,6 +147,8 @@ public class LaunchLimitMountsTest
                                 .disableAllowSensitiveStorage()
                                 .performIf(SAVE, enabled, ToolSettings::save)
                 );
+        ToolVersionSettings.restore(sensitiveToolSettings);
+        ToolVersionSettings.restore(toolSettings);
     }
 
     @Test(priority = 1)

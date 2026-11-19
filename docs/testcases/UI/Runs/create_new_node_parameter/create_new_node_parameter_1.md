@@ -6,7 +6,7 @@ Test verifies that:
 
 **Prerequisites**:
 - Admin user
-- Test tool, e.g. `library/centos`
+- Test tool, e.g. `library/rockylinux`
 - The cluster has not reached the `cluster.max.size` size, and has no free node of the instance type that the test tool runs on by default
 - The keep-alive settings keep a free node for at least 30 minutes after step 8. The defaults do, if steps 4-8 take less than 20 minutes: `cluster.keep.alive.policy` is `MINUTES_TILL_HOUR` and `cluster.keep.alive.minutes` is `10`, so a free node is stopped only in the last 10 minutes of each hour since its start
 - No other run starts in the cluster until the end of the case, so that no other run takes the free node

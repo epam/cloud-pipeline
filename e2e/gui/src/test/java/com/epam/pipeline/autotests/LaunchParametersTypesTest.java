@@ -87,6 +87,7 @@ public class LaunchParametersTypesTest extends AbstractAutoRemovingPipelineRunni
                 .chooseStorage(storage)
                 .addToSelection(storageFolder)
                 .ok().close()
+                .withoutMounts()
                 .launch(this)
                 .showLog(getRunId())
                 .waitForCompletion();

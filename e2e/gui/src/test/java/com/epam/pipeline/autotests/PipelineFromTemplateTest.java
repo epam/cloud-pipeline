@@ -55,6 +55,7 @@ public class PipelineFromTemplateTest extends AbstractAutoRemovingPipelineRunnin
                 .createPipeline(template, getPipelineName())
                 .firstVersion()
                 .runPipeline()
+                .withoutMounts()
                 .launch(this)
                 .showLog(getRunId())
                 .waitForCompletion()

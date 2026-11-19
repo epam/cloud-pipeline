@@ -330,4 +330,16 @@ public class ToolSettings extends ToolTab<ToolSettings> {
         expandExecEnvironment().click(LIMIT_MOUNTS);
         return  new SelectLimitMountsPopupAO<>(this).sleep(2, SECONDS);
     }
+
+    /**
+     * Limits the tool's runs to these data storages (CP_CAP_LIMIT_MOUNTS lists them), to be saved. "Do not mount
+     * storages" is unticked first: the limit can't be chosen while it is ticked.
+     */
+    public ToolSettings limitMountsTo(final String... storages) {
+        doNotMountStoragesSelect(false);
+        final SelectLimitMountsPopupAO<ToolSettings> selection = selectDataStoragesToLimitMounts()
+                .clearSelectionIfAny();
+        Arrays.stream(storages).forEach(storage -> selection.searchStorage(storage).selectStorage(storage));
+        return selection.ok();
+    }
 }

@@ -353,6 +353,7 @@ public class RoleModelTest
                 .runPipeline()
 		.setPriceType(ON_DEMAND)
                 .waitUntilLaunchButtonAppear()
+                .withoutMounts()
                 .launch(this);
 
         navigationMenu()
@@ -480,6 +481,7 @@ public class RoleModelTest
                 .runPipeline()
                 .setPriceType(priceType)
                 .waitUntilLaunchButtonAppear()
+                .withoutMounts()
                 .launch(this);
 
         navigationMenu()
@@ -1029,6 +1031,7 @@ public class RoleModelTest
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setDefaultLaunchOptions()
                 .setCommand(defaultCommand)
+                .withoutMounts()
                 .launchTool(this, Utils.nameWithoutGroup(tool));
     }
 

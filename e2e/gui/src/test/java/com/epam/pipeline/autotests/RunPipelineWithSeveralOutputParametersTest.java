@@ -73,6 +73,7 @@ public class RunPipelineWithSeveralOutputParametersTest extends AbstractAutoRemo
                 .addToSelection(anotherStorageFolder)
                 .ok()
                 .close()
+                .withoutMounts()
                 .launch(this)
                 .showLog(getRunId())
                 .waitForCompletion();

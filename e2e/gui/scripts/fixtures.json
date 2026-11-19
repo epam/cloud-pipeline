@@ -19,7 +19,10 @@
         "  they are deactivated for the run (state only, the creation date is kept) and activated back afterwards.",
         "mute_user_notifications: the GUI shows a user's unread in-app notifications as cards over the top right of every",
         "  page, where they take the tests' clicks: the test users and the anonymous user get the metadata key",
-        "  ui.notifications.mute for the run (only the GUI reads it, emails are still sent), restored afterwards."
+        "  ui.notifications.mute for the run (only the GUI reads it, emails are still sent), restored afterwards.",
+        "tools_limit_mounts: CP_CAP_LIMIT_MOUNTS set in the settings of the latest version of each tool above for the run",
+        "  (restored afterwards), so that a run with default settings mounts no storage: without a limit a run mounts every",
+        "  storage its user can see, one after another. Empty keeps the tools' settings."
     ],
     "tool_groups": [
         {
@@ -51,7 +54,7 @@
             }
         },
         {
-            "image": "library/centos",
+            "image": "library/rockylinux",
             "settings": {}
         },
         {
@@ -89,5 +92,6 @@
     },
     "deactivate_blocking_notifications": true,
     "mute_user_notifications": true,
+    "tools_limit_mounts": "None",
     "preferences": []
 }
