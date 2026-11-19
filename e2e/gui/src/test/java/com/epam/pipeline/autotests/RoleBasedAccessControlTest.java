@@ -265,6 +265,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
             tools()
                     .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
                     .setDefaultLaunchOptions()
+                    .withoutMounts()
                     .launchTool(this, Utils.nameWithoutGroup(testingTool));
             logout();
             loginAs(admin);
@@ -338,6 +339,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         loginAs(admin);
         String endpoint = tools()
                 .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
+                .withoutMounts()
                 .launchTool(this, toolEndpoint)
                 .show(getLastRunId())
                 .waitEndpoint()

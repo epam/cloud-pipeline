@@ -177,7 +177,7 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
                 .runPipeline()
                 .setPriceType(ON_DEMAND);
         final String dockerImage = runForm.get(DOCKER_IMAGE).shouldBe(visible).shouldNotBe(empty).getValue();
-        runForm.launch(this);
+        runForm.withoutMounts().launch(this);
 
         navigateToPipelineHistory()
                 .recordsCountShouldBe(1)
@@ -274,6 +274,7 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
                 .clickOnPipeline(draftPipelineName)
                 .sleep(2, SECONDS)
                 .runFirstVersion()
+                .withoutMounts()
                 .launch(this);
         runsMenu()
                 .stopRun(getLastRunId());
@@ -309,6 +310,7 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
                 .sleep(2, SECONDS)
                 .firstVersion()
                 .runPipeline()
+                .withoutMounts()
                 .launch(pipelineDetailsTest);
     }
 

@@ -90,7 +90,13 @@ class after that at its first page. So:
    `ui.notifications.mute`, which only the GUI reads: emails are still sent), as the GUI shows the unread ones as cards
    over the top right of every page, where they take the clicks meant for the buttons there; the previous value is
    restored in step 7, and a mute an earlier run left behind is removed. `"mute_user_notifications": false` keeps
-   them. The account of `--dummy-session` is muted for good, the admin of an SSO session is not (see above).
+   them. The account of `--dummy-session` is muted for good, the admin of an SSO session is not (see above). The
+   fixture tools get `CP_CAP_LIMIT_MOUNTS=None` in the settings of their latest version for the run (restored in
+   step 7): a run without a limit mounts every data storage its user can see, one after another, which takes many
+   minutes on a platform with many storages, and a run with default settings takes the limit only from there or from
+   the user's own `CP_CAP_LIMIT_MOUNTS` attribute. The
+   tests set the limit on every launch form themselves: none, or the storages a test checks in the run.
+   `"tools_limit_mounts"` in `scripts/fixtures.json` sets another value; empty keeps the tools' settings.
 3. generates the tests config from the live deployment (`scripts/generate-config.sh`, see below)
 4. TC-TEST-ENVIRONMENT-1: unblocks the test users (`scripts/test-users.sh unblock`)
 5. records the platform state (`scripts/platform-state.sh snapshot`): preferences, library, tools, registry catalog,
@@ -191,7 +197,7 @@ Besides the fixtures `platform-prepare.sh` creates, set these before a full run:
 | `e2e.ui.nfs.prefix` in the overrides: the path prefix of a new NFS storage, e.g. `<NFS host>:/` | `NfsDataStorageTest` |
 | `CP_EDGE_DNS_RECORD_FORMAT={job_name}` in the `cp-config-global` config map (the edge default is `{job_name}.{region_name}`), with the edge restarted | `DNSrecordForRunsTest` (1615_1, 1615_2) |
 | `cluster.allowed.instance.types` and `cluster.allowed.instance.types.docker` allow the family of `default_instance_type` (`scripts/fixtures.json`, `m6i`, which the 0.16 default `m5.*,c5.*,r4.*,t2.*` does not), and `c6i.*` and `r6i.*` | `PlatformPreferencesTest` (TC-PARAMETERS-4), `LaunchParametersTest` (TC-PARAMETERS-6, 3433) |
-| `launch.capabilities` has a `conda` capability | `LaunchParametersTest` (TC-PARAMETERS-7) |
+| `launch.capabilities` has a `conda` capability that loads conda from a shared EFS file system | `LaunchParametersTest` (TC-PARAMETERS-7), excluded in `testng.xml`: a general deployment has no such capability |
 | `PIPELINE_RUN_STATUS` email notifications enabled, an SMTP server for the notifier, and an `email` attribute of the admin (with `--dummy-session`: `--dummy-session-email`); the notifier and the VM monitor on the node of `run-e2e.sh` | `RunStatusNotificationTest`, `CertificateExpirationNotificationTest`, `NodeThresholdNotificationTest` |
 | `CP_API_JWT_DISABLE_SESSION` not `true` in the `cp-config-global` config map (without the key the API image defaults it to `false`) | `--dummy-session` |
 

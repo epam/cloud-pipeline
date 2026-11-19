@@ -86,6 +86,7 @@ public class StorageRulesTest extends AbstractAutoRemovingPipelineRunningTest {
                 .setPriceType(priceType)
                 .validateThereIsParameterOfType("result", pathToFile, ParameterType.OUTPUT,true)
                 .waitUntilLaunchButtonAppear()
+                .withoutMounts()
                 .launchAndWaitUntilFinished(this);
     }
 

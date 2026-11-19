@@ -165,6 +165,8 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
             final RunsMenuAO runs = tools()
                     .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                     .setCommand(UMOUNT_COMMAND)
+                    // the replaced umount hangs launch.sh's "umount -lfa" with or without mounts
+                    .withoutMounts()
                     .launchTool(this, nameWithoutGroup(tool));
             stuckRunId = getLastRunId();
             runs
@@ -183,6 +185,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                     .setName(TERMINATE_RUN_TIMEOUT)
                     .setValue(valueOf(TEST_TERMINATE_RUN_TIMEOUT))
                     .close()
+                    .withoutMounts()
                     .launchTool(this, nameWithoutGroup(tool))
                     .showLog(getLastRunId())
                     .waitForTask(CONSOLE)

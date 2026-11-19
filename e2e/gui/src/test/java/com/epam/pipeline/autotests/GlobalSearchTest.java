@@ -250,6 +250,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 // 2663 finds "InitializeNode" in the log of this run, which only a run on a new node has (2662 and
                 // 2663 are not selected in testng.xml)
                 .createNewNode()
+                .withoutMounts()
                 .launch(this)
                 .showLog(testRunID = getLastRunId())
                 .waitForCompletion();
@@ -259,6 +260,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .firstVersion()
                 .runPipeline()
 		.setPriceType(ON_DEMAND)
+                .withoutMounts()
                 .launch(this)
                 .stopRun(getLastRunId());
         library()
@@ -267,6 +269,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .firstVersion()
                 .runPipeline()
 		.setPriceType(ON_DEMAND)
+                .withoutMounts()
                 .launch(this);
         search()
                 .click(PIPELINES)
@@ -399,6 +402,8 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .firstVersion()
                 .runPipeline()
 		.setPriceType(ON_DEMAND)
+                // the log is searched for this storage's mount line; the storage has its alias as its name by now
+                .withMountsOf(storageAlias)
                 .launch(this)
                 .showLog(getLastRunId())
                 .waitForCompletion();
@@ -489,6 +494,8 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
             endpointPage = tools()
                     .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
 		    .setPriceType(ON_DEMAND)
+                    // the run still has its MountDataStorages task, which the preview is checked for
+                    .withoutMounts()
                     .launchTool(this, toolEndpoint)
                     .showLog(testRunID_2668 = getLastRunId())
                     .waitForEndpointLink()

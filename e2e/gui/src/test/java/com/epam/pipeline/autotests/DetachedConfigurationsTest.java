@@ -855,6 +855,8 @@ public class DetachedConfigurationsTest
                     // RAM.
                     .ensure(INSTANCE_TYPE, text("CPU"))
                     .selectValue(INSTANCE_TYPE, nodeType)
+                    // the run is launched with the saved profile, so the mounts are set before the profile is saved
+                    .also(() -> new Profile(configuration).withoutMounts())
                     .click(SAVE)
                     .ensureDisable(SAVE)
                     .runSelected(this, pipeline1)

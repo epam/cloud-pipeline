@@ -72,6 +72,7 @@ public class Launch_PipelineRunTimeoutTest extends AbstractAutoRemovingPipelineR
                 .sleep(2, SECONDS)
                 .runPipeline()
 		.setPriceType(ON_DEMAND)
+                .withoutMounts()
                 .launch(this)
                 .showLogForce(getRunId())
                 .ensure(pipelineLink(), text(getPipelineName()))

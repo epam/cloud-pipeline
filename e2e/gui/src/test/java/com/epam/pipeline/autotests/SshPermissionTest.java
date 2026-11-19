@@ -157,6 +157,7 @@ public class SshPermissionTest extends AbstractSeveralPipelineRunningTest implem
                 .runPipeline()
                 .setCommand(sleepingCommand)
                 .setPriceType(ON_DEMAND)
+                .withoutMounts()
                 .launch(this);
         return getLastRunId();
     }

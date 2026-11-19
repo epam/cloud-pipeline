@@ -170,6 +170,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             .also(priceTypeMenuHasItems(2))
             .click(combobox("Price type"))
             .selectValue(combobox("Price type"), menuitem(onDemandPriceName))
+            .withoutMounts()
             .launch(this)
             .showLog(getLastRunId())
             .instanceParameters(p -> p.ensure(parameterWithName("Price type"), have(text(onDemandPriceName))))
@@ -356,6 +357,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
     public void launchAndCheckLaunchParametersInPipelineLogsPage() {
         onLaunchPage()
 		.setPriceType(onDemandPriceName)
+                .withoutMounts()
                 .launch(this)
                 .showLog(getLastRunId())
                 .instanceParameters(instance ->

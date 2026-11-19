@@ -522,6 +522,32 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                         "No such node type with RAM {%s}.", minRAM)));
     }
 
+    /**
+     * The run mounts no data storage (CP_CAP_LIMIT_MOUNTS=None, "Do not mount storages"): for a test that checks
+     * nothing about the storages mounted in a run. Without a limit a run mounts every storage the user can see, one
+     * after another, which takes many minutes on a platform with many storages. The field is in the ADVANCED panel,
+     * which is opened first. CP_CAP_LIMIT_MOUNTS can't be added as a parameter: the form refuses reserved names.
+     */
+    public PipelineRunFormAO withoutMounts() {
+        expandTab(ADVANCED_PANEL);
+        return doNotMountStoragesSelect(true).assertDoNotMountStoragesIsChecked();
+    }
+
+    /**
+     * The run mounts these data storages only (CP_CAP_LIMIT_MOUNTS lists them): for a test that checks storages
+     * mounted in a run. Each name is searched for and selected in the "Limit mounts" dialog, which is cleared first.
+     * "Do not mount storages" is unticked first: the form of a fixture tool starts with it ticked (run-e2e.sh), and
+     * the field is hidden while it is.
+     */
+    public PipelineRunFormAO withMountsOf(final String... storages) {
+        expandTab(ADVANCED_PANEL);
+        doNotMountStoragesSelect(false);
+        final SelectLimitMountsPopupAO<PipelineRunFormAO> selection = selectDataStoragesToLimitMounts()
+                .clearSelectionIfAny();
+        Arrays.stream(storages).forEach(storage -> selection.searchStorage(storage).selectStorage(storage));
+        return selection.ok();
+    }
+
     public PipelineRunFormAO doNotMountStoragesSelect (boolean isSelected) {
         if ((!get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && isSelected) ||
                 (get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && !isSelected)) {

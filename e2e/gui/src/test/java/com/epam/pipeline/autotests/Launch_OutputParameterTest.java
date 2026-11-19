@@ -68,6 +68,7 @@ public class Launch_OutputParameterTest extends AbstractAutoRemovingPipelineRunn
             .setPriceType(ON_DEMAND)
             .addOutputParameter("output", pathToFile)
             .waitUntilLaunchButtonAppear()
+            .withoutMounts()
             .launchAndWaitUntilFinished(this);
     }
 
