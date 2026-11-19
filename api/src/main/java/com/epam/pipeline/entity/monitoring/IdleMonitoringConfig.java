@@ -16,20 +16,10 @@
 
 package com.epam.pipeline.entity.monitoring;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class IdleMonitoringConfig {
-    private IdleMonitoringType type;
-    private boolean enabled;
-    private Double thresholdPercent;
-    private Integer gracePeriodMinutes;
-    private Integer actionTimeoutMinutes;
-    private IdleRunAction action;
+public record IdleMonitoringConfig(IdleMonitoringType type,
+                                   boolean enabled,
+                                   Double thresholdPercent,
+                                   Integer gracePeriodMinutes,
+                                   Integer actionTimeoutMinutes,
+                                   IdleRunAction action) {
 }

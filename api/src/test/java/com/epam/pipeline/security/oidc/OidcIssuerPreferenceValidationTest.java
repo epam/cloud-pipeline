@@ -18,8 +18,8 @@ package com.epam.pipeline.security.oidc;
 
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.manager.preference.PreferenceValidators;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -102,10 +102,10 @@ public class OidcIssuerPreferenceValidationTest {
 
     private static final String CLAIM_LINE = "\"claim\": \"repository_owner\",";
 
-    @Before
+    @BeforeEach
     public void initMapper() {
-        // the mapper is a Spring singleton published by @PostConstruct, and this test has no context
-        new JsonMapper().init();
+        // the mapper is a Spring singleton published by afterPropertiesSet, and this test has no context
+        new JsonMapper().afterPropertiesSet();
     }
 
     @Test

@@ -155,10 +155,9 @@ public class RunApiService {
             + "@grantPermissionManager.hasConfigurationUpdatePermission(#configuration, 'EXECUTE')")
     @AclMaskList
     @QuotaLaunchCheck
-    public List<PipelineRun> runConfiguration(String refreshToken,
-                                              RunConfigurationWithEntitiesVO configuration,
+    public List<PipelineRun> runConfiguration(RunConfigurationWithEntitiesVO configuration,
                                               String expansionExpression) {
-        return configurationLauncher.runConfiguration(refreshToken, configuration, expansionExpression);
+        return configurationLauncher.runConfiguration(configuration, expansionExpression);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR hasRole('RUN_ADMIN')" +

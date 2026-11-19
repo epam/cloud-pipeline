@@ -33,9 +33,9 @@ import com.sun.net.httpserver.HttpServer;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import org.apache.commons.io.IOUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -44,9 +44,9 @@ import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -74,7 +74,7 @@ public class PipelineExecutorImageDigestTest {
     private HttpServer kubernetesApi;
     private PipelineExecutor executor;
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException {
         kubernetesApi = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
         kubernetesApi.createContext("/", this::createPod);
@@ -90,7 +90,7 @@ public class PipelineExecutorImageDigestTest {
                 mock(AuthManager.class), Collections.emptyList(), NAMESPACE, kubernetesManager);
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         kubernetesApi.stop(0);
     }

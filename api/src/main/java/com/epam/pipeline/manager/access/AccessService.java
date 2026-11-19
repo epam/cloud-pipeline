@@ -31,7 +31,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.List;

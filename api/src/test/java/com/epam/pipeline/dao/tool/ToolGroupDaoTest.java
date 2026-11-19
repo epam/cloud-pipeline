@@ -20,15 +20,16 @@ import com.epam.pipeline.dao.docker.DockerRegistryDao;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ToolGroupDaoTest extends AbstractJdbcTest {
     private static final String TEST_GROUP_NAME = "TestGroup";
@@ -48,8 +49,7 @@ public class ToolGroupDaoTest extends AbstractJdbcTest {
     private DockerRegistry registry;
     private DockerRegistry registry2;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach    public void setUp() throws Exception {
         registry = new DockerRegistry();
         registry.setPath(TEST_REPO);
         registry.setOwner(TEST_USER);
@@ -66,7 +66,7 @@ public class ToolGroupDaoTest extends AbstractJdbcTest {
     public void createToolGroup() {
         ToolGroup group = saveToolGroup(TEST_GROUP_NAME, registry);
 
-        Assert.assertNotNull(group.getId());
+        assertNotNull(group.getId());
     }
 
     private ToolGroup saveToolGroup(String name, DockerRegistry dockerRegistry) {
@@ -93,8 +93,8 @@ public class ToolGroupDaoTest extends AbstractJdbcTest {
         }
 
         List<ToolGroup> groups = toolGroupDao.loadToolGroups();
-        Assert.assertFalse(groups.isEmpty());
-        Assert.assertTrue(groups.size() >= 10);
+        assertFalse(groups.isEmpty());
+        assertTrue(groups.size() >= 10);
     }
 
     @Test
@@ -103,10 +103,10 @@ public class ToolGroupDaoTest extends AbstractJdbcTest {
         saveToolGroup(TEST_GROUP_NAME, registry);
         saveToolGroup(TEST_GROUP_NAME, registry2);
 
-        Assert.assertEquals(1,
+        assertEquals(1,
                             toolGroupDao.loadToolGroupsByNameAndRegistryName(TEST_GROUP_NAME, registry.getPath())
                                 .size());
-        Assert.assertEquals(1,
+        assertEquals(1,
                             toolGroupDao.loadToolGroupsByNameAndRegistryName(TEST_GROUP_NAME, registry2.getPath())
                                 .size());
     }
@@ -117,7 +117,7 @@ public class ToolGroupDaoTest extends AbstractJdbcTest {
         saveToolGroup(TEST_GROUP_NAME, registry);
         saveToolGroup(TEST_GROUP_NAME, registry2);
 
-        Assert.assertEquals(1, toolGroupDao.loadToolGroups(registry.getId()).size());
+        assertEquals(1, toolGroupDao.loadToolGroups(registry.getId()).size());
     }
 
     @Test
@@ -130,15 +130,15 @@ public class ToolGroupDaoTest extends AbstractJdbcTest {
     }
 
     private void checkFields(ToolGroup group, Optional<ToolGroup> loaded) {
-        Assert.assertTrue(loaded.isPresent());
+        assertTrue(loaded.isPresent());
 
         ToolGroup loadedGroup = loaded.get();
 
-        Assert.assertEquals(group.getId(), loadedGroup.getId());
-        Assert.assertEquals(group.getName(), loadedGroup.getName());
-        Assert.assertEquals(group.getRegistryId(), loadedGroup.getRegistryId());
-        Assert.assertEquals(group.getOwner(), loadedGroup.getOwner());
-        Assert.assertEquals(group.getDescription(), loadedGroup.getDescription());
+        assertEquals(group.getId(), loadedGroup.getId());
+        assertEquals(group.getName(), loadedGroup.getName());
+        assertEquals(group.getRegistryId(), loadedGroup.getRegistryId());
+        assertEquals(group.getOwner(), loadedGroup.getOwner());
+        assertEquals(group.getDescription(), loadedGroup.getDescription());
     }
 
     @Test
@@ -157,7 +157,7 @@ public class ToolGroupDaoTest extends AbstractJdbcTest {
 
         toolGroupDao.deleteToolGroup(group.getId());
 
-        Assert.assertTrue(toolGroupDao.loadToolGroups().stream().noneMatch(g -> g.getId().equals(group.getId())));
+        assertTrue(toolGroupDao.loadToolGroups().stream().noneMatch(g -> g.getId().equals(group.getId())));
     }
 
     @Test
@@ -170,7 +170,7 @@ public class ToolGroupDaoTest extends AbstractJdbcTest {
         toolGroupDao.updateToolGroup(group);
 
         ToolGroup loaded = toolGroupDao.loadToolGroup(group.getId()).get();
-        Assert.assertEquals(TEST_USER2, loaded.getOwner());
-        Assert.assertEquals(TEST_OTHER_DESCRIPTION, loaded.getDescription());
+        assertEquals(TEST_USER2, loaded.getOwner());
+        assertEquals(TEST_OTHER_DESCRIPTION, loaded.getDescription());
     }
 }

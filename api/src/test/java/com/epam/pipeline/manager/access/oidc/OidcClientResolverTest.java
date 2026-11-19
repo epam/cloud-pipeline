@@ -23,8 +23,8 @@ import com.epam.pipeline.security.oidc.OidcClaimRule;
 import com.epam.pipeline.security.oidc.OidcClient;
 import com.epam.pipeline.security.oidc.OidcIssuer;
 import com.nimbusds.jwt.JWTClaimsSet;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,7 +49,7 @@ public class OidcClientResolverTest {
 
     private OidcClientResolver resolver;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         resolver = new OidcClientResolver();
     }

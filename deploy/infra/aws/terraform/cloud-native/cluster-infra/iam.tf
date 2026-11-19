@@ -340,6 +340,7 @@ resource "aws_iam_policy" "cp_main_service" {
           "kms:GenerateDataKey",
           "ec2:DescribeSubnets",
           "ec2:DeleteKeyPair",
+          "ec2:PurchaseCapacityBlock",
           "cloudwatch:GetMetricStatistics",
           "cloudwatch:ListMetrics",
           "cloudwatch:PutMetricData",

@@ -25,14 +25,14 @@ import com.epam.pipeline.repository.access.AccessCodeRepository;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import joptsimple.internal.Strings;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.util.Collections;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.epam.pipeline.util.CustomAssertions.notInvoked;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;

@@ -35,6 +35,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -75,7 +76,7 @@ public class ElasticsearchAgentService {
         log.debug("Start scheduled database changes...");
 
         LocalDateTime lastSyncTime = getLastSyncTime();
-        LocalDateTime syncStart = LocalDateTime.now(Clock.systemUTC());
+        LocalDateTime syncStart = LocalDateTime.now(Clock.systemUTC()).truncatedTo(ChronoUnit.MILLIS);
 
         List<CompletableFuture<Void>> results = synchronizers.stream()
                 .map(synchronizer -> CompletableFuture.runAsync(() -> {
@@ -113,7 +114,7 @@ public class ElasticsearchAgentService {
     private LocalDateTime getLastSyncTime() {
         String lastTime = getLastLineFromFile();
         if (StringUtils.isEmpty(lastTime)) {
-            return LocalDateTime.now(Clock.systemUTC());
+            return LocalDateTime.now(Clock.systemUTC()).truncatedTo(ChronoUnit.MILLIS);
         }
         try {
             return LocalDateTime.parse(lastTime, DATE_TIME_FORMATTER);

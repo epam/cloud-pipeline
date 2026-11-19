@@ -1,5 +1,7 @@
 package com.epam.pipeline.entity.reporter;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Value;
 
 /**
@@ -11,4 +13,12 @@ import lombok.Value;
 public class NodeReporterStatsLimit {
     long softLimit;
     long hardLimit;
+
+    @JsonCreator
+    public NodeReporterStatsLimit(
+            @JsonProperty("soft_limit") final long softLimit,
+            @JsonProperty("hard_limit") final long hardLimit) {
+        this.softLimit = softLimit;
+        this.hardLimit = hardLimit;
+    }
 }

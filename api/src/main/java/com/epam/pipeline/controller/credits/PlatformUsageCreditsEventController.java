@@ -22,10 +22,10 @@ import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsEventFilterVO;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,12 +33,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 
 @RestController
-@Api(value = "Platform usage credits events management")
+@Tag(name = "platform-usage-credits-event-controller", description = "Platform usage credits events management")
 @RequestMapping("/usage/credits/events")
 @RequiredArgsConstructor
 public class PlatformUsageCreditsEventController extends AbstractRestController {
@@ -46,33 +46,36 @@ public class PlatformUsageCreditsEventController extends AbstractRestController 
     private final PlatformUsageCreditsEventApiService apiService;
 
     @PostMapping
-    @ApiOperation(
-            value = "Send platform usage credits update events. Admin only.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Send platform usage credits update events. Admin only.",
+            description = "Send platform usage credits update events. Admin only.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<PlatformUsageCreditsUpdateEvent>> process(
             @RequestBody final List<PlatformUsageCreditsUpdateEvent> events) {
         return Result.success(apiService.process(events));
     }
 
     @PostMapping("/filter")
-    @ApiOperation(
-            value = "Filters platform usage credits update events with pagination. "
+    @Operation(
+            summary = "Filters platform usage credits update events with pagination. "
                     + "Non-admin users are restricted to their own events.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+            description = "Filters platform usage credits update events with pagination. "
+                    + "Non-admin users are restricted to their own events.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<PagedResult<List<PlatformUsageCreditsUpdateEvent>>> filter(
             @RequestBody final PlatformUsageCreditsEventFilterVO filter) {
         return Result.success(apiService.filter(filter));
     }
 
     @PostMapping("/export")
-    @ApiOperation(
-            value = "Exports all matching credits events as CSV. "
+    @Operation(
+            summary = "Exports all matching credits events as CSV. "
                     + "Non-admin users are restricted to their own events. "
                     + "Pagination fields in the request body are ignored.",
-            produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+            description = "Exports all matching credits events as CSV. "
+                    + "Non-admin users are restricted to their own events. "
+                    + "Pagination fields in the request body are ignored.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public void export(@RequestBody final PlatformUsageCreditsEventFilterVO filter,
                        final HttpServletResponse response) throws IOException {
         response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);

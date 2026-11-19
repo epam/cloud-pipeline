@@ -37,7 +37,7 @@ import org.springframework.util.Assert;
 
 import org.apache.commons.collections4.CollectionUtils;
 
-import javax.annotation.Nullable;
+import org.springframework.lang.Nullable;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -179,7 +179,7 @@ public class PlatformUsageCreditsUserBalanceService {
     private int getIntPreference(final AbstractSystemPreference.IntPreference intPreference,
                                   final PipelineUser user) {
         return Integer.parseInt(contextualPreferenceManager.search(
-                Collections.singletonList(intPreference.getKey()), user).getValue());
+                Collections.singletonList(intPreference.getKey()), user).value());
     }
 
     private void validateResetValue(final int value, final int min, final int max, final Long userId) {

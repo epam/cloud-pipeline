@@ -1,0 +1,63 @@
+/*
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* The title row sticks to the top of this element, so the table must scroll here. Scroll padding
+   keeps an item focused by keyboard out from under the sticky rows; stylelint 7 predates it.
+   shortcut: 104px is the title row (47px) plus a one-line column header (57px), so a taller
+   header can still cover a focused item - measure both rows in JS if that matters. */
+.table {
+  overflow-y: auto;
+  scroll-padding-top: 104px; /* stylelint-disable-line property-no-unknown */
+}
+
+/* antd hides the overflow of these wrappers, which would pin the title row to them instead. */
+.table > :global(.ant-spin-nested-loading) > :global(.ant-spin-container),
+.table > :global(.ant-spin-nested-loading) > :global(.ant-spin-container) > :global(.ant-table) {
+  overflow: visible;
+}
+
+/* The title row draws the table's top border, so the border scrolls with it. */
+.table > :global(.ant-spin-nested-loading) > :global(.ant-spin-container) > :global(.ant-table) {
+  border-top: 0;
+}
+
+/* Clips the rows to the bottom corners that the dropped overflow no longer clips. `clip`, unlike
+   antd's `hidden`, does not pin the column header to these elements. */
+.table > :global(.ant-spin-nested-loading) > :global(.ant-spin-container) > :global(.ant-table) > :global(.ant-table-content),
+.table > :global(.ant-spin-nested-loading) > :global(.ant-spin-container) > :global(.ant-table) > :global(.ant-table-content) > :global(.ant-table-body) > table {
+  overflow: clip;
+}
+
+.table > :global(.ant-spin-nested-loading) > :global(.ant-spin-container) > :global(.ant-table) > :global(.ant-table-content) {
+  border-radius: 0 0 4px 4px;
+}
+
+.table > :global(.ant-spin-nested-loading) > :global(.ant-spin-container) > :global(.ant-table) > :global(.ant-table-title) {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  border-top-width: 1px;
+  border-top-style: solid;
+}
+
+/* shortcut: 47px is the title row's height with one line of controls; a wrapped row hides the
+   header's top under it - measure the row in JS if that starts to happen. z-index 2 keeps the rows'
+   checkboxes (antd's invisible input is at z-index 1) from taking clicks through the header. */
+.table > :global(.ant-spin-nested-loading) > :global(.ant-spin-container) > :global(.ant-table) > :global(.ant-table-content) :global(.ant-table-thead) > tr > th {
+  position: sticky;
+  top: 47px;
+  z-index: 2;
+}

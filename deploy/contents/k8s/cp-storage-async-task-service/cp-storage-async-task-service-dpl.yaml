@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cp-storage-async-task-service
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-storage-async-task-service: "true"
+  # One replica is enough: a pod runs CP_SATS_SLOTS tasks at a time. More would be harmless - the API
+  # hands a pending task to exactly one caller.
+  replicas: 1
+  template:
+    metadata:
+      name: cp-storage-async-task-service
+      namespace: default
+      labels:
+        cloud-pipeline/cp-storage-async-task-service: "true"
+        cloud-pipeline/core-component: "Deployment"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-storage-async-task-service: "true"
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      containers:
+        - name: cp-storage-async-task-service
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:storage-async-task-service-$CP_VERSION
+          imagePullPolicy: "Always"
+          # The service mounts NFS shares itself, and `mount` needs CAP_SYS_ADMIN. cp-dav and
+          # cp-share-srv are privileged for the same reason.
+          securityContext:
+            privileged: true
+          command: ["/start.sh"]
+          # CP_API_JWT_ADMIN and the two CP_API_SRV_INTERNAL_* variables come from here. Everything
+          # else comes from the image's CP_SATS_* defaults.
+          envFrom:
+            - configMapRef:
+                name: cp-config-global
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness.sh
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 4
+          volumeMounts:
+            - mountPath: /opt/cp-sats/logs
+              name: cp-sats-logs
+            - mountPath: /opt/cp-sats/work
+              name: cp-sats-work
+      volumes:
+        - name: cp-sats-logs
+          hostPath:
+            path: /opt/cp-sats/logs
+        # Scratch space, one subdirectory per running task. On the node so that an operator can give
+        # it a disk.
+        #
+        # **It needs room for CP_SATS_SLOTS archives of up to `maxSizeBytes` each** - 200 GiB on the
+        # defaults. The installer labels the kube master by default, and filling a master's root
+        # filesystem makes kubelet evict pods. Point CP_STORAGE_ASYNC_TASK_SERVICE_KUBE_NODE_NAME at a
+        # node with a data disk, or mount one here, before raising either number.
+        - name: cp-sats-work
+          hostPath:
+            path: /opt/cp-sats/work
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

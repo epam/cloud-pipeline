@@ -108,7 +108,7 @@ public class PlatformUsageCreditsEventService {
         if (newEvents.isEmpty()) {
             return Collections.emptyList();
         }
-        usageCreditsEventRepository.save(newEvents.stream().map(mapper::toEntity).collect(Collectors.toList()));
+        usageCreditsEventRepository.saveAll(newEvents.stream().map(mapper::toEntity).collect(Collectors.toList()));
         return newEvents;
     }
 
@@ -134,8 +134,8 @@ public class PlatformUsageCreditsEventService {
         Assert.isTrue(effectiveFilter.getPageSize() > 0, "Page size must be > 0");
         final Page<PlatformUsageCreditsUpdateEventEntity> page = usageCreditsEventRepository.findAll(
                 PlatformUsageCreditsEventSpecification.fromFilter(effectiveFilter),
-                new PageRequest(effectiveFilter.getPage() - 1, effectiveFilter.getPageSize(),
-                        new Sort(Sort.Direction.DESC, FIELD_CREATED_DATE)));
+                PageRequest.of(effectiveFilter.getPage() - 1, effectiveFilter.getPageSize(),
+                        Sort.by(Sort.Direction.DESC, FIELD_CREATED_DATE)));
         return new PagedResult<>(
                 page.getContent().stream().map(mapper::toDto).collect(Collectors.toList()),
                 (int) page.getTotalElements());
@@ -195,7 +195,7 @@ public class PlatformUsageCreditsEventService {
         if (events.isEmpty()) {
             return Collections.emptyList();
         }
-        return usageCreditsEventRepository.save(events).stream().map(mapper::toDto).collect(Collectors.toList());
+        return usageCreditsEventRepository.saveAll(events).stream().map(mapper::toDto).collect(Collectors.toList());
     }
 
     private PlatformUsageCreditsEventFilterVO restrictToCurrentUser(final PlatformUsageCreditsEventFilterVO filter) {

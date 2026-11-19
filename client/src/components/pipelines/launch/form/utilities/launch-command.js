@@ -99,8 +99,12 @@ class LaunchCommand extends React.Component {
       await preferences.fetchIfNeededOrWait();
       const {osType} = this.state;
       const request = new PipelineRunCmd();
+      // `capacityBlockPoolId` is the launch form's own field, not a run API
+      // one: the pool's launch config is already in `params` and
+      // `podAssignPolicy`, and the API rejects the payload that carries it.
       const {
         params = {},
+        capacityBlockPoolId,
         ...payloadRest
       } = payload || {};
       const pipelineStart = {

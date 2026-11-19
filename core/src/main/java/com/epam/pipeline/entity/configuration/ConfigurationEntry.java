@@ -21,7 +21,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Represents a set of settings for a {@link com.epam.pipeline.entity.pipeline.Pipeline}, usually is
@@ -48,10 +48,10 @@ public class ConfigurationEntry {
     }
 
     public boolean checkConfigComplete() {
-        if (!StringUtils.hasText(name)) {
+        if (StringUtils.isBlank(name)) {
             return false;
         }
-        if (configuration == null || !StringUtils.hasText(configuration.getCmdTemplate())) {
+        if (configuration == null || StringUtils.isBlank(configuration.getCmdTemplate())) {
             return false;
         }
         return true;

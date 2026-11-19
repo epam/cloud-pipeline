@@ -18,12 +18,12 @@ package com.epam.pipeline.manager.contextual;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.epam.pipeline.util.CustomMatchers.isEmpty;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -47,7 +47,7 @@ import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("PMD.TooManyStaticImports")
 public class ContextualPreferenceManagerTest {
@@ -139,7 +139,7 @@ public class ContextualPreferenceManagerTest {
         final ContextualPreferenceVO preferenceVO = new ContextualPreferenceVO(NAME, VALUE, TYPE, toolResource);
         final ContextualPreference preference = new ContextualPreference(NAME, VALUE, TYPE, toolResource);
         when(contextualPreferenceHandler.isValid(eq(preference))).thenReturn(true);
-        when(contextualPreferenceDao.load(eq(preference.getName()))).thenReturn(Collections.singletonList(
+        when(contextualPreferenceDao.load(eq(preference.name()))).thenReturn(Collections.singletonList(
                 new ContextualPreference(NAME, VALUE, ANOTHER_TYPE, anotherResource)));
 
         assertThrows(IllegalArgumentException.class, () -> manager.upsert(preferenceVO));
@@ -151,7 +151,7 @@ public class ContextualPreferenceManagerTest {
                 toolResource);
         final ContextualPreference preference = new ContextualPreference(NAME, VALUE, ANOTHER_TYPE, toolResource);
         when(contextualPreferenceHandler.isValid(eq(preference))).thenReturn(true);
-        when(contextualPreferenceDao.load(eq(preference.getName()))).thenReturn(Collections.emptyList());
+        when(contextualPreferenceDao.load(eq(preference.name()))).thenReturn(Collections.emptyList());
 
         assertThrows(IllegalArgumentException.class, () -> manager.upsert(preferenceVO));
     }

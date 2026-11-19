@@ -25,6 +25,7 @@
 - [`pipe storage mount` waits for the mount point](#pipe-storage-mount-waits-for-the-mount-point)
 - [Parallel mounting of data storages](#parallel-mounting-of-data-storages)
 - [Hot node pools](#hot-node-pools)
+- [Node pools backed by an AWS capacity reservation or capacity block](#node-pools-backed-by-an-aws-capacity-reservation-or-capacity-block)
 - [FS quotas](#fs-quotas)
 - [Pause/resume runs via `pipe`](#pauseresume-runs-via-pipe)
 - [Home storage for each user](#home-storage-for-each-user)
@@ -41,6 +42,8 @@
 - [NAT gateway](#nat-gateway)
 - [Custom Run capabilities](#custom-run-capabilities)
 - [Storage lifecycle management](#storage-lifecycle-management)
+- [Download storage contents as an archive](#download-storage-contents-as-an-archive)
+- [Upload and extract archives](#upload-and-extract-archives)
 - [Image history and generating of Dockerfile](#image-history-and-generating-of-dockerfile)
 - [Environments synchronization via `pipectl`](#environments-synchronization-via-pipectl)
 - [Data access audit](#data-access-audit)
@@ -60,6 +63,8 @@
 - [Python 3 support for backend services](#python-3-support-for-backend-services)
 - [Self-contained Python 3.12 distribution](#self-contained-python-312-distribution)
 - [Run controls for an unavailable node](#run-controls-for-an-unavailable-node)
+- [Capacity blocks sourced from node pools](#capacity-blocks-sourced-from-node-pools)
+- [Node pool managers can edit and delete the pools they own](#node-pool-managers-can-edit-and-delete-the-pools-they-own)
 - [Priority of group GUI settings](#priority-of-group-gui-settings)
 - [Show optional parameters per pipeline or tool](#show-optional-parameters-per-pipeline-or-tool)
 - [Read and launch access to all pipelines](#read-and-launch-access-to-all-pipelines)
@@ -67,11 +72,13 @@
 - [Rocky Linux 9.8 for the proxy and the backup workers](#rocky-linux-98-for-the-proxy-and-the-backup-workers)
 - [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
 - [Pinning a run to the Docker image digest](#pinning-a-run-to-the-docker-image-digest)
+- [Data storage: the controls row and the column header stay visible while scrolling](#data-storage-the-controls-row-and-the-column-header-stay-visible-while-scrolling)
 - [Default version of a tool](#default-version-of-a-tool)
 - [NICE DCV desktop: no wallpaper, a keyboard layout switcher, Ubuntu 24.04](#nice-dcv-desktop-no-wallpaper-a-keyboard-layout-switcher-ubuntu-2404)
 - [Retries of a failed scratch Lustre file system](#retries-of-a-failed-scratch-lustre-file-system)
 - [OIDC token exchange](#oidc-token-exchange)
 - [Cloud Pipeline apt repository for Ubuntu 24.04 and later](#cloud-pipeline-apt-repository-for-ubuntu-2404-and-later)
+- [Extracting an archive that lies in a data storage](#extracting-an-archive-that-lies-in-a-data-storage)
 
 ***
 
@@ -79,6 +86,7 @@
     - [Nextflow run view: some tasks stay `RUNNING` after the run finishes](#nextflow-run-view-some-tasks-stay-running-after-the-run-finishes)
     - [GUI: library versions with security advisories](#gui-library-versions-with-security-advisories)
     - [Users export: the names of the date columns depend on the API time zone](#users-export-the-names-of-the-date-columns-depend-on-the-api-time-zone)
+    - [Data storage: "Select page" is enabled when no item on the page can be selected](#data-storage-select-page-is-enabled-when-no-item-on-the-page-can-be-selected)
     - [A committed image of a user with a large UID writes hundreds of GB to the disk](#a-committed-image-of-a-user-with-a-large-uid-writes-hundreds-of-gb-to-the-disk)
     - [Detached configuration: the old name stays in the Library after a rename](#detached-configuration-the-old-name-stays-in-the-library-after-a-rename)
     - [NICE DCV setup reports a failure only after 30 minutes, with no reason](#nice-dcv-setup-reports-a-failure-only-after-30-minutes-with-no-reason)
@@ -1007,6 +1015,23 @@ If the user starts a job in this time (_pool's schedule(s)_) and the instance re
 
 For more details and examples see [here](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md).
 
+## Node pools backed by an AWS capacity reservation or capacity block
+
+A node pool can now be backed by a cloud provider's own capacity reservation, so its nodes are guaranteed rather than subject to the usual on-demand availability. An administrator, or a user with the **ROLE_NODE_POOL_MANAGER** role, creates such a pool with its reservation request alongside the usual pool settings; whether it then needs an administrator's approval is decided by the **`cluster.capacity.reservation.policies`** system preference.
+
+Two kinds of reservation are supported, both AWS-only for now:
+
+- a **future-dated** reservation, for a date and zone the platform searches for and reserves on the requester's behalf, sliding to the next candidate on a refusal
+- an **AWS Capacity Block for ML**, bought whole for an exact, already-searched window - the highest-guarantee capacity AWS sells, with no cancelling it once bought
+
+The pool takes no nodes before its reservation is active, and stops taking new runs once the reservation is ending; jobs already running keep running until it actually ends. The owner is notified as the reservation's status changes.
+
+A pool's type (`STANDARD` or `SHAREABLE_NODE`) can now be changed by an update request, including for a pool backed by a capacity reservation - so a pool created with the wrong type no longer has to be recreated, and a reservation it already holds isn't given up and re-requested just to fix that.
+
+A run can also be bound to one of these pools exclusively, rather than merely becoming eligible for it: setting the `CP_CAP_POOL_ID` parameter to the pool's ID restricts the run to that pool's own free nodes only. If the pool has no free node yet - because it is not yet active or its nodes are busy - the run waits up to **`cluster.occupied.node.pool.wait.sec`** seconds (default 86400, i.e. 24 h; `0` = indefinite). Where the pool's own node already exists and is free but still cannot take the run - its instance type or disk doesn't match, the pool's own filter rejects the run, the reservation backing the pool has already ended, or the pool's end date has passed - the run fails right away instead of waiting, naming the reason and the pool. A launch naming an unknown pool, or an instance type or region the pool doesn't itself provide, is rejected immediately instead of waiting for that. Naming a shareable pool this way reuses that pool's own node selector automatically, the same one its launch form picker already applies - see [Guaranteeing a run's capacity](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#guaranteeing-a-runs-capacity).
+
+For the full behaviour - including how a pool backed by either kind can be edited, cancelled or deleted - see [Pools backed by a capacity reservation](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#pools-backed-by-a-capacity-reservation) and [Pools backed by a capacity block](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#pools-backed-by-a-capacity-block).
+
 ## FS quotas
 
 In some cases, users may store lots of extra files that are not needed more for them in FS storages.  
@@ -1553,6 +1578,26 @@ _Data restoring_ can be applied to previously archived files. Separate files or 
 
 For more details see [here](../../manual/08_Manage_Data_Storage/8.10._Storage_lifecycle.md#restoring).
 
+## Download storage contents as an archive
+
+Previously, selecting several files in the Storage browser and downloading them fetched the files one by one, and any selected folder was silently skipped.
+
+In **`v0.17`**, a selection of files **and** folders can be downloaded as a single `ZIP` archive instead, from AWS S3 storages and NFS storages on an NFS share. The archive is built by the platform in the background: the user names it from the **Download archive** item, which sits in the same selection menu as **Download** (on those storages, the plain **Download** item is itself offered only where one to three of the selected files can be downloaded, any selected folders not counted, and four files or more are covered by **Download archive** alone - while **Download archive** is in turn not offered for a single selected file, which **Download** already covers), and later tracks, cancels or fetches it from the **Storage tasks** window, opened from the storage view's own presentation dropdown rather than from a page of its own. The window shows each task's status and archive size, can be filtered by status and (for an administrator, and for a **ROLE_STORAGE_ADMIN**) by owner, is paged, and keeps itself up to date while it is open. A notification announces each archive as it finishes, including one that finished while the application was closed, or one queued on another computer; unlike most notifications, the one for a finished archive stays on screen until it is clicked, rather than disappearing on its own. The number of archive downloads a user may have in progress at once is capped by the platform, and that cap is counted against the server each time an archive is asked for.
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8.2._Upload_Download_data.md#download-as-archive).
+
+## Upload and extract archives
+
+Previously, uploading a batch of files that included an archive uploaded the archive like any other file, with no way to unpack it on the platform's side.
+
+In **`v0.17`**, uploading a batch that includes an archive - one of `ZIP`, `TAR`, `TAR.GZ`, `TGZ`, `TAR.BZ2`, `TAR.XZ`, `GZ`, `BZ2` or `XZ` - on a data storage on AWS S3, or on an NFS storage whose share is mounted as NFS, pauses the upload with a pop-up that lists the selected files and offers a choice: **Upload**, which uploads everything exactly as before, or **Upload and extract**, which uploads everything and then queues one background task per archive that uploaded successfully, closing the pop-up the same way an ordinary upload does. Each archive is extracted into a new folder beside it, named after the archive without its extension - `data/reports.tar.gz` into `data/reports/` - and the archive itself is kept. A message confirms how many extractions have been queued, and its **Show storage tasks** is a link that opens the **Storage tasks** window.
+
+The **Storage tasks** window now lists every kind of archive task rather than downloads alone, with a new **Type** column naming each one - **Download archive** or **Extract archive** - and a filter on that column to show one kind at a time. Its **Storage** column has become **Source**, reading `<storage name>/<folder>` and linking to the folder the task was queued from, shortened to fit the column with the whole path on hover; the **Created** and **Finished** columns are gone. An extraction task is cancelled from the same window as a download, counts towards the same per-user allowance of active archive tasks, and offers no **Download** button, since it writes into the storage itself. An archive already in a storage is extracted the same way from the storage's own selection menu, via a new **Extract archive** item below **Download archive**, with no pop-up in between. That item takes one archive at a time, so that a bulk extraction cannot be started by accident - **Select page** takes a whole listing in one click - so it is offered only for a selection of exactly one archive. Uploading is unchanged: there the user picked the files, so **Upload and extract** still takes the whole batch.
+
+One archive is one task, counted against the per-user allowance of active archive tasks that archive downloads already use. Where a user does not have enough of it left for every archive they picked, the action is unavailable and says why - the upload pop-up greys **Upload and extract** out and shows the reason, and the selection menu greys its item out with an information icon beside it. The pop-up keeps checking while it is open, so the button becomes available again as soon as one of the user's tasks finishes, with no need to pick the files afresh. A finished extraction raises a notification of its own, like a finished download.
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8.2._Upload_Download_data.md#upload-data).
+
 ## Image history and generating of Dockerfile
 
 **Cloud Pipeline** performs scanning of the Docker images on a regular basis. This is used to grab the information on:
@@ -1908,6 +1953,28 @@ For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#contr
 
 ***
 
+## Capacity blocks sourced from node pools
+
+Previously, the GUI learned about capacity blocks - reserved compute capacity that a node type can draw on at launch - from the `launch.reservation.parameters` system preference, a map keyed by an instance-type pattern. That preference is no longer read by the GUI.
+
+In the current version, the GUI reads capacity blocks directly off the node pools that back them. The node type list leads with a **Reserved capacity blocks** group, one entry per pool: only picking an entry there launches the run on the reservation, and a plain instance type launches without one. The launch form also lists the reserved capacity available right now for the selected **Cloud Region**. Configurations, launch profiles and tool settings do not offer capacity blocks.
+
+A run on a node pool, or with reservation requests, no longer shows an estimated price: a pool node outlives a single run, so a per-run price would mislead.
+
+For more details see [6. Manage Pipeline](../../manual/06_Manage_Pipeline/6._Manage_Pipeline.md#configuration) and [9.1. Hot node pools](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#future-dated-node-pools).
+
+## Node pool managers can edit and delete the pools they own
+
+Previously, a **ROLE_NODE_POOL_MANAGER** could create a **Future dated** node pool but never reach it again - viewing, editing and removing an existing pool was restricted to administrators and **ROLE_RUN_ADMIN**.
+
+In the current version, such a user may also open, edit and remove a pool it owns - the one it created. A pool owned by somebody else, or managed only by an administrator, stays out of reach.
+
+Deleting a **Future dated** pool whose capacity reservation is still open - any status but _Requires approval_, _Finished_, _Purchase failed_, _Failed_ or _Cancelled_ - now also shows a warning in the delete confirmation: the reservation is given up too, and the cloud provider may still charge for the capacity it already committed. The **DELETE** button stays disabled until a **Force deletion** checkbox is ticked, for an administrator exactly as much as for the pool's owner.
+
+For more details see [9.1. Hot node pools](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#delete-existing-pool).
+
+***
+
 ## Priority of group GUI settings
 
 The **`misc.groups.ui.preferences`** system preference sets GUI settings per group or role. In **`v0.17`**, each group's settings accept a `priority` number: if a user is in several of the listed groups, each setting comes from the group with the highest `priority` that sets it.  
@@ -2004,6 +2071,14 @@ The preference applies when a run is launched or restarted. The runs launched be
 > **_Note_**: the previous API versions cannot find the container of a running pinned run. Before downgrading the API to such a version, disable the preference and wait until no pinned run is running - otherwise pausing, committing or limiting the network of such a run fails, and a failed pause fails the run and terminates its node. Paused pinned runs are safe: a previous version resumes them with the tag, as before.
 
 For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#launch).
+
+***
+
+## Data storage: the controls row and the column header stay visible while scrolling
+
+The controls row of a data storage - **Select page**, **Create**, **Upload** and the others - and the column header with its sort and filter controls now stay at the top while the file list is scrolled.
+
+See details in [8. Manage Data Storage](../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage.md#controls).
 
 ***
 
@@ -2105,6 +2180,22 @@ The repository can be signed with the key of the deployment. A deployment upload
 
 ***
 
+## Extracting an archive that lies in a data storage
+
+Previously, an archive stored in a data storage could only be unpacked by hand: download it, extract it locally, upload the content back. For a large archive that is two transfers of the whole thing over the user's own connection, and the files arrive in the storage one by one.
+
+In **`v0.17`**, the platform extracts such an archive itself. The request names the archive - a storage and a path - and where its content shall go, again a storage and a folder, and the two may be the same storage. It is recorded as an asynchronous task, like an [archive download](#download-storage-contents-as-an-archive), and performed in the background by the storage task service; the task is visible, cancellable and reports what it wrote. Both ends are checked against the requesting user's own permissions: **READ** on the source and **WRITE** on the destination folder, plus **WRITE** on the source as well when the request asks for the archive to be deleted after a successful extraction.
+
+`ZIP`, `TAR`, `TAR.GZ`, `TGZ`, `TAR.BZ2`, `TAR.XZ`, `GZ`, `BZ2` and `XZ` are supported, and the format is taken from the content of the file rather than from its name - a `.zip` that is really a tar extracts, and a file that is neither fails with a reason. The archive's own folder structure is preserved under the requested folder, and no folder is added on top of it: a caller who wants the content in a folder named after the archive asks for that folder. **Extraction is one level deep** - an archive found inside the archive is written out as a file, with its name unchanged and its content untouched, and extracting that one is a second request.
+
+By default nothing in the destination is replaced: a single entry whose name is already taken refuses the whole task, before anything is written, and the request has to ask for replacement explicitly. A task that fails or is cancelled part way through **leaves the files it had already written** - there is no rollback - and says how many in its error message; a new request over the same folder then needs replacement allowed, or those files removed.
+
+AWS S3 storages and NFS storages on an NFS share are supported as both the source and the destination. How large an archive may be, how much it may be extracted into, how many entries it may hold and how long one extraction may take are set by an administrator in the `tasks.storageUnpackArchive` section of the **`system.async.tasks.config`** preference.
+
+For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md).
+
+***
+
 ## Notable Bug fixes
 
 ### Nextflow run view: some tasks stay `RUNNING` after the run finishes
@@ -2144,6 +2235,14 @@ Also, the GUI checks that the region of an AWS S3 storage is a valid part of a h
 Previously, the users export named its date columns after the default time zone of the API server, while the dates are written in UTC. So with another zone set for the API, the names did not match the data, e.g. `registrationDate Europe/Berlin`. And on an API image whose system names the zone `Etc/UTC`, as Rocky Linux 9 does, a script that looks for `registrationDate UTC` did not find the column.
 Now, the columns are always named `registrationDate UTC` and `firstLoginDate UTC`.
 See details in [12. Manage Settings](../../manual/12_Manage_Settings/12._Manage_Settings.md#export-users).
+
+### Data storage: "Select page" is enabled when no item on the page can be selected
+
+[#4846](https://github.com/epam/cloud-pipeline/issues/4846)
+
+Previously, the **Select page** control of a data storage was enabled whenever the current page listed any item, even when none of those items had a checkbox - e.g. a page of folders in a storage the user may only read, or a sensitive storage with no download allowed. Clicking the control selected nothing, with no message.
+Now, **Select page** is disabled unless the page holds an item that can be selected and is not selected yet.
+See details in [8. Manage Data Storage](../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage.md#select-page).
 
 ### A committed image of a user with a large UID writes hundreds of GB to the disk
 

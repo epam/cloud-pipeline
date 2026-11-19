@@ -28,7 +28,7 @@ public final class S3ListingHelper {
     }
     
     @RequiredArgsConstructor
-    private static class PageIterator implements Iterator<List<DataStorageFile>> {
+    private static final class PageIterator implements Iterator<List<DataStorageFile>> {
 
         private final AmazonS3 client;
         private final String bucket;

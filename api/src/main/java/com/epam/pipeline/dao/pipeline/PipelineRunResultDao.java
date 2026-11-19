@@ -20,7 +20,7 @@ import com.epam.pipeline.dao.DryRunJdbcDaoSupport;
 import com.epam.pipeline.entity.pipeline.run.PipelineRunResult;
 import lombok.Setter;
 import org.apache.commons.collections4.ListUtils;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.transaction.annotation.Propagation;
@@ -33,11 +33,11 @@ import java.util.Map;
 
 public class PipelineRunResultDao extends DryRunJdbcDaoSupport {
 
-    @Setter(onMethod_={@Required})
+    @Setter
     private String addPipelineRunResultQuery;
-    @Setter(onMethod_={@Required})
+    @Setter
     private String loadPipelineRunResultQuery;
-    @Setter(onMethod_={@Required})
+    @Setter
     private String deletePipelineRunResultsByRunIdQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)

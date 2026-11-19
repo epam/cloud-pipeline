@@ -15,8 +15,11 @@
 
 package com.epam.pipeline.manager.cluster.autoscale;
 
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.TagsVO;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
@@ -50,25 +53,34 @@ import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.PodResource;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import org.hamcrest.Matchers;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.mockito.internal.util.reflection.Whitebox;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.IntStream;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Matchers.eq;
+import static org.hamcrest.Matchers.hasProperty;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -78,6 +90,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class AutoscaleManagerTest {
     private static final String TEST_KUBE_NAMESPACE = "testNamespace";
     private static final Long TEST_RUN_ID = 111L;
@@ -86,6 +100,10 @@ public class AutoscaleManagerTest {
     private static final int PREFERENCE_RETRY_COUNT = 2;
     private static final int PARAMETER_RETRY_COUNT = 4;
     private static final int NODEUP_GENERIC_FAILURE_EXIT_CODE = 1;
+    private static final Long TEST_POOL_ID = 777L;
+    private static final int POOL_WAIT_SEC = 300;
+    private static final long MILLIS_IN_SECOND = 1000L;
+    private static final String POOL_PENDING_TAG = "POOL_PENDING";
     private static final String FREE_RUN_NODE_ID = "222";
     private static final String FREE_POOL_NODE_ID = AutoscaleContants.NODE_POOL_PREFIX + "1";
     private static final String FREE_LOCAL_NODE_ID = AutoscaleContants.NODE_LOCAL_PREFIX + "1";
@@ -130,20 +148,20 @@ public class AutoscaleManagerTest {
     private RunRegionShiftHandler runRegionShiftHandler;
     @Mock
     private MetadataManager metadataManager;
+    @Mock
+    private MessageHelper messageHelper;
     private AutoscaleManager.AutoscaleManagerCore autoscaleManagerCore;
     private PipelineRun testRun;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
-        MockitoAnnotations.initMocks(this);
-
         autoscaleManagerCore = new AutoscaleManager.AutoscaleManagerCore(
                 pipelineRunManager, executorService,
                 autoscalerService, nodesManager, kubernetesManager,
                 preferenceManager, TEST_KUBE_NAMESPACE, cloudFacade,
                 nodePoolManager, reassignHandler, scaleDownHandler, Collections.emptyList(), poolAutoscaler,
-                runRegionShiftHandler, metadataManager, Boolean.FALSE.toString());
-        Whitebox.setInternalState(autoscaleManagerCore, "preferenceManager", preferenceManager);
+                runRegionShiftHandler, metadataManager, messageHelper, Boolean.FALSE.toString(), null);
+        ReflectionTestUtils.setField(autoscaleManagerCore, "preferenceManager", preferenceManager);
 
         when(executorService.getExecutorService()).thenReturn(new CurrentThreadExecutorService());
 
@@ -162,6 +180,13 @@ public class AutoscaleManagerTest {
             .thenReturn(SystemPreferences.CLUSTER_HIGH_NON_BATCH_PRIORITY.getDefaultValue());
         when(preferenceManager.getPreference(SystemPreferences.CLUSTER_DISABLE_REASSIGN))
                 .thenReturn(false);
+
+        // By default every run here is an ordinary one. The pool-bound tests below override this.
+        when(reassignHandler.requiredPoolId(any())).thenReturn(Optional.empty());
+        when(nodePoolManager.find(anyLong())).thenReturn(Optional.empty());
+        when(messageHelper.getMessage(any(), (Object[]) any())).thenReturn("test message");
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_OCCUPIED_NODE_POOL_WAIT_SEC))
+                .thenReturn(POOL_WAIT_SEC);
 
         when(kubernetesManager.getKubernetesClient(any(Config.class))).thenReturn(kubernetesClient);
 
@@ -231,18 +256,17 @@ public class AutoscaleManagerTest {
         when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
 
         when(cloudFacade.scaleUpNode(eq(TEST_RUN_ID),
-                argThat(Matchers.hasProperty("spot", Matchers.is(true))), any(), any()))
+                argThat(hasProperty("spot", Matchers.is(true))), any(), any()))
             .thenThrow(new CmdExecutionException("", 5, ""));
 
         autoscaleManagerCore.runAutoscaling(); // this time spot scheduling should fail
         verify(cloudFacade).scaleUpNode(eq(TEST_RUN_ID),
-                argThat(Matchers.hasProperty("spot", Matchers.is(true))),
-                any(), any());
+                argThat(hasProperty("spot", Matchers.is(true))), any(), any());
 
         autoscaleManagerCore.runAutoscaling(); // this time it should be a on-demand request
         verify(cloudFacade, times(2))
             .scaleUpNode(eq(TEST_RUN_ID), argThat(
-                Matchers.hasProperty("spot", Matchers.is(false))), any(), any());
+                hasProperty("spot", Matchers.is(false))), any(), any());
     }
 
     @Test
@@ -297,8 +321,8 @@ public class AutoscaleManagerTest {
                 autoscalerService, nodesManager, kubernetesManager,
                 preferenceManager, TEST_KUBE_NAMESPACE, cloudFacade,
                 nodePoolManager, reassignHandler, scaleDownHandler, Collections.emptyList(), poolAutoscaler,
-                runRegionShiftHandler, metadataManager, Boolean.TRUE.toString());
-        Whitebox.setInternalState(haCoreNotMaster, "preferenceManager", preferenceManager);
+                runRegionShiftHandler, metadataManager, messageHelper, Boolean.TRUE.toString(), null);
+        ReflectionTestUtils.setField(haCoreNotMaster, "preferenceManager", preferenceManager);
 
         haCoreNotMaster.runAutoscaling();
 
@@ -316,12 +340,130 @@ public class AutoscaleManagerTest {
                 autoscalerService, nodesManager, kubernetesManager,
                 preferenceManager, TEST_KUBE_NAMESPACE, cloudFacade,
                 nodePoolManager, reassignHandler, scaleDownHandler, Collections.emptyList(), poolAutoscaler,
-                runRegionShiftHandler, metadataManager, Boolean.TRUE.toString());
-        Whitebox.setInternalState(haCoreIsMaster, "preferenceManager", preferenceManager);
+                runRegionShiftHandler, metadataManager, messageHelper, Boolean.TRUE.toString(), null);
+        ReflectionTestUtils.setField(haCoreIsMaster, "preferenceManager", preferenceManager);
 
         haCoreIsMaster.runAutoscaling();
 
         verify(cloudFacade).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
+    }
+
+    @Test
+    public void testExclusivePoolRunNeverFallsBackToGenericNode() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+        when(reassignHandler.requiredPoolId(testRun)).thenReturn(Optional.of(TEST_POOL_ID));
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(cloudFacade, never()).scaleUpNode(any(), any(), any(), any());
+        verify(pipelineRunManager, never())
+            .updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
+    }
+
+    @Test
+    public void testExclusivePoolRunSetsPoolPendingTagOnFirstBlockedCycle() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+        when(reassignHandler.requiredPoolId(testRun)).thenReturn(Optional.of(TEST_POOL_ID));
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(cloudFacade, never()).scaleUpNode(any(), any(), any(), any());
+        verify(pipelineRunManager, never())
+                .updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
+        verify(pipelineRunManager).updateStateReasonMessageById(eq(TEST_RUN_ID), any());
+    }
+
+    @Test
+    public void testExclusivePoolRunTimesOutWhenPoolRemainsOccupied() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+        when(reassignHandler.requiredPoolId(testRun)).thenReturn(Optional.of(TEST_POOL_ID));
+        testRun.setStartDate(new Date(System.currentTimeMillis() - (POOL_WAIT_SEC + 1) * MILLIS_IN_SECOND));
+        final Map<String, String> tags = new HashMap<>();
+        tags.put(POOL_PENDING_TAG, KubernetesConstants.TRUE_LABEL_VALUE);
+        testRun.setTags(tags);
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(cloudFacade, never()).scaleUpNode(any(), any(), any(), any());
+        verify(pipelineRunManager).updateStateReasonMessageById(eq(TEST_RUN_ID), any());
+        verify(pipelineRunManager).updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
+    }
+
+    @Test
+    public void testExclusivePoolRunDoesNotTimeOutBeforeDeadline() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+        when(reassignHandler.requiredPoolId(testRun)).thenReturn(Optional.of(TEST_POOL_ID));
+        testRun.setStartDate(new Date(System.currentTimeMillis() - (POOL_WAIT_SEC / 2) * MILLIS_IN_SECOND));
+        final Map<String, String> tags = new HashMap<>();
+        tags.put(POOL_PENDING_TAG, KubernetesConstants.TRUE_LABEL_VALUE);
+        testRun.setTags(tags);
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(pipelineRunManager, never())
+                .updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
+    }
+
+    @Test
+    public void testExclusivePoolRunWaitsForeverWhenWaitSecIsZero() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+        when(reassignHandler.requiredPoolId(testRun)).thenReturn(Optional.of(TEST_POOL_ID));
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_OCCUPIED_NODE_POOL_WAIT_SEC))
+                .thenReturn(0);
+        testRun.setStartDate(new Date(0));
+        final Map<String, String> tags = new HashMap<>();
+        tags.put(POOL_PENDING_TAG, KubernetesConstants.TRUE_LABEL_VALUE);
+        testRun.setTags(tags);
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(pipelineRunManager, never())
+                .updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
+    }
+
+    @Test
+    public void testExclusivePoolRunFailsImmediatelyWhenPoolEnded() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+        when(reassignHandler.requiredPoolId(testRun)).thenReturn(Optional.of(TEST_POOL_ID));
+        final NodePool endedPool = new NodePool();
+        endedPool.setEndDate(DateUtils.nowUTC().minusHours(1));
+        when(nodePoolManager.find(TEST_POOL_ID)).thenReturn(Optional.of(endedPool));
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(cloudFacade, never()).scaleUpNode(any(), any(), any(), any());
+        verify(pipelineRunManager).updateStateReasonMessageById(eq(TEST_RUN_ID), any());
+        verify(pipelineRunManager).updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
+    }
+
+    @Test
+    public void testExclusivePoolRunFailsImmediatelyWhenPoolsOwnNodeIsIncompatible() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+        when(reassignHandler.requiredPoolId(testRun)).thenReturn(Optional.of(TEST_POOL_ID));
+        final String reason = "The run does not match the reserved instance of node pool 'ml-pool'.";
+        doThrow(new PoolReservationIncompatibleException(reason))
+                .when(reassignHandler).tryReassignNode(any(), any(), any(), any(), anyLong(), any(), any());
+
+        autoscaleManagerCore.runAutoscaling(); // a single tick - no retry budget spent on a certainty
+
+        verify(cloudFacade, never()).scaleUpNode(any(), any(), any(), any());
+        verify(pipelineRunManager).updateStateReasonMessageById(eq(TEST_RUN_ID), eq(reason));
+        verify(pipelineRunManager).updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
+    }
+
+    @Test
+    public void testExclusivePoolRunClearsWaitingMessageWhenPoolBecomesAvailable() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+        when(reassignHandler.requiredPoolId(testRun)).thenReturn(Optional.of(TEST_POOL_ID));
+        when(reassignHandler.tryReassignNode(any(), any(), any(), any(), anyLong(), any(), any()))
+                .thenReturn(true);
+        final Map<String, String> tags = new HashMap<>();
+        tags.put(POOL_PENDING_TAG, KubernetesConstants.TRUE_LABEL_VALUE);
+        testRun.setTags(tags);
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(pipelineRunManager).updateStateReasonMessageById(eq(TEST_RUN_ID), isNull());
     }
 
     @Test
@@ -412,7 +554,7 @@ public class AutoscaleManagerTest {
         runAutoscaling(PREFERENCE_RETRY_COUNT);
 
         verify(runRegionShiftHandler).restartRunInAnotherRegion(eq(TEST_RUN_ID));
-        assertThat((Set<?>) Whitebox.getInternalState(autoscaleManagerCore, "nodeUpTaskInProgress"),
+        assertThat((Set<?>) ReflectionTestUtils.getField(autoscaleManagerCore, "nodeUpTaskInProgress"),
                 Matchers.empty());
 
         autoscaleManagerCore.runAutoscaling();
@@ -449,10 +591,11 @@ public class AutoscaleManagerTest {
 
         autoscaleManagerCore.runAutoscaling();
 
-        verify(pipelineRunManager).updateTags(eq(TEST_RUN_ID),
-                argThat(Matchers.hasProperty("tags", Matchers.hasEntry(NODE_PENDING_TAG,
-                        KubernetesConstants.TRUE_LABEL_VALUE))),
-                eq(false));
+        // TagsVO is a record, so the map is read through its accessor: `hasProperty` finds no bean getter
+        final ArgumentCaptor<TagsVO> tags = ArgumentCaptor.forClass(TagsVO.class);
+        verify(pipelineRunManager).updateTags(eq(TEST_RUN_ID), tags.capture(), eq(false));
+        assertThat(tags.getValue().tags(),
+                Matchers.hasEntry(NODE_PENDING_TAG, KubernetesConstants.TRUE_LABEL_VALUE));
         verify(cloudFacade, never()).scaleUpNode(any(), any(), any(), any());
     }
 

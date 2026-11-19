@@ -35,8 +35,8 @@ import com.epam.pipeline.security.oidc.OidcClient;
 import com.epam.pipeline.security.oidc.OidcIssuer;
 import com.epam.pipeline.security.oidc.OidcUserMapping;
 import com.nimbusds.jwt.JWTClaimsSet;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.security.authentication.LockedException;
@@ -85,7 +85,7 @@ public class OidcTokenExchangeManagerTest {
     private PreferenceManager preferenceManager;
     private OidcTokenExchangeManager manager;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         tokenVerifier = Mockito.mock(OidcTokenVerifier.class);
         clientResolver = Mockito.mock(OidcClientResolver.class);
@@ -629,7 +629,7 @@ public class OidcTokenExchangeManagerTest {
         assertThatThrownBy(() -> manager.exchange(SUBJECT_TOKEN))
                 .isInstanceOf(OidcTokenVerificationException.class)
                 .hasMessageContaining("has no value to map a user by");
-        Mockito.verifyZeroInteractions(metadataManager);
+        Mockito.verifyNoInteractions(metadataManager);
     }
 
     /**
@@ -675,7 +675,7 @@ public class OidcTokenExchangeManagerTest {
         assertThatThrownBy(() -> manager.exchange(SUBJECT_TOKEN))
                 .isInstanceOf(OidcClientNotAuthorizedException.class);
 
-        Mockito.verifyZeroInteractions(metadataManager);
+        Mockito.verifyNoInteractions(metadataManager);
     }
 
     @Test

@@ -25,8 +25,8 @@ import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.time.LocalDateTime;
@@ -49,7 +49,7 @@ public class DockerAuthServiceTest {
     private JwtTokenVerifier jwtTokenVerifier;
     private DockerAuthService service;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         final UserManager userManager = Mockito.mock(UserManager.class);
         jwtTokenVerifier = Mockito.mock(JwtTokenVerifier.class);

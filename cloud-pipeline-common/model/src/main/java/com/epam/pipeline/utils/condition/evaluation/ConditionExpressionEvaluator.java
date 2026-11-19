@@ -82,7 +82,7 @@ public class ConditionExpressionEvaluator<T> {
                                           final LocalDateTime now) {
         final String fieldName = expression.getField();
         final EntityConditionEvaluationStrategy<T> strategy = conditionEvaluationStrategies.get(fieldName);
-        Assert.notNull(strategy, "Unknown quota rule field: '" + fieldName + "'");
+        Assert.notNull(strategy, "Unknown condition rule field: '" + fieldName + "'");
         return strategy.evaluate(expression, subject, now);
     }
 
