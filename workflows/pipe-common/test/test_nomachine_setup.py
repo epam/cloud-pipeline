@@ -210,8 +210,9 @@ def test_rocky_10_stops_gdm_which_the_nomachine_display_does_not_use(nomachine_s
     exit_code, calls = nomachine_setup(ROCKY_10)
 
     assert exit_code == 0
-    assert _calls_of(calls, 'systemctl') == [['mask', '--now', 'gdm.service']]
-    assert _index(calls, 'systemctl', 'mask') < _index(calls, 'nxserver', '--startup')
+    # Disabled, not masked: NICE DCV starts GDM, if the run has DCV as well
+    assert _calls_of(calls, 'systemctl') == [['disable', '--now', 'gdm.service']]
+    assert _index(calls, 'systemctl', 'disable') < _index(calls, 'nxserver', '--startup')
 
 
 @pytest.mark.parametrize('os_version, extra_env', [

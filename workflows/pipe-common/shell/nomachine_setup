@@ -168,9 +168,9 @@ function run_nomachine() {
     if [ "$CP_NM_GNOME_DESKTOP" == "true" ]; then
         # The GNOME defaults (incl. the keyboard layouts) are set before the desktop session starts. GDM is not used:
         # GNOME runs in the NoMachine display. It is enabled by the GNOME packages, and would start with an image,
-        # committed from the run
+        # committed from the run. It is disabled, not masked: NICE DCV starts it, if the run has DCV as well
         gnome_desktop_setup configure "$NOMACHINE_INSTALL_TASK"
-        systemctl mask --now gdm.service
+        systemctl disable --now gdm.service
     else
         su -l "$OWNER" bash -c "cp -rT /etc/nomachine/xfce/ \$HOME/"
     fi
