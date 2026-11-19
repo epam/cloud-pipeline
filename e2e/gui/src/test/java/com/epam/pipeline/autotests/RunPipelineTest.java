@@ -77,6 +77,9 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
     private final String pipeline314 = resourceName("epmcmbibpc-314");
     private final String pipeline306 = resourceName("epmcmbibpc-306");
     private final String pipeline312 = resourceName("epmcmbibpc-312");
+    // the one storage the run of 100 mounts: 309 checks the log of its MountDataStorages task, which logs the lines
+    // "Found N available storage(s)..." and "Finished data storage mounting" only when the run mounts some storage
+    private final String storage309 = resourceName("epmcmbibpc-309-storage");
 
     @AfterClass(alwaysRun = true)
     public void removePipelines() {
@@ -89,6 +92,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
             .removePipelineIfExists(pipeline314)
             .removePipelineIfExists(pipeline306)
             .removePipelineIfExists(pipeline312);
+        Utils.removeStorages(this, storage309);
     }
 
     @Test
@@ -141,12 +145,14 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
     @TestCase("EPMCMBIBPC-100")
     public void shouldLaunchPipeline() {
         final RunsMenuAO runs = library()
+            .createStorage(storage309)
             .createPipeline(Template.PYTHON, pipeline100)
             .runPipelineFromTable(pipeline100)
             .expandTab(EXEC_ENVIRONMENT)
             .expandTab(ADVANCED_PANEL)
             .setLaunchOptions("20", C.DEFAULT_INSTANCE, "")
             .setPriceType(ON_DEMAND)
+            .withMountsOf(storage309)
             .launch(this);
         final String runId = getLastRunId();
         runs
@@ -296,6 +302,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
             .firstVersion()
             .runPipeline()
 	    .setPriceType(ON_DEMAND)
+            .withoutMounts()
             .launch(this)
             .showLog(getLastRunId())
             .ensure(pipelineLink(), have(text(pipeline312)))

@@ -225,6 +225,7 @@ public class RunToolsInSandBoxTest
         sleep(1, MINUTES);
         tools().perform(registry, group, tool, runTool())
                 .setDefaultLaunchOptions()
+                .withoutMounts()
                 .launchTool(this, nameWithoutGroup(tool));
 
         String otherNodeName = clusterMenu()
@@ -241,6 +242,7 @@ public class RunToolsInSandBoxTest
 
         final LogAO runPage = tools().perform(registry, group, tool, runTool())
                 .setLaunchOptions(disk, type, String.valueOf(timeout))
+                .withoutMounts()
                 .launchTool(this, nameWithoutGroup(tool))
                 .showLog(getLastRunId())
                 // the timeout counts from the start of the command, which follows the environment initialization
@@ -277,6 +279,7 @@ public class RunToolsInSandBoxTest
                 .perform(registry, group, tool, runTool())
                 .selectValue(RUN_CAPABILITIES, "DinD")
                 .setPriceType(priceType)
+                .withoutMounts()
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
@@ -305,6 +308,7 @@ public class RunToolsInSandBoxTest
                 .perform(registry, group, tool, runTool())
                 .selectValue(RUN_CAPABILITIES, "Singularity")
                 .setPriceType(priceType)
+                .withoutMounts()
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)

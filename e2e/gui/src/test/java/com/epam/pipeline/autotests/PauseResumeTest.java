@@ -177,6 +177,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                     .setLaunchOptions("15", instanceType, null)
                     .setPriceType(priceType)
                     .click(START_IDLE)
+                    .withoutMounts()
                     .launchTool(this, nameWithoutGroup(tool));
             loginAsAdminAndPerform(() ->
                     navigationMenu()
@@ -255,6 +256,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 .setLaunchOptions("15", instanceType, null)
                 .setPriceType(priceType)
                 .click(START_IDLE)
+                .withoutMounts()
                 .launchTool(this, nameWithoutGroup(tool))
                 .log(getLastRunId(), log ->
                         log.waitForSshLink()

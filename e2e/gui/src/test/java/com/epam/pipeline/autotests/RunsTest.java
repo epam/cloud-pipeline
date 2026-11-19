@@ -89,6 +89,7 @@ public class RunsTest extends AbstractSeveralPipelineRunningTest implements Auth
                 .firstVersion()
                 .runPipeline()
 		.setPriceType(ON_DEMAND)
+		.withoutMounts()
 		.launch(this)
                 .shouldContainRun(pipeline, getLastRunId())
                 .showLog(pipelineRunID = getLastRunId())
@@ -96,12 +97,14 @@ public class RunsTest extends AbstractSeveralPipelineRunningTest implements Auth
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setDefaultLaunchOptions()
+                .withoutMounts()
                 .launchTool(this, nameWithoutGroup(tool))
                 .sleep(3, MINUTES)
                 .stopRun(firstToolRunID = getLastRunId());
         tools()
                 .perform(registry, anotherGroup, anotherTool, ToolTab::runWithCustomSettings)
                 .setDefaultLaunchOptions()
+                .withoutMounts()
                 .launchTool(this, nameWithoutGroup(anotherTool))
                 .sleep(3, MINUTES)
                 .stopRun(secondToolRunID = getLastRunId());
@@ -158,6 +161,7 @@ public class RunsTest extends AbstractSeveralPipelineRunningTest implements Auth
                 .setDefaultLaunchOptions()
                 // the case waits for the run's SSH: a spot request can wait for capacity longer than that
                 .setPriceType(ON_DEMAND)
+                .withoutMounts()
                 .launchTool(this, "ubuntu")
                 .showLog(getLastRunId())
                 .waitForSshLink()

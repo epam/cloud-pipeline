@@ -116,6 +116,7 @@ public class Launch_InputDataValidationTest extends AbstractAutoRemovingPipeline
                 .clickOnPipeline(getPipelineName())
                 .firstVersion()
                 .runPipeline()
+                .withoutMounts()
                 .launch(this)
                 .sleep(1, SECONDS)
                 .showLog(getRunId())
