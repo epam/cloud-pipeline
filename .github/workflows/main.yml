@@ -6,10 +6,7 @@ concurrency: Cloud-Pipeline-Distribution
 on:
   push:
     branches:
-      - develop
-      - vscode-ext
-      # - 'release/**'
-      # - 'stage/**'
+      - 'release/0.24'
 
   workflow_dispatch:
     inputs:

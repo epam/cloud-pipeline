@@ -17,7 +17,7 @@
 export CP_SRC=${CP_SRC:-/home/cloud-pipeline}
 export RESULTS_DIR=${RESULTS_DIR:-/home/results}
 export CP_CLI_DIR=${CP_CLI_DIR:-/home/pipe}
-export CP_VERSION=${CP_VERSION:-0.17}
+export CP_VERSION=${CP_VERSION:-0.24}
 
 mkdir -p ${RESULTS_DIR}
 
