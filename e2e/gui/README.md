@@ -238,7 +238,7 @@ and the command of `tests/e2e-endpoints`):
   command, instance type, disk, endpoints or labels), and creates its tool group, e.g. `tests`, without a description
   if there is none. A tool registered exactly like that is **taken over** by the run. It gets its fixture settings and
   the cpu/ram a registration by the preparation sets (`1000mi`/`1Gi`), and it is unregistered after the run, like a
-  tool the preparation registers. A tool whose fixture has no settings (`library/centos`, `library/ubuntu`) is never
+  tool the preparation registers. A tool whose fixture has no settings (`library/rockylinux`, `library/ubuntu`) is never
   taken over.
 - its tool group is taken over too if it has no description, at least one of its tools was taken over, and all its
   tools are taken over or registered by the preparation. It is deleted after the run if it is empty then: a tool

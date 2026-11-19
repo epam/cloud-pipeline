@@ -415,7 +415,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                         instance
                                 .ensure(TYPE, text("c6i."))
                                 .ensure(DISK, text("45"))
-                                .ensure(IMAGE, text("/library/centos:latest")))
+                                .ensure(IMAGE, text("/library/rockylinux:latest")))
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter("CP_CAP_SGE_HOSTLIST_NAME", format("@%s", testProfile)), exist)
                 .ensure(configurationParameter("CP_CAP_SGE_QUEUE_NAME", testProfile), exist);

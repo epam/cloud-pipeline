@@ -5,7 +5,7 @@ Test verifies that utility **sge** allows to dynamically configure grid engine a
 **Prerequisites:**
 - Admin user
 - Instance types of the `c6i` family are allowed
-- A tool for the child runs, other than the test tool (`<other_test_tool>`), e.g. `/library/centos:latest`
+- A tool for the child runs, other than the test tool (`<other_test_tool>`), e.g. `/library/rockylinux:latest`
 
 | Steps | Actions | Expected results |
 |:---:|--- |---|
