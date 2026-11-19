@@ -4,17 +4,17 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.cluster.NodeDiskDao;
 import com.epam.pipeline.entity.cluster.DiskRegistrationRequest;
 import com.epam.pipeline.entity.cluster.NodeDisk;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -35,8 +35,7 @@ public class NodeDiskManagerTest {
     private final MessageHelper messageHelper = mock(MessageHelper.class);
     private final NodeDiskManager manager = new NodeDiskManager(nodeDiskDao, messageHelper);
 
-    @Before
-    public void mockInsertingDisk() {
+    @BeforeEach    public void mockInsertingDisk() {
         doReturn(Collections.singletonList(disk())).when(nodeDiskDao).insert(any(), any());
         doReturn(Collections.singletonList(disk())).when(nodeDiskDao).insert(any(), any(), any());
     }

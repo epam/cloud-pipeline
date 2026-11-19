@@ -21,18 +21,20 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.Objects;
 
-import javax.servlet.http.Cookie;
+import jakarta.servlet.http.Cookie;
 
 import com.epam.pipeline.utils.AuthorizationUtils;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.authentication.AuthenticationServiceException;
 
 @Getter
 @AllArgsConstructor
 @EqualsAndHashCode
+@NoArgsConstructor
 public class JwtRawToken implements Serializable {
     private static final String BEARER_PREFIX = "Bearer ";
     private String token;

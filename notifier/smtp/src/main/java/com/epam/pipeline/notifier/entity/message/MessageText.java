@@ -17,10 +17,12 @@
 package com.epam.pipeline.notifier.entity.message;
 
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 @Data
 @Builder
+@Jacksonized
 public class MessageText {
 
     private final String subject;

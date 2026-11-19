@@ -1,0 +1,44 @@
+name: Fetch a Cloud Pipeline API token
+description: >-
+  Exchanges this workflow run's GitHub OIDC token for a short-lived Cloud Pipeline API token,
+  and exports it as API_TOKEN for the steps that follow.
+
+inputs:
+  api-url:
+    description: >-
+      The Cloud Pipeline URL, which must be https. Either the API root, as `pipe` expects it in API
+      (https://cloud-pipeline.example.com/pipeline/restapi), or just the host
+      (https://cloud-pipeline.example.com), in which case /pipeline/restapi is appended.
+      Whatever it resolves to is both the endpoint called and the audience requested from
+      GitHub, so it has to match an entry of the deployment's
+      system.oidc.token.exchange.issuers preference.
+    required: true
+  insecure-tls:
+    description: >-
+      Skip TLS certificate verification on the Cloud Pipeline requests, for a deployment serving a
+      self-signed certificate that the runner does not trust. Off by default. It never applies to
+      the request to GitHub, whose certificate is publicly trusted. Prefer trusting the CA on the
+      runner; this is the fallback where that is not possible.
+    required: false
+    default: 'false'
+
+outputs:
+  token:
+    description: The Cloud Pipeline API token. Masked in the log, but treat it as a secret.
+    value: ${{ steps.exchange.outputs.token }}
+  api-url:
+    description: The API root the token was issued by, after the input was resolved.
+    value: ${{ steps.exchange.outputs.api-url }}
+  expires-in:
+    description: How long the token is valid for, in seconds.
+    value: ${{ steps.exchange.outputs.expires-in }}
+
+runs:
+  using: composite
+  steps:
+    - id: exchange
+      shell: bash
+      env:
+        INPUT_API_URL: ${{ inputs.api-url }}
+        INPUT_INSECURE_TLS: ${{ inputs.insecure-tls }}
+      run: bash "$GITHUB_ACTION_PATH/../_lib/exchange-token.sh"

@@ -17,11 +17,12 @@
 package com.epam.pipeline.repository.access;
 
 import com.epam.pipeline.entity.access.AccessCodeEntity;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-import javax.transaction.Transactional;
+
 import java.util.Optional;
 
 public interface AccessCodeRepository extends CrudRepository<AccessCodeEntity, Long> {

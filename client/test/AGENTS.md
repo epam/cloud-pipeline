@@ -24,7 +24,8 @@ client/
     ├── config.js                defaults + the CP_TEST_* knobs — env-mechanism-bearing
     ├── render.js                render/cleanup/act      — React-version-bearing
     ├── events.js                click/change/type/hover — React-version-bearing
-    ├── providers.js              renderWithStores/renderWithRouter — MobX + router-bearing
+    ├── providers.js              renderWithStores/renderWithRouter/renderWithLocale — MobX +
+    │                             router + antd-locale-bearing
     ├── runner.js                 fn/spyOn/useFakeTimers/describeLive — framework-bearing
     ├── http.js                   stubApi() — the Result<T> fetch stub
     ├── factories/index.js        payload builders
@@ -129,9 +130,10 @@ These are the deliverable as much as the tests are. A test file may cite one of 
     `observable({...})` object is a sufficient test double for a store; it does not need
     `@observable` class fields. MobX 3 decorators become `makeObservable` at MobX 6; public
     methods and `@computed` reads do not change.
-11. **Provider and router wiring only via `renderWithStores` / `renderWithRouter`** from `@test`.
-    Never a hand-rolled `<Provider>` or `<Router>` in a test file — react-router 3 → 6 rewrites
-    those wrappers, and it should rewrite one file, not every test that uses one.
+11. **Provider, router and antd-locale wiring only via `renderWithStores` / `renderWithRouter` /
+    `renderWithLocale`** from `@test`. Never a hand-rolled `<Provider>`, `<Router>` or antd
+    `<LocaleProvider>` in a test file — react-router 3 → 6 and an antd major both rewrite those
+    wrappers, and each should rewrite one file, not every test that uses one.
 12. **No test file reads `process.env`.** Import `liveApi` and `liveTestsEnabled` from `@test`
     instead. Vite loads env through `loadEnv` with its own `envPrefix` rules rather than dotenv,
     and `config.js` is the one file that absorbs that difference.

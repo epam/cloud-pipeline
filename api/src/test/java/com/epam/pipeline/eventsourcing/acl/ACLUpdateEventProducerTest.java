@@ -17,20 +17,20 @@
 package com.epam.pipeline.eventsourcing.acl;
 
 import com.epam.pipeline.entity.pipeline.Folder;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mockito;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class ACLUpdateEventProducerTest {
 
     private static final long ID = 1L;
@@ -43,8 +43,7 @@ public class ACLUpdateEventProducerTest {
     @Captor
     private ArgumentCaptor<Map<String, String>> eventCapture;
 
-    @Before
-    public void setup() {
+    @BeforeEach    public void setup() {
         aclUpdateEventProducer = new ACLUpdateEventProducer();
         aclUpdateEventProducer.init(innerProviderSpy);
     }

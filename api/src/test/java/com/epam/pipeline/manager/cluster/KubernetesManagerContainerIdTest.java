@@ -26,12 +26,12 @@ import io.fabric8.kubernetes.api.model.PodList;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.PodResource;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -49,7 +49,7 @@ public class KubernetesManagerContainerIdTest {
     private final KubernetesManager kubernetesManager = spy(new KubernetesManager());
     private final KubernetesClient client = mock(KubernetesClient.class);
 
-    @Before
+    @BeforeEach
     public void setUp() {
         ReflectionTestUtils.setField(kubernetesManager, "kubeNamespace", NAMESPACE);
         doReturn(client).when(kubernetesManager).getKubernetesClient();

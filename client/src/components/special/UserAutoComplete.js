@@ -27,6 +27,8 @@ export default class UserAutoComplete extends React.Component {
 
   static propTypes = {
     onChange: PropTypes.func,
+    // The input's text on every keystroke and on blur; `onChange` reports picked users only.
+    onTextChange: PropTypes.func,
     value: PropTypes.string,
     readOnly: PropTypes.bool,
     placeholder: PropTypes.string,
@@ -54,6 +56,9 @@ export default class UserAutoComplete extends React.Component {
   };
   lastFetchId = 0;
   findUser = (value) => {
+    if (this.props.onTextChange) {
+      this.props.onTextChange(value || '');
+    }
     this.lastFetchId += 1;
     const fetchId = this.lastFetchId;
     this.setState({
@@ -78,6 +83,10 @@ export default class UserAutoComplete extends React.Component {
   };
   onBlur = () => {
     if (this.state.value === null) {
+      // The field falls back to `value` below, so report that instead of the dropped text.
+      if (this.props.onTextChange) {
+        this.props.onTextChange(this.props.value || '');
+      }
       this.setState({
         valueInput: null
       });

@@ -47,6 +47,12 @@ public class OidcAssumeStrategy {
     private String userClaim;
 
     /**
+     * How to find the user from the token's claims and user metadata, for
+     * {@link OidcAssumeStrategyType#MAPPED_USER} only.
+     */
+    private OidcUserMapping userMapping;
+
+    /**
      * The only users this client may act as. Absent means no limit; empty is a configuration
      * error rather than a way of saying "anyone".
      */

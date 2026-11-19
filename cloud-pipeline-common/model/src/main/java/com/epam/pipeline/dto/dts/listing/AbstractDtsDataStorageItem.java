@@ -25,8 +25,8 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = DtsDataStorageFolder.class, name = "Folder"),
-        @JsonSubTypes.Type(value = DtsDataStorageFile.class, name = "File")})
+    @JsonSubTypes.Type(value = DtsDataStorageFolder.class, name = "Folder"),
+    @JsonSubTypes.Type(value = DtsDataStorageFile.class, name = "File")})
 public abstract class AbstractDtsDataStorageItem {
     private int permission;
 }

@@ -17,26 +17,26 @@
 package com.epam.pipeline.elasticsearch.model.v7.action.delete;
 
 import com.epam.pipeline.elasticsearch.model.DeleteRequestInner;
-import lombok.Getter;
 
-@Getter
 @SuppressWarnings("PMD.ShortMethodName")
 public class DeleteRequestV7 implements DeleteRequestInner {
 
-    private final org.opensearch.action.delete.DeleteRequest inner;
+    private final String index;
+    private final String id;
 
     public DeleteRequestV7(final String indexName, final String objectId) {
-        inner = new org.opensearch.action.delete.DeleteRequest(indexName, objectId);
+        this.index = indexName;
+        this.id = objectId;
     }
 
     @Override
     public String id() {
-        return inner.id();
+        return id;
     }
 
     @Override
     public String index() {
-        return inner.index();
+        return index;
     }
 
     @Override

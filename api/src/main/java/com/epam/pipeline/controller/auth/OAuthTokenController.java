@@ -25,10 +25,10 @@ import com.epam.pipeline.manager.access.oidc.OidcTokenExchangeManager;
 import com.epam.pipeline.manager.access.oidc.OidcTokenVerificationException;
 import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.token.TokenTypeURI;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -57,7 +57,8 @@ import java.util.Set;
  */
 @RestController
 @ConditionalOnProperty(value = OAuthTokenController.ENABLED_PROPERTY, havingValue = "true")
-@Api(value = "Methods to exchange an identity provider's token for a platform token.")
+@Tag(name = "oauth-token-controller",
+        description = "Methods to exchange an identity provider's token for a platform token.")
 @RequestMapping(value = "/oauth")
 @RequiredArgsConstructor
 @Slf4j
@@ -90,12 +91,12 @@ public class OAuthTokenController extends AbstractRestController {
     @PostMapping(value = "/token",
             consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(
-            value = "Exchanges an identity provider's access token for a platform token.",
-            notes = "Form encoded, as RFC 8693 defines. Returns the token exchange response "
-                    + "directly rather than wrapped, so ordinary OAuth clients can read it.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = "A platform token for the caller")})
+    @Operation(
+            summary = "Exchanges an identity provider's access token for a platform token.",
+            description = "Form encoded, as RFC 8693 defines. Returns the token exchange response "
+                    + "directly rather than wrapped, so ordinary OAuth clients can read it.")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200",
+            description = "A platform token for the caller")})
     public ResponseEntity<Object> token(
             @RequestParam(value = "grant_type", required = false) final String grantType,
             @RequestParam(value = "subject_token", required = false) final String subjectToken,

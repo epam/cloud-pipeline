@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.security;
 
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
@@ -29,6 +30,7 @@ import java.util.regex.Pattern;
  */
 @Value
 @Builder
+@Jacksonized
 public class NamedJwtToken implements Serializable {
     private static final long serialVersionUID = 1L;
 

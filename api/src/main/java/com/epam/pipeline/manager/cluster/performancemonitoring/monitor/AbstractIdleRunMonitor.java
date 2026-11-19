@@ -81,22 +81,22 @@ public abstract class AbstractIdleRunMonitor extends AbstractRunMonitor {
     protected IdleMonitoringConfig getIdleConfig(final IdleMonitoringType monitoringType) {
         return ListUtils.emptyIfNull(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
                 .stream()
-                .filter(config -> config.getType() == monitoringType)
+                .filter(config -> config.type() == monitoringType)
                 .findFirst()
                 .orElse(null);
     }
 
     protected boolean isIdleConfigReadyForProcessing(final IdleMonitoringConfig config,
                                                       final IdleMonitoringType type) {
-        if (config == null || !config.isEnabled()) {
+        if (config == null || !config.enabled()) {
             log.debug("{} idle monitoring config is not configured or disabled, skipping idle check.", type.name());
             return false;
         }
-        if (Objects.isNull(config.getActionTimeoutMinutes())) {
+        if (Objects.isNull(config.actionTimeoutMinutes())) {
             log.warn("{} idle monitoring config misses action timeout, skipping idle check.", type.name());
             return false;
         }
-        if (type != IdleMonitoringType.ABSOLUTE && Objects.isNull(config.getGracePeriodMinutes())) {
+        if (type != IdleMonitoringType.ABSOLUTE && Objects.isNull(config.gracePeriodMinutes())) {
             log.warn("{} idle monitoring config misses grace period, skipping idle check.", type.name());
             return false;
         }

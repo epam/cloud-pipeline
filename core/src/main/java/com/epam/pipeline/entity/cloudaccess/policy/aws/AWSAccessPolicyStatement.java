@@ -19,11 +19,13 @@ package com.epam.pipeline.entity.cloudaccess.policy.aws;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Set;
 
 @Value
 @Builder
+@Jacksonized
 public class AWSAccessPolicyStatement {
 
     @JsonProperty("Effect")

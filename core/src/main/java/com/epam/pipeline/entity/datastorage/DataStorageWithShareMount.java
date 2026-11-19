@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.SecuredEntityDelegate;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
@@ -30,6 +31,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @EqualsAndHashCode
+@NoArgsConstructor
 public class DataStorageWithShareMount implements SecuredEntityDelegate {
     private AbstractDataStorage storage;
     private FileShareMount shareMount;

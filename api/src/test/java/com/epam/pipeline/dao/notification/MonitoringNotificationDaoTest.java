@@ -35,8 +35,8 @@ import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.mapper.PipelineRunMapper;
 import com.epam.pipeline.test.creator.user.UserCreatorUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,9 +49,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static junit.framework.TestCase.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Transactional
 public class MonitoringNotificationDaoTest extends AbstractJdbcTest {
@@ -93,8 +93,7 @@ public class MonitoringNotificationDaoTest extends AbstractJdbcTest {
     private AbstractCloudRegion region;
 
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         user = UserCreatorUtils.getPipelineUser(TEST_USER1);
         userDao.createUser(user,
                 Arrays.asList(DefaultRoles.ROLE_ADMIN.getId(), DefaultRoles.ROLE_USER.getId()));

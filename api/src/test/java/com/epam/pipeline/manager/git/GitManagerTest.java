@@ -39,22 +39,20 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.client.WireMock;
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
-import org.assertj.core.api.exception.RuntimeIOException;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.mockito.internal.util.reflection.Whitebox;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.util.ReflectionTestUtils;
+import wiremock.org.eclipse.jetty.io.RuntimeIOException;
 
 import java.io.File;
 import java.io.IOException;
@@ -73,12 +71,12 @@ import java.util.HashMap;
 import java.util.List;
 
 import static com.epam.pipeline.manager.git.GitManager.DRAFT_PREFIX;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.created;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.givenThat;
 import static com.github.tomakehurst.wiremock.client.WireMock.notFound;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
@@ -91,16 +89,16 @@ import static java.util.Collections.singletonList;
 import static java.util.Comparator.reverseOrder;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.text.IsEmptyString.isEmptyString;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings("PMD.TooManyStaticImports")
@@ -137,85 +135,77 @@ public class GitManagerTest extends AbstractManagerTest {
     private static final String GIT_MASTER_REPOSITORY = "refs/heads/master";
     private static final String FORK = "/fork";
 
-    @Rule
-    public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+    @RegisterExtension
+    static WireMockExtension wireMock = WireMockExtension.newInstance()
+            .options(wireMockConfig().dynamicPort())
+            .build();
+
     private GitRepositoryUrl gitHost;
 
-    @Mock
+    @MockBean
     private PipelineManager pipelineManagerMock;
 
     @SpyBean
     private PreferenceManager preferenceManager;
 
-    @Mock
+    @MockBean
     private CmdExecutor executor;
 
     @Value("${working.directory}")
     private String workingDirPath;
 
     @Autowired
-    @InjectMocks
     private GitManager gitManager;
 
     @Autowired
     private PipelineRepositoryService pipelineRepositoryService;
 
-    @Before
-    public void describePreferenceManager() {
+    @AfterEach
+    public void removeWorkingDirectory() throws IOException {
+        final Path workDir = Paths.get(workingDirPath);
+        if (Files.exists(workDir)) {
+            Files.walk(workDir)
+                 .map(Path::toFile)
+                 .sorted(reverseOrder())
+                 .forEach(File::delete);
+        }
+    }
+
+    @BeforeEach
+    public void setup() throws IOException {
+        gitHost = GitRepositoryUrl.from("http://localhost:" + wireMock.getPort());
+        wireMock.stubFor(
+                get(urlPathEqualTo("/api/v3/users"))
+                        .willReturn(okJson(with(singletonList(USER))))
+        );
+        wireMock.stubFor(
+                post(urlPathEqualTo("/api/v3/users/1/impersonation_tokens"))
+                        .willReturn(okJson(with(USER_TOKEN)))
+        );
+
+        final Pipeline pipeline = testingPipeline();
+        when(pipelineManagerMock.load(pipeline.getId())).thenReturn(pipeline);
+        when(pipelineManagerMock.load(eq(pipeline.getId()), anyBoolean())).thenReturn(pipeline);
+
         when(preferenceManager.getPreference(SystemPreferences.GIT_HOST)).thenReturn(gitHost.asString());
         when(preferenceManager.getPreference(SystemPreferences.GIT_READER_HOST)).thenReturn(gitHost.asString());
         when(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID)).thenReturn(ROOT_USER_ID);
         when(preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME)).thenReturn(ROOT_USER_NAME);
         when(preferenceManager.getPreference(SystemPreferences.GITLAB_API_VERSION)).thenReturn("v3");
-    }
 
-    @Before
-    public void describeCmdExecutor() {
-        Whitebox.setInternalState(gitManager, "cmdExecutor", executor);
+        ReflectionTestUtils.setField(gitManager, "cmdExecutor", executor);
         when(executor.executeCommand(anyString(), any(), any(), anyBoolean())).thenReturn("inconsiderable output");
-    }
 
-    @Before
-    public void describePipelineManager() {
-        final Pipeline pipeline = testingPipeline();
-        when(pipelineManagerMock.load(pipeline.getId())).thenReturn(pipeline);
-        when(pipelineManagerMock.load(eq(pipeline.getId()), anyBoolean())).thenReturn(pipeline);
-    }
-
-    @Before
-    public void createWorkingDirectory() throws IOException {
         if (Files.notExists(Paths.get(workingDirPath))) {
             Files.createDirectory(Paths.get(workingDirPath));
         }
-    }
-
-    @After
-    public void removeWorkingDirectory() throws IOException {
-        Files.walk(Paths.get(workingDirPath))
-             .map(Path::toFile)
-             .sorted(reverseOrder())
-             .forEach(File::delete);
-    }
-
-    @Before
-    public void setup() {
-        MockitoAnnotations.initMocks(this.getClass());
-        gitHost = GitRepositoryUrl.from("http://localhost:" + wireMockRule.port());
-        givenThat(
-                get(urlPathEqualTo("/api/v3/users"))
-                        .willReturn(okJson(with(singletonList(USER))))
-        );
-        givenThat(
-                post(urlPathEqualTo("/api/v3/users/1/impersonation_tokens"))
-                        .willReturn(okJson(with(USER_TOKEN)))
-        );
     }
 
     @Test
     public void shouldReturnTrueWhenProjectExists() {
         final GitProject project = new GitProject();
         project.setRepoUrl(gitHost.withNamespace(ROOT_USER_NAME).withProject(REPOSITORY_NAME).asString());
-        givenThat(
+        wireMock.stubFor(
             get(urlPathEqualTo(api()))
                 .willReturn(okJson(with(project)))
         );
@@ -227,7 +217,7 @@ public class GitManagerTest extends AbstractManagerTest {
 
     @Test
     public void shouldReturnFalseWhenProjectDoesNotExists() {
-        givenThat(
+        wireMock.stubFor(
             get(urlPathEqualTo(api()))
                 .willReturn(notFound())
         );
@@ -276,13 +266,13 @@ public class GitManagerTest extends AbstractManagerTest {
         initialCommit.setMessage("New pipeline initial commit");
         initialCommit.setCreatedAt("2017-07-25T13:13:11Z");
         initialCommit.setId(sha);
-        givenThat(
+        wireMock.stubFor(
             get(urlPathEqualTo(api(REPOSITORY_COMMITS + "/" + initialCommit.getId())))
                 .willReturn(okJson(with(initialCommit)))
         );
         final GitTagEntry tag = new GitTagEntry();
         tag.setName(TEST_REVISION);
-        givenThat(
+        wireMock.givenThat(
             get(urlPathEqualTo(api(REPOSITORY_TAGS + "/" + tag.getName())))
                 .willReturn(okJson(with(tag)))
         );
@@ -294,7 +284,7 @@ public class GitManagerTest extends AbstractManagerTest {
     public void shouldFetchRevision() throws GitClientException {
         final Pipeline pipeline = testingPipeline();
         final List<GitTagEntry> tags = Collections.emptyList();
-        givenThat(
+        wireMock.stubFor(
             get(urlPathEqualTo(api(REPOSITORY_TAGS)))
                 .willReturn(okJson(with(tags)))
         );
@@ -302,7 +292,7 @@ public class GitManagerTest extends AbstractManagerTest {
         initialCommit.setMessage("New pipeline initial commit");
         initialCommit.setCreatedAt("2017-07-25T13:13:11Z");
         final List<GitCommitEntry> commits = singletonList(initialCommit);
-        givenThat(
+        wireMock.stubFor(
             get(urlPathEqualTo(api(REPOSITORY_COMMITS)))
                 .willReturn(okJson(with(commits)))
         );
@@ -318,7 +308,7 @@ public class GitManagerTest extends AbstractManagerTest {
         bla.setName(README_FILE);
         bla.setType(BLOB_TYPE);
         final List<GitRepositoryEntry> tree = singletonList(bla);
-        givenThat(
+        wireMock.stubFor(
             get(urlPathEqualTo(apiV4(REPOSITORY_TREE)))
                 .withQueryParam(REF, equalTo(TEST_REVISION))
                 .withQueryParam(PATH, equalTo(DOCS + "/"))
@@ -326,7 +316,7 @@ public class GitManagerTest extends AbstractManagerTest {
                 .willReturn(okJson(with(tree)))
         );
         final GitTagEntry tag = new GitTagEntry();
-        givenThat(
+        wireMock.stubFor(
             get(urlPathEqualTo(api(REPOSITORY_TAGS + "/" + TEST_REVISION)))
                 .willReturn(okJson(with(tag)))
         );
@@ -353,7 +343,7 @@ public class GitManagerTest extends AbstractManagerTest {
     public void getPipelineRevision() throws GitClientException {
         final Pipeline pipeline = testingPipeline();
         final GitTagEntry tag = new GitTagEntry();
-        givenThat(
+        wireMock.stubFor(
             get(urlPathEqualTo(api(REPOSITORY_TAGS + "/" + TEST_REVISION)))
                 .willReturn(okJson(with(tag)))
         );
@@ -366,7 +356,7 @@ public class GitManagerTest extends AbstractManagerTest {
         final Pipeline pipeline = testingPipeline();
         final GitTagEntry tag = new GitTagEntry();
         final String sha = "somecommitsha";
-        givenThat(
+        wireMock.stubFor(
             get(urlPathEqualTo(api(REPOSITORY_COMMITS + "/" + sha)))
                 .willReturn(okJson(with(tag)))
         );
@@ -386,7 +376,7 @@ public class GitManagerTest extends AbstractManagerTest {
         final GitCommitEntry expectedCommit = new GitCommitEntry();
         expectedCommit.setMessage("Rename the file");
         expectedCommit.setCreatedAt("2017-07-25T13:13:11Z");
-        givenThat(
+        wireMock.stubFor(
             post(urlPathEqualTo(api(REPOSITORY_COMMITS)))
                 .willReturn(okJson(with(expectedCommit)))
         );
@@ -403,7 +393,7 @@ public class GitManagerTest extends AbstractManagerTest {
         repositoryEntry.setName(README_FILE);
         repositoryEntry.setType(BLOB_TYPE);
         final List<GitRepositoryEntry> tree = singletonList(repositoryEntry);
-        givenThat(
+        wireMock.stubFor(
             get(urlPathEqualTo(apiV4(REPOSITORY_TREE)))
                 .withQueryParam(REF, equalTo(GIT_MASTER_REPOSITORY))
                 .withQueryParam(PATH, equalTo(DOCS))
@@ -441,7 +431,7 @@ public class GitManagerTest extends AbstractManagerTest {
         mockGitCommitRequest();
         final GitTagEntry tag = new GitTagEntry();
         tag.setName(TEST_REVISION);
-        givenThat(
+        wireMock.stubFor(
             get(urlPathEqualTo(api(REPOSITORY_TAGS + "/" + tag.getName())))
                 .willReturn(okJson(with(tag)))
         );
@@ -453,7 +443,7 @@ public class GitManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void shouldRenameFolder() throws GitClientException {
         final String blaFilePath = DOCS + "/" + README_FILE;
         final Pipeline pipeline = testingPipeline();
@@ -466,14 +456,14 @@ public class GitManagerTest extends AbstractManagerTest {
         bla.setType(BLOB_TYPE);
         bla.setPath(blaFilePath);
         final List<GitRepositoryEntry> tree = singletonList(bla);
-        givenThat(
+        wireMock.stubFor(
             get(urlPathEqualTo(api(REPOSITORY_TREE)))
                 .withQueryParam(REF_NAME, equalTo(GIT_MASTER_REPOSITORY))
                 .withQueryParam(PATH, equalTo(DOCS))
                 .willReturn(okJson(with(tree)))
         );
         mockFileContentRequest(DOCS + File.separator + GITKEEP, GIT_MASTER_REPOSITORY, FILE_CONTENT);
-        givenThat(
+        wireMock.stubFor(
             get(urlPathEqualTo(api(REPOSITORY_FILES)))
                 .withQueryParam(FILE_PATH, equalTo("doc" + File.separator + GITKEEP))
                 .withQueryParam(REF, equalTo(GIT_MASTER_REPOSITORY))
@@ -485,7 +475,7 @@ public class GitManagerTest extends AbstractManagerTest {
         assertThat(resultingCommit, is(expectedCommit));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void createFolderShouldFailIfDirectoryExists() throws GitClientException {
         final Pipeline pipeline = testingPipeline();
         final PipelineSourceItemVO folder = new PipelineSourceItemVO();
@@ -496,20 +486,20 @@ public class GitManagerTest extends AbstractManagerTest {
         bla.setType(BLOB_TYPE);
         bla.setPath(DOCS + "/" + README_FILE);
         final List<GitRepositoryEntry> tree = singletonList(bla);
-        givenThat(
+        wireMock.stubFor(
             get(urlPathEqualTo(apiV4(REPOSITORY_TREE)))
                 .withQueryParam(PATH, equalTo(DOCS))
                 .willReturn(okJson(with(tree)))
         );
-        givenThat(
+        wireMock.stubFor(
                 get(urlPathEqualTo(api(REPOSITORY_FILES + "/" + encodeUrlPath(DOCS))))
                         .withQueryParam(REF, equalTo(GIT_MASTER_REPOSITORY))
                         .willReturn(notFound())
         );
-        gitManager.createOrRenameFolder(pipeline.getId(), folder);
+        assertThrows(IllegalArgumentException.class, () -> gitManager.createOrRenameFolder(pipeline.getId(), folder));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void createFolderShouldFailIfFileWithTheSameNameExists() throws GitClientException {
         final Pipeline pipeline = testingPipeline();
         final PipelineSourceItemVO folder = new PipelineSourceItemVO();
@@ -520,13 +510,13 @@ public class GitManagerTest extends AbstractManagerTest {
         bla.setType(BLOB_TYPE);
         bla.setPath(DOCS + "/" + README_FILE);
         final List<GitRepositoryEntry> tree = singletonList(bla);
-        givenThat(
+        wireMock.stubFor(
                 get(urlPathEqualTo(apiV4(REPOSITORY_TREE)))
                         .withQueryParam(PATH, equalTo(DOCS))
                         .willReturn(okJson(with(tree)))
         );
         mockFileContentRequest(DOCS, GIT_MASTER_REPOSITORY, FILE_CONTENT);
-        gitManager.createOrRenameFolder(pipeline.getId(), folder);
+        assertThrows(IllegalArgumentException.class, () -> gitManager.createOrRenameFolder(pipeline.getId(), folder));
     }
 
     @Test
@@ -535,17 +525,17 @@ public class GitManagerTest extends AbstractManagerTest {
         final PipelineSourceItemVO folder = new PipelineSourceItemVO();
         folder.setPath(DOCS);
         folder.setLastCommitId(pipeline.getCurrentVersion().getCommitId());
-        givenThat(
+        wireMock.stubFor(
                 get(urlPathEqualTo(apiV4(REPOSITORY_TREE)))
                         .withQueryParam(PATH, equalTo(DOCS))
                         .willReturn(notFound())
         );
-        givenThat(
+        wireMock.stubFor(
                 get(urlPathEqualTo(apiV4(REPOSITORY_TREE)))
                         .withQueryParam(PATH, WireMock.absent())
                         .willReturn(okJson("[]"))
         );
-        givenThat(
+        wireMock.stubFor(
                 get(urlPathEqualTo(api(REPOSITORY_FILES + "/" + encodeUrlPath(DOCS))))
                         .withQueryParam(REF, equalTo(GIT_MASTER_REPOSITORY))
                         .willReturn(notFound())
@@ -556,7 +546,7 @@ public class GitManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void shouldModifyFile() throws GitClientException {
         final GitCommitEntry expectedCommit = mockGitCommitRequest();
         final String filePath = DOCS + "/" + README_FILE;
@@ -583,17 +573,17 @@ public class GitManagerTest extends AbstractManagerTest {
         final String tagName = "v1.0.1";
         tag.setName(tagName);
         tag.setCommit(commit);
-        givenThat(
+        wireMock.stubFor(
             post(urlPathEqualTo(api(REPOSITORY_TAGS)))
                 .withQueryParam(REF, equalTo(sha))
                 .withQueryParam(TAG_NAME, equalTo(tagName))
                 .willReturn(created().withHeader(CONTENT_TYPE, "application/json").withBody(with(tag)))
         );
-        givenThat(
+        wireMock.stubFor(
             get(urlPathEqualTo("/api/v4/version"))
                 .willReturn(okJson("{\"version\": \"15.5.4\"}"))
         );
-        givenThat(
+        wireMock.stubFor(
             post(urlPathEqualTo(api(REPOSITORY_RELEASES)))
                 .willReturn(okJson("{\"tag_name\": \"v1.0.1\", \"description\": \"Release description\"}")
                         .withStatus(HttpURLConnection.HTTP_CREATED))
@@ -604,7 +594,7 @@ public class GitManagerTest extends AbstractManagerTest {
         );
         assertThat(revision.getName(), is(tag.getName()));
         assertThat(revision.getMessage(), is(tag.getMessage()));
-        wireMockRule.verify(WireMock.postRequestedFor(urlPathEqualTo(api(REPOSITORY_RELEASES)))
+        wireMock.verify(WireMock.postRequestedFor(urlPathEqualTo(api(REPOSITORY_RELEASES)))
                 .withRequestBody(equalToJson(
                         "{\"tag_name\": \"v1.0.1\", \"description\": \"Release description\"}")));
     }
@@ -613,7 +603,7 @@ public class GitManagerTest extends AbstractManagerTest {
     public void shouldGetCommits() throws GitClientException {
         final Pipeline pipeline = testingPipeline();
         final GitCommitEntry expectedCommit = new GitCommitEntry();
-        givenThat(
+        wireMock.stubFor(
             get(urlPathEqualTo(api(REPOSITORY_COMMITS)))
                 .withQueryParam(REF_NAME, equalTo(pipeline.getCurrentVersion().getCommitId()))
                 .willReturn(okJson(with(singletonList(expectedCommit))))
@@ -630,11 +620,11 @@ public class GitManagerTest extends AbstractManagerTest {
         final String newProjectName = "expectedname";
         final GitProject currentProject = createProject(projectName);
         final GitProject expectedProject = createProject(newProjectName);
-        givenThat(
+        wireMock.stubFor(
             get(urlPathEqualTo(PROJECTS_ROOT + getUrlEncodedNamespacePath(projectName)))
                 .willReturn(okJson(with(currentProject)))
         );
-        givenThat(
+        wireMock.stubFor(
             put(urlPathEqualTo(PROJECTS_ROOT + getUrlEncodedNamespacePath(projectName)))
                 .withRequestBody(equalToJson(createUpdateRequestBody(newProjectName)))
                 .willReturn(okJson(with(expectedProject)))
@@ -652,85 +642,88 @@ public class GitManagerTest extends AbstractManagerTest {
         final String tmpRenamedProject = encodeUrlPath(tmpGroup + "/" + newProjectName);
         final String copiedProject = getUrlEncodedNamespacePath(newProjectName);
         final GitProject expectedProject = createProject(newProjectName);
-        givenThat(post(urlPathEqualTo("/api/v3/groups"))
+        wireMock.stubFor(post(urlPathEqualTo("/api/v3/groups"))
                 .willReturn(okJson("{\"id\": 3, \"name\": \"" + tmpGroup + "\", \"path\": \"" + tmpGroup + "\"}")
                         .withStatus(HttpURLConnection.HTTP_CREATED)));
         for (String project : new String[]{PROJECT_PATH, tmpProject, tmpRenamedProject, copiedProject}) {
-            givenThat(get(urlPathEqualTo(PROJECTS_ROOT + project + REPOSITORY_TAGS)).willReturn(okJson("[]")));
+            wireMock.stubFor(get(urlPathEqualTo(PROJECTS_ROOT + project + REPOSITORY_TAGS)).willReturn(okJson("[]")));
         }
-        givenThat(post(urlPathEqualTo(api(FORK)))
+        wireMock.stubFor(post(urlPathEqualTo(api(FORK)))
                 .willReturn(okJson(with(createProject(REPOSITORY_NAME))).withStatus(HttpURLConnection.HTTP_CREATED)));
-        givenThat(get(urlPathEqualTo(PROJECTS_ROOT + tmpProject))
+        wireMock.stubFor(get(urlPathEqualTo(PROJECTS_ROOT + tmpProject))
                 .willReturn(okJson(with(createProject(REPOSITORY_NAME)))));
-        givenThat(put(urlPathEqualTo(PROJECTS_ROOT + tmpProject)).willReturn(okJson(with(expectedProject))));
-        givenThat(post(urlPathEqualTo(PROJECTS_ROOT + tmpRenamedProject + FORK))
+        wireMock.stubFor(put(urlPathEqualTo(PROJECTS_ROOT + tmpProject)).willReturn(okJson(with(expectedProject))));
+        wireMock.stubFor(post(urlPathEqualTo(PROJECTS_ROOT + tmpRenamedProject + FORK))
                 .willReturn(okJson(with(expectedProject)).withStatus(HttpURLConnection.HTTP_CREATED)));
-        givenThat(get(urlPathEqualTo(PROJECTS_ROOT + copiedProject)).willReturn(okJson(with(expectedProject))));
+        wireMock.stubFor(get(urlPathEqualTo(PROJECTS_ROOT + copiedProject)).willReturn(okJson(with(expectedProject))));
         // GitLab 18.0 and later answers the same way, when it only schedules a top-level group for deletion
-        givenThat(WireMock.delete(urlPathEqualTo("/api/v3/groups/" + tmpGroup))
+        wireMock.stubFor(WireMock.delete(urlPathEqualTo("/api/v3/groups/" + tmpGroup))
                 .willReturn(okJson("{\"message\": \"202 Accepted\"}").withStatus(HttpURLConnection.HTTP_ACCEPTED)));
-        givenThat(get(urlPathEqualTo("/api/v4/version")).willReturn(okJson("{\"version\": \"19.4.1\"}")));
+        wireMock.stubFor(get(urlPathEqualTo("/api/v4/version")).willReturn(okJson("{\"version\": \"19.4.1\"}")));
 
         final GitProject copy = gitManager.copyRepository(REPOSITORY_NAME, newProjectName, FORK_UUID);
 
         assertThat(copy, is(expectedProject));
-        wireMockRule.verify(WireMock.postRequestedFor(urlPathEqualTo(api(FORK)))
+        wireMock.verify(WireMock.postRequestedFor(urlPathEqualTo(api(FORK)))
                 .withQueryParam(NAMESPACE_PATH, equalTo(tmpGroup)));
-        wireMockRule.verify(WireMock.postRequestedFor(urlPathEqualTo(PROJECTS_ROOT + tmpRenamedProject + FORK))
+        wireMock.verify(WireMock.postRequestedFor(urlPathEqualTo(PROJECTS_ROOT + tmpRenamedProject + FORK))
                 .withQueryParam(NAMESPACE_PATH, equalTo(ROOT_USER_NAME)));
-        wireMockRule.verify(1, WireMock.deleteRequestedFor(urlPathEqualTo("/api/v3/groups/" + tmpGroup)));
+        wireMock.verify(1, WireMock.deleteRequestedFor(urlPathEqualTo("/api/v3/groups/" + tmpGroup)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void gitLsTreeShouldFailIfRepoVersionDoesntExists() {
-        givenThat(
+        wireMock.stubFor(
                 get(urlPathEqualTo(api(REPOSITORY_TAGS + "/doesnt_exist")))
                         .willReturn(notFound())
         );
-        givenThat(
+        wireMock.stubFor(
                 get(urlPathEqualTo("/git/" + getUrlEncodedNamespacePath(REPOSITORY_NAME) + "/ls_tree"))
                         .willReturn(WireMock.ok())
         );
         Pipeline pipeline = new Pipeline();
         pipeline.setName(REPOSITORY_NAME);
-        pipeline.setRepository("http://localhost:" + wireMockRule.port() + "/" + ROOT_USER_NAME
+        pipeline.setRepository("http://localhost:" + wireMock.getPort() + "/" + ROOT_USER_NAME
                 + "/" + REPOSITORY_NAME + ".git");
         when(pipelineManagerMock.load(1L)).thenReturn(pipeline);
-        gitManager.lsTreeRepositoryContent(1L, "doesnt_exist", null, null, null);
+        assertThrows(IllegalArgumentException.class,
+            () -> gitManager.lsTreeRepositoryContent(1L, "doesnt_exist", null, null, null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void gitLsTreeShouldFailIfPrefGitReaderHostIsNotSpecified() {
         when(preferenceManager.getPreference(SystemPreferences.GIT_READER_HOST)).thenReturn(null);
         final GitTagEntry tag = new GitTagEntry();
-        givenThat(
+        wireMock.stubFor(
                 get(urlPathEqualTo(api(REPOSITORY_TAGS + "/" + TEST_REVISION)))
                         .willReturn(okJson(with(tag)))
         );
-        givenThat(
+        wireMock.stubFor(
                 get(urlPathEqualTo("/git/" + getUrlEncodedNamespacePath(REPOSITORY_NAME) + "/ls_tree"))
                         .willReturn(WireMock.ok())
         );
         Pipeline pipeline = new Pipeline();
         pipeline.setName(REPOSITORY_NAME);
-        pipeline.setRepository("http://localhost:" + wireMockRule.port() + "/" + ROOT_USER_NAME +
+        pipeline.setRepository("http://localhost:" + wireMock.getPort() + "/" + ROOT_USER_NAME +
                 "/" + REPOSITORY_NAME + ".git");
         when(pipelineManagerMock.load(1L)).thenReturn(pipeline);
-        gitManager.lsTreeRepositoryContent(1L, "v1.0.0", null, null, null);
+        assertThrows(IllegalArgumentException.class,
+            () -> gitManager.lsTreeRepositoryContent(1L, "v1.0.0", null, null, null));
     }
 
 
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldThrowExceptionForNonExistentProject() {
         final String projectName = "currentname";
         final String newProjectName = "expectedname";
-        givenThat(
+        wireMock.stubFor(
             put(urlPathEqualTo(PROJECTS_ROOT + getUrlEncodedNamespacePath(projectName)))
                 .willReturn(aResponse().withStatus(HttpURLConnection.HTTP_NOT_FOUND))
         );
-        pipelineRepositoryService.updateRepositoryName(new Pipeline(),
-                String.format(HTTP_PATH_PATTEN, ROOT_USER_NAME, projectName), newProjectName);
+        assertThrows(IllegalArgumentException.class,
+            () -> pipelineRepositoryService.updateRepositoryName(new Pipeline(),
+                String.format(HTTP_PATH_PATTEN, ROOT_USER_NAME, projectName), newProjectName));
     }
 
     private String getUrlEncodedNamespacePath(final String projectName) {
@@ -783,7 +776,7 @@ public class GitManagerTest extends AbstractManagerTest {
      */
     @SneakyThrows
     private static String urlEncoded(final String string) {
-        return URLEncoder.encode(string, "UTF-8");
+        return URLEncoder.encode(string, StandardCharsets.UTF_8);
     }
 
     private static String api() {
@@ -805,7 +798,7 @@ public class GitManagerTest extends AbstractManagerTest {
     private void mockFileContentRequest(final String filePath, final String ref, final String content) {
         final GitFile gitFile = new GitFile();
         gitFile.setContent(Base64.getEncoder().encodeToString(content.getBytes()));
-        givenThat(
+        wireMock.stubFor(
                 get(urlPathEqualTo(api(REPOSITORY_FILES + "/" + encodeUrlPath(filePath))))
                         .withQueryParam(REF, equalTo(ref))
                         .willReturn(okJson(with(gitFile)))
@@ -823,7 +816,7 @@ public class GitManagerTest extends AbstractManagerTest {
 
     private GitCommitEntry mockGitCommitRequest() {
         final GitCommitEntry expectedCommit = new GitCommitEntry();
-        givenThat(
+        wireMock.stubFor(
                 post(urlPathEqualTo(api(REPOSITORY_COMMITS)))
                         .willReturn(okJson(with(expectedCommit)))
         );

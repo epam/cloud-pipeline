@@ -18,11 +18,11 @@ package com.epam.pipeline.dts.transfer.repository;
 
 import com.epam.pipeline.dts.transfer.model.TaskStatus;
 import com.epam.pipeline.dts.transfer.model.TransferTask;
-import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface TaskRepository extends PagingAndSortingRepository<TransferTask, Long> {
+public interface TaskRepository extends JpaRepository<TransferTask, Long> {
 
     List<TransferTask> findAllByStatus(TaskStatus status);
 }
