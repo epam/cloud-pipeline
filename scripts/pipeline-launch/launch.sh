@@ -593,7 +593,15 @@ EOF
                               ([ "${CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS_ROCKY,,}" != 'false' ] && \
                               [ "${CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS,,}" == 'true' ]); then
                               echo "[INFO] Default repositories list (/etc/yum.repos.d/) is requested to be delete via CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS"
-                              rm -f /etc/yum.repos.d/Rocky-*.repo
+                              # The default repo files are the ones of the rocky-repos package: Rocky-*.repo on Rocky Linux 8,
+                              # rocky*.repo on 9 and later. A file that stays defines the same repo ids as
+                              # cloud-pipeline-extra.repo. The other repo files (e.g. of the Rocky SIGs) are kept
+                              local _rocky_default_repos=$(rpm -ql rocky-repos 2>/dev/null | grep '^/etc/yum.repos.d/.*\.repo$')
+                              if [ "$_rocky_default_repos" ]; then
+                                    rm -f $_rocky_default_repos
+                              else
+                                    rm -f /etc/yum.repos.d/Rocky-*.repo /etc/yum.repos.d/rocky*.repo
+                              fi
                         fi
 
                         cat > /etc/yum.repos.d/cloud-pipeline-extra.repo <<EOF
