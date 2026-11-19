@@ -12,6 +12,12 @@ on:
       # - 'stage/**'
 
   workflow_dispatch:
+    inputs:
+      build_without_cache_images:
+        description: "Images to rebuild without docker cache: 'all', or exact service names, comma-separated"
+        required: false
+        type: string
+        default: ''
 
 env:
   CLOUD_PIPELINE_BUILD_NUMBER_SEED: 20000
@@ -104,5 +110,7 @@ jobs:
     uses: ./.github/workflows/build-pipectl.yml
     with:
       cp_dist_url: "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/builds/${{ github.ref_name }}/${{ needs.Build_All.outputs.cp_dist_filename }}"
+      # A push carries no inputs, so it always builds with the cache
+      build_without_cache_images: ${{ inputs.build_without_cache_images }}
     secrets: inherit
       
