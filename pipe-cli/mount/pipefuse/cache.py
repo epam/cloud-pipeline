@@ -20,7 +20,7 @@ from threading import RLock
 from dateutil.tz import tzlocal
 
 from pipefuse import fuseutils
-from pipefuse.fsclient import File, FileSystemClientDecorator
+from pipefuse.fsclient import File, FileSystemClientDecorator, NotEmptyOperationException
 from pipefuse.lock import synchronized
 
 
@@ -244,6 +244,11 @@ class CachingListingFileSystemClient(FileSystemClientDecorator):
             self._inner.rmdir(path)
             self._cache.replace_in_parent_cache(path)
             self._cache.invalidate_cache_recursively(path)
+        except NotEmptyOperationException:
+            # An expected refusal: git, for one, removes parent folders until one is refused.
+            logging.info('Rmdir has been refused for %s since the folder is not empty' % path)
+            self._cache.invalidate_cache_recursively(path)
+            raise
         except Exception:
             logging.exception('Rmdir has failed for %s' % path)
             self._cache.invalidate_parent_cache(path)

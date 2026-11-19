@@ -17,7 +17,7 @@ import logging
 from abc import abstractmethod, ABCMeta
 
 from pipefuse import fuseutils
-from pipefuse.fsclient import FileSystemClient, FileSystemClientDecorator
+from pipefuse.fsclient import FileSystemClient, FileSystemClientDecorator, NotEmptyOperationException
 from pipefuse.fuseutils import MB
 from pipefuse.mpu import UnmanageableMultipartUploadException
 
@@ -89,12 +89,23 @@ class StorageHighLevelFileSystemClient(FileSystemClientDecorator):
         self._inner.mv(source_path, destination_path)
 
     def mkdir(self, path):
-        synthetic_file_path = fuseutils.join_path_with_delimiter(path, '.DS_Store')
+        synthetic_file_path = fuseutils.join_path_with_delimiter(path, fuseutils.FOLDER_MARKER)
         self.upload([], synthetic_file_path)
 
     def rmdir(self, path):
-        for file in self.ls(fuseutils.append_delimiter(path), depth=-1):
-            self.delete(file.name)
+        """
+        Removes an empty folder, see fuseutils.get_empty_folder_paths.
+
+        Only the paths that an empty folder still holds are deleted.
+
+        :raises NotEmptyOperationException: if the folder holds any other file or folder.
+        """
+        folder_path = fuseutils.append_delimiter(path)
+        paths = fuseutils.get_empty_folder_paths(folder_path, self.ls(folder_path, depth=1), self._delimiter)
+        if paths is None:
+            raise NotEmptyOperationException()
+        for folder_item_path in paths:
+            self.delete(folder_item_path)
 
     def download_range(self, fh, buf, path, offset=0, length=0):
         source_path = path.lstrip(self._delimiter)

@@ -28,7 +28,8 @@ from requests import cookies
 from pipefuse import fuseutils
 from pipefuse.chain import ChainingService
 from pipefuse.fsclient import File, FileSystemClient, \
-    ForbiddenOperationException, NotFoundOperationException, InvalidOperationException
+    ForbiddenOperationException, NotFoundOperationException, InvalidOperationException, \
+    NotEmptyOperationException
 from pipefuse.fuseutils import MB
 
 from urllib.parse import urlparse, quote, unquote
@@ -226,6 +227,24 @@ class WebDavClient(_WebDavBaseClient, FileSystemClient):
         self._send('MKCOL', path, (200, 201, 204))
 
     def rmdir(self, path):
+        """
+        Removes an empty folder.
+
+        WebDav DELETE of a folder removes everything in it (RFC 4918, section 9.6.1),
+        so the folder is checked first. Only the files that the mount does not list
+        (see fuseutils.is_hidden_file) are allowed to remain in it.
+
+        :raises NotEmptyOperationException: if the folder holds any other file or folder.
+        """
+        for item in self.ls(fuseutils.append_delimiter(path), depth=1):
+            name = item.name.rstrip(self.cwd)
+            if not name:
+                # The folder itself
+                continue
+            if item.is_dir or not fuseutils.is_hidden_file(name):
+                raise NotEmptyOperationException()
+        # WebDav has no DELETE of an empty folder only. So a file that another client
+        # writes into the folder after the check above is deleted with the folder.
         self.delete(path)
 
     def mv(self, old_path, new_path):
