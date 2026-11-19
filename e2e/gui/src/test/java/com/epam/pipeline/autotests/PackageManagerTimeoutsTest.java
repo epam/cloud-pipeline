@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
+import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -84,7 +85,9 @@ public class PackageManagerTimeoutsTest extends AbstractSeveralPipelineRunningTe
     private static final ObjectMapper JSON = new ObjectMapper();
 
     private final String registry = C.DEFAULT_REGISTRY;
+    private final String group = C.DEFAULT_GROUP;
     private final String anotherGroup = C.ANOTHER_GROUP;
+    private final String rockyTool = C.TESTING_TOOL_NAME;
     private final String ubuntuTool = format("%s/ubuntu", anotherGroup);
     private final String rockylinuxTool = format("%s/%s", anotherGroup, C.TEST_DOCKER_IMAGE);
     private ObjectNode originalPreference;
@@ -162,8 +165,8 @@ public class PackageManagerTimeoutsTest extends AbstractSeveralPipelineRunningTe
         assertNoOtherCommands("rocky", YUM_COMMAND);
         String runId = null;
         try {
-            // the Rocky Linux test image: the testing tool's image is not Rocky Linux on every deployment
-            final LogAO run = launchWithParameters(anotherGroup, rockylinuxTool, C.TEST_DOCKER_IMAGE,
+            // the testing tool: tests/e2e-endpoints, Rocky Linux (deploy/docker/cp-tests/e2e-endpoints)
+            final LogAO run = launchWithParameters(group, rockyTool, nameWithoutGroup(rockyTool),
                     "TEST_YUM_HANG_ONCE", "CP_PKG_MANAGER_INSTALL_TIMEOUT_SEC");
             runId = getLastRunId();
             final List<String> log = consoleLog(run.waitForSshLink());
