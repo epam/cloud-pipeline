@@ -851,7 +851,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Run_tools_in_sandbox</b> (148 tests, 75 automated)</summary>
+<summary><b>Run_tools_in_sandbox</b> (150 tests, 75 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -982,6 +982,8 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**4682_1**](Run_tools_in_sandbox/Launch_parameters/4682/4682_1.md) | "Show optional parameters" checkbox is checked by default on the pipeline launch form |  |
 | [**4682_2**](Run_tools_in_sandbox/Launch_parameters/4682/4682_2.md) | "Show optional parameters" checkbox overrides for a single pipeline |  |
 | [**4682_3**](Run_tools_in_sandbox/Launch_parameters/4682/4682_3.md) | "Show optional parameters" checkbox overrides for a single tool |  |
+| [**4740_1**](Run_tools_in_sandbox/Launch_parameters/4740/4740_1.md) | "Add system parameter" dialog keeps the selection while the launch form loads |  |
+| [**4740_2**](Run_tools_in_sandbox/Launch_parameters/4740/4740_2.md) | "Add system parameter" dialog is cleared when it is opened again |  |
 | [**TC-PARAMETERS-6**](Run_tools_in_sandbox/Launch_parameters/SGE_Configuration/TC-PARAMETERS-6.md) | Autoscaling cluster configuration | :white_check_mark: |
 | [**1447**](Run_tools_in_sandbox/Limit_mounts/1447.md) | Displaying the CP_CAP_LIMIT_MOUNTS in a user-friendly manner | :white_check_mark: |
 | [**1480**](Run_tools_in_sandbox/Limit_mounts/1480.md) | Check limit mounts warnings | :white_check_mark: |
