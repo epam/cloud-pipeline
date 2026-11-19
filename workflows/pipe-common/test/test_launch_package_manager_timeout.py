@@ -15,7 +15,8 @@
 # The time limits of the apt-get, yum and apk calls of scripts/pipeline-launch/launch.sh: the wrappers, the install and
 # upgrade commands, configure_package_manager (the Debian 8 refresh, and the Cloud Pipeline repo setup on Ubuntu 22.04
 # and Rocky Linux 8.7) with a package manager call that hangs, and a check that every downloading call has a limit.
-# Also how configure_package_manager adds the Cloud Pipeline apt repo, with no apt-key on the host.
+# Also how configure_package_manager adds the Cloud Pipeline apt repo, with no apt-key on the host, and the extra
+# repositories mirror on Rocky Linux 8, 9 and 10, with and without the default repo files of the image.
 # Runs the shell code with bash and stub package managers that hang, with the absolute paths replaced with temporary
 # ones. Needs bash and GNU coreutils. A test that hangs takes 2-4 s. Runs on Python 2.7 and 3.
 
@@ -453,6 +454,127 @@ class ConfigurePackageManagerYumTest(ConfigurePackageManagerTestCase):
         self.assertEqual([YUM_PRIORITIES_CALL, YUM_PRIORITIES_CALL.replace('yum-priorities', 'yum-utils')],
                          self.calls())
         self.assertNotIn('did not finish', proc.stdout)
+
+
+# The default repo files of the Rocky Linux images (the files of their rocky-repos package), with the ids of their
+# repos: 8 (the files that define the ids of cloud-pipeline-extra.repo), 9 and 10 (the stock 9.8 and 10.2 images)
+ROCKY_8_REPOS = {'Rocky-AppStream.repo': ['appstream'], 'Rocky-BaseOS.repo': ['baseos'], 'Rocky-Extras.repo': ['extras'],
+                 'Rocky-HighAvailability.repo': ['ha'], 'Rocky-NFV.repo': ['nfv'], 'Rocky-Plus.repo': ['plus'],
+                 'Rocky-PowerTools.repo': ['powertools'], 'Rocky-RT.repo': ['rt'],
+                 'Rocky-ResilientStorage.repo': ['resilient-storage']}
+ROCKY_9_REPOS = {'rocky.repo': ['baseos', 'appstream', 'crb'],
+                 'rocky-addons.repo': ['highavailability', 'resilientstorage', 'nfv', 'rt', 'sap', 'saphana'],
+                 'rocky-devel.repo': ['devel'], 'rocky-extras.repo': ['extras', 'plus'], 'rocky-security.repo': ['security']}
+ROCKY_10_REPOS = dict(ROCKY_9_REPOS, **{'rocky-addons.repo': ['highavailability', 'nfv', 'rt', 'sap', 'saphana']})
+# Repo files that are not the default ones of the image, e.g. added by the image or by the run
+OTHER_REPOS = {'docker-ce.repo': ['docker-ce-stable'], 'epel.repo': ['epel'], 'remi.repo': ['remi']}
+# A repo of a Rocky SIG, installed by its release package (rocky-release-storage-squid), not by rocky-repos
+SIG_REPOS = {'Rocky-SIG-Storage-Squid-9.repo': ['SIG-Storage-Squid-9']}
+RUN_REPO_FILES = ['cloud-pipeline-extra.repo', 'cloud-pipeline.repo']
+MIRROR_URL = 'http://mirror.example'
+
+# A file of the rocky-repos package that is not a repo file: the repo files of the Rocky SIGs use its variable
+ROCKY_REPOS_DNF_VAR = '/etc/dnf/vars/sigcontentdir'
+
+# rpm -ql rocky-repos: the files of ROCKY_REPOS_FILES, and ROCKY_REPOS_OTHER_FILE, as the other files of the package.
+# Not installed, if ROCKY_REPOS_FILES is not set
+RPM_ROCKY_REPOS_STUB = """#!/bin/bash
+if [ "$1 $2" == "-ql rocky-repos" ] && [ -n "$ROCKY_REPOS_FILES" ]; then
+    echo "$ROCKY_REPOS_FILES" | tr ':' '\n'
+    echo "$ROCKY_REPOS_OTHER_FILE"
+    exit 0
+fi
+echo "package $2 is not installed"
+exit 1
+"""
+
+
+class ConfigurePackageManagerRockyMirrorTest(ConfigurePackageManagerTestCase):
+    # The extra repositories mirror (CP_REPO_EXTRA_ENABLED) of a Rocky Linux run: cloud-pipeline-extra.repo, and the
+    # default repo files of the image, which CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS(_ROCKY) removes
+
+    def setUp(self):
+        super(ConfigurePackageManagerRockyMirrorTest, self).setUp()
+        _stub(self.stub_bin, 'yum', PKG_MANAGER_STUB)
+        _stub(self.stub_bin, 'yum-config-manager', '#!/bin/bash\n')
+        _stub(self.stub_bin, 'curl', CURL_REPO_STUB)
+        _stub(self.stub_bin, 'rpm', RPM_ROCKY_REPOS_STUB)
+
+    def configure_mirror(self, cp_ver, image_repos, rocky_repos_installed=True, **env):
+        os.makedirs(os.path.dirname(self.path(ROCKY_REPOS_DNF_VAR)))
+        with open(self.path(ROCKY_REPOS_DNF_VAR), 'w') as f:
+            f.write('pub/sig\n')
+        for name, ids in list(image_repos.items()) + list(OTHER_REPOS.items()):
+            with open(self.path('/etc/yum.repos.d/' + name), 'w') as f:
+                f.write(''.join('[%s]\nname=%s\nenabled=1\n' % (repo_id, name) for repo_id in ids))
+        run_env = {'CP_REPO_EXTRA_ENABLED': 'true', 'CP_REPO_BASE_EXTRA_URL_DEFAULT': MIRROR_URL,
+                   'CP_PKG_MANAGER_INSTALL_TIMEOUT_SEC': '2'}
+        if rocky_repos_installed:
+            # The package files as rpm prints them: the paths of the run, which the test moves into its temporary root
+            default_files = [name for name in image_repos if name not in SIG_REPOS]
+            run_env['ROCKY_REPOS_FILES'] = ':'.join(self.path('/etc/yum.repos.d/' + name) for name in default_files)
+            run_env['ROCKY_REPOS_OTHER_FILE'] = self.path(ROCKY_REPOS_DNF_VAR)
+        run_env.update(env)
+        proc = self.configure('rocky', cp_ver, env=run_env)
+        self.assertEqual(0, proc.returncode, proc.stderr)
+        self.assertIn('Extra repositories mirror is being configured: %s/rocky' % MIRROR_URL, proc.stdout)
+        self.assertIn('baseurl=%s/rocky/%s/BaseOS/$basearch/os/' % (MIRROR_URL, cp_ver),
+                      _read(self.path('/etc/yum.repos.d/cloud-pipeline-extra.repo')))
+        return proc
+
+    def repo_files(self):
+        return sorted(os.listdir(self.path('/etc/yum.repos.d')))
+
+    def repo_ids(self):
+        # The repo ids of all the repo files, with the files that define each of them
+        ids = collections.defaultdict(list)
+        for name in self.repo_files():
+            for repo_id in re.findall(r'^\[([^\]]+)\]', _read(self.path('/etc/yum.repos.d/' + name)), re.M):
+                ids[repo_id].append(name)
+        return ids
+
+    def assert_default_repos_removed(self, kept=()):
+        self.assertEqual(sorted(list(OTHER_REPOS) + RUN_REPO_FILES + list(kept)), self.repo_files())
+        self.assertEqual({}, dict((repo_id, files) for repo_id, files in self.repo_ids().items() if len(files) > 1))
+        # Only the repo files of the package are removed
+        self.assertTrue(os.path.exists(self.path(ROCKY_REPOS_DNF_VAR)))
+
+    def test_the_default_repo_files_of_rocky_linux_10_are_removed(self):
+        self.configure_mirror('10.2', ROCKY_10_REPOS, CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS_ROCKY='true')
+        self.assert_default_repos_removed()
+
+    def test_the_default_repo_files_of_rocky_linux_9_are_removed(self):
+        self.configure_mirror('9.8', ROCKY_9_REPOS, CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS_ROCKY='true')
+        self.assert_default_repos_removed()
+
+    def test_the_default_repo_files_of_rocky_linux_8_are_removed(self):
+        self.configure_mirror('8.10', ROCKY_8_REPOS, CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS_ROCKY='true')
+        self.assert_default_repos_removed()
+
+    def test_the_repo_files_of_the_rocky_sigs_are_kept(self):
+        self.configure_mirror('10.2', dict(ROCKY_10_REPOS, **SIG_REPOS), CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS_ROCKY='true')
+        self.assert_default_repos_removed(kept=SIG_REPOS)
+
+    def test_without_the_rocky_repos_package_the_files_are_found_by_their_names(self):
+        self.configure_mirror('10.2', ROCKY_10_REPOS, rocky_repos_installed=False,
+                              CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS_ROCKY='true')
+        self.assert_default_repos_removed()
+
+    def test_the_setting_for_all_the_distributions_removes_them(self):
+        self.configure_mirror('10.2', ROCKY_10_REPOS, CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS='true')
+        self.assert_default_repos_removed()
+
+    def test_the_rocky_linux_setting_overrides_the_one_for_all_the_distributions(self):
+        self.configure_mirror('10.2', ROCKY_10_REPOS, CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS='true',
+                              CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS_ROCKY='false')
+        self.assertEqual(sorted(list(ROCKY_10_REPOS) + list(OTHER_REPOS) + RUN_REPO_FILES), self.repo_files())
+
+    def test_the_default_repo_files_are_kept_without_the_setting(self):
+        proc = self.configure_mirror('10.2', ROCKY_10_REPOS)
+        self.assertEqual(sorted(list(ROCKY_10_REPOS) + list(OTHER_REPOS) + RUN_REPO_FILES), self.repo_files())
+        self.assertNotIn('is requested to be delete', proc.stdout)
+        # As before: the ids of the mirror file are defined by the image files as well
+        self.assertEqual(['cloud-pipeline-extra.repo', 'rocky.repo'], self.repo_ids()['baseos'])
 
 
 class LaunchPackageManagerCallsTest(unittest.TestCase):
