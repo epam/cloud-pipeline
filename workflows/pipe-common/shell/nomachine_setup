@@ -168,7 +168,7 @@ function run_nomachine() {
     if [ "$CP_NM_GNOME_DESKTOP" == "true" ]; then
         # The GNOME defaults (incl. the keyboard layouts) are set before the desktop session starts. GDM is not used:
         # GNOME runs in the NoMachine display. It is enabled by the GNOME packages, and would start with an image,
-        # committed from the run. It is disabled, not masked: NICE DCV starts it, if the run has DCV as well
+        # committed from the run. It is disabled, not masked: NICE DCV starts it, e.g. in a run of such an image
         gnome_desktop_setup configure "$NOMACHINE_INSTALL_TASK"
         systemctl disable --now gdm.service
     else
@@ -221,6 +221,13 @@ IS_RPM_BASED=$?
 # with NoMachine 9.8.2, as the earlier versions do not offer its display. NoMachine cannot start its node there without
 # systemd as PID 1
 if gnome_desktop_setup applies; then
+    # NICE DCV runs the GNOME desktop there as well (on Wayland, with GDM), and the two desktops of the same user cannot
+    # share its configuration and session: a run with both gets NICE DCV only (launch.sh sets it up after NoMachine)
+    if [ "$CP_CAP_DCV" == "true" ]; then
+        pipe_log_warn "[WARNING] NoMachine is not configured: the run has NICE DCV (CP_CAP_DCV) as well, and on ${CP_OS} ${CP_VER} only one of them can run the desktop. NICE DCV is used" "$NOMACHINE_INSTALL_TASK"
+        pipe_log_success "NoMachine is skipped, as the run has NICE DCV" "$NOMACHINE_INSTALL_TASK"
+        exit 0
+    fi
     export CP_NM_GNOME_DESKTOP="true"
     NM_TARGET_VERSION="${CP_CAP_DESKTOP_NM_VERSION_EL10:-9.8.2_1}"
     if [ "$(cat /proc/1/comm 2>/dev/null)" != "systemd" ]; then

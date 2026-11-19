@@ -160,11 +160,13 @@ def nomachine_setup(tmpdir, root):
         env.update(os_version)
         env.update(extra_env)
         exit_code = subprocess.call(['bash', '-c', script], env=env, cwd=str(work_dir))
-        # The NoMachine server is started in background, "tail -f" of its log is the last step
+        # The NoMachine server is started in background, "tail -f" of its log is the last step. The setup waits for its
+        # ports (lsof) after starting it: without these calls, the server was not started
         for _ in range(50):
-            if calls.exists() and any(line.startswith('tail\t') for line in calls.read().splitlines()):
+            lines = calls.read().splitlines() if calls.exists() else []
+            if any(line.startswith('tail\t') for line in lines):
                 break
-            if exit_code != 0:
+            if exit_code != 0 or not any(line.startswith('lsof\t') for line in lines):
                 break
             time.sleep(0.1)
         lines = calls.read().splitlines() if calls.exists() else []
@@ -295,6 +297,40 @@ def test_rocky_10_without_systemd_fails_early(nomachine_setup):
     assert [args for args in _calls_of(calls, 'pipe_log_fail') if 'CP_CAP_SYSTEMD_CONTAINER' in args[0]]
     assert not _calls_of(calls, 'yum')
     assert not _calls_of(calls, 'nxserver')
+
+
+@pytest.mark.parametrize('pid_1', ['systemd', 'bash'])
+def test_rocky_10_with_nice_dcv_leaves_the_desktop_to_dcv(nomachine_setup, pid_1):
+    # Both run the GNOME desktop there, and launch.sh sets up NICE DCV after NoMachine
+    exit_code, calls = nomachine_setup(ROCKY_10, pid_1=pid_1, CP_CAP_DCV='true')
+
+    assert exit_code == 0
+    assert _calls_of(calls, 'gnome_desktop_setup') == [['applies']]
+    assert [args for args in _calls_of(calls, 'pipe_log_warn')
+            if 'NoMachine is not configured' in args[0] and 'NICE DCV' in args[0]]
+    assert _calls_of(calls, 'pipe_log_success') == [['NoMachine is skipped, as the run has NICE DCV',
+                                                     'NoMachineInitialization']]
+    assert not _calls_of(calls, 'pipe_log_fail')
+    for command in ('yum', 'wget', 'systemctl', 'nxserver', 'nohup'):
+        assert not _calls_of(calls, command)
+
+
+def test_rocky_10_with_nice_dcv_disabled_installs_nomachine(nomachine_setup):
+    exit_code, calls = nomachine_setup(ROCKY_10, CP_CAP_DCV='false')
+
+    assert exit_code == 0
+    assert _calls_of(calls, 'gnome_desktop_setup')[1:] == [['install', 'NoMachineInitialization'],
+                                                           ['configure', 'NoMachineInitialization']]
+
+
+def test_rocky_9_with_nice_dcv_installs_nomachine_as_before(nomachine_setup):
+    exit_code, calls = nomachine_setup(ROCKY_9, CP_CAP_DESKTOP_NM_VERSION='8.4.2_1', CP_CAP_DCV='true')
+
+    assert exit_code == 0
+    assert 'https://distribution.example/tools/nomachine/xfce4-rocky-98.tar.gz' in [args[1] for args in
+                                                                                   _calls_of(calls, 'wget')]
+    assert ['--startup'] in _calls_of(calls, 'nxserver')
+    assert not _calls_of(calls, 'pipe_log_warn')
 
 
 def test_rocky_10_reports_the_gnome_desktop_which_cannot_be_installed(nomachine_setup):
