@@ -22,6 +22,28 @@ export _RETRIES_COUNT="${CP_DCV_RETRIES_COUNT:-60}"
 CP_DCV_EXTRAS_DIR="/opt/dcv/extras"
 CP_DCV_XFCE_TEMPLATES_DIR="$CP_DCV_EXTRAS_DIR/xfce"
 
+# Rocky Linux, RHEL and CentOS 10 and later have no X server and no Xfce: there DCV runs virtual sessions
+# of the GNOME desktop on Wayland, started by GDM (see is_dcv_wayland). These are the distributions, which
+# DCV supports on Wayland. The other ones (e.g. Amazon Linux 2023) keep their X11 packages
+CP_DCV_WAYLAND_OS="rocky rhel centos"
+CP_DCV_WAYLAND_MIN_OS_MAJOR=10
+CP_DCV_KEYBOARD_LAYOUTS="${CP_DCV_XKB_LAYOUTS:-us,fr,de}"
+# Services of the "Server with GUI" group, which shall not run in a (privileged) container of a run:
+# they manage the network, the clock and the kernel tuning of the node, or are not needed for a desktop.
+# The sleep targets are masked as well, so that an idle desktop cannot suspend the node
+CP_DCV_WAYLAND_MASKED_UNITS="NetworkManager.service firewalld.service chronyd.service tuned.service \
+                             irqbalance.service ModemManager.service wpa_supplicant.service \
+                             cups.service cups.socket cups.path avahi-daemon.service avahi-daemon.socket \
+                             bluetooth.service \
+                             sleep.target suspend.target hibernate.target hybrid-sleep.target \
+                             suspend-then-hibernate.target"
+
+function is_dcv_wayland {
+  [[ "$IS_RPM_BASED" = 0 ]] && \
+  [[ " $CP_DCV_WAYLAND_OS " == *" $CP_OS "* ]] && \
+  [ "$_dcv_os_major" -ge "$CP_DCV_WAYLAND_MIN_OS_MAJOR" ]
+}
+
 function install_optional_rpm_pkgs {
   for _optional_pkg in "$@"; do
     yum -y install "$_optional_pkg" || \
@@ -44,7 +66,27 @@ function install_optional_deb_pkgs {
 function install_prerequisites {
   pipe_log_info "Installing DCV prerequisites" "$DCV_INSTALL_TASK"
   _pkg_result=0
-  if [[ "$IS_RPM_BASED" = 0 ]]; then
+  if is_dcv_wayland; then
+    # The GNOME desktop of "Server with GUI" and the GDM login screen. The group requires the full
+    # coreutils, while the images often have coreutils-single. A kernel is not needed in a container
+    if rpm -q coreutils-single &> /dev/null; then
+      yum -y install --allowerasing coreutils || \
+      yum -y install --allowerasing --disablerepo=cloud-pipeline coreutils
+    fi
+    local _rpm_dcv_group_exclusions=(--exclude=kernel --exclude=kernel-core '--exclude=kernel-modules*'
+                                     '--exclude=kernel-tools*' --exclude=kmod-kvdo '--exclude=*-firmware'
+                                     --exclude=vdo)
+    yum -y groupinstall "${_rpm_dcv_group_exclusions[@]}" "Server with GUI" && \
+    yum -y install egl-utils
+    _pkg_result=$?
+
+    # Fallback: try same with an upstream repo
+    if [ $_pkg_result -ne 0 ]; then
+      yum -y groupinstall --disablerepo=cloud-pipeline "${_rpm_dcv_group_exclusions[@]}" "Server with GUI" && \
+      yum -y install --disablerepo=cloud-pipeline egl-utils
+      _pkg_result=$?
+    fi
+  elif [[ "$IS_RPM_BASED" = 0 ]]; then
     if [ "$CP_OS" == "centos" ]; then
       _rpm_dcv_extra_pkgs="xvattr gnome-system-log desktop-backgrounds-gnome"
     fi
@@ -111,16 +153,11 @@ function install_dcv {
   _pkg_result=0
   _dcv_distro_url="${CP_CAP_DCV_DISTRO_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/dcv"}"
   if [[ "$IS_RPM_BASED" = 0 ]]; then
-    # Major version of the underlying distribution, e.g. 7 for "centos:7.9", 9 for "rocky:9.8".
-    # If it cannot be resolved - the el8 distribution is used, as before
-    _dcv_os_major="${CP_VER_MAJOR:-${CP_VER%%.*}}"
-    if ! [[ "$_dcv_os_major" =~ ^[0-9]+$ ]]; then
-        pipe_log_warn "[WARNING] Cannot resolve a major version of the distribution from CP_VER='$CP_VER', el8 packages will be used" "$DCV_INSTALL_TASK"
-        _dcv_os_major=8
-    fi
-
     if [ "$_dcv_os_major" -eq 7 ]; then
         _NICE_DCV_DISTRIBUTION="${CP_CAP_DCV_DISTRIBUTION:-nice-dcv-2021.2-11190-el7-x86_64}"
+        rpm --import "$_dcv_distro_url/NICE-GPG-KEY"
+    elif is_dcv_wayland; then
+        _NICE_DCV_DISTRIBUTION="${CP_CAP_DCV_DISTRIBUTION:-nice-dcv-2026.0-25174-el10-x86_64}"
         rpm --import "$_dcv_distro_url/NICE-GPG-KEY"
     elif [ "$_dcv_os_major" -ge 9 ]; then
         _NICE_DCV_DISTRIBUTION="${CP_CAP_DCV_DISTRIBUTION:-nice-dcv-2024.0-19030-el9-x86_64}"
@@ -130,12 +167,19 @@ function install_dcv {
     fi
     pipe_log_info "DCV distribution to be installed: ${_NICE_DCV_DISTRIBUTION}" "$DCV_INSTALL_TASK"
 
+    # Virtual sessions run in an X server of DCV (Xdcv) on X11, and in a GNOME session on Wayland,
+    # which the DCV GNOME Shell extension connects to the DCV server. The el10 build has no Xdcv
+    if is_dcv_wayland; then
+      _dcv_session_pkgs="nice-dcv-gnome-shell-extension-*.noarch.rpm"
+    else
+      _dcv_session_pkgs="nice-xdcv-*.x86_64.rpm"
+    fi
     wget "$_dcv_distro_url/${_NICE_DCV_DISTRIBUTION}.tgz" && \
       tar -xvzf ${_NICE_DCV_DISTRIBUTION}.tgz && \
       cd ${_NICE_DCV_DISTRIBUTION} && \
       yum install -y nice-dcv-server-*.x86_64.rpm \
                       nice-dcv-web-viewer-*.x86_64.rpm \
-                      nice-xdcv-*.x86_64.rpm
+                      $_dcv_session_pkgs
     _pkg_result=$?
   else
     if [[ "$CP_VER" == *"18.04"* ]]; then
@@ -201,6 +245,10 @@ function configure_dcv {
   usermod -aG video dcv
   sed -i 's|#authentication="none"|authentication="none"|g' /etc/dcv/dcv.conf
   sed -i -E "s|#web-port=.*|web-port=$CP_DCV_WEB_PORT|g" /etc/dcv/dcv.conf
+  if is_dcv_wayland && ! grep -q '^os-auto-lock=' /etc/dcv/dcv.conf; then
+    # By default DCV locks the GNOME session, once its last client disconnects
+    sed -i '/^\[security\]/a os-auto-lock=false' /etc/dcv/dcv.conf
+  fi
 
 cat <<EOF >>/etc/dcv/dcv.conf
 [clipboard]
@@ -209,7 +257,77 @@ primary-selection-paste=true
 EOF
 }
 
+function configure_dcv_gnome {
+  # The defaults of the GNOME desktop for all the users (a system dconf database): no wallpaper,
+  # the keyboard layouts of CP_DCV_XKB_LAYOUTS, no screen lock, no welcome tour and no suspend when idle
+  local _input_sources=""
+  local _layout
+  local _layouts
+  IFS=',' read -ra _layouts <<< "$CP_DCV_KEYBOARD_LAYOUTS"
+  for _layout in "${_layouts[@]}"; do
+    _input_sources="${_input_sources:+$_input_sources, }('xkb', '$_layout')"
+  done
+
+  # The databases of a profile take precedence in their order, so the local one goes right after the user's one
+  mkdir -p /etc/dconf/db/local.d /etc/dconf/profile
+  if [ ! -f /etc/dconf/profile/user ]; then
+    printf 'user-db:user\nsystem-db:local\n' > /etc/dconf/profile/user
+  elif ! grep -qx 'system-db:local' /etc/dconf/profile/user; then
+    if grep -q '^user-db:' /etc/dconf/profile/user; then
+      sed -i '0,/^user-db:/{/^user-db:/a system-db:local
+}' /etc/dconf/profile/user
+    else
+      sed -i '1i system-db:local' /etc/dconf/profile/user
+    fi
+  fi
+
+cat <<EOF >/etc/dconf/db/local.d/00-cloud-pipeline
+[org/gnome/desktop/background]
+picture-uri=''
+picture-uri-dark=''
+color-shading-type='solid'
+primary-color='#2e3436'
+
+[org/gnome/desktop/input-sources]
+sources=[$_input_sources]
+
+[org/gnome/desktop/screensaver]
+lock-enabled=false
+
+[org/gnome/desktop/session]
+idle-delay=uint32 0
+
+[org/gnome/shell]
+welcome-dialog-last-shown-version='999'
+
+[org/gnome/settings-daemon/plugins/power]
+sleep-inactive-ac-type='nothing'
+sleep-inactive-battery-type='nothing'
+EOF
+
+  # The GDM login screen has its own database (the "gdm" dconf profile). By default it blanks after 5 minutes,
+  # so a user, who connects later, would get a black screen until the first input. It does not suspend either
+  mkdir -p /etc/dconf/db/gdm.d
+cat <<EOF >/etc/dconf/db/gdm.d/00-cloud-pipeline
+[org/gnome/desktop/session]
+idle-delay=uint32 0
+
+[org/gnome/settings-daemon/plugins/power]
+sleep-inactive-ac-type='nothing'
+sleep-inactive-battery-type='nothing'
+EOF
+  dconf update
+  if [ $? -ne 0 ]; then
+    pipe_log_warn "[WARNING] Cannot apply the GNOME defaults (dconf update), a default GNOME look and feel will be used" "$DCV_INSTALL_TASK"
+  fi
+}
+
 function configure_dcv_extras {
+  if is_dcv_wayland; then
+    configure_dcv_gnome
+    return
+  fi
+
   mkdir -p "$CP_DCV_EXTRAS_DIR"
 
   # Xfce configuration templates are shipped with the common repository and are applied
@@ -387,7 +505,16 @@ chmod +x "$CP_DCV_EXTRAS_DIR/xfce4launch"
 
 function run_dcv {
   pipe_log_info "Starting DCV server and waiting for boot up" "$DCV_INSTALL_TASK"
-  if [[ "$IS_RPM_BASED" = 0 ]]; then
+  if is_dcv_wayland; then
+    # GDM starts the GNOME sessions of DCV on Wayland. The graphical target is not isolated,
+    # as it would start all the services of the desktop, so only GDM is started
+    systemctl mask --now $CP_DCV_WAYLAND_MASKED_UNITS
+    systemctl start dbus
+    if ! systemctl start gdm; then
+      pipe_log_warn "[WARNING] GDM cannot be started, DCV sessions will not have a desktop. See: journalctl -u gdm" "$DCV_INSTALL_TASK"
+    fi
+    systemctl start dcvserver
+  elif [[ "$IS_RPM_BASED" = 0 ]]; then
     systemctl start dbus
     systemctl start dcvserver
   else
@@ -450,6 +577,14 @@ function check_dcv_installation {
 ######################################################
 /usr/bin/rpm -q -f /usr/bin/rpm >/dev/null 2>&1
 export IS_RPM_BASED=$?
+
+# Major version of the underlying distribution, e.g. 7 for "centos:7.9", 9 for "rocky:9.8".
+# If it cannot be resolved - the el8 distribution is used, as before
+_dcv_os_major="${CP_VER_MAJOR:-${CP_VER%%.*}}"
+if [[ "$IS_RPM_BASED" = 0 ]] && ! [[ "$_dcv_os_major" =~ ^[0-9]+$ ]]; then
+    pipe_log_warn "[WARNING] Cannot resolve a major version of the distribution from CP_VER='$CP_VER', el8 packages will be used" "$DCV_INSTALL_TASK"
+    _dcv_os_major=8
+fi
 
 ######################################################
 # Check cloud platform

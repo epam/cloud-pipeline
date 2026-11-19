@@ -49,6 +49,7 @@
 - [A run can ask for a new node](#a-run-can-ask-for-a-new-node)
 - [WDL and Luigi pipelines are no longer supported](#wdl-and-luigi-pipelines-are-no-longer-supported)
 - [OIDC token exchange](#oidc-token-exchange)
+- [NICE DCV on Rocky Linux 10](#nice-dcv-on-rocky-linux-10)
 - [NoMachine on Rocky Linux 10](#nomachine-on-rocky-linux-10)
 
 ***
@@ -115,6 +116,7 @@
     - [Git synchronization: a new GitLab 9 user has to confirm the email](#git-synchronization-a-new-gitlab-9-user-has-to-confirm-the-email)
     - [The timeout of the API HTTP sessions cannot be set](#the-timeout-of-the-api-http-sessions-cannot-be-set)
     - [A new install points the API at the transport port of the search Elasticsearch](#a-new-install-points-the-api-at-the-transport-port-of-the-search-elasticsearch)
+    - [`pipe storage mount`: removing a folder that is not empty deletes all its content](#pipe-storage-mount-removing-a-folder-that-is-not-empty-deletes-all-its-content)
 
 ***
 
@@ -991,6 +993,18 @@ For more details see [here](../../manual/12_Manage_Settings/12.16._OIDC_token_ex
 
 ***
 
+## NICE DCV on Rocky Linux 10
+
+Rocky Linux 10, RHEL 10 and CentOS Stream 10 have no X server and no Xfce, also not in EPEL. So the NICE DCV desktop (`CP_CAP_DCV`) previously failed to install on them: "Cannot install system prerequisites for DCV".
+
+In the current version, DCV runs the GNOME desktop on Wayland there, with the el10 build of Amazon DCV 2026.0 (`nice-dcv-2026.0-25174-el10-x86_64` in `tools/dcv` of the distribution URL), which supports these releases. A DCV session opens at the GDM login screen, which lists the owner of the run: the user selects the name, and no password is asked, in the web and in the desktop DCV client alike. As the Xfce desktop, it has no wallpaper and the keyboard layouts of `CP_DCV_XKB_LAYOUTS` (`us`, `fr` and `de` by default). It has no screen lock either. Rocky Linux 8 and 9 keep Xfce on X11.
+
+On Wayland, a user can have one DCV session, and DCV does not run an initialization script for it (`CP_DCV_INIT_SCRIPT`).
+
+For more details see [here](../../manual/10_Manage_Tools/10.3._Add_a_Tool.md#supported-os-families).
+
+***
+
 ## NoMachine on Rocky Linux 10
 
 Rocky Linux 10, RHEL 10 and CentOS Stream 10 have no Xfce, also not in EPEL, and `tools/nomachine` of the distribution URL has no Xfce bundle for them. So the NoMachine desktop (`CP_CAP_DESKTOP_NM`) previously failed to install on them: "Failed to install NoMachine".
@@ -1488,3 +1502,11 @@ Now:
 - Docker in Docker puts NVIDIA's key into `/etc/apt/keyrings/nvidia-docker.asc`, which its list names, and uses NVIDIA's 22.04 list for the Ubuntu releases after 22.04. With an apt older than 1.4 (Ubuntu 16.04), it imports the key with `apt-key`, as before
 
 Please note: a run adds the Cloud Pipeline repository only if the distribution has one for its OS version. The public distribution has Ubuntu 16.04 to 22.04 and Debian 8 to 10. So with the public distribution URL, runs on Ubuntu 24.04 and later still get no Cloud Pipeline repository. A deployment that needs it there has to host `tools/repos/ubuntu/<version>` of its own distribution URL.
+
+### `pipe storage mount`: removing a folder that is not empty deletes all its content
+
+[#4886](https://github.com/epam/cloud-pipeline/issues/4886)
+
+Previously, on a storage mounted by `pipe` FUSE - an object storage that a run mounts into `/cloud-data`, or a storage mounted by `pipe storage mount` - `rmdir` of a folder that is not empty deleted every file in the folder and in its subfolders, and succeeded. On a local disk, `rmdir` fails with "Directory not empty" for such a folder. This was so for object storages (S3, GCS) and for file storages mounted over WebDAV. Tools that rely on this error lost data. For example, after git removes a file, it removes the parent folders one by one, until one of them is not empty. On a mounted storage, no folder was refused. So a `git rm` or a `git rebase` in a repository on a mounted storage could delete untracked files, the whole repository and the folders next to it, up to the mount point.
+
+Now, `rmdir` of a folder that holds any file or folder fails with "Directory not empty" (`ENOTEMPTY`), and deletes nothing, as on a local disk. Files that the user has no permissions for count too, even though the mount does not show them. Files that the mount does not show because of their storage class, e.g. archived files that are not restored, are ignored, as before: `rmdir` succeeds, and the folder stays in the storage with these files. An empty folder is removed as before, also one made by `mkdir`, and `rm -r` still removes a folder with all its content. See [14.3. Manage Storage via CLI](../../manual/14_CLI/14.3._Manage_Storage_via_CLI.md#mounting-of-storages).
