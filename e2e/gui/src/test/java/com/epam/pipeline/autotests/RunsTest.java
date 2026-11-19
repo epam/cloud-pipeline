@@ -159,6 +159,8 @@ public class RunsTest extends AbstractSeveralPipelineRunningTest implements Auth
         tools()
                 .perform(registry, anotherGroup, format("%s/ubuntu", anotherGroup), ToolTab::runWithCustomSettings)
                 .setDefaultLaunchOptions()
+                // the case waits for the run's SSH: a spot request can wait for capacity longer than that
+                .setPriceType(ON_DEMAND)
                 .withoutMounts()
                 .launchTool(this, "ubuntu")
                 .showLog(getLastRunId())

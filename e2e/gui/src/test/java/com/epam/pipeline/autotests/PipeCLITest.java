@@ -26,8 +26,10 @@ import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static com.codeborne.selenide.Condition.exist;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
@@ -45,6 +47,10 @@ public class PipeCLITest extends AbstractSeveralPipelineRunningTest
     private static final String RESULT = "Pipeline run scheduled with RunId: ";
     private static final String ORIGINAL_OWNER = "ORIGINAL_OWNER";
     private static final String CONFIG_STORE_OPTION = "\\s+(--config-store|-cs)(\\s+|=)\\S+";
+    // the installation content is one line, its commands joined with " && " (getOperationSystemInstallationContent)
+    private static final String INSTALLATION_COMMANDS_SEPARATOR = "\\s*&&\\s*";
+    // a "pipe configure" command, of the pipe on the PATH or called by its path
+    private static final Pattern PIPE_CONFIGURE = compile("(\\S*/)?pipe\\s+configure\\b.*");
     private static final String HOME_DIR_CONFIG_STORE =
             "Config storing mode is `home-dir`, target path `/root/.pipe/config.json`";
     private static final String INSTALL_DIR_CONFIG_STORE = "Config storing mode is `install-dir`, target path `";
@@ -90,7 +96,14 @@ public class PipeCLITest extends AbstractSeveralPipelineRunningTest
                 .switchPipeCLI()
                 .selectOperationSystem("Linux-Binary");
 
-        final String operationSystemInstallationContent = cliAO.getOperationSystemInstallationContent();
+        // Only the installation part of the deployment's commands is run: they may end with a "pipe configure" of their
+        // own, e.g. an interactive "--login" one that waits for a sign-in in a browser, and the case configures pipe
+        // with its own command below
+        final String operationSystemInstallationContent = Arrays.stream(cliAO.getOperationSystemInstallationContent()
+                        .split(INSTALLATION_COMMANDS_SEPARATOR))
+                .map(String::trim)
+                .filter(command -> !command.isEmpty() && !PIPE_CONFIGURE.matcher(command).matches())
+                .collect(Collectors.joining(" && "));
         // the configure command template of the deployment may already choose a config store
         final String pipeConfigCommand = cliAO
                 .generateAccessKey()

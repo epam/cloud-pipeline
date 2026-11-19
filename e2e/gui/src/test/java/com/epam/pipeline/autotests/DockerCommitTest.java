@@ -60,7 +60,11 @@ public class DockerCommitTest
     private final String defaultPriceType = Tools.defaultPriceType;
     private final String testFileName = "test_file.txt";
     private final String testFileContent = "This is a test file " + suffix;
-    private final String personalGroup = "personal";
+    // the groups dropdown of the tools page labels a user's personal group "Personal"
+    // (client/.../tools/DockerRegistriesGroupsList.js), the group selector of the commit popup "personal"
+    // (client/.../tools/selectors/ToolGroupSelector.js)
+    private final String personalGroup = "Personal";
+    private final String personalGroupInCommit = "personal";
     private final String toolInPersonalGroup = personalGroupActualName(login) + "/" + exactToolName(tool);
     private final String customTag = "test_tag";
 
@@ -288,7 +292,7 @@ public class DockerCommitTest
                                 .waitForCommitButton()
                                 .commit(commit ->
                                         commit.setRegistry(registry)
-                                                .setGroup(personalGroup)
+                                                .setGroup(personalGroupInCommit)
                                                 .ensure(IMAGE_NAME, value(exactToolName(tool)))
                                                 .sleep(1, SECONDS)
                                                 .ok())
