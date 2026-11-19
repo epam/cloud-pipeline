@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.dao.monitoring;
 
+import java.io.File;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -26,6 +27,7 @@ import java.util.stream.IntStream;
 
 import com.epam.pipeline.dao.monitoring.metricrequester.HeapsterElasticRestHighLevelClient;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
+import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpHost;
 import org.elasticsearch.ResourceAlreadyExistsException;
 import org.elasticsearch.action.search.SearchResponse;
@@ -40,13 +42,13 @@ import org.elasticsearch.node.InternalSettingsPreparer;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.transport.Netty4Plugin;
-import org.junit.*;
 
 import com.epam.pipeline.entity.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -64,6 +66,10 @@ public class MonitoringESDaoTest {
     private static final int ONE_HUNDRED = 100;
     private static final double TEST_DELTA = 0.0001;
     private static final int ELASTICSEARCH_DEFAULT_PORT = 9200;
+    // Relative to the api project directory, which Gradle makes the test's working directory. The
+    // random suffix makes the directory this run's own, so tearDownClass can delete it outright and
+    // two test JVMs - the test task forks several - can never share one node's data.
+    private static final String ES_HOME_PATH = "target/elasticsearch-" + UUID.randomUUID();
 
     private MonitoringESDao monitoringESDao;
 
@@ -73,7 +79,7 @@ public class MonitoringESDaoTest {
     @BeforeAll
     public static void setUpClass() throws Exception {
         Settings settings = Settings.builder()
-            .put("path.home", "target/elasticsearch")
+            .put("path.home", ES_HOME_PATH)
             .put("http.enabled", true)
             .build();
 
@@ -163,6 +169,9 @@ public class MonitoringESDaoTest {
     @AfterAll
     public static void tearDownClass() throws Exception {
         node.close();
+        if (!FileUtils.deleteQuietly(new File(ES_HOME_PATH))) {
+            log.warn("Elasticsearch data directory {} was left behind", ES_HOME_PATH);
+        }
     }
 
     @Test
