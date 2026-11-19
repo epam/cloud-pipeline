@@ -8,7 +8,7 @@ Test verifies that the console output of a run log:
 
 **Prerequisites**:
 - Non-admin user with the permission to launch a test tool
-- Test tool with `bash` and `base64`, e.g. `library/centos`
+- Test tool with `bash` and `base64`, e.g. `library/rockylinux`
 
 **Preparations**:
 1. The command below prints the log lines of the *Table* at the end of this case. They are encoded with `base64`, so that the launch form and the shell change none of their quotes, backslashes or escape codes:

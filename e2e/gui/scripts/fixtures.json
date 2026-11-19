@@ -54,7 +54,7 @@
             }
         },
         {
-            "image": "library/centos",
+            "image": "library/rockylinux",
             "settings": {}
         },
         {

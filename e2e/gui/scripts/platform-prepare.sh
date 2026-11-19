@@ -281,7 +281,7 @@ function _apply_tool_settings {
     _settings="$(jq -c '.settings // {}' <<< "$4")"
     # Taken over only if the tool is exactly what DockerRegistryManager.buildTool registers for a pushed image: cpu
     # "0mi", ram "0Gi" and nothing else set, so a tool an admin configured is never unregistered after the run. Without
-    # settings in the fixture (library/centos, library/ubuntu) a tool is never taken over.
+    # settings in the fixture (library/rockylinux, library/ubuntu) a tool is never taken over.
     _bare="$(jq -r --argjson s "$_settings" '
         def empty_value: . == null or . == "" or . == [] or . == 0;
         ($s | length > 0) and .cpu == "0mi" and .ram == "0Gi"

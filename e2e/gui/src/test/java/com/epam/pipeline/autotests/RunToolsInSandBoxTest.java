@@ -25,6 +25,8 @@ import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import java.util.function.Function;
+import java.util.regex.Pattern;
+import org.apache.commons.lang3.StringUtils;
 
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -60,7 +62,6 @@ import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.commons.lang3.StringUtils.rightPad;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -80,7 +81,8 @@ public class RunToolsInSandBoxTest
     private final String tool = C.TESTING_TOOL_NAME;
     private final String group = C.DEFAULT_GROUP;
     private final String endpoint = C.VALID_ENDPOINT;
-    private final String testDockerImage = C.TEST_DOCKER_IMAGE;
+    // a Docker Hub image as repository[:tag], pulled inside the runs of the DinD and Singularity cases
+    private final String dindImage = C.DIND_DOCKER_IMAGE;
     private final String priceType = C.DEFAULT_INSTANCE_PRICE_TYPE;
     private String nodeName;
 
@@ -288,15 +290,18 @@ public class RunToolsInSandBoxTest
                 .ssh(shell -> shell
                         .execute("docker --version")
                         .assertOutputContains("Docker version", ", build ")
-                        .execute(format("docker pull %s", testDockerImage))
-                        .execute(format("docker create %s", testDockerImage))
+                        .execute(format("docker pull %s", dindImage()))
+                        .execute(format("docker create %s", dindImage()))
                         .execute("docker image ls")
                         .assertOutputContains("REPOSITORY", "TAG", "IMAGE ID", "CREATED", "SIZE")
-                        .assertOutputContains(testDockerImage, "latest")
-                        .assertPageContainsString(format(rightPad(testDockerImage, 20, ' '), "latest"))
+                        // the image's row: its repository, then its tag (the columns are padded with spaces)
+                        .assertPageContainsStringsWithRegex("docker image ls",
+                                format("%s\\s+%s\\s", Pattern.quote(dindRepository()), Pattern.quote(dindTag())))
                         .execute("docker container ls -a")
                         .assertOutputContains("CONTAINER ID", "IMAGE", "COMMAND", "CREATED", "STATUS", "PORTS", "NAMES")
-                        .assertPageContainsString(format(rightPad(testDockerImage, 20, ' '), "\"/bin/bash\""))
+                        // the container's row: the image, then the command
+                        .assertPageContainsStringsWithRegex("docker container ls -a",
+                                format("%s\\s+\"/bin/bash\"", Pattern.quote(dindImage())))
                         .assertOutputContains("Created")
                         .close());
     }
@@ -317,16 +322,41 @@ public class RunToolsInSandBoxTest
                 .ssh(shell -> shell
                         .execute("singularity help version")
                         .assertOutputContains("Show the version for Singularity")
-                        .execute(format("singularity build %s.sif library://%s", testDockerImage, testDockerImage))
+                        // The run sets the owner and the API token as Singularity's credentials, for the
+                        // platform's registry: sent to Docker Hub, they fail the pull, and must not go there
+                        .execute(format("env -u SINGULARITY_DOCKER_USERNAME -u SINGULARITY_DOCKER_PASSWORD "
+                                + "singularity build %s.sif docker://%s", sifName(), dindImage()))
                         .waitForLog("Build complete")
-                        .assertOutputContains(format("Build complete: %s.sif", testDockerImage))
-                        .execute(format("singularity instance start %s.sif instance1", testDockerImage))
+                        .assertOutputContains(format("Build complete: %s.sif", sifName()))
+                        .execute(format("singularity instance start %s.sif instance1", sifName()))
                         .assertOutputContains("instance started successfully")
                         .execute("singularity instance list")
                         .assertOutputContains("INSTANCE NAME", "PID", "IP", "IMAGE")
                         .assertPageContainsString("IMAGE\ninstance1")
-                        .assertPageContainsString(format("/root/%s.sif", testDockerImage))
+                        .assertPageContainsString(format("/root/%s.sif", sifName()))
                         .close());
+    }
+
+    // e2e.ui.dind.docker.image, read where it is used: a missing key fails these two cases only
+    private String dindImage() {
+        assertTrue(StringUtils.isNotBlank(dindImage), "e2e.ui.dind.docker.image is not set");
+        return dindImage.trim();
+    }
+
+    // a tag is the part after the last ':' that has no '/' after it; without one, docker takes "latest"
+    private String dindRepository() {
+        final int colon = dindImage().lastIndexOf(':');
+        return colon > dindImage().lastIndexOf('/') ? dindImage().substring(0, colon) : dindImage();
+    }
+
+    private String dindTag() {
+        final String repository = dindRepository();
+        return repository.length() < dindImage().length() ? dindImage().substring(repository.length() + 1) : "latest";
+    }
+
+    // the image file Singularity builds, named after the last part of the repository
+    private String sifName() {
+        return dindRepository().substring(dindRepository().lastIndexOf('/') + 1);
     }
 
     private Function<ToolDescription, PipelineRunFormAO> runTool() {
