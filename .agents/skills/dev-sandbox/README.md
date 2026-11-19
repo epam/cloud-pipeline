@@ -199,16 +199,16 @@ monitoring", below):
 | Container | On the network as | What |
 |---|---|---|
 | `cp-sandbox-<name>-db` | `db` | PostgreSQL of the version the platform's installer deploys, `PSG_VERSION` in `deploy/contents/install/install-config`, its data in the volume `cp-sandbox-<name>-db` |
-| `cp-sandbox-<name>-api` | `api` | the API, on Java 8, serving HTTPS on port 9999: the tunnel's remote forward leads the master's `<private IP>:9999` there, for the platform's nodes |
+| `cp-sandbox-<name>-api` | `api` | the API, on Java 21, serving HTTPS on port 9999: the tunnel's remote forward leads the master's `<private IP>:9999` there, for the platform's nodes |
 
 In order, `services`:
 
 1. builds the API's jar and jwt-generator's, when either is missing or with `--build`, with
-   Gradle in Docker: `./gradlew :api:bootRepackage :jwt-generator:shadowJar`, the lightest build
+   Gradle in Docker: `./gradlew :api:bootJar :jwt-generator:shadowJar`, the lightest build
    that gives a runnable jar. It serves `launch.sh` and `init.sh` from the checkout, and no UI.
    Gradle runs as you, so that what it writes in the checkout stays yours, with its home and cache
    in `.gradle-home` in the local state root;
-2. builds the API's image, `docker/api.Dockerfile`, when it has changed: Java 8, Python 3.12 with
+2. builds the API's image, `docker/api.Dockerfile`, when it has changed: Java 21, Python 3.12 with
    the packages of `scripts/autoscaling/requirements.txt` and pipe-common, for the node scripts
    the API runs, OpenSSH's client, for what the API does on a run's node ("A run", below), and
    tun2socks;

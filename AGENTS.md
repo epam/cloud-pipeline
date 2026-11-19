@@ -136,9 +136,10 @@ Things that have gone wrong here before, or that are expensive to undo:
   spawned, review it as its own pass and say so — the `implement-task` skill → "Fresh-eyes review".
 - **Don't commit without reading the `commit-changes` skill.**
 - **Don't edit an applied Flyway migration.** Add a new one.
-- **Don't modernize a build file casually.** `compile`/`testCompile` and `bootRepackage` are still in
-  use, and a construct that looks obsolete may be load-bearing. Toolchain levels are per-module and
-  mid-migration, so read that module's own `build.gradle`.
+- **Don't modernize a build file casually.** A construct that looks obsolete may be load-bearing:
+  `compile`/`testCompile` are the configurations that work in `e2e/gui`, a standalone build on its own
+  wrapper (`e2e/gui/AGENTS.md`). Toolchain and Spring Boot levels are per-module, so read that
+  module's own `build.gradle`.
 - **Don't run deployment tooling** (`pipectl`, `docker push`, `deploy/pipectl/build-pipectl.sh`,
   `aws s3 rm|mv`) as part of a code change, except the `dev-sandbox` skill's sandbox lifecycle when
   someone asks for it.
