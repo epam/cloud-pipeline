@@ -22,6 +22,7 @@ import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.Quotes;
 
@@ -391,16 +392,32 @@ public class LogAO implements AccessObject<LogAO> {
         return this;
     }
 
+    /**
+     * Reloads the page until a line of the log matches the regular expression (found anywhere in the line, as
+     * matchText finds it), and fails if no line does after 70 reloads, about 23 min. The whole log is read each time
+     * ({@link #logMessages} adds the earlier lines of a long log first). It used to end the wait without an error,
+     * so a line that never came failed a later step instead, or none. A read that fails at one reload (the log still
+     * loading, or a line removed while the lines were read, as the shown part of a growing log moves) is tried again
+     * at the next one, and the last such error is the cause of the final one.
+     */
     public LogAO waitForLog(final String message) {
-        for (int i = 0; i < 70; i++) {
+        final int reloads = 70;
+        final Pattern pattern = Pattern.compile(message);
+        Throwable readError = null;
+        for (int reload = 1; reload <= reloads; reload++) {
             refresh();
             sleep(10, SECONDS);
-            if ($(log()).shouldBe(visible).is(matchText(message))) {
-                break;
+            try {
+                if (logMessages().anyMatch(line -> pattern.matcher(line).find())) {
+                    return this;
+                }
+            } catch (StaleElementReferenceException | AssertionError e) {
+                readError = e;
             }
             sleep(10, SECONDS);
         }
-        return this;
+        throw new AssertionError(format("No line of the log matches {%s} after %d reloads", message, reloads),
+                readError);
     }
 
     public LogAO waitForTask(final String task) {

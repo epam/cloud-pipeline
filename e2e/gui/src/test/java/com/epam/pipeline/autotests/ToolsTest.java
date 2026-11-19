@@ -67,7 +67,8 @@ public class ToolsTest
     private final String defaultRegistryId = C.DEFAULT_REGISTRY_IP;
     private final String testingTool = C.TESTING_TOOL_NAME;
     private final String dockerImage = String.format("%s/%s", defaultRegistryId, testingTool);
-    private final String personalGroup = "personal";
+    // the groups dropdown labels a user's personal group "Personal" (client/.../tools/DockerRegistriesGroupsList.js)
+    private final String personalGroup = "Personal";
     private final String defaultGroup = C.DEFAULT_GROUP;
     private final String command = "echo \"Hi, I'm nginx!\"";
     private final String disk = "23";
@@ -221,9 +222,9 @@ public class ToolsTest
         final String fullDescription = "full description";
         tools().performWithin(defaultRegistry, defaultGroup, testingTool, tool ->
                 tool.addShortDescription(shortDescription)
-                        .ensure(SHORT_DESCRIPTION, text(shortDescription))
+                        .ensure(SHORT_DESCRIPTION, exactText(shortDescription))
                         .addFullDescription(fullDescription)
-                        .ensure(FULL_DESCRIPTION, text(fullDescription))
+                        .ensure(FULL_DESCRIPTION, exactText(fullDescription))
         );
     }
 
@@ -404,7 +405,7 @@ public class ToolsTest
                 .setDisk("11")
                 .click(SAVE)
                 .description()
-                .ensure(FULL_DESCRIPTION, text(description))
+                .ensure(FULL_DESCRIPTION, exactText(description))
         );
     }
 

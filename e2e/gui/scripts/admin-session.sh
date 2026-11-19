@@ -26,7 +26,9 @@
 #                                                           it does not exist yet, unblocked if it is blocked) that
 #                                                           lasts <s> (default 93600 = 26 h: the 24 h tests timeout of
 #                                                           run-e2e.sh plus 2 h), with no SSO sign-in at all; sets the
-#                                                           "email" attribute of <name> to <address>
+#                                                           "email" attribute of <name> to <address>; mutes the
+#                                                           in-app notifications of <name> (metadata key
+#                                                           ui.notifications.mute, kept after the run)
 #   admin-session.sh watch   --state <dir> [--interval <s>] [--pid <pid>]
 #                                                           re-applies the extension every <s> (default 300) while
 #                                                           <pid> is alive: a request that was in flight during the
@@ -377,6 +379,17 @@ case "$_CMD" in
         elif [ -z "$(jq -r '[(.attributes // {}) | to_entries[] | select(.key | ascii_downcase == "email") | .value]
                 | first // empty' <<< "$_ACCOUNT")" ]; then
             e2e_warn "The user $_PRINCIPAL has no email attribute: TC-NOTIFICATION-01 fails (--email sets one)"
+        fi
+        # The GUI shows the unread in-app notifications (the run status ones of the account's own runs among them) as
+        # cards over the top right of every page, where they take the clicks of the tests. Muted for good, as the
+        # account belongs to the runs; only the GUI reads the key, emails are still sent.
+        if cp_api POST metadata/updateKeys "$(jq -cn --argjson id "$_USER_ID" '{entity: {entityId: $id,
+                entityClass: "PIPELINE_USER"}, data: {"ui.notifications.mute": {value: "{\"muted\":true,\"by\":\"e2e\"}",
+                type: "string"}}}')" \
+                > /dev/null; then
+            e2e_log "The in-app notifications of $_PRINCIPAL are muted (ui.notifications.mute)"
+        else
+            e2e_warn "Unable to mute the in-app notifications of $_PRINCIPAL: their cards can cover what the tests click"
         fi
         _jwt="$(cp_api_payload GET "user/token?name=$_USER_URI&expiration=300" 2> /dev/null \
             | jq -r '.token // empty' 2> /dev/null)"

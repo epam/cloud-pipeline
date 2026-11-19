@@ -32,6 +32,7 @@ import org.testng.collections.CollectionUtils;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -184,10 +185,11 @@ public class ToolVersions extends ToolTab<ToolVersions> {
                 .find(byXpath(String.format(
                         ".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", customTag)))
                 .find(byId(String.format("run-%s-button", customTag))).shouldBe(visible).click();
-        new RunsMenuAO()
-                .messageShouldAppear(String.format(
-                        "Are you sure you want to launch tool (version %s) with default settings?", customTag))
-                .click(button("Launch"));
+        // the question of this client names the run as <tool>:<version> (ConfirmationPopupAO.ensureRunTitleMatches)
+        new ConfirmationPopupAO<>(new RunsMenuAO())
+                .ensureRunTitleMatches(String.format("Are you sure you want to launch\\s*.+?:%s\\s*with default settings\\?",
+                        Pattern.quote(customTag)))
+                .ok();
         sleep(1, SECONDS);
         test.addRunId(Utils.getToolRunId(tool, customTag));
         return new RunsMenuAO();

@@ -497,6 +497,48 @@ public class Utils {
                 .perform();
     }
 
+    /**
+     * Clicks the element, and clicks it again while the click shows nothing, up to {@code clicks} times. A click can
+     * be lost if the page redraws during it: the Active Runs table, for one, reloads every 10 s and redraws its rows
+     * (client/.../runs/AllRuns.js). {@code shown} checks what the click opens, with its own wait, and throws an
+     * AssertionError if it isn't there, as Selenide's should* do. The error of the last click is rethrown.
+     *
+     * What an earlier click opens may still come after that wait. If it then covers the element (the mask of a
+     * confirmation), the next click fails once Selenide has retried it for its timeout, and {@code shown} is checked
+     * once more instead. If it comes later still, the next click goes through and can open it a second time, so the
+     * wait of {@code shown} has to be longer than the click normally takes to show its result.
+     */
+    public static void clickUntilShown(final SelenideElement element, final Runnable shown, final int clicks) {
+        for (int click = 1; ; click++) {
+            try {
+                element.shouldBe(visible).click();
+            } catch (AssertionError clickError) {
+                if (click == 1) {
+                    throw clickError;
+                }
+                System.out.printf("[WARN] Click %d of %d on %s failed, checking what the click before showed%n",
+                        click, clicks, element.getSearchCriteria());
+                try {
+                    shown.run();
+                    return;
+                } catch (AssertionError shownError) {
+                    clickError.addSuppressed(shownError);
+                    throw clickError;
+                }
+            }
+            try {
+                shown.run();
+                return;
+            } catch (AssertionError e) {
+                if (click == clicks) {
+                    throw e;
+                }
+                System.out.printf("[WARN] Click %d of %d on %s showed nothing, clicking it again%n",
+                        click, clicks, element.getSearchCriteria());
+            }
+        }
+    }
+
     public static String readFile(final String filePath) {
         try {
             return String.join("\n", Files.readAllLines(Paths.get(filePath)));

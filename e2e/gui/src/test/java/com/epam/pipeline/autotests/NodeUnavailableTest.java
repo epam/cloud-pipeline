@@ -282,9 +282,24 @@ public class NodeUnavailableTest extends AbstractSeveralPipelineRunningTest impl
      */
     private static List<String> waitForTags(final LogAO runLog, final Predicate<List<String>> expected) {
         final long deadline = System.currentTimeMillis() + TAGS_TIMEOUT.toMillis();
+        List<String> tags = null;
         while (true) {
-            final List<String> tags = runTags(runLog);
-            if (expected.test(tags) || System.currentTimeMillis() > deadline) {
+            try {
+                tags = runTags(runLog);
+                if (expected.test(tags)) {
+                    return tags;
+                }
+            } catch (org.openqa.selenium.StaleElementReferenceException
+                     | org.openqa.selenium.NoSuchElementException e) {
+                // A reload of the page redrew the tags, or removed the Tags row, between finding and reading them
+                System.out.printf("%s: the tags changed while they were read, they are read again: %s%n", CASE,
+                        e.getClass().getSimpleName());
+            }
+            if (System.currentTimeMillis() > deadline) {
+                // without a single read, a check that the tag is gone would pass on tags never read
+                if (tags == null) {
+                    fail(format("The tags of the run could not be read in %d s", TAGS_TIMEOUT.getSeconds()));
+                }
                 return tags;
             }
             sleep(TAGS_POLL.getSeconds(), SECONDS);

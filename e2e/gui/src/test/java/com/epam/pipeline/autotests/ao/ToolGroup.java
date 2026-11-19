@@ -26,6 +26,7 @@ import java.util.function.Function;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 
+import static com.codeborne.selenide.Condition.exactValue;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
@@ -72,14 +73,19 @@ public class ToolGroup implements AccessObject<ToolGroup> {
         return new ToolDescription(this, toolName);
     }
 
+    /**
+     * Pastes the name over the text of the search input and checks it. The input is controlled, and the tools page
+     * keeps the search of an earlier step: clear() emptied only the page's text of it, and the name was pasted after
+     * the old search ("tests/e2e-emptytests/e2e-empty"), so no tool was found.
+     */
     public ToolGroup searchToolByName(final String toolName) {
         StringSelection stringSelection = new StringSelection(toolName);
         Toolkit.getDefaultToolkit().getSystemClipboard()
                 .setContents(stringSelection, null);
         SelenideElement element = get(SEARCH);
         element.click();
-        element.clear();
-        element.sendKeys(Keys.chord(Keys.CONTROL, "v"));
+        element.sendKeys(Keys.chord(Keys.CONTROL, "a"), Keys.chord(Keys.CONTROL, "v"));
+        element.shouldHave(exactValue(toolName));
         return this;
     }
 

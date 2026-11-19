@@ -29,6 +29,7 @@ import org.openqa.selenium.WebElement;
 import static com.codeborne.selenide.Condition.appear;
 import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.enabled;
+import static com.codeborne.selenide.Condition.exactValue;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byAttribute;
@@ -68,6 +69,9 @@ import static java.util.stream.Collectors.toList;
 
 public class ToolSettings extends ToolTab<ToolSettings> {
 
+    // clicks on the EXECUTION ENVIRONMENT header until the section stays open (expandExecEnvironment)
+    private static final int EXEC_ENVIRONMENT_CLICKS = 3;
+
     private final Map<Primitive, SelenideElement> elements;
 
     public ToolSettings(final ToolGroup toolGroup, final String toolName) {
@@ -100,7 +104,33 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     @Override
     public ToolSettings open() {
         click(SETTINGS);
-        return click(EXEC_ENVIRONMENT);
+        return expandExecEnvironment();
+    }
+
+    /**
+     * Opens the EXECUTION ENVIRONMENT section unless it is open already: a click on an open section's header would
+     * close it. A new form starts with the section collapsed (openedPanels, client/.../tools/forms/EditToolForm.js),
+     * and each click on SETTINGS loads the tool again and draws a new form (client/.../tools/Tool.js). The form can
+     * also close the section once more when it finishes loading: EditToolForm.rebuildComponent keeps this.state,
+     * awaits its requests and then sets it back, with the openedPanels it read before them. So the section has to be
+     * still open a second after a click, otherwise its header is clicked again, up to EXEC_ENVIRONMENT_CLICKS times;
+     * and the setters of its fields (cmd template, instance and price type, disk, sensitive storages, limit mounts)
+     * call this again just before they use them.
+     */
+    public ToolSettings expandExecEnvironment() {
+        final SelenideElement section = get(EXEC_ENVIRONMENT).shouldBe(visible).closest(".ant-collapse-item");
+        for (int click = 1; !section.has(cssClass("ant-collapse-item-active")); click++) {
+            if (click > EXEC_ENVIRONMENT_CLICKS) {
+                section.shouldHave(cssClass("ant-collapse-item-active"));
+            }
+            if (click > 1) {
+                System.out.printf("[WARN] EXECUTION ENVIRONMENT is closed after click %d of %d on it, clicking it again%n",
+                        click - 1, EXEC_ENVIRONMENT_CLICKS);
+            }
+            click(EXEC_ENVIRONMENT);
+            sleep(1, SECONDS);
+        }
+        return this;
     }
 
     public ToolSettings addEndpoint(final String endpoint) {
@@ -125,16 +155,29 @@ public class ToolSettings extends ToolTab<ToolSettings> {
         return this;
     }
 
+    /**
+     * Replaces the port of the first endpoint. The input is a controlled one that already has the port: Selenide's
+     * setValue clears only the page's text, so a redraw before the typing puts the old port back and the new one is
+     * typed after it. Selecting the text and typing over it changes the value as a user does; the check stops the
+     * test here if the value is still another.
+     */
     public ToolSettings changeEndpointPort(final String port) {
-        get(PORT).find(byClassName("ant-input")).should(appear).setValue(port);
+        final SelenideElement portField = get(PORT).find(byClassName("ant-input")).should(appear);
+        setValue(portField, port);
+        portField.shouldHave(exactValue(port));
         return this;
     }
 
+    /**
+     * Replaces the name of the first endpoint: typed over the selected old name and checked, as in
+     * {@link #changeEndpointPort(String)}.
+     */
     public ToolSettings changeEndpointName(final String name) {
-        $(byText("Name:")).parent()
+        final SelenideElement nameField = $(byText("Name:")).parent()
                 .$(byClassName("ant-input"))
-                .should(appear)
-                .setValue(name);
+                .should(appear);
+        setValue(nameField, name);
+        nameField.shouldHave(exactValue(name));
         return this;
     }
     
@@ -173,13 +216,16 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     }
 
     public ToolSettings setDefaultCommand(final String command) {
-        SelenideElement defaultCommand = get(DEFAULT_COMMAND);
+        expandExecEnvironment();
+        // in a closed section the editor stays in the page with no size, and the mouse can't be moved to it
+        SelenideElement defaultCommand = get(DEFAULT_COMMAND).shouldBe(visible);
         Utils.clearTextField(defaultCommand);
         Utils.clickAndSendKeysWithSlashes(defaultCommand, command);
         return this;
     }
 
     public ToolSettings disableAllowSensitiveStorage() {
+        expandExecEnvironment();
         if (get(SENSITIVE_STORAGE).has(cssClass("ant-checkbox-checked"))) {
             click(SENSITIVE_STORAGE);
         }
@@ -187,6 +233,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     }
 
     public ToolSettings enableAllowSensitiveStorage() {
+        expandExecEnvironment();
         if (!get(SENSITIVE_STORAGE).has(cssClass("ant-checkbox-checked"))) {
             click(SENSITIVE_STORAGE);
         }
@@ -194,6 +241,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     }
 
     public ToolSettings doNotMountStoragesSelect (boolean isSelected) {
+        expandExecEnvironment();
         if ((!get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && isSelected) ||
                 (get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && !isSelected)) {
             click(DO_NOT_MOUNT_STORAGES);
@@ -202,7 +250,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     }
 
     public ToolSettings setDisk(final String disk) {
-        return setValue(DISK, disk);
+        return expandExecEnvironment().setValue(DISK, disk);
     }
 
     public ToolSettings setEndpoint(final String port) {
@@ -210,14 +258,14 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     }
 
     public ToolSettings setInstanceType(final String instanceType) {
-        click(INSTANCE_TYPE);
+        expandExecEnvironment().click(INSTANCE_TYPE);
         $(PipelineSelectors.visible(byClassName("ant-select-dropdown-menu"))).find(withText(instanceType))
                 .shouldBe(visible).click();
         return this;
     }
 
     public ToolSettings setPriceType(final String priceType) {
-        click(PRICE_TYPE);
+        expandExecEnvironment().click(PRICE_TYPE);
         $(PipelineSelectors.visible(byClassName("ant-select-dropdown-menu")))
                 .find(withText(priceType))
                 .shouldBe(visible)
@@ -279,7 +327,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     }
 
     public SelectLimitMountsPopupAO<ToolSettings> selectDataStoragesToLimitMounts() {
-        click(LIMIT_MOUNTS);
+        expandExecEnvironment().click(LIMIT_MOUNTS);
         return  new SelectLimitMountsPopupAO<>(this).sleep(2, SECONDS);
     }
 }

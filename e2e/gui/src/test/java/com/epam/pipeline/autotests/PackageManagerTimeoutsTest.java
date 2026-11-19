@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -200,6 +201,8 @@ public class PackageManagerTimeoutsTest extends AbstractSeveralPipelineRunningTe
             final LogAO run = tools()
                     .perform(registry, anotherGroup, tool, ToolTab::runWithCustomSettings)
                     .setDefaultLaunchOptions()
+                    // the case waits for the run's SSH: a spot request can wait for capacity longer than that
+                    .setPriceType(ON_DEMAND)
                     .doNotMountStoragesSelect(true)
                     .launchTool(this, toolSelfName)
                     .showLog(getLastRunId());
@@ -220,6 +223,7 @@ public class PackageManagerTimeoutsTest extends AbstractSeveralPipelineRunningTe
         return tools()
                 .perform(registry, toolGroup, tool, ToolTab::runWithCustomSettings)
                 .setDefaultLaunchOptions()
+                .setPriceType(ON_DEMAND)
                 .doNotMountStoragesSelect(true)
                 .clickAddStringParameter().setName(hangParameter).setValue("true").close()
                 .clickAddStringParameter().setName(limitParameter).setValue(TIME_LIMIT).close()

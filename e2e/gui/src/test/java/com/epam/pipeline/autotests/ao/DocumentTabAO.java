@@ -156,9 +156,15 @@ public class DocumentTabAO extends AbstractPipelineTabAO<DocumentTabAO> {
             super(DocumentTabAO.this);
         }
 
+        /**
+         * Types over the selected old name and checks it: Selenide's setValue clears only the page's text of the
+         * controlled input, and a redraw before the typing would put the old name in front of the new one.
+         */
         @Override
         public DocumentRenamingPopupAO typeInField(String value) {
-            $(byId("name")).setValue(value);
+            final SelenideElement nameField = $(byId("name"));
+            setValue(nameField, value);
+            nameField.shouldHave(exactValue(value));
             return this;
         }
     }

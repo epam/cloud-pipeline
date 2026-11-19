@@ -87,7 +87,7 @@ public abstract class ToolTab<TAB extends ToolTab<TAB>> implements AccessObject<
         sleep(2, SECONDS);
         click(RUN);
         final ConfirmationPopupAO<RunsMenuAO> confirmation = new ConfirmationPopupAO<>(new RunsMenuAO())
-                .ensureTitleContains("Are you sure you want to launch tool.*with default settings?")
+                .ensureRunTitleMatches("Are you sure you want to launch\\s*.+?\\s*with default settings\\?")
                 .ensure(byClassName("ob-estimated-price-info__info"), visible);
         // The label is made of several text nodes ("Set ", the price type, " price type")
         final SelenideElement onDemand = $(byXpath(
@@ -105,7 +105,7 @@ public abstract class ToolTab<TAB extends ToolTab<TAB>> implements AccessObject<
         sleep(2, SECONDS);
         click(RUN);
         return new ConfirmationPopupAO<>(new RunsMenuAO())
-                .ensureTitleContains("Are you sure you want to launch tool.*with default settings?")
+                .ensureRunTitleMatches("Are you sure you want to launch\\s*.+?\\s*with default settings\\?")
                 .ensure(byClassName("ob-estimated-price-info__info"), visible)
                 .ok();
     }
