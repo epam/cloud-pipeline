@@ -109,6 +109,7 @@ import RunCapabilities, {
   hasPlatformSpecificCapabilities,
   RUN_CAPABILITIES_MODE
 } from './utilities/run-capabilities';
+import fetchToolOS from './utilities/fetch-tool-os';
 import {
   CP_CAP_LIMIT_MOUNTS,
   CP_CAP_SGE,
@@ -1338,6 +1339,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
   };
 
+  // The platform, the OS of the tool and the cloud provider of the run, for the capabilities that
+  // depend on them (e.g. NICE DCV). The capabilities of the user may come after the selection was
+  // checked for the OS of the tool
+  getCapabilitiesPlatformInfo = async (dockerImage) => ({
+    platform: this.toolPlatform,
+    os: await fetchToolOS(dockerImage),
+    provider: this.currentCloudRegionProvider || undefined
+  });
+
   generateConfigurationPayload = async (values, options = {}) => {
     const {
       skipReservationParameters = false,
@@ -1492,7 +1502,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       payload.parameters,
       this.state.runCapabilities,
       this.props.preferences,
-      this.toolPlatform
+      await this.getCapabilitiesPlatformInfo(values[EXEC_ENVIRONMENT].dockerImage)
     );
     if (this.props.detached && this.state.pipeline && this.state.version) {
       payload.pipelineId = this.state.pipeline.id;
@@ -1715,7 +1725,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       payload.params,
       this.state.runCapabilities,
       this.props.preferences,
-      this.toolPlatform
+      await this.getCapabilitiesPlatformInfo(payload.dockerImage)
     );
     const {
       parameters: appliedReservationParameters,

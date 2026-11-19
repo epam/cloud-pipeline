@@ -50,6 +50,7 @@
 - [WDL and Luigi pipelines are no longer supported](#wdl-and-luigi-pipelines-are-no-longer-supported)
 - [OIDC token exchange](#oidc-token-exchange)
 - [NICE DCV on Rocky Linux 10](#nice-dcv-on-rocky-linux-10)
+- [NoMachine on Rocky Linux 10](#nomachine-on-rocky-linux-10)
 
 ***
 
@@ -1000,6 +1001,22 @@ Rocky Linux 10, RHEL 10 and CentOS Stream 10 have no X server and no Xfce, also 
 In the current version, DCV runs the GNOME desktop on Wayland there, with the el10 build of Amazon DCV 2026.0 (`nice-dcv-2026.0-25174-el10-x86_64` in `tools/dcv` of the distribution URL), which supports these releases. A DCV session opens at the GDM login screen, which lists the owner of the run: the user selects the name, and no password is asked, in the web and in the desktop DCV client alike. As the Xfce desktop, it has no wallpaper and the keyboard layouts of `CP_DCV_XKB_LAYOUTS` (`us`, `fr` and `de` by default). It has no screen lock either. Rocky Linux 8 and 9 keep Xfce on X11.
 
 On Wayland, a user can have one DCV session, and DCV does not run an initialization script for it (`CP_DCV_INIT_SCRIPT`).
+
+For more details see [here](../../manual/10_Manage_Tools/10.3._Add_a_Tool.md#supported-os-families).
+
+***
+
+## NoMachine on Rocky Linux 10
+
+Rocky Linux 10, RHEL 10 and CentOS Stream 10 have no Xfce, also not in EPEL, and `tools/nomachine` of the distribution URL has no Xfce bundle for them. So the NoMachine desktop (`CP_CAP_DESKTOP_NM`) previously failed to install on them: "Failed to install NoMachine".
+
+In the current version, NoMachine runs the GNOME desktop there, on X11 in the virtual display of NoMachine 9.8.2 (`nomachine_9.8.2_1_x86_64.rpm` in `tools/nomachine` of the distribution URL). As the Xfce desktop, it has no wallpaper and the keyboard layouts `us`, `fr` and `de`. It has no screen lock either. Rocky Linux 8 and 9 keep Xfce.
+
+Such a run needs the **SystemD** capability (`CP_CAP_SYSTEMD_CONTAINER`) together with **NoMachine**, as NoMachine cannot start a desktop there without systemd. Without it, the `NoMachineInitialization` task of the run fails at once: "NoMachine on rocky 10.2 needs systemd", and the run goes on without a desktop. NoMachine and NICE DCV (`CP_CAP_DCV`) both run the GNOME desktop there, so a run gets one of them: NICE DCV. A run launched with both through the API or `pipe run` does not configure NoMachine, with a warning, and NICE DCV stops the NoMachine server of the image, e.g. of an image committed from a NoMachine run.
+
+The GUI keeps NICE DCV as well, on any OS, where NICE DCV can run. Previously, when a launch got both NICE DCV and NoMachine, e.g. from the tool settings, the launch parameters or the capabilities of the user, the launch form and the other launches (e.g. **Run with default settings**, a run from the home page, or a rerun) switched NICE DCV off. Now they switch NoMachine off, where NICE DCV is offered for the OS of the tool and the cloud of the run, or where the OS is not known (e.g. the tool version was not scanned). Elsewhere, NoMachine is kept, as before. A capability that the user selects in the launch form still replaces the other one.
+
+Also, on any distribution, a run whose image has NoMachine already, e.g. an image committed from a NoMachine run, no longer installs the same version again at each start. Previously, a version set as in the package file name (e.g. `CP_CAP_DESKTOP_NM_VERSION=8.4.2_1`) never matched the installed one (`8.4.2-1`), so the run downloaded and installed it again.
 
 For more details see [here](../../manual/10_Manage_Tools/10.3._Add_a_Tool.md#supported-os-families).
 

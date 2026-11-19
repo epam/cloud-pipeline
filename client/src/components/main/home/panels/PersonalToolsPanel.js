@@ -55,6 +55,7 @@ import {
   updateCapabilities,
   getEnabledCapabilities,
   applyUserCapabilities,
+  getCapabilitiesPlatformInfo,
   checkRequiredCapabilitiesErrors
 } from '../../../pipelines/launch/form/utilities/run-capabilities';
 import {
@@ -273,17 +274,23 @@ export default class PersonalToolsPanel extends React.Component {
     const {preferences} = this.props;
     const payload = this.getGeneralLaunchPayload();
     if (runToolInfo && payload) {
+      // The OS of the tool and the cloud of the run decide, e.g., if NICE DCV is available
+      const platformInfo = await getCapabilitiesPlatformInfo(
+        payload,
+        runToolInfo.tool.platform,
+        this.props.awsRegions
+      );
       payload.params = await applyUserCapabilities(
         payload.params || {},
         preferences,
-        runToolInfo.tool.platform
+        platformInfo
       );
       if (runToolInfo.runCapabilities) {
         payload.params = updateCapabilities(
           payload.params,
           runToolInfo.runCapabilities,
           preferences,
-          runToolInfo.tool.platform
+          platformInfo
         );
       }
       return payload;
