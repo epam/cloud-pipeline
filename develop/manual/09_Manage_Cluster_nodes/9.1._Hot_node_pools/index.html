@@ -177,9 +177,27 @@
         <ul>
     <li class="toctree-l4"><a class="reference internal" href="#pool-creation">Pool creation</a>
     </li>
+    <li class="toctree-l4"><a class="reference internal" href="#future-dated-node-pools">Future dated node pools</a>
+    </li>
     <li class="toctree-l4"><a class="reference internal" href="#view-existing-pools">View existing pools</a>
     </li>
     <li class="toctree-l4"><a class="reference internal" href="#edit-existing-pool">Edit existing pool</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#delete-existing-pool">Delete existing pool</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#pool-launch-configuration">Pool launch configuration</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#pools-backed-by-a-capacity-reservation">Pools backed by a capacity reservation</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#browsing-capacity-block-offerings">Browsing capacity block offerings</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#pools-backed-by-a-capacity-block">Pools backed by a capacity block</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#extending-a-capacity-block">Extending a capacity block</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#shareable-pool-runs-configuration">Shareable pool runs configuration</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#guaranteeing-a-runs-capacity">Guaranteeing a run's capacity</a>
     </li>
         </ul>
     </li>
@@ -442,8 +460,10 @@
 <li><a href="#overview">Overview</a></li>
 <li><a href="#node-pools-management">Node pools management</a><ul>
 <li><a href="#pool-creation">Pool creation</a></li>
+<li><a href="#future-dated-node-pools">Future dated node pools</a></li>
 <li><a href="#view-existing-pools">View existing pools</a></li>
 <li><a href="#edit-existing-pool">Edit existing pool</a></li>
+<li><a href="#delete-existing-pool">Delete existing pool</a></li>
 </ul>
 </li>
 <li><a href="#example-of-using">Example</a></li>
@@ -455,24 +475,25 @@
 </li>
 </ul>
 <blockquote>
-<p>To view and manage node pools you need to have <strong>ROLE_ADMIN</strong> role.</p>
+<p>To create a node pool you need the <strong>ROLE_ADMIN</strong> or <strong>ROLE_RUN_ADMIN</strong> role, or the <strong>ROLE_NODE_POOL_MANAGER</strong> role (restricted to a <strong>Future dated</strong> pool - see <a href="#future-dated-node-pools">Future dated node pools</a>). To view, edit or remove an existing pool you need <strong>ROLE_ADMIN</strong> or <strong>ROLE_RUN_ADMIN</strong>; a <strong>ROLE_NODE_POOL_MANAGER</strong> may also edit or remove a pool it owns.</p>
 </blockquote>
 <p>For some jobs, a waiting for a node launch can be too long. It is convenient to have some scope of the running nodes in the background that will be always or on schedule be available.</p>
 <p><strong>Cloud Pipeline</strong> allows controlling the number of persistent compute nodes in the cluster - i.e. a certain number (<strong><code>cluster.min.size</code></strong>) of the nodes of a specified size (<strong><code>cluster.instance.type</code></strong>/<strong><code>cluster.instance.hdd</code></strong>) will be always available in the cluster (even if there is no workload) - see details about System Preferences could be applied for the cluster <a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#cluster">here</a>.<br />
 This is useful to speed up the compute instances creation process (as the nodes are already up and running).<br />
 But this mechanism can be expanded and be a bit more flexible by another platform ability - it is the ability to create "<strong><em>hot node pools</em></strong>".</p>
 <h2 id="overview">Overview</h2>
-<p>Admin can create and manage node pools:</p>
+<p>Administrators and users with the <strong>ROLE_RUN_ADMIN</strong> role can create and manage node pools in either mode. A user with the <strong>ROLE_NODE_POOL_MANAGER</strong> role can also create a <strong>Future dated</strong> node pool (see <a href="#future-dated-node-pools">Future dated node pools</a>), and can open, edit or remove a pool they own, but cannot reach a pool owned by somebody else:</p>
 <ul>
 <li>each pool contains <em>one or several identical nodes</em> - admin specifies the node configuration (instance type, disk, Cloud Region, etc.) and a corresponding number of such nodes. This count can be fixed or flexible ("autoscaled")</li>
 <li>each pool has <em>the schedule of these nodes creation/termination</em>. E.g. the majority of the new compute jobs are started during the workday, so no need to keep these persistent instances over the weekends. For the pool, several schedules can be specified</li>
 <li>for each pool can be configured additional filters - to restrict its usage by the specific users/groups or for the specific pipelines/tools etc.</li>
 </ul>
 <p>When the pool is created, corresponding nodes are being up (<em>according to pool's schedule(s)</em>) and waiting in background. If the user starts a job in this time and the instance requested for a job matches to the pool's node - such running node from the pool is automatically being assigned to the job.</p>
-<p><strong><em>Note</em></strong>: pools management is available only for admins. Usage of pool nodes is available for any user.</p>
+<p><strong><em>Note</em></strong>: removing an existing pool is available only for admins and <strong>ROLE_RUN_ADMIN</strong>, who may also view and edit any pool. Creating a <strong>Future dated</strong> node pool is also available to a <strong>ROLE_NODE_POOL_MANAGER</strong>, who may additionally view and edit the pools it owns - see <a href="#future-dated-node-pools">Future dated node pools</a>. Usage of pool nodes is available for any user.</p>
 <h2 id="node-pools-management">Node pools management</h2>
 <p>For the node pools management a new tab is implemented in the <strong>Cluster State</strong> section - <strong>HOT NODE POOLS</strong> tab:<br />
 <img alt="CP_ManageHotNodePools" src="../attachments/HotNodePools_01.png" /></p>
+<p><strong><em>Note</em></strong>: the <strong>HOT NODE POOLS</strong> tab is shown to admins and to users with the <strong>ROLE_RUN_ADMIN</strong>, <strong>ROLE_CLUSTER_READER</strong> or <strong>ROLE_NODE_POOL_MANAGER</strong> role - a <strong>ROLE_NODE_POOL_MANAGER</strong> reaches it to create a <strong>Future dated</strong> pool. The neighbouring <strong>POOLS USAGE</strong> tab is shown to admins and to the <strong>ROLE_CLUSTER_READER</strong> role.</p>
 <h3 id="pool-creation">Pool creation</h3>
 <p>To create a new pool:</p>
 <ol>
@@ -480,6 +501,12 @@ But this mechanism can be expanded and be a bit more flexible by another platfor
 <li>The pop-up appears:<br />
 <img alt="CP_ManageHotNodePools" src="../attachments/HotNodePools_02.png" /></li>
 <li>Specify the pool name</li>
+<li>Specify the <strong>Pool type</strong>:<ul>
+<li><strong>Standard</strong> - a pool node runs one job at a time, as every pool does today.</li>
+<li><strong>Shareable node</strong> - several jobs may share one pool node, which the platform divides between them.<br />
+The pool type is chosen when the pool is created and cannot be changed afterwards.</li>
+</ul>
+</li>
 <li>Specify the pool schedule - weekly time period during which the pool nodes will be up (running and waiting for the jobs):<ul>
 <li>specify the day of the week and the time of the day for the <em>beginning</em> of the period, e.g.:<br />
 <img alt="CP_ManageHotNodePools" src="../attachments/HotNodePools_03.png" /></li>
@@ -488,7 +515,7 @@ But this mechanism can be expanded and be a bit more flexible by another platfor
 <li>if you wish, you can add several schedule periods for the pool. For that, click the "<strong>+ Add schedule</strong>" button and repeats actions described above for a new period:<br />
 <img alt="CP_ManageHotNodePools" src="../attachments/HotNodePools_05.png" /></li>
 <li>remove the unnecessary schedule you can by the corresponding button <img alt="CP_ManageHotNodePools" src="../attachments/HotNodePools_06.png" /> next to the schedule<br />
-<strong><em>Note</em></strong>: the pool shall have at least one schedule</li>
+<strong><em>Note</em></strong>: the pool shall have at least one schedule, except a pool backed by a capacity reservation, which takes none - see <a href="#pools-backed-by-a-capacity-reservation">Pools backed by a capacity reservation</a></li>
 </ul>
 </li>
 <li>Specify the pool nodes count, e.g.:<br />
@@ -510,7 +537,8 @@ But this mechanism can be expanded and be a bit more flexible by another platfor
 <img alt="CP_ManageHotNodePools" src="../attachments/HotNodePools_09.png" /></li>
 <li>Specify the instance type that will be used for the pool nodes:<br />
 <img alt="CP_ManageHotNodePools" src="../attachments/HotNodePools_10.png" /></li>
-<li>If you wish, you may specify the <strong>AMI</strong> that will be used for the pool nodes. It is non-required. Without specifying - the default deployment <strong>AMI</strong> will be used.</li>
+<li>If you wish, you may specify the <strong>AMI</strong> that will be used for the pool nodes. It is non-required. Without specifying - the default deployment <strong>AMI</strong> will be used.<br />
+<strong><em>Note</em></strong>: this field is deprecated in favor of the pool's <a href="#pool-launch-configuration">launch configuration</a>. It is still honored: when specified - at creation, or later by editing the pool - it is used as the <code>ami</code> of the pool's launch configuration.</li>
 <li>Specify the disk size (in <code>Gb</code>) for the pool nodes, e.g.:<br />
 <img alt="CP_ManageHotNodePools" src="../attachments/HotNodePools_11.png" /><br />
 <strong><em>Note</em></strong>: the pool node will be assign to the job only if user request for a job a smaller disk than pool node has. Also note that the <em>real</em> disk size used for a job differs upwards from the user request - both these notes should be considered. E.g. if user requests 30 GB disk, <em>real</em> node disk may be 40 GB. Then if the pool node has disk setting 35 GB - it will not be assigned to the user job (as the <em>real</em> disk size 40 GB is more than the pool node disk size 35 GB). But if the pool node has disk setting 45 GB - it <strong>will be</strong> assigned normally to the user job. So, the pool disk should be set with a margin - of course, if the admin knows the disk size usually requested by the user.<br />
@@ -550,13 +578,40 @@ For the selected property specify/select the value, e.g.:<br />
 You can select any count of properties in the same way as described above, e.g.:<br />
 <img alt="CP_ManageHotNodePools" src="../attachments/HotNodePools_22.png" /><br />
 In the example above, nodes from the pool will be assigned to the job only if it will be launched by any user (except <em>USER1</em> and <em>USER2</em>) with the <em>ROLE_USER</em> role (of course, if other settings match).<br />
-To remove the filter use the corresponding button <img alt="CP_ManageHotNodePools" src="../attachments/HotNodePools_06.png" /> in the filter row</li>
+To remove the filter use the corresponding button <img alt="CP_ManageHotNodePools" src="../attachments/HotNodePools_06.png" /> in the filter row<br />
+The filters that say <em>whose</em> jobs the pool serves - <strong>Run owner</strong> and <strong>Run owner group</strong> - do not hold against the pool's own owner: a job of the user who owns the pool is assigned to one of its free nodes as if those filters matched it, even where a <strong>Run owner</strong> filter excludes that user. The filters about the job itself - its <strong>Docker image</strong>, <strong>Pipeline</strong>, <strong>Run configuration</strong> or a <strong>Parameter</strong> - hold for the owner as for anyone else, so a pool kept for one image still serves that image only. A pool backed by a capacity reservation adds one more condition its owner does not escape: a job is assigned to its nodes only inside the reservation's window.</li>
 </ul>
 </li>
-<li>To confirm the pool creation, click the <strong>CREATE</strong> button</li>
+<li>To confirm the pool creation, click the <strong>CREATE</strong> button. While the pool is being created, that button shows a progress indicator and the whole form is blocked - every field, the <strong>Add schedule</strong> button and the schedule rows included - so the request cannot be sent twice or the form edited while it runs. The <strong>SAVE</strong> button of an existing pool behaves the same way</li>
 <li>Created pool will appear in the list:<br />
 <img alt="CP_ManageHotNodePools" src="../attachments/HotNodePools_23.png" /></li>
 </ol>
+<h3 id="future-dated-node-pools">Future dated node pools</h3>
+<ol>
+<li>At the <strong>HOT NODE POOLS</strong> tab, click the "<strong>+ Create</strong>" button. The pop-up now starts with a <strong>Mode</strong> field:<ul>
+<li><strong>Default</strong> - the pool described in <a href="#pool-creation">Pool creation</a> above. This is the preselected value.</li>
+<li><strong>Future dated</strong> - a pool that reserves a block of capacity for a single, one-time commitment window instead of a weekly recurring schedule.<br />
+<strong><em>Note</em></strong>: <strong>Mode</strong> can only be chosen while creating a pool - it is disabled when <a href="#edit-existing-pool">editing</a> an existing pool. Reopening an existing <strong>Future dated</strong> pool correctly shows <strong>Future dated</strong>, not <strong>Default</strong>.</li>
+</ul>
+</li>
+<li>Both pool types from <a href="#pool-creation">Pool creation</a> are available in <strong>Future dated</strong> mode. A <strong>new</strong> <strong>Future dated</strong> pool opens with its <strong>Filters</strong> panel already pre-filled with one criterion - <strong>Run owner</strong> <strong>Equals</strong> <code>&lt;your login&gt;</code> - and the <strong>Condition</strong> set to <code>Matches all filters ("and")</code>. This is a starting point, not a locked value: you may edit or remove it, and it applies the same way for either pool type. Opening an <em>existing</em> pool for editing never re-adds or changes this criterion, so it is never rewritten to whoever happens to open the pool.</li>
+<li>For a <strong>Future dated</strong> pool, the <strong>Schedule</strong> panel shows a single one-time commitment window instead of the weekly recurring schedule:<ul>
+<li><strong>Search from</strong> - the earliest moment the reservation may begin. Together with <strong>Search until</strong> it defines a search window: the cloud provider reserves the requested <strong>Duration (days)</strong> somewhere inside that window, as soon as matching capacity becomes available, so the dates actually granted are chosen for the reservation, not these two values. <strong>Search from</strong> must be between <strong>5</strong> and <strong>120</strong> days from now.</li>
+<li><strong>Search until</strong> - the end of the search window; the reservation must finish by then. It must be later than <strong>Search from</strong>.</li>
+<li><strong>Duration (days)</strong> - the committed length, in whole days, with a minimum of <strong>14</strong>. It must fit between <strong>Search from</strong> and <strong>Search until</strong>. A hint under the fields tells you whether the current window covers the duration.</li>
+</ul>
+</li>
+<li>The following constraints also apply when creating a <strong>Future dated</strong> pool:<ul>
+<li><strong>Spot pricing is not available</strong> - only on-demand price type can be used for a reservation.</li>
+<li><strong>Nodes count must be at least 1</strong> when you create the pool - but once created, <strong>the pool shows no nodes until the reservation is activated</strong>: the platform sets the pool's node count to the reserved amount when the reservation starts, and back to zero once it ends.</li>
+<li><strong>Autoscaling is not available for Future dated pools</strong> - the <strong>Autoscaled</strong> checkbox and its settings (described in step 6 of <a href="#pool-creation">Pool creation</a>) are not shown. A <strong>Future dated</strong> pool always keeps the fixed pool nodes count.</li>
+</ul>
+</li>
+<li>The rest of the pool settings - <strong>Cloud Provider</strong>/<strong>Region</strong>, instance type, <strong>AMI</strong>, disk size, docker images, node labels - are specified exactly as for a <strong>Default</strong> pool (price type is restricted as described in step 4 above).</li>
+<li>Click the <strong>CREATE</strong> button to confirm. The reservation is <strong>submitted to the platform for approval</strong> rather than applied immediately, and the platform may still reject it for provider-side limits (for example a minimum total vCPU count, or an instance family that is not allowed for reservations) - in which case the error is reported right after clicking <strong>CREATE</strong>.</li>
+</ol>
+<p><strong>Who may create what</strong>: administrators and users with the <strong>ROLE_RUN_ADMIN</strong> role can create pools in either mode, and can view, edit or remove any existing pool. A user with the <strong>ROLE_NODE_POOL_MANAGER</strong> role also sees the "<strong>+ Create</strong>" button, but can create <strong>Future dated</strong> pools only - the <strong>Mode</strong> field is not shown to such a user. Such a user may open, edit or remove the pools it owns, which are the ones it created, and cannot reach a pool owned by anybody else. Node pools are becoming permission-managed, shareable objects on the backend, but the GUI does not yet expose per-pool sharing, so ownership is the whole of a <strong>ROLE_NODE_POOL_MANAGER</strong>'s access to an existing pool.</p>
+<p>Reopening an existing <strong>Future dated</strong> pool whose reservation has already been scheduled shows the granted window as read-only text under <strong>Reservation window:</strong>, instead of the editable <strong>Search from</strong> / <strong>Search until</strong> / <strong>Duration (days)</strong> controls. If the reservation has not been scheduled yet, those three controls are shown instead, as read-only (disabled) controls carrying the originally requested values, together with a notice stating what the reservation is doing - waiting for an administrator's approval, waiting to be placed with the cloud provider, being assessed by it - or, where it will never be placed, why: the reservation was cancelled, failed, or has ended. <strong>Nodes count</strong> is shown as read-only text in the form <code>0 out of N</code> (N being the reserved instance count), because the pool's own node count stays <code>0</code> until the reservation is activated. The price type is also disabled on an existing reservation pool, because neither it nor the window can be changed through this form once the pool exists.</p>
 <h3 id="view-existing-pools">View existing pools</h3>
 <p>At the <strong>HOT NODE POOLS</strong> tab, you can view all existing node pools, their schedules, settings, states.</p>
 <p><img alt="CP_ManageHotNodePools" src="../attachments/HotNodePools_24.png" /></p>
@@ -570,8 +625,10 @@ To remove the filter use the corresponding button <img alt="CP_ManageHotNodePool
 <li><strong>f</strong> - the list of pool schedules</li>
 <li><strong>g</strong> - the count of pool nodes assigned to jobs in the current moment</li>
 <li><strong>h</strong> - the summary count of pool nodes running in the current moment (in background or assigned to jobs)</li>
-<li><strong>i</strong> - controls to edit/remove the pool</li>
+<li><strong>i</strong> - controls to edit/remove the pool, and to open its utilization. Each appears only where it can be used: editing and removing for an administrator, a <strong>ROLE_RUN_ADMIN</strong> or the pool's owner, and the utilization chart for whoever may open the <strong>Pools usage</strong> tab behind it - an administrator, a <strong>ROLE_RUN_ADMIN</strong> or a <strong>ROLE_CLUSTER_READER</strong></li>
 </ul>
+<p>A <strong>Future dated</strong> pool's card additionally carries a reservation badge, reflecting the reservation's own status as reported by the platform - one of <em>Requires approval</em>, <em>Approved</em>, <em>Assessing by cloud provider</em>, <em>Scheduled</em>, <em>Active</em>, <em>Finalizing</em>, <em>Finished</em>, <em>Purchase failed</em>, <em>Failed</em> or <em>Cancelled</em>. While the reservation is not yet activated, the card shows the reserved instance count as its total node count instead of <code>0</code> - e.g. <code>0 / 3</code> for a reservation of 3 instances, rather than <code>0 / 0</code> - and such a pool is still <strong>not</strong> marked <code>(disabled)</code>, unlike a <strong>Default</strong> pool with a node count of <code>0</code>, which still is.</p>
+<p>While a reservation is <strong>Active</strong>, its pool's instance type is offered as reserved capacity on the pipeline launch form - see <a href="../../06_Manage_Pipeline/6._Manage_Pipeline/#configuration">6. Manage Pipeline</a> - to any user who can read the pool, not only to the one who created it.</p>
 <p>To view the pool state, click it in the list, e.g.:<br />
 <img alt="CP_ManageHotNodePools" src="../attachments/HotNodePools_25.png" /></p>
 <p>The pool nodes list will appear:<br />
@@ -585,6 +642,153 @@ Pool nodes that are running in background but not assigned to jobs yet have <em>
 <img alt="CP_ManageHotNodePools" src="../attachments/HotNodePools_28.png" /><br />
 You can edit only pool name, pool schedules, pool nodes count (and "autoscaled" property/settings) and filters.</p>
 <p>Make changes and click the <strong>SAVE</strong> button to confirm.</p>
+<h3 id="delete-existing-pool">Delete existing pool</h3>
+<p>To delete a pool, click the corresponding button on its tile. A confirmation pop-up asks
+"<strong>Are you sure you want to delete "<code>&lt;pool name&gt;</code>" pool?</strong>".</p>
+<p>For a <strong>Future dated</strong> pool whose capacity reservation is still open - any status but
+<em>Requires approval</em>, <em>Finished</em>, <em>Purchase failed</em>, <em>Failed</em> or <em>Cancelled</em> (see
+<a href="#future-dated-node-pools">Future dated node pools</a>) - the pop-up additionally shows a
+warning: deleting the pool gives the reservation up too, and the cloud provider may still
+charge for the capacity it already committed. The <strong>DELETE</strong> button stays disabled until
+the <strong>Force deletion</strong> checkbox is ticked, confirming the deletion is wanted despite that.
+This applies equally to an administrator and to the <strong>ROLE_NODE_POOL_MANAGER</strong> who owns the
+pool - neither role waives the warning. A <strong>Default</strong> pool, and a <strong>Future dated</strong> one
+whose reservation has already reached one of the statuses above, show no warning and no
+checkbox: the <strong>DELETE</strong> button is enabled right away.</p>
+<h3 id="pool-launch-configuration">Pool launch configuration</h3>
+<p>A pool may have its own launch configuration - how its nodes are started - in the <code>amiConfiguration</code> field of the pool. It has the same form as an entry of the <code>amis</code> list of the region in the <strong><code>cluster.networks.config</code></strong> system preference:</p>
+<pre><code class="language-json">&quot;amiConfiguration&quot;: {
+    &quot;ami&quot;: &quot;ami-0123456789abcdef0&quot;,
+    &quot;init_script&quot;: &quot;/opt/api/scripts/init_multicloud_v1.15.4.sh&quot;,
+    &quot;fs_type&quot;: &quot;btrfs&quot;,
+    &quot;embedded_scripts&quot;: { &quot;fsautoscale&quot;: &quot;/opt/api/scripts/fsautoscale.sh&quot; },
+    &quot;additional_spec&quot;: { &quot;IamInstanceProfile&quot;: { &quot;Arn&quot;: &quot;arn:aws:iam::123456789012:instance-profile/node&quot; } },
+    &quot;availability_zone&quot;: &quot;us-east-1c&quot;,
+    &quot;subnet&quot;: &quot;subnet-0123456789abcdef0&quot;
+}
+</code></pre>
+<p>The launch configuration can be specified in the <code>amiConfiguration</code> field of the pool create or update request (<code>POST /cluster/pool</code>, an update is a request with the pool's <code>id</code>):</p>
+<ul>
+<li>if a create request specifies it, it is used as is</li>
+<li>if a create request doesn't specify it, the pool has none, and its nodes are launched as the region's <code>amis</code> entries say</li>
+<li>if an update request specifies it, it replaces the current one; if not, the current one is kept</li>
+<li>the <strong>AMI</strong> of the pool, if specified, is used as the <code>ami</code> when the launch configuration doesn't specify one, and also when the <strong>AMI</strong> is changed later by editing the pool</li>
+</ul>
+<p>A launch configuration only needs the fields that differ from the region's <code>amis</code> entry the pool's nodes match - the other fields are taken from that entry when a node is launched, so changes of <strong><code>cluster.networks.config</code></strong> reach the pool's new nodes.</p>
+<p>A specified launch configuration is checked:</p>
+<ul>
+<li>for an AWS region that configures <code>networks</code> in <strong><code>cluster.networks.config</code></strong>, the <code>availability_zone</code> shall be one of its zones, and the <code>subnet</code> shall be the subnet configured for that zone</li>
+<li>Windows images are not allowed, as for the <strong>AMI</strong> field</li>
+</ul>
+<p>A launch configuration sent unchanged in an update request - e.g. when the pool is resized - is not checked again.</p>
+<p>When a node of a pool with a launch configuration is launched, the pool's configuration is applied over the region's first <code>amis</code> entry that matches the node, as for any other node:</p>
+<ul>
+<li>every field the pool's configuration sets wins; <code>additional_spec</code> and <code>embedded_scripts</code> are merged key by key - a key the pool's configuration sets replaces the entry's value for that key as a whole</li>
+<li>the fields the pool's configuration doesn't set are taken from the matching entry, or take their default values if no entry matches</li>
+<li>the <code>platform</code>, <code>instance_mask</code>, <code>permissions</code>, <code>docker_image</code> and <code>run_parameters</code> fields of the pool's configuration are not used</li>
+<li><code>subnet</code> is a pool-only field: the pool's nodes are launched into that subnet</li>
+<li>if <code>availability_zone</code> is set and no subnet fixes it, the pool's nodes are launched in that zone</li>
+</ul>
+<p>Currently, the launch configuration is applied to AWS pools only - except its <code>ami</code>, which is used as the pool's image on every Cloud Provider.</p>
+<p>A run uses a pool's node only if it asks for the same node image as the pool - the launch configuration's <code>ami</code>, or the pool's <strong>AMI</strong> - or if neither the run nor the pool sets one: both then get the image of the region's matching <code>amis</code> entry.</p>
+<h3 id="pools-backed-by-a-capacity-reservation">Pools backed by a capacity reservation</h3>
+<p>Capacity reservations are available in AWS regions only. A request that creates a pool backed by a capacity reservation in a region of another cloud provider is rejected.</p>
+<p>An administrator creates any pool. A user with the <strong>ROLE_NODE_POOL_MANAGER</strong> role creates a pool only when the request carries a capacity reservation: a request for an ordinary pool from such a user is refused as unauthorized, rather than rejected as invalid. Whether the reservation then needs an administrator's approval is for the policies below to say.</p>
+<p>For a pool backed by a capacity reservation, the platform chooses the reservation's availability zone itself: it is one of the region's zones that offer the pool's instance type and that the region's <code>networks</code> configure, if any. If the cloud provider can't provide the capacity for the requested date in one zone, the other zones are tried for the same date first, and only then the next date. Every refusal moves the reservation on this way - whether the provider refuses the request as it is submitted or fails, cancels or delays the reservation it had already taken - and the request fails only once no start date left in the requested window can fit the reservation's duration, or no zone can take the reservation at all. A payment the cloud provider rejects fails the request at once: no other date or zone would fare any better. Moving on to the next candidate puts the request back into approval, so a reservation that needed an administrator's approval is approved once only - a request to approve one that is already approved is rejected, and the owner is notified of the attempt that settles the request rather than of each candidate tried.</p>
+<p>Once the cloud provider has scheduled the reservation, the platform sets the pool's start date to the reservation's, and its end date to the reservation's end minus <code>finalizingLeadHours</code> of the <strong><code>cluster.capacity.reservation.monitor.settings</code></strong> system preference - the moment the reservation is reported as ending. From then on the pool's nodes take no new runs, so that no job is started on capacity that ends shortly after; runs already on them keep running until the reservation itself ends. The platform also writes the reservation's data into the pool's launch configuration:</p>
+<ul>
+<li>the reservation target, in <code>additional_spec</code> (<code>CapacityReservationSpecification</code>), so that the pool's nodes consume the reserved capacity</li>
+<li>the reservation's <code>availability_zone</code>, and the <code>subnet</code> configured for that zone</li>
+</ul>
+<p>The pool's node count stays <code>0</code> until the reservation is active, so no nodes are launched before the reserved capacity exists. These fields, and the pool's own start and end date, are removed when the reservation ends, fails, is cancelled, or is moved to another date or zone after the cloud provider refused it: the pool is left with no nodes, and is reported as inactive until a reservation schedules it again.</p>
+<p>A pool backed by a capacity reservation can't be autoscaled: it runs at the reserved size. A request that creates such a pool as autoscaled is rejected. Nor can it follow a schedule - the reservation's own window decides when its nodes are available - so a request that gives such a pool a schedule is rejected, at creation and in an update alike.</p>
+<p>The reservation also limits how the pool can be edited. An update request that changes any of the following is rejected:</p>
+<ul>
+<li>the node count - it is <code>0</code> until the reservation is active, the reserved count while it is, and <code>0</code> again once it ends or is cancelled</li>
+<li><strong>Autoscaled</strong></li>
+<li>the schedule - a pool backed by a capacity reservation follows none</li>
+<li>the price type</li>
+<li>the launch configuration (<code>amiConfiguration</code>), or the instance image</li>
+</ul>
+<p>Other settings - e.g. the name and the filters - can be changed as for any other pool. A request that sends the current values of the fields above back unchanged, or doesn't specify the launch configuration or the instance image, is accepted. To change these settings, create a new pool with a new reservation.</p>
+<p>The pool's <code>poolType</code> is not in the list above either: a reservation-backed pool created with the wrong type can be switched between <code>STANDARD</code> and <code>SHAREABLE_NODE</code> by an update request, the same as for any other pool (see <a href="#shareable-pool-runs-configuration">Shareable pool runs configuration</a>), without giving up or re-requesting the reservation itself.</p>
+<p>Deleting the pool gives up its reservation. One still waiting for an administrator's approval has bought nothing, so it is cancelled and deleted along with the pool. One the platform has already acted on - approved, or anything after that - is given up only when the request asks for it: <code>DELETE /cluster/pool/{id}?force=true</code> cancels the reservation at the cloud provider, which may cost a cancellation charge, and then deletes the pool. Without <code>force</code> such a request is rejected and names the reservation's status. A reservation that has already ended, failed or been cancelled is simply deleted with the pool.</p>
+<p>The autoscaler doesn't resize a pool backed by a capacity reservation.</p>
+<p>A future-dated capacity reservation shall be at least 32 vCPUs in total, e.g. 8 instances of <code>m5.xlarge</code>. A smaller request is rejected when the pool is created.</p>
+<p>Which instance types the cloud provider will reserve capacity for is set by the <strong><code>cluster.capacity.reservation.instance.families</code></strong> system preference: a JSON object keyed by reservation type (<code>FUTURE_DATED</code> or <code>CAPACITY_BLOCK</code>), each value a comma-separated list of instance type patterns matched against the requested instance type, in the same format as <strong><code>cluster.allowed.instance.types</code></strong> (e.g. <code>c5.*</code>). A reservation type with no entry in the object has no restriction at all. The preference ships with <code>{"FUTURE_DATED": "c*,m*,r*,i*,t*,g*"}</code> - a future-dated reservation is restricted to those families by default, while a capacity block is unrestricted until an administrator adds a <code>CAPACITY_BLOCK</code> entry of its own, e.g. <code>"CAPACITY_BLOCK": "p5.4xlarge"</code> to allow only that one instance type.</p>
+<p>The reservation's <code>commitmentDuration</code> is requested <strong>in seconds</strong>, and shall be at least 14 days (<code>1209600</code>) - the commitment the cloud provider requires. The requested window shall be wide enough to hold it: the reservation is scheduled at a start date inside the window, and runs for the commitment from there. The notifications about a reservation report the commitment in days and hours.</p>
+<p>The policies that decide what becomes of a requested reservation are set in the <strong><code>cluster.capacity.reservation.policies</code></strong> system preference. Each carries an action: a request that matches a <strong><code>DENY</code></strong> policy is refused, and neither the pool nor the reservation is created - the error names the instances asked for and says to ask an administrator; one that matches an <strong><code>AUTO_APPROVE</code></strong> policy and no <code>DENY</code> policy is approved straight away; one that matches neither waits for an administrator's approval. A <code>DENY</code> match wins over an <code>AUTO_APPROVE</code> one whatever order they are listed in, and an administrator's own request is approved without consulting the policies at all. The policies address the commitment as the <code>commitment.duration</code> field, in seconds - e.g. <code>{"type": "LOGICAL", "field": "commitment.duration", "operand": "&gt;", "value": "1209600"}</code> matches a reservation committed to for longer than 14 days. An expression that names a field the platform does not know is skipped, with a warning in the log, and evaluates as not matching: it makes an <code>AND</code> statement - and a statement that is that expression alone - not match at all, while in an <code>OR</code> statement the other expressions still decide. So a policy carried over from a platform version that named the field differently stops taking effect rather than failing loudly.</p>
+<h3 id="browsing-capacity-block-offerings">Browsing capacity block offerings</h3>
+<p>AWS Capacity Blocks for ML are a second kind of reservation, for the highest-guarantee accelerated capacity: a block of ML/accelerated instances bought whole, for a fixed window AWS currently has for sale - unlike a future-dated reservation, there is no date to search, and no cancelling it once bought. Two read-only endpoints let a user see what is on offer before creating a pool backed by one - see <a href="#pools-backed-by-a-capacity-block">Pools backed by a capacity block</a>.</p>
+<p><code>GET /cluster/capacity-reservation/instance-types?regionId={id}</code> lists the instance types a region currently sells as capacity blocks - most instance types never are, so this is narrower than the region's general instance type list - together with enough of each type's specification (vCPU count, memory and, where it has one, its GPU) for a user to tell them apart before searching offerings for one. <code>POST /cluster/capacity-reservation/offerings</code> searches those offerings for a concrete instance type, count and duration, with the date to start searching from and an optional end to that window, and returns what AWS currently has: the offering's id, instance type, availability zone, instance count, its exact start and end date, the duration and its up-front price.</p>
+<p>A capacity block's duration is requested in hours, and AWS only sells blocks in specific lengths: 1-day steps from 1 up to 14 days, then 7-day steps from 14 up to 182 days. A duration outside that stepping is rejected before AWS is even asked.</p>
+<p>The same is true of the search's other required fields and AWS-imposed limits: instance type, instance count, duration and the start date to search from are all required; the instance count must also be a whole number from 1 to 64, and the start date no more than 8 weeks ahead - all rejected locally rather than left for AWS's own refusal.</p>
+<p>Both endpoints are available to an administrator, a <strong>ROLE_RUN_ADMIN</strong>, or a user with the <strong>ROLE_NODE_POOL_MANAGER</strong> role - the same roles that may create a reservation-backed pool, since no pool exists yet at this point to check a permission against.</p>
+<h3 id="pools-backed-by-a-capacity-block">Pools backed by a capacity block</h3>
+<p>A pool may also be backed by one of the offerings found above: set <code>capacityReservationRequest.reservationType</code> to <code>CAPACITY_BLOCK</code>, and carry the offering's <code>capacityBlockOfferingId</code>, <code>availabilityZone</code>, start and end date (as <code>requestedStartDate</code>/<code>requestedEndDate</code>) and duration (as <code>commitmentDuration</code>, in seconds - the offering itself reports it in hours) straight from the search response. A capacity block names an exact slot rather than a window to search, so there is no date or zone for the platform to pick, unlike <a href="#pools-backed-by-a-capacity-reservation">a future-dated reservation</a>.</p>
+<p>A refusal is never retried with another candidate the way a future-dated reservation's is: if the cloud provider refuses the purchase - the offering is no longer on offer, or the payment is rejected - the request fails outright. To try again, search for a new offering and submit a new request with <code>originId</code> set to the failed one; asking for no more than the failed request's own commitment inherits its approval, the same as for a future-dated reservation.</p>
+<p>The minimum vCPU count described above is a future-dated reservation's own requirement: a capacity block already names an exact, already-searched instance count (1 to 64), so there is no size to enforce. The policies in <strong><code>cluster.capacity.reservation.policies</code></strong> apply the same way as for a future-dated reservation, including one written against <code>reservation.type = CAPACITY_BLOCK</code> to approve or deny this kind of request differently from the other. The <strong><code>cluster.capacity.reservation.instance.families</code></strong> preference described above applies here too, keyed separately by <code>CAPACITY_BLOCK</code> - by default it carries no entry for this type, so no instance type restriction applies to a capacity block unless an administrator adds one.</p>
+<p>Deleting the pool follows the same rule as for a future-dated reservation, with one exception: once the block has actually been purchased, <code>force=true</code> no longer helps. A capacity block cannot be cancelled at the cloud provider at all - there is no cancellation charge to weigh here, the provider simply will not give the capacity back early - so the delete request is rejected regardless of <code>force</code> until the block ends on its own, fails, or is cancelled before being purchased. Before the purchase happens - still waiting for approval, or approved but not yet submitted - the pool can be deleted exactly as for a future-dated reservation. A capacity block also ends only at its own fixed time, which AWS enforces on its own; unlike a future-dated reservation, the platform does not call the cloud provider to end it.</p>
+<p><strong><em>Note</em></strong>: the notification templates for a capacity reservation (see <a href="../../12_Manage_Settings/12._Manage_Settings/#email-notifications">Email notifications</a>) are shared between both kinds. An admin customizing one can tell them apart by its <code>reservationType</code> template parameter, e.g. to say something a future-dated reservation's own wording would not. The offering a capacity block bought is available to the same template as the <code>capacityBlockOfferingId</code> parameter.</p>
+<h3 id="extending-a-capacity-block">Extending a capacity block</h3>
+<p>A capacity block already purchased and still active can be bought more time on, before its fixed end arrives - an AWS capacity block extension, not a new reservation. <code>GET /cluster/capacity-reservation/{id}/extension-offerings?durationHours={n}</code> searches what AWS currently offers to extend it by that much; <code>POST /cluster/capacity-reservation/{id}/extension</code>, naming the chosen offering's id as <code>extensionOfferingId</code> and the same <code>durationHours</code>, requests it. Both are available to the reservation's owner or an administrator - the same bar as cancelling it.</p>
+<p>AWS may have nothing on offer at the exact <code>durationHours</code> asked for, even though it is a valid stepping value, while a shorter one is still available - e.g. 10 days asked for, nothing past 7 actually available. Setting <code>findNearestAvailable=true</code> on the search has it fall back, in that case, to the longest shorter duration AWS does still have an offering for, rather than coming back empty; the offerings it returns carry their own <code>capacityDurationHours</code>, so the caller reads the duration actually found off them rather than being told separately. Left at its default <code>false</code>, the search answers only the exact duration asked for, as before.</p>
+<p>An extension can only be requested from 1 hour up to 57 days before the block's current end, and only while the block is active or about to finalize; a request outside that window, or for a reservation that is not a capacity block at all, is rejected before AWS is ever asked. Its duration follows AWS's own capacity block stepping for a single extension - 1-day steps up to 14 days, then 7-day steps up to 182 days total - but there is no limit to how many extensions a block can take over its lifetime, so this stepping is checked against the requested duration alone, not against anything the block has already been extended by.</p>
+<p>An extension is a non-refundable up-front payment, so it goes through the same <code>cluster.capacity.reservation.policies</code> an original purchase does, evaluated against its own <code>commitmentDuration</code> (the requested <code>durationHours</code>, in seconds) rather than the reservation's: one that matches a <code>DENY</code> policy is refused, one that matches an <code>AUTO_APPROVE</code> policy and no <code>DENY</code> policy is purchased straight away, and one that matches neither waits for an administrator - who approves it with <code>POST /cluster/capacity-reservation/extension/{extensionId}/approve</code>, administrators only, since approving one commits the platform to paying for it. Once purchased, the reservation's own end date moves out to what AWS granted, so everything that already reads it - the backing pool's own end date among them - keeps working unchanged; a request that fails, by policy or at the provider, leaves the reservation exactly as it was.</p>
+<p>A retry of a request that failed - after approval, or at the provider - may name that failed request's id as <code>originId</code> in the body of <code>POST /cluster/capacity-reservation/{id}/extension</code>. Asking for no more than the failed request's own duration inherits its approval without waiting on an administrator again, the same way a retried <a href="#pools-backed-by-a-capacity-reservation">capacity reservation</a> or <a href="#pools-backed-by-a-capacity-block">capacity block</a> purchase does: an administrator who already approved paying for 48 hours has, by that, already approved paying for 24. Naming an <code>originId</code> that is not <code>FAILED</code>, that asks for more than it did, or that belongs to another reservation, is not an error - the request simply goes through the policies as if it were new.</p>
+<p>The pre-expiry warning (<code>CAPACITY_RESERVATION_FINALIZING</code>, see <a href="../../12_Manage_Settings/12._Manage_Settings/#email-notifications">Email notifications</a>) says whether the block can still be extended at all, through its <code>extensionAvailable</code> template parameter: true for a capacity block that is active or finalizing, false otherwise - including always false for a future-dated reservation, which this template is also sent for. This is a simpler check than <code>GET .../extension-offerings</code> itself makes for a specific duration: it says nothing about the narrower AWS lead-time window, or about whether a given duration still fits the single-extension 14-day/182-day stepping.</p>
+<h3 id="shareable-pool-runs-configuration">Shareable pool runs configuration</h3>
+<p>A pool with the <code>SHAREABLE_NODE</code> <code>poolType</code> lets several runs share one of its nodes. How they divide it is set by the <code>launchConfig</code> field of the pool:</p>
+<ul>
+<li>if a create request specifies it, it is used</li>
+<li>if a create request doesn't specify it, it is derived from the pool's instance type: CPU and RAM requests are enabled, GPU requests only when the instance type has GPUs; 1 CPU and <code>1GiB</code> of RAM are held back from each node; the runs' containers are privileged and don't skip container requests</li>
+<li>if an update request specifies it, it replaces the current one; if not, the current one is kept</li>
+</ul>
+<p>An update request may also change the pool's <code>poolType</code> itself: switching it to <code>SHAREABLE_NODE</code> builds a default <code>launchConfig</code> exactly as a create request with none would, and switching it away from <code>SHAREABLE_NODE</code> drops the <code>launchConfig</code> entirely, since other pool types don't use one.</p>
+<p>The runs are assigned to the pool's own nodes by the <code>pool_id</code> label, which every node of a pool carries, with the pool's ID as its value - unless the <code>launchConfig</code> specifies a selector of its own. Naming the pool's ID via the <code>CP_CAP_POOL_ID</code> parameter (see <a href="#guaranteeing-a-runs-capacity">Guaranteeing a run's capacity</a>) reaches a shareable pool's nodes the same way: the run's own launch picks up this stored selector automatically.</p>
+<p>The <code>launchConfig</code> of other pool types is not used, and is ignored in a request.</p>
+<h3 id="guaranteeing-a-runs-capacity">Guaranteeing a run's capacity</h3>
+<p>The <a href="#example-of-using">example below</a> is a soft match: a run eligible for a pool is only ever assigned
+to one of its nodes later, by the autoscaler, and only once a node is actually free - it can still land
+on an unrelated, non-pool node if the pool's own nodes are busy at the moment the run is launched.</p>
+<p>A run that sets the <code>CP_CAP_POOL_ID</code> parameter to a pool's ID is bound to that pool exclusively instead:
+the autoscaler's own matching cycle only ever assigns it one of that pool's own free nodes - never an
+unrelated node or a different pool's, even one it would otherwise be eligible for. The run is never
+silently launched off the pool. If the pool has no free node yet - because it is not yet active, or
+because all its nodes are busy with other runs - the run is left pending and waits. The maximum time it
+will wait is governed by the <strong><code>cluster.occupied.node.pool.wait.sec</code></strong> system preference (default
+<strong>86400</strong> seconds, i.e. 24 hours). Once that limit is reached, the run fails with a message naming the
+pool and the elapsed time. Setting the preference to <strong><code>0</code></strong> removes the limit and lets the run wait
+indefinitely.</p>
+<p>Where the pool's own node already exists, is free, and still cannot take the run, nothing later would
+change that - so the run fails immediately, on that same autoscaler cycle, rather than spending time on
+a certainty. This happens for four reasons, each named in the run's failure reason along with the pool:
+the run's requested instance type or disk does not match what the pool's own node actually offers; the
+pool's own filter (see <a href="#pool-launch-configuration">Pool launch configuration</a>) rejects the run; the
+pool's reservation window has already ended; or the pool's end date has passed and the pool is no longer
+active.</p>
+<p><code>CP_CAP_POOL_ID</code> is an opportunity, not a requirement: a run that doesn't set it is unaffected, and
+keeps the soft, eligibility-only matching described below.</p>
+<p>Most of this guarantee resolves on the autoscaler's own schedule, not at the moment the run is launched:
+a pool that currently has no free node only fails the run after <strong><code>cluster.occupied.node.pool.wait.sec</code></strong>
+seconds have elapsed since the run was submitted, not as an error from the launch call itself. The
+exception is the pool's own free node already failing one of the checks above, which ends the run
+immediately instead.</p>
+<p>A few things are checked immediately, at launch, instead of waiting for that: <code>CP_CAP_POOL_ID</code> must be a
+valid pool id, the named pool must exist, and if the run explicitly asks for an instance type or a
+region, it must be the pool's own - every node in a pool is provisioned alike, from the pool's own fixed
+configuration, so this much is already knowable without waiting for a live free node. The launch is
+rejected outright, naming which of these failed, in every case. A run that doesn't explicitly ask for an
+instance type or region is unaffected by that particular check either way - there is nothing concrete yet
+to compare against the pool.</p>
+<p>A pipeline's own <code>config.json</code> may declare a default value for <code>CP_CAP_POOL_ID</code>, the same as for any
+other parameter: a launch request that doesn't set it gets the pipeline's default pool, and one that
+does set it overrides the default.</p>
+<p>If the named pool is itself a <a href="#shareable-pool-runs-configuration">shareable pool</a>, the run's launch
+picks up that pool's own <code>launchConfig</code> node selector automatically, in place of the <code>RUN_ID_LABEL</code>
+selector every other pool uses - overriding anything the launch request itself supplied, exactly the
+way the launch form's own node-type selector already does when a user picks a pool directly. Any other
+pool type has no selector of its own, so this changes nothing for them.</p>
 <h2 id="example-of-using">Example of using</h2>
 <ol>
 <li>For example, there is the nodes pool that was created as described <a href="#pool-creation">above</a>:<br />

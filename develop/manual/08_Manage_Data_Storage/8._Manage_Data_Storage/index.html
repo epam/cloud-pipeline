@@ -485,9 +485,10 @@
 <img alt="CP_ManageDataStorage" src="../attachments/ManageDataStorage_4.png" /></li>
 </ul>
 <h2 id="controls">Controls</h2>
-<p>At the top of the <strong>"Details"</strong> view there are buttons:</p>
+<p>At the top of the <strong>"Details"</strong> view there are buttons. Their row and the column header stay visible while the storage content is scrolled:</p>
 <h3 id="select-page">Select page</h3>
-<p>Clicking this control (see picture <strong>Figure 1</strong> above, item <strong>2</strong>), the whole file and folders on the current page will be selected. It allows to perform bulk operations like deleting.</p>
+<p>Clicking this control (see picture <strong>Figure 1</strong> above, item <strong>2</strong>), the whole file and folders on the current page will be selected. It allows to perform bulk operations like deleting.<br />
+<strong><em>Note</em></strong>: only the items that show a checkbox are selected - an item that no bulk operation is available for cannot be selected. The control is disabled when the current page has no such item left to select, e.g. the page is empty, no bulk operation is available for its items, or they are all selected already.</p>
 <h3 id="show-file-versions">Show file versions</h3>
 <blockquote>
 <p>This feature is available not for all Cloud Providers. Currently, it is supported by <strong>AWS</strong> and <strong>GCP</strong>.</p>
@@ -495,11 +496,12 @@
 <p>Tick this checkbox (see picture <strong>Figure 1</strong> above, item <strong>3</strong>) and the view of a page will changed: the all file versions will be displayed. You can expand each version's list by clicking "<strong>+</strong>" in desired line.<br />
 <strong><em>Note</em></strong>: the last version will be marked by "<strong>(latest)</strong>".</p>
 <h3 id="remove-all-selected">Remove all selected</h3>
-<p>This is a bulk operation control. It is visible, if at least one of the data storage item (folder or file) is selected.<br />
+<p>This is a bulk operation control. It is visible if you may write to at least one of the selected items (folders or files).<br />
+<strong><em>Note</em></strong>: only the items you may write to are removed. If you cannot write to some of the selected items, the <strong>Remove</strong> item shows an info icon. Hover over it to see how many items will be removed.<br />
 <img alt="CP_ManageDataStorage" src="../attachments/ManageDataStorage_5.png" /></p>
 <h3 id="generate-url">Generate URL</h3>
 <p>This control helps to generate URLs for a number of files and then download them manually one by one or via scripts. See details <a href="../8.2._Upload_Download_data/">here</a>.<br />
-<strong><em>Note</em></strong>: the control is available, if only files are selected.</p>
+<strong><em>Note</em></strong>: the control is available if at least one selected file can be downloaded. Folders and files you cannot download are skipped, and the control shows an info icon that says so.</p>
 <p><img alt="CP_ManageDataStorage" src="../attachments/ManageDataStorage_6.png" /></p>
 <h3 id="show-attributeshide-attributes">Show attributes/Hide attributes</h3>
 <p>Allows see or edit a list of <strong>key=value</strong> attributes of the data storage (see picture <strong>Figure 1</strong> above, item <strong>4</strong>).<br />

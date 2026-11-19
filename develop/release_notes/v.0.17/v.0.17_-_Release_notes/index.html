@@ -162,6 +162,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#hot-node-pools">Hot node pools</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#node-pools-backed-by-an-aws-capacity-reservation-or-capacity-block">Node pools backed by an AWS capacity reservation or capacity block</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#fs-quotas">FS quotas</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#pauseresume-runs-via-pipe">Pause/resume runs via pipe</a>
@@ -216,6 +218,10 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#storage-lifecycle-management">Storage lifecycle management</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#download-storage-contents-as-an-archive">Download storage contents as an archive</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#upload-and-extract-archives">Upload and extract archives</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#image-history-and-generating-of-dockerfile">Image history and generating of Dockerfile</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#environments-synchronization-via-pipectl">Environments synchronization via pipectl</a>
@@ -256,6 +262,10 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#run-controls-for-an-unavailable-node">Run controls for an unavailable node</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#capacity-blocks-sourced-from-node-pools">Capacity blocks sourced from node pools</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#node-pool-managers-can-edit-and-delete-the-pools-they-own">Node pool managers can edit and delete the pools they own</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#priority-of-group-gui-settings">Priority of group GUI settings</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#show-optional-parameters-per-pipeline-or-tool">Show optional parameters per pipeline or tool</a>
@@ -270,6 +280,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#pinning-a-run-to-the-docker-image-digest">Pinning a run to the Docker image digest</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#data-storage-the-controls-row-and-the-column-header-stay-visible-while-scrolling">Data storage: the controls row and the column header stay visible while scrolling</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#default-version-of-a-tool">Default version of a tool</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#nice-dcv-desktop-no-wallpaper-a-keyboard-layout-switcher-ubuntu-2404">NICE DCV desktop: no wallpaper, a keyboard layout switcher, Ubuntu 24.04</a>
@@ -280,6 +292,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#cloud-pipeline-apt-repository-for-ubuntu-2404-and-later">Cloud Pipeline apt repository for Ubuntu 24.04 and later</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#extracting-an-archive-that-lies-in-a-data-storage">Extracting an archive that lies in a data storage</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#notable-bug-fixes">Notable Bug fixes</a>
         <ul>
     <li class="toctree-l3"><a class="reference internal" href="#nextflow-run-view-some-tasks-stay-running-after-the-run-finishes">Nextflow run view: some tasks stay RUNNING after the run finishes</a>
@@ -287,6 +301,8 @@
     <li class="toctree-l3"><a class="reference internal" href="#gui-library-versions-with-security-advisories">GUI: library versions with security advisories</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#users-export-the-names-of-the-date-columns-depend-on-the-api-time-zone">Users export: the names of the date columns depend on the API time zone</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#data-storage-select-page-is-enabled-when-no-item-on-the-page-can-be-selected">Data storage: "Select page" is enabled when no item on the page can be selected</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#a-committed-image-of-a-user-with-a-large-uid-writes-hundreds-of-gb-to-the-disk">A committed image of a user with a large UID writes hundreds of GB to the disk</a>
     </li>
@@ -755,6 +771,7 @@
 <li><a href="#pipe-storage-mount-waits-for-the-mount-point"><code>pipe storage mount</code> waits for the mount point</a></li>
 <li><a href="#parallel-mounting-of-data-storages">Parallel mounting of data storages</a></li>
 <li><a href="#hot-node-pools">Hot node pools</a></li>
+<li><a href="#node-pools-backed-by-an-aws-capacity-reservation-or-capacity-block">Node pools backed by an AWS capacity reservation or capacity block</a></li>
 <li><a href="#fs-quotas">FS quotas</a></li>
 <li><a href="#pauseresume-runs-via-pipe">Pause/resume runs via <code>pipe</code></a></li>
 <li><a href="#home-storage-for-each-user">Home storage for each user</a></li>
@@ -771,6 +788,8 @@
 <li><a href="#nat-gateway">NAT gateway</a></li>
 <li><a href="#custom-run-capabilities">Custom Run capabilities</a></li>
 <li><a href="#storage-lifecycle-management">Storage lifecycle management</a></li>
+<li><a href="#download-storage-contents-as-an-archive">Download storage contents as an archive</a></li>
+<li><a href="#upload-and-extract-archives">Upload and extract archives</a></li>
 <li><a href="#image-history-and-generating-of-dockerfile">Image history and generating of Dockerfile</a></li>
 <li><a href="#environments-synchronization-via-pipectl">Environments synchronization via <code>pipectl</code></a></li>
 <li><a href="#data-access-audit">Data access audit</a></li>
@@ -790,6 +809,8 @@
 <li><a href="#python-3-support-for-backend-services">Python 3 support for backend services</a></li>
 <li><a href="#self-contained-python-312-distribution">Self-contained Python 3.12 distribution</a></li>
 <li><a href="#run-controls-for-an-unavailable-node">Run controls for an unavailable node</a></li>
+<li><a href="#capacity-blocks-sourced-from-node-pools">Capacity blocks sourced from node pools</a></li>
+<li><a href="#node-pool-managers-can-edit-and-delete-the-pools-they-own">Node pool managers can edit and delete the pools they own</a></li>
 <li><a href="#priority-of-group-gui-settings">Priority of group GUI settings</a></li>
 <li><a href="#show-optional-parameters-per-pipeline-or-tool">Show optional parameters per pipeline or tool</a></li>
 <li><a href="#read-and-launch-access-to-all-pipelines">Read and launch access to all pipelines</a></li>
@@ -797,11 +818,13 @@
 <li><a href="#rocky-linux-98-for-the-proxy-and-the-backup-workers">Rocky Linux 9.8 for the proxy and the backup workers</a></li>
 <li><a href="#vs-code-extension-the-folder-opened-on-connect">VS Code extension: the folder opened on connect</a></li>
 <li><a href="#pinning-a-run-to-the-docker-image-digest">Pinning a run to the Docker image digest</a></li>
+<li><a href="#data-storage-the-controls-row-and-the-column-header-stay-visible-while-scrolling">Data storage: the controls row and the column header stay visible while scrolling</a></li>
 <li><a href="#default-version-of-a-tool">Default version of a tool</a></li>
 <li><a href="#nice-dcv-desktop-no-wallpaper-a-keyboard-layout-switcher-ubuntu-2404">NICE DCV desktop: no wallpaper, a keyboard layout switcher, Ubuntu 24.04</a></li>
 <li><a href="#retries-of-a-failed-scratch-lustre-file-system">Retries of a failed scratch Lustre file system</a></li>
 <li><a href="#oidc-token-exchange">OIDC token exchange</a></li>
 <li><a href="#cloud-pipeline-apt-repository-for-ubuntu-2404-and-later">Cloud Pipeline apt repository for Ubuntu 24.04 and later</a></li>
+<li><a href="#extracting-an-archive-that-lies-in-a-data-storage">Extracting an archive that lies in a data storage</a></li>
 </ul>
 <hr />
 <ul>
@@ -809,6 +832,7 @@
 <li><a href="#nextflow-run-view-some-tasks-stay-running-after-the-run-finishes">Nextflow run view: some tasks stay <code>RUNNING</code> after the run finishes</a></li>
 <li><a href="#gui-library-versions-with-security-advisories">GUI: library versions with security advisories</a></li>
 <li><a href="#users-export-the-names-of-the-date-columns-depend-on-the-api-time-zone">Users export: the names of the date columns depend on the API time zone</a></li>
+<li><a href="#data-storage-select-page-is-enabled-when-no-item-on-the-page-can-be-selected">Data storage: "Select page" is enabled when no item on the page can be selected</a></li>
 <li><a href="#a-committed-image-of-a-user-with-a-large-uid-writes-hundreds-of-gb-to-the-disk">A committed image of a user with a large UID writes hundreds of GB to the disk</a></li>
 <li><a href="#detached-configuration-the-old-name-stays-in-the-library-after-a-rename">Detached configuration: the old name stays in the Library after a rename</a></li>
 <li><a href="#nice-dcv-setup-reports-a-failure-only-after-30-minutes-with-no-reason">NICE DCV setup reports a failure only after 30 minutes, with no reason</a></li>
@@ -1571,6 +1595,17 @@ This is useful to speed up the compute instances creation process (as the nodes 
 <img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_HotNodePools_03.png" /></p>
 <p><strong><em>Note</em></strong>: pools management is available only for admins. Usage of pool nodes is available for any user.</p>
 <p>For more details and examples see <a href="../../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools/">here</a>.</p>
+<h2 id="node-pools-backed-by-an-aws-capacity-reservation-or-capacity-block">Node pools backed by an AWS capacity reservation or capacity block</h2>
+<p>A node pool can now be backed by a cloud provider's own capacity reservation, so its nodes are guaranteed rather than subject to the usual on-demand availability. An administrator, or a user with the <strong>ROLE_NODE_POOL_MANAGER</strong> role, creates such a pool with its reservation request alongside the usual pool settings; whether it then needs an administrator's approval is decided by the <strong><code>cluster.capacity.reservation.policies</code></strong> system preference.</p>
+<p>Two kinds of reservation are supported, both AWS-only for now:</p>
+<ul>
+<li>a <strong>future-dated</strong> reservation, for a date and zone the platform searches for and reserves on the requester's behalf, sliding to the next candidate on a refusal</li>
+<li>an <strong>AWS Capacity Block for ML</strong>, bought whole for an exact, already-searched window - the highest-guarantee capacity AWS sells, with no cancelling it once bought</li>
+</ul>
+<p>The pool takes no nodes before its reservation is active, and stops taking new runs once the reservation is ending; jobs already running keep running until it actually ends. The owner is notified as the reservation's status changes.</p>
+<p>A pool's type (<code>STANDARD</code> or <code>SHAREABLE_NODE</code>) can now be changed by an update request, including for a pool backed by a capacity reservation - so a pool created with the wrong type no longer has to be recreated, and a reservation it already holds isn't given up and re-requested just to fix that.</p>
+<p>A run can also be bound to one of these pools exclusively, rather than merely becoming eligible for it: setting the <code>CP_CAP_POOL_ID</code> parameter to the pool's ID restricts the run to that pool's own free nodes only. If the pool has no free node yet - because it is not yet active or its nodes are busy - the run waits up to <strong><code>cluster.occupied.node.pool.wait.sec</code></strong> seconds (default 86400, i.e. 24 h; <code>0</code> = indefinite). Where the pool's own node already exists and is free but still cannot take the run - its instance type or disk doesn't match, the pool's own filter rejects the run, the reservation backing the pool has already ended, or the pool's end date has passed - the run fails right away instead of waiting, naming the reason and the pool. A launch naming an unknown pool, or an instance type or region the pool doesn't itself provide, is rejected immediately instead of waiting for that. Naming a shareable pool this way reuses that pool's own node selector automatically, the same one its launch form picker already applies - see <a href="../../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools/#guaranteeing-a-runs-capacity">Guaranteeing a run's capacity</a>.</p>
+<p>For the full behaviour - including how a pool backed by either kind can be edited, cancelled or deleted - see <a href="../../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools/#pools-backed-by-a-capacity-reservation">Pools backed by a capacity reservation</a> and <a href="../../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools/#pools-backed-by-a-capacity-block">Pools backed by a capacity block</a>.</p>
 <h2 id="fs-quotas">FS quotas</h2>
 <p>In some cases, users may store lots of extra files that are not needed more for them in FS storages.<br />
 Such amount of extra files may lead to unnecessary storage costs.<br />
@@ -2027,6 +2062,16 @@ For the new one, an additional tab was included to the storage settings - <stron
 <li>once the restore period is over, files will be automatically transferred to the archive where they were before</li>
 </ul>
 <p>For more details see <a href="../../../manual/08_Manage_Data_Storage/8.10._Storage_lifecycle/#restoring">here</a>.</p>
+<h2 id="download-storage-contents-as-an-archive">Download storage contents as an archive</h2>
+<p>Previously, selecting several files in the Storage browser and downloading them fetched the files one by one, and any selected folder was silently skipped.</p>
+<p>In <strong><code>v0.17</code></strong>, a selection of files <strong>and</strong> folders can be downloaded as a single <code>ZIP</code> archive instead, from AWS S3 storages and NFS storages on an NFS share. The archive is built by the platform in the background: the user names it from the <strong>Download archive</strong> item, which sits in the same selection menu as <strong>Download</strong> (on those storages, the plain <strong>Download</strong> item is itself offered only where one to three of the selected files can be downloaded, any selected folders not counted, and four files or more are covered by <strong>Download archive</strong> alone - while <strong>Download archive</strong> is in turn not offered for a single selected file, which <strong>Download</strong> already covers), and later tracks, cancels or fetches it from the <strong>Storage tasks</strong> window, opened from the storage view's own presentation dropdown rather than from a page of its own. The window shows each task's status and archive size, can be filtered by status and (for an administrator, and for a <strong>ROLE_STORAGE_ADMIN</strong>) by owner, is paged, and keeps itself up to date while it is open. A notification announces each archive as it finishes, including one that finished while the application was closed, or one queued on another computer; unlike most notifications, the one for a finished archive stays on screen until it is clicked, rather than disappearing on its own. The number of archive downloads a user may have in progress at once is capped by the platform, and that cap is counted against the server each time an archive is asked for.</p>
+<p>For more details see <a href="../../../manual/08_Manage_Data_Storage/8.2._Upload_Download_data/#download-as-archive">here</a>.</p>
+<h2 id="upload-and-extract-archives">Upload and extract archives</h2>
+<p>Previously, uploading a batch of files that included an archive uploaded the archive like any other file, with no way to unpack it on the platform's side.</p>
+<p>In <strong><code>v0.17</code></strong>, uploading a batch that includes an archive - one of <code>ZIP</code>, <code>TAR</code>, <code>TAR.GZ</code>, <code>TGZ</code>, <code>TAR.BZ2</code>, <code>TAR.XZ</code>, <code>GZ</code>, <code>BZ2</code> or <code>XZ</code> - on a data storage on AWS S3, or on an NFS storage whose share is mounted as NFS, pauses the upload with a pop-up that lists the selected files and offers a choice: <strong>Upload</strong>, which uploads everything exactly as before, or <strong>Upload and extract</strong>, which uploads everything and then queues one background task per archive that uploaded successfully, closing the pop-up the same way an ordinary upload does. Each archive is extracted into a new folder beside it, named after the archive without its extension - <code>data/reports.tar.gz</code> into <code>data/reports/</code> - and the archive itself is kept. A message confirms how many extractions have been queued, and its <strong>Show storage tasks</strong> is a link that opens the <strong>Storage tasks</strong> window.</p>
+<p>The <strong>Storage tasks</strong> window now lists every kind of archive task rather than downloads alone, with a new <strong>Type</strong> column naming each one - <strong>Download archive</strong> or <strong>Extract archive</strong> - and a filter on that column to show one kind at a time. Its <strong>Storage</strong> column has become <strong>Source</strong>, reading <code>&lt;storage name&gt;/&lt;folder&gt;</code> and linking to the folder the task was queued from, shortened to fit the column with the whole path on hover; the <strong>Created</strong> and <strong>Finished</strong> columns are gone. An extraction task is cancelled from the same window as a download, counts towards the same per-user allowance of active archive tasks, and offers no <strong>Download</strong> button, since it writes into the storage itself. An archive already in a storage is extracted the same way from the storage's own selection menu, via a new <strong>Extract archive</strong> item below <strong>Download archive</strong>, with no pop-up in between. That item takes one archive at a time, so that a bulk extraction cannot be started by accident - <strong>Select page</strong> takes a whole listing in one click - so it is offered only for a selection of exactly one archive. Uploading is unchanged: there the user picked the files, so <strong>Upload and extract</strong> still takes the whole batch.</p>
+<p>One archive is one task, counted against the per-user allowance of active archive tasks that archive downloads already use. Where a user does not have enough of it left for every archive they picked, the action is unavailable and says why - the upload pop-up greys <strong>Upload and extract</strong> out and shows the reason, and the selection menu greys its item out with an information icon beside it. The pop-up keeps checking while it is open, so the button becomes available again as soon as one of the user's tasks finishes, with no need to pick the files afresh. A finished extraction raises a notification of its own, like a finished download.</p>
+<p>For more details see <a href="../../../manual/08_Manage_Data_Storage/8.2._Upload_Download_data/#upload-data">here</a>.</p>
 <h2 id="image-history-and-generating-of-dockerfile">Image history and generating of Dockerfile</h2>
 <p><strong>Cloud Pipeline</strong> performs scanning of the Docker images on a regular basis. This is used to grab the information on:</p>
 <ul>
@@ -2311,6 +2356,17 @@ Previously, the GUI still showed the <strong>PAUSE</strong>, <strong>COMMIT</str
 <p>In <strong><code>v0.17</code></strong>, these controls are hidden while the run has the <code>NODE_UNAVAILABLE</code> tag - at the <strong>Run logs</strong> page, at the <strong>ACTIVE RUNS</strong> tab, at the <strong>Home</strong> page and in the actions of in-app notifications. The <strong>STOP</strong> dialog does not offer to persist the current docker image state either. The controls are shown again once the node recovers and the tag is removed.<br />
 For more details see <a href="../../../manual/11_Manage_Runs/11._Manage_Runs/#controls">here</a>.</p>
 <hr />
+<h2 id="capacity-blocks-sourced-from-node-pools">Capacity blocks sourced from node pools</h2>
+<p>Previously, the GUI learned about capacity blocks - reserved compute capacity that a node type can draw on at launch - from the <code>launch.reservation.parameters</code> system preference, a map keyed by an instance-type pattern. That preference is no longer read by the GUI.</p>
+<p>In the current version, the GUI reads capacity blocks directly off the node pools that back them. The node type list leads with a <strong>Reserved capacity blocks</strong> group, one entry per pool: only picking an entry there launches the run on the reservation, and a plain instance type launches without one. The launch form also lists the reserved capacity available right now for the selected <strong>Cloud Region</strong>. Configurations, launch profiles and tool settings do not offer capacity blocks.</p>
+<p>A run on a node pool, or with reservation requests, no longer shows an estimated price: a pool node outlives a single run, so a per-run price would mislead.</p>
+<p>For more details see <a href="../../../manual/06_Manage_Pipeline/6._Manage_Pipeline/#configuration">6. Manage Pipeline</a> and <a href="../../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools/#future-dated-node-pools">9.1. Hot node pools</a>.</p>
+<h2 id="node-pool-managers-can-edit-and-delete-the-pools-they-own">Node pool managers can edit and delete the pools they own</h2>
+<p>Previously, a <strong>ROLE_NODE_POOL_MANAGER</strong> could create a <strong>Future dated</strong> node pool but never reach it again - viewing, editing and removing an existing pool was restricted to administrators and <strong>ROLE_RUN_ADMIN</strong>.</p>
+<p>In the current version, such a user may also open, edit and remove a pool it owns - the one it created. A pool owned by somebody else, or managed only by an administrator, stays out of reach.</p>
+<p>Deleting a <strong>Future dated</strong> pool whose capacity reservation is still open - any status but <em>Requires approval</em>, <em>Finished</em>, <em>Purchase failed</em>, <em>Failed</em> or <em>Cancelled</em> - now also shows a warning in the delete confirmation: the reservation is given up too, and the cloud provider may still charge for the capacity it already committed. The <strong>DELETE</strong> button stays disabled until a <strong>Force deletion</strong> checkbox is ticked, for an administrator exactly as much as for the pool's owner.</p>
+<p>For more details see <a href="../../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools/#delete-existing-pool">9.1. Hot node pools</a>.</p>
+<hr />
 <h2 id="priority-of-group-gui-settings">Priority of group GUI settings</h2>
 <p>The <strong><code>misc.groups.ui.preferences</code></strong> system preference sets GUI settings per group or role. In <strong><code>v0.17</code></strong>, each group's settings accept a <code>priority</code> number: if a user is in several of the listed groups, each setting comes from the group with the highest <code>priority</code> that sets it.<br />
 For more details see <a href="../../../manual/12_Manage_Settings/12.10._Manage_system-level_settings/#miscellaneous">here</a>.</p>
@@ -2386,6 +2442,10 @@ In the current version, two new roles were introduced. Both cover every pipeline
 </blockquote>
 <p>For more details see <a href="../../../manual/12_Manage_Settings/12.10._Manage_system-level_settings/#launch">here</a>.</p>
 <hr />
+<h2 id="data-storage-the-controls-row-and-the-column-header-stay-visible-while-scrolling">Data storage: the controls row and the column header stay visible while scrolling</h2>
+<p>The controls row of a data storage - <strong>Select page</strong>, <strong>Create</strong>, <strong>Upload</strong> and the others - and the column header with its sort and filter controls now stay at the top while the file list is scrolled.</p>
+<p>See details in <a href="../../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage/#controls">8. Manage Data Storage</a>.</p>
+<hr />
 <h2 id="default-version-of-a-tool">Default version of a tool</h2>
 <p>Previously, the version of a tool, which was used if a version was not specified, was always the <code>latest</code> one. To make another version the default one, it had to be pushed again with the <code>latest</code> tag, and when a version was deleted, <code>latest</code> could still point to an old image.</p>
 <p>In <strong><code>v0.17</code></strong>, any version of a tool can be set as its default version. The default version is used in place of the <code>latest</code> one:</p>
@@ -2437,10 +2497,12 @@ subject_token_type=urn:ietf:params:oauth:token-type:access_token
 </code></pre>
 <p>So the application stores no static token from Cloud Pipeline, every call is made and audited as the real user with that user's own permissions, and blocking a user takes effect within one token lifetime. The issued token is an ordinary platform token, which the API, the edge and <code>pipe</code> accept as any other.</p>
 <p>The exchange is off by default, and is enabled by the <code>oidc.token.exchange.enabled</code> property of the API service - until then the endpoint is not registered at all. The administrator then configures the trusted identity providers in the <strong><code>system.oidc.token.exchange.issuers</code></strong> preference. Each provider holds a list of <strong>clients</strong> - the callers trusted under it, because one provider issues tokens for many callers: every repository on github.com shares one issuer, as does every application in an Entra ID tenant. A client is identified by conditions on the token's claims, and says which user it may act as: a user named by a claim of the token, or a fixed service account for a CI job. A client can also narrow the roles its tokens carry, so an application can be given read-only access to the API on behalf of users who have more.</p>
+<p>A client can also pick the user by <strong>metadata</strong> instead of by name. An <code>assumeStrategy</code> of type <code>MAPPED_USER</code> names a claim and a user metadata attribute - <code>{"claim": "repository_owner", "metadataKey": "github_owner"}</code> - and the token is issued for the user whose <code>github_owner</code> attribute holds the value of the token's <code>repository_owner</code> claim. That maps a caller whose identity the platform does not keep on the user - a GitHub organisation, a workload identity, an employee number - without renaming anybody. Exactly one user has to match: if several carry the same value, no token is issued at all.</p>
 <p>The exchange never creates a user: the user has to exist in Cloud Pipeline already, and the usual blocking checks apply. The issued token lives no longer than the provider's token it came from, so ending a user's session at the provider ends their Cloud Pipeline access, and it cannot be renewed into a longer-lived one unless the client is configured to allow it.</p>
 <blockquote>
 <p><strong><em>Note</em></strong>: upgrading removes the stored web sessions. The security context is held in the database with Java serialization, and it gained fields for this feature, which makes a session written by an earlier version unreadable - so clearing them avoids an error on the first request after the upgrade. Most users will not notice: a GUI session with a valid <code>bearer</code> cookie is re-established on the next request, and only a user without one is asked to sign in again. Three things to know when planning the upgrade: restart the API service with the old replicas out of service, because a rolling upgrade lets an old replica keep writing sessions the new one cannot read; clear the sessions by hand if the service is ever rolled back, since the migration runs only once; and expect the platform usage report to show no online users for the interval covering the upgrade, as that figure is derived from the stored sessions.</p>
 </blockquote>
+<p>Ready-made GitHub Actions ship with the platform under <code>deploy/integrations/oidc/github-actions/</code>, so a workflow obtains a token with one step and no stored secret: <code>fetch-api-token</code> performs the exchange, <code>configure-pipe-cli</code> additionally installs the <code>pipe</code> CLI the deployment serves and leaves it authenticated, and <code>configure-docker-registry</code> logs the runner's docker client into the deployment's registry.</p>
 <p>For more details see <a href="../../../manual/12_Manage_Settings/12.16._OIDC_token_exchange/">here</a>.</p>
 <h2 id="cloud-pipeline-apt-repository-for-ubuntu-2404-and-later">Cloud Pipeline apt repository for Ubuntu 24.04 and later</h2>
 <p>Runs add the Cloud Pipeline apt repository of their Ubuntu release from <code>tools/repos/ubuntu/&lt;version&gt;</code> of the distribution URL, if there is one. The public distribution has it for Ubuntu 16.04 to 22.04 only. So on newer releases, runs could not install SGE, LizardFS, the Singularity prerequisites and blobfuse 1, which need it.</p>
@@ -2451,6 +2513,14 @@ subject_token_type=urn:ietf:params:oauth:token-type:access_token
 <li>gcsfuse and blobfuse2</li>
 </ul>
 <p>The repository can be signed with the key of the deployment. A deployment uploads it to <code>tools/repos/ubuntu/&lt;version&gt;</code> of its distribution URL. For more details see the <a href="https://github.com/epam/cloud-pipeline/blob/develop/deploy/repos/README.md">README</a> of <code>deploy/repos</code>.</p>
+<hr />
+<h2 id="extracting-an-archive-that-lies-in-a-data-storage">Extracting an archive that lies in a data storage</h2>
+<p>Previously, an archive stored in a data storage could only be unpacked by hand: download it, extract it locally, upload the content back. For a large archive that is two transfers of the whole thing over the user's own connection, and the files arrive in the storage one by one.</p>
+<p>In <strong><code>v0.17</code></strong>, the platform extracts such an archive itself. The request names the archive - a storage and a path - and where its content shall go, again a storage and a folder, and the two may be the same storage. It is recorded as an asynchronous task, like an <a href="#download-storage-contents-as-an-archive">archive download</a>, and performed in the background by the storage task service; the task is visible, cancellable and reports what it wrote. Both ends are checked against the requesting user's own permissions: <strong>READ</strong> on the source and <strong>WRITE</strong> on the destination folder, plus <strong>WRITE</strong> on the source as well when the request asks for the archive to be deleted after a successful extraction.</p>
+<p><code>ZIP</code>, <code>TAR</code>, <code>TAR.GZ</code>, <code>TGZ</code>, <code>TAR.BZ2</code>, <code>TAR.XZ</code>, <code>GZ</code>, <code>BZ2</code> and <code>XZ</code> are supported, and the format is taken from the content of the file rather than from its name - a <code>.zip</code> that is really a tar extracts, and a file that is neither fails with a reason. The archive's own folder structure is preserved under the requested folder, and no folder is added on top of it: a caller who wants the content in a folder named after the archive asks for that folder. <strong>Extraction is one level deep</strong> - an archive found inside the archive is written out as a file, with its name unchanged and its content untouched, and extracting that one is a second request.</p>
+<p>By default nothing in the destination is replaced: a single entry whose name is already taken refuses the whole task, before anything is written, and the request has to ask for replacement explicitly. A task that fails or is cancelled part way through <strong>leaves the files it had already written</strong> - there is no rollback - and says how many in its error message; a new request over the same folder then needs replacement allowed, or those files removed.</p>
+<p>AWS S3 storages and NFS storages on an NFS share are supported as both the source and the destination. How large an archive may be, how much it may be extracted into, how many entries it may hold and how long one extraction may take are set by an administrator in the <code>tasks.storageUnpackArchive</code> section of the <strong><code>system.async.tasks.config</code></strong> preference.</p>
+<p>For more details see <a href="../../../manual/12_Manage_Settings/12.10._Manage_system-level_settings/">here</a>.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
 <h3 id="nextflow-run-view-some-tasks-stay-running-after-the-run-finishes">Nextflow run view: some tasks stay <code>RUNNING</code> after the run finishes</h3>
@@ -2482,6 +2552,11 @@ Now, the last statuses are always sent when Nextflow finishes.</p>
 <p>Previously, the users export named its date columns after the default time zone of the API server, while the dates are written in UTC. So with another zone set for the API, the names did not match the data, e.g. <code>registrationDate Europe/Berlin</code>. And on an API image whose system names the zone <code>Etc/UTC</code>, as Rocky Linux 9 does, a script that looks for <code>registrationDate UTC</code> did not find the column.
 Now, the columns are always named <code>registrationDate UTC</code> and <code>firstLoginDate UTC</code>.
 See details in <a href="../../../manual/12_Manage_Settings/12._Manage_Settings/#export-users">12. Manage Settings</a>.</p>
+<h3 id="data-storage-select-page-is-enabled-when-no-item-on-the-page-can-be-selected">Data storage: "Select page" is enabled when no item on the page can be selected</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/4846">#4846</a></p>
+<p>Previously, the <strong>Select page</strong> control of a data storage was enabled whenever the current page listed any item, even when none of those items had a checkbox - e.g. a page of folders in a storage the user may only read, or a sensitive storage with no download allowed. Clicking the control selected nothing, with no message.
+Now, <strong>Select page</strong> is disabled unless the page holds an item that can be selected and is not selected yet.
+See details in <a href="../../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage/#select-page">8. Manage Data Storage</a>.</p>
 <h3 id="a-committed-image-of-a-user-with-a-large-uid-writes-hundreds-of-gb-to-the-disk">A committed image of a user with a large UID writes hundreds of GB to the disk</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/4767">#4767</a></p>
 <p>Previously, a run owner with a large UID - e.g. one mapped from Active Directory - got a sparse <code>/var/log/lastlog</code> file of up to hundreds of GB in the container: the file keeps a record of each user at an offset that grows with the UID. A commit stored this file in full. The image still looked usual in the registry, as the zeros compress well, but every pull wrote the whole file to the node's disk: the launch took long, the disk was autoscaled for nothing, and a pause of such a run failed for lack of free disk space.

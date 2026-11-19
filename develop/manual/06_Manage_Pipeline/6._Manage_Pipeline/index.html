@@ -709,7 +709,7 @@ To create your own scenario the default template of the main file shall be edite
 <tr>
 <td></td>
 <td><strong>Node type</strong></td>
-<td>An instance type in terms of the specific Cloud Provider: CPU, RAM, GPU (e.g. 2 CPU cores, 8 Gb RAM, 0 GPU cores).</td>
+<td>An instance type in terms of the specific Cloud Provider: CPU, RAM, GPU (e.g. 2 CPU cores, 8 Gb RAM, 0 GPU cores).<br /><br />When at least one active <a href="../../09_Manage_Cluster_nodes/9.1._Hot_node_pools/#future-dated-node-pools">capacity block</a> pool backs an allowed instance type in the current <strong>Cloud Region</strong>, the dropdown list leads with a <strong>Reserved capacity blocks</strong> group - one entry per pool, tagged with the pool's name, even where two pools back the same instance type - and picking one launches the run on that specific reservation. The instance type is also listed in its usual place, with no tag: picking it there launches the run without a reservation. On the right of the section, under the CPU/RAM/GPU figures, a notice lists every capacity block available right now for the current <strong>Cloud Region</strong> - its instance type, the number of nodes reserved and the date it is available until, where known - and clicking an entry there sets <strong>Node type</strong> to it.<br /><br />Only the launch form offers capacity blocks: a pipeline configuration, a detached configuration and a launch profile list plain instance types only.</td>
 </tr>
 <tr>
 <td></td>
@@ -811,7 +811,7 @@ To create your own scenario the default template of the main file shall be edite
 <li><strong>Docker image</strong> - base docker image name.</li>
 <li><strong>Started</strong> - time pipeline started running.</li>
 <li><strong>Completed</strong> - time pipeline finished execution.</li>
-<li><strong>Elapsed</strong> - each record of that column contains two rows: in upper - pipeline running time, in bottom - run's estimated price, which is calculated based on the run duration, region and instance type.</li>
+<li><strong>Elapsed</strong> - each record of that column contains two rows: in upper - pipeline running time, in bottom - run's estimated price, which is calculated based on the run duration, region and instance type. It is not shown for a run on a node pool, or with reservation requests: a pool node outlives a single run.</li>
 <li><strong>Owner</strong> - user who launched run.</li>
 </ul>
 <p>You can filter runs by clicking the <strong>filter icon</strong>. By using the <strong>filter control</strong> you can choose whether display runs for current pipeline version or display runs for all pipeline versions.</p>

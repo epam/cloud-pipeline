@@ -271,6 +271,8 @@
     </li>
     <li class="toctree-l4"><a class="reference internal" href="#assume-strategy">Assume strategy</a>
     </li>
+    <li class="toctree-l4"><a class="reference internal" href="#user-mapping">User mapping</a>
+    </li>
         </ul>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#setting-up-microsoft-entra-id">Setting up Microsoft Entra ID</a>
@@ -452,6 +454,10 @@
 <li><a href="#client">Client</a></li>
 <li><a href="#rules">Rules</a></li>
 <li><a href="#assume-strategy">Assume strategy</a></li>
+<li><a href="#user-mapping">User mapping</a><ul>
+<li><a href="#protect-the-attribute-the-mapping-reads">Protect the attribute the mapping reads</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a href="#setting-up-microsoft-entra-id">Setting up Microsoft Entra ID</a></li>
@@ -704,7 +710,7 @@ identifier over claims holding a name: a name can be released and taken by someb
 <tbody>
 <tr>
 <td><code>type</code></td>
-<td><code>SPECIFIC_USER</code> or <code>REQUESTED_USER</code></td>
+<td><code>SPECIFIC_USER</code>, <code>REQUESTED_USER</code> or <code>MAPPED_USER</code></td>
 </tr>
 <tr>
 <td><code>user</code></td>
@@ -715,12 +721,16 @@ identifier over claims holding a name: a name can be released and taken by someb
 <td>The claim naming the user. <code>REQUESTED_USER</code> only</td>
 </tr>
 <tr>
+<td><code>userMapping</code></td>
+<td>How to find the user from a claim and user metadata. <code>MAPPED_USER</code> only - see <a href="#user-mapping">User mapping</a></td>
+</tr>
+<tr>
 <td><code>allowedUsers</code></td>
-<td>The only users this client may act as. <code>REQUESTED_USER</code> only</td>
+<td>The only users this client may act as. <code>REQUESTED_USER</code> and <code>MAPPED_USER</code> only</td>
 </tr>
 <tr>
 <td><code>deniedUsers</code></td>
-<td>Users this client may never act as, applied after <code>allowedUsers</code>. <code>REQUESTED_USER</code> only</td>
+<td>Users this client may never act as, applied after <code>allowedUsers</code>. <code>REQUESTED_USER</code> and <code>MAPPED_USER</code> only</td>
 </tr>
 <tr>
 <td><code>rolesToKeep</code></td>
@@ -751,7 +761,80 @@ identifier over claims holding a name: a name can be released and taken by someb
 <p>With <strong><code>SPECIFIC_USER</code></strong> the user is named in the configuration — for a CI job or another service
 account, whose token names no person. With <strong><code>REQUESTED_USER</code></strong> the user comes from a claim of the
 token; the claim is chosen by the configuration and never by the caller, so this is not
-impersonation. The name is upper-cased before it is looked up, the same way a SAML login does it.</p>
+impersonation. The name is upper-cased before it is looked up, the same way a SAML login does it.
+With <strong><code>MAPPED_USER</code></strong> no claim names the user at all, and the user is found by its metadata
+instead — see <a href="#user-mapping">User mapping</a> below.</p>
+<h3 id="user-mapping">User mapping</h3>
+<p><code>MAPPED_USER</code> exists for a provider that identifies a caller by something Cloud Pipeline does not
+keep on the user — a GitHub organisation, a workload identity, an employee number. Recording that
+value as user metadata maps the caller to a user without renaming anybody.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>claim</code></td>
+<td>The claim whose value identifies the user. Chosen by the configuration, never by the caller</td>
+</tr>
+<tr>
+<td><code>metadataKey</code></td>
+<td>The user metadata attribute that value is matched against</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-json">&quot;assumeStrategy&quot;: {
+  &quot;type&quot;: &quot;MAPPED_USER&quot;,
+  &quot;userMapping&quot;: {
+    &quot;claim&quot;: &quot;repository_owner&quot;,
+    &quot;metadataKey&quot;: &quot;github_owner&quot;
+  },
+  &quot;rolesToKeep&quot;: [&quot;ROLE_USER&quot;],
+  &quot;ignoreSubjectTokenLifetime&quot;: true
+}
+</code></pre>
+<p>That configuration reads the token's <code>repository_owner</code> claim and issues a token for the user whose
+<code>github_owner</code> metadata attribute holds that value. A claim arriving as a JSON number is matched as
+its text, so an identifier sent either way maps the same.</p>
+<p>The metadata value is matched <strong>exactly</strong> — unlike the user name, which is upper-cased before it is
+looked up — so <code>Octo-Org</code> in the claim does not find <code>octo-org</code> in the attribute. A claim holding a
+list matches only if the list has exactly one entry.</p>
+<p><strong>Exactly one user has to match.</strong> If several carry the same value, no token is issued at all: that
+describes a configuration or a data state nobody intended, and choosing among them would hand out a
+token for an account that was never meant to be reachable. If none does, the exchange is refused —
+it never creates a user. Metadata left behind by a deleted user is ignored, so a stale attribute
+does not break a mapping that still points at one live user.</p>
+<p><code>allowedUsers</code> and <code>deniedUsers</code> still apply, and are checked against the user the mapping arrived
+at. They are the way to keep a mapping from reaching an account it should not, whatever the metadata
+says.</p>
+<h4 id="protect-the-attribute-the-mapping-reads">Protect the attribute the mapping reads</h4>
+<p>The metadata attribute decides who an incoming token is issued for, so <strong>who may write it matters as
+much as the configuration itself</strong>. By default a user may edit their own metadata: any key not
+listed in the <strong><code>misc.metadata.sensitive.keys</code></strong> preference can be set by the user it belongs to,
+without any permission on anybody else's account.</p>
+<p>Left open, that lets an ordinary user interfere with the mapping:</p>
+<ul>
+<li><strong>setting the value on themselves</strong> makes two users carry it, and since exactly one has to match,
+  every exchange through that client is then refused — the integration stops working;</li>
+<li>where <strong>no user carries the value yet</strong> — the attribute was never set, or the user it named was
+  deleted — the first user to set it on themselves becomes the account the mapping resolves to.</li>
+</ul>
+<p>Neither gives that user a token: obtaining one needs the identity provider's token, which they have
+no way to produce. The exposure is to the integration, not to the account.</p>
+<p>So <strong>add the attribute to <code>misc.metadata.sensitive.keys</code></strong> when configuring a mapping:</p>
+<pre><code class="language-json">[&quot;github_owner&quot;]
+</code></pre>
+<p>A key in that list cannot be written by a non-administrator at all, including on their own user.
+Administrators are unaffected and can still set it, so the mapping is configured the same way as
+before. The same preference also keeps the attribute out of user exports, which is the other reason
+to use it.</p>
+<blockquote>
+<p><strong><em>Note</em></strong>: <code>allowedUsers</code> is worth setting as well. It bounds which accounts a mapping can ever
+resolve to, so a mapping that is pointed at the wrong user refuses rather than issues a token.</p>
+</blockquote>
 <p>Both role lists can only <strong>narrow</strong>. They start from what the user already holds, so naming a role
 the user does not have does not grant it.</p>
 <p>They apply to <strong>roles only</strong>. The user's groups are carried into the token untouched, so any
@@ -841,7 +924,53 @@ registered at GitHub — the whole setup is on the Cloud Pipeline side.</p>
   deployment with a private API needs a self-hosted runner inside the network. The API in turn
   needs outbound HTTPS to GitHub to fetch the signing keys, unless an inline <code>jwks</code> is configured.</li>
 </ul>
-<p>A workflow step:</p>
+<p>A ready-made action does the two requests, masks the token and exports <code>API</code> and <code>API_TOKEN</code> for
+the steps that follow:</p>
+<pre><code class="language-yaml">permissions:
+  id-token: write
+steps:
+  - uses: epam/cloud-pipeline/deploy/integrations/oidc/github-actions/fetch-api-token@develop
+    with:
+      api-url: https://&lt;cp-host&gt;
+  - run: pipe storage ls cp://&lt;bucket&gt;/
+</code></pre>
+<p>It lives in <code>deploy/integrations/oidc/github-actions/fetch-api-token</code>, and its <code>README.md</code> covers the
+inputs, the outputs and what each refusal means.</p>
+<p>Two sibling actions perform the same exchange and then finish the setup, so a workflow that only
+wants a storage or a registry needs nothing else:</p>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>What it adds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>configure-pipe-cli</code></td>
+<td>downloads the <code>pipe</code> binary the deployment itself serves, puts it on <code>PATH</code> and leaves it authenticated — no <code>pipe configure</code>, and no token written to the runner's disk</td>
+</tr>
+<tr>
+<td><code>configure-docker-registry</code></td>
+<td>asks the API which registry uses Cloud Pipeline authentication and logs the runner's docker client into it, so the workflow hardcodes no registry address</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-yaml">permissions:
+  id-token: write
+steps:
+  - uses: epam/cloud-pipeline/deploy/integrations/oidc/github-actions/configure-pipe-cli@develop
+    with:
+      api-url: https://&lt;cp-host&gt;
+  - run: pipe storage cp ./build/ cp://&lt;bucket&gt;/builds/ --recursive
+</code></pre>
+<p>Each has its own <code>README.md</code> beside it. All three share one exchange script, so a refusal means the
+same thing and reads the same way whichever is used.</p>
+<p>All three take an <code>insecure-tls</code> input, off by default, for a deployment whose certificate the runner
+does not trust. It skips verification on the Cloud Pipeline requests only — never on the request to
+GitHub — and logs a warning when used. Trusting the CA on the runner is the better fix; note also
+that it does not reach <code>docker login</code>, which is the daemon's own connection.</p>
+<p>The same thing by hand, where a workflow cannot use an action from this repository:</p>
 <pre><code class="language-yaml">permissions:
   id-token: write
 steps:

@@ -521,7 +521,7 @@
 <li><strong>Completed</strong> - time when a run was finished.</li>
 <li><strong>Elapsed</strong> - include:  <ul>
 <li><em>elapsed time</em> (upper row) - a duration of a run</li>
-<li><em>estimated price</em> (bottom row) - estimated price of run, which is calculated based on the run duration and selected instance type. This field is updated interactively (i.e. each 5 - 10 seconds).</li>
+<li><em>estimated price</em> (bottom row) - estimated price of run, which is calculated based on the run duration and selected instance type. This field is updated interactively (i.e. each 5 - 10 seconds). It is not shown for a run on a node pool, or with reservation requests: a pool node outlives a single run.</li>
 </ul>
 </li>
 <li><strong>Owner</strong> - a user, which launched a run.</li>
@@ -686,7 +686,7 @@ If launched run uses a cluster or an auto-scaled cluster (see sections <a href="
 </tr>
 <tr>
 <td><strong>Estimated price</strong></td>
-<td>price of a run according to a run duration and selected instance type.</td>
+<td>price of a run according to a run duration and selected instance type. It is not shown for a run on a node pool, or with reservation requests: a pool node outlives a single run.</td>
 </tr>
 <tr>
 <td><strong>Nested runs</strong></td>

@@ -261,8 +261,6 @@
     </li>
     <li class="toctree-l4"><a class="reference internal" href="#faceted-filter">Faceted Filter</a>
     </li>
-    <li class="toctree-l4"><a class="reference internal" href="#firecloud">FireCloud</a>
-    </li>
     <li class="toctree-l4"><a class="reference internal" href="#gcp">GCP</a>
     </li>
     <li class="toctree-l4"><a class="reference internal" href="#git">Git</a>
@@ -478,7 +476,6 @@
 <li><a href="#data-storage">Data Storage</a></li>
 <li><a href="#docker-security">Docker security</a></li>
 <li><a href="#faceted-filter">Faceted Filter</a></li>
-<li><a href="#firecloud">FireCloud</a></li>
 <li><a href="#gcp">GCP</a></li>
 <li><a href="#git">Git</a></li>
 <li><a href="#grid-engine-autoscaling">Grid engine autoscaling</a></li>
@@ -1037,62 +1034,6 @@
 </tr>
 </tbody>
 </table>
-<h3 id="firecloud">FireCloud</h3>
-<p>These settings define FireCloud parameters:</p>
-<table>
-<thead>
-<tr>
-<th>Setting name</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong><code>google.client.settings</code></strong></td>
-<td></td>
-</tr>
-<tr>
-<td><strong><code>firecloud.base.url</code></strong></td>
-<td></td>
-</tr>
-<tr>
-<td><strong><code>firecloud.billing.project</code></strong></td>
-<td></td>
-</tr>
-<tr>
-<td><strong><code>google.client.id</code></strong></td>
-<td></td>
-</tr>
-<tr>
-<td><strong><code>firecloud.launcher.cmd</code></strong></td>
-<td></td>
-</tr>
-<tr>
-<td><strong><code>firecloud.instance.disk</code></strong></td>
-<td></td>
-</tr>
-<tr>
-<td><strong><code>firecloud.launcher.tool</code></strong></td>
-<td></td>
-</tr>
-<tr>
-<td><strong><code>google.redirect.url</code></strong></td>
-<td></td>
-</tr>
-<tr>
-<td><strong><code>firecloud.api.scopes</code></strong></td>
-<td></td>
-</tr>
-<tr>
-<td><strong><code>firecloud.instance.type</code></strong></td>
-<td></td>
-</tr>
-<tr>
-<td><strong><code>firecloud.enable.user.auth</code></strong></td>
-<td></td>
-</tr>
-</tbody>
-</table>
 <h3 id="gcp">GCP</h3>
 <p>These settings define specific Google Cloud Platform parameters:</p>
 <table>
@@ -1507,6 +1448,10 @@ Note: a run gets the <strong><code>git.token</code></strong> value when it start
 </tr>
 </thead>
 <tbody>
+<tr>
+<td><strong><code>system.async.tasks.config</code></strong></td>
+<td>Defines the limits of the asynchronous tasks the platform runs outside a request - how many of them a single user may have in progress at once (one budget shared by every task type), how long one may stay in the same status before it is taken for stuck, and a section per task type under <code>tasks</code>. The limits of the <a href="../../08_Manage_Data_Storage/8.2._Upload_Download_data/">archive downloads</a> are in its <code>tasks.storageDownloadAsArchive</code> section, and the limits of the archive extractions in its <code>tasks.storageUnpackArchive</code> one: <code>maxArchiveSizeBytes</code> is the largest archive that may be extracted, <code>maxSizeBytes</code> the largest uncompressed total it may be extracted into, <code>maxFilesCount</code> the largest number of entries it may hold, and <code>workerMaxRunningMinutes</code> how long one extraction may take. <code>stuckTasksThresholdMinutes</code> must exceed the larger of the two sections' <code>workerMaxRunningMinutes</code>, and an extraction is not performed at all until the <code>tasks.storageUnpackArchive</code> section is present. Note that both the source and the destination storage are reached through a role of their own cloud region, so both regions need one the executor service may assume</td>
+</tr>
 <tr>
 <td><strong><code>system.archive.run.metadata.key</code></strong></td>
 <td>Defines the name of the metadata key that shall be specified for users/groups which runs shall be <a href="../../11_Manage_Runs/11.5._Archive_runs/">archived</a></td>
