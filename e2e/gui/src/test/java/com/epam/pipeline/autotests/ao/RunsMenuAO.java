@@ -557,9 +557,15 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
                         .click();
                 break;
             case DOCKER_IMAGE:
+                // ip is group/image: one image name is in many groups, and the list is sorted by registry, group and
+                // image, so the first item named after the image alone can be another group's. An item's label shows
+                // the registry, the group and the image in spans of their own; it is picked in the open popover.
+                final int slash = ip.indexOf('/');
                 inputFilterValue("Filter docker images", ip);
-                $(byXpath(format(".//span[.='%s']", ip))).parent()
-                        .$(byXpath("preceding-sibling::span[@class='ant-checkbox']")).click();
+                $$(byClassName("un-table-columns__filter-popover-container")).findBy(visible)
+                        .$(byXpath(format(".//span[.='%s']/following-sibling::span[1][.='%s']",
+                                ip.substring(0, slash), ip.substring(slash + 1))))
+                        .parent().$(byXpath("preceding-sibling::span[@class='ant-checkbox']")).click();
                 break;
             default:
                 throw new IllegalArgumentException("Could be filtered only by Label of Address");
