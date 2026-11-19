@@ -67,7 +67,8 @@ public class ToolsTest
     private final String defaultRegistryId = C.DEFAULT_REGISTRY_IP;
     private final String testingTool = C.TESTING_TOOL_NAME;
     private final String dockerImage = String.format("%s/%s", defaultRegistryId, testingTool);
-    private final String personalGroup = "personal";
+    // the groups dropdown labels a user's personal group "Personal" (client/.../tools/DockerRegistriesGroupsList.js)
+    private final String personalGroup = "Personal";
     private final String defaultGroup = C.DEFAULT_GROUP;
     private final String command = "echo \"Hi, I'm nginx!\"";
     private final String disk = "23";
