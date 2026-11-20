@@ -122,7 +122,7 @@ import {
   nodeUpRetryCountValuesDiffer
 } from '../../pipelines/launch/form/utilities/node-up-retry-count';
 import {
-  buildLaunchParametersFromReservationParameters, findReservationParameterConfig,
+  buildLaunchParametersFromReservationParameters,
   readReservationParameters,
   reservationParametersDiffer
 } from '../../pipelines/launch/form/components/reservation-parameters/utilities';
@@ -546,9 +546,13 @@ export default class EditToolForm extends React.Component {
       (this.props.tool && this.props.tool.friendly_url);
   };
 
+  // A tool stores only a plain instance type.
+  get selectedInstanceTypeName () {
+    return this.props.form.getFieldValue('instanceType');
+  }
+
   getInstanceTypeValue = () => {
-    const name = this.props.form.getFieldValue('instanceType') ||
-      this.getInstanceTypeInitialValue();
+    const name = this.selectedInstanceTypeName || this.getInstanceTypeInitialValue();
     const [instanceType] = this.allowedInstanceTypes.filter(i => i.name === name);
     return instanceType;
   };
@@ -935,14 +939,6 @@ export default class EditToolForm extends React.Component {
       .filter(v => availableMasterNodeTypes.indexOf(v.isSpot) >= 0);
   }
 
-  get isInstanceTypeWithReservation () {
-    const {
-      preferences
-    } = this.props;
-    const instanceTypeValue = this.props.form.getFieldValue('instanceType');
-    return Boolean(findReservationParameterConfig(instanceTypeValue, preferences));
-  }
-
   @computed
   get multiplyValueBy () {
     if (this.state.launchCluster) {
@@ -1213,7 +1209,7 @@ export default class EditToolForm extends React.Component {
     : cpu;
 
   renderExecutionEnvironmentSummary = () => {
-    const instanceTypeValue = this.props.form.getFieldValue('instanceType');
+    const instanceTypeValue = this.selectedInstanceTypeName;
     const [instanceType] = this.instanceTypes.filter(t => t.name === instanceTypeValue);
     let cpu = 0;
     let ram = 0;
@@ -1559,7 +1555,6 @@ export default class EditToolForm extends React.Component {
   };
 
   renderExecutionEnvironment = () => {
-    const {isInstanceTypeWithReservation} = this;
     const renderExecutionEnvironmentSection = () => {
       const {getFieldDecorator, getFieldValue} = this.props.form;
       let allowSensitive = getFieldValue('allowSensitive');
@@ -1603,12 +1598,7 @@ export default class EditToolForm extends React.Component {
                       (option.props.searchValue || option.props.value)
                         .toLowerCase().indexOf(input.toLowerCase()) >= 0}
                   >
-                    {getSelectOptions(
-                      this.allowedInstanceTypes, {
-                        showReservationTag: true,
-                        preferences: this.props.preferences
-                      }
-                    )}
+                    {getSelectOptions(this.allowedInstanceTypes)}
                   </Select>
                 )}
               </Form.Item>
@@ -1632,7 +1622,6 @@ export default class EditToolForm extends React.Component {
                           )
                         )}
                       instanceTypes={this.allowedInstanceTypes}
-                      showReservationTag
                     />
                   )}
                 </Form.Item>
@@ -1947,7 +1936,7 @@ export default class EditToolForm extends React.Component {
                 />
               </Form.Item>
               <ConfigureClusterDialog
-                instanceName={this.props.form.getFieldValue('instanceType')}
+                instanceName={instanceTypeValue?.name}
                 instanceTypes={this.allowedInstanceTypes}
                 launchCluster={this.state.launchCluster}
                 cloudRegionProvider={this.getCloudProvider()}

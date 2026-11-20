@@ -909,6 +909,10 @@ export default `
 @THEME .ant-table-small .ant-table-title {
   border-bottom-color: @table-border-color;
 }
+@THEME .cp-storage-items-table .ant-table-title {
+  background-color: @card-background-color;
+  border-top-color: @table-border-color;
+}
 @THEME .ant-table-thead > tr > th .anticon-filter:hover,
 @THEME .ant-table-thead > tr > th .ant-table-filter-icon:hover,
 @THEME .ant-table-column-sorter-up:hover .anticon,

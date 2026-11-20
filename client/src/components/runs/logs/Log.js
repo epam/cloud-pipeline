@@ -102,9 +102,9 @@ import RestartedRunsInfo from './misc/restarted-runs-info';
 import NestedRunsModal from './forms/NestedRunsModal';
 import RunStatuses, {isRunStatusNodePending} from '../../special/run-status-icon/run-statuses';
 import getRunInvestigationUrl from '../../../utils/run-investigation-url';
+import {isCapacityBlockRun} from '../../../models/cluster/capacity-blocks';
 import runNodeIsUnavailable from '../actions/node-availability';
 
-const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
 const MAX_PARAMETER_VALUES_TO_DISPLAY = 5;
 const MAX_NESTED_RUNS_TO_DISPLAY = 10;
@@ -602,8 +602,6 @@ class Logs extends localization.LocalizedReactComponent {
     if (this.isDtsEnvironment) {
       const dts = this.dtsList.filter(dts => dts.id === run.executionPreferences.dtsId)[0];
       environment = dts ? `${dts.name}` : `${run.executionPreferences.dtsId}`;
-    } else if (this.isFireCloudEnvironment) {
-      environment = 'FireCloud';
     } else {
       environment = this.props.preferences.deploymentName || 'EPAM Cloud Pipeline';
     }
@@ -1296,13 +1294,6 @@ class Logs extends localization.LocalizedReactComponent {
   }
 
   @computed
-  get isFireCloudEnvironment () {
-    const {run} = this.state;
-    return run && run.executionPreferences &&
-      run.executionPreferences.environment === FIRE_CLOUD_ENVIRONMENT;
-  }
-
-  @computed
   get initializeEnvironmentFinished () {
     const {run} = this.state;
     return run && run.initialized;
@@ -1604,6 +1595,7 @@ class Logs extends localization.LocalizedReactComponent {
       platform,
       sshPassword
     } = run || {};
+    const isReservationParameterInstance = isCapacityBlockRun(run);
 
     if (pending || !run) {
       Title = <h1>Run </h1>;
@@ -1902,7 +1894,7 @@ class Logs extends localization.LocalizedReactComponent {
       }
 
       let price;
-      if (pricePerHour) {
+      if (pricePerHour && !isReservationParameterInstance) {
         const adjustPrice = (value) => {
           if (value === 0) {
             return 0;

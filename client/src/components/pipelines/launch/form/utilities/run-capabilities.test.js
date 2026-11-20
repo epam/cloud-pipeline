@@ -19,11 +19,15 @@
 // The two remote desktops of a run, NICE DCV and NoMachine, at a launch outside the launch form
 // (e.g. "Run with default settings"): the capabilities of the user and the tool defaults
 
+import {stubApi} from '@test';
+import capacityBlocks from '../../../../../models/cluster/capacity-blocks';
+import {getReservationParametersConfig} from '../components/reservation-parameters/utilities';
 import fetchToolOS from './fetch-tool-os';
 import {
   applyCapabilities,
   applyCustomCapabilitiesParameters,
   getCapabilitiesPlatformInfo,
+  isEnabledByReservationConfig,
   normalizeCapabilities,
   updateCapabilities
 } from './run-capabilities';
@@ -188,5 +192,75 @@ describe('getCapabilitiesPlatformInfo', () => {
     fetchToolOS.mockReturnValue(Promise.reject(new Error('no registry')));
     const info = await getCapabilitiesPlatformInfo({dockerImage: 'image'}, undefined, undefined);
     expect(info).toEqual({platform: undefined, os: undefined, provider: undefined});
+  });
+});
+
+// The capacity-block store is a module-level singleton, so every test below starts it
+// off as if nothing had been fetched yet - the same arrangement
+// `reservation-parameters/utilities.test.js` uses.
+
+// `RunCapabilities#setReservationConfig` (the component method this bug is
+// in) is a thin, untestable-in-isolation wrapper around these two exported,
+// pure-enough functions: it resolves a config with `getReservationParametersConfig`
+// and feeds it to `isEnabledByReservationConfig`. Mounting the component itself
+// would additionally require stubbing `preferences`, `dockerRegistries`,
+// `fetchToolOS` and `fetchToolDefaultParameters` for no extra coverage of the
+// bug this fixes, so - as with `LaunchPipelineForm.js` and `RunModal.open`'s
+// dialog flow elsewhere on this branch - the fix is tested at this seam
+// instead of through a render.
+const privilegedCapability = {privileged: true};
+
+describe('isEnabledByReservationConfig, fed a pool explicitly chosen among ' +
+  'two backing the same instance type and region', () => {
+  beforeEach(() => {
+    capacityBlocks.invalidateCache();
+  });
+
+  // Two pools backing one instance type in one region, with opposite
+  // `kubeAssignPolicy.securityContext.privileged` settings - exactly the
+  // scenario where resolving "the wrong pool" silently shows or hides a
+  // privileged capability.
+  const lowerIdPool = {
+    id: 10,
+    name: 'lower-id-pool',
+    instanceType: 'm5.2xlarge',
+    regionId: 1,
+    launchConfig: {
+      kubeAssignPolicy: {securityContext: {privileged: false}}
+    }
+  };
+  const higherIdPool = {
+    id: 20,
+    name: 'higher-id-pool',
+    instanceType: 'm5.2xlarge',
+    regionId: 1,
+    launchConfig: {
+      kubeAssignPolicy: {securityContext: {privileged: true}}
+    }
+  };
+
+  it('gates on the explicitly chosen pool\'s own config, not the lowest id ' +
+    'sharing its type and region', async () => {
+    stubApi({'/cluster/pool/filter': [lowerIdPool, higherIdPool]});
+
+    const config = await getReservationParametersConfig(higherIdPool.id);
+
+    expect(isEnabledByReservationConfig(privilegedCapability, config)).toBe(true);
+  });
+
+  it('gates on the other explicitly chosen pool just as precisely', async () => {
+    stubApi({'/cluster/pool/filter': [lowerIdPool, higherIdPool]});
+
+    const config = await getReservationParametersConfig(lowerIdPool.id);
+
+    expect(isEnabledByReservationConfig(privilegedCapability, config)).toBe(false);
+  });
+
+  it('has no reservation config at all when no poolId is given', async () => {
+    stubApi({'/cluster/pool/filter': [higherIdPool, lowerIdPool]});
+
+    const config = await getReservationParametersConfig(undefined);
+
+    expect(config).toBeUndefined();
   });
 });

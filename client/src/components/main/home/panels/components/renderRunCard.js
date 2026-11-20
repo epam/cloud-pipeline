@@ -27,6 +27,7 @@ import RunTags from '../../../../runs/run-tags';
 import RunName from '../../../../runs/run-name';
 import MultizoneUrl from '../../../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';
+import {isCapacityBlockRun} from '../../../../../models/cluster/capacity-blocks';
 
 function renderTitle (run) {
   const podId = run.podId;
@@ -139,6 +140,9 @@ function renderCommitStatus (run) {
 }
 
 function renderEstimatedPrice (run) {
+  if (isCapacityBlockRun(run)) {
+    return null;
+  }
   const price = evaluateRunPrice(run);
   return (
     <JobEstimatedPriceInfo>
