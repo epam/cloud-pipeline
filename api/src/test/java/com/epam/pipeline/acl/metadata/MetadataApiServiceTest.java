@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -304,6 +305,60 @@ public class MetadataApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldUpdateRoleMetadataItemWhenPermissionIsGranted() {
+        final Role role = UserCreatorUtils.getRole(TEST_NAME, ID, ANOTHER_SIMPLE_USER);
+        initAclEntity(role, AclPermission.WRITE);
+        doReturn(role).when(mockEntityManager).load(eq(ROLE_ACL_CLASS), eq(ID));
+        doReturn(roleEntry).when(mockMetadataManager).updateMetadataItem(roleVO);
+        mockAuthUser(SIMPLE_USER);
+
+        assertThat(metadataApiService.updateMetadataItem(roleVO)).isEqualTo(roleEntry);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyUpdateRoleMetadataItemWhenReadPermissionIsGranted() {
+        final Role role = UserCreatorUtils.getRole(TEST_NAME, ID, ANOTHER_SIMPLE_USER);
+        initAclEntity(role, AclPermission.READ);
+        doReturn(role).when(mockEntityManager).load(eq(ROLE_ACL_CLASS), eq(ID));
+        doReturn(roleEntry).when(mockMetadataManager).updateMetadataItem(roleVO);
+        mockAuthUser(SIMPLE_USER);
+
+        assertThrows(AccessDeniedException.class, () -> metadataApiService.updateMetadataItem(roleVO));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyUpdatePredefinedRoleMetadataItemWhenPermissionIsGranted() {
+        final Role role = UserCreatorUtils.getRole(TEST_NAME, ID, ANOTHER_SIMPLE_USER);
+        role.setPredefined(true);
+        initAclEntity(role, AclPermission.WRITE);
+        doReturn(role).when(mockEntityManager).load(eq(ROLE_ACL_CLASS), eq(ID));
+        doReturn(roleEntry).when(mockMetadataManager).updateMetadataItem(roleVO);
+        mockAuthUser(SIMPLE_USER);
+
+        assertThrows(AccessDeniedException.class, () -> metadataApiService.updateMetadataItem(roleVO));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyUpdateRoleMetadataItemForSensitiveKeys() {
+        final MetadataVO sensitiveMetadata = MetadataCreatorUtils.getMetadataVO(ROLE_ACL_CLASS);
+        sensitiveMetadata.setData(Collections.singletonMap(SENSITIVE_KEY, null));
+        doReturn(Collections.singletonList(SENSITIVE_KEY))
+                .when(mockPreferenceManager)
+                .getPreference(eq(SystemPreferences.MISC_METADATA_SENSITIVE_KEYS));
+        final Role role = UserCreatorUtils.getRole(TEST_NAME, ID, ANOTHER_SIMPLE_USER);
+        initAclEntity(role, AclPermission.WRITE);
+        doReturn(role).when(mockEntityManager).load(eq(ROLE_ACL_CLASS), eq(ID));
+        doReturn(roleEntry).when(mockMetadataManager).updateMetadataItem(sensitiveMetadata);
+        mockAuthUser(SIMPLE_USER);
+
+        assertThrows(AccessDeniedException.class, () -> metadataApiService.updateMetadataItem(sensitiveMetadata));
+    }
+
+    @Test
     @WithMockUser
     public void shouldDenyUpdateMetadataItemForNonOwner() {
         doReturn(metadataEntry).when(mockMetadataManager).updateMetadataItem(metadataVO);
@@ -495,6 +550,29 @@ public class MetadataApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDeleteRoleMetadataItemForOwner() {
+        final Role role = UserCreatorUtils.getRole(TEST_NAME, ID, SIMPLE_USER);
+        doReturn(role).when(mockEntityManager).load(eq(ROLE_ACL_CLASS), eq(ID));
+        doReturn(roleEntry).when(mockMetadataManager).deleteMetadataItem(roleEntityVO);
+        mockAuthUser(SIMPLE_USER);
+
+        assertThat(metadataApiService.deleteMetadataItem(roleEntityVO)).isEqualTo(roleEntry);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyDeleteRoleMetadataItemWhenPermissionIsGranted() {
+        final Role role = UserCreatorUtils.getRole(TEST_NAME, ID, ANOTHER_SIMPLE_USER);
+        initAclEntity(role, AclPermission.WRITE);
+        doReturn(role).when(mockEntityManager).load(eq(ROLE_ACL_CLASS), eq(ID));
+        doReturn(roleEntry).when(mockMetadataManager).deleteMetadataItem(roleEntityVO);
+        mockAuthUser(SIMPLE_USER);
+
+        assertThrows(AccessDeniedException.class, () -> metadataApiService.deleteMetadataItem(roleEntityVO));
+    }
+
+    @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldDeleteMetadataItemKeysForAdmin() {
         doReturn(metadataEntry).when(mockMetadataManager).deleteMetadataItemKeys(metadataVO);
@@ -662,6 +740,19 @@ public class MetadataApiServiceTest extends AbstractAclTest {
 
         assertThat(metadataApiService.uploadMetadataFromFile(pipelineUserEntityVO, file, true))
                 .isEqualTo(pipelineUserEntry);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyUploadRoleMetadataFromFileWhenPermissionIsGranted() {
+        final Role role = UserCreatorUtils.getRole(TEST_NAME, ID, ANOTHER_SIMPLE_USER);
+        initAclEntity(role, AclPermission.WRITE);
+        doReturn(role).when(mockEntityManager).load(eq(ROLE_ACL_CLASS), eq(ID));
+        doReturn(roleEntry).when(mockMetadataManager).uploadMetadataFromFile(roleEntityVO, file, true);
+        mockAuthUser(SIMPLE_USER);
+
+        assertThrows(AccessDeniedException.class, () ->
+                metadataApiService.uploadMetadataFromFile(roleEntityVO, file, true));
     }
 
     @Test
