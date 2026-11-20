@@ -40,10 +40,21 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.acl.AclPermission;
+<<<<<<< ours
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+||||||| base
+import com.epam.pipeline.test.acl.AbstractAclTest;
+import org.junit.Assert;
+import org.junit.Test;
+
+=======
+import com.epam.pipeline.test.acl.AbstractAclTest;
+import org.junit.jupiter.api.Test;
+
+>>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.acls.model.AclCache;
@@ -59,11 +70,38 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+<<<<<<< ours
 import static com.epam.pipeline.acl.run.PipelineAclFactory.TEST_PIPELINE_ID;
 import static com.epam.pipeline.acl.run.RunAclFactory.TEST_RUN_ID;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.eq;
+||||||| base
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.*;
+import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.IMAGE1;
+import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getTool;
+import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipeline;
+import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineRun;
+import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineStart;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+
+import static com.epam.pipeline.util.CustomAssertions.notInvoked;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.eq;
+=======
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.*;
+import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.IMAGE1;
+import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getTool;
+import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipeline;
+import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineRun;
+import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineStart;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+
+import static com.epam.pipeline.util.CustomAssertions.notInvoked;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.eq;
+>>>>>>> theirs
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 
@@ -406,10 +444,58 @@ public class RunApiServiceTest {
         assertThat(runApiService.loadPipelineRun(pipelineRun.getId()), equalTo(pipelineRun));
     }
 
+<<<<<<< ours
     @Test(expected = AccessDeniedException.class)
     @WithMockUser(username = TEST_USER2)
     public void shouldNotInheritPermissionsLoadPipelineRunWithPipelineOwnerVisibilityEnabled() {
         enableVisibilityPolicy(RunVisibilityPolicy.INHERIT);
+||||||| base
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void ownerShouldLoadRunPipelineResult() {
+        final Pipeline pipeline = getPipeline(SIMPLE_USER);
+        final PipelineRun pipelineRun = getPipelineRun(ID, SIMPLE_USER);
+        List<PipelineRunResult> runResult = Collections.singletonList(
+            PipelineRunResult.builder().runId(ID)
+                    .name(TEST_NAME).fileMask(TEST_STRING)
+                    .items(Collections.singletonList(TEST_STRING)).build()
+        );
+        doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(ID);
+        doReturn(pipelineRun).when(mockRunCRUDService).loadRunById(ID);
+        doReturn(pipeline).when(mockRunManager).loadRunParent(pipelineRun);
+        doReturn(runResult).when(mockRunResultManager).loadPipelineRunResultsForRun(ID);
+
+        initAclEntity(pipeline);
+        initAclEntity(pipelineRun);
+        mockSecurityContext();
+
+        List<PipelineRunResult> actualResults = runApiService.loadPipelineRunResultsForRun(ID);
+        Assert.assertEquals(runResult, actualResults);
+    }
+=======
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void ownerShouldLoadRunPipelineResult() {
+        final Pipeline pipeline = getPipeline(SIMPLE_USER);
+        final PipelineRun pipelineRun = getPipelineRun(ID, SIMPLE_USER);
+        List<PipelineRunResult> runResult = Collections.singletonList(
+            PipelineRunResult.builder().runId(ID)
+                    .name(TEST_NAME).fileMask(TEST_STRING)
+                    .items(Collections.singletonList(TEST_STRING)).build()
+        );
+        doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(ID);
+        doReturn(pipelineRun).when(mockRunCRUDService).loadRunById(ID);
+        doReturn(pipeline).when(mockRunManager).loadRunParent(pipelineRun);
+        doReturn(runResult).when(mockRunResultManager).loadPipelineRunResultsForRun(ID);
+
+        initAclEntity(pipeline);
+        initAclEntity(pipelineRun);
+        mockSecurityContext();
+
+        List<PipelineRunResult> actualResults = runApiService.loadPipelineRunResultsForRun(ID);
+        assertEquals(runResult, actualResults);
+    }
+>>>>>>> theirs
 
         final Pipeline pipeline = pipelineAclFactory.initPipelineForOwner(TEST_USER2);
         final PipelineRun pipelineRun = runAclFactory.initPipelineRunForOwner(pipeline, TEST_USER1);
@@ -428,7 +514,23 @@ public class RunApiServiceTest {
         disableBillingQuotas();
         doReturn(pipelineRun).when(mockRunManager).runPipeline(pipelineStart);
 
+<<<<<<< ours
         assertThat(runApiService.runPipeline(pipelineStart), equalTo(pipelineRun));
+||||||| base
+        initAclEntity(pipeline, AclPermission.READ);
+        initAclEntity(pipelineRun, AclPermission.READ);
+        mockSecurityContext();
+
+        List<PipelineRunResult> actualResults = runApiService.loadPipelineRunResultsForRun(ID);
+        Assert.assertEquals(runResult, actualResults);
+=======
+        initAclEntity(pipeline, AclPermission.READ);
+        initAclEntity(pipelineRun, AclPermission.READ);
+        mockSecurityContext();
+
+        List<PipelineRunResult> actualResults = runApiService.loadPipelineRunResultsForRun(ID);
+        assertEquals(runResult, actualResults);
+>>>>>>> theirs
     }
 
     @Test(expected = AccessDeniedException.class)

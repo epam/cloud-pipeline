@@ -18,10 +18,19 @@ package com.epam.pipeline.manager.python;
 
 import com.epam.pipeline.controller.vo.TaskGraphVO;
 import com.epam.pipeline.manager.CmdExecutor;
+<<<<<<< ours
 import com.epam.pipeline.manager.utils.PythonExecutableUtils;
 import org.junit.Assert;
 import org.junit.Test;
+||||||| base
+import org.junit.Assert;
+import org.junit.Test;
+=======
+import org.junit.jupiter.api.Test;
+>>>>>>> theirs
 import org.springframework.test.util.ReflectionTestUtils;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class GraphReaderTest {
 
@@ -39,8 +48,14 @@ public class GraphReaderTest {
 
         reader.readGraph("graph.py", "path/to/script", "config.json");
 
+<<<<<<< ours
         Assert.assertTrue(capturedCommand.toString()
                 .startsWith(PythonExecutableUtils.getPythonExecutable() + " graph.py path/to/script config.json"));
+||||||| base
+        Assert.assertTrue(capturedCommand.toString().startsWith("python graph.py path/to/script config.json"));
+=======
+        assertTrue(capturedCommand.toString().startsWith("python graph.py path/to/script config.json"));
+>>>>>>> theirs
     }
 
     @Test
@@ -68,7 +83,7 @@ public class GraphReaderTest {
                 + "OUT:AlignmentSummaryMetrics.txt\n";
         GraphReader reader = new GraphReader();
         TaskGraphVO graph = reader.createGraphFromScriptOutput(output);
-        Assert.assertNotNull(graph);
-        Assert.assertEquals(4, graph.getTasks().size());
+        assertNotNull(graph);
+        assertEquals(4, graph.getTasks().size());
     }
 }

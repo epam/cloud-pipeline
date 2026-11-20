@@ -57,6 +57,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
+<<<<<<< ours
 import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.util.TestUtils;
 import org.apache.commons.collections.CollectionUtils;
@@ -65,6 +66,18 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
+||||||| base
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.MockitoAnnotations;
+=======
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+>>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -85,6 +98,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+<<<<<<< ours
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -95,16 +109,35 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doNothing;
+||||||| base
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+=======
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
+>>>>>>> theirs
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.quality.Strictness.LENIENT;
 
 @DirtiesContext //TODO: find a better workaround, this may make tests slower. Maybe, create a special package for
                 // integration tests, so they will be executed one after another and the context will remain?
 @ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
 @Transactional
-@SuppressWarnings({"PMD.TooManyStaticImports", "PMD.UnusedPrivateField", "PMD.AvoidDuplicateLiterals"})
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = LENIENT)
+@SuppressWarnings({"PMD.TooManyStaticImports", "PMD.UnusedPrivateField"})
 public class PipelineRunManagerTest extends AbstractManagerTest {
     private static final String PARAM_NAME_1 = "param-1";
     private static final String ENV_VAR_NAME = "TEST_ENV";
@@ -181,16 +214,30 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     @Autowired
     private PreferenceManager preferenceManager;
 
+<<<<<<< ours
     private static final String TEST_IMAGE = "testImage";
     private Tool notScannedTool;
     private PipelineConfiguration configuration;
     private InstancePrice price;
 
     @Before
+||||||| base
+    @Before
+=======
+    @BeforeEach
+>>>>>>> theirs
     public void setUp() throws Exception {
+<<<<<<< ours
         MockitoAnnotations.initMocks(this);
 
         notScannedTool = new Tool();
+||||||| base
+        MockitoAnnotations.initMocks(this);
+
+        Tool notScannedTool = new Tool();
+=======
+        Tool notScannedTool = new Tool();
+>>>>>>> theirs
         notScannedTool.setId(1L);
         notScannedTool.setImage(TEST_IMAGE);
         notScannedTool.setDefaultCommand("sleep");
@@ -229,8 +276,8 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
                 .isInstanceAllowed(anyString(), eq(NON_DEFAULT_REGION_ID), eq(false))).thenReturn(true);
         when(instanceOfferManager.findOffer(anyString(), anyLong())).thenReturn(Optional.empty());
         when(instanceOfferManager.isPriceTypeAllowed(anyString(), any(), anyBoolean())).thenReturn(true);
-        when(instanceOfferManager.getInstanceEstimatedPrice(anyString(), anyInt(), anyBoolean(), anyLong()))
-                .thenReturn(price);
+        when(instanceOfferManager.getInstanceEstimatedPrice(nullable(String.class), nullable(Integer.class),
+                anyBoolean(), anyLong())).thenReturn(price);
         when(pipelineLauncher.launch(any(PipelineRun.class), any(), any(), anyString())).thenReturn("sleep");
         when(toolScanInfoManager.loadToolVersionScanInfo(notScannedTool.getId(), null))
                 .thenReturn(Optional.empty());
@@ -272,17 +319,17 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     /**
      * Tests that Aspect will deny PipelineRunManager::runCmd method execution
      */
-    @Test(expected = ToolExecutionDeniedException.class)
+    @Test
     public void testRunCmdFailed() {
         PipelineStart startVO = new PipelineStart();
         preferenceManager.update(Collections.singletonList(new Preference(
                 SystemPreferences.DOCKER_SECURITY_TOOL_POLICY_DENY_NOT_SCANNED.getKey(), Boolean.toString(true))));
         startVO.setDockerImage(TEST_IMAGE);
-        pipelineRunManager.runCmd(startVO);
+        assertThrows(ToolExecutionDeniedException.class, () -> pipelineRunManager.runCmd(startVO));
     }
 
     @WithMockUser(roles = "ADMIN")
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testRunCmdFailsWhenFallbackTypesExceedLimit() {
         preferenceManager.update(Collections.singletonList(new Preference(
                 SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT.getKey(), "2")));
@@ -298,7 +345,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         startVO.setDockerImage(TEST_IMAGE);
         startVO.setInstanceType(INSTANCE_TYPE);
         startVO.setHddSize(1);
-        pipelineRunManager.runCmd(startVO);
+        assertThrows(IllegalArgumentException.class, () -> pipelineRunManager.runCmd(startVO));
     }
 
     @WithMockUser(roles = "ADMIN")
@@ -341,11 +388,11 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         startVO.setHddSize(1);
         final PipelineRun run = pipelineRunManager.runCmd(startVO);
 
-        assertThat(run.getInstance().getFallbackInstanceTypes()).isNullOrEmpty();
+        Assertions.assertThat(run.getInstance().getFallbackInstanceTypes()).isNullOrEmpty();
     }
 
     @WithMockUser(roles = "ADMIN")
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testApplyRunInstanceConfigFailsWhenInstanceTypeNotAllowed() {
         when(instanceOfferManager.isToolInstanceAllowed(eq("r4.large"), any(), eq(REGION_ID), eq(false)))
                 .thenReturn(false);
@@ -353,11 +400,12 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
 
         final RunInstanceConfigVO vo = new RunInstanceConfigVO();
         vo.setInstanceType("r4.large");
-        pipelineRunManager.applyRunInstanceConfig(run.getId(), vo);
+        Assertions.assertThatThrownBy(() -> pipelineRunManager.applyRunInstanceConfig(run.getId(), vo))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @WithMockUser(roles = "ADMIN")
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testApplyRunInstanceConfigFailsWhenFallbackTypeNotAllowed() {
         when(instanceOfferManager.isToolInstanceAllowed(eq("r4.large"), any(), eq(REGION_ID), eq(false)))
                 .thenReturn(false);
@@ -365,7 +413,8 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
 
         final RunInstanceConfigVO vo = new RunInstanceConfigVO();
         vo.setFallbackInstanceTypes(Arrays.asList(INSTANCE_TYPE, "r4.large"));
-        pipelineRunManager.applyRunInstanceConfig(run.getId(), vo);
+        Assertions.assertThatThrownBy(() -> pipelineRunManager.applyRunInstanceConfig(run.getId(), vo))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @WithMockUser(roles = "ADMIN")
@@ -395,7 +444,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     }
 
     @WithMockUser(roles = "ADMIN")
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testApplyRunInstanceConfigRejectsGpuMainTypeForCpuRun() {
         final InstanceOffer cpuOffer = InstanceOffer.builder().gpu(0).build();
         final InstanceOffer gpuOffer = InstanceOffer.builder().gpu(1).build();
@@ -407,11 +456,12 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
 
         final RunInstanceConfigVO vo = new RunInstanceConfigVO();
         vo.setInstanceType("p3.2xlarge");
-        pipelineRunManager.applyRunInstanceConfig(run.getId(), vo);
+        assertThrows(IllegalArgumentException.class,
+                () -> pipelineRunManager.applyRunInstanceConfig(run.getId(), vo));
     }
 
     @WithMockUser(roles = "ADMIN")
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testApplyRunInstanceConfigRejectsGpuFallbackTypeForCpuRun() {
         final InstanceOffer cpuOffer = InstanceOffer.builder().gpu(0).build();
         final InstanceOffer gpuOffer = InstanceOffer.builder().gpu(1).build();
@@ -423,7 +473,8 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
 
         final RunInstanceConfigVO vo = new RunInstanceConfigVO();
         vo.setFallbackInstanceTypes(Arrays.asList(INSTANCE_TYPE, "p3.2xlarge"));
-        pipelineRunManager.applyRunInstanceConfig(run.getId(), vo);
+        assertThrows(IllegalArgumentException.class,
+                () -> pipelineRunManager.applyRunInstanceConfig(run.getId(), vo));
     }
 
     @WithMockUser(roles = "ADMIN")

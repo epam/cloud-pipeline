@@ -135,6 +135,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
 
     public static MetricRequester getRequester(final ELKUsageMetric metric,
                                                final HeapsterElasticRestHighLevelClient client) {
+<<<<<<< ours
         switch (metric) {
             case CPU:
                 return new CPURequester(client);
@@ -147,6 +148,25 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
             default:
                 throw new IllegalArgumentException("Metric type: " + metric.getName() + " isn't supported!");
         }
+||||||| base
+        switch (metric) {
+            case CPU: return new CPURequester(client);
+            case MEM: return new MemoryRequester(client);
+            case FS: return new FSRequester(client);
+            case NETWORK: return new NetworkRequester(client);
+            case GPU_AGGS: return new GPUAggregationRequester(client);
+            default: throw new IllegalArgumentException("Metric type: " + metric.getName() + " isn't supported!");
+        }
+=======
+        return switch (metric) {
+            case CPU -> new CPURequester(client);
+            case MEM -> new MemoryRequester(client);
+            case FS -> new FSRequester(client);
+            case NETWORK -> new NetworkRequester(client);
+            case GPU_AGGS -> new GPUAggregationRequester(client);
+            default -> throw new IllegalArgumentException("Metric type: " + metric.getName() + " isn't supported!");
+        };
+>>>>>>> theirs
     }
 
     public static MonitoringRequester getStatsRequester(final ELKUsageMetric metric,
@@ -202,7 +222,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
         }
     }
 
-    protected static String path(final String ...parts) {
+    protected static String path(final String...parts) {
         return String.join(".", parts);
     }
 

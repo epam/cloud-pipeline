@@ -35,8 +35,8 @@ import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.user.UserManager;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,8 +88,7 @@ public class RunSchedulerTest extends AbstractSpringTest {
     @MockBean
     protected InstanceOfferManager instanceOfferManager;
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         MockitoAnnotations.initMocks(this);
 
         final PipelineRun pipelineRun = createPipelineRun(RUN_ID, RUN_ID);
@@ -137,7 +136,7 @@ public class RunSchedulerTest extends AbstractSpringTest {
         Mockito.verify(pipelineRunDockerOperationManager, Mockito.times(numberOfInvocations))
                 .pauseRun(RUN_ID, true);
         Mockito.verify(configurationRunner, Mockito.times(numberOfInvocations))
-                .runConfiguration(Mockito.any(), Mockito.any(), Mockito.any());
+                .runConfiguration(Mockito.any(), Mockito.any());
 
     }
 
@@ -152,8 +151,16 @@ public class RunSchedulerTest extends AbstractSpringTest {
         runScheduler.unscheduleRunSchedule(runSchedule);
 
         final int numberOfInvocations = 1 + TEST_PERIOD_DURATION / TEST_INVOCATION_PERIOD;
+<<<<<<< ours
         Mockito.verify(configurationRunner, Mockito.times(numberOfInvocations))
                 .runConfiguration(Mockito.any(), Mockito.any(), Mockito.any());
+||||||| base
+        Mockito.verify(configurationRunner, Mockito.timeout(TEST_SCHEDULER_TIMEOUT_MILLIS).times(numberOfInvocations))
+                .runConfiguration(Mockito.any(), Mockito.any(), Mockito.any());
+=======
+        Mockito.verify(configurationRunner, Mockito.timeout(TEST_SCHEDULER_TIMEOUT_MILLIS).times(numberOfInvocations))
+                .runConfiguration(Mockito.any(), Mockito.any());
+>>>>>>> theirs
 
     }
 
@@ -168,7 +175,7 @@ public class RunSchedulerTest extends AbstractSpringTest {
         runScheduler.unscheduleRunSchedule(runSchedule);
 
         Mockito.verify(configurationRunner, Mockito.never())
-                .runConfiguration(Mockito.any(), Mockito.any(), Mockito.any());
+                .runConfiguration(Mockito.any(), Mockito.any());
 
     }
 

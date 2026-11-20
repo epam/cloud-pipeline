@@ -19,6 +19,7 @@ package com.epam.pipeline.entity.scan;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Date;
 import java.util.List;
@@ -27,6 +28,13 @@ import java.util.Optional;
 
 @Getter
 @Builder
+<<<<<<< ours
+||||||| base
+@EqualsAndHashCode
+=======
+@EqualsAndHashCode
+@Jacksonized
+>>>>>>> theirs
 public class ToolVersionScanResultView {
 
     private Long toolId;

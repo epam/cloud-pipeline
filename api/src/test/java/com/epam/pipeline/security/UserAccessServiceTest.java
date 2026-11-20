@@ -16,42 +16,88 @@
 
 package com.epam.pipeline.security;
 
-import com.epam.pipeline.entity.security.JwtRawToken;
-import com.epam.pipeline.entity.security.JwtTokenClaims;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.quota.QuotaService;
+import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
-import com.epam.pipeline.security.jwt.TokenVerificationException;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mockito;
+import com.epam.pipeline.security.saml.SamlUserRegisterStrategy;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.security.authentication.LockedException;
+<<<<<<< ours
 import org.springframework.security.core.GrantedAuthority;
+||||||| base
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.test.util.ReflectionTestUtils;
+=======
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.test.util.ReflectionTestUtils;
+>>>>>>> theirs
 
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static com.epam.pipeline.security.saml.SamlUserRegisterStrategy.*;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.when;
 
-public class UserAccessServiceTest {
+@SuppressWarnings("PMD.UnusedPrivateField")
+class UserAccessServiceTest {
 
-    private static final String USER_NAME = "JANE";
-    private static final Long USER_ID = 1L;
-    private static final String ROLE_USER = "ROLE_USER";
-    private static final String ROLE_ADMIN = "ROLE_ADMIN";
-    private static final String READER = "READER";
-    private static final String GROUP = "BIOINFORMATICS";
-    private static final int LOGIN_THRESHOLD = 1;
+    private static final String USER_NAME = "TEST_USER";
+    private static final String OLD_USER_NAME = "user_name";
+    private static final String SAML_ATTRIBUTE_1 = "ATTR_1";
+    private static final String SAML_ATTRIBUTE_2 = "ATTR_2";
+    private static final String SAML_ATTRIBUTES_STRING = "ATTR_3";
+    private static final String ATTRIBUTES_KEY_1 = "email";
+    private static final String ATTRIBUTES_KEY_2 = "user";
 
+    private final PipelineUser user = new PipelineUser();
+    private final List<String> groups = Stream.of(SAML_ATTRIBUTE_1, SAML_ATTRIBUTE_2).collect(Collectors.toList());
+    private final UserContext expectedUserContext = new UserContext(1L, USER_NAME.toUpperCase());
+    private final Map<String, String> expectedAttributes = initAttributes();
+
+    @Mock
+    private UserManager userManager;
+    @Mock
+    private RoleManager roleManager;
+    @Mock
+    private MessageHelper messageHelper;
+    @Mock
+    private GrantPermissionManager permissionManager;
+    @Mock
+    private PreferenceManager preferenceManager;
+    @Mock
+    private QuotaService quotaService;
+
+    @InjectMocks
+    private UserAccessService userAccessService;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+
+        user.setUserName(USER_NAME);
+        user.setAttributes(expectedAttributes);
+        user.setGroups(groups);
+
+<<<<<<< ours
     private UserManager userManager;
     private UserAccessService service;
 
@@ -79,146 +125,159 @@ public class UserAccessServiceTest {
     @Test
     public void shouldKeepTheTokenRolesWhenTheyAreScoped() {
         storedUser(ROLE_ADMIN, ROLE_USER, READER);
+||||||| base
+    private UserManager userManager;
+    private UserAccessService service;
 
-        final UserContext context = service.getJwtUser(rawToken(), claims(true, ROLE_USER));
+    @Before
+    public void setUp() {
+        userManager = Mockito.mock(UserManager.class);
+        final QuotaService quotaService = Mockito.mock(QuotaService.class);
+        final PreferenceManager preferenceManager = Mockito.mock(PreferenceManager.class);
 
-        assertThat(authoritiesOf(context)).containsExactlyInAnyOrder(ROLE_USER, GROUP);
-    }
+        service = new UserAccessService();
+        ReflectionTestUtils.setField(service, "userManager", userManager);
+        ReflectionTestUtils.setField(service, "quotaService", quotaService);
+        ReflectionTestUtils.setField(service, "preferenceManager", preferenceManager);
+        // the whole point of the flag is the deployments that switch this on
+        ReflectionTestUtils.setField(service, "validateUser", true);
 
-    /**
-     * Narrowing is an intersection, not a substitution, so withdrawing a role in the database
-     * still takes effect — which is the reason a deployment turns this validation on at all.
-     */
-    @Test
-    public void shouldDropARoleThatHasBeenWithdrawnFromTheStoredUser() {
-        storedUser(ROLE_USER);
-
-        final UserContext context = service.getJwtUser(rawToken(), claims(true, ROLE_USER, READER));
-
-        assertThat(authoritiesOf(context)).containsExactlyInAnyOrder(ROLE_USER, GROUP);
-    }
-
-    @Test
-    public void shouldNotGrantARoleTheStoredUserDoesNotHold() {
-        storedUser(ROLE_USER);
-
-        final UserContext context = service.getJwtUser(rawToken(), claims(true, ROLE_ADMIN));
-
-        assertThat(authoritiesOf(context)).containsExactly(GROUP);
-    }
-
-    /**
-     * Only roles are ever narrowed, so a group granted after the token was issued has to show up
-     * on the next request — pinning the group set to the moment of issue would hide it, and the
-     * permissions that come with it, for the rest of the token's life.
-     */
-    @Test
-    public void shouldPickUpAGroupGrantedAfterTheTokenWasIssued() {
-        final PipelineUser stored = storedUser(ROLE_USER);
-        stored.setGroups(Arrays.asList(GROUP, "LATE_GROUP"));
-
-        final UserContext context = service.getJwtUser(rawToken(),
-                claimsWithGroups(true, Collections.singletonList(GROUP), ROLE_USER));
-
-        assertThat(authoritiesOf(context)).containsExactlyInAnyOrder(ROLE_USER, GROUP, "LATE_GROUP");
-    }
-
-    @Test
-    public void shouldDropAGroupThatHasBeenWithdrawnFromTheStoredUser() {
-        final PipelineUser stored = storedUser(ROLE_USER);
-        stored.setGroups(Collections.<String>emptyList());
-
-        final UserContext context = service.getJwtUser(rawToken(),
-                claimsWithGroups(true, Collections.singletonList(GROUP), ROLE_USER));
-
-        assertThat(authoritiesOf(context)).containsExactly(ROLE_USER);
-    }
-
-    @Test
-    public void shouldRefreshAuthoritiesFromTheStoredUserWhenTheyAreNotFinal() {
-        storedUser(ROLE_ADMIN, READER);
-
-        final UserContext context = service.getJwtUser(rawToken(), claims(false, ROLE_USER));
-
-        assertThat(authoritiesOf(context)).containsExactlyInAnyOrder(ROLE_ADMIN, READER, GROUP);
-    }
-
-    @Test
-    public void shouldStillRejectABlockedUserWhenAuthoritiesAreFinal() {
-        storedUser(ROLE_USER).setBlocked(true);
-
-        assertThatThrownBy(() -> service.getJwtUser(rawToken(), claims(true, ROLE_USER)))
-                .isInstanceOf(LockedException.class);
-    }
-
-    /**
-     * Group blocking is checked against the groups the stored user really has, not the ones left in
-     * the token, so narrowing cannot be used to slip past it.
-     */
-    @Test
-    public void shouldStillRejectABlockedGroupWhenAuthoritiesAreFinal() {
-        storedUser(ROLE_USER);
+        Mockito.when(preferenceManager.getPreference(SystemPreferences.SYSTEM_USER_JWT_LAST_LOGIN_THRESHOLD))
+                .thenReturn(LOGIN_THRESHOLD);
+        Mockito.when(quotaService.findActiveActionForUser(Mockito.any(), Mockito.any()))
+                .thenReturn(Optional.empty());
         Mockito.when(userManager.loadGroupBlockingStatus(Mockito.anyList()))
-                .thenReturn(Collections.singletonList(new GroupStatus(GROUP, true, null)));
+                .thenReturn(Collections.emptyList());
+    }
 
-        assertThatThrownBy(() -> service.getJwtUser(rawToken(), claims(true, ROLE_USER)))
-                .isInstanceOf(LockedException.class);
+    /**
+     * The restriction a narrowed token carries only holds if its roles are not refreshed from the
+     * stored user on the next request. Its groups are refreshed, because nothing narrowed them.
+     */
+    @Test
+    public void shouldKeepTheTokenRolesWhenTheyAreScoped() {
+        storedUser(ROLE_ADMIN, ROLE_USER, READER);
+=======
+        expectedUserContext.setGroups(groups);
+    }
+>>>>>>> theirs
+
+    @Test
+    void shouldLoadUserWithCreation() {
+        switchRegisterStrategyTo(AUTO);
+        mockUserDoesNotExistSituation();
+        when(roleManager.getDefaultRolesIds()).thenReturn(Collections.singletonList(1L));
+
+        assertUserNameAndGroups(userAccessService.parseUser(USER_NAME, groups, expectedAttributes));
     }
 
     @Test
-    public void shouldRejectATokenWhoseUserIdDoesNotMatchTheStoredUser() {
-        final PipelineUser stored = storedUser(ROLE_USER);
-        stored.setId(USER_ID + 1);
+    void shouldLoadUserWithExistingUser() {
+        user.setUserName(OLD_USER_NAME);
+        user.setGroups(Stream.of(SAML_ATTRIBUTE_1, SAML_ATTRIBUTE_2).collect(Collectors.toList()));
 
-        assertThatThrownBy(() -> service.getJwtUser(rawToken(), claims(true, ROLE_USER)))
-                .isInstanceOf(TokenVerificationException.class);
+        when(userManager.loadUserByName(anyString())).thenReturn(user);
+        when(userManager.updateUserSAMLInfo(any(), any(), any(), any(), any())).thenReturn(user);
+
+        assertUserNameAndGroups(userAccessService.parseUser(USER_NAME, groups, expectedAttributes));
     }
 
     @Test
-    public void shouldKeepTheTokenAuthoritiesWhenTheStoredUserIsGone() {
-        Mockito.when(userManager.loadUserByName(USER_NAME)).thenReturn(null);
+    void shouldRegisterUserIfGroupPresentsAndEntityExistsWithExplicitGroupMode() {
+        switchRegisterStrategyTo(EXPLICIT_GROUP);
+        mockUserDoesNotExistSituation();
 
-        final UserContext context = service.getJwtUser(rawToken(), claims(true, ROLE_USER));
+        when(permissionManager.isGroupRegistered(any())).thenReturn(true);
+        when(roleManager.getDefaultRolesIds()).thenReturn(Collections.singletonList(1L));
 
-        assertThat(authoritiesOf(context)).containsExactly(ROLE_USER);
+        assertUserNameAndGroups(userAccessService.parseUser(USER_NAME, groups, expectedAttributes));
     }
 
-    private PipelineUser storedUser(final String... roles) {
-        final PipelineUser user = PipelineUser.builder()
-                .id(USER_ID)
-                .userName(USER_NAME)
-                .roles(Arrays.stream(roles).map(Role::new).collect(Collectors.toList()))
-                .groups(Collections.singletonList(GROUP))
-                .build();
-        Mockito.when(userManager.loadUserByName(USER_NAME)).thenReturn(user);
-        return user;
+    @Test
+    void shouldAuthorizeRegisteredUserIfGroupsHaveValidGroupStatus() {
+        when(userManager.loadUserByName(anyString())).thenReturn(user);
+        final GroupStatus validGroupStatus = new GroupStatus(SAML_ATTRIBUTE_1, false, null);
+        when(userManager.loadGroupBlockingStatus(groups)).thenReturn(Collections.singletonList(validGroupStatus));
+
+        assertUserNameAndGroups(userAccessService.parseUser(USER_NAME, groups, expectedAttributes));
     }
 
-    private static JwtTokenClaims claims(final boolean authoritiesScoped, final String... roles) {
-        return claimsWithGroups(authoritiesScoped, Collections.<String>emptyList(), roles);
+    @Test
+    void shouldAuthorizeRegisteredUserIfGroupsAreNotAtGroupStatus() {
+        when(userManager.loadUserByName(anyString())).thenReturn(user);
+        when(userManager.loadGroupBlockingStatus(groups)).thenReturn(Collections.emptyList());
+
+        assertUserNameAndGroups(userAccessService.parseUser(USER_NAME, groups, expectedAttributes));
     }
 
-    private static JwtTokenClaims claimsWithGroups(final boolean authoritiesScoped,
-                                                   final List<String> groups,
-                                                   final String... roles) {
-        return JwtTokenClaims.builder()
-                .jwtTokenId(UUID.randomUUID().toString())
-                .userName(USER_NAME)
-                .userId(String.valueOf(USER_ID))
-                .orgUnitId("")
-                .roles(Arrays.asList(roles))
-                .groups(groups)
-                .authoritiesScoped(authoritiesScoped)
-                .build();
+    @Test
+    void shouldThrowAuthorizationExceptionForBlockedUser() {
+        user.setBlocked(true);
+        when(userManager.loadUserByName(anyString())).thenReturn(user);
+
+        assertThrows(LockedException.class, () -> userAccessService.parseUser(USER_NAME, groups, expectedAttributes));
     }
 
-    private static JwtRawToken rawToken() {
-        return new JwtRawToken("token");
+    @Test
+    void shouldNotRegisterUserIfGroupNotPresentsWithExplicitGroupMode() {
+        switchRegisterStrategyTo(EXPLICIT_GROUP);
+        mockUserDoesNotExistSituation();
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> userAccessService.parseUser(USER_NAME, groups, expectedAttributes));
     }
 
-    private static List<String> authoritiesOf(final UserContext context) {
-        return context.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList());
+    @Test
+    void shouldNotRegisterUserWithExplicitMode() {
+        switchRegisterStrategyTo(EXPLICIT);
+        mockUserDoesNotExistSituation();
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> userAccessService.parseUser(USER_NAME, groups, expectedAttributes));
+    }
+
+    @Test
+    void shouldThrowAuthorizationExceptionForUserFromBlockedGroup() {
+        blockOneGroupForCurrentUser();
+
+        assertThrows(LockedException.class, () -> userAccessService.validateUserGroupsBlockStatus(user));
+    }
+
+    @Test
+    void shouldThrowAuthorizationExceptionForUserWithBlockedRole() {
+        final Role role = new Role();
+        role.setName(SAML_ATTRIBUTE_1);
+        role.setPredefined(false);
+        user.setRoles(Collections.singletonList(role));
+        blockOneGroupForCurrentUser();
+
+        assertThrows(LockedException.class, () -> userAccessService.validateUserGroupsBlockStatus(user));
+    }
+
+    private void switchRegisterStrategyTo(final SamlUserRegisterStrategy samlUserRegisterStrategy) {
+        ReflectionTestUtils.setField(userAccessService, "autoCreateUsers", samlUserRegisterStrategy);
+    }
+
+    private void mockUserDoesNotExistSituation() {
+        when(userManager.loadUserByName(anyString())).thenReturn(null);
+        when(userManager.create(any(), any(), any(), any(), any())).thenReturn(user);
+    }
+
+    private Map<String, String> initAttributes() {
+        final Map<String, String> attributes = new HashMap<>();
+        attributes.put(ATTRIBUTES_KEY_1, SAML_ATTRIBUTES_STRING);
+        attributes.put(ATTRIBUTES_KEY_2, SAML_ATTRIBUTES_STRING);
+        return attributes;
+    }
+
+    private void assertUserNameAndGroups(final UserContext actualUserContext) {
+        assertEquals(expectedUserContext.getUsername(), actualUserContext.getUsername());
+        assertEquals(expectedUserContext.getGroups(), actualUserContext.getGroups());
+    }
+
+    private void blockOneGroupForCurrentUser() {
+        when(userManager.loadUserByName(anyString())).thenReturn(user);
+        final GroupStatus blockedGroupStatus = new GroupStatus(SAML_ATTRIBUTE_1, true, null);
+        doReturn(Collections.singletonList(blockedGroupStatus)).when(userManager).loadGroupBlockingStatus(groups);
     }
 }

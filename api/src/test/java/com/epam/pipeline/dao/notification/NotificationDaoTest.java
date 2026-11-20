@@ -32,14 +32,51 @@ import com.epam.pipeline.controller.vo.SystemNotificationFilterVO;
 import com.epam.pipeline.entity.notification.SystemNotification;
 import com.epam.pipeline.entity.notification.SystemNotificationSeverity;
 import com.epam.pipeline.entity.notification.SystemNotificationState;
+<<<<<<< ours
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+||||||| base
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+=======
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+>>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+<<<<<<< ours
 public class NotificationDaoTest extends AbstractSpringTest {
+||||||| base
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertTrue;
+
+public class NotificationDaoTest extends AbstractJdbcTest {
+=======
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+public class NotificationDaoTest extends AbstractJdbcTest {
+>>>>>>> theirs
 
     private static final String TITLE_STRING = "Title";
     private static final String BODY_STRING = "Body";
@@ -58,8 +95,7 @@ public class NotificationDaoTest extends AbstractSpringTest {
     private SystemNotification systemNotification;
     private SystemNotification additionalNotification;
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         systemNotification = new SystemNotification();
         systemNotification.setCreatedDate(DATE);
         systemNotification.setTitle(TITLE_STRING);
@@ -100,7 +136,7 @@ public class NotificationDaoTest extends AbstractSpringTest {
         notificationDao.createNotification(additionalNotification);
         List<SystemNotification> actualNotifications = notificationDao.loadAllNotifications();
         assertFalse(actualNotifications.isEmpty());
-        Assert.assertEquals(2, actualNotifications.size());
+        assertEquals(2, actualNotifications.size());
 
         notificationDao.deleteNotification(systemNotification.getNotificationId());
         notificationDao.deleteNotification(additionalNotification.getNotificationId());

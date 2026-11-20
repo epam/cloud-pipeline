@@ -280,11 +280,29 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     @Override
     public void attachDisk(final AwsRegion region, final Long runId, final DiskAttachRequest request,
                            final Map<String, String> tags) {
-        ec2Helper.createAndAttachVolume(String.valueOf(runId), request.getSize(), region,
+        ec2Helper.createAndAttachVolume(String.valueOf(runId), request.size(), region,
                 region.getKmsKeyArn(), tags);
     }
 
     @Override
+<<<<<<< ours
+||||||| base
+    public void attachDiskToInstance(final AwsRegion region, final String nodeName, final DiskAttachRequest request,
+                                     final Map<String, String> tags) {
+        ec2Helper.createAndAttachVolumeToInstance(nodeName, request.getSize(), region,
+                region.getKmsKeyArn(), tags);
+    }
+
+    @Override
+=======
+    public void attachDiskToInstance(final AwsRegion region, final String nodeName, final DiskAttachRequest request,
+                                     final Map<String, String> tags) {
+        ec2Helper.createAndAttachVolumeToInstance(nodeName, request.size(), region,
+                region.getKmsKeyArn(), tags);
+    }
+
+    @Override
+>>>>>>> theirs
     public List<InstanceDisk> loadDisks(final AwsRegion region, final Long runId) {
         return ec2Helper.loadAttachedVolumes(String.valueOf(runId), region);
     }

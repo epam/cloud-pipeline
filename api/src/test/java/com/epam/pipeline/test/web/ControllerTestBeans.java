@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.test.web;
 
+import com.epam.pipeline.acl.async.AsyncTaskApiService;
 import com.epam.pipeline.acl.auth.AccessApiService;
 import com.epam.pipeline.acl.billing.BillingApiService;
 import com.epam.pipeline.acl.cloud.credentials.CloudProfileCredentialsApiService;
@@ -34,11 +35,13 @@ import com.epam.pipeline.acl.report.ReportApiService;
 import com.epam.pipeline.acl.run.RunApiService;
 import com.epam.pipeline.acl.run.RunScheduleApiService;
 import com.epam.pipeline.acl.cluster.InfrastructureApiService;
+import com.epam.pipeline.acl.cluster.capacityreservation.CapacityReservationApiService;
 import com.epam.pipeline.acl.cluster.pool.NodePoolApiService;
 import com.epam.pipeline.acl.cluster.pool.NodeScheduleApiService;
 import com.epam.pipeline.manager.access.UnsecuredAccessService;
 import com.epam.pipeline.manager.access.oidc.OidcTokenExchangeManager;
 import com.epam.pipeline.manager.app.ApplicationInfoManager;
+<<<<<<< ours
 import com.epam.pipeline.manager.cluster.ClusterApiService;
 import com.epam.pipeline.manager.configuration.RunConfigurationApiService;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceApiService;
@@ -50,6 +53,13 @@ import com.epam.pipeline.manager.dts.DtsRegistryApiService;
 import com.epam.pipeline.manager.entity.EntityApiService;
 import com.epam.pipeline.manager.firecloud.FirecloudApiService;
 import com.epam.pipeline.manager.google.CredentialsManager;
+||||||| base
+import com.epam.pipeline.manager.cloudaccess.CloudAccessApiService;
+import com.epam.pipeline.manager.firecloud.FirecloudApiService;
+import com.epam.pipeline.manager.google.CredentialsManager;
+=======
+import com.epam.pipeline.manager.cloudaccess.CloudAccessApiService;
+>>>>>>> theirs
 import com.epam.pipeline.manager.issue.AttachmentFileManager;
 import com.epam.pipeline.manager.issue.IssueApiService;
 import com.epam.pipeline.manager.ldap.LdapApiService;
@@ -72,8 +82,17 @@ import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.manager.security.AclPermissionApiService;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.template.TemplateManager;
+<<<<<<< ours
 import com.epam.pipeline.manager.user.RoleApiService;
 import com.epam.pipeline.manager.user.UserApiService;
+||||||| base
+import com.epam.pipeline.acl.user.RoleApiService;
+import com.epam.pipeline.acl.user.UserApiService;
+=======
+import com.epam.pipeline.acl.user.RoleApiService;
+import com.epam.pipeline.acl.user.UserApiService;
+import com.epam.pipeline.acl.session.PipelineSessionService;
+>>>>>>> theirs
 import com.epam.pipeline.security.UserAccessService;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
@@ -81,8 +100,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.saml.SAMLAuthenticationProvider;
-import org.springframework.security.saml.SAMLEntryPoint;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
 @Configuration
@@ -107,12 +124,6 @@ public class ControllerTestBeans {
 
     @MockBean
     protected EntityApiService entityApiService;
-
-    @MockBean
-    protected FirecloudApiService firecloudApiService;
-
-    @MockBean
-    protected CredentialsManager credentialsManager;
 
     @MockBean
     protected IssueApiService issueApiService;
@@ -175,7 +186,7 @@ public class ControllerTestBeans {
     protected UserApiService userApiService;
 
     @MockBean
-    protected SAMLAuthenticationProvider samlAuthenticationProvider;
+    protected PipelineSessionService pipelineSessionService;
 
     @MockBean
     protected PreferenceManager preferenceManager;
@@ -211,9 +222,6 @@ public class ControllerTestBeans {
     protected UserAccessService userAccessService;
 
     @MockBean
-    protected SAMLEntryPoint samlEntryPoint;
-
-    @MockBean
     protected JwtTokenVerifier jwtTokenVerifier;
 
     @MockBean
@@ -227,6 +235,9 @@ public class ControllerTestBeans {
 
     @MockBean
     protected NodePoolApiService nodePoolApiService;
+
+    @MockBean
+    protected CapacityReservationApiService capacityReservationApiService;
 
     @MockBean
     protected NodeScheduleApiService nodeScheduleApiService;
@@ -275,6 +286,10 @@ public class ControllerTestBeans {
 
     @MockBean
     protected UnsecuredAccessService unsecuredAccessService;
+
+    @MockBean
+    protected AsyncTaskApiService asyncTaskApiService;
+
 
     @MockBean
     protected OidcTokenExchangeManager oidcTokenExchangeManager;

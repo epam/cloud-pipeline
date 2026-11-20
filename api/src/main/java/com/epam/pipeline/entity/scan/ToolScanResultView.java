@@ -16,11 +16,20 @@
 
 package com.epam.pipeline.entity.scan;
 
+<<<<<<< ours
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+||||||| base
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+
+=======
+>>>>>>> theirs
 import java.util.Map;
 
+<<<<<<< ours
 @Getter
 @AllArgsConstructor
 public class ToolScanResultView {
@@ -30,3 +39,19 @@ public class ToolScanResultView {
 
 
 }
+||||||| base
+@Getter
+@AllArgsConstructor
+@EqualsAndHashCode
+public class ToolScanResultView {
+
+    private final long toolId;
+    private final Map<String, ToolVersionScanResultView> toolVersionScanResults;
+
+
+}
+=======
+public record ToolScanResultView(
+        long toolId, Map<String,
+        ToolVersionScanResultView> toolVersionScanResults) {}
+>>>>>>> theirs

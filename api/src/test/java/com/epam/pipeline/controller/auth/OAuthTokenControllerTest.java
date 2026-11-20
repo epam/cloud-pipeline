@@ -21,8 +21,8 @@ import com.epam.pipeline.manager.access.oidc.OidcExchangedToken;
 import com.epam.pipeline.manager.access.oidc.OidcTokenExchangeManager;
 import com.epam.pipeline.manager.access.oidc.OidcTokenVerificationException;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -59,7 +59,7 @@ public class OAuthTokenControllerTest extends AbstractControllerTest {
     @Autowired
     private OidcTokenExchangeManager tokenExchangeManager;
 
-    @Before
+    @BeforeEach
     public void prepareExchange() {
         Mockito.when(tokenExchangeManager.exchange(PROVIDER_TOKEN))
                 .thenReturn(new OidcExchangedToken(ISSUED_TOKEN, EXPIRES_IN));
@@ -231,7 +231,6 @@ public class OAuthTokenControllerTest extends AbstractControllerTest {
 
     private static MockHttpServletRequestBuilder request() {
         return post(TOKEN_URL)
-                .servletPath(SERVLET_PATH)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED);
     }
 }

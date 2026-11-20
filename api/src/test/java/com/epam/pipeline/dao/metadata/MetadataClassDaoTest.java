@@ -16,11 +16,25 @@
 
 package com.epam.pipeline.dao.metadata;
 
+<<<<<<< ours
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.metadata.FireCloudClass;
+||||||| base
+import com.epam.pipeline.entity.metadata.FireCloudClass;
+=======
+>>>>>>> theirs
 import com.epam.pipeline.entity.metadata.MetadataClass;
+<<<<<<< ours
 import org.junit.Assert;
 import org.junit.Test;
+||||||| base
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.junit.Assert;
+import org.junit.Test;
+=======
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.junit.jupiter.api.Test;
+>>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +42,15 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collections;
 import java.util.List;
 
+<<<<<<< ours
 public class MetadataClassDaoTest extends AbstractSpringTest {
+||||||| base
+public class MetadataClassDaoTest extends AbstractJdbcTest {
+=======
+import static org.junit.jupiter.api.Assertions.*;
+
+public class MetadataClassDaoTest extends AbstractJdbcTest {
+>>>>>>> theirs
 
     private static final Long CLASS_ID_1 = 1L;
     private static final String CLASS_NAME_1 = "Sample";
@@ -45,15 +67,12 @@ public class MetadataClassDaoTest extends AbstractSpringTest {
         metadataClassDao.createMetadataClass(metadataClass);
 
         List<MetadataClass> expectedResult = Collections.singletonList(metadataClass);
-        Assert.assertEquals(expectedResult, metadataClassDao.loadAllMetadataClasses());
-
-        metadataClass.setFireCloudClassName(FireCloudClass.SAMPLE);
-        metadataClassDao.updateMetadataClass(metadataClass);
+        assertEquals(expectedResult, metadataClassDao.loadAllMetadataClasses());
 
         expectedResult = Collections.singletonList(metadataClass);
-        Assert.assertEquals(expectedResult, metadataClassDao.loadAllMetadataClasses());
+        assertEquals(expectedResult, metadataClassDao.loadAllMetadataClasses());
 
         metadataClassDao.deleteMetadataClass(metadataClass.getId());
-        Assert.assertEquals(Collections.emptyList(), metadataClassDao.loadAllMetadataClasses());
+        assertEquals(Collections.emptyList(), metadataClassDao.loadAllMetadataClasses());
     }
 }

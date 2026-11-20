@@ -17,6 +17,15 @@
 package com.epam.pipeline.test.acl;
 
 import com.epam.pipeline.acl.auth.AccessApiService;
+<<<<<<< ours
+||||||| base
+import com.epam.pipeline.acl.plugin.PluginAssignmentService;
+import com.epam.pipeline.acl.plugin.PluginService;
+=======
+import com.epam.pipeline.acl.plugin.PluginAssignmentService;
+import com.epam.pipeline.acl.plugin.PluginService;
+import org.springframework.session.jdbc.JdbcIndexedSessionRepository;
+>>>>>>> theirs
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
@@ -46,12 +55,31 @@ import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.PodsManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
+import com.epam.pipeline.manager.cluster.capacityreservation.CapacityBlockExtensionService;
+import com.epam.pipeline.manager.cluster.capacityreservation.CapacityBlockOfferingService;
+import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationPermissionManager;
+import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationService;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
 import com.epam.pipeline.manager.cluster.pool.NodeScheduleManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
+<<<<<<< ours
+||||||| base
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsEventService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsRuleService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceCRUDService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
+=======
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsEventService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsRuleService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceCRUDService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
+import com.epam.pipeline.manager.async.AsyncTaskManager;
+>>>>>>> theirs
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStoragePathLoader;
 import com.epam.pipeline.manager.datastorage.DataStorageRuleManager;
@@ -78,11 +106,9 @@ import com.epam.pipeline.manager.event.EntityEventServiceManager;
 import com.epam.pipeline.manager.execution.CommandBuilder;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.filter.FilterManager;
-import com.epam.pipeline.manager.firecloud.FirecloudManager;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.git.PipelineRepositoryService;
 import com.epam.pipeline.manager.git.TemplatesScanner;
-import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.log.LogManager;
 import com.epam.pipeline.manager.log.storage.StorageRequestManager;
@@ -129,6 +155,15 @@ import com.epam.pipeline.manager.report.NodePoolReportService;
 import com.epam.pipeline.manager.report.UsersUsageReportService;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.manager.security.AuthManager;
+<<<<<<< ours
+||||||| base
+import com.epam.pipeline.manager.security.JwtTokenRevocationManager;
+import com.epam.pipeline.manager.security.NamedJwtTokenManager;
+=======
+import com.epam.pipeline.manager.security.CheckPermissionHelper;
+import com.epam.pipeline.manager.security.JwtTokenRevocationManager;
+import com.epam.pipeline.manager.security.NamedJwtTokenManager;
+>>>>>>> theirs
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.PermissionsService;
 import com.epam.pipeline.manager.user.OnlineUsersService;
@@ -156,6 +191,7 @@ import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.acls.domain.AclAuthorizationStrategy;
 import org.springframework.security.acls.domain.PermissionFactory;
 import org.springframework.security.acls.model.AclCache;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.sql.DataSource;
 import java.util.concurrent.Executor;
@@ -301,9 +337,6 @@ public class AclTestBeans {
     protected DtsRegistryManager mockDtsRegistryManager;
 
     @MockBean
-    protected FirecloudManager mockFirecloudManager;
-
-    @MockBean
     protected MetadataUploadManager mockMetadataUploadManager;
 
     @MockBean
@@ -385,9 +418,6 @@ public class AclTestBeans {
     protected CommandBuilder mockCommandBuilder;
 
     @MockBean
-    protected CredentialsManager mockCredentialsManager;
-
-    @MockBean
     protected RunStatusDao mockRunStatusDao;
 
     @MockBean
@@ -457,6 +487,15 @@ public class AclTestBeans {
     protected NodePoolManager nodePoolManager;
 
     @MockBean
+    protected CapacityReservationService capacityReservationService;
+
+    @MockBean
+    protected CapacityBlockOfferingService capacityBlockOfferingService;
+
+    @MockBean
+    protected CapacityBlockExtensionService capacityBlockExtensionService;
+
+    @MockBean
     protected InfrastructureManager infrastructureManager;
 
     @MockBean
@@ -479,6 +518,9 @@ public class AclTestBeans {
 
     @MockBean
     protected DataStorageManager mockDataStorageManager;
+
+    @MockBean
+    protected AsyncTaskManager asyncTaskManager;
 
     @MockBean
     protected FolderCrudManager mockFolderCrudManager;
@@ -514,6 +556,9 @@ public class AclTestBeans {
 
     @MockBean
     protected UserRunnersManager mockUserRunnersManager;
+
+    @MockBean
+    protected JdbcIndexedSessionRepository mockJdbcIndexedSessionRepository;
 
     @MockBean
     protected PipelineRunAsManager mockPipelineRunAsManager;
@@ -591,5 +636,16 @@ public class AclTestBeans {
         grantPermissionManager.setPermissionEvaluator(permissionEvaluator);
         grantPermissionManager.setPermissionFactory(permissionFactory);
         return spy(grantPermissionManager);
+    }
+
+    @Bean
+    public CapacityReservationPermissionManager capacityReservationPermissionManager(
+            final CapacityReservationService capacityReservationService,
+            final CheckPermissionHelper checkPermissionHelper,
+            final NodePoolManager nodePoolManager) {
+        final CapacityReservationPermissionManager permissionManager =
+                new CapacityReservationPermissionManager(capacityReservationService, checkPermissionHelper);
+        ReflectionTestUtils.setField(permissionManager, "poolManager", nodePoolManager);
+        return permissionManager;
     }
 }

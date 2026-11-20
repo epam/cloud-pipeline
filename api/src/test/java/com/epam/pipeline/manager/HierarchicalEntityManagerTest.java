@@ -44,10 +44,18 @@ import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.acl.AclPermission;
+<<<<<<< ours
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
+||||||| base
+import com.epam.pipeline.test.acl.AbstractAclTest;
+import org.junit.Test;
+=======
+import com.epam.pipeline.test.acl.AbstractAclTest;
+import org.junit.jupiter.api.Test;
+>>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -59,6 +67,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+<<<<<<< ours
 
 @DirtiesContext
 @Transactional
@@ -76,6 +85,47 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
             .map(AclPermission::getSimpleMask).reduce((m, m2) -> m | m2).get();
     private static final String TEST_ROLE = "TEST_ROLE";
 
+||||||| base
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.READ_PERMISSION;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.WRITE_PERMISSION;
+import static com.epam.pipeline.test.creator.configuration.ConfigurationCreatorUtils.getRunConfiguration;
+import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getDockerRegistry;
+import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getDockerRegistryList;
+import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getTool;
+import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getToolGroup;
+import static com.epam.pipeline.test.creator.folder.FolderCreatorUtils.getFolder;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doReturn;
+
+public class HierarchicalEntityManagerTest extends AbstractAclTest {
+
+    private final DockerRegistryList dockerRegistryList = getDockerRegistryList();
+    private final UserContext userContext = new UserContext(ID, SIMPLE_USER);
+    private static final AclSid USER_SID = new AclSid(SIMPLE_USER, true);
+=======
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.READ_PERMISSION;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.WRITE_PERMISSION;
+import static com.epam.pipeline.test.creator.configuration.ConfigurationCreatorUtils.getRunConfiguration;
+import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getDockerRegistry;
+import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getDockerRegistryList;
+import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getTool;
+import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getToolGroup;
+import static com.epam.pipeline.test.creator.folder.FolderCreatorUtils.getFolder;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+
+public class HierarchicalEntityManagerTest extends AbstractAclTest {
+
+    private final DockerRegistryList dockerRegistryList = getDockerRegistryList();
+    private final UserContext userContext = new UserContext(ID, SIMPLE_USER);
+    private static final AclSid USER_SID = new AclSid(SIMPLE_USER, true);
+>>>>>>> theirs
 
     @Autowired
     private HierarchicalEntityManager hierarchicalEntityManager;

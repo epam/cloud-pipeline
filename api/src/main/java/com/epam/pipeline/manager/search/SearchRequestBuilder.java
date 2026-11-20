@@ -165,9 +165,483 @@ public class SearchRequestBuilder {
         return request;
     }
 
+<<<<<<< ours
     private QueryBuilder getQuery(final ElasticSearchRequest searchRequest) {
         final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
                 .must(getBasicQuery(searchRequest));
+||||||| base
+    public SearchRequest buildFacetedRequest(final FacetedSearchRequest searchRequest,
+                                             final String typeFieldName,
+                                             final Set<String> metadataSourceFields) {
+        final SearchSourceBuilder searchSource = new SearchSourceBuilder()
+                .query(CollectionUtils.isEmpty(searchRequest.getFiles())
+                        ? getFacetedQuery(searchRequest.getQuery(), searchRequest.getFilters())
+                        : getStorageFilesQuery(searchRequest.getFiles()))
+                .fetchSource(buildSourceFields(typeFieldName, metadataSourceFields), Strings.EMPTY_ARRAY)
+                .size(searchRequest.getPageSize());
+
+        final List<SearchRequestSort> sorts = resolveSorts(searchRequest.getSorts());
+        buildSorts(sorts, isScrollingBackwards(searchRequest.getScrollingParameters()))
+                .forEach(searchSource::sort);
+
+        if (Objects.isNull(searchRequest.getScrollingParameters())) {
+            searchSource.from(searchRequest.getOffset());
+        } else {
+            Assert.notNull(searchRequest.getScrollingParameters().getDocId(), messageHelper.getMessage(
+                    MessageConstants.ERROR_SEARCH_SCROLLING_PARAMETER_DOC_ID_MISSING));
+            searchSource.searchAfter(buildSearchAfterArguments(sorts, searchRequest.getScrollingParameters()));
+        }
+
+        if (searchRequest.isHighlight()) {
+            addHighlighterToSource(searchSource);
+        }
+
+        ListUtils.emptyIfNull(searchRequest.getFacets())
+                .forEach(facet -> addTermAggregationToSource(searchSource, facet));
+
+        log.debug("Search request: {} ", searchSource);
+
+        return new SearchRequest()
+                .indices(buildAllIndexTypes())
+                .indicesOptions(IndicesOptions.lenientExpandOpen())
+                .source(searchSource);
+    }
+
+    private Boolean isScrollingBackwards(final ScrollingParameters scrollingParameters) {
+        return Optional.ofNullable(scrollingParameters)
+                .map(ScrollingParameters::isScrollingBackward)
+                .orElse(false);
+    }
+
+    private List<SearchRequestSort> resolveSorts(final List<SearchRequestSort> requestedSorts) {
+        final List<SearchRequestSort> sorts = new ArrayList<>(ListUtils.emptyIfNull(requestedSorts));
+        sorts.add(new SearchRequestSort(ES_DOC_SCORE_FIELD, SearchRequestSortOrder.DESC));
+        sorts.add(new SearchRequestSort(NAME_FIELD, SearchRequestSortOrder.DESC));
+        return sorts;
+    }
+
+    private List<SortBuilder<?>> buildSorts(final List<SearchRequestSort> sorts, final boolean isScrollingBackwards) {
+        return sorts.stream()
+                .map(sort -> buildSort(sort, isScrollingBackwards))
+                .collect(Collectors.toList());
+    }
+
+    private SortBuilder<?> buildSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
+        return isDefaultField(sort.getField()) ? buildDefaultFieldSort(sort, isScrollingBackwards)
+                : isOwnerField(sort.getField()) ? buildOwnerFieldSort(sort, isScrollingBackwards)
+                : isDateField(sort.getField()) ? buildDateFieldSort(sort, isScrollingBackwards)
+                : isNumericField(sort.getField()) ? buildNumericFieldSort(sort, isScrollingBackwards)
+                : buildRegularFieldSort(sort, isScrollingBackwards);
+    }
+
+    private SortBuilder<?> buildDefaultFieldSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
+        return SortBuilders.fieldSort(sort.getField())
+                .order(buildSortOrder(sort.getOrder(), isScrollingBackwards));
+    }
+
+    private SortBuilder<?> buildOwnerFieldSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
+        return buildFieldSort(SearchSourceFields.OWNER.getFieldName(), sort.getOrder(), ES_KEYWORD_TYPE,
+                isScrollingBackwards);
+    }
+
+    private SortBuilder<?> buildDateFieldSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
+        return buildFieldSort(sort.getField(), sort.getOrder(), ES_DATE_TYPE, isScrollingBackwards);
+    }
+
+    private SortBuilder<?> buildNumericFieldSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
+        return buildFieldSort(sort.getField(), sort.getOrder(), ES_LONG_TYPE, isScrollingBackwards);
+    }
+
+    private SortBuilder<?> buildRegularFieldSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
+        return buildFieldSort(buildKeywordName(sort.getField()), sort.getOrder(), ES_KEYWORD_TYPE,
+                isScrollingBackwards);
+    }
+
+    private SortBuilder<?> buildFieldSort(final String field,
+                                          final SearchRequestSortOrder order,
+                                          final String unmappedType,
+                                          final boolean isScrollingBackwards) {
+        final SortOrder actualOrder = buildSortOrder(order, isScrollingBackwards);
+        final String missing = actualOrder == SortOrder.ASC ? ES_SORT_MISSING_LAST : ES_SORT_MISSING_FIRST;
+        return SortBuilders.fieldSort(field)
+                .order(actualOrder)
+                .unmappedType(unmappedType)
+                .missing(missing);
+    }
+
+    private SortOrder buildSortOrder(final SearchRequestSortOrder order, final boolean isScrollingBackwards) {
+        switch (isScrollingBackwards ? order.invert() : order) {
+            case ASC: return SortOrder.ASC;
+            case DESC: return SortOrder.DESC;
+            default: throw new IllegalArgumentException(String.format("Non supported sort order %s", this));
+        }
+    }
+
+    private Object[] buildSearchAfterArguments(final List<SearchRequestSort> sorts,
+                                               final ScrollingParameters scrollingParameters) {
+        final Map<String, Object> searchAfterParameters = getSearchAfterParameters(scrollingParameters);
+        final List<String> sortFields = sorts.stream().map(SearchRequestSort::getField).collect(Collectors.toList());
+        final Collection<String> sortFieldsWithoutSearchAfterParameter = CollectionUtils.subtract(sortFields,
+                searchAfterParameters.keySet());
+        Assert.isTrue(CollectionUtils.isEmpty(sortFieldsWithoutSearchAfterParameter), messageHelper.getMessage(
+                MessageConstants.ERROR_SEARCH_SCROLLING_PARAMETER_DOC_SORT_FIELDS_MISSING,
+                sortFieldsWithoutSearchAfterParameter));
+        return sortFields.stream().map(searchAfterParameters::get).toArray();
+    }
+
+    private Map<String, Object> getSearchAfterParameters(final ScrollingParameters scrollingParameters) {
+        final Map<String, Object> searchAfterParameters = CommonUtils.mergeMaps(
+                getDefaultSearchAfterParameters(scrollingParameters),
+                scrollingParameters.getDocSortFields());
+        searchAfterParameters.replaceAll(this::buildSearchAfterParameterValue);
+        return searchAfterParameters;
+    }
+
+    private Map<String, Object> getDefaultSearchAfterParameters(final ScrollingParameters scrollingParameters) {
+        final Map<String, Object> parameters = new HashMap<>();
+        parameters.put(NAME_FIELD, scrollingParameters.getDocId());
+        parameters.put(ES_DOC_SCORE_FIELD, scrollingParameters.getDocScore());
+        return parameters;
+    }
+
+    private Object buildSearchAfterParameterValue(final String field, final Object value) {
+        return isDateField(field) ? buildSearchAfterDateParameterValue(value)
+                : isNumericField(field) ? buildSearchAfterNumericParameterValue(value)
+                : buildSearchAfterRegularParameterValue(value);
+    }
+
+    private long buildSearchAfterDateParameterValue(final Object value) {
+        return Optional.ofNullable(value)
+                .map(Object::toString)
+                .filter(StringUtils::isNotBlank)
+                .map(stringValue -> LocalDateTime.parse(stringValue, DATE_TIME_FORMATTER))
+                .map(DateUtils::convertLocalDateTimeToEpochMillis)
+                .orElse(Long.MAX_VALUE);
+    }
+
+    private long buildSearchAfterNumericParameterValue(final Object value) {
+        return Optional.ofNullable(value)
+                .map(Object::toString)
+                .filter(StringUtils::isNotBlank)
+                .map(NumberUtils::toLong)
+                .orElse(Long.MAX_VALUE);
+    }
+
+    private String buildSearchAfterRegularParameterValue(final Object value) {
+        return Optional.ofNullable(value)
+                .map(Object::toString)
+                .filter(StringUtils::isNotBlank)
+                .orElse(null);
+    }
+
+    private boolean isDefaultField(final String field) {
+        return StringUtils.equalsIgnoreCase(field, ES_DOC_ID_FIELD)
+                || StringUtils.equalsIgnoreCase(field, ES_DOC_SCORE_FIELD)
+                || StringUtils.equalsIgnoreCase(field, NAME_FIELD);
+    }
+
+    private boolean isOwnerField(final String field) {
+        return StringUtils.equalsIgnoreCase(field, SearchSourceFields.OWNER.name().toLowerCase());
+    }
+
+    private boolean isDateField(final String field) {
+        return SearchSourceFields.DATE_FIELDS.contains(field);
+    }
+
+    private boolean isNumericField(final String field) {
+        return SearchSourceFields.NUMERIC_FIELDS.contains(field);
+    }
+
+    private String[] buildSourceFields(final String typeFieldName, final Set<String> metadataSourceFields) {
+        final List<String> storedFields = Arrays.stream(SearchSourceFields.values())
+                .map(SearchSourceFields::getFieldName)
+                .collect(Collectors.toList());
+        storedFields.add(typeFieldName);
+        storedFields.addAll(metadataSourceFields);
+        return storedFields.toArray(Strings.EMPTY_ARRAY);
+    }
+
+    private void addHighlighterToSource(final SearchSourceBuilder searchSource) {
+        searchSource.highlighter(SearchSourceBuilder.highlight()
+                .field("*")
+                .postTags("</highlight>")
+                .preTags("<highlight>"));
+    }
+
+    private QueryBuilder getQuery(final ElasticSearchRequest queryRequest) {
+        final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(getBasicQuery(queryRequest.getQuery()));
+        addStorageFilter(queryBuilder, queryRequest.getObjectIdentifier());
+        addGlobsFilterToQuery(queryBuilder, queryRequest.getFilterGlobs());
+        if (preferenceManager.getPreference(SystemPreferences.SEARCH_HIDE_DELETED)) {
+            queryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_DELETED, Boolean.TRUE));
+        }
+        return prepareAclFiltersOrAdmin(queryBuilder);
+    }
+
+    private QueryBuilder getStorageFilesQuery(final List<SearchStorageFilesRequest> filesRequests) {
+        final BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        boolQueryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_HIDDEN, Boolean.TRUE));
+        if (preferenceManager.getPreference(SystemPreferences.SEARCH_HIDE_DELETED)) {
+            boolQueryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_DELETED, Boolean.TRUE));
+        }
+        ListUtils.emptyIfNull(filesRequests)
+                .forEach(file -> boolQueryBuilder.should(QueryBuilders.boolQuery()
+                        .filter(QueryBuilders.termQuery(buildKeywordName(ES_PATH_FIELD), file.getPath()))
+                        .filter(QueryBuilders.termQuery(ES_STORAGE_ID_FIELD, file.getStorageId()))
+                ));
+        return boolQueryBuilder;
+    }
+
+    private QueryBuilder getFacetedQuery(final String query, final Map<String, List<String>> filters) {
+        final BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        boolQueryBuilder.must(prepareFacetedQuery(query));
+        boolQueryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_HIDDEN, Boolean.TRUE));
+        if (preferenceManager.getPreference(SystemPreferences.SEARCH_HIDE_DELETED)) {
+            boolQueryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_DELETED, Boolean.TRUE));
+        }
+        MapUtils.emptyIfNull(filters)
+                .forEach((fieldName, values) -> boolQueryBuilder.must(filterToTermsQuery(fieldName, values)));
+        return boolQueryBuilder;
+    }
+
+    private QueryBuilder prepareAclFiltersOrAdmin(final BoolQueryBuilder queryBuilder) {
+=======
+    public SearchRequest buildFacetedRequest(final FacetedSearchRequest searchRequest,
+                                             final String typeFieldName,
+                                             final Set<String> metadataSourceFields) {
+        final SearchSourceBuilder searchSource = new SearchSourceBuilder()
+                .query(CollectionUtils.isEmpty(searchRequest.getFiles())
+                        ? getFacetedQuery(searchRequest.getQuery(), searchRequest.getFilters())
+                        : getStorageFilesQuery(searchRequest.getFiles()))
+                .fetchSource(buildSourceFields(typeFieldName, metadataSourceFields), Strings.EMPTY_ARRAY)
+                .size(searchRequest.getPageSize());
+
+        final List<SearchRequestSort> sorts = resolveSorts(searchRequest.getSorts());
+        buildSorts(sorts, isScrollingBackwards(searchRequest.getScrollingParameters()))
+                .forEach(searchSource::sort);
+
+        if (Objects.isNull(searchRequest.getScrollingParameters())) {
+            searchSource.from(searchRequest.getOffset());
+        } else {
+            Assert.notNull(searchRequest.getScrollingParameters().getDocId(), messageHelper.getMessage(
+                    MessageConstants.ERROR_SEARCH_SCROLLING_PARAMETER_DOC_ID_MISSING));
+            searchSource.searchAfter(buildSearchAfterArguments(sorts, searchRequest.getScrollingParameters()));
+        }
+
+        if (searchRequest.isHighlight()) {
+            addHighlighterToSource(searchSource);
+        }
+
+        ListUtils.emptyIfNull(searchRequest.getFacets())
+                .forEach(facet -> addTermAggregationToSource(searchSource, facet));
+
+        log.debug("Search request: {} ", searchSource);
+
+        return new SearchRequest()
+                .indices(buildAllIndexTypes())
+                .indicesOptions(IndicesOptions.lenientExpandOpen())
+                .source(searchSource);
+    }
+
+    private Boolean isScrollingBackwards(final ScrollingParameters scrollingParameters) {
+        return Optional.ofNullable(scrollingParameters)
+                .map(ScrollingParameters::isScrollingBackward)
+                .orElse(false);
+    }
+
+    private List<SearchRequestSort> resolveSorts(final List<SearchRequestSort> requestedSorts) {
+        final List<SearchRequestSort> sorts = new ArrayList<>(ListUtils.emptyIfNull(requestedSorts));
+        sorts.add(new SearchRequestSort(ES_DOC_SCORE_FIELD, SearchRequestSortOrder.DESC));
+        sorts.add(new SearchRequestSort(NAME_FIELD, SearchRequestSortOrder.DESC));
+        return sorts;
+    }
+
+    private List<SortBuilder<?>> buildSorts(final List<SearchRequestSort> sorts, final boolean isScrollingBackwards) {
+        return sorts.stream()
+                .map(sort -> buildSort(sort, isScrollingBackwards))
+                .collect(Collectors.toList());
+    }
+
+    private SortBuilder<?> buildSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
+        return isDefaultField(sort.field()) ? buildDefaultFieldSort(sort, isScrollingBackwards)
+                : isOwnerField(sort.field()) ? buildOwnerFieldSort(sort, isScrollingBackwards)
+                : isDateField(sort.field()) ? buildDateFieldSort(sort, isScrollingBackwards)
+                : isNumericField(sort.field()) ? buildNumericFieldSort(sort, isScrollingBackwards)
+                : buildRegularFieldSort(sort, isScrollingBackwards);
+    }
+
+    private SortBuilder<?> buildDefaultFieldSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
+        return SortBuilders.fieldSort(sort.field())
+                .order(buildSortOrder(sort.order(), isScrollingBackwards));
+    }
+
+    private SortBuilder<?> buildOwnerFieldSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
+        return buildFieldSort(SearchSourceFields.OWNER.getFieldName(), sort.order(), ES_KEYWORD_TYPE,
+                isScrollingBackwards);
+    }
+
+    private SortBuilder<?> buildDateFieldSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
+        return buildFieldSort(sort.field(), sort.order(), ES_DATE_TYPE, isScrollingBackwards);
+    }
+
+    private SortBuilder<?> buildNumericFieldSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
+        return buildFieldSort(sort.field(), sort.order(), ES_LONG_TYPE, isScrollingBackwards);
+    }
+
+    private SortBuilder<?> buildRegularFieldSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
+        return buildFieldSort(buildKeywordName(sort.field()), sort.order(), ES_KEYWORD_TYPE,
+                isScrollingBackwards);
+    }
+
+    private SortBuilder<?> buildFieldSort(final String field,
+                                          final SearchRequestSortOrder order,
+                                          final String unmappedType,
+                                          final boolean isScrollingBackwards) {
+        final SortOrder actualOrder = buildSortOrder(order, isScrollingBackwards);
+        final String missing = actualOrder == SortOrder.ASC ? ES_SORT_MISSING_LAST : ES_SORT_MISSING_FIRST;
+        return SortBuilders.fieldSort(field)
+                .order(actualOrder)
+                .unmappedType(unmappedType)
+                .missing(missing);
+    }
+
+    private SortOrder buildSortOrder(final SearchRequestSortOrder order, final boolean isScrollingBackwards) {
+        switch (isScrollingBackwards ? order.invert() : order) {
+            case ASC: return SortOrder.ASC;
+            case DESC: return SortOrder.DESC;
+            default: throw new IllegalArgumentException(String.format("Non supported sort order %s", this));
+        }
+    }
+
+    private Object[] buildSearchAfterArguments(final List<SearchRequestSort> sorts,
+                                               final ScrollingParameters scrollingParameters) {
+        final Map<String, Object> searchAfterParameters = getSearchAfterParameters(scrollingParameters);
+        final List<String> sortFields = sorts.stream().map(SearchRequestSort::field).collect(Collectors.toList());
+        final Collection<String> sortFieldsWithoutSearchAfterParameter = CollectionUtils.subtract(sortFields,
+                searchAfterParameters.keySet());
+        Assert.isTrue(CollectionUtils.isEmpty(sortFieldsWithoutSearchAfterParameter), messageHelper.getMessage(
+                MessageConstants.ERROR_SEARCH_SCROLLING_PARAMETER_DOC_SORT_FIELDS_MISSING,
+                sortFieldsWithoutSearchAfterParameter));
+        return sortFields.stream().map(searchAfterParameters::get).toArray();
+    }
+
+    private Map<String, Object> getSearchAfterParameters(final ScrollingParameters scrollingParameters) {
+        final Map<String, Object> searchAfterParameters = CommonUtils.mergeMaps(
+                getDefaultSearchAfterParameters(scrollingParameters),
+                scrollingParameters.getDocSortFields());
+        searchAfterParameters.replaceAll(this::buildSearchAfterParameterValue);
+        return searchAfterParameters;
+    }
+
+    private Map<String, Object> getDefaultSearchAfterParameters(final ScrollingParameters scrollingParameters) {
+        final Map<String, Object> parameters = new HashMap<>();
+        parameters.put(NAME_FIELD, scrollingParameters.getDocId());
+        parameters.put(ES_DOC_SCORE_FIELD, scrollingParameters.getDocScore());
+        return parameters;
+    }
+
+    private Object buildSearchAfterParameterValue(final String field, final Object value) {
+        return isDateField(field) ? buildSearchAfterDateParameterValue(value)
+                : isNumericField(field) ? buildSearchAfterNumericParameterValue(value)
+                : buildSearchAfterRegularParameterValue(value);
+    }
+
+    private long buildSearchAfterDateParameterValue(final Object value) {
+        return Optional.ofNullable(value)
+                .map(Object::toString)
+                .filter(StringUtils::isNotBlank)
+                .map(stringValue -> LocalDateTime.parse(stringValue, DATE_TIME_FORMATTER))
+                .map(DateUtils::convertLocalDateTimeToEpochMillis)
+                .orElse(Long.MAX_VALUE);
+    }
+
+    private long buildSearchAfterNumericParameterValue(final Object value) {
+        return Optional.ofNullable(value)
+                .map(Object::toString)
+                .filter(StringUtils::isNotBlank)
+                .map(NumberUtils::toLong)
+                .orElse(Long.MAX_VALUE);
+    }
+
+    private String buildSearchAfterRegularParameterValue(final Object value) {
+        return Optional.ofNullable(value)
+                .map(Object::toString)
+                .filter(StringUtils::isNotBlank)
+                .orElse(null);
+    }
+
+    private boolean isDefaultField(final String field) {
+        return StringUtils.equalsIgnoreCase(field, ES_DOC_ID_FIELD)
+                || StringUtils.equalsIgnoreCase(field, ES_DOC_SCORE_FIELD)
+                || StringUtils.equalsIgnoreCase(field, NAME_FIELD);
+    }
+
+    private boolean isOwnerField(final String field) {
+        return StringUtils.equalsIgnoreCase(field, SearchSourceFields.OWNER.name().toLowerCase());
+    }
+
+    private boolean isDateField(final String field) {
+        return SearchSourceFields.DATE_FIELDS.contains(field);
+    }
+
+    private boolean isNumericField(final String field) {
+        return SearchSourceFields.NUMERIC_FIELDS.contains(field);
+    }
+
+    private String[] buildSourceFields(final String typeFieldName, final Set<String> metadataSourceFields) {
+        final List<String> storedFields = Arrays.stream(SearchSourceFields.values())
+                .map(SearchSourceFields::getFieldName)
+                .collect(Collectors.toList());
+        storedFields.add(typeFieldName);
+        storedFields.addAll(metadataSourceFields);
+        return storedFields.toArray(Strings.EMPTY_ARRAY);
+    }
+
+    private void addHighlighterToSource(final SearchSourceBuilder searchSource) {
+        searchSource.highlighter(SearchSourceBuilder.highlight()
+                .field("*")
+                .postTags("</highlight>")
+                .preTags("<highlight>"));
+    }
+
+    private QueryBuilder getQuery(final ElasticSearchRequest queryRequest) {
+        final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(getBasicQuery(queryRequest.getQuery()));
+        addStorageFilter(queryBuilder, queryRequest.getObjectIdentifier());
+        addGlobsFilterToQuery(queryBuilder, queryRequest.getFilterGlobs());
+        if (preferenceManager.getPreference(SystemPreferences.SEARCH_HIDE_DELETED)) {
+            queryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_DELETED, Boolean.TRUE));
+        }
+        return prepareAclFiltersOrAdmin(queryBuilder);
+    }
+
+    private QueryBuilder getStorageFilesQuery(final List<SearchStorageFilesRequest> filesRequests) {
+        final BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        boolQueryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_HIDDEN, Boolean.TRUE));
+        if (preferenceManager.getPreference(SystemPreferences.SEARCH_HIDE_DELETED)) {
+            boolQueryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_DELETED, Boolean.TRUE));
+        }
+        ListUtils.emptyIfNull(filesRequests)
+                .forEach(file -> boolQueryBuilder.should(QueryBuilders.boolQuery()
+                        .filter(QueryBuilders.termQuery(buildKeywordName(ES_PATH_FIELD), file.getPath()))
+                        .filter(QueryBuilders.termQuery(ES_STORAGE_ID_FIELD, file.getStorageId()))
+                ));
+        return boolQueryBuilder;
+    }
+
+    private QueryBuilder getFacetedQuery(final String query, final Map<String, List<String>> filters) {
+        final BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        boolQueryBuilder.must(prepareFacetedQuery(query));
+        boolQueryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_HIDDEN, Boolean.TRUE));
+        if (preferenceManager.getPreference(SystemPreferences.SEARCH_HIDE_DELETED)) {
+            boolQueryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_DELETED, Boolean.TRUE));
+        }
+        MapUtils.emptyIfNull(filters)
+                .forEach((fieldName, values) -> boolQueryBuilder.must(filterToTermsQuery(fieldName, values)));
+        return boolQueryBuilder;
+    }
+
+    private QueryBuilder prepareAclFiltersOrAdmin(final BoolQueryBuilder queryBuilder) {
+>>>>>>> theirs
         final PipelineUser pipelineUser = userManager.loadUserByName(authManager.getAuthorizedUser());
         if (pipelineUser == null) {
             throw new IllegalArgumentException("Failed to find currently authorized user");

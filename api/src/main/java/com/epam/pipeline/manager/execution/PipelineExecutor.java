@@ -87,10 +87,8 @@ public class PipelineExecutor {
     private static final String TRUE = "true";
     private static final String USE_HOST_NETWORK = "CP_USE_HOST_NETWORK";
     private static final String DEFAULT_CPU_REQUEST = "1";
-    private static final DockerMount HOST_CGROUP_MOUNT = DockerMount.builder()
-            .name("host-cgroups")
-            .hostPath("/sys/fs/cgroup")
-            .mountPath("/sys/fs/cgroup").build();
+    private static final DockerMount HOST_CGROUP_MOUNT = new DockerMount(
+        "host-cgroups", "/sys/fs/cgroup", "/sys/fs/cgroup", false);
     private static final String DOMAIN_DELIMITER = "@";
     private static final String DEFAULT_KUBE_SERVICE_ACCOUNT = "default";
 
@@ -313,6 +311,7 @@ public class PipelineExecutor {
         container.setEnv(envVars);
         container.setImage(dockerImage);
         container.setSecurityContext(buildSecurityContext(policy));
+<<<<<<< ours
         String entryPoint = Optional.ofNullable(template.getEntrypoint()).orElse("/bin/bash");
         container.setCommand(Collections.singletonList(entryPoint));
         if (!StringUtils.isEmpty(command)) {
@@ -321,6 +320,51 @@ public class PipelineExecutor {
             List<String> mergedArgs = new ArrayList<>(args);
             mergedArgs.add(command);
             container.setArgs(mergedArgs);
+||||||| base
+        if (KubernetesConstants.WINDOWS.equals(run.getPlatform())) {
+            container.setCommand(Collections.singletonList("powershell"));
+            if (!StringUtils.isEmpty(command)) {
+                container.setArgs(Arrays.asList("-command", command));
+            }
+            container.setVolumeMounts(getWindowsMounts());
+            container.setTerminationMessagePath("c:\\termination-log");
+        } else {
+            String entryPoint = Optional.ofNullable(template.getEntrypoint()).orElse("/bin/bash");
+            container.setCommand(Collections.singletonList(entryPoint));
+            if (!StringUtils.isEmpty(command)) {
+                List<String> args = CollectionUtils.isEmpty(template.getArgs()) ?
+                        Collections.singletonList("-c") : template.getArgs();
+                List<String> mergedArgs = new ArrayList<>(args);
+                mergedArgs.add(command);
+                container.setArgs(mergedArgs);
+            }
+            container.setVolumeMounts(
+                    getMounts(isDockerInDockerEnabled, isSystemdEnabled, isEBSVolumesEnabled, commonMounts)
+            );
+            container.setTerminationMessagePath("/dev/termination-log");
+=======
+        if (KubernetesConstants.WINDOWS.equals(run.getPlatform())) {
+            container.setCommand(Collections.singletonList("powershell"));
+            if (!StringUtils.isEmpty(command)) {
+                container.setArgs(Arrays.asList("-command", command));
+            }
+            container.setVolumeMounts(getWindowsMounts());
+            container.setTerminationMessagePath("c:\\termination-log");
+        } else {
+            String entryPoint = Optional.ofNullable(template.entrypoint()).orElse("/bin/bash");
+            container.setCommand(Collections.singletonList(entryPoint));
+            if (!StringUtils.isEmpty(command)) {
+                List<String> args = CollectionUtils.isEmpty(template.args()) ?
+                        Collections.singletonList("-c") : template.args();
+                List<String> mergedArgs = new ArrayList<>(args);
+                mergedArgs.add(command);
+                container.setArgs(mergedArgs);
+            }
+            container.setVolumeMounts(
+                    getMounts(isDockerInDockerEnabled, isSystemdEnabled, isEBSVolumesEnabled, commonMounts)
+            );
+            container.setTerminationMessagePath("/dev/termination-log");
+>>>>>>> theirs
         }
         container.setVolumeMounts(getMounts(isDockerInDockerEnabled, isSystemdEnabled, commonMounts));
         container.setTerminationMessagePath("/dev/termination-log");
@@ -418,13 +462,13 @@ public class PipelineExecutor {
                 SystemPreferences.DOCKER_IN_DOCKER_MOUNTS);
         if (isDockerInDockerEnabled &&
                 CollectionUtils.isNotEmpty(dockerMounts)) {
-            dockerMounts.forEach(mount -> volumes.add(createVolume(mount.getName(), mount.getHostPath())));
+            dockerMounts.forEach(mount -> volumes.add(createVolume(mount.name(), mount.hostPath())));
         }
         if (CollectionUtils.isNotEmpty(commonMounts)) {
-            commonMounts.forEach(mount -> volumes.add(createVolume(mount.getName(), mount.getHostPath())));
+            commonMounts.forEach(mount -> volumes.add(createVolume(mount.name(), mount.hostPath())));
         }
         if (isSystemdEnabled) {
-            volumes.add(createVolume(HOST_CGROUP_MOUNT.getName(), HOST_CGROUP_MOUNT.getHostPath()));
+            volumes.add(createVolume(HOST_CGROUP_MOUNT.name(), HOST_CGROUP_MOUNT.hostPath()));
         }
         return volumes;
     }
@@ -441,14 +485,14 @@ public class PipelineExecutor {
         if (isDockerInDockerEnabled &&
                 CollectionUtils.isNotEmpty(dockerMounts)) {
             dockerMounts.forEach(mount -> mounts.add(
-                    getVolumeMount(mount.getName(), mount.getMountPath(), mount.isReadOnly())));
+                    getVolumeMount(mount.name(), mount.mountPath(), mount.readOnly())));
         }
         if (CollectionUtils.isNotEmpty(commonMounts)) {
             commonMounts.forEach(mount -> mounts.add(
-                    getVolumeMount(mount.getName(), mount.getMountPath(), mount.isReadOnly())));
+                    getVolumeMount(mount.name(), mount.mountPath(), mount.readOnly())));
         }
         if (isSystemdEnabled) {
-            mounts.add(getVolumeMount(HOST_CGROUP_MOUNT.getName(), HOST_CGROUP_MOUNT.getMountPath()));
+            mounts.add(getVolumeMount(HOST_CGROUP_MOUNT.name(), HOST_CGROUP_MOUNT.mountPath()));
         }
         return mounts;
     }

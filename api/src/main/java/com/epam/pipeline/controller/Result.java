@@ -16,7 +16,15 @@
 
 package com.epam.pipeline.controller;
 
+<<<<<<< ours
 import io.swagger.annotations.ApiModelProperty;
+||||||| base
+import io.swagger.annotations.ApiModelProperty;
+import lombok.EqualsAndHashCode;
+=======
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.EqualsAndHashCode;
+>>>>>>> theirs
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
@@ -52,7 +60,7 @@ public final class Result<T> {
         return message;
     }
 
-    @ApiModelProperty(value = "it defines the status with which an operation may result in",
+    @Schema(description = "it defines the status with which an operation may result in",
             allowableValues = "OK, INFO, WARN, ERROR", required = true)
     public ResultStatus getStatus() {
         return status;

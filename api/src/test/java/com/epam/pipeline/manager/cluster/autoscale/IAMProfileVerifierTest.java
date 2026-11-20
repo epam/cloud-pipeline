@@ -26,14 +26,20 @@ import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
+<<<<<<< ours
 import com.epam.pipeline.manager.user.UserManager;
 import org.junit.Test;
+||||||| base
+import org.junit.Test;
+=======
+import org.junit.jupiter.api.Test;
+>>>>>>> theirs
 
 import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 

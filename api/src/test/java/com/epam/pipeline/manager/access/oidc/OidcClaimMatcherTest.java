@@ -19,12 +19,14 @@ package com.epam.pipeline.manager.access.oidc;
 import com.epam.pipeline.security.oidc.OidcClaimOperator;
 import com.epam.pipeline.security.oidc.OidcClaimRule;
 import com.nimbusds.jwt.JWTClaimsSet;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -182,7 +184,9 @@ public class OidcClaimMatcherTest {
      * A translation of this glob into a regular expression backtracks for seconds on a few
      * wildcards, and the claim is attacker-controlled on a shared issuer.
      */
-    @Test(timeout = GLOB_TIMEOUT_MS)
+    @Test
+    @Timeout(value = GLOB_TIMEOUT_MS, unit = TimeUnit.MILLISECONDS,
+            threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
     public void shouldMatchGlobsWithManyWildcardsWithoutBacktracking() {
         final StringBuilder value = new StringBuilder();
         for (int index = 0; index < LONG_CLAIM_LENGTH; index++) {

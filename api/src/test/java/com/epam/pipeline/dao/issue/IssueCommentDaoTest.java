@@ -16,9 +16,31 @@
 
 package com.epam.pipeline.dao.issue;
 
+<<<<<<< ours
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+||||||| base
+import com.epam.pipeline.controller.vo.EntityVO;
+import com.epam.pipeline.entity.issue.Issue;
+import com.epam.pipeline.entity.issue.IssueComment;
+import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+=======
+import com.epam.pipeline.controller.vo.EntityVO;
+import com.epam.pipeline.entity.issue.Issue;
+import com.epam.pipeline.entity.issue.IssueComment;
+import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+>>>>>>> theirs
 
 import java.util.Collections;
 import java.util.List;
@@ -27,6 +49,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+<<<<<<< ours
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.entity.issue.Issue;
@@ -36,6 +59,15 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+||||||| base
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+=======
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+>>>>>>> theirs
 
 public class IssueCommentDaoTest extends AbstractSpringTest {
 

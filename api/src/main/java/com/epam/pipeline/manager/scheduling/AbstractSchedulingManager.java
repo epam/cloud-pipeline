@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.scheduling;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -58,14 +59,58 @@ public abstract class AbstractSchedulingManager {
         Integer statusUpdateRate = preferenceManager.getPreference(delayPreference);
         log.info("Scheduled {} with a rate of {} ms", taskName, statusUpdateRate);
 
+<<<<<<< ours
         ScheduledFuture<?> future = scheduler.scheduleWithFixedDelay(task, statusUpdateRate);
         scheduledFuture.set(future);
+||||||| base
+        if(statusUpdateRate > 0) {
+            scheduledFuture.set(
+                    scheduler.scheduleWithFixedDelay(task, statusUpdateRate)
+            );
+        } else {
+            log.info("Delay rate configured as negative value for task: {}." +
+                    " This is considered as disable scheduling. Task will not be scheduled", taskName);
+        }
+=======
+        if(statusUpdateRate > 0) {
+            scheduledFuture.set(
+                    scheduler.scheduleWithFixedDelay(task, Duration.ofMillis(statusUpdateRate))
+            );
+        } else {
+            log.info("Delay rate configured as negative value for task: {}." +
+                    " This is considered as disable scheduling. Task will not be scheduled", taskName);
+        }
+>>>>>>> theirs
 
         preferenceManager.getObservablePreference(delayPreference)
             .subscribe(rate -> scheduledFuture.updateAndGet(f -> {
                 log.debug("Rescheduling {} with a new rate of {} ms", taskName, rate);
+<<<<<<< ours
                 f.cancel(false);
                 return scheduler.scheduleWithFixedDelay(task, rate.longValue());
+||||||| base
+                if (f != null) {
+                    f.cancel(false);
+                }
+                long delay = rate.longValue();
+                if (delay <= 0) {
+                    log.info("Delay rate configured as negative value for task: {}." +
+                            " This is considered as disable scheduling. Task will not be scheduled", taskName);
+                    return null;
+                }
+                return scheduler.scheduleWithFixedDelay(task, delay);
+=======
+                if (f != null) {
+                    f.cancel(false);
+                }
+                long delay = rate.longValue();
+                if (delay <= 0) {
+                    log.info("Delay rate configured as negative value for task: {}." +
+                            " This is considered as disable scheduling. Task will not be scheduled", taskName);
+                    return null;
+                }
+                return scheduler.scheduleWithFixedDelay(task, Duration.ofMillis(rate.longValue()));
+>>>>>>> theirs
             }));
     }
 
@@ -105,13 +150,13 @@ public abstract class AbstractSchedulingManager {
                 .orElse(0L);
 
         log.info("Scheduled {} at {}", taskName, rate);
-        scheduledFuture.set(scheduler.scheduleWithFixedDelay(secureRunnable, rate));
+        scheduledFuture.set(scheduler.scheduleWithFixedDelay(secureRunnable, Duration.ofMillis(rate)));
         preferenceManager.getObservablePreference(delayPreference)
                 .subscribe(newRate -> scheduledFuture.updateAndGet(f -> {
                     log.info("Rescheduling {} at {}", taskName, newRate);
                     f.cancel(false);
                     return scheduler.scheduleWithFixedDelay(secureRunnable,
-                            Optional.ofNullable(newRate).map(delayUnit::toMillis).orElse(0L));
+                            Duration.ofMillis(Optional.ofNullable(newRate).map(delayUnit::toMillis).orElse(0L)));
                 }));
     }
 

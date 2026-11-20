@@ -16,12 +16,22 @@
 
 package com.epam.pipeline.entity.notification;
 
+<<<<<<< ours
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+||||||| base
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+=======
+import com.fasterxml.jackson.annotation.JsonProperty;
+>>>>>>> theirs
 
 import java.util.Date;
 
+<<<<<<< ours
 @Getter
 @Setter
 @RequiredArgsConstructor
@@ -31,4 +41,23 @@ public class SystemNotificationConfirmation {
     private final String body;
     private final String user;
     private final Date date;
+||||||| base
+@Getter
+@Setter
+@RequiredArgsConstructor
+@EqualsAndHashCode
+public class SystemNotificationConfirmation {
+    private final Long notificationId;
+    private final String title;
+    private final String body;
+    private final String user;
+    private final Date date;
+=======
+public record SystemNotificationConfirmation(
+        @JsonProperty("notificationId") Long notificationId,
+        @JsonProperty("title") String title,
+        @JsonProperty("body") String body,
+        @JsonProperty("user") String user,
+        @JsonProperty("date") Date date) {
+>>>>>>> theirs
 }

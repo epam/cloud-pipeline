@@ -39,12 +39,12 @@ public @interface FilterField {
     boolean isRegex() default false;
     boolean multiplePlaceholders() default false;
     FilterOperandType[] supportedOperands() default {
-            FilterOperandType.LESS,
-            FilterOperandType.LESS_OR_EQUALS,
-            FilterOperandType.EQUALS,
-            FilterOperandType.NOT_EQUALS,
-            FilterOperandType.MORE_OR_EQUALS,
-            FilterOperandType.MORE
+        FilterOperandType.LESS,
+        FilterOperandType.LESS_OR_EQUALS,
+        FilterOperandType.EQUALS,
+        FilterOperandType.NOT_EQUALS,
+        FilterOperandType.MORE_OR_EQUALS,
+        FilterOperandType.MORE
     };
     Class<? extends AbstractFilterValueConverter> converter() default DefaultConverter.class;
     Class<? extends AbstractFilterComposer> composer() default DefaultComposer.class;

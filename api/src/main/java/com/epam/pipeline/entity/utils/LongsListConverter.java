@@ -2,7 +2,7 @@ package com.epam.pipeline.entity.utils;
 
 import org.apache.commons.lang3.StringUtils;
 
-import javax.persistence.AttributeConverter;
+import jakarta.persistence.AttributeConverter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;

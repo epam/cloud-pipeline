@@ -58,12 +58,13 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import javax.annotation.PostConstruct;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -85,7 +86,7 @@ import java.util.stream.Collectors;
  * @author Mikhail Miroliubov
  */
 @Service
-public class GitManager {
+public class GitManager implements InitializingBean {
     private static final String GIT_CLONE_CMD = "git clone %s %s";
     private static final String GIT_CHECKOUT_CMD = "git checkout %s";
     private static final String PATH_DELIMITER = "/";
@@ -126,8 +127,8 @@ public class GitManager {
     @Autowired
     private PipelineRepositoryService pipelineRepositoryService;
 
-    @PostConstruct
-    public void configure() {
+    @Override
+    public void afterPropertiesSet() {
         File baseDir = new File(workingDirPath);
         boolean result = baseDir.exists() || baseDir.mkdirs();
         Assert.isTrue(result, "Could not create directory");

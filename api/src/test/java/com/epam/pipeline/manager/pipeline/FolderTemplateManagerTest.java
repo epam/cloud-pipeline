@@ -38,9 +38,19 @@ import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3StorageProvider;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
+<<<<<<< ours
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+||||||| base
+import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
+import com.epam.pipeline.test.acl.AbstractAclTest;
+import org.junit.Test;
+=======
+import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
+import com.epam.pipeline.test.acl.AbstractAclTest;
+import org.junit.jupiter.api.Test;
+>>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -53,11 +63,39 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+<<<<<<< ours
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.mockito.Matchers.any;
+||||||| base
+import java.util.function.Predicate;
+
+import static com.epam.pipeline.test.creator.pipeline.FolderTemplateCreatorUtils.getFolderTemplate;
+import static com.epam.pipeline.test.creator.pipeline.FolderTemplateCreatorUtils.getS3BucketDataStorageWithMetadataNameAndPath;
+import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.getPermissionGrantVOFrom;
+import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.getPermissionVO;
+import static com.epam.pipeline.util.CustomMatchers.matches;
+import static org.mockito.Matchers.argThat;
+import static org.mockito.Matchers.eq;
+=======
+import java.util.function.Predicate;
+
+import static com.epam.pipeline.test.creator.pipeline.FolderTemplateCreatorUtils.getFolderTemplate;
+import static com.epam.pipeline.test.creator.pipeline.FolderTemplateCreatorUtils.getS3BucketDataStorageWithMetadataNameAndPath;
+import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.getPermissionGrantVOFrom;
+import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.getPermissionVO;
+import static com.epam.pipeline.util.CustomMatchers.matches;
+import static org.mockito.ArgumentMatchers.eq;
+>>>>>>> theirs
 import static org.mockito.Mockito.doReturn;
+<<<<<<< ours
+||||||| base
+import static org.mockito.Mockito.verify;
+=======
+import static org.mockito.Mockito.verify;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
+>>>>>>> theirs
 
 @DirtiesContext
 @ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
@@ -144,6 +182,7 @@ public class FolderTemplateManagerTest extends AbstractSpringTest {
         folder.setName(TEMPLATE_FOLDER_NAME);
         folderTemplateManager.createFolderFromTemplate(folder, folderTemplate);
 
+<<<<<<< ours
         Folder savedRootFolder = folderManager.loadByNameOrId(TEMPLATE_FOLDER_NAME);
         savedRootFolder = folderManager.load(savedRootFolder.getId());
         Assert.assertNotNull(savedRootFolder);
@@ -168,5 +207,48 @@ public class FolderTemplateManagerTest extends AbstractSpringTest {
                 CHILD_TEMPLATE_FOLDER_NAME_1);
         Assert.assertNotNull(savedChildFolder);
         Assert.assertEquals(rootFolderId, savedChildFolder.getParentId());
+||||||| base
+    private static class Predicates {
+        static Predicate<Folder> forFolderTemplate(String name) {
+            return f -> !FOLDER_ID.equals(f.getParentId())
+                    && f.getName().equals(name);
+        }
+
+        static Predicate<Folder> forChildFolderTemplate(String name) {
+            return f -> FOLDER_ID.equals(f.getParentId())
+                    && f.getName().equals(name);
+        }
+
+        static Predicate<DataStorageWithMetadataVO> forDataStorage() {
+            return dataStorage -> DATASTORAGE_NAME.equals(dataStorage.getName())
+                    && TEST_PATH.equals(dataStorage.getPath());
+        }
+
+        static Predicate<DataStorageWithMetadataVO> forChildDataStorage() {
+            return dataStorage -> DATASTORAGE_NAME_2.equals(dataStorage.getName())
+                    && TEST_PATH_2.equals(dataStorage.getPath());
+        }
+=======
+    private static final class Predicates {
+        static Predicate<Folder> forFolderTemplate(String name) {
+            return f -> !FOLDER_ID.equals(f.getParentId())
+                    && f.getName().equals(name);
+        }
+
+        static Predicate<Folder> forChildFolderTemplate(String name) {
+            return f -> FOLDER_ID.equals(f.getParentId())
+                    && f.getName().equals(name);
+        }
+
+        static Predicate<DataStorageWithMetadataVO> forDataStorage() {
+            return dataStorage -> DATASTORAGE_NAME.equals(dataStorage.getName())
+                    && TEST_PATH.equals(dataStorage.getPath());
+        }
+
+        static Predicate<DataStorageWithMetadataVO> forChildDataStorage() {
+            return dataStorage -> DATASTORAGE_NAME_2.equals(dataStorage.getName())
+                    && TEST_PATH_2.equals(dataStorage.getPath());
+        }
+>>>>>>> theirs
     }
 }

@@ -16,8 +16,34 @@
 
 package com.epam.pipeline.manager.notification;
 
+<<<<<<< ours
 import com.epam.pipeline.app.TestApplicationWithAclSecurity;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
+||||||| base
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
+import com.epam.pipeline.dao.notification.NotificationSettingsDao;
+import com.epam.pipeline.dao.user.RoleDao;
+=======
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
+import com.epam.pipeline.dao.notification.NotificationSettingsDao;
+import com.epam.pipeline.dao.user.RoleDao;
+>>>>>>> theirs
 import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
@@ -27,9 +53,21 @@ import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.util.TestUtils;
+<<<<<<< ours
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+||||||| base
+import java.util.Arrays;
+import java.util.Optional;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+=======
+import java.util.Arrays;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+>>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;

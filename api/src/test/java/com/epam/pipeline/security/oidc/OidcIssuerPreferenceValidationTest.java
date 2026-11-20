@@ -18,8 +18,8 @@ package com.epam.pipeline.security.oidc;
 
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.manager.preference.PreferenceValidators;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -74,10 +74,72 @@ public class OidcIssuerPreferenceValidationTest {
             + "  }]\n"
             + "}]";
 
+<<<<<<< ours
     @Before
+||||||| base
+    /**
+     * The configuration the manual documents for MAPPED_USER, so that the example an
+     * administrator copies is known to parse. userMapping is the first nested object in a
+     * strategy, and an unrecognised field anywhere in it refuses the whole preference.
+     */
+    private static final String MAPPED = "[{\n"
+            + "  \"issuer\": \"https://token.actions.githubusercontent.com\",\n"
+            + "  \"audiences\": [\"https://cloud-pipeline.local/pipeline/restapi\"],\n"
+            + "  \"algorithms\": [\"RS256\"],\n"
+            + "  \"clients\": [{\n"
+            + "    \"id\": \"github-mapped\",\n"
+            + "    \"rules\": [\n"
+            + "      { \"claim\": \"repository_owner\", \"operator\": \"EQUALS\", \"value\": \"octo-org\" }\n"
+            + "    ],\n"
+            + "    \"assumeStrategy\": {\n"
+            + "      \"type\": \"MAPPED_USER\",\n"
+            + "      \"userMapping\": {\n"
+            + "        \"claim\": \"repository_owner\",\n"
+            + "        \"metadataKey\": \"github_owner\"\n"
+            + "      },\n"
+            + "      \"rolesToKeep\": [\"ROLE_USER\"],\n"
+            + "      \"ignoreSubjectTokenLifetime\": true\n"
+            + "    }\n"
+            + "  }]\n"
+            + "}]";
+
+    private static final String CLAIM_LINE = "\"claim\": \"repository_owner\",";
+
+    @Before
+=======
+    /**
+     * The configuration the manual documents for MAPPED_USER, so that the example an
+     * administrator copies is known to parse. userMapping is the first nested object in a
+     * strategy, and an unrecognised field anywhere in it refuses the whole preference.
+     */
+    private static final String MAPPED = "[{\n"
+            + "  \"issuer\": \"https://token.actions.githubusercontent.com\",\n"
+            + "  \"audiences\": [\"https://cloud-pipeline.local/pipeline/restapi\"],\n"
+            + "  \"algorithms\": [\"RS256\"],\n"
+            + "  \"clients\": [{\n"
+            + "    \"id\": \"github-mapped\",\n"
+            + "    \"rules\": [\n"
+            + "      { \"claim\": \"repository_owner\", \"operator\": \"EQUALS\", \"value\": \"octo-org\" }\n"
+            + "    ],\n"
+            + "    \"assumeStrategy\": {\n"
+            + "      \"type\": \"MAPPED_USER\",\n"
+            + "      \"userMapping\": {\n"
+            + "        \"claim\": \"repository_owner\",\n"
+            + "        \"metadataKey\": \"github_owner\"\n"
+            + "      },\n"
+            + "      \"rolesToKeep\": [\"ROLE_USER\"],\n"
+            + "      \"ignoreSubjectTokenLifetime\": true\n"
+            + "    }\n"
+            + "  }]\n"
+            + "}]";
+
+    private static final String CLAIM_LINE = "\"claim\": \"repository_owner\",";
+
+    @BeforeEach
+>>>>>>> theirs
     public void initMapper() {
-        // the mapper is a Spring singleton published by @PostConstruct, and this test has no context
-        new JsonMapper().init();
+        // the mapper is a Spring singleton published by afterPropertiesSet, and this test has no context
+        new JsonMapper().afterPropertiesSet();
     }
 
     @Test

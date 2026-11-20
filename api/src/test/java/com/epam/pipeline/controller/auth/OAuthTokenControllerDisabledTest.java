@@ -17,7 +17,7 @@
 package com.epam.pipeline.controller.auth;
 
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -39,7 +39,6 @@ public class OAuthTokenControllerDisabledTest extends AbstractControllerTest {
     @WithMockUser
     public void shouldNotServeTheEndpointUnlessItIsEnabled() throws Exception {
         mvc().perform(post(TOKEN_URL)
-                .servletPath(SERVLET_PATH)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .param("grant_type", "urn:ietf:params:oauth:grant-type:token-exchange")
                 .param("subject_token", "provider-token")

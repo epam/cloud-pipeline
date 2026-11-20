@@ -31,8 +31,8 @@ import com.epam.pipeline.security.oidc.OidcClaimRule;
 import com.epam.pipeline.security.oidc.OidcClient;
 import com.epam.pipeline.security.oidc.OidcIssuer;
 import com.nimbusds.jwt.JWTClaimsSet;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.security.authentication.LockedException;
@@ -75,7 +75,7 @@ public class OidcTokenExchangeManagerTest {
     private PreferenceManager preferenceManager;
     private OidcTokenExchangeManager manager;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         tokenVerifier = Mockito.mock(OidcTokenVerifier.class);
         clientResolver = Mockito.mock(OidcClientResolver.class);
@@ -483,4 +483,434 @@ public class OidcTokenExchangeManagerTest {
         Mockito.when(userManager.loadUserByName(USER_NAME)).thenReturn(user);
         return user;
     }
+<<<<<<< ours
+||||||| base
+
+    private static OidcAssumeStrategy mappedUser() {
+        final OidcAssumeStrategy strategy = new OidcAssumeStrategy();
+        strategy.setType(OidcAssumeStrategyType.MAPPED_USER);
+        strategy.setUserMapping(mapping(OWNER_CLAIM, OWNER_KEY));
+        return strategy;
+    }
+
+    private static OidcUserMapping mapping(final String claim, final String metadataKey) {
+        final OidcUserMapping mapping = new OidcUserMapping();
+        mapping.setClaim(claim);
+        mapping.setMetadataKey(metadataKey);
+        return mapping;
+    }
+
+    private void metadataMatches(final Long... userIds) {
+        Mockito.when(metadataManager.searchMetadataByClassAndKeyValue(
+                        AclClass.PIPELINE_USER, OWNER_KEY, OWNER_VALUE))
+                .thenReturn(Arrays.stream(userIds)
+                        .map(id -> new EntityVO(id, AclClass.PIPELINE_USER))
+                        .collect(Collectors.toList()));
+    }
+
+    /**
+     * The repository load is used for the name only, so it stands in here for what JPA really
+     * returns: the groups are transient and the roles lazy, so neither is populated.
+     */
+    private void repositoryReturns(final Long... userIds) {
+        Mockito.when(userManager.loadUsersById(Arrays.asList(userIds)))
+                .thenReturn(Arrays.stream(userIds)
+                        .map(id -> PipelineUser.builder()
+                                .id(id)
+                                .userName(USER_ID.equals(id) ? USER_NAME : "USER_" + id)
+                                .build())
+                        .collect(Collectors.toList()));
+    }
+
+    @Test
+    public void shouldIssueATokenForTheUserCarryingTheClaimValueInItsMetadata() {
+        metadataMatches(USER_ID);
+        repositoryReturns(USER_ID);
+        configure(mappedUser(), subjectClaims().claim(OWNER_CLAIM, OWNER_VALUE).build());
+
+        final OidcExchangedToken exchanged = manager.exchange(SUBJECT_TOKEN);
+
+        assertThat(exchanged.getToken()).isEqualTo(ISSUED_TOKEN);
+        assertThat(issuedClaims().getUserName()).isEqualTo(USER_NAME);
+        assertThat(issuedClaims().getUserId()).isEqualTo(String.valueOf(USER_ID));
+    }
+
+    /**
+     * The claim's value is what is looked for, under the configured attribute.
+     */
+    @Test
+    public void shouldLookTheUserUpByTheClaimValueUnderTheConfiguredMetadataKey() {
+        metadataMatches(USER_ID);
+        repositoryReturns(USER_ID);
+        configure(mappedUser(), subjectClaims().claim(OWNER_CLAIM, OWNER_VALUE).build());
+
+        manager.exchange(SUBJECT_TOKEN);
+
+        Mockito.verify(metadataManager)
+                .searchMetadataByClassAndKeyValue(AclClass.PIPELINE_USER, OWNER_KEY, OWNER_VALUE);
+    }
+
+    /**
+     * The mapped user has to be loaded the same way as a named one. The repository load that finds
+     * it by metadata gives back no groups and no roles — they are transient and lazy on the entity
+     * — so building the token from that object would quietly strip the permissions a user holds
+     * through a group, which is how storage access is usually granted.
+     */
+    @Test
+    public void shouldCarryTheRolesAndGroupsOfTheMappedUserIntoTheToken() {
+        storedUser(ROLE_USER, READER);
+        metadataMatches(USER_ID);
+        repositoryReturns(USER_ID);
+        configure(mappedUser(), subjectClaims().claim(OWNER_CLAIM, OWNER_VALUE).build());
+
+        manager.exchange(SUBJECT_TOKEN);
+
+        assertThat(issuedClaims().getRoles()).contains(ROLE_USER, READER);
+        assertThat(issuedClaims().getGroups()).containsExactly(GROUP);
+    }
+
+    @Test
+    public void shouldRefuseWhenNoUserCarriesTheClaimValue() {
+        metadataMatches();
+        configure(mappedUser(), subjectClaims().claim(OWNER_CLAIM, OWNER_VALUE).build());
+
+        assertThatThrownBy(() -> manager.exchange(SUBJECT_TOKEN))
+                .isInstanceOf(OidcTokenVerificationException.class)
+                .hasMessageContaining("No user has");
+    }
+
+    /**
+     * Choosing among several would hand out a token for an account nobody meant to expose, so an
+     * ambiguous mapping issues nothing at all.
+     */
+    @Test
+    public void shouldRefuseWhenTheMappingMatchesMoreThanOneUser() {
+        metadataMatches(USER_ID, OTHER_USER_ID);
+        repositoryReturns(USER_ID, OTHER_USER_ID);
+        configure(mappedUser(), subjectClaims().claim(OWNER_CLAIM, OWNER_VALUE).build());
+
+        assertThatThrownBy(() -> manager.exchange(SUBJECT_TOKEN))
+                .isInstanceOf(OidcTokenVerificationException.class)
+                .hasMessageContaining("matches 2 users");
+        Mockito.verify(jwtTokenGenerator, Mockito.never())
+                .encodeToken(Mockito.any(), Mockito.anyLong());
+    }
+
+    /**
+     * Metadata outlives the user it described, so a stale row must not break a mapping that still
+     * points at exactly one live user.
+     */
+    @Test
+    public void shouldIgnoreMetadataLeftBehindByADeletedUser() {
+        metadataMatches(USER_ID, OTHER_USER_ID);
+        Mockito.when(userManager.loadUsersById(Arrays.asList(USER_ID, OTHER_USER_ID)))
+                .thenReturn(Collections.singletonList(
+                        PipelineUser.builder().id(USER_ID).userName(USER_NAME).build()));
+        configure(mappedUser(), subjectClaims().claim(OWNER_CLAIM, OWNER_VALUE).build());
+
+        manager.exchange(SUBJECT_TOKEN);
+
+        assertThat(issuedClaims().getUserName()).isEqualTo(USER_NAME);
+    }
+
+    @Test
+    public void shouldRefuseWhenTheMappedClaimIsAbsentFromTheToken() {
+        configure(mappedUser(), subjectClaims().build());
+
+        assertThatThrownBy(() -> manager.exchange(SUBJECT_TOKEN))
+                .isInstanceOf(OidcTokenVerificationException.class)
+                .hasMessageContaining("has no value to map a user by");
+        Mockito.verifyZeroInteractions(metadataManager);
+    }
+
+    /**
+     * A claim that arrives as a JSON number still maps, since an identifier is as often sent that
+     * way as it is sent as a string.
+     */
+    @Test
+    public void shouldMapByAClaimThatArrivesAsANumber() {
+        Mockito.when(metadataManager.searchMetadataByClassAndKeyValue(
+                        AclClass.PIPELINE_USER, OWNER_KEY, String.valueOf(NUMERIC_CLAIM)))
+                .thenReturn(Collections.singletonList(new EntityVO(USER_ID, AclClass.PIPELINE_USER)));
+        repositoryReturns(USER_ID);
+        configure(mappedUser(), subjectClaims().claim(OWNER_CLAIM, NUMERIC_CLAIM).build());
+
+        manager.exchange(SUBJECT_TOKEN);
+
+        assertThat(issuedClaims().getUserName()).isEqualTo(USER_NAME);
+    }
+
+    /**
+     * The validator refuses an incomplete mapping, so reaching this means a preference written
+     * straight into the database. It is a configuration fault, and has to be reported as one: an
+     * invalid_grant would send an administrator looking for a problem at the identity provider.
+     */
+    @Test
+    public void shouldRefuseAnIncompleteMappingAsAClientFault() {
+        final OidcAssumeStrategy withoutMapping = mappedUser();
+        withoutMapping.setUserMapping(null);
+        configure(withoutMapping, subjectClaims().claim(OWNER_CLAIM, OWNER_VALUE).build());
+        assertThatThrownBy(() -> manager.exchange(SUBJECT_TOKEN))
+                .isInstanceOf(OidcClientNotAuthorizedException.class)
+                .hasMessageContaining("says nothing about how to map a user");
+
+        final OidcAssumeStrategy withoutKey = mappedUser();
+        withoutKey.setUserMapping(mapping(OWNER_CLAIM, null));
+        configure(withoutKey, subjectClaims().claim(OWNER_CLAIM, OWNER_VALUE).build());
+        assertThatThrownBy(() -> manager.exchange(SUBJECT_TOKEN))
+                .isInstanceOf(OidcClientNotAuthorizedException.class);
+
+        final OidcAssumeStrategy withoutClaim = mappedUser();
+        withoutClaim.setUserMapping(mapping(null, OWNER_KEY));
+        configure(withoutClaim, subjectClaims().claim(OWNER_CLAIM, OWNER_VALUE).build());
+        assertThatThrownBy(() -> manager.exchange(SUBJECT_TOKEN))
+                .isInstanceOf(OidcClientNotAuthorizedException.class);
+
+        Mockito.verifyZeroInteractions(metadataManager);
+    }
+
+    @Test
+    public void shouldRefuseAMappedUserOutsideTheClientsAllowedUsers() {
+        metadataMatches(USER_ID);
+        repositoryReturns(USER_ID);
+        final OidcAssumeStrategy strategy = mappedUser();
+        strategy.setAllowedUsers(Collections.singletonList("SOMEBODY_ELSE"));
+        configure(strategy, subjectClaims().claim(OWNER_CLAIM, OWNER_VALUE).build());
+
+        assertThatThrownBy(() -> manager.exchange(SUBJECT_TOKEN))
+                .isInstanceOf(OidcClientNotAuthorizedException.class)
+                .hasMessageContaining("may not act as");
+    }
+
+    /**
+     * A mapped user is still subject to the client's own limits, checked on the user the lookup
+     * arrived at rather than on anything the configuration named directly.
+     */
+    @Test
+    public void shouldRefuseAMappedUserTheClientMayNotActAs() {
+        metadataMatches(USER_ID);
+        repositoryReturns(USER_ID);
+        final OidcAssumeStrategy strategy = mappedUser();
+        strategy.setDeniedUsers(Collections.singletonList(USER_NAME));
+        configure(strategy, subjectClaims().claim(OWNER_CLAIM, OWNER_VALUE).build());
+
+        assertThatThrownBy(() -> manager.exchange(SUBJECT_TOKEN))
+                .isInstanceOf(OidcClientNotAuthorizedException.class)
+                .hasMessageContaining("denied acting as");
+    }
+=======
+
+    private static OidcAssumeStrategy mappedUser() {
+        final OidcAssumeStrategy strategy = new OidcAssumeStrategy();
+        strategy.setType(OidcAssumeStrategyType.MAPPED_USER);
+        strategy.setUserMapping(mapping(OWNER_CLAIM, OWNER_KEY));
+        return strategy;
+    }
+
+    private static OidcUserMapping mapping(final String claim, final String metadataKey) {
+        final OidcUserMapping mapping = new OidcUserMapping();
+        mapping.setClaim(claim);
+        mapping.setMetadataKey(metadataKey);
+        return mapping;
+    }
+
+    private void metadataMatches(final Long... userIds) {
+        Mockito.when(metadataManager.searchMetadataByClassAndKeyValue(
+                        AclClass.PIPELINE_USER, OWNER_KEY, OWNER_VALUE))
+                .thenReturn(Arrays.stream(userIds)
+                        .map(id -> new EntityVO(id, AclClass.PIPELINE_USER))
+                        .collect(Collectors.toList()));
+    }
+
+    /**
+     * The repository load is used for the name only, so it stands in here for what JPA really
+     * returns: the groups are transient and the roles lazy, so neither is populated.
+     */
+    private void repositoryReturns(final Long... userIds) {
+        Mockito.when(userManager.loadUsersById(Arrays.asList(userIds)))
+                .thenReturn(Arrays.stream(userIds)
+                        .map(id -> PipelineUser.builder()
+                                .id(id)
+                                .userName(USER_ID.equals(id) ? USER_NAME : "USER_" + id)
+                                .build())
+                        .collect(Collectors.toList()));
+    }
+
+    @Test
+    public void shouldIssueATokenForTheUserCarryingTheClaimValueInItsMetadata() {
+        metadataMatches(USER_ID);
+        repositoryReturns(USER_ID);
+        configure(mappedUser(), subjectClaims().claim(OWNER_CLAIM, OWNER_VALUE).build());
+
+        final OidcExchangedToken exchanged = manager.exchange(SUBJECT_TOKEN);
+
+        assertThat(exchanged.getToken()).isEqualTo(ISSUED_TOKEN);
+        assertThat(issuedClaims().getUserName()).isEqualTo(USER_NAME);
+        assertThat(issuedClaims().getUserId()).isEqualTo(String.valueOf(USER_ID));
+    }
+
+    /**
+     * The claim's value is what is looked for, under the configured attribute.
+     */
+    @Test
+    public void shouldLookTheUserUpByTheClaimValueUnderTheConfiguredMetadataKey() {
+        metadataMatches(USER_ID);
+        repositoryReturns(USER_ID);
+        configure(mappedUser(), subjectClaims().claim(OWNER_CLAIM, OWNER_VALUE).build());
+
+        manager.exchange(SUBJECT_TOKEN);
+
+        Mockito.verify(metadataManager)
+                .searchMetadataByClassAndKeyValue(AclClass.PIPELINE_USER, OWNER_KEY, OWNER_VALUE);
+    }
+
+    /**
+     * The mapped user has to be loaded the same way as a named one. The repository load that finds
+     * it by metadata gives back no groups and no roles — they are transient and lazy on the entity
+     * — so building the token from that object would quietly strip the permissions a user holds
+     * through a group, which is how storage access is usually granted.
+     */
+    @Test
+    public void shouldCarryTheRolesAndGroupsOfTheMappedUserIntoTheToken() {
+        storedUser(ROLE_USER, READER);
+        metadataMatches(USER_ID);
+        repositoryReturns(USER_ID);
+        configure(mappedUser(), subjectClaims().claim(OWNER_CLAIM, OWNER_VALUE).build());
+
+        manager.exchange(SUBJECT_TOKEN);
+
+        assertThat(issuedClaims().getRoles()).contains(ROLE_USER, READER);
+        assertThat(issuedClaims().getGroups()).containsExactly(GROUP);
+    }
+
+    @Test
+    public void shouldRefuseWhenNoUserCarriesTheClaimValue() {
+        metadataMatches();
+        configure(mappedUser(), subjectClaims().claim(OWNER_CLAIM, OWNER_VALUE).build());
+
+        assertThatThrownBy(() -> manager.exchange(SUBJECT_TOKEN))
+                .isInstanceOf(OidcTokenVerificationException.class)
+                .hasMessageContaining("No user has");
+    }
+
+    /**
+     * Choosing among several would hand out a token for an account nobody meant to expose, so an
+     * ambiguous mapping issues nothing at all.
+     */
+    @Test
+    public void shouldRefuseWhenTheMappingMatchesMoreThanOneUser() {
+        metadataMatches(USER_ID, OTHER_USER_ID);
+        repositoryReturns(USER_ID, OTHER_USER_ID);
+        configure(mappedUser(), subjectClaims().claim(OWNER_CLAIM, OWNER_VALUE).build());
+
+        assertThatThrownBy(() -> manager.exchange(SUBJECT_TOKEN))
+                .isInstanceOf(OidcTokenVerificationException.class)
+                .hasMessageContaining("matches 2 users");
+        Mockito.verify(jwtTokenGenerator, Mockito.never())
+                .encodeToken(Mockito.any(), Mockito.anyLong());
+    }
+
+    /**
+     * Metadata outlives the user it described, so a stale row must not break a mapping that still
+     * points at exactly one live user.
+     */
+    @Test
+    public void shouldIgnoreMetadataLeftBehindByADeletedUser() {
+        metadataMatches(USER_ID, OTHER_USER_ID);
+        Mockito.when(userManager.loadUsersById(Arrays.asList(USER_ID, OTHER_USER_ID)))
+                .thenReturn(Collections.singletonList(
+                        PipelineUser.builder().id(USER_ID).userName(USER_NAME).build()));
+        configure(mappedUser(), subjectClaims().claim(OWNER_CLAIM, OWNER_VALUE).build());
+
+        manager.exchange(SUBJECT_TOKEN);
+
+        assertThat(issuedClaims().getUserName()).isEqualTo(USER_NAME);
+    }
+
+    @Test
+    public void shouldRefuseWhenTheMappedClaimIsAbsentFromTheToken() {
+        configure(mappedUser(), subjectClaims().build());
+
+        assertThatThrownBy(() -> manager.exchange(SUBJECT_TOKEN))
+                .isInstanceOf(OidcTokenVerificationException.class)
+                .hasMessageContaining("has no value to map a user by");
+        Mockito.verifyNoInteractions(metadataManager);
+    }
+
+    /**
+     * A claim that arrives as a JSON number still maps, since an identifier is as often sent that
+     * way as it is sent as a string.
+     */
+    @Test
+    public void shouldMapByAClaimThatArrivesAsANumber() {
+        Mockito.when(metadataManager.searchMetadataByClassAndKeyValue(
+                        AclClass.PIPELINE_USER, OWNER_KEY, String.valueOf(NUMERIC_CLAIM)))
+                .thenReturn(Collections.singletonList(new EntityVO(USER_ID, AclClass.PIPELINE_USER)));
+        repositoryReturns(USER_ID);
+        configure(mappedUser(), subjectClaims().claim(OWNER_CLAIM, NUMERIC_CLAIM).build());
+
+        manager.exchange(SUBJECT_TOKEN);
+
+        assertThat(issuedClaims().getUserName()).isEqualTo(USER_NAME);
+    }
+
+    /**
+     * The validator refuses an incomplete mapping, so reaching this means a preference written
+     * straight into the database. It is a configuration fault, and has to be reported as one: an
+     * invalid_grant would send an administrator looking for a problem at the identity provider.
+     */
+    @Test
+    public void shouldRefuseAnIncompleteMappingAsAClientFault() {
+        final OidcAssumeStrategy withoutMapping = mappedUser();
+        withoutMapping.setUserMapping(null);
+        configure(withoutMapping, subjectClaims().claim(OWNER_CLAIM, OWNER_VALUE).build());
+        assertThatThrownBy(() -> manager.exchange(SUBJECT_TOKEN))
+                .isInstanceOf(OidcClientNotAuthorizedException.class)
+                .hasMessageContaining("says nothing about how to map a user");
+
+        final OidcAssumeStrategy withoutKey = mappedUser();
+        withoutKey.setUserMapping(mapping(OWNER_CLAIM, null));
+        configure(withoutKey, subjectClaims().claim(OWNER_CLAIM, OWNER_VALUE).build());
+        assertThatThrownBy(() -> manager.exchange(SUBJECT_TOKEN))
+                .isInstanceOf(OidcClientNotAuthorizedException.class);
+
+        final OidcAssumeStrategy withoutClaim = mappedUser();
+        withoutClaim.setUserMapping(mapping(null, OWNER_KEY));
+        configure(withoutClaim, subjectClaims().claim(OWNER_CLAIM, OWNER_VALUE).build());
+        assertThatThrownBy(() -> manager.exchange(SUBJECT_TOKEN))
+                .isInstanceOf(OidcClientNotAuthorizedException.class);
+
+        Mockito.verifyNoInteractions(metadataManager);
+    }
+
+    @Test
+    public void shouldRefuseAMappedUserOutsideTheClientsAllowedUsers() {
+        metadataMatches(USER_ID);
+        repositoryReturns(USER_ID);
+        final OidcAssumeStrategy strategy = mappedUser();
+        strategy.setAllowedUsers(Collections.singletonList("SOMEBODY_ELSE"));
+        configure(strategy, subjectClaims().claim(OWNER_CLAIM, OWNER_VALUE).build());
+
+        assertThatThrownBy(() -> manager.exchange(SUBJECT_TOKEN))
+                .isInstanceOf(OidcClientNotAuthorizedException.class)
+                .hasMessageContaining("may not act as");
+    }
+
+    /**
+     * A mapped user is still subject to the client's own limits, checked on the user the lookup
+     * arrived at rather than on anything the configuration named directly.
+     */
+    @Test
+    public void shouldRefuseAMappedUserTheClientMayNotActAs() {
+        metadataMatches(USER_ID);
+        repositoryReturns(USER_ID);
+        final OidcAssumeStrategy strategy = mappedUser();
+        strategy.setDeniedUsers(Collections.singletonList(USER_NAME));
+        configure(strategy, subjectClaims().claim(OWNER_CLAIM, OWNER_VALUE).build());
+
+        assertThatThrownBy(() -> manager.exchange(SUBJECT_TOKEN))
+                .isInstanceOf(OidcClientNotAuthorizedException.class)
+                .hasMessageContaining("denied acting as");
+    }
+>>>>>>> theirs
 }

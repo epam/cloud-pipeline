@@ -31,8 +31,20 @@ import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
 import com.epam.pipeline.entity.pipeline.*;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.security.acl.AclPermission;
+<<<<<<< ours
 import org.junit.Before;
 import org.junit.Test;
+||||||| base
+import com.epam.pipeline.test.acl.AbstractAclTest;
+import com.epam.pipeline.test.creator.configuration.ConfigurationCreatorUtils;
+import com.epam.pipeline.test.creator.folder.FolderCreatorUtils;
+import org.junit.Test;
+=======
+import com.epam.pipeline.test.acl.AbstractAclTest;
+import com.epam.pipeline.test.creator.configuration.ConfigurationCreatorUtils;
+import com.epam.pipeline.test.creator.folder.FolderCreatorUtils;
+import org.junit.jupiter.api.Test;
+>>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -44,6 +56,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collections;
 import java.util.List;
 
+<<<<<<< ours
 import static com.epam.pipeline.manager.ObjectCreatorUtils.*;
 
 @DirtiesContext
@@ -59,6 +72,23 @@ public class RunConfigurationApiServiceTest extends AbstractManagerTest {
     private static final String TOOL_GROUP_NAME = "repository/TEST_USER_1";
     private static final String TEST_REPO = "///";
     private static final String TEST_REPO_SSH = "git@test";
+||||||| base
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+=======
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+>>>>>>> theirs
 
     @Autowired
     private RunConfigurationApiService runConfigurationApiService;

@@ -30,8 +30,18 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
+<<<<<<< ours
 import org.junit.Before;
 import org.junit.Test;
+||||||| base
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.junit.Before;
+import org.junit.Test;
+=======
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+>>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,9 +51,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.TimeZone;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Transactional
 public class RunScheduleDaoTest extends AbstractSpringTest {
@@ -83,7 +93,7 @@ public class RunScheduleDaoTest extends AbstractSpringTest {
     private RunSchedule testUpdatedRunSchedule2;
     private RunSchedule testConfRunSchedule;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         testPipeline = new Pipeline();
         testPipeline.setName(TEST_NAME);

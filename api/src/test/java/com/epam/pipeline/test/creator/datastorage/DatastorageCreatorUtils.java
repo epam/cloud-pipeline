@@ -17,6 +17,7 @@
 package com.epam.pipeline.test.creator.datastorage;
 
 import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.dto.async.AsyncTask;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
@@ -49,6 +50,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -61,6 +63,8 @@ public final class DatastorageCreatorUtils {
 
     public static final TypeReference<Result<List<S3bucketDataStorage>>> S3BUCKET_LIST_TYPE =
             new TypeReference<Result<List<S3bucketDataStorage>>>() { };
+    public static final TypeReference<Result<AsyncTask>> ASYNC_TASK_TYPE =
+            new TypeReference<Result<AsyncTask>>() { };
     public static final TypeReference<Result<List<DataStorageWithShareMount>>> DS_WITH_SHARE_MOUNT_TYPE =
             new TypeReference<Result<List<DataStorageWithShareMount>>>() { };
     public static final TypeReference<Result<S3bucketDataStorage>> S3_BUCKET_TYPE =
@@ -220,6 +224,27 @@ public final class DatastorageCreatorUtils {
         return dataStorageRule;
     }
 
+<<<<<<< ours
+||||||| base
+    public static DataStorageTag getDataStorageTag() {
+        return new DataStorageTag(getDataStorageObject(), TEST_STRING, TEST_STRING, TEST_LOCAL_DATE_TIME);
+    }
+
+    private static DataStorageObject getDataStorageObject() {
+        return new DataStorageObject(TEST_STRING, TEST_STRING);
+    }
+
+=======
+    public static DataStorageTag getDataStorageTag() {
+        return new DataStorageTag(getDataStorageObject(), TEST_STRING, TEST_STRING,
+                TEST_LOCAL_DATE_TIME.truncatedTo(ChronoUnit.MILLIS));
+    }
+
+    private static DataStorageObject getDataStorageObject() {
+        return new DataStorageObject(TEST_STRING, TEST_STRING);
+    }
+
+>>>>>>> theirs
     public static TemporaryCredentials getTemporaryCredentials() {
         return new TemporaryCredentials(TEST_STRING, TEST_STRING, TEST_STRING, TEST_STRING, TEST_STRING);
     }

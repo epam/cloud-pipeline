@@ -27,8 +27,8 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -40,7 +40,21 @@ import java.util.List;
 import static com.epam.pipeline.assertions.tool.ToolAssertions.assertRegistryGroups;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.*;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.*;
+<<<<<<< ours
 import static org.mockito.Matchers.any;
+||||||| base
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyString;
+=======
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+>>>>>>> theirs
 import static org.mockito.Mockito.doReturn;
 
 public class DockerRegistryManagerUnitTest {
@@ -65,9 +79,8 @@ public class DockerRegistryManagerUnitTest {
     @InjectMocks
     private DockerRegistryManager dockerRegistryManager;
 
-    @Before
-    public void setUp() throws Exception {
-        MockitoAnnotations.initMocks(this);
+    @BeforeEach    public void setUp() throws Exception {
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test

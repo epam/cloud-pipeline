@@ -30,8 +30,8 @@ import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.google.common.collect.Maps;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -41,7 +41,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -70,8 +70,7 @@ public class MetadataManagerUnitTest {
     @InjectMocks
     private MetadataManager metadataManager;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach    public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
     }
 

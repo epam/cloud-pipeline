@@ -3,10 +3,12 @@ package com.epam.pipeline.entity.cluster;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 import org.apache.commons.lang3.StringUtils;
 
 @Value
 @Builder(toBuilder = true)
+@Jacksonized
 public class GpuDevice {
 
     String name;

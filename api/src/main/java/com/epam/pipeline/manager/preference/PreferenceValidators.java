@@ -24,6 +24,7 @@ import com.amazonaws.services.kms.AWSKMS;
 import com.amazonaws.services.kms.AWSKMSClientBuilder;
 import com.amazonaws.services.kms.model.KeyListEntry;
 import com.epam.pipeline.config.JsonMapper;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationMonitorSettings;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
@@ -147,12 +148,13 @@ public final class PreferenceValidators {
     };
 
 
-    public static final BiPredicate<String, Map<String, Preference>> isEmptyOrValidBatchOfPaths = (pref, dependencies) ->
-            pref.isEmpty() || Arrays.stream(pref.split(",")).allMatch(s -> s.matches("[^\0 \n]+[^\\/]")
-                    || "/".equals(s) || "\\".equals(s));
+    public static final BiPredicate<String, Map<String, Preference>> isEmptyOrValidBatchOfPaths =
+        (pref, dependencies) -> pref.isEmpty() || Arrays.stream(pref.split(","))
+            .allMatch(s -> s.matches("[^\0 \n]+[^\\/]") || "/".equals(s) || "\\".equals(s));
 
-    public static final BiPredicate<String, Map<String, Preference>> isEmptyOrValidBatchOfOSes = (pref, dependencies) ->
-            pref.isEmpty() || Arrays.stream(pref.split(",")).allMatch(s -> s.matches("\\w+:?[\\w.\\-_]*"));
+    public static final BiPredicate<String, Map<String, Preference>> isEmptyOrValidBatchOfOSes =
+        (pref, dependencies) -> pref.isEmpty() || Arrays.stream(pref.split(","))
+            .allMatch(s -> s.matches("\\w+:?[\\w.\\-_]*"));
 
     public static BiPredicate<String, Map<String, Preference>> isGreaterThan(long x) {
         return (pref, dependencies) -> StringUtils.isNumeric(pref) && Long.parseLong(pref) > x;
@@ -160,14 +162,30 @@ public final class PreferenceValidators {
 
     public static BiPredicate<String, Map<String, Preference>> isNullOrGreaterThan(int x) {
         return (pref, dependencies) -> StringUtils.isBlank(pref)
+<<<<<<< ours
                 || StringUtils.isNumeric(pref) && Long.parseLong(pref) > x;
+||||||| base
+                || (StringUtils.isNumeric(pref) && Long.parseLong(pref) > x);
+=======
+            || (StringUtils.isNumeric(pref) && Long.parseLong(pref) > x);
+>>>>>>> theirs
     }
 
     public static BiPredicate<String, Map<String, Preference>> isNotLessThanValueOrNull(String key) {
         return (pref, dependencies) -> {
+<<<<<<< ours
             Long valueToCompare = dependencies.containsKey(key) ? dependencies.get(key).get(Long::parseLong) : Long.MIN_VALUE;
             return StringUtils.isBlank(pref) ||
                     StringUtils.isNumeric(pref) && Long.parseLong(pref) >= valueToCompare;
+||||||| base
+            Long valueToCompare = dependencies.containsKey(key) ? dependencies.get(key).get(Long::parseLong) : Long.MIN_VALUE;
+            return StringUtils.isBlank(pref) ||
+                    (StringUtils.isNumeric(pref) && Long.parseLong(pref) >= valueToCompare);
+=======
+            Long valueToCompare = dependencies.containsKey(key) ?
+                dependencies.get(key).get(Long::parseLong) : Long.MIN_VALUE;
+            return StringUtils.isBlank(pref) || (StringUtils.isNumeric(pref) && Long.parseLong(pref) >= valueToCompare);
+>>>>>>> theirs
         };
     }
 
@@ -276,7 +294,8 @@ public final class PreferenceValidators {
 
     public static final BiPredicate<String, Map<String, Preference>> isClusterInstanceTypeAllowed =
         (pref, dependencies) -> {
-            Preference allowedInstanceTypes = dependencies.get(SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES.getKey());
+            Preference allowedInstanceTypes = dependencies
+                .get(SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES.getKey());
             return Arrays.stream(allowedInstanceTypes.getValue().split(","))
                 .anyMatch(type -> {
                     AntPathMatcher matcher = new AntPathMatcher();
@@ -313,7 +332,7 @@ public final class PreferenceValidators {
                 .and((pref, dependencies) -> {
                     final List<OSSpecificLaunchCommandTemplate> commandsByImage =
                         JsonMapper.parseData(pref, new TypeReference<List<OSSpecificLaunchCommandTemplate>>() {});
-                    if (commandsByImage.stream().noneMatch(c -> c.getOs().equals("*") || c.getOs().equals("all"))) {
+                    if (commandsByImage.stream().noneMatch(c -> c.os().equals("*") || c.os().equals("all"))) {
                         throw new IllegalArgumentException(
                                 "List of commands doesn't contain default entry with key: '*' or 'all'"
                         );
@@ -331,6 +350,157 @@ public final class PreferenceValidators {
         return true;
     };
 
+<<<<<<< ours
+||||||| base
+    public static final BiPredicate<String, Map<String, Preference>> isValidSearchExportTemplateConfig =
+            isNullOrValidJson(new TypeReference<Map<String, SearchTemplateExportConfig>>() {})
+                    .and((pref, dependencies) -> {
+                        final Map<String, SearchTemplateExportConfig> configurations = JsonMapper.parseData(pref,
+                                new TypeReference<Map<String, SearchTemplateExportConfig>>() {});
+                        configurations.forEach(PreferenceValidators::validateSearchExportTemplate);
+                        return true;
+                    });
+
+    private static void validateSearchExportTemplate(final String templateId,
+                                                     final SearchTemplateExportConfig configuration) {
+        final String messagePattern = "Failed to persist template '%s': %s.";
+        Assert.state(StringUtils.isNotBlank(configuration.getTemplatePath()),
+                String.format(messagePattern, templateId, "'template_path' field is required."));
+        Assert.state(MapUtils.isNotEmpty(configuration.getMapping()),
+                String.format(messagePattern, templateId, "No mappings provided."));
+        Assert.state(configuration.getMapping().values().stream()
+                        .flatMap(Collection::stream)
+                        .map(SearchTemplateExportSheetMapping::getStartRow)
+                        .filter(Objects::nonNull)
+                        .noneMatch(value -> value < 1),
+                String.format(messagePattern, templateId, "Row start value shall be greater that 0."));
+    }
+
+    public static final BiPredicate<String, Map<String, Preference>> isValidIdleMonitoringConfig =
+        isNullOrValidJson(new TypeReference<List<IdleMonitoringConfig>>() {})
+            .and((pref, dependencies) -> {
+                if (StringUtils.isBlank(pref)) {
+                    return true;
+                }
+                final List<IdleMonitoringConfig> configs =
+                    JsonMapper.parseData(pref, new TypeReference<List<IdleMonitoringConfig>>() {});
+                ListUtils.emptyIfNull(configs).forEach(PreferenceValidators::validateIdleMonitoringConfig);
+                return true;
+            });
+
+    private static void validateIdleMonitoringConfig(final IdleMonitoringConfig config) {
+        Assert.state(config.getType() != null,
+                "Idle monitoring config entry is missing required field 'type'.");
+        Assert.state(config.getAction() != null,
+                "Idle monitoring config entry is missing required field 'action'.");
+        Assert.state(config.getActionTimeoutMinutes() != null,
+                "Idle monitoring config entry is missing required field 'actionTimeoutMinutes'.");
+        switch (config.getType()) {
+            case CPU:
+                Assert.state(config.getThresholdPercent() != null,
+                        "CPU idle monitoring config requires 'thresholdPercent'.");
+                Assert.state(config.getGracePeriodMinutes() != null,
+                        "CPU idle monitoring config requires 'gracePeriodMinutes'.");
+                break;
+            case GPU:
+                Assert.state(config.getGracePeriodMinutes() != null,
+                        "GPU idle monitoring config requires 'gracePeriodMinutes'.");
+                Assert.state(config.getThresholdPercent() == null,
+                        "GPU idle monitoring config can't have 'thresholdPercent'.");
+                break;
+            case ABSOLUTE:
+                Assert.state(config.getThresholdPercent() == null,
+                        "ABSOLUTE idle monitoring config must not specify 'thresholdPercent'.");
+                Assert.state(config.getGracePeriodMinutes() == null,
+                        "ABSOLUTE idle monitoring config must not specify 'gracePeriodMinutes'.");
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown idle monitoring type: " + config.getType());
+        }
+    }
+
+=======
+    public static final BiPredicate<String, Map<String, Preference>> isValidSearchExportTemplateConfig =
+            isNullOrValidJson(new TypeReference<Map<String, SearchTemplateExportConfig>>() {})
+                    .and((pref, dependencies) -> {
+                        final Map<String, SearchTemplateExportConfig> configurations = JsonMapper.parseData(pref,
+                                new TypeReference<Map<String, SearchTemplateExportConfig>>() {});
+                        configurations.forEach(PreferenceValidators::validateSearchExportTemplate);
+                        return true;
+                    });
+
+    private static void validateSearchExportTemplate(final String templateId,
+                                                     final SearchTemplateExportConfig configuration) {
+        final String messagePattern = "Failed to persist template '%s': %s.";
+        Assert.state(StringUtils.isNotBlank(configuration.getTemplatePath()),
+                String.format(messagePattern, templateId, "'template_path' field is required."));
+        Assert.state(MapUtils.isNotEmpty(configuration.getMapping()),
+                String.format(messagePattern, templateId, "No mappings provided."));
+        Assert.state(configuration.getMapping().values().stream()
+                        .flatMap(Collection::stream)
+                        .map(SearchTemplateExportSheetMapping::getStartRow)
+                        .filter(Objects::nonNull)
+                        .noneMatch(value -> value < 1),
+                String.format(messagePattern, templateId, "Row start value shall be greater that 0."));
+    }
+
+    public static final BiPredicate<String, Map<String, Preference>> isValidCapacityReservationMonitorSettings =
+        isNullOrValidJson(new TypeReference<CapacityReservationMonitorSettings>() {})
+            .and((pref, dependencies) -> {
+                Assert.state(StringUtils.isNotBlank(pref), "Capacity reservation monitor settings are required.");
+                final CapacityReservationMonitorSettings settings =
+                    JsonMapper.parseData(pref, new TypeReference<CapacityReservationMonitorSettings>() {});
+                Assert.state(settings != null && settings.getFinalizingLeadHours() != null,
+                        "Capacity reservation monitor settings require 'finalizingLeadHours'.");
+                Assert.state(settings.getFinalizingLeadHours() >= 0,
+                        "Capacity reservation monitor setting 'finalizingLeadHours' cannot be negative.");
+                return true;
+            });
+
+    public static final BiPredicate<String, Map<String, Preference>> isValidIdleMonitoringConfig =
+        isNullOrValidJson(new TypeReference<List<IdleMonitoringConfig>>() {})
+            .and((pref, dependencies) -> {
+                if (StringUtils.isBlank(pref)) {
+                    return true;
+                }
+                final List<IdleMonitoringConfig> configs =
+                    JsonMapper.parseData(pref, new TypeReference<List<IdleMonitoringConfig>>() {});
+                ListUtils.emptyIfNull(configs).forEach(PreferenceValidators::validateIdleMonitoringConfig);
+                return true;
+            });
+
+    private static void validateIdleMonitoringConfig(final IdleMonitoringConfig config) {
+        Assert.state(config.type() != null,
+                "Idle monitoring config entry is missing required field 'type'.");
+        Assert.state(config.action() != null,
+                "Idle monitoring config entry is missing required field 'action'.");
+        Assert.state(config.actionTimeoutMinutes() != null,
+                "Idle monitoring config entry is missing required field 'actionTimeoutMinutes'.");
+        switch (config.type()) {
+            case CPU:
+                Assert.state(config.thresholdPercent() != null,
+                        "CPU idle monitoring config requires 'thresholdPercent'.");
+                Assert.state(config.gracePeriodMinutes() != null,
+                        "CPU idle monitoring config requires 'gracePeriodMinutes'.");
+                break;
+            case GPU:
+                Assert.state(config.gracePeriodMinutes() != null,
+                        "GPU idle monitoring config requires 'gracePeriodMinutes'.");
+                Assert.state(config.thresholdPercent() == null,
+                        "GPU idle monitoring config can't have 'thresholdPercent'.");
+                break;
+            case ABSOLUTE:
+                Assert.state(config.thresholdPercent() == null,
+                        "ABSOLUTE idle monitoring config must not specify 'thresholdPercent'.");
+                Assert.state(config.gracePeriodMinutes() == null,
+                        "ABSOLUTE idle monitoring config must not specify 'gracePeriodMinutes'.");
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown idle monitoring type: " + config.type());
+        }
+    }
+
+>>>>>>> theirs
     private PreferenceValidators() {
         // No-op
     }

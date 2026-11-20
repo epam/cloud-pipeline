@@ -38,6 +38,7 @@ import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
+<<<<<<< ours
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.UserContext;
@@ -52,7 +53,19 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
+||||||| base
+import org.junit.Before;
+import org.junit.Test;
+=======
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+import org.junit.jupiter.api.Test;
+>>>>>>> theirs
 import org.mockito.Mock;
+<<<<<<< ours
 import org.mockito.MockitoAnnotations;
 import org.mockito.internal.util.reflection.Whitebox;
 import org.springframework.scheduling.TaskScheduler;
@@ -60,6 +73,10 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+||||||| base
+import org.mockito.MockitoAnnotations;
+=======
+>>>>>>> theirs
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -85,7 +102,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+<<<<<<< ours
 @SuppressWarnings("PMD.TooManyStaticImports")
+||||||| base
+=======
+@MockitoSettings(strictness = Strictness.LENIENT)
+@ExtendWith(MockitoExtension.class)
+>>>>>>> theirs
 public class ResourceMonitoringManagerTest {
     private static final long TEST_OK_RUN_ID = 1;
     private static final double TEST_OK_RUN_CPU_LOAD = 800.0;
@@ -167,6 +190,7 @@ public class ResourceMonitoringManagerTest {
 
     private Map<String, Double> mockStats;
 
+<<<<<<< ours
     @Before
     @SuppressWarnings("checkstyle:MethodLength")
     public void setUp() throws Exception {
@@ -631,6 +655,24 @@ public class ResourceMonitoringManagerTest {
         verify(pipelineRunManager, never()).stop(TEST_IDLE_SPOT_RUN_ID);
 
         verify(notificationManager, never()).notifyIdleRuns(any(), eq(NotificationType.IDLE_RUN_STOPPED));
+||||||| base
+    @Before
+    public void setUp() {
+        MockitoAnnotations.initMocks(this);
+        when(firstMonitor.order()).thenReturn(0);
+        when(secondMonitor.order()).thenReturn(1);
+        core = new ResourceMonitoringManager.ResourceMonitoringManagerCore(
+                pipelineRunManager, monitoringESDao, preferenceManager,
+                Arrays.asList(secondMonitor, firstMonitor));
+=======
+    @BeforeEach
+    public void setUp() {
+        when(firstMonitor.order()).thenReturn(0);
+        when(secondMonitor.order()).thenReturn(1);
+        core = new ResourceMonitoringManager.ResourceMonitoringManagerCore(
+                pipelineRunManager, monitoringESDao, preferenceManager,
+                Arrays.asList(secondMonitor, firstMonitor));
+>>>>>>> theirs
     }
 
     @Test

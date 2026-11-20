@@ -24,25 +24,26 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.UserContext;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Date;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.isNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 @SuppressWarnings("PMD.UnusedPrivateField")
 public class PipelineLauncherApiTokenTest {
 
@@ -69,11 +70,12 @@ public class PipelineLauncherApiTokenTest {
     private final PipelineUser ownerUser = PipelineUser.builder().id(OWNER_ID).userName(OWNER).build();
     private final UserContext ownerContext = new UserContext(ownerUser);
 
-    @Before
+    @BeforeEach
     public void setUp() {
         doReturn(new Preference()).when(preferenceManager).getSystemPreference(any());
         doReturn(ownerUser).when(userManager).loadByNameOrId(OWNER);
-        doReturn(new JwtRawToken(OWNER_TOKEN)).when(authManager).issueToken(eq(ownerContext), isNull(Long.class));
+        lenient().doReturn(new JwtRawToken(OWNER_TOKEN)).when(authManager)
+                .issueToken(eq(ownerContext), isNull(Long.class));
     }
 
     @Test

@@ -31,7 +31,15 @@ import com.epam.pipeline.utils.CommonUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.collections4.CollectionUtils;
+<<<<<<< ours
 import org.springframework.beans.factory.annotation.Required;
+||||||| base
+import org.apache.commons.collections4.ListUtils;
+import org.springframework.beans.factory.annotation.Required;
+=======
+import org.apache.commons.collections4.ListUtils;
+
+>>>>>>> theirs
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.transaction.annotation.Propagation;
@@ -40,6 +48,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class RunLogDao extends DryRunJdbcDaoSupport {
 
+<<<<<<< ours
     private String createPipelineLogQuery;
     private String loadAllLogsByRunIdQuery;
     private String loadAllLogsForTaskQuery;
@@ -47,6 +56,29 @@ public class RunLogDao extends DryRunJdbcDaoSupport {
     private String loadTaskForInstanceQuery;
     private String loadTaskStatusQuery;
     private String deleteRunLogByRunIdsQuery;
+||||||| base
+    @Setter(onMethod_={@Required}) private String createPipelineLogQuery;
+    @Setter(onMethod_={@Required}) private String loadLogsByRunIdQueryDesc;
+    @Setter(onMethod_={@Required}) private String loadLogsByRunIdQueryAsc;
+    @Setter(onMethod_={@Required}) private String loadLogsForTaskQueryDesc;
+    @Setter(onMethod_={@Required}) private String loadLogsForTaskQueryAsc;
+    @Setter(onMethod_={@Required}) private String loadTasksByRunIdQuery;
+    @Setter(onMethod_={@Required}) private String loadTaskForInstanceQuery;
+    @Setter(onMethod_={@Required}) private String loadTaskStatusQuery;
+    @Setter(onMethod_={@Required}) private String deleteRunLogByRunIdsQuery;
+    @Setter(onMethod_={@Required}) private String loadAllLogsByRunIdQuery;
+=======
+    @Setter private String createPipelineLogQuery;
+    @Setter private String loadLogsByRunIdQueryDesc;
+    @Setter private String loadLogsByRunIdQueryAsc;
+    @Setter private String loadLogsForTaskQueryDesc;
+    @Setter private String loadLogsForTaskQueryAsc;
+    @Setter private String loadTasksByRunIdQuery;
+    @Setter private String loadTaskForInstanceQuery;
+    @Setter private String loadTaskStatusQuery;
+    @Setter private String deleteRunLogByRunIdsQuery;
+    @Setter private String loadAllLogsByRunIdQuery;
+>>>>>>> theirs
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void createRunLog(RunLog runLog) {

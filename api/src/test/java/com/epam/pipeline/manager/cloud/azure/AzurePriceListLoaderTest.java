@@ -16,14 +16,25 @@
 
 package com.epam.pipeline.manager.cloud.azure;
 
+
+import com.azure.resourcemanager.compute.models.ResourceSkuCapabilities;
+import com.azure.resourcemanager.compute.fluent.models.ResourceSkuInner;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.pricing.azure.AzureEAPricingMeter;
 import com.epam.pipeline.entity.pricing.azure.AzurePricingMeter;
 import com.epam.pipeline.entity.pricing.azure.AzureRateCardPricingMeter;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
+<<<<<<< ours
 import com.microsoft.azure.management.compute.ResourceSkuCapabilities;
 import com.microsoft.azure.management.compute.implementation.ResourceSkuInner;
 import org.junit.Test;
+||||||| base
+import com.azure.resourcemanager.compute.models.ResourceSkuCapabilities;
+import com.azure.resourcemanager.compute.fluent.models.ResourceSkuInner;
+import org.junit.Test;
+=======
+import org.junit.jupiter.api.Test;
+>>>>>>> theirs
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Arrays;
@@ -33,7 +44,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.epam.pipeline.manager.cloud.CloudInstancePriceService.HOURS_UNIT;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AzurePriceListLoaderTest {
 

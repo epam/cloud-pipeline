@@ -16,6 +16,18 @@
 
 package com.epam.pipeline.manager.metadata;
 
+<<<<<<< ours
+||||||| base
+import static com.epam.pipeline.util.CategoricalAttributeTestUtils.extractAttributesContent;
+import static org.mockito.Matchers.eq;
+
+=======
+import static com.epam.pipeline.util.CategoricalAttributeTestUtils.extractAttributesContent;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
+
+>>>>>>> theirs
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
@@ -23,9 +35,22 @@ import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.exception.MetadataReadingException;
 import org.apache.commons.io.IOUtils;
+<<<<<<< ours
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+||||||| base
+import org.hamcrest.CoreMatchers;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mockito;
+=======
+import org.hamcrest.CoreMatchers;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+>>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockMultipartFile;
 
@@ -33,6 +58,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class MetadataManagerTest extends AbstractSpringTest {
 
@@ -53,8 +80,7 @@ public class MetadataManagerTest extends AbstractSpringTest {
     private static final String TSV_FILE_NAME = "test_file.tsv";
     private static final String CSV_FILE_NAME = "test_file.csv";
 
-    @Before
-    public void setup() {
+    @BeforeEach    public void setup() {
         expectedData.put(KEY_1, new PipeConfValue(TYPE, VALUE_1));
         expectedData.put(KEY_2, new PipeConfValue(TYPE, VALUE_2));
         metadataEntry.setEntity(entityVO);
@@ -111,55 +137,331 @@ public class MetadataManagerTest extends AbstractSpringTest {
         assertFileContent(exampleContent, CSV_FILE_NAME);
     }
 
+<<<<<<< ours
     @Test(expected = MetadataReadingException.class)
     public void metadataFileShouldFailWithoutHeader() throws IOException {
-        String exampleContent = simpleContent("\t", false);
-        assertFileContent(exampleContent, TSV_FILE_NAME);
+||||||| base
+    @Test
+    @Transactional
+    public void syncWithCategoricalAttributes() {
+        preferenceManager.update(Collections.singletonList(new Preference(
+            SystemPreferences.MISC_METADATA_SENSITIVE_KEYS.getKey(),
+            String.format("[\"%s\"]", SENSITIVE_KEY))));
+        Assert.assertEquals(0, categoricalAttributeManager.loadAll().size());
+        Mockito.doReturn(new PipelineUser(TEST_USER)).when(entityManager)
+                .load(eq(AclClass.PIPELINE_USER), Mockito.anyLong());
+        final EntityVO entityVO = new EntityVO(USER_ENTITY_ID, AclClass.PIPELINE_USER);
+        final Map<String, PipeConfValue> data = new HashMap<>();
+        data.put(KEY_1, new PipeConfValue(TYPE, VALUE_1));
+        data.put(KEY_2, new PipeConfValue(TYPE, VALUE_2));
+        data.put(SENSITIVE_KEY, new PipeConfValue(TYPE, VALUE_2));
+        final MetadataVO metadataVO = new MetadataVO();
+        metadataVO.setEntity(entityVO);
+        metadataVO.setData(data);
+        metadataManager.updateMetadataItem(metadataVO);
+        metadataManager.syncWithCategoricalAttributes();
+
+        final Map<String, List<String>> categoricalAttributesAfterSync =
+            extractAttributesContent(categoricalAttributeManager.loadAll());
+        Assert.assertEquals(2, categoricalAttributesAfterSync.size());
+        Assert.assertThat(categoricalAttributesAfterSync.get(KEY_1),
+                          CoreMatchers.is(Collections.singletonList(VALUE_1)));
+        Assert.assertThat(categoricalAttributesAfterSync.get(KEY_2),
+                   CoreMatchers.is(Collections.singletonList(VALUE_2)));
+        Assert.assertFalse(categoricalAttributesAfterSync.containsKey(SENSITIVE_KEY));
+    }
+
+    @Test
+    @Transactional
+    public void syncWithCategoricalAttributesWithoutSensitiveKeys() {
+        Assert.assertEquals(0, categoricalAttributeManager.loadAll().size());
+        Mockito.doReturn(new PipelineUser(TEST_USER)).when(entityManager)
+                .load(eq(AclClass.PIPELINE_USER), Mockito.anyLong());
+        final EntityVO entityVO = new EntityVO(USER_ENTITY_ID, AclClass.PIPELINE_USER);
+        final Map<String, PipeConfValue> data = new HashMap<>();
+        data.put(KEY_1, new PipeConfValue(TYPE, VALUE_1));
+        data.put(KEY_2, new PipeConfValue(TYPE, VALUE_2));
+        final MetadataVO metadataVO = new MetadataVO();
+        metadataVO.setEntity(entityVO);
+        metadataVO.setData(data);
+        metadataManager.updateMetadataItem(metadataVO);
+        metadataManager.syncWithCategoricalAttributes();
+
+        final Map<String, List<String>> categoricalAttributesAfterSync =
+            extractAttributesContent(categoricalAttributeManager.loadAll());
+        Assert.assertEquals(2, categoricalAttributesAfterSync.size());
+        Assert.assertThat(categoricalAttributesAfterSync.get(KEY_1),
+                          CoreMatchers.is(Collections.singletonList(VALUE_1)));
+        Assert.assertThat(categoricalAttributesAfterSync.get(KEY_2),
+                   CoreMatchers.is(Collections.singletonList(VALUE_2)));
+    }
+
+    @Test
+    @Transactional
+    public void testThatEntityCouldBeSearchedByClassAndKeyOnly() {
+        Mockito.doReturn(new PipelineUser(TEST_USER)).when(entityManager)
+                .load(eq(AclClass.PIPELINE_USER), Mockito.anyLong());
+
+        final EntityVO entityVO = new EntityVO(USER_ENTITY_ID, AclClass.PIPELINE_USER);
+        final Map<String, PipeConfValue> data = new HashMap<>();
+        data.put(KEY_1, new PipeConfValue(TYPE, VALUE_1));
+        final MetadataVO metadataVO = new MetadataVO();
+        metadataVO.setEntity(entityVO);
+        metadataVO.setData(data);
+        metadataManager.updateMetadataItem(metadataVO);
+
+        List<EntityVO> result = metadataManager.searchMetadataByClassAndKeyValue(
+                AclClass.PIPELINE_USER, KEY_1, VALUE_2);
+
+        Assert.assertTrue(result.isEmpty());
+
+        result = metadataManager.searchMetadataByClassAndKeyValue(
+                AclClass.PIPELINE_USER, KEY_1, null);
+
+        Assert.assertFalse(result.isEmpty());
+    }
+
+    @Test
+    @Transactional
+    public void testThatSecretMetadataWillBeHidedDuringSearch() {
+        Mockito.doReturn(new PipelineUser(TEST_USER)).when(entityManager)
+                .load(eq(AclClass.PIPELINE_USER), Mockito.anyLong());
+
+        final EntityVO entityVO = new EntityVO(USER_ENTITY_ID, AclClass.PIPELINE_USER);
+        final Map<String, PipeConfValue> data = new HashMap<>();
+        data.put(KEY_1, new PipeConfValue(SECRET_TYPE, VALUE_1));
+        final MetadataVO metadataVO = new MetadataVO();
+        metadataVO.setEntity(entityVO);
+        metadataVO.setData(data);
+        metadataManager.updateMetadataItem(metadataVO);
+
+        // We can find entities by specific secret metadata key
+        List<EntityVO> searchResult = metadataManager.searchMetadataByClassAndKeyValue(
+                AclClass.PIPELINE_USER, KEY_1, null);
+        Assert.assertFalse(searchResult.isEmpty());
+
+        // And we can list specific secret metadata by key
+        List<MetadataEntry> loadResultByKey = metadataManager
+                .listMetadataItemsByKey(KEY_1, Collections.singletonList(entityVO));
+        Assert.assertFalse(loadResultByKey.isEmpty());
+        Assert.assertFalse(loadResultByKey.get(0).getData().isEmpty());
+
+        // But we can't see the value of the secret when list all metadata for the entity
+        List<MetadataEntry> loadResult = metadataManager.listMetadataItems(Collections.singletonList(entityVO));
+        Assert.assertFalse(loadResult.isEmpty());
+        Assert.assertFalse(loadResult.get(0).getData().isEmpty());
+        Assert.assertEquals(MetadataDao.SECRET_MASK_VALUE, loadResult.get(0).getData().get(KEY_1).getValue());
     }
 
     @Test(expected = MetadataReadingException.class)
-    public void metadataFileShouldFailWithExtraColumnInHeader() throws IOException {
-        String exampleContent = TSV_HEADER + "Id\n" + simpleContent("\t", false);
-        assertFileContent(exampleContent, TSV_FILE_NAME);
+    public void metadataFileShouldFailWithoutHeader() throws IOException {
+=======
+    @Test
+    @Transactional
+    public void syncWithCategoricalAttributes() {
+        preferenceManager.update(Collections.singletonList(new Preference(
+            SystemPreferences.MISC_METADATA_SENSITIVE_KEYS.getKey(),
+            String.format("[\"%s\"]", SENSITIVE_KEY))));
+        assertEquals(0, categoricalAttributeManager.loadAll().size());
+        Mockito.doReturn(new PipelineUser(TEST_USER)).when(entityManager)
+                .load(eq(AclClass.PIPELINE_USER), Mockito.anyLong());
+        final EntityVO entityVO = new EntityVO(USER_ENTITY_ID, AclClass.PIPELINE_USER);
+        final Map<String, PipeConfValue> data = new HashMap<>();
+        data.put(KEY_1, new PipeConfValue(TYPE, VALUE_1));
+        data.put(KEY_2, new PipeConfValue(TYPE, VALUE_2));
+        data.put(SENSITIVE_KEY, new PipeConfValue(TYPE, VALUE_2));
+        final MetadataVO metadataVO = new MetadataVO();
+        metadataVO.setEntity(entityVO);
+        metadataVO.setData(data);
+        metadataManager.updateMetadataItem(metadataVO);
+        metadataManager.syncWithCategoricalAttributes();
+
+        final Map<String, List<String>> categoricalAttributesAfterSync =
+            extractAttributesContent(categoricalAttributeManager.loadAll());
+        assertEquals(2, categoricalAttributesAfterSync.size());
+        assertThat(categoricalAttributesAfterSync.get(KEY_1),
+                          CoreMatchers.is(Collections.singletonList(VALUE_1)));
+        assertThat(categoricalAttributesAfterSync.get(KEY_2),
+                   CoreMatchers.is(Collections.singletonList(VALUE_2)));
+        assertFalse(categoricalAttributesAfterSync.containsKey(SENSITIVE_KEY));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void metadataFileShouldFailWithExtraColumnInLine() throws IOException {
+    @Test
+    @Transactional
+    public void syncWithCategoricalAttributesWithoutSensitiveKeys() {
+        assertEquals(0, categoricalAttributeManager.loadAll().size());
+        Mockito.doReturn(new PipelineUser(TEST_USER)).when(entityManager)
+                .load(eq(AclClass.PIPELINE_USER), Mockito.anyLong());
+        final EntityVO entityVO = new EntityVO(USER_ENTITY_ID, AclClass.PIPELINE_USER);
+        final Map<String, PipeConfValue> data = new HashMap<>();
+        data.put(KEY_1, new PipeConfValue(TYPE, VALUE_1));
+        data.put(KEY_2, new PipeConfValue(TYPE, VALUE_2));
+        final MetadataVO metadataVO = new MetadataVO();
+        metadataVO.setEntity(entityVO);
+        metadataVO.setData(data);
+        metadataManager.updateMetadataItem(metadataVO);
+        metadataManager.syncWithCategoricalAttributes();
+
+        final Map<String, List<String>> categoricalAttributesAfterSync =
+            extractAttributesContent(categoricalAttributeManager.loadAll());
+        assertEquals(2, categoricalAttributesAfterSync.size());
+        assertThat(categoricalAttributesAfterSync.get(KEY_1),
+                          CoreMatchers.is(Collections.singletonList(VALUE_1)));
+        assertThat(categoricalAttributesAfterSync.get(KEY_2),
+                   CoreMatchers.is(Collections.singletonList(VALUE_2)));
+    }
+
+    @Test
+    @Transactional
+    public void testThatEntityCouldBeSearchedByClassAndKeyOnly() {
+        Mockito.doReturn(new PipelineUser(TEST_USER)).when(entityManager)
+                .load(eq(AclClass.PIPELINE_USER), Mockito.anyLong());
+
+        final EntityVO entityVO = new EntityVO(USER_ENTITY_ID, AclClass.PIPELINE_USER);
+        final Map<String, PipeConfValue> data = new HashMap<>();
+        data.put(KEY_1, new PipeConfValue(TYPE, VALUE_1));
+        final MetadataVO metadataVO = new MetadataVO();
+        metadataVO.setEntity(entityVO);
+        metadataVO.setData(data);
+        metadataManager.updateMetadataItem(metadataVO);
+
+        List<EntityVO> result = metadataManager.searchMetadataByClassAndKeyValue(
+                AclClass.PIPELINE_USER, KEY_1, VALUE_2);
+
+        assertTrue(result.isEmpty());
+
+        result = metadataManager.searchMetadataByClassAndKeyValue(
+                AclClass.PIPELINE_USER, KEY_1, null);
+
+        assertFalse(result.isEmpty());
+    }
+
+    @Test
+    @Transactional
+    public void testThatSecretMetadataWillBeHidedDuringSearch() {
+        Mockito.doReturn(new PipelineUser(TEST_USER)).when(entityManager)
+                .load(eq(AclClass.PIPELINE_USER), Mockito.anyLong());
+
+        final EntityVO entityVO = new EntityVO(USER_ENTITY_ID, AclClass.PIPELINE_USER);
+        final Map<String, PipeConfValue> data = new HashMap<>();
+        data.put(KEY_1, new PipeConfValue(SECRET_TYPE, VALUE_1));
+        final MetadataVO metadataVO = new MetadataVO();
+        metadataVO.setEntity(entityVO);
+        metadataVO.setData(data);
+        metadataManager.updateMetadataItem(metadataVO);
+
+        // We can find entities by specific secret metadata key
+        List<EntityVO> searchResult = metadataManager.searchMetadataByClassAndKeyValue(
+                AclClass.PIPELINE_USER, KEY_1, null);
+        assertFalse(searchResult.isEmpty());
+
+        // And we can list specific secret metadata by key
+        List<MetadataEntry> loadResultByKey = metadataManager
+                .listMetadataItemsByKey(KEY_1, Collections.singletonList(entityVO));
+        assertFalse(loadResultByKey.isEmpty());
+        assertFalse(loadResultByKey.get(0).getData().isEmpty());
+
+        // But we can't see the value of the secret when list all metadata for the entity
+        List<MetadataEntry> loadResult = metadataManager.listMetadataItems(Collections.singletonList(entityVO));
+        assertFalse(loadResult.isEmpty());
+        assertFalse(loadResult.get(0).getData().isEmpty());
+        assertEquals(MetadataDao.SECRET_MASK_VALUE, loadResult.get(0).getData().get(KEY_1).getValue());
+    }
+
+    @Test
+    public void metadataFileShouldFailWithoutHeader() {
+>>>>>>> theirs
+        String exampleContent = simpleContent("\t", false);
+        assertThrows(MetadataReadingException.class, () -> {
+            try {
+                assertFileContent(exampleContent, TSV_FILE_NAME);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @Test
+    public void metadataFileShouldFailWithExtraColumnInHeader() {
+        String exampleContent = TSV_HEADER + "Id\n" + simpleContent("\t", false);
+        assertThrows(MetadataReadingException.class, () -> {
+            try {
+                assertFileContent(exampleContent, TSV_FILE_NAME);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @Test
+    public void metadataFileShouldFailWithExtraColumnInLine() {
         String exampleContent = TSV_HEADER + "\n" +
                 KEY_1 + "\t" + VALUE_1 + "\t" + TYPE + "\t" + "Extra\n" +
                 KEY_2 + "\t" + VALUE_2 + "\t" + TYPE + "\n";
-        assertFileContent(exampleContent, TSV_FILE_NAME);
+        assertThrows(IllegalArgumentException.class,
+            () -> {
+                try {
+                    assertFileContent(exampleContent, TSV_FILE_NAME);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
     }
 
-    @Test(expected = MetadataReadingException.class)
-    public void metadataFileShouldFailWithIncorrectDelimiter() throws IOException {
+    @Test
+    public void metadataFileShouldFailWithIncorrectDelimiter() {
         String exampleContent = TSV_HEADER + "\n" + simpleContent("\t", false);
-        assertFileContent(exampleContent, CSV_FILE_NAME);
+        assertThrows(MetadataReadingException.class, () -> {
+            try {
+                assertFileContent(exampleContent, CSV_FILE_NAME);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void metadataFileShouldFailWithUnsupportedFileExtension() throws IOException {
         String exampleContent = TSV_HEADER + "\n" + simpleContent("\t", false);
-        assertFileContent(exampleContent, "test_file.txt");
+        assertThrows(IllegalArgumentException.class,
+            () -> {
+                try {
+                    assertFileContent(exampleContent, "test_file.txt");
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void metadataFileShouldFailWithoutRequiredColumn() throws IOException {
+    @Test
+    public void metadataFileShouldFailWithoutRequiredColumn() {
         String exampleContent = "Key\n" + KEY_1 + "\n" + KEY_2 + "\n";
-        assertFileContent(exampleContent, TSV_FILE_NAME);
+        assertThrows(IllegalArgumentException.class, () -> {
+            try {
+                assertFileContent(exampleContent, TSV_FILE_NAME);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
-    @Test(expected = MetadataReadingException.class)
+    @Test
     public void metadataFileShouldFailWithIncorrectColumnName() throws IOException {
         String exampleContent = "Key\tValue\tTypes\n" + simpleContent("\t", false);
-        assertFileContent(exampleContent, TSV_FILE_NAME);
+        assertThrows(MetadataReadingException.class, () -> {
+            try {
+                assertFileContent(exampleContent, TSV_FILE_NAME);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     private void assertFileContent(String exampleContent, String fileName) throws IOException {
         try (InputStream inputStream = IOUtils.toInputStream(exampleContent, "UTF-8")) {
             Map<String, PipeConfValue> actualData = metadataManager
                     .convertFileContentToMetadata(new MockMultipartFile(fileName, fileName, null, inputStream));
-            Assert.assertEquals(expectedData, actualData);
+            assertEquals(expectedData, actualData);
         }
     }
 

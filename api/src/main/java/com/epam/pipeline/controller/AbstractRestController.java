@@ -17,6 +17,7 @@
 package com.epam.pipeline.controller;
 
 import org.apache.commons.collections4.CollectionUtils;
+<<<<<<< ours
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileItemFactory;
 import org.apache.commons.fileupload.FileItemIterator;
@@ -24,19 +25,39 @@ import org.apache.commons.fileupload.FileItemStream;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
+||||||| base
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.FileItemFactory;
+import org.apache.commons.fileupload.FileItemIterator;
+import org.apache.commons.fileupload.FileItemStream;
+import org.apache.commons.fileupload.FileUploadException;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
+=======
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.fileupload2.core.DiskFileItem;
+import org.apache.commons.fileupload2.core.DiskFileItemFactory;
+import org.apache.commons.fileupload2.core.FileItemInput;
+import org.apache.commons.fileupload2.core.FileUploadException;
+import org.apache.commons.fileupload2.jakarta.servlet6.JakartaServletFileUpload;
+>>>>>>> theirs
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.commons.CommonsMultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -75,7 +96,6 @@ public abstract class AbstractRestController {
      * @param response to write data
      * @param bytes content to download
      * @param name file name
-     * @throws IOException
      */
     protected void writeFileToResponse(HttpServletResponse response, byte[] bytes, String name)
             throws IOException {
@@ -97,15 +117,21 @@ public abstract class AbstractRestController {
      * @throws FileUploadException
      */
     protected InputStream getMultipartStream(HttpServletRequest request) throws IOException, FileUploadException {
-        Assert.isTrue(ServletFileUpload.isMultipartContent(request), NOT_A_MULTIPART_REQUEST);
-        ServletFileUpload upload = new ServletFileUpload();
-        FileItemIterator iterator = upload.getItemIterator(request);
+        if (request instanceof MultipartHttpServletRequest multipartRequest) {
+            MultipartFile file = multipartRequest.getFileMap().values().stream()
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException(NO_FILES_MESSAGE));
+            return file.getInputStream();
+        }
+        Assert.isTrue(JakartaServletFileUpload.isMultipartContent(request), NOT_A_MULTIPART_REQUEST);
+        var upload = new JakartaServletFileUpload<>();
+        var iterator = upload.getItemIterator(request);
 
         Assert.isTrue(iterator.hasNext(), NO_FILES_MESSAGE);
         while (iterator.hasNext()) {
-            FileItemStream stream = iterator.next();
+            FileItemInput stream = iterator.next();
             if (!stream.isFormField()) {
-                return stream.openStream();
+                return stream.getInputStream();
             }
         }
 
@@ -114,20 +140,24 @@ public abstract class AbstractRestController {
 
     protected <T> List<T> processStreamingUpload(HttpServletRequest request,
                                                  BiFunction<InputStream, String, T> uploadMapper)
-        throws IOException, FileUploadException {
-        Assert.isTrue(ServletFileUpload.isMultipartContent(request), NOT_A_MULTIPART_REQUEST);
+            throws IOException, FileUploadException {
+        if (request instanceof MultipartHttpServletRequest multipartRequest) {
+            List<MultipartFile> files = new ArrayList<>(multipartRequest.getFileMap().values());
+            return processStreamingUpload(files, uploadMapper);
+        }
+        Assert.isTrue(JakartaServletFileUpload.isMultipartContent(request), NOT_A_MULTIPART_REQUEST);
 
-        ServletFileUpload upload = new ServletFileUpload();
-        FileItemIterator iterator = upload.getItemIterator(request);
+        var upload = new JakartaServletFileUpload<>();
+        var iterator = upload.getItemIterator(request);
 
         Assert.isTrue(iterator.hasNext(), NO_FILES_MESSAGE);
         boolean found = false;
         List<T> uploadedResults = new ArrayList<>();
         while (iterator.hasNext()) {
-            FileItemStream stream = iterator.next();
+            FileItemInput stream = iterator.next();
             if (!stream.isFormField()) {
                 found = true;
-                try (InputStream dataStream = stream.openStream()) {
+                try (InputStream dataStream = stream.getInputStream()) {
                     uploadedResults.add(uploadMapper.apply(dataStream, stream.getName()));
                 }
             }
@@ -135,6 +165,22 @@ public abstract class AbstractRestController {
 
         Assert.isTrue(found, NO_FILES_MESSAGE);
 
+        return uploadedResults;
+    }
+
+    protected <T> List<T> processStreamingUpload(List<MultipartFile> files,
+                                                 BiFunction<InputStream, String, T> uploadMapper)
+            throws IOException {
+        Assert.isTrue(!files.isEmpty(), NO_FILES_MESSAGE);
+        List<T> uploadedResults = new ArrayList<>();
+        for (MultipartFile file : files) {
+            if (!file.isEmpty()) {
+                try (InputStream dataStream = file.getInputStream()) {
+                    uploadedResults.add(uploadMapper.apply(dataStream, file.getOriginalFilename()));
+                }
+            }
+        }
+        Assert.isTrue(!uploadedResults.isEmpty(), NO_FILES_MESSAGE);
         return uploadedResults;
     }
 
@@ -172,26 +218,21 @@ public abstract class AbstractRestController {
     }
 
     protected MediaType guessMediaType(String fileName) {
-        switch (FilenameUtils.getExtension(fileName)) {
-            case "gif":
-                return MediaType.IMAGE_GIF;
-            case "jpeg":
-                return MediaType.IMAGE_JPEG;
-            case "jpg":
-            case "png":
-                return MediaType.IMAGE_PNG;
-            default:
-                return MediaType.APPLICATION_OCTET_STREAM;
-        }
+        return switch (FilenameUtils.getExtension(fileName)) {
+            case "gif" -> MediaType.IMAGE_GIF;
+            case "jpeg" -> MediaType.IMAGE_JPEG;
+            case "jpg", "png" -> MediaType.IMAGE_PNG;
+            default -> MediaType.APPLICATION_OCTET_STREAM;
+        };
     }
 
     /**
      * Consumes the whole multipart file to memory
      * @param request a HttpServletRequest to controller
-     * @return a {@link MultipartFile}, containing all the dile data in memory
-     * @throws FileUploadException
+     * @return a {@link MultipartFile}, containing all the file data in memory
+     * @throws IOException
      */
-    protected MultipartFile consumeMultipartFile(HttpServletRequest request) throws FileUploadException {
+    protected MultipartFile consumeMultipartFile(HttpServletRequest request) throws IOException {
         return consumeMultipartFile(request, Collections.emptySet());
     }
 
@@ -199,28 +240,102 @@ public abstract class AbstractRestController {
      * Consumes the whole multipart file to memory
      * @param request a HttpServletRequest to controller
      * @param allowedExtensions a set of file extensions, that are allowed for uploading. Example: txt, png
-     * @return a {@link MultipartFile}, containing all the dile data in memory
-     * @throws FileUploadException
+     * @return a {@link MultipartFile}, containing all the file data in memory
      */
     protected MultipartFile consumeMultipartFile(HttpServletRequest request, Set<String> allowedExtensions)
-        throws FileUploadException {
-        Assert.isTrue(ServletFileUpload.isMultipartContent(request), NOT_A_MULTIPART_REQUEST);
-        FileItemFactory factory = new DiskFileItemFactory();
-        ServletFileUpload upload = new ServletFileUpload(factory);
-        List<FileItem> items = upload.parseRequest(request);
-        MultipartFile file = new CommonsMultipartFile(items.stream()
-                                            .findFirst()
-                                            .orElseThrow(() -> new IllegalArgumentException(NO_FILES_MESSAGE))
-        );
+            throws IOException {
+        MultipartFile file;
+        if (request instanceof MultipartHttpServletRequest multipartRequest) {
+            file = multipartRequest.getFileMap().values().stream()
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException(NO_FILES_MESSAGE));
+        } else {
+            Assert.isTrue(JakartaServletFileUpload.isMultipartContent(request), NOT_A_MULTIPART_REQUEST);
+            var factory = DiskFileItemFactory.builder().get();
+            var upload = new JakartaServletFileUpload<>(factory);
+            var items = upload.parseRequest(request);
+            file = toMultipartFile(items.stream()
+                    .filter(item -> !item.isFormField())
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException(NO_FILES_MESSAGE))
+            );
+        }
 
         if (CollectionUtils.isNotEmpty(allowedExtensions)) {
             String extension = FilenameUtils.getExtension(file.getOriginalFilename()).toLowerCase();
             Assert.isTrue(allowedExtensions.contains(extension),
-                          String.format("File type %s is not allowed for uploading. Allowed types: %s", extension,
-                                        allowedExtensions.stream().collect(Collectors.joining(", "))));
+                    String.format("File type %s is not allowed for uploading. Allowed types: %s", extension,
+                            allowedExtensions.stream().collect(Collectors.joining(", "))));
         }
 
         return file;
+    }
+
+    /**
+     * Consumes all multipart files to memory
+     * @param request a HttpServletRequest to controller
+     * @return a list of {@link MultipartFile}, containing all the file data in memory
+     */
+    protected List<MultipartFile> consumeMultipartFiles(HttpServletRequest request)
+            throws FileUploadException, IOException {
+        if (request instanceof MultipartHttpServletRequest multipartRequest) {
+            return new ArrayList<>(multipartRequest.getFileMap().values());
+        }
+        Assert.isTrue(JakartaServletFileUpload.isMultipartContent(request), NOT_A_MULTIPART_REQUEST);
+        var factory = DiskFileItemFactory.builder().get();
+        var upload = new JakartaServletFileUpload<>(factory);
+        var items = upload.parseRequest(request);
+        return items.stream()
+                .filter(item -> !item.isFormField())
+                .map(AbstractRestController::toMultipartFile)
+                .collect(Collectors.toList());
+    }
+
+    private static MultipartFile toMultipartFile(DiskFileItem item) {
+        return new MultipartFile() {
+            @Override
+            public String getName() {
+                return item.getFieldName();
+            }
+
+            @Override
+            public String getOriginalFilename() {
+                return item.getName();
+            }
+
+            @Override
+            public String getContentType() {
+                return item.getContentType();
+            }
+
+            @Override
+            public boolean isEmpty() {
+                return item.getSize() == 0;
+            }
+
+            @Override
+            public long getSize() {
+                return item.getSize();
+            }
+
+            @Override
+            public byte[] getBytes() throws IOException {
+                return item.get();
+            }
+
+            @Override
+            public InputStream getInputStream() throws IOException {
+                return item.getInputStream();
+            }
+
+            @Override
+            public void transferTo(File dest) throws IOException, IllegalStateException {
+                try (InputStream in = item.getInputStream();
+                     OutputStream out = new FileOutputStream(dest)) {
+                    in.transferTo(out);
+                }
+            }
+        };
     }
 
 }

@@ -28,7 +28,15 @@ import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationRecipient;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaTrigger;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
+<<<<<<< ours
 import org.junit.Test;
+||||||| base
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.junit.Test;
+=======
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.junit.jupiter.api.Test;
+>>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 

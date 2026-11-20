@@ -35,11 +35,25 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.security.acl.AclPermission;
+<<<<<<< ours
 import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
+||||||| base
+import com.epam.pipeline.test.acl.AbstractAclTest;
+import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
+import com.epam.pipeline.test.creator.issue.IssueCreatorUtils;
+import com.epam.pipeline.test.creator.security.SecurityCreatorUtils;
+import org.junit.Test;
+=======
+import com.epam.pipeline.test.acl.AbstractAclTest;
+import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
+import com.epam.pipeline.test.creator.issue.IssueCreatorUtils;
+import com.epam.pipeline.test.creator.security.SecurityCreatorUtils;
+import org.junit.jupiter.api.Test;
+>>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;

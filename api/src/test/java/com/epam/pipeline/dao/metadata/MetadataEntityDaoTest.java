@@ -30,8 +30,20 @@ import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
+<<<<<<< ours
 import org.junit.Assert;
 import org.junit.Test;
+||||||| base
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.apache.commons.lang3.StringUtils;
+import org.junit.Assert;
+import org.junit.Test;
+=======
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.junit.jupiter.api.Test;
+import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.Assertions;
+>>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,7 +65,15 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+<<<<<<< ours
 public class MetadataEntityDaoTest extends AbstractSpringTest {
+||||||| base
+public class MetadataEntityDaoTest extends AbstractJdbcTest {
+=======
+import static org.junit.jupiter.api.Assertions.*;
+
+public class MetadataEntityDaoTest extends AbstractJdbcTest {
+>>>>>>> theirs
 
     private static final String TEST_USER = "Test";
     private static final String TEST_NAME = "Test";
@@ -99,20 +119,20 @@ public class MetadataEntityDaoTest extends AbstractSpringTest {
 
         List<MetadataEntity> folder1List = metadataEntityDao
                 .loadMetadataEntityByClassNameAndFolderId(folder1.getId(), CLASS_NAME_1);
-        Assert.assertEquals(2, folder1List.size());
+        assertEquals(2, folder1List.size());
 
         List<MetadataEntity> folder2List = metadataEntityDao
                 .loadMetadataEntityByClassNameAndFolderId(folder2.getId(), CLASS_NAME_1);
-        Assert.assertEquals(1, folder2List.size());
+        assertEquals(1, folder2List.size());
 
         metadataEntityDao.deleteMetadataFromFolder(folder1.getId());
 
         folder1List = metadataEntityDao
                 .loadMetadataEntityByClassNameAndFolderId(folder1.getId(), CLASS_NAME_1);
-        Assert.assertEquals(0, folder1List.size());
+        assertEquals(0, folder1List.size());
         folder2List = metadataEntityDao
                 .loadMetadataEntityByClassNameAndFolderId(folder2.getId(), CLASS_NAME_1);
-        Assert.assertEquals(1, folder2List.size());
+        assertEquals(1, folder2List.size());
     }
 
     @Test
@@ -137,8 +157,8 @@ public class MetadataEntityDaoTest extends AbstractSpringTest {
         metadataEntity.setData(data);
         metadataEntityDao.updateMetadataEntity(metadataEntity);
         MetadataEntity updateResult = metadataEntityDao.loadMetadataEntityById(result.getId());
-        Assert.assertEquals(metadataEntity.getName(), updateResult.getName());
-        Assert.assertEquals(metadataEntity.getData(), updateResult.getData());
+        assertEquals(metadataEntity.getName(), updateResult.getName());
+        assertEquals(metadataEntity.getData(), updateResult.getData());
 
         // update metadata entity data key
         data.put(DATA_KEY_2, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_2));
@@ -147,7 +167,7 @@ public class MetadataEntityDaoTest extends AbstractSpringTest {
         MetadataEntity updateKeyResult = metadataEntityDao
                 .loadMetadataEntityByClassNameAndFolderId(metadataEntity.getParent().getId(),
                         metadataEntity.getClassEntity().getName()).get(0);
-        Assert.assertEquals(metadataEntity.getData(), updateKeyResult.getData());
+        assertEquals(metadataEntity.getData(), updateKeyResult.getData());
 
         // load metadata entity from root
         MetadataEntity metadataEntityInRoot = new MetadataEntity();
@@ -159,26 +179,26 @@ public class MetadataEntityDaoTest extends AbstractSpringTest {
         metadataEntityDao.createMetadataEntity(metadataEntityInRoot);
 
         MetadataEntity rootResult = metadataEntityDao.loadRootMetadataEntities().get(0);
-        Assert.assertEquals(metadataEntityInRoot.getId(), rootResult.getId());
-        Assert.assertEquals(metadataEntityInRoot.getClassEntity().getName(), rootResult.getClassEntity().getName());
-        Assert.assertEquals(metadataEntityInRoot.getData(), rootResult.getData());
+        assertEquals(metadataEntityInRoot.getId(), rootResult.getId());
+        assertEquals(metadataEntityInRoot.getClassEntity().getName(), rootResult.getClassEntity().getName());
+        assertEquals(metadataEntityInRoot.getData(), rootResult.getData());
 
         // load by external ids
         MetadataEntity entity2 = createMetadataEntity(folder, metadataClass, EXTERNAL_ID_2, data);
         Set<MetadataEntity> existing = metadataEntityDao
                 .loadExisting(folder.getId(), metadataClass.getName(),
                         new HashSet<>(Arrays.asList(EXTERNAL_ID_1, EXTERNAL_ID_2)));
-        Assert.assertEquals(new HashSet<>(Arrays.asList(metadataEntity, entity2)), existing);
+        assertEquals(new HashSet<>(Arrays.asList(metadataEntity, entity2)), existing);
 
         //load by inner ids
         Set<MetadataEntity> entitiesByIds =
                 metadataEntityDao.loadByIds(Collections.singleton(entity2.getId()));
-        Assert.assertEquals(Collections.singleton(entity2), entitiesByIds);
+        assertEquals(Collections.singleton(entity2), entitiesByIds);
 
         //load with folders
         rootResult = metadataEntityDao.loadMetadataEntityWithParents(metadataEntityInRoot.getId());
-        Assert.assertEquals(metadataEntityInRoot.getId(), rootResult.getId());
-        Assert.assertEquals(metadataEntityInRoot.getData(), rootResult.getData());
+        assertEquals(metadataEntityInRoot.getId(), rootResult.getId());
+        assertEquals(metadataEntityInRoot.getData(), rootResult.getData());
 
         // delete key from metadata entity
         data.clear();
@@ -186,12 +206,12 @@ public class MetadataEntityDaoTest extends AbstractSpringTest {
         metadataEntity.setData(data);
         metadataEntityDao.deleteMetadataItemKey(metadataEntity.getId(), DATA_KEY_2);
         MetadataEntity deletedKeyResult = metadataEntityDao.loadMetadataEntityById(metadataEntity.getId());
-        Assert.assertEquals(metadataEntity.getData(), deletedKeyResult.getData());
+        assertEquals(metadataEntity.getData(), deletedKeyResult.getData());
 
         // delete metadata entity
         metadataEntityDao.deleteMetadataEntity(metadataEntity.getId());
         MetadataEntity deletedEntity = metadataEntityDao.loadMetadataEntityById(metadataEntity.getId());
-        Assert.assertNull(deletedEntity);
+        assertNull(deletedEntity);
     }
 
 
@@ -227,7 +247,7 @@ public class MetadataEntityDaoTest extends AbstractSpringTest {
 
         List<MetadataEntity> links = metadataEntityDao
                 .loadAllReferences(Collections.singletonList(sample.getId()), folder.getId());
-        Assert.assertEquals(new HashSet<>(Arrays.asList(batch1, participant1, participant2, sample)),
+        assertEquals(new HashSet<>(Arrays.asList(batch1, participant1, participant2, sample)),
                 new HashSet<>(links));
     }
 
@@ -253,7 +273,7 @@ public class MetadataEntityDaoTest extends AbstractSpringTest {
 
         List<MetadataEntity> links = metadataEntityDao.loadAllReferences(
                 Arrays.asList(participant1.getId(), participant2.getId()), folder.getId());
-        Assert.assertEquals(new HashSet<>(Arrays.asList(participant1, participant2)), new HashSet<>(links));
+        assertEquals(new HashSet<>(Arrays.asList(participant1, participant2)), new HashSet<>(links));
     }
 
     @Test
@@ -271,7 +291,7 @@ public class MetadataEntityDaoTest extends AbstractSpringTest {
                 EXTERNAL_ID_2, data, DateUtils.now());
         Collection<MetadataEntity> result =
                 metadataEntityDao.batchInsert(Arrays.asList(entity1, entity2));
-        Assert.assertTrue(result.stream().allMatch(e -> e.getId() != null));
+        assertTrue(result.stream().allMatch(e -> e.getId() != null));
 
         data.put(DATA_KEY_2, new PipeConfValue(DATA_TYPE_2, DATA_VALUE_2));
         entity1.setData(data);
@@ -280,11 +300,11 @@ public class MetadataEntityDaoTest extends AbstractSpringTest {
 
         List<MetadataEntity> loaded = metadataEntityDao
                 .loadMetadataEntityByClassNameAndFolderId(folder.getId(), metadataClass.getName());
-        Assert.assertTrue(loaded.stream().allMatch(e -> e.getData().equals(data)));
+        assertTrue(loaded.stream().allMatch(e -> e.getData().equals(data)));
 
         Set<Long> entitiesToDelete = Stream.of(entity1.getId(), entity2.getId()).collect(Collectors.toSet());
         metadataEntityDao.deleteMetadataEntities(entitiesToDelete);
-        Assert.assertEquals(0, metadataEntityDao.loadAllMetadataEntities().stream()
+        assertEquals(0, metadataEntityDao.loadAllMetadataEntities().stream()
                 .filter(entity -> entitiesToDelete.contains(entity.getId())).count());
     }
 
@@ -489,12 +509,12 @@ public class MetadataEntityDaoTest extends AbstractSpringTest {
 
         Collection<MetadataClassDescription> metadataFields =
                 metadataEntityDao.getMetadataFields(parent.getId());
-        Assert.assertEquals(2, metadataFields.size());
+        assertEquals(2, metadataFields.size());
         Map<Long, MetadataClassDescription> results = metadataFields.stream()
                 .collect(Collectors.toMap(e -> e.getMetadataClass().getId(), Function.identity()));
-        Assert.assertEquals(Collections.singletonList(new EntityTypeField(DATA_KEY_1, DATA_TYPE_1)),
+        assertEquals(Collections.singletonList(new EntityTypeField(DATA_KEY_1, DATA_TYPE_1)),
                 results.get(metadataClass1.getId()).getFields());
-        Assert.assertEquals(Collections.singletonList(new EntityTypeField(DATA_KEY_2, CLASS_NAME_2, true, false)),
+        assertEquals(Collections.singletonList(new EntityTypeField(DATA_KEY_2, CLASS_NAME_2, true, false)),
                 results.get(metadataClass2.getId()).getFields());
     }
 
@@ -522,7 +542,7 @@ public class MetadataEntityDaoTest extends AbstractSpringTest {
         List<MetadataEntity> entitiesStoredInDestinationFolder = metadataEntityDao.loadAllMetadataEntities().stream()
                 .filter(entity -> Objects.equals(entity.getParent().getId(), destinationFolder.getId()))
                 .collect(Collectors.toList());
-        Assert.assertEquals(expected.size(), entitiesStoredInDestinationFolder.size());
+        assertEquals(expected.size(), entitiesStoredInDestinationFolder.size());
         Map<String, MetadataEntity> expectedMap =
                 expected.stream().collect(Collectors.toMap(MetadataEntity::getExternalId, Function.identity()));
         entitiesStoredInDestinationFolder.forEach(e -> compareMetadata(expectedMap.get(e.getExternalId()), e, false));
@@ -544,11 +564,11 @@ public class MetadataEntityDaoTest extends AbstractSpringTest {
         MetadataEntity metadataEntity = createMetadataEntity(parent, metadataClass, EXTERNAL_ID_1, data);
 
         MetadataEntity result = metadataEntityDao.loadMetadataEntityWithParents(metadataEntity.getId());
-        Assert.assertEquals(metadataEntity.getId(), result.getId());
-        Assert.assertEquals(metadataEntity.getName(), result.getName());
-        Assert.assertEquals(metadataEntity.getParent().getId(), result.getParent().getId());
-        Assert.assertEquals(metadataEntity.getExternalId(), result.getExternalId());
-        Assert.assertEquals(metadataEntity.getData(), result.getData());
+        assertEquals(metadataEntity.getId(), result.getId());
+        assertEquals(metadataEntity.getName(), result.getName());
+        assertEquals(metadataEntity.getParent().getId(), result.getParent().getId());
+        assertEquals(metadataEntity.getExternalId(), result.getExternalId());
+        assertEquals(metadataEntity.getData(), result.getData());
         verifyFolderTree(parent, result.getParent());
     }
 
@@ -689,6 +709,288 @@ public class MetadataEntityDaoTest extends AbstractSpringTest {
         checkFilterRequest(combineSearchAndFilter, Arrays.asList(folder1Sample1, folder1Sample2));
     }
 
+<<<<<<< ours
+||||||| base
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testFacetQuery() {
+        final Folder folder1 = createFolder();
+        // used only to prove isolation by folder
+        final Folder folder2 = createFolder();
+
+        final MetadataClass metadataClass = createMetadataClass(CLASS_NAME_1);
+
+        final String key1 = "key 1";
+        final String key2 = "key2";
+        final String key3 = "key3";
+        final String key4 = "key4";
+
+        final String value1 = "key1-value1";
+        final String value21 = "key2-value1";
+        final String value22 = "key2-value2";
+        final String value3 = "key3-value1";
+        final String value4 = "key4-value1";
+
+        final Map<String, PipeConfValue> data1 = new HashMap<>();
+        data1.put(key1, new PipeConfValue(DATA_TYPE_1, value1));
+        data1.put(key2, new PipeConfValue(DATA_TYPE_1, StringUtils.EMPTY));
+        data1.put(key3, new PipeConfValue(DATA_TYPE_1, StringUtils.EMPTY));
+        createMetadataEntity(folder1, metadataClass, EXTERNAL_ID_1, data1);
+
+        final Map<String, PipeConfValue> data2 = new HashMap<>();
+        data2.put(key1, new PipeConfValue(DATA_TYPE_1, value1));
+        data2.put(key2, new PipeConfValue(DATA_TYPE_1, value21));
+        data2.put(key3, new PipeConfValue(DATA_TYPE_1, null));
+        createMetadataEntity(folder1, metadataClass, EXTERNAL_ID_2, data2);
+
+        final Map<String, PipeConfValue> data3 = new HashMap<>();
+        data3.put(key1, new PipeConfValue(DATA_TYPE_1, value1));
+        data3.put(key2, new PipeConfValue(DATA_TYPE_1, value22));
+        data3.put(key4, new PipeConfValue(DATA_TYPE_1, value4));
+        createMetadataEntity(folder1, metadataClass, EXTERNAL_ID_3, data3);
+
+        final Map<String, PipeConfValue> data4 = new HashMap<>();
+        data4.put(key1, new PipeConfValue(DATA_TYPE_1, value1));
+        data4.put(key2, new PipeConfValue(DATA_TYPE_1, value21));
+        data4.put(key3, new PipeConfValue(DATA_TYPE_1, value3));
+        createMetadataEntity(folder2, metadataClass, EXTERNAL_ID_1, data4);
+
+        MetadataFilter filter = createFilterWithFacet(folder1.getId(), metadataClass.getName(),
+                Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+
+        //checking empty facet request
+        Map<String, Facet> facetMap = metadataEntityDao.groupFacets(filter);
+        Assert.assertTrue(facetMap.isEmpty());
+
+        //checking facet request
+        filter = createFilterWithFacet(folder1.getId(), metadataClass.getName(),
+                Collections.emptyList(),
+                Arrays.asList(new MetadataFilter.FacetRequest(key1, false),
+                        new MetadataFilter.FacetRequest(key2, false),
+                        new MetadataFilter.FacetRequest(key3, false)),
+                Collections.emptyList());
+        facetMap = metadataEntityDao.groupFacets(filter);
+
+        Assert.assertFalse(facetMap.isEmpty());
+        Assert.assertEquals(3, facetMap.size());
+        Assert.assertTrue(facetMap.containsKey(key1));
+
+        Facet facet = facetMap.get(key1);
+        Assert.assertEquals(0, facet.getEmpty().intValue());
+        Assert.assertEquals(1, facet.getCounts().size());
+        Assert.assertTrue(facet.getCounts().containsKey(value1));
+        Assert.assertEquals(3, facet.getCounts().get(value1).intValue());
+
+        Assert.assertTrue(facetMap.containsKey(key2));
+        facet = facetMap.get(key2);
+        Assert.assertEquals(2, facet.getCounts().size());
+        Assert.assertTrue(facet.getCounts().containsKey(value21));
+        Assert.assertTrue(facet.getCounts().containsKey(value22));
+        Assert.assertEquals(1, facet.getCounts().get(value21).intValue());
+        Assert.assertEquals(1, facet.getCounts().get(value22).intValue());
+        Assert.assertEquals(1, facet.getEmpty().intValue());
+
+        Assert.assertTrue(facetMap.containsKey(key3));
+        facet = facetMap.get(key3);
+        Assert.assertEquals(0, facet.getCounts().size());
+        Assert.assertEquals(3, facet.getEmpty().intValue());
+
+        //checking facet request with filters
+        filter = createFilterWithFacet(folder1.getId(), metadataClass.getName(),
+                Collections.singletonList(new MetadataFilter.FilterQuery(key2, Arrays.asList(value21, value22), false)),
+                Arrays.asList(
+                    new MetadataFilter.FacetRequest(key1, false),
+                    new MetadataFilter.FacetRequest(key4, false)),
+                Collections.emptyList());
+        facetMap = metadataEntityDao.groupFacets(filter);
+
+        Assert.assertFalse(facetMap.isEmpty());
+        Assert.assertEquals(2, facetMap.size());
+        Assert.assertTrue(facetMap.containsKey(key1));
+
+        facet = facetMap.get(key1);
+        Assert.assertEquals(0, facet.getEmpty().intValue());
+        Assert.assertEquals(1, facet.getCounts().size());
+        Assert.assertTrue(facet.getCounts().containsKey(value1));
+        Assert.assertEquals(2, facet.getCounts().get(value1).intValue());
+
+        Assert.assertTrue(facetMap.containsKey(key4));
+
+        facet = facetMap.get(key4);
+        Assert.assertEquals(1, facet.getEmpty().intValue());
+        Assert.assertEquals(1, facet.getCounts().size());
+        Assert.assertTrue(facet.getCounts().containsKey(value4));
+        Assert.assertEquals(1, facet.getCounts().get(value4).intValue());
+
+        //checking facet request with search queries
+        filter = createFilterWithFacet(folder1.getId(), metadataClass.getName(),
+                Collections.emptyList(),
+                Arrays.asList(
+                    new MetadataFilter.FacetRequest(key1, false),
+                    new MetadataFilter.FacetRequest(key4, false)),
+                Collections.singletonList(value4));
+        facetMap = metadataEntityDao.groupFacets(filter);
+
+        Assert.assertFalse(facetMap.isEmpty());
+        Assert.assertEquals(2, facetMap.size());
+        Assert.assertTrue(facetMap.containsKey(key1));
+
+        facet = facetMap.get(key1);
+        Assert.assertEquals(0, facet.getEmpty().intValue());
+        Assert.assertEquals(1, facet.getCounts().size());
+        Assert.assertTrue(facet.getCounts().containsKey(value1));
+        Assert.assertEquals(1, facet.getCounts().get(value1).intValue());
+
+        Assert.assertTrue(facetMap.containsKey(key4));
+
+        facet = facetMap.get(key4);
+        Assert.assertEquals(0, facet.getEmpty().intValue());
+        Assert.assertEquals(1, facet.getCounts().size());
+        Assert.assertTrue(facet.getCounts().containsKey(value4));
+        Assert.assertEquals(1, facet.getCounts().get(value4).intValue());
+    }
+
+=======
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testFacetQuery() {
+        final Folder folder1 = createFolder();
+        // used only to prove isolation by folder
+        final Folder folder2 = createFolder();
+
+        final MetadataClass metadataClass = createMetadataClass(CLASS_NAME_1);
+
+        final String key1 = "key 1";
+        final String key2 = "key2";
+        final String key3 = "key3";
+        final String key4 = "key4";
+
+        final String value1 = "key1-value1";
+        final String value21 = "key2-value1";
+        final String value22 = "key2-value2";
+        final String value3 = "key3-value1";
+        final String value4 = "key4-value1";
+
+        final Map<String, PipeConfValue> data1 = new HashMap<>();
+        data1.put(key1, new PipeConfValue(DATA_TYPE_1, value1));
+        data1.put(key2, new PipeConfValue(DATA_TYPE_1, StringUtils.EMPTY));
+        data1.put(key3, new PipeConfValue(DATA_TYPE_1, StringUtils.EMPTY));
+        createMetadataEntity(folder1, metadataClass, EXTERNAL_ID_1, data1);
+
+        final Map<String, PipeConfValue> data2 = new HashMap<>();
+        data2.put(key1, new PipeConfValue(DATA_TYPE_1, value1));
+        data2.put(key2, new PipeConfValue(DATA_TYPE_1, value21));
+        data2.put(key3, new PipeConfValue(DATA_TYPE_1, null));
+        createMetadataEntity(folder1, metadataClass, EXTERNAL_ID_2, data2);
+
+        final Map<String, PipeConfValue> data3 = new HashMap<>();
+        data3.put(key1, new PipeConfValue(DATA_TYPE_1, value1));
+        data3.put(key2, new PipeConfValue(DATA_TYPE_1, value22));
+        data3.put(key4, new PipeConfValue(DATA_TYPE_1, value4));
+        createMetadataEntity(folder1, metadataClass, EXTERNAL_ID_3, data3);
+
+        final Map<String, PipeConfValue> data4 = new HashMap<>();
+        data4.put(key1, new PipeConfValue(DATA_TYPE_1, value1));
+        data4.put(key2, new PipeConfValue(DATA_TYPE_1, value21));
+        data4.put(key3, new PipeConfValue(DATA_TYPE_1, value3));
+        createMetadataEntity(folder2, metadataClass, EXTERNAL_ID_1, data4);
+
+        MetadataFilter filter = createFilterWithFacet(folder1.getId(), metadataClass.getName(),
+                Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+
+        //checking empty facet request
+        Map<String, Facet> facetMap = metadataEntityDao.groupFacets(filter);
+        Assertions.assertTrue(facetMap.isEmpty());
+
+        //checking facet request
+        filter = createFilterWithFacet(folder1.getId(), metadataClass.getName(),
+                Collections.emptyList(),
+                Arrays.asList(new MetadataFilter.FacetRequest(key1, false),
+                        new MetadataFilter.FacetRequest(key2, false),
+                        new MetadataFilter.FacetRequest(key3, false)),
+                Collections.emptyList());
+        facetMap = metadataEntityDao.groupFacets(filter);
+
+        Assertions.assertFalse(facetMap.isEmpty());
+        Assertions.assertEquals(3, facetMap.size());
+        Assertions.assertTrue(facetMap.containsKey(key1));
+
+        Facet facet = facetMap.get(key1);
+        Assertions.assertEquals(0, facet.getEmpty().intValue());
+        Assertions.assertEquals(1, facet.getCounts().size());
+        Assertions.assertTrue(facet.getCounts().containsKey(value1));
+        Assertions.assertEquals(3, facet.getCounts().get(value1).intValue());
+
+        Assertions.assertTrue(facetMap.containsKey(key2));
+        facet = facetMap.get(key2);
+        Assertions.assertEquals(2, facet.getCounts().size());
+        Assertions.assertTrue(facet.getCounts().containsKey(value21));
+        Assertions.assertTrue(facet.getCounts().containsKey(value22));
+        Assertions.assertEquals(1, facet.getCounts().get(value21).intValue());
+        Assertions.assertEquals(1, facet.getCounts().get(value22).intValue());
+        Assertions.assertEquals(1, facet.getEmpty().intValue());
+
+        Assertions.assertTrue(facetMap.containsKey(key3));
+        facet = facetMap.get(key3);
+        Assertions.assertEquals(0, facet.getCounts().size());
+        Assertions.assertEquals(3, facet.getEmpty().intValue());
+
+        //checking facet request with filters
+        filter = createFilterWithFacet(folder1.getId(), metadataClass.getName(),
+                Collections.singletonList(new MetadataFilter.FilterQuery(key2, Arrays.asList(value21, value22), false)),
+                Arrays.asList(
+                    new MetadataFilter.FacetRequest(key1, false),
+                    new MetadataFilter.FacetRequest(key4, false)),
+                Collections.emptyList());
+        facetMap = metadataEntityDao.groupFacets(filter);
+
+        Assertions.assertFalse(facetMap.isEmpty());
+        Assertions.assertEquals(2, facetMap.size());
+        Assertions.assertTrue(facetMap.containsKey(key1));
+
+        facet = facetMap.get(key1);
+        Assertions.assertEquals(0, facet.getEmpty().intValue());
+        Assertions.assertEquals(1, facet.getCounts().size());
+        Assertions.assertTrue(facet.getCounts().containsKey(value1));
+        Assertions.assertEquals(2, facet.getCounts().get(value1).intValue());
+
+        Assertions.assertTrue(facetMap.containsKey(key4));
+
+        facet = facetMap.get(key4);
+        Assertions.assertEquals(1, facet.getEmpty().intValue());
+        Assertions.assertEquals(1, facet.getCounts().size());
+        Assertions.assertTrue(facet.getCounts().containsKey(value4));
+        Assertions.assertEquals(1, facet.getCounts().get(value4).intValue());
+
+        //checking facet request with search queries
+        filter = createFilterWithFacet(folder1.getId(), metadataClass.getName(),
+                Collections.emptyList(),
+                Arrays.asList(
+                    new MetadataFilter.FacetRequest(key1, false),
+                    new MetadataFilter.FacetRequest(key4, false)),
+                Collections.singletonList(value4));
+        facetMap = metadataEntityDao.groupFacets(filter);
+
+        Assertions.assertFalse(facetMap.isEmpty());
+        Assertions.assertEquals(2, facetMap.size());
+        Assertions.assertTrue(facetMap.containsKey(key1));
+
+        facet = facetMap.get(key1);
+        Assertions.assertEquals(0, facet.getEmpty().intValue());
+        Assertions.assertEquals(1, facet.getCounts().size());
+        Assertions.assertTrue(facet.getCounts().containsKey(value1));
+        Assertions.assertEquals(1, facet.getCounts().get(value1).intValue());
+
+        Assertions.assertTrue(facetMap.containsKey(key4));
+
+        facet = facetMap.get(key4);
+        Assertions.assertEquals(0, facet.getEmpty().intValue());
+        Assertions.assertEquals(1, facet.getCounts().size());
+        Assertions.assertTrue(facet.getCounts().containsKey(value4));
+        Assertions.assertEquals(1, facet.getCounts().get(value4).intValue());
+    }
+
+>>>>>>> theirs
     private MetadataField getDataField(String key) {
         return new MetadataField(key, null, false);
     }
@@ -699,18 +1001,18 @@ public class MetadataEntityDaoTest extends AbstractSpringTest {
                 metadataEntityDao.getMetadataKeys(folder.getId(), metadataClass.getId());
         Set<MetadataField> expected = new HashSet<>(defaultKeys);
         expected.addAll(Arrays.asList(expectedKeys));
-        Assert.assertEquals(expected, new HashSet<>(keys));
+        assertEquals(expected, new HashSet<>(keys));
     }
 
     private void checkFilterRequest(MetadataFilter filter, List<MetadataEntity> expected) {
         List<MetadataEntity> result = metadataEntityDao.filterEntities(filter);
         checkSearchResult(expected, result);
         int count = metadataEntityDao.countEntities(filter);
-        Assert.assertEquals(expected.size(), count);
+        assertEquals(expected.size(), count);
     }
 
     private void checkSearchResult(List<MetadataEntity> expected, List<MetadataEntity> actual) {
-        Assert.assertEquals(expected.size(), actual.size());
+        assertEquals(expected.size(), actual.size());
         Map<Long, MetadataEntity> expectedMap =
                 expected.stream().collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
         actual.forEach(e -> compareMetadata(expectedMap.get(e.getId()), e, true));
@@ -718,14 +1020,14 @@ public class MetadataEntityDaoTest extends AbstractSpringTest {
 
     private void compareMetadata(MetadataEntity metadataEntity, MetadataEntity result, boolean compareExactly) {
         if (compareExactly) {
-            Assert.assertEquals(metadataEntity.getId(), result.getId());
-            Assert.assertEquals(metadataEntity.getCreatedDate(), result.getCreatedDate());
+            assertEquals(metadataEntity.getId(), result.getId());
+            assertEquals(metadataEntity.getCreatedDate(), result.getCreatedDate());
         }
-        Assert.assertEquals(metadataEntity.getName(), result.getName());
-        Assert.assertEquals(metadataEntity.getClassEntity().getName(), result.getClassEntity().getName());
-        Assert.assertEquals(metadataEntity.getParent().getId(), result.getParent().getId());
-        Assert.assertEquals(metadataEntity.getExternalId(), result.getExternalId());
-        Assert.assertEquals(metadataEntity.getData(), result.getData());
+        assertEquals(metadataEntity.getName(), result.getName());
+        assertEquals(metadataEntity.getClassEntity().getName(), result.getClassEntity().getName());
+        assertEquals(metadataEntity.getParent().getId(), result.getParent().getId());
+        assertEquals(metadataEntity.getExternalId(), result.getExternalId());
+        assertEquals(metadataEntity.getData(), result.getData());
     }
 
     private MetadataFilter createFilter(Long folderId, String className,
@@ -783,8 +1085,8 @@ public class MetadataEntityDaoTest extends AbstractSpringTest {
     }
 
     private void verifyFolderTree(final Folder expected, final Folder actual) {
-        Assert.assertEquals(expected.getId(), actual.getId());
-        Assert.assertEquals(expected.getParentId(), actual.getParentId());
+        assertEquals(expected.getId(), actual.getId());
+        assertEquals(expected.getParentId(), actual.getParentId());
         if (expected.getParent() != null) {
             verifyFolderTree(expected.getParent(), actual.getParent());
         }

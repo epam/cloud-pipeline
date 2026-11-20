@@ -21,6 +21,8 @@ import com.epam.pipeline.dao.cluster.ClusterDao;
 import com.epam.pipeline.dao.cluster.InstanceOfferDao;
 import com.epam.pipeline.dao.cluster.NatGatewayDao;
 import com.epam.pipeline.dao.cluster.NodeDiskDao;
+import com.epam.pipeline.dao.cluster.capacityreservation.CapacityBlockExtensionDao;
+import com.epam.pipeline.dao.cluster.capacityreservation.CapacityReservationDao;
 import com.epam.pipeline.dao.cluster.pool.NodePoolDao;
 import com.epam.pipeline.dao.cluster.pool.NodeScheduleDao;
 import com.epam.pipeline.dao.configuration.RunConfigurationDao;
@@ -60,6 +62,7 @@ import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.manager.access.AccessCodeCleaner;
 import com.epam.pipeline.manager.access.AccessService;
 import com.epam.pipeline.manager.access.UnsecuredAccessService;
+import com.epam.pipeline.manager.audit.CommonAuditClient;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
 import com.epam.pipeline.manager.cloud.CloudFacade;
@@ -78,8 +81,18 @@ import com.epam.pipeline.manager.notification.ContextualNotificationSettingsMana
 import com.epam.pipeline.manager.pipeline.FolderApiService;
 import com.epam.pipeline.manager.pipeline.ToolApiService;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
+<<<<<<< ours
+||||||| base
+import com.epam.pipeline.dao.monitoring.metricrequester.HeapsterElasticRestHighLevelClient;
+import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
+=======
+import com.epam.pipeline.dao.monitoring.metricrequester.HeapsterElasticRestHighLevelClient;
+import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
+import com.epam.pipeline.mapper.async.AsyncTaskMapper;
+>>>>>>> theirs
 import com.epam.pipeline.mapper.cluster.KubernetesMapper;
 import com.epam.pipeline.mapper.git.GitHubMapper;
+import com.epam.pipeline.repository.async.AsyncTaskRepository;
 import com.epam.pipeline.security.saml.impersonation.ImpersonationManager;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.mapper.AbstractDataStorageMapper;
@@ -121,368 +134,593 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.acls.domain.PermissionFactory;
 import org.springframework.security.acls.model.SidRetrievalStrategy;
+import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
 public class AspectTestBeans {
 
     @MockBean(name = "flyway")
-    protected Flyway mockFlyway;
+    public Flyway mockFlyway;
 
     @MockBean(name = "flywayInitializer")
-    protected FlywayMigrationInitializer mockFlywayMigrationInitializer;
+    public FlywayMigrationInitializer mockFlywayMigrationInitializer;
+
+    /**
+     * This context has no data source, so nothing declares a transaction manager. The scanned
+     * {@code com.epam.pipeline.manager} components that build a {@code TransactionTemplate} of
+     * their own still need one in order to be constructed. It is a mock, so work such a component
+     * does here is not actually transactional - do not assert transactional behaviour against it.
+     */
+    @MockBean
+    public PlatformTransactionManager mockTransactionManager;
 
     @MockBean
-    protected ImpersonationManager impersonationManager;
+    public ImpersonationManager impersonationManager;
 
     @MockBean
-    protected JwtTokenGenerator mockJwtTokenGenerator;
+    public JwtTokenGenerator mockJwtTokenGenerator;
 
     @MockBean
-    protected MetadataDao mockMetadataDao;
+    public MetadataDao mockMetadataDao;
 
     @MockBean
-    protected RunConfigurationDao mockRunConfigurationDao;
+    public RunConfigurationDao mockRunConfigurationDao;
 
     @MockBean
-    protected FolderDao mockFolderDao;
+    public FolderDao mockFolderDao;
 
     @MockBean
-    protected MetadataEntityDao mockMetadataEntityDao;
+    public MetadataEntityDao mockMetadataEntityDao;
 
     @MockBean
-    protected MetadataClassDao mockMetadataClassDao;
+    public MetadataClassDao mockMetadataClassDao;
 
     @MockBean
-    protected CloudRegionDao mockCloudRegionDao;
+    public CloudRegionDao mockCloudRegionDao;
 
     @MockBean
-    protected CloudRegionMapper mockCloudRegionMapper;
+    public CloudRegionMapper mockCloudRegionMapper;
 
     @MockBean
-    protected FileShareMountDao mockFileShareMountDao;
+    public FileShareMountDao mockFileShareMountDao;
 
     @MockBean
-    protected DataStorageDao mockDataStorageDao;
+<<<<<<< ours
+    protected JdbcMutableAclServiceImpl mockJdbcMutableAclService;
+||||||| base
+    protected DataStorageTagDao mockDataStorageTagDao;
 
     @MockBean
     protected JdbcMutableAclServiceImpl mockJdbcMutableAclService;
+=======
+    public DataStorageDao mockDataStorageDao;
 
     @MockBean
-    protected GroupStatusDao mockGroupStatusDao;
+    public DataStorageTagDao mockDataStorageTagDao;
+>>>>>>> theirs
 
     @MockBean
-    protected PermissionEvaluator mockPermissionEvaluator;
+    public JdbcMutableAclServiceImpl mockJdbcMutableAclService;
 
     @MockBean
-    protected PermissionFactory mockPermissionFactory;
+    public GroupStatusDao mockGroupStatusDao;
 
     @MockBean
-    protected ToolDao mockToolDao;
+    public PermissionEvaluator mockPermissionEvaluator;
 
     @MockBean
-    protected ToolVulnerabilityDao mockToolVulnerabilityDao;
+    public PermissionFactory mockPermissionFactory;
 
     @MockBean
-    protected DockerRegistryDao mockDockerRegistryDao;
+    public ToolDao mockToolDao;
 
     @MockBean
-    protected ToolGroupDao mockToolGroupDao;
+    public ToolVulnerabilityDao mockToolVulnerabilityDao;
 
     @MockBean
-    protected ToolGroupWithIssuesMapper mockToolGroupWithIssuesMapper;
+    public DockerRegistryDao mockDockerRegistryDao;
 
     @MockBean
-    protected JwtTokenVerifier mockTwtTokenVerifier;
+    public ToolGroupDao mockToolGroupDao;
 
     @MockBean
-    protected ToolVersionDao mockToolVersionDao;
+    public ToolGroupWithIssuesMapper mockToolGroupWithIssuesMapper;
 
     @MockBean
-    protected InstanceOfferDao mockInstanceOfferDao;
+    public JwtTokenVerifier mockTwtTokenVerifier;
 
     @MockBean
-    protected PipelineApiService mockPipelineApiService;
+    public ToolVersionDao mockToolVersionDao;
 
     @MockBean
-    protected SidRetrievalStrategy mockSidRetrievalStrategy;
+    public InstanceOfferDao mockInstanceOfferDao;
 
     @MockBean
-    protected ContextualPreferenceDao mockContextualPreferenceDao;
+    public PipelineApiService mockPipelineApiService;
 
     @MockBean
-    protected ContextualPreferenceHandler mockContextualPreferenceHandler;
+    public SidRetrievalStrategy mockSidRetrievalStrategy;
 
     @MockBean
-    protected DataStorageApiService mockDataStorageApiService;
+    public ContextualPreferenceDao mockContextualPreferenceDao;
 
     @MockBean
-    protected ToolApiService mockToolApiService;
+    public ContextualPreferenceHandler mockContextualPreferenceHandler;
 
     @MockBean
-    protected FolderApiService mockFolderApiService;
+    public DataStorageApiService mockDataStorageApiService;
 
     @MockBean
-    protected DtsRegistryDao mockDtsRegistryDao;
+    public ToolApiService mockToolApiService;
 
     @MockBean
-    protected DtsRegistryMapper mockDtsRegistryMapper;
+    public FolderApiService mockFolderApiService;
 
     @MockBean
-    protected RestartRunDao mockRestartRunDao;
+    public DtsRegistryDao mockDtsRegistryDao;
 
     @MockBean
-    protected ClusterDao mockClusterDao;
+    public DtsRegistryMapper mockDtsRegistryMapper;
 
     @MockBean
-    protected NodeDiskDao mockNodeDiskDao;
+    public RestartRunDao mockRestartRunDao;
+
+    @MockBean
+    public ClusterDao mockClusterDao;
+
+    @MockBean
+<<<<<<< ours
+    protected IssueDao mockIssueDao;
+||||||| base
+    protected StopServerlessRunDao mockStopServerlessRunDao;
 
     @MockBean
     protected IssueDao mockIssueDao;
+=======
+    public NodeDiskDao mockNodeDiskDao;
 
     @MockBean
-    protected IssueCommentDao mockIssueCommentDao;
+    public StopServerlessRunDao mockStopServerlessRunDao;
+>>>>>>> theirs
 
     @MockBean
-    protected IssueMapper mockIssueMapper;
+    public IssueDao mockIssueDao;
 
     @MockBean
-    protected PipelineWithPermissionsMapper mockPipelineWithPermissionsMapper;
+    public IssueCommentDao mockIssueCommentDao;
 
     @MockBean
-    protected AbstractEntityPermissionMapper mockAbstractEntityPermissionMapper;
+    public IssueMapper mockIssueMapper;
 
     @MockBean
-    protected PermissionGrantVOMapper mockPermissionGrantVOMapper;
+    public PipelineWithPermissionsMapper mockPipelineWithPermissionsMapper;
 
     @MockBean
-    protected Executor mockExecutor;
+    public AbstractEntityPermissionMapper mockAbstractEntityPermissionMapper;
 
     @MockBean
-    protected AbstractRunConfigurationMapper mockAbstractRunConfigurationMapper;
+    public PermissionGrantVOMapper mockPermissionGrantVOMapper;
 
     @MockBean
-    protected MetadataEntryMapper mockMetadataEntryMapper;
+    public Executor mockExecutor;
 
     @MockBean
-    protected AbstractDataStorageMapper mockAbstractDataStorageMapper;
+    public AbstractRunConfigurationMapper mockAbstractRunConfigurationMapper;
 
     @MockBean
-    protected NodeScheduleMapper mockNodeScheduleMapper;
+    public MetadataEntryMapper mockMetadataEntryMapper;
 
     @MockBean
-    protected NodePoolMapper mockNodePoolMapper;
+    public AbstractDataStorageMapper mockAbstractDataStorageMapper;
 
     @MockBean
-    protected TaskScheduler mockTaskScheduler;
+    public NodeScheduleMapper mockNodeScheduleMapper;
 
     @MockBean
-    protected InstanceOfferScheduler mockInstanceOfferScheduler;
+    public NodePoolMapper mockNodePoolMapper;
 
     @MockBean
-    protected MonitoringESDao mockMonitoringESDao;
+    public TaskScheduler mockTaskScheduler;
 
     @MockBean
-    protected PodMonitor mockPodMonitor;
+    public InstanceOfferScheduler mockInstanceOfferScheduler;
 
     @MockBean
-    protected ToolScanScheduler mockToolScanScheduler;
+    public MonitoringESDao mockMonitoringESDao;
 
     @MockBean
-    protected SchedulerFactoryBean mockSchedulerFactoryBean;
+    public PodMonitor mockPodMonitor;
 
     @MockBean
-    protected RunScheduler mockRunScheduler;
+    public ToolScanScheduler mockToolScanScheduler;
 
     @MockBean
-    protected PipelineRunDao mockPipelineRunDao;
+    public RunScheduler mockRunScheduler;
+
+    @MockBean
+    public PipelineRunDao mockPipelineRunDao;
+
+    @MockBean
+<<<<<<< ours
+    protected UserDao mockUserDao;
+||||||| base
+    protected PipelineRunResultDao mockPipelineRunResultDao;
+
+    @MockBean
+    protected JwtTokenRevocationDao mockJwtTokenRevocationDao;
+
+    @MockBean
+    protected NamedJwtTokenDao mockNamedJwtTokenDao;
+
+    @MockBean
+    protected JwtTokenRevocationManager jwtTokenRevocationManager;
+
+    @MockBean
+    protected NamedJwtTokenManager namedJwtTokenManager;
 
     @MockBean
     protected UserDao mockUserDao;
+=======
+    public PipelineRunResultDao mockPipelineRunResultDao;
 
     @MockBean
-    protected MonitoringNotificationDao monitoringNotificationDao;
+    protected JwtTokenRevocationDao mockJwtTokenRevocationDao;
 
     @MockBean
-    protected NotificationSettingsDao mockNotificationSettingsDao;
+    protected NamedJwtTokenDao mockNamedJwtTokenDao;
 
     @MockBean
-    protected RoleDao mockRoleDao;
+    protected JwtTokenRevocationManager jwtTokenRevocationManager;
 
     @MockBean
-    protected AttachmentDao mockAttachmentDao;
+    protected NamedJwtTokenManager namedJwtTokenManager;
 
     @MockBean
-    protected EventDao mockEventDao;
+    public UserDao mockUserDao;
+>>>>>>> theirs
 
     @MockBean
-    protected RunScheduleDao mockRunScheduleDao;
+    public MonitoringNotificationDao monitoringNotificationDao;
 
     @MockBean
-    protected NodePoolDao mockNodePoolDao;
+    public NotificationSettingsDao mockNotificationSettingsDao;
 
     @MockBean
-    protected NodeScheduleDao nodeScheduleDao;
+    public RoleDao mockRoleDao;
 
     @MockBean
-    protected RunLogDao mockRunLogDao;
+    public AttachmentDao mockAttachmentDao;
 
     @MockBean
-    protected DataStorageRuleDao mockDataStorageRuleDao;
+    public EventDao mockEventDao;
 
     @MockBean
-    protected FilterDao mockFilterDao;
+    public RunScheduleDao mockRunScheduleDao;
 
     @MockBean
-    protected CategoricalAttributeDao mockCategoricalAttributeDao;
+    public NodePoolDao mockNodePoolDao;
 
     @MockBean
-    protected NotificationTemplateDao mockNotificationTemplateDao;
+    public CapacityReservationDao mockCapacityReservationDao;
 
     @MockBean
-    protected NotificationDao mockNotificationDao;
+    public CapacityBlockExtensionDao mockCapacityBlockExtensionDao;
 
     @MockBean
-    protected DocumentGenerationPropertyDao mockDocumentGenerationPropertyDao;
+    public NodeScheduleDao nodeScheduleDao;
 
     @MockBean
-    protected PipelineDao mockPipelineDao;
+    public RunLogDao mockRunLogDao;
 
     @MockBean
-    protected AWSProfileCredentialsRepository mockAWSProfileCredentialsRepository;
+    public DataStorageRuleDao mockDataStorageRuleDao;
 
     @MockBean
-    protected CloudProfileCredentialsMapper mockCloudProfileCredentialsMapper;
+    public FilterDao mockFilterDao;
 
     @MockBean
-    protected CloudProfileCredentialsRepository mockCloudProfileCredentialsRepository;
+    public CategoricalAttributeDao mockCategoricalAttributeDao;
 
     @MockBean
-    protected PipelineUserRepository mockPipelineUserRepository;
+    public NotificationTemplateDao mockNotificationTemplateDao;
 
     @MockBean
-    protected RoleRepository mockRoleRepository;
+    public NotificationDao mockNotificationDao;
+
+    @MockBean
+    public DocumentGenerationPropertyDao mockDocumentGenerationPropertyDao;
+
+    @MockBean
+    public PipelineDao mockPipelineDao;
+
+    @MockBean
+    public AWSProfileCredentialsRepository mockAWSProfileCredentialsRepository;
+
+    @MockBean
+    public CloudProfileCredentialsMapper mockCloudProfileCredentialsMapper;
+
+    @MockBean
+    public CloudProfileCredentialsRepository mockCloudProfileCredentialsRepository;
+
+    @MockBean
+<<<<<<< ours
+    protected DataStorageLifecycleRuleRepository lifecycleRuleRepository;
+||||||| base
+    protected OntologyMapper mockOntologyMapper;
+
+    @MockBean
+    protected OntologyRepository mockOntologyRepository;
 
     @MockBean
     protected DataStorageLifecycleRuleRepository lifecycleRuleRepository;
+=======
+    public PipelineUserRepository mockPipelineUserRepository;
 
     @MockBean
-    protected DataStorageLifecycleRuleExecutionRepository lifecycleRuleExecutionRepository;
+    public RoleRepository mockRoleRepository;
 
     @MockBean
-    protected PreferenceDao mockPreferenceDao;
+    public OntologyMapper mockOntologyMapper;
+>>>>>>> theirs
 
     @MockBean
-    protected RunStatusDao mockRunStatusDao;
+    public OntologyRepository mockOntologyRepository;
 
     @MockBean
-    protected UserRunnersManager mockUserRunnersManager;
+    public DataStorageLifecycleRuleRepository lifecycleRuleRepository;
 
     @MockBean
-    protected RunServiceUrlDao mockRunServiceUrlDao;
+    public DataStorageLifecycleRuleExecutionRepository lifecycleRuleExecutionRepository;
 
     @MockBean
-    protected ContextualNotificationManager contextualNotificationManager;
+    public PreferenceDao mockPreferenceDao;
 
     @MockBean
-    protected ContextualNotificationSettingsManager contextualNotificationSettingsManager;
+    public RunStatusDao mockRunStatusDao;
 
     @MockBean
-    protected ContextualNotificationRegistrationManager contextualNotificationRegistrationManager;
+    public UserRunnersManager mockUserRunnersManager;
 
     @MockBean
-    protected CacheManager cacheManager;
+    public RunServiceUrlDao mockRunServiceUrlDao;
 
     @MockBean
-    protected NatGatewayDao natGatewayDao;
+    public ContextualNotificationManager contextualNotificationManager;
+
+    @MockBean
+    public ContextualNotificationSettingsManager contextualNotificationSettingsManager;
+
+    @MockBean
+    public ContextualNotificationRegistrationManager contextualNotificationRegistrationManager;
+
+    @MockBean
+    public CacheManager cacheManager;
+
+<<<<<<< ours
+||||||| base
+    @MockBean(name = "aclCacheManager")
+    protected CacheManager aclCacheManager;
+
+=======
+    @MockBean(name = "aclCacheManager")
+    public CacheManager aclCacheManager;
+
+>>>>>>> theirs
+    @MockBean
+    public NatGatewayDao natGatewayDao;
+
+    @MockBean
+<<<<<<< ours
+    protected BillingManager billingManager;
+||||||| base
+    protected LdapTemplateProvider ldapTemplateProvider;
 
     @MockBean
     protected BillingManager billingManager;
+=======
+    public LdapTemplateProvider ldapTemplateProvider;
 
+    @MockBean
+    public BillingManager billingManager;
+>>>>>>> theirs
+
+<<<<<<< ours
+||||||| base
+    @MockBean
+    protected PipelineRunResultManager mockPipelineRunResultManager;
+
+=======
+    @MockBean
+    public PipelineRunResultManager mockPipelineRunResultManager;
+
+>>>>>>> theirs
     @MockBean(name = "pipelineBillingDetailsLoader")
-    protected EntityBillingDetailsLoader pipelineBillingDetailsLoader;
+    public EntityBillingDetailsLoader pipelineBillingDetailsLoader;
 
     @MockBean(name = "toolBillingDetailsLoader")
-    protected EntityBillingDetailsLoader toolBillingDetailsLoader;
+    public EntityBillingDetailsLoader toolBillingDetailsLoader;
 
     @MockBean(name = "storageBillingDetailsLoader")
-    protected EntityBillingDetailsLoader storageBillingDetailsLoader;
+    public EntityBillingDetailsLoader storageBillingDetailsLoader;
 
     @MockBean(name = "userBillingDetailsLoader")
-    protected EntityBillingDetailsLoader userBillingDetailsLoader;
+    public EntityBillingDetailsLoader userBillingDetailsLoader;
 
     @MockBean
-    protected QuotaRepository quotaRepository;
+    public QuotaRepository quotaRepository;
 
     @MockBean
-    protected QuotaActionRepository quotaActionRepository;
+    public QuotaActionRepository quotaActionRepository;
 
     @MockBean
-    protected QuotaMapper quotaMapper;
+    public QuotaMapper quotaMapper;
 
     @MockBean
-    protected AppliedQuotaRepository appliedQuotaRepository;
+    public AppliedQuotaRepository appliedQuotaRepository;
 
     @MockBean
-    protected StorageQuotaTriggersDao storageQuotaTriggersDao;
+    public StorageQuotaTriggersDao storageQuotaTriggersDao;
 
     @MockBean
-    protected StorageQuotaTriggersManager storageQuotaTriggersManager;
+    public StorageQuotaTriggersManager storageQuotaTriggersManager;
 
     @MockBean
-    protected OnlineUsersRepository onlineUsersRepository;
+    public OnlineUsersRepository onlineUsersRepository;
 
     @MockBean
-    protected OnlineUsersMapper onlineUsersMapper;
+    public OnlineUsersMapper onlineUsersMapper;
 
     @MockBean
-    protected NodePoolUsageRepository nodePoolUsageRepository;
+    public NodePoolUsageRepository nodePoolUsageRepository;
 
     @MockBean
-    protected NodePoolUsageMapper nodePoolUsageMapper;
+    public NodePoolUsageMapper nodePoolUsageMapper;
+
+    @MockBean
+<<<<<<< ours
+    protected GitHubMapper gitHubMapper;
+||||||| base
+    protected BitbucketMapper bitbucketMapper;
+
+    @MockBean
+    protected BitbucketCloudMapper bitbucketCloudMapper;
 
     @MockBean
     protected GitHubMapper gitHubMapper;
+=======
+    public BitbucketMapper bitbucketMapper;
 
     @MockBean
-    protected DataStorageLifecycleManager storageLifecycleManager;
+    public BitbucketCloudMapper bitbucketCloudMapper;
 
     @MockBean
-    protected DataStorageLifecycleRestoreManager storageLifecycleRestoreManager;
+    public GitHubMapper gitHubMapper;
+>>>>>>> theirs
 
     @MockBean
-    protected UserNotificationRepository userNotificationRepository;
+    public DataStorageLifecycleManager storageLifecycleManager;
 
     @MockBean
-    protected UserNotificationMapper userNotificationMapper;
+    public DataStorageLifecycleRestoreManager storageLifecycleRestoreManager;
 
     @MockBean
-    protected StorageEventCollector events;
+    public UserNotificationRepository userNotificationRepository;
 
     @MockBean
-    protected CloudFacade cloudFacade;
+    public UserNotificationMapper userNotificationMapper;
 
     @MockBean
-    protected KubernetesMapper kubernetesMapper;
+    public StorageEventCollector events;
+
+    @MockBean
+    public CloudFacade cloudFacade;
+
+    @MockBean
+    public KubernetesMapper kubernetesMapper;
+
+    @MockBean
+<<<<<<< ours
+    protected StoragePathPermissionsDao storagePathPermissionsDao;
+||||||| base
+    protected ArchiveRunDao archiveRunDao;
+
+    @MockBean
+    protected EngineRunTaskDao engineRunTaskDao;
 
     @MockBean
     protected StoragePathPermissionsDao storagePathPermissionsDao;
+=======
+    public ArchiveRunDao archiveRunDao;
 
     @MockBean
-    protected AccessCodeCleaner accessCodeCleaner;
+    public EngineRunTaskDao engineRunTaskDao;
 
     @MockBean
-    protected AccessService accessService;
+    public StoragePathPermissionsDao storagePathPermissionsDao;
+>>>>>>> theirs
 
     @MockBean
-    protected UnsecuredAccessService unsecuredAccessService;
+    public AccessCodeCleaner accessCodeCleaner;
 
     @MockBean
+    public AccessService accessService;
+
+    @MockBean
+    public UnsecuredAccessService unsecuredAccessService;
+
+    @MockBean
+<<<<<<< ours
+||||||| base
+    protected AzureDevOpsMapper azureDevOpsMapper;
+
+    @MockBean
+    protected GlobalSearchElasticHelper globalSearchElasticHelper;
+
+    @MockBean
+    protected HeapsterElasticRestHighLevelClient heapsterElasticRestHighLevelClient;
+
+    @MockBean
+=======
+    public AzureDevOpsMapper azureDevOpsMapper;
+
+    @MockBean
+    public CommonAuditClient auditClient;
+
+    @MockBean
+    protected HeapsterElasticRestHighLevelClient heapsterElasticRestHighLevelClient;
+
+    @MockBean
+    protected GlobalSearchElasticHelper globalSearchElasticHelper;
+
+    @MockBean
+>>>>>>> theirs
     protected PipelineRunMetricsDao pipelineRunMetricsDao;
 
     @MockBean
+<<<<<<< ours
     protected ArchiveRunDao archiveRunDao;
+||||||| base
+    protected PlatformUsageCreditsRuleService platformUsageCreditsRuleService;
+
+    @MockBean
+    protected PlatformUsageCreditsUserBalanceService platformUsageCreditsUserBalanceService;
+
+    @MockBean
+    protected PlatformUsageCreditsUserBalanceCRUDService platformUsageCreditsUserBalanceCRUDService;
+
+    @MockBean
+    protected PlatformUsageCreditsLaunchService platformUsageCreditsLaunchService;
+
+    @MockBean
+    protected PlatformUsageCreditsEventService platformUsageCreditsEventService;
+
+    @MockBean
+    protected UserAccessService userAccessService;
+=======
+    protected PlatformUsageCreditsRuleService platformUsageCreditsRuleService;
+
+    @MockBean
+    protected PlatformUsageCreditsUserBalanceService platformUsageCreditsUserBalanceService;
+
+    @MockBean
+    protected PlatformUsageCreditsUserBalanceCRUDService platformUsageCreditsUserBalanceCRUDService;
+
+    @MockBean
+    protected PlatformUsageCreditsLaunchService platformUsageCreditsLaunchService;
+
+    @MockBean
+    protected PlatformUsageCreditsEventService platformUsageCreditsEventService;
+
+    @MockBean
+    protected UserAccessService userAccessService;
+
+    @MockBean
+    protected AsyncTaskRepository asyncTaskRepository;
+
+    @MockBean
+    protected AsyncTaskMapper asyncTaskMapper;
+>>>>>>> theirs
 }

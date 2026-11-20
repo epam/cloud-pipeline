@@ -44,10 +44,22 @@ import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.google.common.collect.Maps;
+<<<<<<< ours
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.junit.Before;
 import org.junit.Test;
+||||||| base
+import org.apache.commons.lang3.tuple.Pair;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+=======
+import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+>>>>>>> theirs
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -80,13 +92,13 @@ import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
@@ -170,8 +182,7 @@ public class PipelineRunManagerUnitTest {
     private final List<PipelineRunParameter> parameters = singletonList(
             new PipelineRunParameter(PARAM_NAME_1, TEST_STRING));
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach    public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
     }
 
@@ -258,6 +269,316 @@ public class PipelineRunManagerUnitTest {
     }
 
     @Test
+<<<<<<< ours
+||||||| base
+    public void testResolveProjectFiltering() {
+        final Folder project = new Folder();
+        project.setId(1L);
+
+        final Folder child = new Folder();
+        project.setId(2L);
+        project.getChildFolders().add(child);
+
+        final Pipeline pipeline1 = new Pipeline();
+        pipeline1.setId(2L);
+        project.getPipelines().add(pipeline1);
+
+        final Pipeline pipeline2 = new Pipeline();
+        pipeline2.setId(3L);
+        child.getPipelines().add(pipeline2);
+
+        final RunConfiguration configuration1 = new RunConfiguration();
+        configuration1.setId(4L);
+        project.getConfigurations().add(configuration1);
+
+        final RunConfiguration configuration2 = new RunConfiguration();
+        configuration2.setId(5L);
+        child.getConfigurations().add(configuration2);
+
+        when(folderApiService.load(project.getId())).thenReturn(project);
+
+        final PagingRunFilterVO filterVO = new PagingRunFilterVO();
+        filterVO.setProjectIds(singletonList(project.getId()));
+
+        final PipelineRunFilterVO.ProjectFilter projectFilter = pipelineRunManager.resolveProjectFiltering(filterVO);
+        assertEquals(2, projectFilter.getPipelineIds().size());
+        assertEquals(2, projectFilter.getConfigurationIds().size());
+    }
+
+    @Test
+    public void shouldThrowExceptionOnInexistentRunTagUpdate() {
+        doReturn(null).when(pipelineRunDao).loadPipelineRun(eq(NOT_EXISTING_RUN_ID));
+
+        assertThrows(IllegalArgumentException.class, () -> pipelineRunManager
+                .updateTags(NOT_EXISTING_RUN_ID, new TagsVO(null), true));
+    }
+
+    @Test
+    public void shouldReplaceEnvVarsWithEmptyCollections() {
+        assertTrue(isEmpty(pipelineRunManager.replaceParametersWithEnvVars(new ArrayList<>(), new HashMap<>())));
+    }
+
+    @Test
+    public void shouldReplaceEnvVarsWithEmptyEnvVars() {
+        assertEquals(parameters, pipelineRunManager.replaceParametersWithEnvVars(parameters, new HashMap<>()));
+    }
+
+    @Test
+    public void shouldReplaceEnvVarsWithEmptyParams() {
+        assertTrue(isEmpty(pipelineRunManager.replaceParametersWithEnvVars(new ArrayList<>(), envVars)));
+    }
+
+    @Test
+    public void shouldNotReplaceEnvVarsIfNoNeeded() {
+        assertEquals(TEST_STRING, pipelineRunManager
+                .replaceParametersWithEnvVars(parameters, envVars).get(0).getValue());
+    }
+
+    @Test
+    public void shouldReplaceEnvVarsWithTestEnv() {
+        assertEnvVarsReplacement("test/${%s}", "test/%s");
+    }
+
+    @Test
+    public void shouldReplaceEnvVarsWithTestEnvAtTheEndOfTheLine() {
+        assertEnvVarsReplacement("test/$%s", "test/%s");
+    }
+
+    @Test
+    public void shouldReplaceEnvVarsWithTestEnvAtTheMiddleOfTheLine() {
+        assertEnvVarsReplacement("test/$%s/", "test/%s/");
+    }
+
+    @Test
+    public void shouldReplaceEnvVarsWithTestEnvWithSeveralVariables() {
+        assertEnvVarsReplacement("test/$%1$s/${%1$s}/$%1$s/", "test/%1$s/%1$s/%1$s/");
+    }
+
+    @Test
+    public void shouldUpdateLastProcessedDate() {
+        final PipelineRun pipelineRun = new PipelineRun();
+        pipelineRun.setId(ID);
+        pipelineRun.setEntitiesIds(singletonList(ID));
+        pipelineRun.setStatus(TaskStatus.STOPPED);
+        pipelineRun.setEndDate(TEST_DATE);
+
+        pipelineRun.setPipelineRunParameters(Arrays.asList(
+                new PipelineRunParameter(CP_REPORT_RUN_PROCESSED_DATE, PROCESSED_VALUE),
+                new PipelineRunParameter(CP_REPORT_RUN_STATUS, "Status")));
+
+        final MetadataEntity currentMetadata = new MetadataEntity();
+        currentMetadata.setData(new HashMap<>());
+        doReturn(Collections.singleton(currentMetadata)).when(metadataEntityManager)
+                .loadEntitiesByIds(Collections.singleton(ID));
+
+        new JsonMapper().init();
+
+        pipelineRunManager.updatePipelineStatus(pipelineRun);
+        final ArgumentCaptor<List<MetadataEntity>> captor = ArgumentCaptor.forClass((Class) List.class);
+        verify(metadataEntityManager).loadEntitiesByIds(Collections.singleton(ID));
+        verify(metadataEntityManager).updateMetadataEntities(captor.capture());
+        final MetadataEntity updatedMetadataEntity = captor.getValue().get(0);
+        assertThat(updatedMetadataEntity.getData())
+                .hasSize(2)
+                .containsKey(PROCESSED_VALUE);
+    }
+
+    @Test
+    public void shouldUpdateMetadataRunStatus() {
+        final String parameterValue = "Analysis status";
+        final PipelineRun pipelineRun = new PipelineRun();
+        pipelineRun.setId(ID);
+        pipelineRun.setEntitiesIds(singletonList(ID));
+        pipelineRun.setStatus(TaskStatus.STOPPED);
+        pipelineRun.setStartDate(TEST_DATE);
+        pipelineRun.setPipelineRunParameters(singletonList(
+                new PipelineRunParameter(CP_REPORT_RUN_STATUS, parameterValue)));
+
+        final Map<String, PipeConfValue> currentData = new HashMap<>();
+        currentData.put(TEST_STRING, new PipeConfValue(PipeConfValueType.STRING.toString(), TEST_STRING));
+        final MetadataEntity currentMetadata = new MetadataEntity();
+        currentMetadata.setData(currentData);
+
+        doReturn(Collections.singleton(currentMetadata)).when(metadataEntityManager)
+                .loadEntitiesByIds(Collections.singleton(ID));
+
+        new JsonMapper().init();
+
+        pipelineRunManager.updatePipelineStatus(pipelineRun);
+
+        final String expectedDataValue = String.format(
+                "[{\"runId\":1,\"status\":\"STOPPED\",\"startDate\":\"%s\"}]", TEST_DATE_STRING);
+        final ArgumentCaptor<List<MetadataEntity>> captor = ArgumentCaptor.forClass((Class) List.class);
+        verify(metadataEntityManager).loadEntitiesByIds(Collections.singleton(ID));
+        verify(metadataEntityManager).updateMetadataEntities(captor.capture());
+        verify(runCRUDService).updateRunStatus(any());
+        final List<MetadataEntity> updatedMetadataEntities = captor.getValue();
+        assertThat(updatedMetadataEntities.size()).isEqualTo(1);
+        final MetadataEntity updatedMetadataEntity = updatedMetadataEntities.get(0);
+        assertThat(updatedMetadataEntity.getData())
+                .hasSize(2)
+                .containsKey(TEST_STRING)
+                .containsKey(parameterValue);
+        assertThat(updatedMetadataEntity.getData().get(TEST_STRING).getValue()).isEqualTo(TEST_STRING);
+        assertThat(updatedMetadataEntity.getData().get(parameterValue).getValue()).isEqualTo(expectedDataValue);
+    }
+
+    @Test
+=======
+    public void testResolveProjectFiltering() {
+        final Folder project = new Folder();
+        project.setId(1L);
+
+        final Folder child = new Folder();
+        project.setId(2L);
+        project.getChildFolders().add(child);
+
+        final Pipeline pipeline1 = new Pipeline();
+        pipeline1.setId(2L);
+        project.getPipelines().add(pipeline1);
+
+        final Pipeline pipeline2 = new Pipeline();
+        pipeline2.setId(3L);
+        child.getPipelines().add(pipeline2);
+
+        final RunConfiguration configuration1 = new RunConfiguration();
+        configuration1.setId(4L);
+        project.getConfigurations().add(configuration1);
+
+        final RunConfiguration configuration2 = new RunConfiguration();
+        configuration2.setId(5L);
+        child.getConfigurations().add(configuration2);
+
+        when(folderApiService.load(project.getId())).thenReturn(project);
+
+        final PagingRunFilterVO filterVO = new PagingRunFilterVO();
+        filterVO.setProjectIds(singletonList(project.getId()));
+
+        final PipelineRunFilterVO.ProjectFilter projectFilter = pipelineRunManager.resolveProjectFiltering(filterVO);
+        assertEquals(2, projectFilter.getPipelineIds().size());
+        assertEquals(2, projectFilter.getConfigurationIds().size());
+    }
+
+    @Test
+    public void shouldThrowExceptionOnInexistentRunTagUpdate() {
+        doReturn(null).when(pipelineRunDao).loadPipelineRun(eq(NOT_EXISTING_RUN_ID));
+
+        assertThrows(IllegalArgumentException.class, () -> pipelineRunManager
+                .updateTags(NOT_EXISTING_RUN_ID, new TagsVO(null), true));
+    }
+
+    @Test
+    public void shouldReplaceEnvVarsWithEmptyCollections() {
+        assertTrue(isEmpty(pipelineRunManager.replaceParametersWithEnvVars(new ArrayList<>(), new HashMap<>())));
+    }
+
+    @Test
+    public void shouldReplaceEnvVarsWithEmptyEnvVars() {
+        assertEquals(parameters, pipelineRunManager.replaceParametersWithEnvVars(parameters, new HashMap<>()));
+    }
+
+    @Test
+    public void shouldReplaceEnvVarsWithEmptyParams() {
+        assertTrue(isEmpty(pipelineRunManager.replaceParametersWithEnvVars(new ArrayList<>(), envVars)));
+    }
+
+    @Test
+    public void shouldNotReplaceEnvVarsIfNoNeeded() {
+        assertEquals(TEST_STRING, pipelineRunManager
+                .replaceParametersWithEnvVars(parameters, envVars).get(0).getValue());
+    }
+
+    @Test
+    public void shouldReplaceEnvVarsWithTestEnv() {
+        assertEnvVarsReplacement("test/${%s}", "test/%s");
+    }
+
+    @Test
+    public void shouldReplaceEnvVarsWithTestEnvAtTheEndOfTheLine() {
+        assertEnvVarsReplacement("test/$%s", "test/%s");
+    }
+
+    @Test
+    public void shouldReplaceEnvVarsWithTestEnvAtTheMiddleOfTheLine() {
+        assertEnvVarsReplacement("test/$%s/", "test/%s/");
+    }
+
+    @Test
+    public void shouldReplaceEnvVarsWithTestEnvWithSeveralVariables() {
+        assertEnvVarsReplacement("test/$%1$s/${%1$s}/$%1$s/", "test/%1$s/%1$s/%1$s/");
+    }
+
+    @Test
+    public void shouldUpdateLastProcessedDate() {
+        final PipelineRun pipelineRun = new PipelineRun();
+        pipelineRun.setId(ID);
+        pipelineRun.setEntitiesIds(singletonList(ID));
+        pipelineRun.setStatus(TaskStatus.STOPPED);
+        pipelineRun.setEndDate(TEST_DATE);
+
+        pipelineRun.setPipelineRunParameters(Arrays.asList(
+                new PipelineRunParameter(CP_REPORT_RUN_PROCESSED_DATE, PROCESSED_VALUE),
+                new PipelineRunParameter(CP_REPORT_RUN_STATUS, "Status")));
+
+        final MetadataEntity currentMetadata = new MetadataEntity();
+        currentMetadata.setData(new HashMap<>());
+        doReturn(Collections.singleton(currentMetadata)).when(metadataEntityManager)
+                .loadEntitiesByIds(Collections.singleton(ID));
+
+        new JsonMapper().afterPropertiesSet();
+
+        pipelineRunManager.updatePipelineStatus(pipelineRun);
+        final ArgumentCaptor<List<MetadataEntity>> captor = ArgumentCaptor.forClass((Class) List.class);
+        verify(metadataEntityManager).loadEntitiesByIds(Collections.singleton(ID));
+        verify(metadataEntityManager).updateMetadataEntities(captor.capture());
+        final MetadataEntity updatedMetadataEntity = captor.getValue().get(0);
+        assertThat(updatedMetadataEntity.getData())
+                .hasSize(2)
+                .containsKey(PROCESSED_VALUE);
+    }
+
+    @Test
+    public void shouldUpdateMetadataRunStatus() {
+        final String parameterValue = "Analysis status";
+        final PipelineRun pipelineRun = new PipelineRun();
+        pipelineRun.setId(ID);
+        pipelineRun.setEntitiesIds(singletonList(ID));
+        pipelineRun.setStatus(TaskStatus.STOPPED);
+        pipelineRun.setStartDate(TEST_DATE);
+        pipelineRun.setPipelineRunParameters(singletonList(
+                new PipelineRunParameter(CP_REPORT_RUN_STATUS, parameterValue)));
+
+        final Map<String, PipeConfValue> currentData = new HashMap<>();
+        currentData.put(TEST_STRING, new PipeConfValue(PipeConfValueType.STRING.toString(), TEST_STRING));
+        final MetadataEntity currentMetadata = new MetadataEntity();
+        currentMetadata.setData(currentData);
+
+        doReturn(Collections.singleton(currentMetadata)).when(metadataEntityManager)
+                .loadEntitiesByIds(Collections.singleton(ID));
+
+        new JsonMapper().afterPropertiesSet();
+
+        pipelineRunManager.updatePipelineStatus(pipelineRun);
+
+        final String expectedDataValue = String.format(
+                "[{\"runId\":1,\"status\":\"STOPPED\",\"startDate\":\"%s\"}]", TEST_DATE_STRING);
+        final ArgumentCaptor<List<MetadataEntity>> captor = ArgumentCaptor.forClass((Class) List.class);
+        verify(metadataEntityManager).loadEntitiesByIds(Collections.singleton(ID));
+        verify(metadataEntityManager).updateMetadataEntities(captor.capture());
+        verify(runCRUDService).updateRunStatus(any());
+        final List<MetadataEntity> updatedMetadataEntities = captor.getValue();
+        assertThat(updatedMetadataEntities.size()).isEqualTo(1);
+        final MetadataEntity updatedMetadataEntity = updatedMetadataEntities.get(0);
+        assertThat(updatedMetadataEntity.getData())
+                .hasSize(2)
+                .containsKey(TEST_STRING)
+                .containsKey(parameterValue);
+        assertThat(updatedMetadataEntity.getData().get(TEST_STRING).getValue()).isEqualTo(TEST_STRING);
+        assertThat(updatedMetadataEntity.getData().get(parameterValue).getValue()).isEqualTo(expectedDataValue);
+    }
+
+    @Test
+>>>>>>> theirs
     public void shouldLoadRestartedRunsWithRegions() {
         final RunInstance runInstance = new RunInstance();
         runInstance.setCloudRegionId(ID_4);
@@ -1281,15 +1602,15 @@ public class PipelineRunManagerUnitTest {
     private void assertContainsUser(final List<RunSid> runSids, final String userName,
                                     final RunAccessType accessType) {
         final RunSid user = findRunSid(runSids, userName, true);
-        assertNotNull(String.format("User %s not found", userName), user);
-        assertEquals(String.format("User %s has wrong access type", userName), accessType, user.getAccessType());
+        assertNotNull(user);
+        assertEquals(accessType, user.getAccessType());
     }
 
     private void assertContainsRole(final List<RunSid> runSids, final String roleName,
                                     final RunAccessType accessType) {
         final RunSid role = findRunSid(runSids, roleName, false);
-        assertNotNull(String.format("Role %s not found", roleName), role);
-        assertEquals(String.format("Role %s has wrong access type", roleName), accessType, role.getAccessType());
+        assertNotNull(role);
+        assertEquals(accessType, role.getAccessType());
     }
 
     private RunSid findRunSid(final List<RunSid> runSids, final String name, final boolean isPrincipal) {

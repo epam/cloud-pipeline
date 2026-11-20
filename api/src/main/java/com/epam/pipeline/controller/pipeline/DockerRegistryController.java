@@ -25,14 +25,29 @@ import com.epam.pipeline.entity.pipeline.DockerRegistryEventEnvelope;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.exception.docker.DockerAuthorizationException;
+<<<<<<< ours
 import com.epam.pipeline.manager.docker.DockerRegistryApiService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.apache.commons.lang3.StringUtils;
+||||||| base
+import com.epam.pipeline.acl.docker.DockerRegistryApiService;
+import com.epam.pipeline.utils.AuthorizationUtils;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+=======
+import com.epam.pipeline.acl.docker.DockerRegistryApiService;
+import com.epam.pipeline.utils.AuthorizationUtils;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+>>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -41,9 +56,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Base64;
@@ -52,7 +66,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Controller
-@Api(value = "DockerRegistry")
+@Tag(name = "docker-registry-controller", description = "Docker Registry Controller")
 public class DockerRegistryController extends AbstractRestController {
 
     public static final String CERTIFICATE_NAME = "ca.crt";
@@ -63,12 +77,11 @@ public class DockerRegistryController extends AbstractRestController {
 
     @RequestMapping(value = "/dockerRegistry/register", method= RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Registers a new docker registry.",
-            notes = "Registers a new docker registry.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Registers a new docker registry.",
+            description = "Registers a new docker registry.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<DockerRegistry> registerDockerRegistry(@RequestBody
             DockerRegistryVO dockerRegistryVO) {
@@ -77,12 +90,11 @@ public class DockerRegistryController extends AbstractRestController {
 
     @RequestMapping(value = "/dockerRegistry/update", method= RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Updates docker registry.",
-            notes = "Updates docker registry.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Updates docker registry.",
+            description = "Updates docker registry.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<DockerRegistry> updateDockerRegistry(@RequestBody DockerRegistry dockerRegistry) {
         return Result.success(dockerRegistryApiService.updateDockerRegistry(dockerRegistry));
@@ -90,12 +102,11 @@ public class DockerRegistryController extends AbstractRestController {
 
     @RequestMapping(value = "/dockerRegistry/updateCredentials", method= RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Updates docker registry credentials.",
-            notes = "Updates docker registry credentials.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Updates docker registry credentials.",
+            description = "Updates docker registry credentials.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<DockerRegistry> updateDockerRegistryCredentials(@RequestBody DockerRegistryVO dockerRegistry) {
         return Result.success(dockerRegistryApiService.updateDockerRegistryCredentials(dockerRegistry));
@@ -103,12 +114,11 @@ public class DockerRegistryController extends AbstractRestController {
 
     @RequestMapping(value = "/dockerRegistry/oauth", method= RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Authorization endpoint for docker registry.",
-            notes = "Authorization endpoint for docker registry.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Authorization endpoint for docker registry.",
+            description = "Authorization endpoint for docker registry.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public JwtRawToken oauthEndpoint(@RequestParam String service,
             @RequestParam(required = false) String scope, HttpServletRequest request) {
@@ -130,12 +140,11 @@ public class DockerRegistryController extends AbstractRestController {
 
     @RequestMapping(value = "/dockerRegistry/loadTree", method= RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Lists all registered docker registries with groups and tools.",
-            notes = "Lists all registered docker registries with groups and tools.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Lists all registered docker registries with groups and tools.",
+            description = "Lists all registered docker registries with groups and tools.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<DockerRegistryList> loadAllRegistryContent() {
         return Result.success(dockerRegistryApiService.loadAllRegistriesContent());
@@ -143,12 +152,11 @@ public class DockerRegistryController extends AbstractRestController {
 
     @RequestMapping(value = "/dockerRegistry/loadCerts", method= RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Lists registered docker registries with certificates.",
-            notes = "Lists registered docker registries with certificates.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Lists registered docker registries with certificates.",
+            description = "Lists registered docker registries with certificates.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<Map<String, String>> loadRegistryCertificates() {
         DockerRegistryList registryList =
@@ -161,12 +169,11 @@ public class DockerRegistryController extends AbstractRestController {
 
     @RequestMapping(value = "/dockerRegistry/{id}/load", method= RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Returns a docker registry, specified by id.",
-            notes = "Returns a docker registry, specified by ID.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns a docker registry, specified by id.",
+            description = "Returns a docker registry, specified by ID.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<DockerRegistry> loadDockerRegistry(@PathVariable(value = "id") final Long id) {
         return Result.success(dockerRegistryApiService.load(id));
@@ -174,12 +181,11 @@ public class DockerRegistryController extends AbstractRestController {
 
     @RequestMapping(value = "/dockerRegistry/{id}/delete", method= RequestMethod.DELETE)
     @ResponseBody
-    @ApiOperation(
-            value = "Deletes a docker registry, specified by id.",
-            notes = "Deletes a docker registry, specified by id.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Deletes a docker registry, specified by id.",
+            description = "Deletes a docker registry, specified by id.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<DockerRegistry> deleteDockerRegistry(@PathVariable(value = "id") final Long id,
                                                        @RequestParam(value = "force") final boolean force) {
@@ -188,12 +194,11 @@ public class DockerRegistryController extends AbstractRestController {
 
     @RequestMapping(value = "/dockerRegistry/notify", method= RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Notify about docker registry event.",
-            notes = "Notify about docker registry event.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Notify about docker registry event.",
+            description = "Notify about docker registry event.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<Tool>> notifyDockerRegistryEvents(@RequestHeader(value="Registry-Path") final String registry,
                                                          @RequestBody final DockerRegistryEventEnvelope events) {
@@ -203,12 +208,11 @@ public class DockerRegistryController extends AbstractRestController {
 
     @RequestMapping(value = "/dockerRegistry/{id}/cert", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Downloads a certificate file",
-            notes = "Downloads a certificate file for a registry, specified by id.",
-            produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @Operation(
+            summary = "Downloads a certificate file",
+            description = "Downloads a certificate file for a registry, specified by id.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public void downloadPipelineFile(@PathVariable Long id, HttpServletResponse response)
             throws IOException {
@@ -218,12 +222,11 @@ public class DockerRegistryController extends AbstractRestController {
 
     @RequestMapping(value = "/dockerRegistry/{id}/login", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Downloads a script to configure local docker client to work with remote repository.",
-            notes = "Downloads a script to configure local docker client to work with remote repository.",
-            produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @Operation(
+            summary = "Downloads a script to configure local docker client to work with remote repository.",
+            description = "Downloads a script to configure local docker client to work with remote repository.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public void downloadConfigScript(@PathVariable Long id, HttpServletResponse response)
             throws IOException {

@@ -1,12 +1,14 @@
 package com.epam.pipeline.entity.cloud;
 
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 
 @Data
 @Builder(toBuilder = true)
+@Jacksonized
 @RequiredArgsConstructor
 public class InstanceDNSRecord {
 

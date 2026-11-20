@@ -20,15 +20,23 @@ import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 
-import javax.servlet.http.Cookie;
+import jakarta.servlet.http.Cookie;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.authentication.AuthenticationServiceException;
 
 @Getter
 @AllArgsConstructor
+<<<<<<< ours
+||||||| base
+@EqualsAndHashCode
+=======
+@EqualsAndHashCode
+@NoArgsConstructor
+>>>>>>> theirs
 public class JwtRawToken implements Serializable {
     private static final String HEADER_PREFIX = "Bearer ";
     private String token;

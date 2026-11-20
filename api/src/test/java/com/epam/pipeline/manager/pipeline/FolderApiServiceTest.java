@@ -33,10 +33,20 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.security.acl.AclPermission;
+<<<<<<< ours
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+||||||| base
+import com.epam.pipeline.test.acl.AbstractAclTest;
+import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
+import org.junit.Test;
+=======
+import com.epam.pipeline.test.acl.AbstractAclTest;
+import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
+import org.junit.jupiter.api.Test;
+>>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;

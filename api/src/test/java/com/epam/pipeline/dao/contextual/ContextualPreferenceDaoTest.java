@@ -16,12 +16,41 @@
 
 package com.epam.pipeline.dao.contextual;
 
+<<<<<<< ours
+||||||| base
+import com.epam.pipeline.entity.contextual.ContextualPreference;
+import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
+import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
+import com.epam.pipeline.entity.preference.PreferenceType;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.junit.After;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.List;
+import java.util.Optional;
+
+=======
+import com.epam.pipeline.entity.contextual.ContextualPreference;
+import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
+import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
+import com.epam.pipeline.entity.preference.PreferenceType;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.List;
+import java.util.Optional;
+
+>>>>>>> theirs
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.epam.pipeline.util.CustomMatchers.isEmpty;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+<<<<<<< ours
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -35,6 +64,15 @@ import java.util.Optional;
 import org.junit.After;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+||||||| base
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+=======
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+>>>>>>> theirs
 
 @SuppressWarnings("PMD.TooManyStaticImports")
 public class ContextualPreferenceDaoTest extends AbstractSpringTest {
@@ -52,15 +90,20 @@ public class ContextualPreferenceDaoTest extends AbstractSpringTest {
 
     @Autowired
     private ContextualPreferenceDao contextualPreferenceDao;
+    private boolean skipTearDown = false;
 
-    @After
+    @AfterEach
     public void tearDown() {
-        contextualPreferenceDao.loadAll().forEach(pref ->
-                contextualPreferenceDao.delete(pref.getName(), pref.getResource()));
+        if (!skipTearDown) {
+            contextualPreferenceDao.loadAll().forEach(pref ->
+                    contextualPreferenceDao.delete(pref.name(), pref.resource()));
+        }
+        skipTearDown = false;
     }
 
     @Test
     public void upsertShouldFailIfPreferenceHasEmptyFields() {
+        skipTearDown = true;
         assertThrows(() -> {
             final ContextualPreference preferenceWithoutName = new ContextualPreference(null, VALUE,
                     new ContextualPreferenceExternalResource(LEVEL, RESOURCE_ID));
@@ -117,7 +160,7 @@ public class ContextualPreferenceDaoTest extends AbstractSpringTest {
         final Optional<ContextualPreference> loadedPreference = contextualPreferenceDao.load(NAME, resource);
 
         assertTrue(loadedPreference.isPresent());
-        assertThat(loadedPreference.get().getValue(), is(ANOTHER_VALUE));
+        assertThat(loadedPreference.get().value(), is(ANOTHER_VALUE));
     }
 
     @Test
@@ -129,7 +172,7 @@ public class ContextualPreferenceDaoTest extends AbstractSpringTest {
         final Optional<ContextualPreference> loadedPreference = contextualPreferenceDao.load(NAME, resource);
 
         assertTrue(loadedPreference.isPresent());
-        assertNotNull(loadedPreference.get().getCreatedDate());
+        assertNotNull(loadedPreference.get().createdDate());
     }
 
     @Test
@@ -186,11 +229,11 @@ public class ContextualPreferenceDaoTest extends AbstractSpringTest {
 
         assertTrue(loadedPreference.isPresent());
         loadedPreference.ifPresent(pref -> {
-            assertThat(pref.getName(), is(storedPreference.getName()));
-            assertThat(pref.getValue(), is(storedPreference.getValue()));
-            assertThat(pref.getType(), is(storedPreference.getType()));
-            assertThat(pref.getCreatedDate(), is(storedPreference.getCreatedDate()));
-            assertThat(pref.getResource(), is(storedPreference.getResource()));
+            assertThat(pref.name(), is(storedPreference.name()));
+            assertThat(pref.value(), is(storedPreference.value()));
+            assertThat(pref.type(), is(storedPreference.type()));
+            assertThat(pref.createdDate(), is(storedPreference.createdDate()));
+            assertThat(pref.resource(), is(storedPreference.resource()));
         });
     }
 

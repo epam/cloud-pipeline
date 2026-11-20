@@ -43,13 +43,24 @@ import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.cluster.PodMonitor;
 import com.epam.pipeline.manager.cluster.autoscale.AutoscaleManager;
+import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationMonitor;
 import com.epam.pipeline.manager.cluster.costs.ClusterCostsMonitoringService;
 import com.epam.pipeline.manager.cluster.performancemonitoring.ResourceMonitoringManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolMonitoringService;
 import com.epam.pipeline.manager.docker.scan.AggregatingToolScanManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
+<<<<<<< ours
 import com.epam.pipeline.manager.firecloud.FirecloudApiService;
 import com.epam.pipeline.manager.firecloud.FirecloudManager;
+||||||| base
+import com.epam.pipeline.manager.dts.DtsMonitoringManager;
+import com.epam.pipeline.manager.firecloud.FirecloudApiService;
+import com.epam.pipeline.manager.firecloud.FirecloudManager;
+import com.epam.pipeline.manager.git.GitTokenRotationService;
+=======
+import com.epam.pipeline.manager.dts.DtsMonitoringManager;
+import com.epam.pipeline.manager.git.GitTokenRotationService;
+>>>>>>> theirs
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.quota.BillingQuotasScheduler;
@@ -58,14 +69,14 @@ import com.epam.pipeline.manager.user.InactiveUsersMonitoringService;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.util.TestUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
@@ -79,10 +90,10 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -129,9 +140,24 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
     @MockBean
     private ToolScanScheduler toolScanScheduler;
     @MockBean
+<<<<<<< ours
     private FirecloudApiService firecloudApiService;
     @MockBean
     private FirecloudManager firecloudManager;
+||||||| base
+    private DtsMonitoringManager dtsMonitoringManager;
+    @MockBean
+    private FirecloudApiService firecloudApiService;
+    @MockBean
+    private FirecloudManager firecloudManager;
+    @MockBean
+    private GitTokenRotationService gitTokenRotationService;
+    @MockBean
+=======
+    private DtsMonitoringManager dtsMonitoringManager;
+    @MockBean
+    private GitTokenRotationService gitTokenRotationService;
+>>>>>>> theirs
     @MockBean
     private RunScheduleMonitoringManager runScheduleMonitoringManager;
     @MockBean
@@ -142,6 +168,8 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
     private InactiveUsersMonitoringService inactiveUsersMonitoringService;
     @MockBean
     private BandwidthMonitoringService bandwidthMonitoringService;
+    @MockBean
+    private CapacityReservationMonitor capacityReservationMonitor;
 
     @SpyBean
     private PipelineRunDao pipelineRunDao;
@@ -168,8 +196,7 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
     @Autowired
     private ArchiveRunService archiveRunService;
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         doReturn(TEST).when(preferenceManager).getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_METADATA_KEY);
         doReturn(CHUNK_SIZE).when(preferenceManager)
                 .getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_RUNS_CHUNK_SIZE);

@@ -20,12 +20,24 @@ import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.notification.NotificationMessageVO;
 import com.epam.pipeline.entity.notification.NotificationMessage;
+<<<<<<< ours
 import com.epam.pipeline.manager.notification.NotificationApiService;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+||||||| base
+import com.epam.pipeline.acl.notification.NotificationApiService;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+=======
+import com.epam.pipeline.acl.notification.NotificationApiService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+>>>>>>> theirs
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,19 +46,19 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/notification")
 @RequiredArgsConstructor
+@Tag(name = "notification-controller", description = "Notification Controller")
 public class NotificationController extends AbstractRestController {
 
     private final NotificationApiService notificationApiService;
 
     @PostMapping("/message")
-    @ApiOperation(
-            value = "Creates custom notification.",
-            notes = "Creates a custom notification with the specified parameters. " +
+    @Operation(
+            summary = "Creates custom notification.",
+            description = "Creates a custom notification with the specified parameters. " +
                     "Subject, body and toUser fields are the required once. " +
-                    "All specified user names have to be actual pipeline user names.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+                    "All specified user names have to be actual pipeline user names.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)}
     )
     public Result<NotificationMessage> create(@RequestBody final NotificationMessageVO message) {
         return Result.success(notificationApiService.createNotification(message));

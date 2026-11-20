@@ -185,6 +185,84 @@ public class UserManager implements SecuredEntityManager {
         return user;
     }
 
+<<<<<<< ours
+||||||| base
+    private boolean isSshKeysAutoCreationEnabled() {
+        return Optional.of(SystemPreferences.SYSTEM_USER_SSH_KEYS_AUTO_CREATE)
+                .map(preferenceManager::getPreference)
+                .orElse(true);
+    }
+
+    private void configureSshKeys(final PipelineUser user) {
+        log.info("Generating ssh keys for user {} #{}...", user.getUserName(), user.getId());
+        final SshKeyPair sshKeyPair = sshKeyPairManager.generate();
+        final Map<String, PipeConfValue> metadata = new HashMap<>(getCurrentMetadata(user.getId()));
+        metadata.put(getSshPrvMetadataKey(), getMetadataValue(sshKeyPair.getPrivateKey()));
+        metadata.put(getSshPubMetadataKey(), getMetadataValue(sshKeyPair.getPublicKey()));
+        metadataManager.updateEntityMetadata(metadata, user.getId(), AclClass.PIPELINE_USER);
+    }
+
+    private Map<String, PipeConfValue> getCurrentMetadata(final Long userId) {
+        return Optional.ofNullable(metadataManager.loadMetadataItem(userId, AclClass.PIPELINE_USER))
+                .map(MetadataEntry::getData)
+                .orElseGet(Collections::emptyMap);
+    }
+
+    private String getSshPrvMetadataKey() {
+        return Optional.of(SystemPreferences.SYSTEM_USER_SSH_KEYS_PRV_METADATA_KEY)
+                .map(preferenceManager::getPreference)
+                .orElse(FALLBACK_SSH_PRV_METADATA_KEY);
+    }
+
+    private String getSshPubMetadataKey() {
+        return Optional.of(SystemPreferences.SYSTEM_USER_SSH_KEYS_PUB_METADATA_KEY)
+                .map(preferenceManager::getPreference)
+                .orElse(FALLBACK_SSH_PUB_METADATA_KEY);
+    }
+
+    private PipeConfValue getMetadataValue(final String sshKeyPair) {
+        return new PipeConfValue(EntityTypeField.DEFAULT_TYPE, sshKeyPair);
+    }
+
+=======
+    private boolean isSshKeysAutoCreationEnabled() {
+        return Optional.of(SystemPreferences.SYSTEM_USER_SSH_KEYS_AUTO_CREATE)
+                .map(preferenceManager::getPreference)
+                .orElse(true);
+    }
+
+    private void configureSshKeys(final PipelineUser user) {
+        log.info("Generating ssh keys for user {} #{}...", user.getUserName(), user.getId());
+        final SshKeyPair sshKeyPair = sshKeyPairManager.generate();
+        final Map<String, PipeConfValue> metadata = new HashMap<>(getCurrentMetadata(user.getId()));
+        metadata.put(getSshPrvMetadataKey(), getMetadataValue(sshKeyPair.privateKey()));
+        metadata.put(getSshPubMetadataKey(), getMetadataValue(sshKeyPair.publicKey()));
+        metadataManager.updateEntityMetadata(metadata, user.getId(), AclClass.PIPELINE_USER);
+    }
+
+    private Map<String, PipeConfValue> getCurrentMetadata(final Long userId) {
+        return Optional.ofNullable(metadataManager.loadMetadataItem(userId, AclClass.PIPELINE_USER))
+                .map(MetadataEntry::getData)
+                .orElseGet(Collections::emptyMap);
+    }
+
+    private String getSshPrvMetadataKey() {
+        return Optional.of(SystemPreferences.SYSTEM_USER_SSH_KEYS_PRV_METADATA_KEY)
+                .map(preferenceManager::getPreference)
+                .orElse(FALLBACK_SSH_PRV_METADATA_KEY);
+    }
+
+    private String getSshPubMetadataKey() {
+        return Optional.of(SystemPreferences.SYSTEM_USER_SSH_KEYS_PUB_METADATA_KEY)
+                .map(preferenceManager::getPreference)
+                .orElse(FALLBACK_SSH_PUB_METADATA_KEY);
+    }
+
+    private PipeConfValue getMetadataValue(final String sshKeyPair) {
+        return new PipeConfValue(EntityTypeField.DEFAULT_TYPE, sshKeyPair);
+    }
+
+>>>>>>> theirs
     /**
      * Creates user with parameters defined in Cloud Pipeline (username and roles).
      * Assumes that other parameters (groups and attributes) will be filled later from AD,
@@ -247,7 +325,7 @@ public class UserManager implements SecuredEntityManager {
     }
 
     public Collection<PipelineUser> loadUsersById(final List<Long> userIds) {
-        return StreamSupport.stream(userRepository.findAll(userIds).spliterator(), false)
+        return StreamSupport.stream(userRepository.findAllById(userIds).spliterator(), false)
                 .collect(Collectors.toList());
     }
 
@@ -369,7 +447,7 @@ public class UserManager implements SecuredEntityManager {
         final GroupStatus groupStatus = loadGroupBlockingStatus(groupName);
         Assert.notNull(groupName,
                 messageHelper.getMessage(MessageConstants.ERROR_NO_GROUP_WAS_FOUND, groupName));
-        groupStatusDao.deleteGroupBlockingStatus(groupStatus.getGroupName());
+        groupStatusDao.deleteGroupBlockingStatus(groupStatus.groupName());
         return groupStatus;
     }
 

@@ -17,8 +17,22 @@
 package com.epam.pipeline.manager.user;
 
 import com.epam.pipeline.controller.vo.PipelineUserExportVO;
+<<<<<<< ours
 import org.junit.After;
 import org.junit.Test;
+||||||| base
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
+import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
+import org.junit.After;
+import org.junit.Test;
+=======
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
+import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+>>>>>>> theirs
 
 import java.util.Collections;
 import java.util.TimeZone;
@@ -32,7 +46,7 @@ public class UserExporterTest {
     private final UserExporter exporter = new UserExporter();
     private final TimeZone defaultTimeZone = TimeZone.getDefault();
 
-    @After
+    @AfterEach
     public void restoreDefaultTimeZone() {
         TimeZone.setDefault(defaultTimeZone);
     }

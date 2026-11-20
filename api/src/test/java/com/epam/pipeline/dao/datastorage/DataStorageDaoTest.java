@@ -34,9 +34,20 @@ import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
+<<<<<<< ours
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+||||||| base
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+=======
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+>>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +61,7 @@ import java.util.stream.Collectors;
 
 import static com.epam.pipeline.assertions.ProjectAssertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Transactional
 public class DataStorageDaoTest extends AbstractSpringTest {
@@ -88,8 +100,7 @@ public class DataStorageDaoTest extends AbstractSpringTest {
     private AwsRegion awsRegion;
     private StoragePolicy policy;
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         testFolder = buildFolder(null);
 
         awsRegion = new AwsRegion();
@@ -515,8 +526,8 @@ public class DataStorageDaoTest extends AbstractSpringTest {
     }
 
     private void verifyFolderTree(final Folder expected, final Folder actual) {
-        Assert.assertEquals(expected.getId(), actual.getId());
-        Assert.assertEquals(expected.getParentId(), actual.getParentId());
+        assertEquals(expected.getId(), actual.getId());
+        assertEquals(expected.getParentId(), actual.getParentId());
         if (expected.getParent() != null) {
             verifyFolderTree(expected.getParent(), actual.getParent());
         }

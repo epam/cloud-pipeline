@@ -23,8 +23,8 @@ import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import org.apache.commons.lang.StringUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,8 +34,18 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+<<<<<<< ours
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+||||||| base
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+=======
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+>>>>>>> theirs
 
 public class MetadataEntityManagerTest extends AbstractSpringTest {
 
@@ -60,8 +70,7 @@ public class MetadataEntityManagerTest extends AbstractSpringTest {
     private MetadataClass sampleClass;
     private MetadataClass pairClass;
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         folder = folderManager.create(ObjectCreatorUtils.createFolder(TEST_FOLDER_NAME, null));
         sampleClass = entityManager.createMetadataClass(SAMPLE_CLASS);
         pairClass = entityManager.createMetadataClass(PAIR_CLASS);

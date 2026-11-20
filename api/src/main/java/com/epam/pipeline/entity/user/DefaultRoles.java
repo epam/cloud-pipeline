@@ -53,7 +53,24 @@ public enum DefaultRoles {
     ROLE_PIPELINE_ADMIN(new Role(null, "ROLE_PIPELINE_ADMIN", true, false, null, null, null, null)),
     ROLE_PIPELINE_READER(new Role(null, "ROLE_PIPELINE_READER", true, false, null, null, null, null)),
     ROLE_PIPELINE_EXECUTOR(new Role(null, "ROLE_PIPELINE_EXECUTOR", true, false, null, null, null, null)),
+<<<<<<< ours
     ROLE_RUN_ADMIN(new Role(null, "ROLE_RUN_ADMIN", true, false, null, null, null, null));
+||||||| base
+    ROLE_RUN_ADMIN(new Role(null, "ROLE_RUN_ADMIN", true, false, null, null, null, null)),
+    ROLE_ADVANCED_RUN_POLICY_MANAGER(new Role(null, "ROLE_ADVANCED_RUN_POLICY_MANAGER", true, false,
+            null, null, null, null)),
+    ROLE_CLUSTER_READER(new Role(null, "ROLE_CLUSTER_READER", true, false, null, null, null, null)),
+    ROLE_USER_METADATA_READER(new Role(null, "ROLE_USER_METADATA_READER", true, false, null, null, null, null)),
+    ROLE_USER_READER(new Role(null, "ROLE_USER_READER", true, false, null, null, null, null));
+=======
+    ROLE_RUN_ADMIN(new Role(null, "ROLE_RUN_ADMIN", true, false, null, null, null, null)),
+    ROLE_ADVANCED_RUN_POLICY_MANAGER(new Role(null, "ROLE_ADVANCED_RUN_POLICY_MANAGER", true, false,
+            null, null, null, null)),
+    ROLE_CLUSTER_READER(new Role(null, "ROLE_CLUSTER_READER", true, false, null, null, null, null)),
+    ROLE_USER_METADATA_READER(new Role(null, "ROLE_USER_METADATA_READER", true, false, null, null, null, null)),
+    ROLE_USER_READER(new Role(null, "ROLE_USER_READER", true, false, null, null, null, null)),
+    ROLE_NODE_POOL_MANAGER(new Role(null, "ROLE_NODE_POOL_MANAGER", true, false, null, null, null, null));
+>>>>>>> theirs
 
     private Role role;
 

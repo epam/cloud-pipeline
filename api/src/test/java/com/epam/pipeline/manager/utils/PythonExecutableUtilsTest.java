@@ -16,24 +16,41 @@
 
 package com.epam.pipeline.manager.utils;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PythonExecutableUtilsTest {
 
     @Test
     public void resolvesToCpPythonPathWhenSet() {
-        Assert.assertEquals("/usr/local/python3.12/bin/python3.12",
+        assertEquals("/usr/local/python3.12/bin/python3.12",
                 PythonExecutableUtils.resolvePythonExecutable("/usr/local/python3.12/bin/python3.12"));
     }
 
     @Test
+<<<<<<< ours
     public void fallsBackToPython3WhenCpPythonPathIsNull() {
         Assert.assertEquals("python3", PythonExecutableUtils.resolvePythonExecutable(null));
+||||||| base
+    public void fallsBackToPythonWhenCpPythonPathIsNull() {
+        Assert.assertEquals("python", PythonExecutableUtils.resolvePythonExecutable(null));
+=======
+    public void fallsBackToPythonWhenCpPythonPathIsNull() {
+        assertEquals("python", PythonExecutableUtils.resolvePythonExecutable(null));
+>>>>>>> theirs
     }
 
     @Test
+<<<<<<< ours
     public void fallsBackToPython3WhenCpPythonPathIsBlank() {
         Assert.assertEquals("python3", PythonExecutableUtils.resolvePythonExecutable("   "));
+||||||| base
+    public void fallsBackToPythonWhenCpPythonPathIsBlank() {
+        Assert.assertEquals("python", PythonExecutableUtils.resolvePythonExecutable("   "));
+=======
+    public void fallsBackToPythonWhenCpPythonPathIsBlank() {
+        assertEquals("python", PythonExecutableUtils.resolvePythonExecutable("   "));
+>>>>>>> theirs
     }
 }

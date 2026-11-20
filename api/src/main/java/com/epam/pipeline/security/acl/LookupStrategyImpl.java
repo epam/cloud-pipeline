@@ -398,10 +398,9 @@ public class LookupStrategyImpl implements LookupStrategy {
                             // No need to check for nulls, as guaranteed non-null by
                             // ObjectIdentity.getIdentifier() interface contract
                             String identifier = oid.getIdentifier().toString();
-                            long id = (Long.valueOf(identifier)).longValue();
 
                             // Inject values
-                            ps.setLong((2 * i) + 1, id);
+                            ps.setString((2 * i) + 1, identifier);
                             ps.setString((2 * i) + 2, type);
                             i++;
                         }
@@ -574,10 +573,10 @@ public class LookupStrategyImpl implements LookupStrategy {
                 long parentId = rs.getLong("parent_object");
                 if (parentId != 0) {
                     // See if it's already in the "acls"
-                    if (acls.containsKey(new Long(parentId))) {
+                    if (acls.containsKey(Long.valueOf(parentId))) {
                         continue; // skip this while iteration
                     }
-                    parentIdsToLookup.add(new Long(parentId));
+                    parentIdsToLookup.add(Long.valueOf(parentId));
                 }
             }
             // Return the parents left to lookup to the caller
@@ -618,15 +617,15 @@ public class LookupStrategyImpl implements LookupStrategy {
 
                 if (parentId != 0) {
                     // See if it's already in the "acls"
-                    if (acls.containsKey(new Long(parentId))) {
+                    if (acls.containsKey(Long.valueOf(parentId))) {
                         continue; // skip this while iteration
                     }
 
                     // Now try to find it in the cache
-                    MutableAcl cached = aclCache.getFromCache(new Long(parentId));
+                    MutableAcl cached = aclCache.getFromCache(Long.valueOf(parentId));
 
                     if ((cached == null) || !cached.isSidLoaded(sids)) {
-                        parentIdsToLookup.add(new Long(parentId));
+                        parentIdsToLookup.add(Long.valueOf(parentId));
                     } else {
                         // Pop into the acls map, so our convert method doesn't
                         // need to deal with an unsynchronized AclCache
@@ -650,7 +649,7 @@ public class LookupStrategyImpl implements LookupStrategy {
          */
         protected void convertCurrentResultIntoObject(
                 final Map<Serializable, Acl> acls, final ResultSet rs) throws SQLException {
-            Long id = new Long(rs.getLong("acl_id"));
+            Long id = Long.valueOf(rs.getLong("acl_id"));
 
             // If we already have an ACL for this ID, just create the ACE
             Acl acl = acls.get(id);
@@ -682,7 +681,7 @@ public class LookupStrategyImpl implements LookupStrategy {
             // It is permissible to have no ACEs in an ACL (which is detected by a null
             // ACE_SID)
             if (rs.getString("ace_sid") != null) {
-                Long aceId = new Long(rs.getLong("ace_id"));
+                Long aceId = Long.valueOf(rs.getLong("ace_id"));
                 Sid recipient = createSid(rs.getBoolean("ace_principal"),
                         rs.getString("ace_sid"));
 

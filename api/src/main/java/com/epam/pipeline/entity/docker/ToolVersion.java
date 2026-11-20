@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Date;
 import java.util.List;
@@ -27,6 +28,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @Builder
+@Jacksonized
 public class ToolVersion {
     private Long id;
     private Long toolId;

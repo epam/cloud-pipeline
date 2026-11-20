@@ -20,11 +20,23 @@ import java.util.Collection;
 import java.util.Collections;
 
 import com.epam.pipeline.entity.preference.Preference;
+<<<<<<< ours
 import com.epam.pipeline.entity.preference.PreferenceType;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+||||||| base
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.test.acl.AbstractAclTest;
+import org.junit.Test;
+=======
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.test.acl.AbstractAclTest;
+import org.junit.jupiter.api.Test;
+>>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.transaction.annotation.Propagation;

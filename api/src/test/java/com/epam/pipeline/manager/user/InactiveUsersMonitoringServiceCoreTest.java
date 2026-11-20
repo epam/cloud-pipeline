@@ -21,8 +21,8 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.time.LocalDateTime;
@@ -31,7 +31,7 @@ import java.util.List;
 
 import static com.epam.pipeline.test.creator.user.UserCreatorUtils.getPipelineUser;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -49,6 +49,7 @@ public class InactiveUsersMonitoringServiceCoreTest {
     private final InactiveUsersMonitoringServiceCore monitoringService = new InactiveUsersMonitoringServiceCore(
             userManager, notificationManager, preferenceManager);
 
+<<<<<<< ours
     private static PipelineUser activeUser(final String userName, final Long id) {
         final PipelineUser pipelineUser = getPipelineUser(userName, id);
         pipelineUser.setBlocked(false);
@@ -87,6 +88,12 @@ public class InactiveUsersMonitoringServiceCoreTest {
 
     @Before
     public void setup() {
+||||||| base
+    @Before
+    public void setup() {
+=======
+    @BeforeEach    public void setup() {
+>>>>>>> theirs
         doReturn(THRESHOLD_DAYS).when(preferenceManager)
                 .getPreference(SystemPreferences.SYSTEM_INACTIVE_USER_MONITOR_BLOCKED_DAYS);
         doReturn(THRESHOLD_DAYS).when(preferenceManager)

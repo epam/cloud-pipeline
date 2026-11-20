@@ -4,11 +4,19 @@ import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.cluster.DiskRegistrationRequest;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.utils.DateUtils;
+<<<<<<< ours
 import org.junit.Test;
+||||||| base
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.junit.Test;
+=======
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.junit.jupiter.api.Test;
+>>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -17,8 +25,8 @@ import java.util.stream.Collectors;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Transactional
 public class NodeDiskDaoTest extends AbstractSpringTest {
@@ -48,12 +56,12 @@ public class NodeDiskDaoTest extends AbstractSpringTest {
         
         assertThat(disks.size(), is(1));
         final NodeDisk disk = disks.get(0);
-        assertThat(disk.getSize(), is(SIZE));
-        assertThat(disk.getNodeId(), is(NODE_ID));
+        assertThat(disk.size(), is(SIZE));
+        assertThat(disk.nodeId(), is(NODE_ID));
         final LocalDateTime expectedCreationDate = DateUtils.nowUTC();
         final LocalDateTime lowerExpectedCreationDate = expectedCreationDate.minusMinutes(1);
         final LocalDateTime upperExpectedCreationDate = expectedCreationDate.plusMinutes(1);
-        final LocalDateTime actualCreationDate = disk.getCreatedDate();
+        final LocalDateTime actualCreationDate = disk.createdDate();
         assertTrue(actualCreationDate.isAfter(lowerExpectedCreationDate)
                 && actualCreationDate.isBefore(upperExpectedCreationDate));
     }
@@ -64,7 +72,7 @@ public class NodeDiskDaoTest extends AbstractSpringTest {
         final List<NodeDisk> disks = insert(NODE_ID, creationDate, diskRequestOf(SIZE), diskRequestOf(SIZE));
         
         assertThat(disks.size(), is(2));
-        disks.forEach(disk -> assertThat(disk.getCreatedDate(), is(creationDate)));
+        disks.forEach(disk -> assertThat(disk.createdDate(), is(creationDate)));
     }
     
     @Test
@@ -79,7 +87,7 @@ public class NodeDiskDaoTest extends AbstractSpringTest {
         final List<NodeDisk> disks = insert(NODE_ID, diskRequestOf(SIZE), diskRequestOf(SIZE));
         
         final Set<LocalDateTime> creationDates = disks.stream()
-                .map(NodeDisk::getCreatedDate)
+                .map(NodeDisk::createdDate)
                 .collect(Collectors.toSet());
         assertThat(creationDates.size(), is(1));
     }
