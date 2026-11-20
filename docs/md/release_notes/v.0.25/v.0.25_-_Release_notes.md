@@ -32,7 +32,7 @@ How many candidates one request may carry is bounded by the `cluster.capacity.bl
 
 The monitoring data behind the node and run charts, the idle, network and overload run notifications, the free disk check before a commit or a pause, and the deployment autoscaler come from heapster **1.5.4**. heapster is retired, and it reads kubelet endpoints that current Kubernetes releases no longer serve.
 
-In the current version, a new service, `cp-metrics-collector`, reads each kubelet's stats summary and cAdvisor metrics and writes the same documents into the same `heapster-*` indices of `cp-heapster-elk`, so the platform reads them unchanged. It works on Kubernetes **1.15** and on current releases (checked on **1.15.4** and **1.37.0**).
+In the current version, a new service, `cp-metrics-collector`, reads each kubelet's stats summary and cAdvisor metrics and writes documents of heapster's shape into the same `heapster-*` indices of `cp-heapster-elk`, so the platform reads them unchanged. Where they differ from heapster's, in fields the platform does not read or in the timing of the rates, the service's README lists it. It works on Kubernetes **1.15** and on current releases (checked on **1.15.4** and **1.37.0**).
 
 Before heapster is removed, the collector can run beside it under another index name, and its compare tool shows, per node and pod, how the two differ. `pipectl` does not install it yet: its image, specs and the steps are described in `deploy/docker/cp-metrics-collector/README.md`.
 
