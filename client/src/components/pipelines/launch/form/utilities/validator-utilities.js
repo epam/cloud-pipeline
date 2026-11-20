@@ -17,6 +17,8 @@
 import DataStorageAvailable from '../../../../../models/dataStorage/DataStorageAvailable';
 import DataStorageItemContent from '../../../../../models/dataStorage/DataStorageItemContent';
 import DataStorageItemSize from '../../../../../models/dataStorage/DataStorageItemSize';
+import MetadataEntityFilter from '../../../../../models/folderMetadata/MetadataEntityFilter';
+import DataStoragePage from '../../../../../models/dataStorage/DataStoragePage';
 import {base64toString} from '../../../../../utils/base64';
 import {getStorageLinkInfo} from '../../../../special/data-storage-link/utilities.js';
 
@@ -52,7 +54,7 @@ async function getFileSize (path) {
     throw new Error(`Error fetching file size: ${sizeRequest.error}`);
   }
   const result = (sizeRequest.value || [])[0];
-  if (!result || result.size === undefined) {
+  if (!result || result.size < 0) {
     throw new Error(`File not found: ${path}`);
   }
   return result.size;
@@ -245,8 +247,108 @@ function invalidateFileContentCache () {
   fileContentCache.clear();
 }
 
+/**
+ * Checks whether a file exists at the given storage path.
+ * Returns false on request errors (treats errors as "not found").
+ * @param {string} path - File path (e.g. "s3://bucket/path/to/file.txt")
+ * @returns {Promise<boolean>}
+ */
+async function fileExists (path) {
+  try {
+    await DataStorageAvailable.fetchIfNeededOrWait();
+    const info = getStorageLinkInfo({
+      storages: DataStorageAvailable.value,
+      path,
+      isFolder: false,
+      showShared: true
+    });
+    if (!info?.storageId) {
+      return false;
+    }
+    const relativePath = info.relativePath ?? '';
+    const request = new DataStoragePage(info.storageId, relativePath, false, false, 1);
+    await request.fetchPage(undefined);
+    if (request.error) {
+      return false;
+    }
+    console.log('req', request.value);
+    return (request.value?.results ?? []).some(
+      (item) => item.type === 'File' &&
+        (item.path ?? '').toLowerCase() === relativePath.toLowerCase()
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * @type {Map<string, Promise<Array>>}
+ */
+const metadataByFolderCache = new Map();
+
+/**
+ * @typedef {Object} MetadataFilter
+ * @property {number|string} folderId - Folder ID to search in
+ * @property {string} metadataClass - Metadata class name (e.g. "datasets")
+ * @property {Array} [filters=[]] - Field-level filter conditions
+ * @property {Array} [orderBy=[]] - Sort order descriptors
+ * @property {number} [page=1] - Page number (1-based)
+ * @property {number} [pageSize=1000] - Number of results per page
+ * @property {string[]} [searchQueries=[]] - Free-text search queries
+ */
+
+/**
+ * POSTs to the metadataEntity/filter endpoint and returns the elements array.
+ * Results are cached by a stable JSON key; cache is invalidated by `invalidateMetadataCache()`.
+ * @param {MetadataFilter} filter - Filter payload
+ * @returns {Promise<Array>} Array of metadata entity objects
+ */
+function metadataFilter (filter = {}) {
+  const mergedFilter = {
+    filters: [],
+    orderBy: [],
+    page: 1,
+    pageSize: 1000,
+    searchQueries: [],
+    ...filter
+  };
+  const key = JSON.stringify(mergedFilter, Object.keys(mergedFilter).sort());
+  if (metadataByFolderCache.has(key)) {
+    return metadataByFolderCache.get(key);
+  }
+  const promise = (async () => {
+    const request = new MetadataEntityFilter();
+    await request.send(mergedFilter);
+    if (request.error) {
+      throw new Error(`Metadata filter error: ${request.error}`);
+    }
+    return (request.value || {}).elements || [];
+  })().catch(err => {
+    metadataByFolderCache.delete(key);
+    throw err;
+  });
+  metadataByFolderCache.set(key, promise);
+  return promise;
+}
+
+/**
+ * Loads all metadata entities for a folder/class pair using default filter settings.
+ * For custom filtering call `metadataFilter` directly.
+ * @param {number|string} folderId
+ * @param {string} metadataClass
+ * @returns {Promise<Array>}
+ */
+function loadMetadataByFolderId (folderId, metadataClass) {
+  return metadataFilter({folderId, metadataClass});
+}
+
+function invalidateMetadataCache () {
+  metadataByFolderCache.clear();
+}
+
 export {
   logError,
+  fileExists,
   getFileSize,
   getFileContent,
   getCSVColumns,
@@ -254,5 +356,8 @@ export {
   validateCSVHeader,
   parseCSV,
   getCSVColumnValues,
-  invalidateFileContentCache
+  invalidateFileContentCache,
+  metadataFilter,
+  loadMetadataByFolderId,
+  invalidateMetadataCache
 };
