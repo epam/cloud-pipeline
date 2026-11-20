@@ -31,7 +31,7 @@ public enum StorageQuotaAction {
 
     private final String code;
 
-    private static final Map<String, StorageQuotaAction> idMap = Stream.of(StorageQuotaAction.values())
+    private static final Map<String, StorageQuotaAction> ID_MAP = Stream.of(StorageQuotaAction.values())
         .collect(Collectors.toMap(StorageQuotaAction::getCode, Function.identity()));
 
     @JsonValue
@@ -41,6 +41,6 @@ public enum StorageQuotaAction {
 
     @JsonCreator
     public static StorageQuotaAction fromCode(final String code) {
-        return idMap.getOrDefault(code, UNKNOWN);
+        return ID_MAP.getOrDefault(code, UNKNOWN);
     }
 }

@@ -33,15 +33,15 @@ import java.util.List;
 @Getter
 @Setter
 @JsonTypeInfo(
-        use = JsonTypeInfo.Id.NAME,
-        include = JsonTypeInfo.As.PROPERTY,
-        property = "provider",
-        defaultImpl = AwsRegion.class)
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.PROPERTY,
+    property = "provider",
+    defaultImpl = AwsRegion.class)
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = AwsRegion.class, name = "AWS"),
-        @JsonSubTypes.Type(value = AzureRegion.class, name = "AZURE"),
-        @JsonSubTypes.Type(value = GCPRegion.class, name = "GCP"),
-        @JsonSubTypes.Type(value = LocalRegion.class, name = "LOCAL")})
+    @JsonSubTypes.Type(value = AwsRegion.class, name = "AWS"),
+    @JsonSubTypes.Type(value = AzureRegion.class, name = "AZURE"),
+    @JsonSubTypes.Type(value = GCPRegion.class, name = "GCP"),
+    @JsonSubTypes.Type(value = LocalRegion.class, name = "LOCAL")})
 public abstract class AbstractCloudRegion extends AbstractSecuredEntity {
 
     private final AclClass aclClass = AclClass.CLOUD_REGION;

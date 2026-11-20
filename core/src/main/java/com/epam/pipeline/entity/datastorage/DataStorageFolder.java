@@ -18,7 +18,7 @@ package com.epam.pipeline.entity.datastorage;
 
 import java.io.File;
 
-import org.springframework.util.Assert;
+import org.apache.commons.lang3.Validate;
 
 public class DataStorageFolder extends AbstractDataStorageItem {
 
@@ -30,7 +30,7 @@ public class DataStorageFolder extends AbstractDataStorageItem {
     public DataStorageFolder(String path, File directory) {
         super();
 
-        Assert.isTrue(directory.isDirectory(), "Supplied file is not a directory");
+        Validate.isTrue(directory.isDirectory(), "Supplied file is not a directory");
         setName(directory.getName());
         setPath(path);
     }

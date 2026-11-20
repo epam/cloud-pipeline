@@ -9,3 +9,17 @@ api/src/main/resources/static/
 docs/site
 dist
 vscode-cloud-pipeline/.env
+
+# Build output of the Java modules whose own .gitignore, if they have one, leaves it out
+/jwt-generator/build/
+/cloud-pipeline-common/event-sourcing-java-client/build/
+/cloud-pipeline-common/model/build/
+/billing-report-agent/build/
+/elasticsearch-agent/build/
+/data-transfer-service/build/
+/notifier/smtp/build/
+/monitoring-service/build/
+/vm-monitor/build/
+/docker-comp-scan/build/
+/data-sharing-service/api/build/
+/storage-async-task-service/build/

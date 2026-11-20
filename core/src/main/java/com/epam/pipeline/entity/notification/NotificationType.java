@@ -72,7 +72,13 @@ public enum NotificationType {
     LDAP_BLOCKED_POSTPONED_USERS(20, -1L, -1L, Collections.emptyList(), true,
             NotificationGroup.USER),
     HIGH_CONSUMED_NETWORK_BANDWIDTH(21, -1L, -1L, Collections.emptyList(), true,
-            NotificationGroup.RESOURCE_CONSUMING);
+            NotificationGroup.RESOURCE_CONSUMING),
+    CAPACITY_RESERVATION_REQUIRES_APPROVAL(25, -1L, -1L, Collections.emptyList(), true,
+            NotificationGroup.CAPACITY_RESERVATION),
+    CAPACITY_RESERVATION_STATUS_CHANGED(26, -1L, -1L, Collections.emptyList(), true,
+            NotificationGroup.CAPACITY_RESERVATION),
+    CAPACITY_RESERVATION_FINALIZING(27, -1L, -1L, Collections.emptyList(), true,
+            NotificationGroup.CAPACITY_RESERVATION);
 
     private static final Map<Long, NotificationType> BY_ID;
 
