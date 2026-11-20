@@ -34,18 +34,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-<<<<<<< ours
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-||||||| base
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-=======
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
->>>>>>> theirs
 
 public class MetadataEntityManagerTest extends AbstractSpringTest {
 

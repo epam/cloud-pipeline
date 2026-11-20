@@ -18,15 +18,7 @@ package com.epam.pipeline.app;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
-<<<<<<< ours
-||||||| base
-import com.epam.pipeline.dao.plugin.UIPluginAssignmentRepository;
-import com.epam.pipeline.dao.plugin.UIPluginRepository;
-=======
 import com.epam.pipeline.dao.pipeline.PipelineRunMetricsDao;
-import com.epam.pipeline.dao.plugin.UIPluginAssignmentRepository;
-import com.epam.pipeline.dao.plugin.UIPluginRepository;
->>>>>>> theirs
 import com.epam.pipeline.dao.run.RunServiceUrlDao;
 import com.epam.pipeline.manager.access.AccessCodeCleaner;
 import com.epam.pipeline.manager.audit.CommonAuditClient;
@@ -188,16 +180,8 @@ public class TestApplication {
     @MockBean
     protected UserNotificationRepository userNotificationRepository;
 
-<<<<<<< ours
-    @MockBean
-    protected StorageEventCollector events;
-||||||| base
-    @MockBean
-    public StorageEventCollector events;
-=======
     /*@Mock
     public StorageEventCollector events;*/
->>>>>>> theirs
 
     @MockBean
     protected PipelineRunServiceUrlRepository pipelineRunServiceUrlRepository;
@@ -221,43 +205,9 @@ public class TestApplication {
     @MockBean
     private PipelineRunMetricsDao runMetricsDao;
 
-<<<<<<< ours
-||||||| base
-    @MockBean
-    public GlobalSearchElasticHelper elasticHelper;
-
-    @MockBean
-    public PlatformUsageCreditsRuleService platformUsageCreditsRuleService;
-
-    @MockBean
-    public PlatformUsageCreditsUserBalanceService platformUsageCreditsUserBalanceService;
-
-    @MockBean
-    public PlatformUsageCreditsUserBalanceCRUDService platformUsageCreditsUserBalanceCRUDService;
-
-    @MockBean
-    public PlatformUsageCreditsEventService platformUsageCreditsEventService;
-
-=======
-    @MockBean
-    public GlobalSearchElasticHelper elasticHelper;
-
-    @MockBean
-    public PlatformUsageCreditsRuleService platformUsageCreditsRuleService;
-
-    @MockBean
-    public PlatformUsageCreditsUserBalanceService platformUsageCreditsUserBalanceService;
-
-    @MockBean
-    public PlatformUsageCreditsUserBalanceCRUDService platformUsageCreditsUserBalanceCRUDService;
-
-    @MockBean
-    public PlatformUsageCreditsEventService platformUsageCreditsEventService;
-
     @MockBean
     public AsyncTaskRepository asyncTaskRepository;
 
->>>>>>> theirs
     @Bean
     public WebServerFactoryCustomizer<TomcatServletWebServerFactory> webServerFactoryCustomizer() {
         return (factory) -> {

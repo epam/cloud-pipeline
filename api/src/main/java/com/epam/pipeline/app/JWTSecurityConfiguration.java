@@ -67,19 +67,9 @@ public class JWTSecurityConfiguration {
 
     @Value("${jwt.disable.session:true}")
     private boolean disableJwtSession;
-<<<<<<< ours
-||||||| base
-
-    @Value("${api.security.redirected.urls:/restapi/route,/restapi/**/prolong**,/restapi/static-resources/**}")
-    private String[] redirectedResources;
-=======
-
-    @Value("${api.security.redirected.urls:/restapi/route,/restapi/**/prolong**,/restapi/static-resources/**}")
-    private String[] redirectedResources;
 
     @Value("${saml.sso.registration-id:SSO}")
     private String samlRegistrationId;
->>>>>>> theirs
     
     @Getter
     @Value("${api.security.anonymous.urls:/restapi/route}")
@@ -179,23 +169,11 @@ public class JWTSecurityConfiguration {
         return paths.toArray(new String[0]);
     }
 
-<<<<<<< ours
-    public String[] getAnonymousResources() {
-        return anonymousResources;
-    }
-
     //List of urls under REST that should be redirected back after authorization
     private String[] redirectedUrls() {
         return new String[] { ROUTE_URL, PROLONG_URL, ACCESS_AUTH };
     }
 
-||||||| base
-    public String[] getAnonymousResources() {
-        return anonymousResources;
-    }
-
-=======
->>>>>>> theirs
     private RequestCache requestCache() {
         final HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
         requestCache.setRequestMatcher(getRedirectRequestMatcher());

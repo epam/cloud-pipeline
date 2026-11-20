@@ -29,22 +29,8 @@ import com.epam.pipeline.entity.security.acl.AclPermissionEntry;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
-<<<<<<< ours
-import org.junit.Before;
-import org.junit.Test;
-||||||| base
-import com.epam.pipeline.test.acl.AbstractAclTest;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Before;
-import org.junit.Test;
-=======
-import com.epam.pipeline.test.acl.AbstractAclTest;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
->>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
@@ -55,19 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 import static com.epam.pipeline.manager.ObjectCreatorUtils.constructPipeline;
-<<<<<<< ours
-import static org.junit.Assert.assertEquals;
-||||||| base
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
-=======
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doReturn;
->>>>>>> theirs
 
 @DirtiesContext
 @ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
@@ -100,8 +74,7 @@ public class PipelineWithPermissionsTest extends AbstractManagerTest {
     private AclTestDao.AclSid testUserSid1;
     private AclTestDao.AclSid testUserSid2;
 
-<<<<<<< ours
-    @Before
+    @BeforeEach
     public void setUp() {
         AclTestDao.AclClass folderAclClass = new AclTestDao.AclClass(Folder.class.getCanonicalName());
         aclTestDao.createAclClassIfNotPresent(folderAclClass);
@@ -115,12 +88,6 @@ public class PipelineWithPermissionsTest extends AbstractManagerTest {
         testUserSid2 = new AclTestDao.AclSid(true, TEST_OWNER2);
         aclTestDao.createAclSid(testUserSid2);
 
-||||||| base
-    @Before
-    public void setUp() {
-=======
-    @BeforeEach    public void setUp() {
->>>>>>> theirs
         folder1 = getFolder(TEST_FOLDER1, TEST_OWNER1);
         folderDao.createFolder(folder1);
 

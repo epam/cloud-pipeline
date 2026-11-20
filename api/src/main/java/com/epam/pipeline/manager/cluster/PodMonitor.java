@@ -63,14 +63,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-<<<<<<< ours
-import javax.annotation.PostConstruct;
 import java.time.Duration;
-||||||| base
-import javax.annotation.PostConstruct;
-=======
-
->>>>>>> theirs
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;

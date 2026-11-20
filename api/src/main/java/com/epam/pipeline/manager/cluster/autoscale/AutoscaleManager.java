@@ -132,13 +132,7 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
         private final PoolAutoscaler poolAutoscaler;
         private final RunRegionShiftHandler runRegionShiftHandler;
         private final MetadataManager metadataManager;
-<<<<<<< ours
-||||||| base
-        private final String haDeployEnabled;
-=======
         private final MessageHelper messageHelper;
-        private final String haDeployEnabled;
->>>>>>> theirs
         private final Set<Long> nodeUpTaskInProgress = ConcurrentHashMap.newKeySet();
         private final Map<Long, Integer> nodeUpAttempts = new ConcurrentHashMap<>();
         private final Map<Long, Integer> spotNodeUpAttempts = new ConcurrentHashMap<>();
@@ -161,17 +155,9 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
                              final List<RunCleaner> runCleaners,
                              final PoolAutoscaler poolAutoscaler,
                              final RunRegionShiftHandler runRegionShiftHandler,
-<<<<<<< ours
-                             final MetadataManager metadataManager) {
-||||||| base
-                             final MetadataManager metadataManager,
-                             final @Value("${ha.deploy.enabled:false}") String haDeployEnabled) {
-=======
                              final MetadataManager metadataManager,
                              final MessageHelper messageHelper,
-                             final @Value("${ha.deploy.enabled:false}") String haDeployEnabled,
                              final RunStatusManager runStatusManager) {
->>>>>>> theirs
             this.pipelineRunManager = pipelineRunManager;
             this.executorService = executorService;
             this.autoscalerService = autoscalerService;
@@ -187,14 +173,8 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
             this.poolAutoscaler = poolAutoscaler;
             this.runRegionShiftHandler = runRegionShiftHandler;
             this.metadataManager = metadataManager;
-<<<<<<< ours
-||||||| base
-            this.haDeployEnabled = haDeployEnabled;
-=======
             this.messageHelper = messageHelper;
-            this.haDeployEnabled = haDeployEnabled;
             this.runStatusManager = runStatusManager;
->>>>>>> theirs
         }
 
         @SchedulerLock(name = "AutoscaleManager_runAutoscaling", lockAtMostForString = "PT10M")
@@ -324,16 +304,10 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
                 final Optional<Long> requiredPoolId = reassignHandler.requiredPoolId(run);
                 // A pool-bound run waits by time, not by attempt count. So skip the attempt budget for it.
                 int retryCount = nodeUpAttempts.getOrDefault(longId, 0); // TODO: should we lock here?
-<<<<<<< ours
                 int nodeUpRetryCount = getNodeUpRetryCount(run,
                         preferenceManager.getPreference(SystemPreferences.CLUSTER_NODEUP_RETRY_COUNT));
 
-                if (retryCount >= nodeUpRetryCount) {
-||||||| base
-                if (retryCount >= getNodeUpRetryCount(run, nodeUpRetryCount)) {
-=======
-                if (!requiredPoolId.isPresent() && retryCount >= getNodeUpRetryCount(run, nodeUpRetryCount)) {
->>>>>>> theirs
+                if (!requiredPoolId.isPresent() && retryCount >= nodeUpRetryCount) {
                     log.debug("Exceeded max nodeup attempts ({}) for run ID {}. Setting run status 'FAILURE'.",
                             retryCount, runId);
                     pipelineRunManager.updatePipelineStatusIfNotFinal(longId, TaskStatus.FAILURE);
@@ -357,18 +331,12 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
                     unLabelPendingRun(run);
                     return;
                 }
-<<<<<<< ours
-                if (!hasClusterCapacity(client)) {
-||||||| base
-                if (!hasClusterCapacity(nodeCount, maxClusterSize)) {
-=======
                 if (requiredPoolId.isPresent()) {
                     // No free node matched this cycle. The run is bound to one pool, so wait for that pool.
                     handleOccupiedPoolRun(longId, runId, run, requiredPoolId.get());
                     return;
                 }
-                if (!hasClusterCapacity(nodeCount, maxClusterSize)) {
->>>>>>> theirs
+                if (!hasClusterCapacity(client)) {
                     labelPendingRun(run);
                     return;
                 }

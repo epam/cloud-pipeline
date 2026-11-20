@@ -24,20 +24,8 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
 import com.epam.pipeline.entity.scan.ToolOSVersion;
-<<<<<<< ours
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
-||||||| base
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
-=======
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
->>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Propagation;

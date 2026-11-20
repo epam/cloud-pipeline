@@ -29,28 +29,12 @@ public class PythonExecutableUtilsTest {
     }
 
     @Test
-<<<<<<< ours
     public void fallsBackToPython3WhenCpPythonPathIsNull() {
-        Assert.assertEquals("python3", PythonExecutableUtils.resolvePythonExecutable(null));
-||||||| base
-    public void fallsBackToPythonWhenCpPythonPathIsNull() {
-        Assert.assertEquals("python", PythonExecutableUtils.resolvePythonExecutable(null));
-=======
-    public void fallsBackToPythonWhenCpPythonPathIsNull() {
-        assertEquals("python", PythonExecutableUtils.resolvePythonExecutable(null));
->>>>>>> theirs
+        assertEquals("python3", PythonExecutableUtils.resolvePythonExecutable(null));
     }
 
     @Test
-<<<<<<< ours
     public void fallsBackToPython3WhenCpPythonPathIsBlank() {
-        Assert.assertEquals("python3", PythonExecutableUtils.resolvePythonExecutable("   "));
-||||||| base
-    public void fallsBackToPythonWhenCpPythonPathIsBlank() {
-        Assert.assertEquals("python", PythonExecutableUtils.resolvePythonExecutable("   "));
-=======
-    public void fallsBackToPythonWhenCpPythonPathIsBlank() {
-        assertEquals("python", PythonExecutableUtils.resolvePythonExecutable("   "));
->>>>>>> theirs
+        assertEquals("python3", PythonExecutableUtils.resolvePythonExecutable("   "));
     }
 }

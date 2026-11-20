@@ -45,24 +45,10 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.hamcrest.Matchers.is;
-<<<<<<< ours
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.anyString;
-||||||| base
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-=======
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
->>>>>>> theirs
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
@@ -99,34 +85,14 @@ public class ToolManagerUnitTest {
 
     @BeforeEach
     public void setUp() {
-<<<<<<< ours
-        Whitebox.setInternalState(manager, "toolDao", toolDao);
-        Whitebox.setInternalState(manager, "dockerRegistryManager", dockerRegistryManager);
-        Whitebox.setInternalState(manager, "messageHelper", messageHelper);
-        Whitebox.setInternalState(manager, "toolVulnerabilityDao", toolVulnerabilityDao);
-        Whitebox.setInternalState(manager, "toolGroupManager", toolGroupManager);
-        Whitebox.setInternalState(manager, "authManager", authManager);
-        Whitebox.setInternalState(manager, "instanceOfferManager", instanceOfferManager);
-        Whitebox.setInternalState(manager, "toolVersionManager", toolVersionManager);
-||||||| base
-        Whitebox.setInternalState(manager, "toolDao", toolDao);
-        Whitebox.setInternalState(manager, "dockerRegistryManager", dockerRegistryManager);
-        Whitebox.setInternalState(manager, "messageHelper", messageHelper);
-        Whitebox.setInternalState(manager, "toolGroupManager", toolGroupManager);
-        Whitebox.setInternalState(manager, "authManager", authManager);
-        Whitebox.setInternalState(manager, "instanceOfferManager", instanceOfferManager);
-        Whitebox.setInternalState(manager, "toolVersionManager", toolVersionManager);
-        Whitebox.setInternalState(manager, "toolVulnerabilityDao", toolVulnerabilityDao);
-=======
         ReflectionTestUtils.setField(manager, "toolDao", toolDao);
         ReflectionTestUtils.setField(manager, "dockerRegistryManager", dockerRegistryManager);
         ReflectionTestUtils.setField(manager, "messageHelper", messageHelper);
+        ReflectionTestUtils.setField(manager, "toolVulnerabilityDao", toolVulnerabilityDao);
         ReflectionTestUtils.setField(manager, "toolGroupManager", toolGroupManager);
         ReflectionTestUtils.setField(manager, "authManager", authManager);
         ReflectionTestUtils.setField(manager, "instanceOfferManager", instanceOfferManager);
         ReflectionTestUtils.setField(manager, "toolVersionManager", toolVersionManager);
-        ReflectionTestUtils.setField(manager, "toolVulnerabilityDao", toolVulnerabilityDao);
->>>>>>> theirs
     }
 
     @Test

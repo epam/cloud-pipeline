@@ -16,44 +16,15 @@
 
 package com.epam.pipeline.dao.contextual;
 
-<<<<<<< ours
-||||||| base
-import com.epam.pipeline.entity.contextual.ContextualPreference;
-import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
-import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
-import com.epam.pipeline.entity.preference.PreferenceType;
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.After;
-import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import java.util.List;
-import java.util.Optional;
-
-=======
-import com.epam.pipeline.entity.contextual.ContextualPreference;
-import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
-import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
-import com.epam.pipeline.entity.preference.PreferenceType;
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import java.util.List;
-import java.util.Optional;
-
->>>>>>> theirs
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.epam.pipeline.util.CustomMatchers.isEmpty;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-<<<<<<< ours
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
@@ -61,18 +32,9 @@ import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.preference.PreferenceType;
 import java.util.List;
 import java.util.Optional;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-||||||| base
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-=======
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
->>>>>>> theirs
 
 @SuppressWarnings("PMD.TooManyStaticImports")
 public class ContextualPreferenceDaoTest extends AbstractSpringTest {

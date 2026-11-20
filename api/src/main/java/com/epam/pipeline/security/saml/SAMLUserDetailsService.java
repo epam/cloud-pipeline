@@ -71,6 +71,7 @@ public class SAMLUserDetailsService {
         final Map<String, String> attributes = readAttributes(credentials);
         final List<String> groups = readAuthorities(credentials);
         final UserContext userContext = accessService.parseUser(userName, groups, attributes);
+        userManager.updateLastLoginDate(userContext.toPipelineUser());
         accessService.validateUserGroupsBlockStatus(userContext.toPipelineUser());
         if (hasBlockedStatusAttribute(credentials)) {
             Optional.ofNullable(userContext.getUserId())

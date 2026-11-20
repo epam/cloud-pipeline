@@ -20,17 +20,9 @@ import com.amazonaws.services.fsx.model.LustreDeploymentType;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
-<<<<<<< ours
-||||||| base
-import com.epam.pipeline.dto.credits.PlatformUsageCreditsMode;
-import com.epam.pipeline.entity.cloudaccess.CloudAccessManagementConfig;
-=======
-import com.epam.pipeline.dto.credits.PlatformUsageCreditsMode;
 import com.epam.pipeline.entity.async.AsyncTasksConfig;
 import com.epam.pipeline.entity.async.StorageDownloadArchiveTaskConfig;
 import com.epam.pipeline.entity.async.StorageUnpackArchiveTaskConfig;
-import com.epam.pipeline.entity.cloudaccess.CloudAccessManagementConfig;
->>>>>>> theirs
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
 import com.epam.pipeline.entity.cluster.DockerMount;
@@ -913,9 +905,10 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, String>> UI_CLI_INSTALL_TEMPLATE = new ObjectPreference<>(
         "ui.pipe.cli.install.template", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
         isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
-    public static final ObjectPreference<Map<String, String>> UI_VSCODE_EXTENSION_INSTALL_TEMPLATE = new ObjectPreference<>(
-        "ui.vscode.extension.install.template", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
-        isNullOrValidJson(new TypeReference<Map<String, String>>() {}), true);
+    public static final ObjectPreference<Map<String, String>> UI_VSCODE_EXTENSION_INSTALL_TEMPLATE =
+            new ObjectPreference<>("ui.vscode.extension.install.template", null,
+                    new TypeReference<Map<String, String>>() {}, UI_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<String, String>>() {}), true);
     public static final ObjectPreference<List<ControlEntry>> UI_CONTROLS_SETTINGS = new ObjectPreference<>(
         "ui.controls.settings", null, new TypeReference<List<ControlEntry>>() {}, UI_GROUP,
         isNullOrValidJson(new TypeReference<List<ControlEntry>>() {}));
@@ -1096,50 +1089,8 @@ public class SystemPreferences {
     /**
      * Controls maximum timeout (in minutes), which a node can stay idle, before an action will be taken
      */
-<<<<<<< ours
     public static final IntPreference SYSTEM_MAX_IDLE_TIMEOUT_MINUTES =
             new IntPreference("system.max.idle.timeout.minutes", 30, SYSTEM_GROUP, isGreaterThan(0));
-||||||| base
-    public static final ObjectPreference<List<IdleMonitoringConfig>> SYSTEM_IDLE_MONITORING_CONFIG =
-            new ObjectPreference<>(
-                    "system.idle.monitoring.config",
-                    Arrays.asList(
-                        new IdleMonitoringConfig(
-                                IdleMonitoringType.CPU,
-                                true, 10.0, 30, 30, IdleRunAction.NOTIFY
-                        ),
-                        new IdleMonitoringConfig(
-                                IdleMonitoringType.GPU,
-                                true, null, 30, 30, IdleRunAction.NOTIFY
-                        ),
-                        new IdleMonitoringConfig(
-                                IdleMonitoringType.ABSOLUTE,
-                                true, null, null, 30, IdleRunAction.NOTIFY
-                        )
-                    ),
-                    new TypeReference<List<IdleMonitoringConfig>>() {}, SYSTEM_GROUP,
-                    PreferenceValidators.isValidIdleMonitoringConfig);
-=======
-    public static final ObjectPreference<List<IdleMonitoringConfig>> SYSTEM_IDLE_MONITORING_CONFIG =
-            new ObjectPreference<>(
-                    "system.idle.monitoring.config",
-                    List.of(
-                        new IdleMonitoringConfig(
-                                IdleMonitoringType.CPU,
-                                true, 10.0, 30, 30, IdleRunAction.NOTIFY
-                        ),
-                        new IdleMonitoringConfig(
-                                IdleMonitoringType.GPU,
-                                true, null, 30, 30, IdleRunAction.NOTIFY
-                        ),
-                        new IdleMonitoringConfig(
-                                IdleMonitoringType.ABSOLUTE,
-                                true, null, null, 30, IdleRunAction.NOTIFY
-                        )
-                    ),
-                    new TypeReference<>() {}, SYSTEM_GROUP,
-                    PreferenceValidators.isValidIdleMonitoringConfig);
->>>>>>> theirs
 
     /**
      * A timeout to wait before an idle action will be taken

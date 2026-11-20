@@ -18,24 +18,4 @@ package com.epam.pipeline.entity.search;
 
 import java.util.Set;
 
-<<<<<<< ours
-@AllArgsConstructor
-@Getter
-public class StorageFileSearchMask {
-
-    private final String storageName;
-    private final Set<String> hiddenFilePathGlobs;
-}
-||||||| base
-@AllArgsConstructor
-@Getter
-public class StorageFileSearchMask {
-
-    private final String storageName;
-    private final Set<String> hiddenFilePathGlobs;
-    private final Set<String> indexedContentPathGlobs;
-}
-=======
-public record StorageFileSearchMask(
-        String storageName, Set<String> hiddenFilePathGlobs, Set<String> indexedContentPathGlobs) {}
->>>>>>> theirs
+public record StorageFileSearchMask(String storageName, Set<String> hiddenFilePathGlobs) {}

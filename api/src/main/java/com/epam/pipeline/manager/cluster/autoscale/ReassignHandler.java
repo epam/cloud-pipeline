@@ -32,15 +32,7 @@ import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.autoscale.filter.PoolFilterHandler;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
-<<<<<<< ours
-||||||| base
-import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.preference.SystemPreferences;
-=======
 import com.epam.pipeline.manager.pipeline.RunStatusManager;
-import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.preference.SystemPreferences;
->>>>>>> theirs
 import com.epam.pipeline.utils.CommonUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.extern.slf4j.Slf4j;
@@ -63,13 +55,7 @@ import java.util.function.BiFunction;
 @Slf4j
 public class ReassignHandler {
     private static final String CP_CREATE_NEW_NODE = "CP_CREATE_NEW_NODE";
-<<<<<<< ours
-||||||| base
-    private static final String CP_CAP_DEDICATED_INSTANCE = "CP_CAP_DEDICATED_INSTANCE";
-=======
-    private static final String CP_CAP_DEDICATED_INSTANCE = "CP_CAP_DEDICATED_INSTANCE";
     private static final String CP_CAP_POOL_ID = "CP_CAP_POOL_ID";
->>>>>>> theirs
 
     private final AutoscalerService autoscalerService;
     private final CloudFacade cloudFacade;
@@ -78,44 +64,24 @@ public class ReassignHandler {
     private final Map<PoolInstanceFilterType, PoolFilterHandler> filterHandlers;
     private final MetadataManager metadataManager;
     private final IAMProfileVerifier iamProfileVerifier;
-<<<<<<< ours
-||||||| base
-    private final PreferenceManager preferenceManager;
-=======
     private final MessageHelper messageHelper;
-    private final PreferenceManager preferenceManager;
->>>>>>> theirs
 
     public ReassignHandler(final AutoscalerService autoscalerService,
                            final CloudFacade cloudFacade,
                            final PipelineRunManager pipelineRunManager,
                            final List<PoolFilterHandler> filterHandlers,
                            final MetadataManager metadataManager,
-<<<<<<< ours
-                           final IAMProfileVerifier iamProfileVerifier) {
-||||||| base
-                           final IAMProfileVerifier iamProfileVerifier,
-                           final PreferenceManager preferenceManager) {
-=======
                            final IAMProfileVerifier iamProfileVerifier,
                            final RunStatusManager runStatusManager,
-                           final MessageHelper messageHelper,
-                           final PreferenceManager preferenceManager) {
->>>>>>> theirs
+                           final MessageHelper messageHelper) {
         this.autoscalerService = autoscalerService;
         this.cloudFacade = cloudFacade;
         this.pipelineRunManager = pipelineRunManager;
         this.filterHandlers = CommonUtils.groupByKey(filterHandlers, PoolFilterHandler::type);
         this.metadataManager = metadataManager;
         this.iamProfileVerifier = iamProfileVerifier;
-<<<<<<< ours
-||||||| base
-        this.preferenceManager = preferenceManager;
-=======
         this.runStatusManager = runStatusManager;
         this.messageHelper = messageHelper;
-        this.preferenceManager = preferenceManager;
->>>>>>> theirs
     }
 
     public boolean tryReassignNode(final KubernetesClient client,
@@ -133,37 +99,12 @@ public class ReassignHandler {
         final Map<String, RunningInstance> freeInstances = ListUtils.emptyIfNull(freeNodes)
                 .stream()
                 .collect(HashMap::new,
-<<<<<<< ours
                     (map, id) -> map.put(id, autoscalerService.getPreviousRunInstance(id, client)), HashMap::putAll);
-        // Try to find match with pre-pulled image
-||||||| base
-                    (map, id) -> map.put(id, autoscalerService.getPreviousRunInstance(id, client)),
-                    HashMap::putAll);
-
-        freeInstances.values()
-            .removeIf(entry -> KubernetesConstants.WINDOWS.equals(entry.getInstance().getNodePlatform()));
-        if (MapUtils.isEmpty(freeInstances)) {
-            log.debug("Available nodes are not suitable for the reassign.");
-            return false;
-        }
-
-        // Try to find match with pre-pulled image
-=======
-                    (map, id) -> map.put(id, autoscalerService.getPreviousRunInstance(id, client)),
-                    HashMap::putAll);
-
-        freeInstances.values()
-            .removeIf(entry -> KubernetesConstants.WINDOWS.equals(entry.getInstance().getNodePlatform()));
-        if (MapUtils.isEmpty(freeInstances)) {
-            log.debug("Available nodes are not suitable for the reassign.");
-            return false;
-        }
 
         final Optional<Long> requiredPoolId = pipelineRun.flatMap(this::requiredPoolId);
 
         // Try to find match with pre-pulled image. This is not the last attempt on this tick, so a required
         // pool's own node that fails here does not fail the run yet. The plain attempt below may still take it.
->>>>>>> theirs
         final boolean reassignedWithMatchingImage = attemptReassign(freeInstances,
                 autoscalerService::requirementsMatchWithImages, requiredInstance, runId, longId,
                 pipelineRun, requiredPoolId, scheduledRuns, reassignedNodes, false);

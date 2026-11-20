@@ -20,17 +20,7 @@ import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.cluster.nat.NatRoute;
 import com.epam.pipeline.entity.cluster.nat.NatRouteStatus;
 import com.epam.pipeline.entity.cluster.nat.NatRoutingRuleDescription;
-<<<<<<< ours
-import org.junit.Assert;
-import org.junit.Test;
-||||||| base
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Assert;
-import org.junit.Test;
-=======
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.jupiter.api.Test;
->>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;

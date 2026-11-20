@@ -81,18 +81,9 @@ import com.epam.pipeline.manager.notification.ContextualNotificationSettingsMana
 import com.epam.pipeline.manager.pipeline.FolderApiService;
 import com.epam.pipeline.manager.pipeline.ToolApiService;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
-<<<<<<< ours
-||||||| base
-import com.epam.pipeline.dao.monitoring.metricrequester.HeapsterElasticRestHighLevelClient;
-import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
-=======
-import com.epam.pipeline.dao.monitoring.metricrequester.HeapsterElasticRestHighLevelClient;
-import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import com.epam.pipeline.mapper.async.AsyncTaskMapper;
->>>>>>> theirs
 import com.epam.pipeline.mapper.cluster.KubernetesMapper;
 import com.epam.pipeline.mapper.git.GitHubMapper;
-import com.epam.pipeline.repository.async.AsyncTaskRepository;
 import com.epam.pipeline.security.saml.impersonation.ImpersonationManager;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.mapper.AbstractDataStorageMapper;
@@ -124,6 +115,7 @@ import com.epam.pipeline.repository.quota.QuotaRepository;
 import com.epam.pipeline.repository.role.RoleRepository;
 import com.epam.pipeline.repository.user.OnlineUsersRepository;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
+import com.epam.pipeline.repository.async.AsyncTaskRepository;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
@@ -188,19 +180,7 @@ public class AspectTestBeans {
     public FileShareMountDao mockFileShareMountDao;
 
     @MockBean
-<<<<<<< ours
-    protected JdbcMutableAclServiceImpl mockJdbcMutableAclService;
-||||||| base
-    protected DataStorageTagDao mockDataStorageTagDao;
-
-    @MockBean
-    protected JdbcMutableAclServiceImpl mockJdbcMutableAclService;
-=======
     public DataStorageDao mockDataStorageDao;
-
-    @MockBean
-    public DataStorageTagDao mockDataStorageTagDao;
->>>>>>> theirs
 
     @MockBean
     public JdbcMutableAclServiceImpl mockJdbcMutableAclService;
@@ -272,19 +252,7 @@ public class AspectTestBeans {
     public ClusterDao mockClusterDao;
 
     @MockBean
-<<<<<<< ours
-    protected IssueDao mockIssueDao;
-||||||| base
-    protected StopServerlessRunDao mockStopServerlessRunDao;
-
-    @MockBean
-    protected IssueDao mockIssueDao;
-=======
     public NodeDiskDao mockNodeDiskDao;
-
-    @MockBean
-    public StopServerlessRunDao mockStopServerlessRunDao;
->>>>>>> theirs
 
     @MockBean
     public IssueDao mockIssueDao;
@@ -344,43 +312,7 @@ public class AspectTestBeans {
     public PipelineRunDao mockPipelineRunDao;
 
     @MockBean
-<<<<<<< ours
-    protected UserDao mockUserDao;
-||||||| base
-    protected PipelineRunResultDao mockPipelineRunResultDao;
-
-    @MockBean
-    protected JwtTokenRevocationDao mockJwtTokenRevocationDao;
-
-    @MockBean
-    protected NamedJwtTokenDao mockNamedJwtTokenDao;
-
-    @MockBean
-    protected JwtTokenRevocationManager jwtTokenRevocationManager;
-
-    @MockBean
-    protected NamedJwtTokenManager namedJwtTokenManager;
-
-    @MockBean
-    protected UserDao mockUserDao;
-=======
-    public PipelineRunResultDao mockPipelineRunResultDao;
-
-    @MockBean
-    protected JwtTokenRevocationDao mockJwtTokenRevocationDao;
-
-    @MockBean
-    protected NamedJwtTokenDao mockNamedJwtTokenDao;
-
-    @MockBean
-    protected JwtTokenRevocationManager jwtTokenRevocationManager;
-
-    @MockBean
-    protected NamedJwtTokenManager namedJwtTokenManager;
-
-    @MockBean
     public UserDao mockUserDao;
->>>>>>> theirs
 
     @MockBean
     public MonitoringNotificationDao monitoringNotificationDao;
@@ -446,28 +378,10 @@ public class AspectTestBeans {
     public CloudProfileCredentialsRepository mockCloudProfileCredentialsRepository;
 
     @MockBean
-<<<<<<< ours
-    protected DataStorageLifecycleRuleRepository lifecycleRuleRepository;
-||||||| base
-    protected OntologyMapper mockOntologyMapper;
-
-    @MockBean
-    protected OntologyRepository mockOntologyRepository;
-
-    @MockBean
-    protected DataStorageLifecycleRuleRepository lifecycleRuleRepository;
-=======
     public PipelineUserRepository mockPipelineUserRepository;
 
     @MockBean
     public RoleRepository mockRoleRepository;
-
-    @MockBean
-    public OntologyMapper mockOntologyMapper;
->>>>>>> theirs
-
-    @MockBean
-    public OntologyRepository mockOntologyRepository;
 
     @MockBean
     public DataStorageLifecycleRuleRepository lifecycleRuleRepository;
@@ -499,44 +413,12 @@ public class AspectTestBeans {
     @MockBean
     public CacheManager cacheManager;
 
-<<<<<<< ours
-||||||| base
-    @MockBean(name = "aclCacheManager")
-    protected CacheManager aclCacheManager;
-
-=======
-    @MockBean(name = "aclCacheManager")
-    public CacheManager aclCacheManager;
-
->>>>>>> theirs
     @MockBean
     public NatGatewayDao natGatewayDao;
 
     @MockBean
-<<<<<<< ours
-    protected BillingManager billingManager;
-||||||| base
-    protected LdapTemplateProvider ldapTemplateProvider;
-
-    @MockBean
-    protected BillingManager billingManager;
-=======
-    public LdapTemplateProvider ldapTemplateProvider;
-
-    @MockBean
     public BillingManager billingManager;
->>>>>>> theirs
 
-<<<<<<< ours
-||||||| base
-    @MockBean
-    protected PipelineRunResultManager mockPipelineRunResultManager;
-
-=======
-    @MockBean
-    public PipelineRunResultManager mockPipelineRunResultManager;
-
->>>>>>> theirs
     @MockBean(name = "pipelineBillingDetailsLoader")
     public EntityBillingDetailsLoader pipelineBillingDetailsLoader;
 
@@ -580,25 +462,7 @@ public class AspectTestBeans {
     public NodePoolUsageMapper nodePoolUsageMapper;
 
     @MockBean
-<<<<<<< ours
-    protected GitHubMapper gitHubMapper;
-||||||| base
-    protected BitbucketMapper bitbucketMapper;
-
-    @MockBean
-    protected BitbucketCloudMapper bitbucketCloudMapper;
-
-    @MockBean
-    protected GitHubMapper gitHubMapper;
-=======
-    public BitbucketMapper bitbucketMapper;
-
-    @MockBean
-    public BitbucketCloudMapper bitbucketCloudMapper;
-
-    @MockBean
     public GitHubMapper gitHubMapper;
->>>>>>> theirs
 
     @MockBean
     public DataStorageLifecycleManager storageLifecycleManager;
@@ -622,25 +486,7 @@ public class AspectTestBeans {
     public KubernetesMapper kubernetesMapper;
 
     @MockBean
-<<<<<<< ours
-    protected StoragePathPermissionsDao storagePathPermissionsDao;
-||||||| base
-    protected ArchiveRunDao archiveRunDao;
-
-    @MockBean
-    protected EngineRunTaskDao engineRunTaskDao;
-
-    @MockBean
-    protected StoragePathPermissionsDao storagePathPermissionsDao;
-=======
-    public ArchiveRunDao archiveRunDao;
-
-    @MockBean
-    public EngineRunTaskDao engineRunTaskDao;
-
-    @MockBean
     public StoragePathPermissionsDao storagePathPermissionsDao;
->>>>>>> theirs
 
     @MockBean
     public AccessCodeCleaner accessCodeCleaner;
@@ -652,75 +498,17 @@ public class AspectTestBeans {
     public UnsecuredAccessService unsecuredAccessService;
 
     @MockBean
-<<<<<<< ours
-||||||| base
-    protected AzureDevOpsMapper azureDevOpsMapper;
-
-    @MockBean
-    protected GlobalSearchElasticHelper globalSearchElasticHelper;
-
-    @MockBean
-    protected HeapsterElasticRestHighLevelClient heapsterElasticRestHighLevelClient;
-
-    @MockBean
-=======
-    public AzureDevOpsMapper azureDevOpsMapper;
-
-    @MockBean
     public CommonAuditClient auditClient;
 
     @MockBean
-    protected HeapsterElasticRestHighLevelClient heapsterElasticRestHighLevelClient;
-
-    @MockBean
-    protected GlobalSearchElasticHelper globalSearchElasticHelper;
-
-    @MockBean
->>>>>>> theirs
     protected PipelineRunMetricsDao pipelineRunMetricsDao;
 
     @MockBean
-<<<<<<< ours
-    protected ArchiveRunDao archiveRunDao;
-||||||| base
-    protected PlatformUsageCreditsRuleService platformUsageCreditsRuleService;
-
-    @MockBean
-    protected PlatformUsageCreditsUserBalanceService platformUsageCreditsUserBalanceService;
-
-    @MockBean
-    protected PlatformUsageCreditsUserBalanceCRUDService platformUsageCreditsUserBalanceCRUDService;
-
-    @MockBean
-    protected PlatformUsageCreditsLaunchService platformUsageCreditsLaunchService;
-
-    @MockBean
-    protected PlatformUsageCreditsEventService platformUsageCreditsEventService;
-
-    @MockBean
-    protected UserAccessService userAccessService;
-=======
-    protected PlatformUsageCreditsRuleService platformUsageCreditsRuleService;
-
-    @MockBean
-    protected PlatformUsageCreditsUserBalanceService platformUsageCreditsUserBalanceService;
-
-    @MockBean
-    protected PlatformUsageCreditsUserBalanceCRUDService platformUsageCreditsUserBalanceCRUDService;
-
-    @MockBean
-    protected PlatformUsageCreditsLaunchService platformUsageCreditsLaunchService;
-
-    @MockBean
-    protected PlatformUsageCreditsEventService platformUsageCreditsEventService;
-
-    @MockBean
-    protected UserAccessService userAccessService;
+    public ArchiveRunDao archiveRunDao;
 
     @MockBean
     protected AsyncTaskRepository asyncTaskRepository;
 
     @MockBean
     protected AsyncTaskMapper asyncTaskMapper;
->>>>>>> theirs
 }

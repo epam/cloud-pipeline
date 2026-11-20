@@ -49,7 +49,6 @@ public class InactiveUsersMonitoringServiceCoreTest {
     private final InactiveUsersMonitoringServiceCore monitoringService = new InactiveUsersMonitoringServiceCore(
             userManager, notificationManager, preferenceManager);
 
-<<<<<<< ours
     private static PipelineUser activeUser(final String userName, final Long id) {
         final PipelineUser pipelineUser = getPipelineUser(userName, id);
         pipelineUser.setBlocked(false);
@@ -86,14 +85,8 @@ public class InactiveUsersMonitoringServiceCoreTest {
         return pipelineUser;
     }
 
-    @Before
+    @BeforeEach
     public void setup() {
-||||||| base
-    @Before
-    public void setup() {
-=======
-    @BeforeEach    public void setup() {
->>>>>>> theirs
         doReturn(THRESHOLD_DAYS).when(preferenceManager)
                 .getPreference(SystemPreferences.SYSTEM_INACTIVE_USER_MONITOR_BLOCKED_DAYS);
         doReturn(THRESHOLD_DAYS).when(preferenceManager)

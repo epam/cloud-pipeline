@@ -28,13 +28,7 @@ import java.util.Optional;
 
 @Getter
 @Builder
-<<<<<<< ours
-||||||| base
-@EqualsAndHashCode
-=======
-@EqualsAndHashCode
 @Jacksonized
->>>>>>> theirs
 public class ToolVersionScanResultView {
 
     private Long toolId;

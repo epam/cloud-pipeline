@@ -42,21 +42,7 @@ import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import com.epam.pipeline.utils.GitUtils;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-<<<<<<< ours
-import lombok.experimental.Wither;
-||||||| base
-import lombok.experimental.Wither;
-import okhttp3.MediaType;
-import okhttp3.MultipartBody;
-import okhttp3.RequestBody;
-import org.apache.commons.collections4.ListUtils;
-=======
 import lombok.With;
-import okhttp3.MediaType;
-import okhttp3.MultipartBody;
-import okhttp3.RequestBody;
-import org.apache.commons.collections4.ListUtils;
->>>>>>> theirs
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;

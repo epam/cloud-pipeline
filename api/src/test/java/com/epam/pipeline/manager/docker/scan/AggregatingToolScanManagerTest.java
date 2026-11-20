@@ -289,17 +289,10 @@ public class AggregatingToolScanManagerTest {
         old.setDigest(DIGEST_2);
         when(toolVersionManager.loadToolVersion(testTool.getId(), LATEST_VERSION)).thenReturn(old);
 
-<<<<<<< ours
-        when(toolManager.getTagFromImageName(Mockito.anyString())).thenReturn(LATEST_VERSION);
-        when(toolVersionManager.findToolVersion(Mockito.anyLong(), Mockito.anyString())).thenReturn(Optional.empty());
-||||||| base
-        when(toolVersionManager.findToolVersion(Mockito.anyLong(), Mockito.anyString())).thenReturn(Optional.empty());
-=======
-        when(toolManager.getTagFromImageName(nullable(String.class), nullable(String.class)))
+        when(toolManager.getTagFromImageName(nullable(String.class)))
                 .thenReturn(LATEST_VERSION);
         when(toolVersionManager.findToolVersion(Mockito.anyLong(), nullable(String.class)))
                 .thenReturn(Optional.empty());
->>>>>>> theirs
 
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_CLAIR_VERSION))
                 .thenReturn(CLAIR_DEFAULT_VERSION);
@@ -608,30 +601,6 @@ public class AggregatingToolScanManagerTest {
     }
 
     @Test
-<<<<<<< ours
-||||||| base
-    public void testAllowWindows() {
-        final Optional<ToolVersion> windowsToolVersion = Optional.of(ToolVersion.builder()
-                                                                         .platform("windows")
-                                                                         .build());
-        when(toolVersionManager.findToolVersion(testTool.getId(), LATEST_VERSION)).thenReturn(windowsToolVersion);
-        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
-        Mockito.verifyZeroInteractions(preferenceManager);
-    }
-    
-    @Test
-=======
-    public void testAllowWindows() {
-        final Optional<ToolVersion> windowsToolVersion = Optional.of(ToolVersion.builder()
-                                                                         .platform("windows")
-                                                                         .build());
-        when(toolVersionManager.findToolVersion(testTool.getId(), LATEST_VERSION)).thenReturn(windowsToolVersion);
-        assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
-        Mockito.verifyNoInteractions(preferenceManager);
-    }
-
-    @Test
->>>>>>> theirs
     public void shouldDenyBlackListedTool() {
         // Setup: Tool version is in blacklist
         toolScanResult.setFromBlackList(true);

@@ -76,6 +76,7 @@ public class SAMLUserDetailsServiceTest {
         doNothing().when(accessService).validateUserGroupsBlockStatus(any());
 
         assertUserNameAndGroups(userDetailsService.loadUserBySAML(credentials), expectedContext);
+        verify(userManager).updateLastLoginDate(any());
         verify(accessService).validateUserGroupsBlockStatus(any());
         notInvoked(accessService).throwUserIsBlocked(any());
     }

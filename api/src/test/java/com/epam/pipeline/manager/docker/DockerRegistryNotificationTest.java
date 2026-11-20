@@ -25,27 +25,12 @@ import com.epam.pipeline.entity.pipeline.*;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.acl.AclPermission;
-<<<<<<< ours
 import com.epam.pipeline.util.TestUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-||||||| base
-import com.epam.pipeline.test.acl.AbstractAclTest;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.InjectMocks;
-=======
-import com.epam.pipeline.test.acl.AbstractAclTest;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
->>>>>>> theirs
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -59,11 +44,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-<<<<<<< ours
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
@@ -80,63 +65,6 @@ public class DockerRegistryNotificationTest extends AbstractManagerTest {
     private static final String TEST_REPO_WITHOUT_WRITE_ACCESS = "repository2";
     private static final String TEST_IMAGE = "library/image";
     private static final String TEST_IMAGE_NEW_GROUP = "library2/image";
-||||||| base
-import java.util.Optional;
-
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_3;
-import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getDockerRegistry;
-import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getTool;
-import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getToolGroup;
-import static com.epam.pipeline.test.creator.security.SecurityCreatorUtils.getEntityVO;
-import static com.epam.pipeline.test.creator.security.SecurityCreatorUtils.getUserContext;
-import static com.epam.pipeline.util.CustomAssertions.assertThrows;
-import static org.apache.commons.lang3.StringUtils.containsIgnoreCase;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
-
-@SuppressWarnings("PMD.UnusedPrivateField")
-public class DockerRegistryNotificationTest extends AbstractAclTest {
-    private static final String REPO = "repository";
-    private static final String REPO_EXTERNAL_PATH = "repository2";
-    private static final String EXTERNAL_PATH = "external_repository";
-    private static final String REPO_NO_WRITE_ACCESS = "repository3";
-    private static final String IMAGE_GROUP_1 = "library";
-    private static final String IMAGE_GROUP_2 = "library2";
-    private static final String IMAGE = IMAGE_GROUP_1 + "/image";
-    private static final String IMAGE_NEW_GROUP = IMAGE_GROUP_2 + "/image";
-=======
-import java.util.Optional;
-
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_3;
-import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getDockerRegistry;
-import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getTool;
-import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getToolGroup;
-import static com.epam.pipeline.test.creator.security.SecurityCreatorUtils.getEntityVO;
-import static com.epam.pipeline.test.creator.security.SecurityCreatorUtils.getUserContext;
-import static com.epam.pipeline.util.CustomAssertions.assertThrows;
-import static org.apache.commons.lang3.StringUtils.containsIgnoreCase;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doReturn;
-
-@SuppressWarnings("PMD.UnusedPrivateField")
-public class DockerRegistryNotificationTest extends AbstractAclTest {
-    private static final String REPO = "repository";
-    private static final String REPO_EXTERNAL_PATH = "repository2";
-    private static final String EXTERNAL_PATH = "external_repository";
-    private static final String REPO_NO_WRITE_ACCESS = "repository3";
-    private static final String IMAGE_GROUP_1 = "library";
-    private static final String IMAGE_GROUP_2 = "library2";
-    private static final String IMAGE = IMAGE_GROUP_1 + "/image";
-    private static final String IMAGE_NEW_GROUP = IMAGE_GROUP_2 + "/image";
->>>>>>> theirs
     private static final String PUSH_ACTION = "push";
     private static final String PULL_ACTION = "pull";
     private static final String ADMIN_ROLE = "ADMIN";
@@ -167,8 +95,7 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
     @MockBean
     private ToolVersionManager toolVersionManager;
 
-<<<<<<< ours
-    @Before
+    @BeforeEach
     public void setUp() {
 
         AclTestDao.AclSid adminSid = new AclTestDao.AclSid(true, ADMIN);
@@ -261,14 +188,6 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
         registryAclEntry3.setOrder(2);
         aclTestDao.createAclEntry(registryAclEntry3);
 
-||||||| base
-    @Before
-    public void setUp() {
-        mockUserContext(getUserContext(ID, SIMPLE_USER, ID, SIMPLE_USER_ROLE));
-=======
-    @BeforeEach    public void setUp() {
-        mockUserContext(getUserContext(ID, SIMPLE_USER, ID, SIMPLE_USER_ROLE));
->>>>>>> theirs
         MockitoAnnotations.initMocks(this);
 
         TestUtils.configureDockerClientMock(dockerClient, dockerClientFactoryMock);
@@ -302,7 +221,7 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
                 Collections.singletonList(PUSH_ACTION));
 
         List<Tool> registeredTools = registryManager.notifyDockerRegistryEvents(TEST_REPO, eventsEnvelope);
-        Assert.assertEquals(1, registeredTools.size());
+        assertEquals(1, registeredTools.size());
     }
 
     @Test
@@ -316,7 +235,7 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
                 Collections.singletonList(PUSH_ACTION));
 
         List<Tool> registeredTools = registryManager.notifyDockerRegistryEvents(TEST_REPO, eventsEnvelope);
-        Assert.assertEquals(1, registeredTools.size());
+        assertEquals(1, registeredTools.size());
     }
 
     @Test
@@ -330,7 +249,7 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
                 Collections.singletonList(PULL_ACTION));
 
         List<Tool> registeredTools = registryManager.notifyDockerRegistryEvents(TEST_REPO, eventsEnvelope);
-        Assert.assertEquals(0, registeredTools.size());
+        assertEquals(0, registeredTools.size());
     }
 
     @Test
@@ -344,7 +263,7 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
                 Collections.singletonList(PUSH_ACTION));
 
         List<Tool> registeredTools = registryManager.notifyDockerRegistryEvents(null, eventsEnvelope);
-        Assert.assertEquals(1, registeredTools.size());
+        assertEquals(1, registeredTools.size());
     }
 
     @Test
@@ -358,7 +277,7 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
                 Collections.singletonList(PUSH_ACTION));
 
         List<Tool> registeredTools = registryManager.notifyDockerRegistryEvents(EXTERNAL_REPO_PATH, eventsEnvelope);
-        Assert.assertEquals(1, registeredTools.size());
+        assertEquals(1, registeredTools.size());
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
@@ -372,7 +291,7 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
 
         List<Tool> registeredTools = registryManager.notifyDockerRegistryEvents(TEST_REPO_WITHOUT_WRITE_ACCESS,
                 eventsEnvelope);
-        Assert.assertEquals(0, registeredTools.size());
+        assertEquals(0, registeredTools.size());
     }
 
     @Test
@@ -386,8 +305,8 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
                 Arrays.asList(PUSH_ACTION, PUSH_ACTION));
 
         List<Tool> registeredTools = registryManager.notifyDockerRegistryEvents(TEST_REPO, eventsEnvelope);
-        Assert.assertEquals(2, registeredTools.size());
-        Assert.assertEquals(registeredTools.get(0).getId(), registeredTools.get(1).getId());
+        assertEquals(2, registeredTools.size());
+        assertEquals(registeredTools.get(0).getId(), registeredTools.get(1).getId());
     }
 
     private DockerRegistryEventEnvelope generateDockerRegistryEvents(List<String> users,

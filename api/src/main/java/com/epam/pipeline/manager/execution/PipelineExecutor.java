@@ -311,60 +311,14 @@ public class PipelineExecutor {
         container.setEnv(envVars);
         container.setImage(dockerImage);
         container.setSecurityContext(buildSecurityContext(policy));
-<<<<<<< ours
-        String entryPoint = Optional.ofNullable(template.getEntrypoint()).orElse("/bin/bash");
+        String entryPoint = Optional.ofNullable(template.entrypoint()).orElse("/bin/bash");
         container.setCommand(Collections.singletonList(entryPoint));
         if (!StringUtils.isEmpty(command)) {
-            List<String> args = CollectionUtils.isEmpty(template.getArgs()) ?
-                    Collections.singletonList("-c") : template.getArgs();
+            List<String> args = CollectionUtils.isEmpty(template.args()) ?
+                    Collections.singletonList("-c") : template.args();
             List<String> mergedArgs = new ArrayList<>(args);
             mergedArgs.add(command);
             container.setArgs(mergedArgs);
-||||||| base
-        if (KubernetesConstants.WINDOWS.equals(run.getPlatform())) {
-            container.setCommand(Collections.singletonList("powershell"));
-            if (!StringUtils.isEmpty(command)) {
-                container.setArgs(Arrays.asList("-command", command));
-            }
-            container.setVolumeMounts(getWindowsMounts());
-            container.setTerminationMessagePath("c:\\termination-log");
-        } else {
-            String entryPoint = Optional.ofNullable(template.getEntrypoint()).orElse("/bin/bash");
-            container.setCommand(Collections.singletonList(entryPoint));
-            if (!StringUtils.isEmpty(command)) {
-                List<String> args = CollectionUtils.isEmpty(template.getArgs()) ?
-                        Collections.singletonList("-c") : template.getArgs();
-                List<String> mergedArgs = new ArrayList<>(args);
-                mergedArgs.add(command);
-                container.setArgs(mergedArgs);
-            }
-            container.setVolumeMounts(
-                    getMounts(isDockerInDockerEnabled, isSystemdEnabled, isEBSVolumesEnabled, commonMounts)
-            );
-            container.setTerminationMessagePath("/dev/termination-log");
-=======
-        if (KubernetesConstants.WINDOWS.equals(run.getPlatform())) {
-            container.setCommand(Collections.singletonList("powershell"));
-            if (!StringUtils.isEmpty(command)) {
-                container.setArgs(Arrays.asList("-command", command));
-            }
-            container.setVolumeMounts(getWindowsMounts());
-            container.setTerminationMessagePath("c:\\termination-log");
-        } else {
-            String entryPoint = Optional.ofNullable(template.entrypoint()).orElse("/bin/bash");
-            container.setCommand(Collections.singletonList(entryPoint));
-            if (!StringUtils.isEmpty(command)) {
-                List<String> args = CollectionUtils.isEmpty(template.args()) ?
-                        Collections.singletonList("-c") : template.args();
-                List<String> mergedArgs = new ArrayList<>(args);
-                mergedArgs.add(command);
-                container.setArgs(mergedArgs);
-            }
-            container.setVolumeMounts(
-                    getMounts(isDockerInDockerEnabled, isSystemdEnabled, isEBSVolumesEnabled, commonMounts)
-            );
-            container.setTerminationMessagePath("/dev/termination-log");
->>>>>>> theirs
         }
         container.setVolumeMounts(getMounts(isDockerInDockerEnabled, isSystemdEnabled, commonMounts));
         container.setTerminationMessagePath("/dev/termination-log");

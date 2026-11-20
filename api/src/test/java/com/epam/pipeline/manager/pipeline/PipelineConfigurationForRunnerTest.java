@@ -38,6 +38,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.util.Arrays;
@@ -49,13 +50,11 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.when;
+import static org.mockito.quality.Strictness.LENIENT;
 
-<<<<<<< ours
-@SuppressWarnings("PMD.UnusedPrivateField")
-||||||| base
-=======
 @ExtendWith(MockitoExtension.class)
->>>>>>> theirs
+@MockitoSettings(strictness = LENIENT)
+@SuppressWarnings("PMD.UnusedPrivateField")
 public class PipelineConfigurationForRunnerTest extends AbstractManagerTest {
     private static final String TEST_IMAGE = "image";
     private static final String TEST_CPU = "500m";
@@ -76,20 +75,6 @@ public class PipelineConfigurationForRunnerTest extends AbstractManagerTest {
     private static final String WORKED_CMD_FIELD = "workerCmd";
     public static final long PIPELINE_ID = 1L;
 
-<<<<<<< ours
-    @InjectMocks
-    private PipelineConfigurationManager pipelineConfigurationManager;
-
-||||||| base
-    @InjectMocks
-    private PipelineConfigurationManager pipelineConfigurationManager;
-
-    @Mock
-    private PipelineManager mockPipelineManager;
-=======
-    @Mock
-    private PipelineManager mockPipelineManager;
->>>>>>> theirs
     @MockBean
     private ToolManager toolManagerMock;
     @MockBean
@@ -138,17 +123,9 @@ public class PipelineConfigurationForRunnerTest extends AbstractManagerTest {
         when(pipelineVersionManagerMock.loadConfigurationEntry(
             nullable(Long.class), nullable(String.class), nullable(String.class))).thenReturn(configurationEntry);
         when(pipelineVersionManagerMock.getValidDockerImage(anyString())).thenReturn(TEST_IMAGE);
-<<<<<<< ours
         when(dataStorageApiServiceMock.getWritableStorages()).thenReturn(Collections.emptyList());
-        when(permissionsServiceMock.isMaskBitSet(anyInt(), anyInt())).thenReturn(true);
-        when(toolVersionManagerMock.loadToolVersionSettings(anyLong(), anyString()))
-||||||| base
-        when(permissionsServiceMock.isMaskBitSet(anyInt(), anyInt())).thenReturn(true);
-        when(toolVersionManagerMock.loadToolVersionSettings(anyLong(), anyString()))
-=======
         when(permissionsServiceMock.isMaskBitSet(nullable(Integer.class), nullable(Integer.class))).thenReturn(true);
         when(toolVersionManagerMock.loadToolVersionSettings(nullable(Long.class), nullable(String.class)))
->>>>>>> theirs
                 .thenReturn(Collections.singletonList(ToolVersion.builder()
                         .settings(Collections.singletonList(configurationEntry)).build()));
         when(launchCapabilitiesProcessor.process(any())).thenReturn(Collections.emptyMap());

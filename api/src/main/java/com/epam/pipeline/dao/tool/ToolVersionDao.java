@@ -207,7 +207,7 @@ public class ToolVersionDao extends NamedParameterJdbcDaoSupport {
                 "Required query createToolVersionWithSettingsQuery is not set");
         Assert.notNull(updateToolVersionWithSettingsQuery,
                 "Required query updateToolVersionWithSettingsQuery is not set");
-        Assert.notNull(loadAllDefaultToolVersionsQuery, "Required query loadAllDefaultToolVersionsQuery is not set");
+        Assert.notNull(loadAllLatestToolVersionsQuery, "Required query loadAllLatestToolVersionsQuery is not set");
     }
 
 
@@ -255,17 +255,7 @@ public class ToolVersionDao extends NamedParameterJdbcDaoSupport {
         this.loadToolVersionListSettingsQuery = loadToolVersionListSettingsQuery;
     }
 
-<<<<<<< ours
-    @Required
     public void setLoadAllLatestToolVersionsQuery(final String loadAllLatestToolVersionsQuery) {
         this.loadAllLatestToolVersionsQuery = loadAllLatestToolVersionsQuery;
-||||||| base
-    @Required
-    public void setLoadAllDefaultToolVersionsQuery(final String loadAllDefaultToolVersionsQuery) {
-        this.loadAllDefaultToolVersionsQuery = loadAllDefaultToolVersionsQuery;
-=======
-    public void setLoadAllDefaultToolVersionsQuery(final String loadAllDefaultToolVersionsQuery) {
-        this.loadAllDefaultToolVersionsQuery = loadAllDefaultToolVersionsQuery;
->>>>>>> theirs
     }
 }

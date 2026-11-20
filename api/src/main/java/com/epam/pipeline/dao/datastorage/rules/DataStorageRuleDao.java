@@ -20,14 +20,6 @@ import java.util.Date;
 import java.util.List;
 
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
-<<<<<<< ours
-import org.springframework.beans.factory.annotation.Required;
-||||||| base
-import org.apache.commons.lang.BooleanUtils;
-import org.springframework.beans.factory.annotation.Required;
-=======
-import org.apache.commons.lang.BooleanUtils;
->>>>>>> theirs
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;

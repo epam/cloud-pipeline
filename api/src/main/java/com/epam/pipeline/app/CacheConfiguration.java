@@ -44,12 +44,8 @@ import redis.clients.jedis.JedisPoolConfig;
 
 import java.time.Duration;
 import java.util.Collections;
-<<<<<<< ours
 import java.util.Optional;
-||||||| base
-=======
 import java.util.Set;
->>>>>>> theirs
 
 @EnableCaching
 public class CacheConfiguration {
@@ -85,110 +81,21 @@ public class CacheConfiguration {
 
     @Bean
     @Primary
-<<<<<<< ours
     public CacheManager cacheManager(final Optional<RedisCacheManager> redisCacheManagerPref) {
-        switch (cacheType) {
-            case MEMORY:
-                return new ConcurrentMapCacheManager(PREFERENCE_CACHE);
-            case REDIS:
-                return redisCacheManagerPref
-                        .orElseThrow(IllegalArgumentException::new);
-            default:
-                return new NoOpCacheManager();
-        }
-||||||| base
-    public CacheManager cacheManager(final ApplicationContext applicationContext) {
-        final RedisCacheManager redisCacheManagerPref = applicationContext.containsBean("redisCacheManagerPref")
-                ? applicationContext.getBean("redisCacheManagerPref", RedisCacheManager.class) : null;
-        switch (cacheType) {
-            case MEMORY:
-                return new ConcurrentMapCacheManager(PREFERENCE_CACHE);
-            case REDIS:
-                if (redisCacheManagerPref == null) {
-                    throw new IllegalArgumentException("redisCacheManagerPref is required when cache.type=REDIS");
-                }
-                return redisCacheManagerPref;
-            default:
-                return new NoOpCacheManager();
-        }
-=======
-    public CacheManager cacheManager(final ApplicationContext applicationContext) {
-        final RedisCacheManager redisCacheManagerPref = applicationContext.containsBean("redisCacheManagerPref")
-                ? applicationContext.getBean("redisCacheManagerPref", RedisCacheManager.class) : null;
         return switch (cacheType) {
             case MEMORY -> new ConcurrentMapCacheManager(PREFERENCE_CACHE);
-            case REDIS -> {
-                if (redisCacheManagerPref == null) {
-                    throw new IllegalArgumentException("redisCacheManagerPref is required when cache.type=REDIS");
-                }
-                yield redisCacheManagerPref;
-            }
+            case REDIS -> redisCacheManagerPref
+                    .orElseThrow(IllegalArgumentException::new);
             default -> new NoOpCacheManager();
         };
->>>>>>> theirs
     }
 
     @Bean
-<<<<<<< ours
     public CacheManager aclCacheManager(final Optional<RedisCacheManager> redisCacheManagerAcl) {
-        switch (cacheTypeAcl) {
-            case MEMORY:
-                return new ConcurrentMapCacheManager(ACL_CACHE);
-            case REDIS:
-                return redisCacheManagerAcl
-                        .orElseThrow(IllegalArgumentException::new);
-            default:
-                return new NoOpCacheManager();
-        }
-||||||| base
-    public CacheManager aclCacheManager(final ApplicationContext applicationContext) {
-        final RedisCacheManager redisCacheManagerAcl = applicationContext.containsBean("redisCacheManagerAcl")
-                ? applicationContext.getBean("redisCacheManagerAcl", RedisCacheManager.class) : null;
-        switch (cacheTypeAcl) {
-            case MEMORY:
-                return new ConcurrentMapCacheManager(ACL_CACHE);
-            case REDIS:
-                if (redisCacheManagerAcl == null) {
-                    throw new IllegalArgumentException(
-                            "redisCacheManagerAcl is required when security.acl.cache.type=REDIS");
-                }
-                return redisCacheManagerAcl;
-            default:
-                return new NoOpCacheManager();
-        }
-=======
-    public CacheManager aclCacheManager(final ApplicationContext applicationContext) {
-        final RedisCacheManager redisCacheManagerAcl = applicationContext.containsBean("redisCacheManagerAcl")
-                ? applicationContext.getBean("redisCacheManagerAcl", RedisCacheManager.class) : null;
         return switch (cacheTypeAcl) {
             case MEMORY -> new ConcurrentMapCacheManager(ACL_CACHE);
-            case REDIS -> {
-                if (redisCacheManagerAcl == null) {
-                    throw new IllegalArgumentException(
-                            "redisCacheManagerAcl is required when security.acl.cache.type=REDIS");
-                }
-                yield redisCacheManagerAcl;
-            }
-            default -> new NoOpCacheManager();
-        };
->>>>>>> theirs
-    }
-
-    @Bean("jwtTokenRevocationCacheManager")
-    public CacheManager jwtTokenRevocationCacheManager(final ApplicationContext applicationContext) {
-        final RedisCacheManager redisCacheManagerJwtRevocation =
-                applicationContext.containsBean("redisCacheManagerJwtTokenRevocation")
-                        ? applicationContext.getBean("redisCacheManagerJwtTokenRevocation", RedisCacheManager.class)
-                        : null;
-        return switch (cacheType) {
-            case MEMORY -> new ConcurrentMapCacheManager(JWT_TOKEN_REVOCATION_CACHE);
-            case REDIS -> {
-                if (redisCacheManagerJwtRevocation == null) {
-                    throw new IllegalArgumentException(
-                            "redisCacheManagerJwtTokenRevocation is required when cache.type=REDIS");
-                }
-                yield redisCacheManagerJwtRevocation;
-            }
+            case REDIS -> redisCacheManagerAcl
+                    .orElseThrow(IllegalArgumentException::new);
             default -> new NoOpCacheManager();
         };
     }
@@ -203,12 +110,6 @@ public class CacheConfiguration {
     @ConditionalOnProperty(value = ACL_CACHE_TYPE, havingValue = REDIS)
     public RedisCacheManager redisCacheManagerAcl(final RedisConnectionFactory connectionFactory) {
         return buildRedisCacheManager(connectionFactory, Collections.singleton(ACL_CACHE), useOptimizedParsing);
-    }
-
-    @Bean("redisCacheManagerJwtTokenRevocation")
-    @ConditionalOnProperty(value = CACHE_TYPE, havingValue = REDIS)
-    public RedisCacheManager redisCacheManagerJwtTokenRevocation(final RedisConnectionFactory connectionFactory) {
-        return buildRedisCacheManager(connectionFactory, Collections.singleton(JWT_TOKEN_REVOCATION_CACHE), false);
     }
 
     @Bean("redisConnectionFactory")
@@ -248,76 +149,6 @@ public class CacheConfiguration {
                 .build();
     }
 
-<<<<<<< ours
-    @Bean
-    @ConditionalOnProperty(value = ACL_CACHE_TYPE, havingValue = REDIS)
-    public RedisTemplate<Object, AclImpl> templateACl(final RedisConnectionFactory redisConnectionFactory) {
-        final RedisTemplate<Object, AclImpl> redisTemplate = new RedisTemplate<>();
-        redisTemplate.setConnectionFactory(redisConnectionFactory);
-        if (useOptimizedParsing) {
-            final JsonMapper jsonMapper = new JsonMapper();
-            final SimpleModule module = new SimpleModule();
-            module.addDeserializer(AclImpl.class, new AclImplDeserializer());
-            module.addSerializer(AclImpl.class, new AclImplSerializer());
-            jsonMapper.registerModule(module);
-            redisTemplate.setDefaultSerializer(new JsonRedisSerializer(jsonMapper));
-        }
-        redisTemplate.setExposeConnection(exposeConnection);
-        return redisTemplate;
-||||||| base
-    @Bean("jwtTokenRevocationCacheManager")
-    public CacheManager jwtTokenRevocationCacheManager(final ApplicationContext applicationContext) {
-        final RedisCacheManager redisCacheManagerJwtRevocation =
-                applicationContext.containsBean("redisCacheManagerJwtTokenRevocation")
-                        ? applicationContext.getBean("redisCacheManagerJwtTokenRevocation", RedisCacheManager.class)
-                        : null;
-        switch (cacheType) {
-            case MEMORY:
-                return new ConcurrentMapCacheManager(JWT_TOKEN_REVOCATION_CACHE);
-            case REDIS:
-                if (redisCacheManagerJwtRevocation == null) {
-                    throw new IllegalArgumentException(
-                            "redisCacheManagerJwtTokenRevocation is required when cache.type=REDIS");
-                }
-                return redisCacheManagerJwtRevocation;
-            default:
-                return new NoOpCacheManager();
-        }
-    }
-
-    @Bean("redisCacheManagerJwtTokenRevocation")
-    @ConditionalOnProperty(value = CACHE_TYPE, havingValue = REDIS)
-    public RedisCacheManager redisCacheManagerJwtTokenRevocation(
-            final RedisTemplate<String, Boolean> jwtTokenRevocationRedisTemplate) {
-        return new RedisCacheManager(jwtTokenRevocationRedisTemplate,
-                Collections.singleton(JWT_TOKEN_REVOCATION_CACHE));
-    }
-
-    @Bean
-    @ConditionalOnProperty(value = CACHE_TYPE, havingValue = REDIS)
-    public RedisTemplate<String, Boolean> jwtTokenRevocationRedisTemplate(
-            @Qualifier("redisConnectionFactory") final RedisConnectionFactory redisConnectionFactory) {
-        final RedisTemplate<String, Boolean> redisTemplate = new RedisTemplate<>();
-        redisTemplate.setConnectionFactory(redisConnectionFactory);
-        return redisTemplate;
-    }
-
-    @Bean
-    @ConditionalOnProperty(value = ACL_CACHE_TYPE, havingValue = REDIS)
-    public RedisTemplate<Object, AclImpl> templateACl(final RedisConnectionFactory redisConnectionFactory) {
-        final RedisTemplate<Object, AclImpl> redisTemplate = new RedisTemplate<>();
-        redisTemplate.setConnectionFactory(redisConnectionFactory);
-        if (useOptimizedParsing) {
-            final JsonMapper jsonMapper = new JsonMapper();
-            final SimpleModule module = new SimpleModule();
-            module.addDeserializer(AclImpl.class, new AclImplDeserializer());
-            module.addSerializer(AclImpl.class, new AclImplSerializer());
-            jsonMapper.registerModule(module);
-            redisTemplate.setDefaultSerializer(new JsonRedisSerializer(jsonMapper));
-        }
-        redisTemplate.setExposeConnection(exposeConnection);
-        return redisTemplate;
-=======
     private RedisCacheConfiguration buildRedisCacheConfiguration(final boolean useOptimizedParsing) {
         if (!useOptimizedParsing) {
             return RedisCacheConfiguration.defaultCacheConfig()
@@ -341,6 +172,5 @@ public class CacheConfiguration {
                                                                              final Class<T> type) {
         return RedisSerializationContext.SerializationPair
                 .fromSerializer(new JsonRedisSerializer<>(jsonMapper, type));
->>>>>>> theirs
     }
 }

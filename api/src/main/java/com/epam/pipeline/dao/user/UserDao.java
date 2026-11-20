@@ -428,7 +428,6 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
         Assert.notNull(updateUserQuery, "Required query updateUserQuery is not set");
         Assert.notNull(loadAllUsersQuery, "Required query loadAllUsersQuery is not set");
         Assert.notNull(findUsersByPrefixQuery, "Required query findUsersByPrefixQuery is not set");
-        Assert.notNull(findUsersByAttributeQuery, "Required query findUsersByAttributeQuery is not set");
         Assert.notNull(loadUserListQuery, "Required query loadUserListQuery is not set");
         Assert.notNull(deleteRoleFromUserQuery, "Required query deleteRoleFromUserQuery is not set");
         Assert.notNull(loadUsersByGroupQuery, "Required query loadUsersByGroupQuery is not set");
@@ -483,21 +482,6 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
         this.findUsersByPrefixQuery = findUsersByPrefixQuery;
     }
 
-<<<<<<< ours
-    @Required
-||||||| base
-    @Required
-    public void setFindUsersByAttributeQuery(String findUsersByAttributeQuery) {
-        this.findUsersByAttributeQuery = findUsersByAttributeQuery;
-    }
-
-    @Required
-=======
-    public void setFindUsersByAttributeQuery(String findUsersByAttributeQuery) {
-        this.findUsersByAttributeQuery = findUsersByAttributeQuery;
-    }
-
->>>>>>> theirs
     public void setLoadUserListQuery(String loadUserListQuery) {
         this.loadUserListQuery = loadUserListQuery;
     }

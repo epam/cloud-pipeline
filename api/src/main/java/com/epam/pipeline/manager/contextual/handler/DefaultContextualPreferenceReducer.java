@@ -58,26 +58,8 @@ public class DefaultContextualPreferenceReducer implements ContextualPreferenceR
     }
 
     private Optional<ContextualPreference> reduceValidPreferences(final List<ContextualPreference> preferences) {
-<<<<<<< ours
-        return preferenceReducerMap.getOrDefault(preferences.get(0).getName(), defaultReducer())
+        return preferenceReducerMap.getOrDefault(preferences.get(0).name(), defaultReducer())
                 .reduce(preferences);
-||||||| base
-        return getReducer(preferences.get(0)).reduce(preferences);
-    }
-
-    private ContextualPreferenceReducer getReducer(final ContextualPreference preference) {
-        return Optional.ofNullable(preferenceNameToReducer.get(preference.getName())).map(Optional::of)
-                .orElseGet(() -> Optional.ofNullable(preferenceTypeToReducer.get(preference.getType())))
-                .orElseGet(this::defaultReducer);
-=======
-        return getReducer(preferences.get(0)).reduce(preferences);
-    }
-
-    private ContextualPreferenceReducer getReducer(final ContextualPreference preference) {
-        return Optional.ofNullable(preferenceNameToReducer.get(preference.name())).map(Optional::of)
-                .orElseGet(() -> Optional.ofNullable(preferenceTypeToReducer.get(preference.type())))
-                .orElseGet(this::defaultReducer);
->>>>>>> theirs
     }
 
     private ContextualPreferenceReducer defaultReducer() {

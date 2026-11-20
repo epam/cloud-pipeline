@@ -23,21 +23,7 @@ import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceSearchRequest;
-<<<<<<< ours
 import com.epam.pipeline.manager.contextual.ContextualPreferenceApiService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-||||||| base
-import com.epam.pipeline.acl.contextual.ContextualPreferenceApiService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-=======
-import com.epam.pipeline.acl.contextual.ContextualPreferenceApiService;
->>>>>>> theirs
 import java.util.List;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

@@ -151,16 +151,8 @@ public class RunSchedulerTest extends AbstractSpringTest {
         runScheduler.unscheduleRunSchedule(runSchedule);
 
         final int numberOfInvocations = 1 + TEST_PERIOD_DURATION / TEST_INVOCATION_PERIOD;
-<<<<<<< ours
         Mockito.verify(configurationRunner, Mockito.times(numberOfInvocations))
-                .runConfiguration(Mockito.any(), Mockito.any(), Mockito.any());
-||||||| base
-        Mockito.verify(configurationRunner, Mockito.timeout(TEST_SCHEDULER_TIMEOUT_MILLIS).times(numberOfInvocations))
-                .runConfiguration(Mockito.any(), Mockito.any(), Mockito.any());
-=======
-        Mockito.verify(configurationRunner, Mockito.timeout(TEST_SCHEDULER_TIMEOUT_MILLIS).times(numberOfInvocations))
                 .runConfiguration(Mockito.any(), Mockito.any());
->>>>>>> theirs
 
     }
 

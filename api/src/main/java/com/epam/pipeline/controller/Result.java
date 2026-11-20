@@ -16,15 +16,7 @@
 
 package com.epam.pipeline.controller;
 
-<<<<<<< ours
-import io.swagger.annotations.ApiModelProperty;
-||||||| base
-import io.swagger.annotations.ApiModelProperty;
-import lombok.EqualsAndHashCode;
-=======
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.EqualsAndHashCode;
->>>>>>> theirs
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor

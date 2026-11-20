@@ -20,34 +20,14 @@ import java.util.List;
 
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
-<<<<<<< ours
-import org.junit.Assert;
-import org.junit.Test;
-||||||| base
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Assert;
-import org.junit.Test;
-=======
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.jupiter.api.Test;
->>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-<<<<<<< ours
-public class NotificationTemplateDaoTest extends AbstractSpringTest {
-||||||| base
-import java.util.List;
-
-public class NotificationTemplateDaoTest extends AbstractJdbcTest {
-=======
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.*;
 
-public class NotificationTemplateDaoTest extends AbstractJdbcTest {
->>>>>>> theirs
+public class NotificationTemplateDaoTest extends AbstractSpringTest {
 
     private static final String SUBJECT_STRING = "Subject";
     private static final String TEST_NAME = "TestTemplate";

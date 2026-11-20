@@ -166,14 +166,7 @@
             <AppenderRef ref="App-Appender"/>
             <AppenderRef ref="Console-Appender"/>
         </Logger>
-<<<<<<< ours
-        <logger name="org.springframework.web.filter.CommonsRequestLoggingFilter" additivity="false">
-            <level value="DEBUG" />
-||||||| base
-        <logger name="org.springframework.web.filter.CommonsRequestLoggingFilter" additivity="false">
-=======
         <logger name="org.springframework.web.filter.CommonsRequestLoggingFilter" additivity="false" level = "DEBUG">
->>>>>>> theirs
             <AppenderRef ref="Requests-Appender"/>
         </logger>
         <Root>

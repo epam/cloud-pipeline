@@ -25,20 +25,8 @@ import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
-<<<<<<< ours
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-||||||| base
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-=======
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
->>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -162,14 +150,13 @@ public class ToolVersionDaoTest extends AbstractSpringTest {
 
     private static void validateToolVersion(ToolVersion actual, String digest, Long size, String version,
                                             Date modificationDate, Long toolId, boolean allowCommit) {
-        assertThat(actual)
-                .isNotNull()
-                .hasFieldOrPropertyWithValue("digest", digest)
-                .hasFieldOrPropertyWithValue("size", size)
-                .hasFieldOrPropertyWithValue("version", version)
-                .hasFieldOrPropertyWithValue("modificationDate", modificationDate)
-                .hasFieldOrPropertyWithValue("toolId", toolId)
-                .hasFieldOrPropertyWithValue("allowCommit", allowCommit);
+        assertThat(actual, is(notNullValue()));
+        assertThat(actual, hasProperty("digest", is(digest)));
+        assertThat(actual, hasProperty("size", is(size)));
+        assertThat(actual, hasProperty("version", is(version)));
+        assertThat(actual, hasProperty("modificationDate", is(modificationDate)));
+        assertThat(actual, hasProperty("toolId", is(toolId)));
+        assertThat(actual, hasProperty("allowCommit", is(allowCommit)));
     }
 
     @Test
@@ -203,56 +190,6 @@ public class ToolVersionDaoTest extends AbstractSpringTest {
 
     @Test
     @Transactional
-<<<<<<< ours
-||||||| base
-    public void shouldCRUDForListOfVersions() {
-        Long toolId = tool.getId();
-        toolVersionDao.createToolVersion(toolVersion1);
-        toolVersionDao.createToolVersion(toolVersion2);
-
-        ToolVersion actual = toolVersionDao.loadToolVersion(toolId, TEST_VERSION).orElse(null);
-        validateToolVersion(actual, TEST_DIGEST, TEST_SIZE, TEST_VERSION, TEST_LAST_MODIFIED_DATE, toolId, true);
-        actual = toolVersionDao.loadToolVersion(toolId, TEST_VERSION_2).orElse(null);
-        validateToolVersion(actual, TEST_DIGEST_2, TEST_SIZE, TEST_VERSION_2, TEST_LAST_MODIFIED_DATE, toolId, true);
-
-        final Map<String, ToolVersion> versions = toolVersionDao.loadToolVersions(toolId,
-                Arrays.asList(TEST_VERSION, TEST_VERSION_2));
-        assertThat(versions).hasSize(2);
-
-        toolVersionDao.deleteToolVersions(toolId);
-        actual = toolVersionDao.loadToolVersion(toolId, TEST_VERSION).orElse(null);
-        assertThat(actual).isNull();
-        actual = toolVersionDao.loadToolVersion(toolId, TEST_VERSION_2).orElse(null);
-        assertThat(actual).isNull();
-    }
-
-    @Test
-    @Transactional
-=======
-    public void shouldCRUDForListOfVersions() {
-        Long toolId = tool.getId();
-        toolVersionDao.createToolVersion(toolVersion1);
-        toolVersionDao.createToolVersion(toolVersion2);
-
-        ToolVersion actual = toolVersionDao.loadToolVersion(toolId, TEST_VERSION).orElse(null);
-        validateToolVersion(actual, TEST_DIGEST, TEST_SIZE, TEST_VERSION, TEST_LAST_MODIFIED_DATE, toolId, true);
-        actual = toolVersionDao.loadToolVersion(toolId, TEST_VERSION_2).orElse(null);
-        validateToolVersion(actual, TEST_DIGEST_2, TEST_SIZE, TEST_VERSION_2, TEST_LAST_MODIFIED_DATE, toolId, true);
-
-        final Map<String, ToolVersion> versions = toolVersionDao.loadToolVersions(toolId,
-                Arrays.asList(TEST_VERSION, TEST_VERSION_2));
-        assertThat(versions.values(), hasSize(2));
-
-        toolVersionDao.deleteToolVersions(toolId);
-        actual = toolVersionDao.loadToolVersion(toolId, TEST_VERSION).orElse(null);
-        assertThat(actual, nullValue());
-        actual = toolVersionDao.loadToolVersion(toolId, TEST_VERSION_2).orElse(null);
-        assertThat(actual, nullValue());
-    }
-
-    @Test
-    @Transactional
->>>>>>> theirs
     public void shouldCRUDWithSettings() {
         Long toolId = tool.getId();
         PipelineConfiguration pipelineConfiguration = new PipelineConfiguration();
@@ -433,7 +370,6 @@ public class ToolVersionDaoTest extends AbstractSpringTest {
         }
     }
 
-<<<<<<< ours
     @Test
     @Transactional
     public void shouldCRUDForListOfVersions() {
@@ -448,35 +384,13 @@ public class ToolVersionDaoTest extends AbstractSpringTest {
 
         final Map<String, ToolVersion> versions = toolVersionDao.loadToolVersions(toolId,
                 Arrays.asList(TEST_VERSION, TEST_VERSION_2));
-        assertThat(versions).hasSize(2);
+        assertThat(versions.values(), hasSize(2));
 
         toolVersionDao.deleteToolVersions(toolId);
         actual = toolVersionDao.loadToolVersion(toolId, TEST_VERSION).orElse(null);
-        assertThat(actual).isNull();
+        assertThat(actual, nullValue());
         actual = toolVersionDao.loadToolVersion(toolId, TEST_VERSION_2).orElse(null);
-        assertThat(actual).isNull();
-||||||| base
-    private static void validateToolVersion(ToolVersion actual, String digest, Long size, String version,
-                                            Date modificationDate, Long toolId, boolean allowCommit) {
-        assertThat(actual)
-                .isNotNull()
-                .hasFieldOrPropertyWithValue("digest", digest)
-                .hasFieldOrPropertyWithValue("size", size)
-                .hasFieldOrPropertyWithValue("version", version)
-                .hasFieldOrPropertyWithValue("modificationDate", modificationDate)
-                .hasFieldOrPropertyWithValue("toolId", toolId)
-                .hasFieldOrPropertyWithValue("allowCommit", allowCommit);
-=======
-    private static void validateToolVersion(ToolVersion actual, String digest, Long size, String version,
-                                            Date modificationDate, Long toolId, boolean allowCommit) {
-        assertThat(actual, is(notNullValue()));
-        assertThat(actual, hasProperty("digest", is(digest)));
-        assertThat(actual, hasProperty("size", is(size)));
-        assertThat(actual, hasProperty("version", is(version)));
-        assertThat(actual, hasProperty("modificationDate", is(modificationDate)));
-        assertThat(actual, hasProperty("toolId", is(toolId)));
-        assertThat(actual, hasProperty("allowCommit", is(allowCommit)));
->>>>>>> theirs
+        assertThat(actual, nullValue());
     }
 
     private static void validateToolVersionSettings(ToolVersion actual, ConfigurationEntry settings,

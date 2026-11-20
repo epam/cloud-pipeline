@@ -157,55 +157,7 @@ public class PipelineRunManager {
 
     public static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
     public static final String NETWORK_LIMIT = "NETWORK_LIMIT";
-<<<<<<< ours
-||||||| base
-    public static final String CP_CAP_REQUESTS_CPU = "CP_CAP_REQUESTS_CPU";
-    public static final String CP_CAP_REQUESTS_GPU = "CP_CAP_REQUESTS_GPU";
-    public static final String CP_CAP_REQUESTS_RAM = "CP_CAP_REQUESTS_RAM";
-    public static final long BYTES_PER_GIB = 1024L * 1024L * 1024L;
-    public static final String GIB_UNIT = "GiB";
-    private static final String RESOLVE_ACTION_MSG =
-            "Please consider selecting a different node type which provides the requested resources.";
-
-
-    private static final Map<String, ToLongFunction<InstanceOffer>> CAPACITY_CHECKS;
-    static {
-        final Map<String, ToLongFunction<InstanceOffer>> checks = new LinkedHashMap<>();
-        checks.put(CP_CAP_REQUESTS_CPU, InstanceOffer::getVCPU);
-        checks.put(CP_CAP_REQUESTS_GPU, InstanceOffer::getGpu);
-        checks.put(CP_CAP_REQUESTS_RAM, o -> {
-            Assert.isTrue(GIB_UNIT.equalsIgnoreCase(o.getMemoryUnit()),
-                    String.format("Can't validate %s for instance %s: memory unit %s is not supported, expected GiB",
-                            CP_CAP_REQUESTS_RAM, o.getInstanceType(), o.getMemoryUnit()));
-            return Math.round(o.getMemory() * BYTES_PER_GIB);
-        });
-        CAPACITY_CHECKS = Collections.unmodifiableMap(checks);
-    }
-=======
-    public static final String CP_CAP_REQUESTS_CPU = "CP_CAP_REQUESTS_CPU";
-    public static final String CP_CAP_REQUESTS_GPU = "CP_CAP_REQUESTS_GPU";
-    public static final String CP_CAP_REQUESTS_RAM = "CP_CAP_REQUESTS_RAM";
     public static final String CP_CAP_POOL_ID = "CP_CAP_POOL_ID";
-    public static final long BYTES_PER_GIB = 1024L * 1024L * 1024L;
-    public static final String GIB_UNIT = "GiB";
-    private static final String RESOLVE_ACTION_MSG =
-            "Please consider selecting a different node type which provides the requested resources.";
-
-
-    private static final Map<String, ToLongFunction<InstanceOffer>> CAPACITY_CHECKS;
-    static {
-        final Map<String, ToLongFunction<InstanceOffer>> checks = new LinkedHashMap<>();
-        checks.put(CP_CAP_REQUESTS_CPU, InstanceOffer::getVCPU);
-        checks.put(CP_CAP_REQUESTS_GPU, InstanceOffer::getGpu);
-        checks.put(CP_CAP_REQUESTS_RAM, o -> {
-            Assert.isTrue(GIB_UNIT.equalsIgnoreCase(o.getMemoryUnit()),
-                    String.format("Can't validate %s for instance %s: memory unit %s is not supported, expected GiB",
-                            CP_CAP_REQUESTS_RAM, o.getInstanceType(), o.getMemoryUnit()));
-            return Math.round(o.getMemory() * BYTES_PER_GIB);
-        });
-        CAPACITY_CHECKS = Collections.unmodifiableMap(checks);
-    }
->>>>>>> theirs
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -454,18 +406,8 @@ public class PipelineRunManager {
         }
 
         adjustInstanceDisk(configuration);
-<<<<<<< ours
         checkGPUInstance(configuration, region.getId());
-||||||| base
-        final Optional<InstanceOffer> instance = instanceOfferManager.findOffer(instanceType, region.getId());
-        checkGPUInstance(configuration, instance);
-        checkCapacityRequirements(configuration, instance);
-=======
-        final Optional<InstanceOffer> instance = instanceOfferManager.findOffer(instanceType, region.getId());
-        checkGPUInstance(configuration, instance);
-        checkCapacityRequirements(configuration, instance);
         checkCapacityPoolCompatibility(configuration);
->>>>>>> theirs
 
         final List<String> endpoints = configuration.isEraseRunEndpoints()
                 ? Collections.emptyList() : tool.getEndpoints();
@@ -516,68 +458,6 @@ public class PipelineRunManager {
         }
         run.setProjectId(getPipelineProjectId(pipeline));
         return run;
-    }
-
-<<<<<<< ours
-    private void checkGPUInstance(final PipelineConfiguration configuration, final Long regionId) {
-||||||| base
-    private void checkCapacityRequirements(final PipelineConfiguration configuration,
-                                           final Optional<InstanceOffer> instance) {
-        final Map<String, PipeConfValueVO> params = MapUtils.emptyIfNull(configuration.getParameters());
-        if (params.isEmpty() || CAPACITY_CHECKS.keySet().stream().noneMatch(params::containsKey)) {
-            return;
-        }
-
-        instance.ifPresent(offer -> {
-            final List<String> violations = CAPACITY_CHECKS.entrySet().stream()
-                    .filter(e -> params.containsKey(e.getKey()))
-                    .map(e -> check(params, e.getKey(), e.getValue().applyAsLong(offer), offer.getInstanceType()))
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .collect(Collectors.toList());
-
-            if (!violations.isEmpty()) {
-                violations.add(RESOLVE_ACTION_MSG);
-            }
-            Assert.isTrue(violations.isEmpty(), String.join("; ", violations));
-        });
-    }
-
-    private static void calculateDynamicParameterValues(final PipelineConfiguration configuration) {
-        final Map<String, PipeConfValueVO> parameters = configuration.getParameters();
-        for (final PipeConfValueVO parameter : parameters.values()) {
-            if (!parameter.getType().equals(PipeConfValueVO.DEFAULT_TYPE)) {
-                continue;
-            }
-            final String resolvedValue = DynamicPipelineRunParameterUtils.applyDynamicValue(parameter.getValue());
-            if (resolvedValue != null) {
-                parameter.setValue(resolvedValue);
-            }
-        }
-    }
-
-    private void checkGPUInstance(final PipelineConfiguration configuration, final Optional<InstanceOffer> instance) {
-=======
-    private void checkCapacityRequirements(final PipelineConfiguration configuration,
-                                           final Optional<InstanceOffer> instance) {
-        final Map<String, PipeConfValueVO> params = MapUtils.emptyIfNull(configuration.getParameters());
-        if (params.isEmpty() || CAPACITY_CHECKS.keySet().stream().noneMatch(params::containsKey)) {
-            return;
-        }
-
-        instance.ifPresent(offer -> {
-            final List<String> violations = CAPACITY_CHECKS.entrySet().stream()
-                    .filter(e -> params.containsKey(e.getKey()))
-                    .map(e -> check(params, e.getKey(), e.getValue().applyAsLong(offer), offer.getInstanceType()))
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .collect(Collectors.toList());
-
-            if (!violations.isEmpty()) {
-                violations.add(RESOLVE_ACTION_MSG);
-            }
-            Assert.isTrue(violations.isEmpty(), String.join("; ", violations));
-        });
     }
 
     /**
@@ -636,21 +516,7 @@ public class PipelineRunManager {
         }
     }
 
-    private static void calculateDynamicParameterValues(final PipelineConfiguration configuration) {
-        final Map<String, PipeConfValueVO> parameters = configuration.getParameters();
-        for (final PipeConfValueVO parameter : parameters.values()) {
-            if (!parameter.getType().equals(PipeConfValueVO.DEFAULT_TYPE)) {
-                continue;
-            }
-            final String resolvedValue = DynamicPipelineRunParameterUtils.applyDynamicValue(parameter.getValue());
-            if (resolvedValue != null) {
-                parameter.setValue(resolvedValue);
-            }
-        }
-    }
-
-    private void checkGPUInstance(final PipelineConfiguration configuration, final Optional<InstanceOffer> instance) {
->>>>>>> theirs
+    private void checkGPUInstance(final PipelineConfiguration configuration, final Long regionId) {
         final String instanceType = configuration.getInstanceType();
         if (StringUtils.isNotBlank(instanceType)) {
             final Optional<InstanceOffer> instance = instanceOfferManager.findOffer(instanceType, regionId);

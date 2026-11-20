@@ -23,14 +23,6 @@ import com.epam.pipeline.controller.vo.metadata.MetadataEntityVO;
 import com.epam.pipeline.dao.metadata.MetadataClassDao;
 import com.epam.pipeline.dao.metadata.MetadataEntityDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
-<<<<<<< ours
-import com.epam.pipeline.entity.metadata.FireCloudClass;
-||||||| base
-import com.epam.pipeline.entity.metadata.Facet;
-import com.epam.pipeline.entity.metadata.FireCloudClass;
-=======
-import com.epam.pipeline.entity.metadata.Facet;
->>>>>>> theirs
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataClassDescription;
 import com.epam.pipeline.entity.metadata.MetadataEntity;

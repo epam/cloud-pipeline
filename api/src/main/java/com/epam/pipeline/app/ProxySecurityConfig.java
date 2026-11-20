@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.app;
 
+import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.security.jwt.RestAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -31,71 +32,13 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
-<<<<<<< ours
-import com.epam.pipeline.security.jwt.RestAuthenticationEntryPoint;
-import com.epam.pipeline.security.saml.SAMLProxyAuthenticationProvider;
-import com.epam.pipeline.security.saml.SAMLProxyFilter;
-import com.epam.pipeline.entity.user.DefaultRoles;
-
-||||||| base
-import com.epam.pipeline.security.jwt.RestAuthenticationEntryPoint;
-import com.epam.pipeline.security.saml.SAMLProxyAuthenticationProvider;
-import com.epam.pipeline.security.saml.SAMLProxyFilter;
-
-=======
->>>>>>> theirs
 @Configuration
 @RequiredArgsConstructor
 public class ProxySecurityConfig {
 
     private static final String RESTAPI_PROXY = "/restapi/proxy/**";
 
-<<<<<<< ours
-    @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.authenticationProvider(proxyAuthenticationProvider());
-    }
-
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http.csrf().disable()
-            .exceptionHandling().authenticationEntryPoint(new RestAuthenticationEntryPoint())
-            .and()
-            .requestMatcher(new AntPathRequestMatcher(RESTAPI_PROXY))
-            .authorizeRequests()
-                .antMatchers(HttpMethod.OPTIONS).permitAll()
-                .antMatchers(RESTAPI_PROXY)
-                    .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName())
-                .anyRequest().permitAll()
-            .and()
-                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-            .and()
-                .addFilterBefore(getSAMLProxyFilter(), UsernamePasswordAuthenticationFilter.class);
-    }
-||||||| base
-    @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.authenticationProvider(proxyAuthenticationProvider());
-    }
-
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http.csrf().disable()
-            .exceptionHandling().authenticationEntryPoint(new RestAuthenticationEntryPoint())
-            .and()
-            .requestMatcher(new AntPathRequestMatcher(RESTAPI_PROXY))
-            .authorizeRequests()
-                .antMatchers(HttpMethod.OPTIONS).permitAll()
-                .antMatchers(RESTAPI_PROXY).authenticated()
-                .anyRequest().permitAll()
-            .and()
-                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-            .and()
-                .addFilterBefore(getSAMLProxyFilter(), UsernamePasswordAuthenticationFilter.class);
-    }
-=======
     private final SAMLProxyFilter proxyFilter;
->>>>>>> theirs
 
     @Order(1)
     @Bean
@@ -107,7 +50,8 @@ public class ProxySecurityConfig {
                 .securityMatcher(new AntPathRequestMatcher(RESTAPI_PROXY))
                 .authorizeHttpRequests(auth -> {
                     auth.requestMatchers(new AntPathRequestMatcher("/**", HttpMethod.OPTIONS.name())).permitAll();
-                    auth.requestMatchers(new AntPathRequestMatcher(RESTAPI_PROXY)).authenticated();
+                    auth.requestMatchers(new AntPathRequestMatcher(RESTAPI_PROXY))
+                            .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName());
                     auth.anyRequest().permitAll();
                 })
                 .sessionManagement(session -> session

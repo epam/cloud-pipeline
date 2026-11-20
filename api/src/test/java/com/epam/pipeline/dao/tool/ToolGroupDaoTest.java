@@ -23,39 +23,15 @@ import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.dao.docker.DockerRegistryDao;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
-<<<<<<< ours
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-||||||| base
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-=======
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
->>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-<<<<<<< ours
-public class ToolGroupDaoTest extends AbstractSpringTest {
-||||||| base
-import java.util.List;
-import java.util.Optional;
-
-public class ToolGroupDaoTest extends AbstractJdbcTest {
-=======
-import java.util.List;
-import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.*;
 
-public class ToolGroupDaoTest extends AbstractJdbcTest {
->>>>>>> theirs
+public class ToolGroupDaoTest extends AbstractSpringTest {
     private static final String TEST_GROUP_NAME = "TestGroup";
     private static final String TEST_REPO = "repository";
     private static final String TEST_REPO2 = "repository2";
@@ -73,7 +49,8 @@ public class ToolGroupDaoTest extends AbstractJdbcTest {
     private DockerRegistry registry;
     private DockerRegistry registry2;
 
-    @BeforeEach    public void setUp() throws Exception {
+    @BeforeEach
+    public void setUp() throws Exception {
         registry = new DockerRegistry();
         registry.setPath(TEST_REPO);
         registry.setOwner(TEST_USER);

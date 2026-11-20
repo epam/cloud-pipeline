@@ -60,14 +60,6 @@ public class MetadataFilter {
     private LocalDateTime endDateTo;
     @Schema(description = "Logical operator for search queries. Default: OR", allowableValues = "AND, OR")
     private LogicalSearchOperator logicalSearchOperator = LogicalSearchOperator.OR;
-<<<<<<< ours
-||||||| base
-    @ApiModelProperty(notes = "List of key-values pairs for retrieving groupings on it")
-    private List<FacetRequest> facets;
-=======
-    @Schema(description = "List of key-values pairs for retrieving groupings on it")
-    private List<FacetRequest> facets;
->>>>>>> theirs
 
 
     @Getter

@@ -1514,12 +1514,12 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         Assert.notNull(countRunGroupsQuery, "Required query countRunGroupsQuery is not set");
         Assert.notNull(updatePodStatusQuery, "Required query updatePodStatusQuery is not set");
         Assert.notNull(loadEnvVarsQuery, "Required query loadEnvVarsQuery is not set");
-        Assert.notNull(updateProlongedAtTimeQuery, "Required query updateProlongedAtTimeQuery is not set");
+        Assert.notNull(updateProlongedAtTimeAndLastIdleNotificationTimeQuery,
+                "Required query updateProlongedAtTimeAndLastIdleNotificationTimeQuery is not set");
+        Assert.notNull(updateLastNotificationQuery, "Required query updateLastNotificationQuery is not set");
         Assert.notNull(updateRunQuery, "Required query updateRunQuery is not set");
         Assert.notNull(loadRunByPrettyUrlQuery, "Required query loadRunByPrettyUrlQuery is not set");
         Assert.notNull(loadRunningPipelineRunsQuery, "Required query loadRunningPipelineRunsQuery is not set");
-        Assert.notNull(loadRunsByStatusesAndOriginalOwnerQuery,
-                "Required query loadRunsByStatusesAndOriginalOwnerQuery is not set");
     }
 
 
@@ -1631,37 +1631,20 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         this.updatePodStatusQuery = updatePodStatusQuery;
     }
 
-<<<<<<< ours
-    @Required
     public void setUpdateProlongedAtTimeAndLastIdleNotificationTimeQuery(
             String updateProlongedAtTimeAndLastIdleNotificationTimeQuery) {
         this.updateProlongedAtTimeAndLastIdleNotificationTimeQuery =
                 updateProlongedAtTimeAndLastIdleNotificationTimeQuery;
-||||||| base
-    @Required
-    public void setUpdateProlongedAtTimeQuery(String updateProlongedAtTimeQuery) {
-        this.updateProlongedAtTimeQuery = updateProlongedAtTimeQuery;
-=======
-    public void setUpdateProlongedAtTimeQuery(String updateProlongedAtTimeQuery) {
-        this.updateProlongedAtTimeQuery = updateProlongedAtTimeQuery;
->>>>>>> theirs
     }
 
     public void setLoadEnvVarsQuery(String loadEnvVarsQuery) {
         this.loadEnvVarsQuery = loadEnvVarsQuery;
     }
 
-<<<<<<< ours
-    @Required
     public void setUpdateLastNotificationQuery(String updateLastNotificationQuery) {
         this.updateLastNotificationQuery = updateLastNotificationQuery;
     }
 
-    @Required
-||||||| base
-    @Required
-=======
->>>>>>> theirs
     public void setUpdateRunQuery(String updateRunQuery) {
         this.updateRunQuery = updateRunQuery;
     }
@@ -1695,21 +1678,6 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         this.loadAllRunsByStatusQuery = loadAllRunsByStatusQuery;
     }
 
-<<<<<<< ours
-    @Required
-||||||| base
-    @Required
-    public void setLoadRunsByStatusesAndOriginalOwnerQuery(final String loadRunsByStatusesAndOriginalOwnerQuery) {
-        this.loadRunsByStatusesAndOriginalOwnerQuery = loadRunsByStatusesAndOriginalOwnerQuery;
-    }
-
-    @Required
-=======
-    public void setLoadRunsByStatusesAndOriginalOwnerQuery(final String loadRunsByStatusesAndOriginalOwnerQuery) {
-        this.loadRunsByStatusesAndOriginalOwnerQuery = loadRunsByStatusesAndOriginalOwnerQuery;
-    }
-
->>>>>>> theirs
     public void setLoadAllRunsByIdsQuery(final String loadAllRunsByIdsQuery) {
         this.loadAllRunsByIdsQuery = loadAllRunsByIdsQuery;
     }
@@ -1758,26 +1726,4 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     public void setDeleteRunSidsByRunIdsQuery(final String deleteRunSidsByRunIdsQuery) {
         this.deleteRunSidsByRunIdsQuery = deleteRunSidsByRunIdsQuery;
     }
-<<<<<<< ours
-||||||| base
-
-    @Required
-    public void setCheckIfRunExistsQuery(final String checkIfRunExistsQuery) {
-        this.checkIfRunExistsQuery = checkIfRunExistsQuery;
-    }
-
-    @Required
-    public void setUpdateRunInitializedQuery(final String updateRunInitializedQuery) {
-        this.updateRunInitializedQuery = updateRunInitializedQuery;
-    }
-=======
-
-    public void setCheckIfRunExistsQuery(final String checkIfRunExistsQuery) {
-        this.checkIfRunExistsQuery = checkIfRunExistsQuery;
-    }
-
-    public void setUpdateRunInitializedQuery(final String updateRunInitializedQuery) {
-        this.updateRunInitializedQuery = updateRunInitializedQuery;
-    }
->>>>>>> theirs
 }

@@ -32,28 +32,12 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserEvent;
 import com.epam.pipeline.entity.user.RunnerSid;
 import com.epam.pipeline.manager.security.AuthManager;
-<<<<<<< ours
 import com.epam.pipeline.manager.user.UserApiService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import org.apache.commons.fileupload.FileUploadException;
-||||||| base
-import com.epam.pipeline.acl.user.UserApiService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import org.apache.commons.fileupload.FileUploadException;
-=======
-import com.epam.pipeline.acl.user.UserApiService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.apache.commons.fileupload2.core.FileUploadException;
->>>>>>> theirs
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -105,125 +89,6 @@ public class UserController extends AbstractRestController {
                 : userApiService.issueTokenForCurrentUser(expiration));
     }
 
-<<<<<<< ours
-||||||| base
-    @GetMapping(value = "/user/token/named")
-    @ResponseBody
-    @ApiOperation(
-            value = "Issues a named (registered) JWT.",
-            notes = "Registers the token in the named-token registry. "
-                    + "Optional tokenName is the registry label for the row. "
-                    + "If userId is omitted, the token is issued for the authenticated user; "
-                    + "with userId (admin-only), for that user.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
-    public Result<NamedJwtToken> issueNamedToken(@RequestParam(required = false) Long expiration,
-                                                 @RequestParam(required = false) String tokenName,
-                                                 @RequestParam(required = false) Long userId) {
-        if (userId != null) {
-            return Result.success(userApiService.issueNamedJwtToken(userId, expiration, tokenName));
-        }
-        return Result.success(userApiService.issueNamedJwtTokenForCurrentUser(expiration, tokenName));
-    }
-
-    @GetMapping(value = "/user/token/named/list")
-    @ResponseBody
-    @ApiOperation(
-            value = "Lists named JWT registry entries.",
-            notes = "Without userId, lists tokens for the current user. "
-                    + "With userId, lists tokens for that user (admin, user admin, or write ACL on that user).",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
-    public Result<List<NamedJwtToken>> listNamedJwtTokens(
-            @RequestParam(required = false) final Long userId) {
-        if (userId != null) {
-            return Result.success(userApiService.listNamedJwtTokensForUser(userId));
-        }
-        return Result.success(userApiService.listCurrentUserNamedJwtTokens());
-    }
-
-    @DeleteMapping(value = "/user/token/revoke")
-    @ResponseBody
-    @ApiOperation(
-            value = "Revokes a JWT by jti.",
-            notes = "Requires jti from the JWT payload. "
-                    + "Omit userId to revoke for the authenticated user. "
-                    + "With userId, revokes that user's token (admin, user admin, or write ACL on that user). "
-                    + "Named and plain tokens are supported. "
-                    + "Registered tokens are listed via GET /user/token/named/list.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
-    public Result<Boolean> revokeJwtToken(@RequestParam final String jti,
-                                          @RequestParam(required = false) final Long userId) {
-        if (userId != null) {
-            userApiService.revokeJwtTokenForUser(userId, jti);
-        } else {
-            userApiService.revokeJwtTokenForCurrentUser(jti);
-        }
-        return Result.success(Boolean.TRUE);
-    }
-
-=======
-    @GetMapping(value = "/user/token/named")
-    @ResponseBody
-    @Operation(
-            summary = "Issues a named (registered) JWT.",
-            description = "Registers the token in the named-token registry. "
-                    + "Optional tokenName is the registry label for the row. "
-                    + "If userId is omitted, the token is issued for the authenticated user; "
-                    + "with userId (admin-only), for that user.")
-    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
-    public Result<NamedJwtToken> issueNamedToken(@RequestParam(required = false) Long expiration,
-                                                 @RequestParam(required = false) String tokenName,
-                                                 @RequestParam(required = false) Long userId) {
-        if (userId != null) {
-            return Result.success(userApiService.issueNamedJwtToken(userId, expiration, tokenName));
-        }
-        return Result.success(userApiService.issueNamedJwtTokenForCurrentUser(expiration, tokenName));
-    }
-
-    @GetMapping(value = "/user/token/named/list")
-    @ResponseBody
-    @Operation(
-            summary = "Lists named JWT registry entries.",
-            description = "Without userId, lists tokens for the current user. "
-                    + "With userId, lists tokens for that user (admin, user admin, or write ACL on that user).")
-    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
-    public Result<List<NamedJwtToken>> listNamedJwtTokens(
-            @RequestParam(required = false) final Long userId) {
-        if (userId != null) {
-            return Result.success(userApiService.listNamedJwtTokensForUser(userId));
-        }
-        return Result.success(userApiService.listCurrentUserNamedJwtTokens());
-    }
-
-    @DeleteMapping(value = "/user/token/revoke")
-    @ResponseBody
-    @Operation(
-            summary = "Revokes a JWT by jti.",
-            description = "Requires jti from the JWT payload. "
-                    + "Omit userId to revoke for the authenticated user. "
-                    + "With userId, revokes that user's token (admin, user admin, or write ACL on that user). "
-                    + "Named and plain tokens are supported. "
-                    + "Registered tokens are listed via GET /user/token/named/list.")
-    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
-    public Result<Boolean> revokeJwtToken(@RequestParam final String jti,
-                                          @RequestParam(required = false) final Long userId) {
-        if (userId != null) {
-            userApiService.revokeJwtTokenForUser(userId, jti);
-        } else {
-            userApiService.revokeJwtTokenForCurrentUser(jti);
-        }
-        return Result.success(Boolean.TRUE);
-    }
-
->>>>>>> theirs
     @RequestMapping(value = "/whoami", method = RequestMethod.GET)
     @ResponseBody
     @Operation(

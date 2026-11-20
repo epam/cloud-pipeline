@@ -27,44 +27,15 @@ import com.epam.pipeline.entity.issue.Attachment;
 import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.issue.IssueComment;
 import com.epam.pipeline.entity.security.acl.AclClass;
-<<<<<<< ours
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-||||||| base
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-=======
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
->>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-<<<<<<< ours
-public class AttachmentDaoTest extends AbstractSpringTest {
-||||||| base
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
-public class AttachmentDaoTest extends AbstractJdbcTest {
-=======
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
 import static org.junit.jupiter.api.Assertions.*;
 
-public class AttachmentDaoTest extends AbstractJdbcTest {
->>>>>>> theirs
+public class AttachmentDaoTest extends AbstractSpringTest {
     private static final String TEST_OWNER = "testUser";
 
     @Autowired
@@ -79,7 +50,8 @@ public class AttachmentDaoTest extends AbstractJdbcTest {
     private Issue issue;
     private IssueComment comment;
 
-    @BeforeEach    public void setUp() throws Exception {
+    @BeforeEach
+    public void setUp() throws Exception {
         EntityVO entity = new EntityVO(1L, AclClass.PIPELINE);
         issue = IssueDaoTest.getIssue("test", entity);
         issueDao.createIssue(issue);

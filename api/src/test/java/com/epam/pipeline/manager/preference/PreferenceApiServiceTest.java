@@ -20,27 +20,17 @@ import java.util.Collection;
 import java.util.Collections;
 
 import com.epam.pipeline.entity.preference.Preference;
-<<<<<<< ours
 import com.epam.pipeline.entity.preference.PreferenceType;
 import com.epam.pipeline.manager.AbstractManagerTest;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-||||||| base
-import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.security.AuthManager;
-import com.epam.pipeline.test.acl.AbstractAclTest;
-import org.junit.Test;
-=======
-import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.security.AuthManager;
-import com.epam.pipeline.test.acl.AbstractAclTest;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
->>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PreferenceApiServiceTest extends AbstractManagerTest {
     @Autowired
@@ -51,7 +41,7 @@ public class PreferenceApiServiceTest extends AbstractManagerTest {
 
     private Preference visiblePreference;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         visiblePreference = new Preference("visible.preference", "", "TEST", "", PreferenceType.STRING, true);
         preferenceManager.update(Collections.singletonList(visiblePreference));
@@ -62,8 +52,8 @@ public class PreferenceApiServiceTest extends AbstractManagerTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testLoadPreferencesUser() {
         Collection<Preference> preferences = preferenceApiService.loadAll();
-        Assert.assertFalse(preferences.isEmpty());
-        Assert.assertTrue(preferences.stream().allMatch(Preference::isVisible));
+        assertFalse(preferences.isEmpty());
+        assertTrue(preferences.stream().allMatch(Preference::isVisible));
     }
 
     @Test
@@ -71,8 +61,8 @@ public class PreferenceApiServiceTest extends AbstractManagerTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testLoadPreferencesAdmin() {
         Collection<Preference> preferences = preferenceApiService.loadAll();
-        Assert.assertFalse(preferences.isEmpty());
-        Assert.assertTrue(preferences.stream().anyMatch(Preference::isVisible));
-        Assert.assertTrue(preferences.stream().anyMatch(p -> !p.isVisible()));
+        assertFalse(preferences.isEmpty());
+        assertTrue(preferences.stream().anyMatch(Preference::isVisible));
+        assertTrue(preferences.stream().anyMatch(p -> !p.isVisible()));
     }
 }

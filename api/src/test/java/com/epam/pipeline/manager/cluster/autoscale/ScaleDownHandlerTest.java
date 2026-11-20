@@ -16,13 +16,9 @@
 
 package com.epam.pipeline.manager.cluster.autoscale;
 
-<<<<<<< ours
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.controller.vo.TagsVO;
-||||||| base
-=======
-import com.epam.pipeline.common.MessageHelper;
->>>>>>> theirs
 import com.epam.pipeline.entity.cluster.pool.InstanceRequest;
 import com.epam.pipeline.entity.cluster.pool.RunningInstance;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -49,17 +45,9 @@ import io.fabric8.kubernetes.api.model.PodCondition;
 import io.fabric8.kubernetes.api.model.PodList;
 import io.fabric8.kubernetes.api.model.PodStatus;
 import io.fabric8.kubernetes.client.KubernetesClient;
-<<<<<<< ours
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-||||||| base
-import org.junit.Before;
-import org.junit.Test;
-=======
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
->>>>>>> theirs
+import org.mockito.ArgumentCaptor;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -70,26 +58,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-<<<<<<< ours
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.cluster.NodeCreatorUtils.getNodeCondition;
 import static com.epam.pipeline.test.creator.cluster.NodeCreatorUtils.getNodeWithConditions;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doNothing;
-||||||| base
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.eq;
-=======
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
->>>>>>> theirs
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -123,15 +101,8 @@ public class ScaleDownHandlerTest {
     private final KubernetesClient client = mock(KubernetesClient.class);
     private final IAMProfileVerifier iamProfileVerifier = mock(IAMProfileVerifier.class);
     private final ReassignHandler reassignHandler = new ReassignHandler(autoscalerService, cloudFacade,
-<<<<<<< ours
-            pipelineRunManager, Collections.emptyList(), mock(MetadataManager.class), iamProfileVerifier);
-||||||| base
             pipelineRunManager, Collections.emptyList(), mock(MetadataManager.class), iamProfileVerifier,
-            preferenceManager);
-=======
-            pipelineRunManager, Collections.emptyList(), mock(MetadataManager.class), iamProfileVerifier,
-            mock(RunStatusManager.class), mock(MessageHelper.class), preferenceManager);
->>>>>>> theirs
+            mock(RunStatusManager.class), mock(MessageHelper.class));
 
     private final ScaleDownHandler scaleDownHandler = new ScaleDownHandler(autoscalerService, cloudFacade,
             pipelineRunManager, runLogManager, kubernetesManager, runCRUDService, preferenceManager,
@@ -140,19 +111,7 @@ public class ScaleDownHandlerTest {
     private final LocalDateTime now = DateUtils.nowUTC().truncatedTo(ChronoUnit.SECONDS);
     private final LocalDateTime nodeStart = now.minusHours(2);
 
-<<<<<<< ours
-    @Before
-||||||| base
-    /**
-     * A free run node matches the pending run and has expired, so it is kept only for the pending run.
-     */
-    @Before
-=======
-    /**
-     * A free run node matches the pending run and has expired, so it is kept only for the pending run.
-     */
     @BeforeEach
->>>>>>> theirs
     public void setUp() {
         final PodList pods = new PodList();
         pods.setItems(Collections.emptyList());

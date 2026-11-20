@@ -824,15 +824,6 @@ public final class MessageConstants {
     public static final String ERROR_NODE_POOL_POSITIVE_INT_REQUIRED = "error.node.pool.positive.int.required";
     public static final String ERROR_NODE_POOL_FIELDS_COMPARE = "error.node.pool.fields.compare";
     public static final String ERROR_NODE_POOL_INVALID_PERCENT = "error.node.pool.invalid.percent";
-<<<<<<< ours
-||||||| base
-    public static final String ERROR_NODE_POOL_WIN_TOOLS_ARE_NOT_ALLOWED = "error.node.pool.win.tools.not.allowed";
-    public static final String ERROR_NODE_POOL_WIN_INSTANCES_ARE_NOT_ALLOWED =
-        "error.node.pool.win.instance.not.allowed";
-=======
-    public static final String ERROR_NODE_POOL_WIN_TOOLS_ARE_NOT_ALLOWED = "error.node.pool.win.tools.not.allowed";
-    public static final String ERROR_NODE_POOL_WIN_INSTANCES_ARE_NOT_ALLOWED =
-        "error.node.pool.win.instance.not.allowed";
     public static final String ERROR_NODE_POOL_ZONE_NOT_CONFIGURED = "error.node.pool.zone.not.configured";
     public static final String ERROR_NODE_POOL_SUBNET_NOT_CONFIGURED = "error.node.pool.subnet.not.configured";
     public static final String ERROR_NODE_POOL_SUBNET_NOT_IN_NETWORKS = "error.node.pool.subnet.not.in.networks";
@@ -845,7 +836,6 @@ public final class MessageConstants {
     public static final String ERROR_NODE_POOL_ID_NO_LONGER_ACTIVE = "error.node.pool.id.no.longer.active";
     public static final String INFO_NODE_POOL_ID_WAITING = "info.node.pool.id.waiting";
     public static final String ERROR_NODE_POOL_ID_BUSY_WAIT_TIMEOUT = "error.node.pool.id.busy.wait.timeout";
->>>>>>> theirs
 
     // Users import events
     public static final String EVENT_USER_CREATED = "user.import.event.user.created";
@@ -953,73 +943,6 @@ public final class MessageConstants {
             "error.aws.omics.store.incorrect.file.path";
     public static final String AWS_OMICS_FILE_NOT_FOUND = "error.aws.omics.file.not.found";
 
-<<<<<<< ours
-||||||| base
-    //Archive runs
-    public static final String DEBUG_ARCHIVE_RUN_COMPLETED = "debug.archive.run.completed";
-    public static final String DEBUG_ARCHIVE_RUN_NO_IDS = "debug.archive.run.no.ids";
-    public static final String DEBUG_ARCHIVE_RUN_LOADING_MASTER_BY_IDS = "debug.archive.run.loading.master.by.ids";
-    public static final String DEBUG_ARCHIVE_RUN_LOADED_MASTER = "debug.archive.run.loaded.master";
-    public static final String DEBUG_ARCHIVE_RUN_LOADING_CHILDREN = "debug.archive.run.loading.children";
-    public static final String DEBUG_ARCHIVE_RUN_LOADED_CHILDREN = "debug.archive.run.loaded.children";
-    public static final String DEBUG_ARCHIVE_RUN_LOADING_STATUSES = "debug.archive.run.loading.statuses";
-    public static final String DEBUG_ARCHIVE_RUN_LOADED_STATUSES = "debug.archive.run.loaded.statuses";
-
-    // Platform usage credits
-    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_NOT_FOUND =
-            "error.platform.usage.credits.rule.not.found";
-    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_NAME_EMPTY =
-            "error.platform.usage.credits.rule.name.empty";
-    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_FILTER_EMPTY =
-            "error.platform.usage.credits.rule.filter.empty";
-    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_ACTION_EMPTY =
-            "error.platform.usage.credits.rule.action.empty";
-    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_UNKNOWN_FIELD =
-            "error.platform.usage.credits.rule.unknown.field";
-    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_UNSUPPORTED_OPERAND =
-            "error.platform.usage.credits.rule.unsupported.operand";
-    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_DURATION_NOT_SUPPORTED =
-            "error.platform.usage.credits.rule.duration.not.supported";
-    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_TIME_WINDOW_INVALID =
-            "error.platform.usage.credits.rule.time.window.invalid";
-    public static final String ERROR_PLATFORM_USAGE_CREDITS_INSUFFICIENT =
-            "error.platform.usage.credits.insufficient";
-    public static final String ERROR_PLATFORM_USAGE_CREDITS_DISABLED =
-            "error.platform.usage.credits.disabled";
-
-=======
-    //Archive runs
-    public static final String DEBUG_ARCHIVE_RUN_COMPLETED = "debug.archive.run.completed";
-    public static final String DEBUG_ARCHIVE_RUN_NO_IDS = "debug.archive.run.no.ids";
-    public static final String DEBUG_ARCHIVE_RUN_LOADING_MASTER_BY_IDS = "debug.archive.run.loading.master.by.ids";
-    public static final String DEBUG_ARCHIVE_RUN_LOADED_MASTER = "debug.archive.run.loaded.master";
-    public static final String DEBUG_ARCHIVE_RUN_LOADING_CHILDREN = "debug.archive.run.loading.children";
-    public static final String DEBUG_ARCHIVE_RUN_LOADED_CHILDREN = "debug.archive.run.loaded.children";
-    public static final String DEBUG_ARCHIVE_RUN_LOADING_STATUSES = "debug.archive.run.loading.statuses";
-    public static final String DEBUG_ARCHIVE_RUN_LOADED_STATUSES = "debug.archive.run.loaded.statuses";
-
-    // Platform usage credits
-    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_NOT_FOUND =
-            "error.platform.usage.credits.rule.not.found";
-    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_NAME_EMPTY =
-            "error.platform.usage.credits.rule.name.empty";
-    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_FILTER_EMPTY =
-            "error.platform.usage.credits.rule.filter.empty";
-    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_ACTION_EMPTY =
-            "error.platform.usage.credits.rule.action.empty";
-    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_UNKNOWN_FIELD =
-            "error.platform.usage.credits.rule.unknown.field";
-    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_UNSUPPORTED_OPERAND =
-            "error.platform.usage.credits.rule.unsupported.operand";
-    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_DURATION_NOT_SUPPORTED =
-            "error.platform.usage.credits.rule.duration.not.supported";
-    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_TIME_WINDOW_INVALID =
-            "error.platform.usage.credits.rule.time.window.invalid";
-    public static final String ERROR_PLATFORM_USAGE_CREDITS_INSUFFICIENT =
-            "error.platform.usage.credits.insufficient";
-    public static final String ERROR_PLATFORM_USAGE_CREDITS_DISABLED =
-            "error.platform.usage.credits.disabled";
-
     /**
      * Async tasks
      */
@@ -1061,7 +984,6 @@ public final class MessageConstants {
             "error.async.task.path.not.canonical";
     public static final String ERROR_ASYNC_TASK_PATH_NOT_A_FILE = "error.async.task.path.not.a.file";
 
->>>>>>> theirs
     private MessageConstants() {
         // no-op
     }

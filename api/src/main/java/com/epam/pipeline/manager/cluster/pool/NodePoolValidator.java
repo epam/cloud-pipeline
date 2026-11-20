@@ -19,43 +19,21 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.cluster.pool.CapacityReservationRequest;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
-<<<<<<< ours
-||||||| base
-import com.epam.pipeline.entity.cluster.InstanceImage;
-=======
 import com.epam.pipeline.entity.cluster.AMIConfiguration;
-import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
->>>>>>> theirs
 import com.epam.pipeline.entity.cluster.PriceType;
-<<<<<<< ours
-||||||| base
-import com.epam.pipeline.entity.docker.ToolVersion;
-import com.epam.pipeline.entity.docker.ToolVersionAttributes;
-import com.epam.pipeline.manager.cloud.CloudFacade;
-=======
-import com.epam.pipeline.entity.docker.ToolVersion;
-import com.epam.pipeline.entity.docker.ToolVersionAttributes;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cloud.aws.capacityreservation.AwsCapacityReservationService;
->>>>>>> theirs
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationCloudFacade;
 import com.epam.pipeline.manager.pipeline.ToolManager;
-<<<<<<< ours
-||||||| base
-import com.epam.pipeline.manager.pipeline.ToolUtils;
-=======
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import com.epam.pipeline.manager.pipeline.ToolUtils;
->>>>>>> theirs
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.utils.DoubleUtils;
 import com.epam.pipeline.utils.InstanceTypePatternMatcher;
@@ -99,14 +77,8 @@ public class NodePoolValidator {
     private final InstanceOfferManager instanceOfferManager;
     private final NodeScheduleManager scheduleManager;
     private final ToolManager toolManager;
-<<<<<<< ours
-||||||| base
-    private final CloudFacade cloudFacade;
-=======
-    private final CloudFacade cloudFacade;
     private final PreferenceManager preferenceManager;
     private final CapacityReservationCloudFacade reservationCloudFacade;
->>>>>>> theirs
 
     public void validate(final NodePoolVO vo) {
         Assert.notNull(vo.getRegionId(),
@@ -139,17 +111,7 @@ public class NodePoolValidator {
                 .ifPresent(scheduleManager::load);
 
         Optional.ofNullable(vo.getDockerImages())
-<<<<<<< ours
                 .ifPresent(images -> images.forEach(toolManager::loadByNameOrId));
-||||||| base
-                .ifPresent(images -> images.forEach(this::validatePoolImage));
-
-        validateInstanceImage(vo);
-=======
-                .ifPresent(images -> images.forEach(this::validatePoolImage));
-
-        validateInstanceImage(vo.getRegionId(), vo.getInstanceImage());
->>>>>>> theirs
 
         if (vo.isAutoscaled()) {
             validateAutoscalingParams(vo);
@@ -158,30 +120,6 @@ public class NodePoolValidator {
                 .ifPresent(request -> validateCapacityReservation(vo, request));
     }
 
-<<<<<<< ours
-||||||| base
-    private void validateInstanceImage(final NodePoolVO vo) {
-        final boolean isWindowsInstanceImage = Optional.ofNullable(vo.getInstanceImage())
-            .map(image -> cloudFacade.getInstanceImageDescription(vo.getRegionId(), image))
-            .map(InstanceImage::getPlatform)
-            .filter(WINDOWS::equalsIgnoreCase)
-            .isPresent();
-        Assert.isTrue(!isWindowsInstanceImage,
-                      messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_WIN_INSTANCES_ARE_NOT_ALLOWED));
-    }
-
-    private void validatePoolImage(final String image) {
-        final boolean poolContainsWindowsImages = Optional.of(toolManager.loadByNameOrId(image))
-            .map(tool -> toolManager.loadToolVersionAttributes(tool.getId(), ToolUtils.getImageTag(tool.getImage())))
-            .map(ToolVersionAttributes::getAttributes)
-            .map(ToolVersion::getPlatform)
-            .filter(WINDOWS::equalsIgnoreCase)
-            .isPresent();
-        Assert.isTrue(!poolContainsWindowsImages,
-                      messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_WIN_TOOLS_ARE_NOT_ALLOWED));
-    }
-
-=======
     @SuppressWarnings("deprecation")
     public void validateReservationPoolUpdate(final NodePool existing, final NodePoolVO vo) {
         validateUnchanged(existing, "count", existing.getCount(), vo.getCount());
@@ -310,26 +248,14 @@ public class NodePoolValidator {
                         Duration.ofSeconds(MIN_RESERVATION_COMMITMENT_SECONDS).toDays()));
     }
 
-    private void validateInstanceImage(final Long regionId, final String instanceImage) {
-        final boolean isWindowsInstanceImage = Optional.ofNullable(instanceImage)
-            .filter(StringUtils::isNotBlank)
-            .map(image -> cloudFacade.getInstanceImageDescription(regionId, image))
-            .map(InstanceImage::getPlatform)
-            .filter(WINDOWS::equalsIgnoreCase)
-            .isPresent();
-        Assert.isTrue(!isWindowsInstanceImage,
-                      messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_WIN_INSTANCES_ARE_NOT_ALLOWED));
-    }
-
     /**
-     * A launch configuration given for a pool. Its image has to be one a pool may launch, and on AWS its zone and
-     * subnet ones its region's networks configure.
+     * A launch configuration given for a pool. On AWS its zone and subnet have to be ones its region's networks
+     * configure.
      */
     public void validateAmiConfiguration(final Long regionId, final AMIConfiguration configuration) {
         if (configuration == null) {
             return;
         }
-        validateInstanceImage(regionId, configuration.getAmi());
         final AbstractCloudRegion region = regionManager.load(regionId);
         if (CloudProvider.AWS != region.getProvider()) {
             return;
@@ -360,18 +286,6 @@ public class NodePoolValidator {
                         subnet, regionCode, zone, networks.get(zone)));
     }
 
-    private void validatePoolImage(final String image) {
-        final boolean poolContainsWindowsImages = Optional.of(toolManager.loadByNameOrId(image))
-            .map(tool -> toolManager.loadToolVersionAttributes(tool.getId(), ToolUtils.getImageTag(tool.getImage())))
-            .map(ToolVersionAttributes::getAttributes)
-            .map(ToolVersion::getPlatform)
-            .filter(WINDOWS::equalsIgnoreCase)
-            .isPresent();
-        Assert.isTrue(!poolContainsWindowsImages,
-                      messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_WIN_TOOLS_ARE_NOT_ALLOWED));
-    }
-
->>>>>>> theirs
     private void validateAutoscalingParams(final NodePoolVO vo) {
         validatePositiveInt(vo.getMaxSize(), MAX_SIZE_FIELD);
         validatePositiveInt(vo.getMinSize(), MIN_SIZE_FIELD);

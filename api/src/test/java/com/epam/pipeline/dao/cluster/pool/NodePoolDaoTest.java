@@ -15,12 +15,8 @@
 
 package com.epam.pipeline.dao.cluster.pool;
 
-<<<<<<< ours
 import com.epam.pipeline.AbstractSpringTest;
-||||||| base
-=======
 import com.epam.pipeline.entity.cluster.AMIConfiguration;
->>>>>>> theirs
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.NodePoolLaunchConfig;
 import com.epam.pipeline.entity.cluster.pool.NodePoolType;
@@ -28,16 +24,8 @@ import com.epam.pipeline.entity.cluster.pool.NodeSchedule;
 import com.epam.pipeline.entity.cluster.pool.PoolLabel;
 import com.epam.pipeline.test.creator.cluster.pool.NodePoolCreatorUtils;
 import com.epam.pipeline.test.creator.cluster.pool.NodeScheduleCreatorUtils;
-<<<<<<< ours
-import org.junit.Test;
-||||||| base
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Test;
-=======
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.apache.commons.collections4.MapUtils;
 import org.junit.jupiter.api.Test;
->>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 

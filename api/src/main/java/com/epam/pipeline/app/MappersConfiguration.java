@@ -161,73 +161,9 @@ public class MappersConfiguration {
     public RunnerSidMapper runnerSidMapper() {
         return Mappers.getMapper(RunnerSidMapper.class);
     }
-<<<<<<< ours
-||||||| base
-
-    @Bean
-    public UIPluginMapper uiPluginMapper() {
-        return Mappers.getMapper(UIPluginMapper.class);
-    }
-
-    @Bean
-    public UIPluginAssignmentMapper uiPluginAssignmentMapper() {
-        return Mappers.getMapper(UIPluginAssignmentMapper.class);
-    }
-
-    @Bean
-    public AzureDevOpsMapper azureDevOpsMapper() {
-        return Mappers.getMapper(AzureDevOpsMapper.class);
-    }
-
-    @Bean
-    public PlatformUsageCreditsRuleMapper platformUsageCreditsRuleMapper() {
-        return Mappers.getMapper(PlatformUsageCreditsRuleMapper.class);
-    }
-
-    @Bean
-    public PlatformUsageCreditsUserBalanceMapper platformUsageCreditsUserBalanceMapper() {
-        return Mappers.getMapper(PlatformUsageCreditsUserBalanceMapper.class);
-    }
-
-    @Bean
-    public PlatformUsageCreditsEventMapper platformUsageCreditsEventMapper() {
-        return Mappers.getMapper(PlatformUsageCreditsEventMapper.class);
-    }
-=======
-
-    @Bean
-    public UIPluginMapper uiPluginMapper() {
-        return Mappers.getMapper(UIPluginMapper.class);
-    }
-
-    @Bean
-    public UIPluginAssignmentMapper uiPluginAssignmentMapper() {
-        return Mappers.getMapper(UIPluginAssignmentMapper.class);
-    }
-
-    @Bean
-    public AzureDevOpsMapper azureDevOpsMapper() {
-        return Mappers.getMapper(AzureDevOpsMapper.class);
-    }
-
-    @Bean
-    public PlatformUsageCreditsRuleMapper platformUsageCreditsRuleMapper() {
-        return Mappers.getMapper(PlatformUsageCreditsRuleMapper.class);
-    }
-
-    @Bean
-    public PlatformUsageCreditsUserBalanceMapper platformUsageCreditsUserBalanceMapper() {
-        return Mappers.getMapper(PlatformUsageCreditsUserBalanceMapper.class);
-    }
-
-    @Bean
-    public PlatformUsageCreditsEventMapper platformUsageCreditsEventMapper() {
-        return Mappers.getMapper(PlatformUsageCreditsEventMapper.class);
-    }
 
     @Bean
     public AsyncTaskMapper asyncTaskMapper() {
         return Mappers.getMapper(AsyncTaskMapper.class);
     }
->>>>>>> theirs
 }

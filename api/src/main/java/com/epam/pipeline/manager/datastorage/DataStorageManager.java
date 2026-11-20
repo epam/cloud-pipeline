@@ -778,105 +778,9 @@ public class DataStorageManager implements SecuredEntityManager {
         return dataStorageFile;
     }
 
-<<<<<<< ours
     public Map<String, String> updateDataStorageObjectTags(Long id, String path, Map<String, String> tagsToAdd,
             String version, Boolean rewrite) {
         AbstractDataStorage dataStorage = load(id);
-||||||| base
-    public List<DataStorageTagSearchResult> searchDataStorageItemByTag(final DataStorageObjectSearchByTagRequest req) {
-        final Set<Long> requestedStorageIds = new HashSet<>(CollectionUtils.emptyIfNull(req.getDatastorageIds()));
-        final Map<Long, List<DataStorageTag>> searchTagsResult =
-                tagProviderManager.search(getDatastoragesByIds(req.getDatastorageIds()), req.getTags());
-
-        if (MapUtils.isNotEmpty(searchTagsResult)) {
-            // by tagProviderManager.search we found tags for datastorage_root, and now we need to map it on
-            // actual storages
-            final Map<Long, List<AbstractDataStorage>> storagesByRootId = dataStorageDao
-                .loadDataStoragesByRootIds(searchTagsResult.keySet()).stream()
-                .filter(dataStorage -> checkStoragePermissions(dataStorage, READ_PERMISSION))
-                .filter(ds -> CollectionUtils.isEmpty(requestedStorageIds) || requestedStorageIds.contains(ds.getId()))
-                .collect(Collectors.groupingBy(AbstractDataStorage::getRootId));
-
-            final Map<Long, List<DataStorageTag>> results = new HashMap<>();
-            searchTagsResult.forEach(
-                (rootId, tags) -> tags.forEach(
-                    rootTag -> storagesByRootId.getOrDefault(rootId, Collections.emptyList())
-                        .stream()
-                        .filter(dataStorage -> rootTag.getObject().getPath().startsWith(dataStorage.getPrefix()))
-                        .max(Comparator.comparingInt(s -> s.getPrefix().length()))
-                        .ifPresent(dataStorage -> {
-                            final DataStorageTag storageTag = new DataStorageTag(
-                                new DataStorageObject(
-                                        dataStorage.resolveRelativePath(rootTag.getObject().getPath()),
-                                        rootTag.getObject().getVersion()
-                                ),
-                                rootTag.getKey(), rootTag.getValue()
-                            );
-                            results.computeIfAbsent(dataStorage.getId(), (id) -> new ArrayList<>()).add(storageTag);
-                        })
-                )
-            );
-            return results.entrySet().stream()
-                    .map(e -> new DataStorageTagSearchResult(e.getKey(), e.getValue()))
-                    .collect(Collectors.toList());
-        } else {
-            return Collections.emptyList();
-        }
-    }
-
-    @Transactional
-    public Map<String, String> updateDataStorageObjectTags(Long id, String path,
-                                                           Map<String, String> tagsToAdd, String version,
-                                                           Boolean rewrite) {
-        final AbstractDataStorage dataStorage = load(id);
-=======
-    public List<DataStorageTagSearchResult> searchDataStorageItemByTag(final DataStorageObjectSearchByTagRequest req) {
-        final Set<Long> requestedStorageIds = new HashSet<>(CollectionUtils.emptyIfNull(req.datastorageIds()));
-        final Map<Long, List<DataStorageTag>> searchTagsResult =
-                tagProviderManager.search(getDatastoragesByIds(req.datastorageIds()), req.tags());
-
-        if (MapUtils.isNotEmpty(searchTagsResult)) {
-            // by tagProviderManager.search we found tags for datastorage_root, and now we need to map it on
-            // actual storages
-            final Map<Long, List<AbstractDataStorage>> storagesByRootId = dataStorageDao
-                .loadDataStoragesByRootIds(searchTagsResult.keySet()).stream()
-                .filter(dataStorage -> checkStoragePermissions(dataStorage, READ_PERMISSION))
-                .filter(ds -> CollectionUtils.isEmpty(requestedStorageIds) || requestedStorageIds.contains(ds.getId()))
-                .collect(Collectors.groupingBy(AbstractDataStorage::getRootId));
-
-            final Map<Long, List<DataStorageTag>> results = new HashMap<>();
-            searchTagsResult.forEach(
-                (rootId, tags) -> tags.forEach(
-                    rootTag -> storagesByRootId.getOrDefault(rootId, Collections.emptyList())
-                        .stream()
-                        .filter(dataStorage -> rootTag.object().path().startsWith(dataStorage.getPrefix()))
-                        .max(Comparator.comparingInt(s -> s.getPrefix().length()))
-                        .ifPresent(dataStorage -> {
-                            final DataStorageTag storageTag = new DataStorageTag(
-                                new DataStorageObject(
-                                        dataStorage.resolveRelativePath(rootTag.object().path()),
-                                        rootTag.object().version()
-                                ),
-                                rootTag.key(), rootTag.value()
-                            );
-                            results.computeIfAbsent(dataStorage.getId(), (id) -> new ArrayList<>()).add(storageTag);
-                        })
-                )
-            );
-            return results.entrySet().stream()
-                    .map(e -> new DataStorageTagSearchResult(e.getKey(), e.getValue()))
-                    .collect(Collectors.toList());
-        } else {
-            return Collections.emptyList();
-        }
-    }
-
-    @Transactional
-    public Map<String, String> updateDataStorageObjectTags(Long id, String path,
-                                                           Map<String, String> tagsToAdd, String version,
-                                                           Boolean rewrite) {
-        final AbstractDataStorage dataStorage = load(id);
->>>>>>> theirs
         checkDataStorageVersioning(dataStorage, version);
         checkWritePermissionsOnFile(dataStorage, path);
         Map<String, String> resultingTags = new HashMap<>();
@@ -1492,35 +1396,7 @@ public class DataStorageManager implements SecuredEntityManager {
         }
     }
 
-<<<<<<< ours
-    private void checkWritePermissionsOnFile(final AbstractDataStorage storage, final String path) {
-||||||| base
-    private void checkGetPermissionsOnItem(final AbstractDataStorage storage, final String path,
-                                           final DataStorageItemType itemType) {
-        if (needToLoadReadPathPermissions(storage)) {
-            switch (itemType) {
-                case Folder: storagePathPermissionsService.canGetFolder(storage.getId(), path);
-                case File: storagePathPermissionsService.canReadFile(storage.getId(), path);
-                default: break;
-            }
-        }
-    }
-
-    private void checkWritePermissionsOnFile(final AbstractDataStorage storage, final String path) {
-=======
-    private void checkGetPermissionsOnItem(final AbstractDataStorage storage, final String path,
-                                           final DataStorageItemType itemType) {
-        if (needToLoadReadPathPermissions(storage)) {
-            switch (itemType) {
-                case Folder: storagePathPermissionsService.canGetFolder(storage.getId(), path);
-                case File: storagePathPermissionsService.canReadFile(storage.getId(), path);
-                default: break;
-            }
-        }
-    }
-
     public void checkWritePermissionsOnFile(final AbstractDataStorage storage, final String path) {
->>>>>>> theirs
         if (needToLoadPathPermissions(storage)) {
             storagePathPermissionsService.canWriteToFile(storage.getId(), path);
         }

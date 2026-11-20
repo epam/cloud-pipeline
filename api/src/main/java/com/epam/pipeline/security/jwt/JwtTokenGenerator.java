@@ -41,8 +41,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-
-
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTCreator;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -60,20 +58,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
-<<<<<<< ours
-public class JwtTokenGenerator {
-||||||| base
-public class JwtTokenGenerator {
-    public static final int SEC_IN_MIN = 60;
-    public static final int SEC_IN_HOUR = 3600;
-    public static final int SEC_IN_DAY = 24 * 3600;
-
-=======
 public class JwtTokenGenerator implements InitializingBean {
-    public static final int SEC_IN_MIN = 60;
-    public static final int SEC_IN_HOUR = 3600;
-    public static final int SEC_IN_DAY = 24 * 3600;
->>>>>>> theirs
     @Autowired
     private PreferenceManager preferenceManager;
 

@@ -40,18 +40,8 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
-
-
 @Service
-<<<<<<< ours
-public class RunLogManager {
-||||||| base
-@Slf4j
-public class RunLogManager {
-=======
-@Slf4j
 public class RunLogManager implements InitializingBean {
->>>>>>> theirs
 
     @Autowired
     private RunLogDao runLogDao;
@@ -78,30 +68,8 @@ public class RunLogManager implements InitializingBean {
     @Value("${runs.console.log.task:Console}")
     private String consoleLogTask;
 
-<<<<<<< ours
-    @PostConstruct
-    public void init() {
-||||||| base
-    @Value("${run.pipeline.init.task.name:InitializeEnvironment}")
-    private String initTaskName;
-
-    public String getConsoleLogTask() {
-        return consoleLogTask;
-    }
-
-    @PostConstruct
-    public void init() {
-=======
-    @Value("${run.pipeline.init.task.name:InitializeEnvironment}")
-    private String initTaskName;
-
-    public String getConsoleLogTask() {
-        return consoleLogTask;
-    }
-
     @Override
     public void afterPropertiesSet() {
->>>>>>> theirs
         self = applicationContext.getBean(RunLogManager.class);
     }
 

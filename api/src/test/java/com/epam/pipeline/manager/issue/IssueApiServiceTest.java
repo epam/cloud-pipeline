@@ -35,25 +35,10 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.security.acl.AclPermission;
-<<<<<<< ours
 import org.apache.commons.collections4.CollectionUtils;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mockito;
-||||||| base
-import com.epam.pipeline.test.acl.AbstractAclTest;
-import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
-import com.epam.pipeline.test.creator.issue.IssueCreatorUtils;
-import com.epam.pipeline.test.creator.security.SecurityCreatorUtils;
-import org.junit.Test;
-=======
-import com.epam.pipeline.test.acl.AbstractAclTest;
-import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
-import com.epam.pipeline.test.creator.issue.IssueCreatorUtils;
-import com.epam.pipeline.test.creator.security.SecurityCreatorUtils;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
->>>>>>> theirs
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -67,7 +52,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Date;
 import java.util.List;
 
-import static org.mockito.Matchers.any;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
 @DirtiesContext
@@ -108,7 +98,7 @@ public class IssueApiServiceTest extends AbstractManagerTest {
     private Issue createdIssue;
     private IssueComment createdIssueComment;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         Folder folder = new Folder();
         folder.setName(TEST_FOLDER_NAME);
@@ -157,7 +147,7 @@ public class IssueApiServiceTest extends AbstractManagerTest {
         aclTestDao.createAclEntry(aclEntry);
 
         verify(notificationManager, Mockito.never()).notifyIssue(any(), any(), any());
-        Mockito.doNothing().when(attachmentFileManager).deleteAttachments(Mockito.anyListOf(Attachment.class));
+        Mockito.doNothing().when(attachmentFileManager).deleteAttachments(Mockito.anyList());
 
         attachment = new Attachment();
         attachment.setName("testAttachment");
@@ -166,7 +156,7 @@ public class IssueApiServiceTest extends AbstractManagerTest {
         attachment.setOwner(TEST_USER);
 
         attachmentDao.createAttachment(attachment);
-        Mockito.doNothing().when(attachmentFileManager).deleteAttachments(Mockito.anyListOf(Attachment.class));
+        Mockito.doNothing().when(attachmentFileManager).deleteAttachments(Mockito.anyList());
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
@@ -176,10 +166,10 @@ public class IssueApiServiceTest extends AbstractManagerTest {
         Issue issue = issueApiService.createIssue(getIssueVO(ISSUE_NAME, ISSUE_TEXT, entityVO));
 
         Issue loaded = issueApiService.loadIssue(issue.getId());
-        Assert.assertNotNull(loaded);
+        assertNotNull(loaded);
 
         List<Issue> loadedIssues = issueApiService.loadIssuesForEntity(entityVO);
-        Assert.assertNotNull(loadedIssues);
+        assertNotNull(loadedIssues);
 
         issueApiService.updateIssue(issue.getId(), getIssueVO(ISSUE_NAME, ISSUE_TEXT + "!", entityVO));
 
@@ -188,7 +178,7 @@ public class IssueApiServiceTest extends AbstractManagerTest {
         IssueComment comment = issueApiService.createComment(issue.getId(), issueCommentVO);
 
         IssueComment loadedComment = issueApiService.loadComment(issue.getId(), comment.getId());
-        Assert.assertNotNull(loadedComment);
+        assertNotNull(loadedComment);
 
         issueCommentVO.setText(COMMENT_TEXT + "!");
         issueApiService.updateComment(issue.getId(), comment.getId(), issueCommentVO);
@@ -198,99 +188,108 @@ public class IssueApiServiceTest extends AbstractManagerTest {
 
     @WithMockUser(username = NO_PERMISSION_USER)
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    @Test(expected = AccessDeniedException.class)
+    @Test
     public void testCreateIssueAccessDenied() {
-        issueApiService.createIssue(getIssueVO(ISSUE_NAME, ISSUE_TEXT, entityVO));
+        assertThrows(AccessDeniedException.class,
+            () -> issueApiService.createIssue(getIssueVO(ISSUE_NAME, ISSUE_TEXT, entityVO)));
     }
 
     @WithMockUser(username = NO_PERMISSION_USER)
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    @Test(expected = AccessDeniedException.class)
+    @Test
     public void testLoadIssueAccessDenied() {
-        issueApiService.loadIssue(createdIssue.getId());
+        assertThrows(AccessDeniedException.class, () -> issueApiService.loadIssue(createdIssue.getId()));
     }
 
     @WithMockUser(username = NO_PERMISSION_USER)
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    @Test(expected = AccessDeniedException.class)
+    @Test
     public void testLoadIssuesAccessDenied() {
-        issueApiService.loadIssuesForEntity(entityVO);
+        assertThrows(AccessDeniedException.class, () -> issueApiService.loadIssuesForEntity(entityVO));
     }
 
     @WithMockUser(username = NO_PERMISSION_USER)
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    @Test(expected = AccessDeniedException.class)
+    @Test
     public void testUpdateIssueAccessDenied() {
-        issueApiService.updateIssue(createdIssue.getId(), getIssueVO(ISSUE_NAME, ISSUE_TEXT, entityVO));
+        assertThrows(AccessDeniedException.class,
+            () -> issueApiService.updateIssue(createdIssue.getId(), getIssueVO(ISSUE_NAME, ISSUE_TEXT, entityVO)));
     }
 
     @WithMockUser(username = NO_PERMISSION_USER)
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    @Test(expected = AccessDeniedException.class)
+    @Test
     public void testDeleteIssueAccessDenied() {
-        issueApiService.deleteIssue(createdIssue.getId());
+        assertThrows(AccessDeniedException.class, () -> issueApiService.deleteIssue(createdIssue.getId()));
     }
 
     @WithMockUser(username = NO_PERMISSION_USER)
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    @Test(expected = AccessDeniedException.class)
+    @Test
     public void testCreateCommentAccessDenied() {
         IssueCommentVO issueCommentVO = new IssueCommentVO();
         issueCommentVO.setText(COMMENT_TEXT);
-        issueApiService.createComment(createdIssue.getId(), issueCommentVO);
+        assertThrows(AccessDeniedException.class,
+            () -> issueApiService.createComment(createdIssue.getId(), issueCommentVO));
     }
 
     @WithMockUser(username = NO_PERMISSION_USER)
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    @Test(expected = AccessDeniedException.class)
+    @Test
     public void testLoadCommentAccessDenied() {
-        issueApiService.loadComment(createdIssue.getId(), createdIssueComment.getId());
+        assertThrows(AccessDeniedException.class,
+            () -> issueApiService.loadComment(createdIssue.getId(), createdIssueComment.getId()));
     }
 
     @WithMockUser(username = NO_PERMISSION_USER)
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    @Test(expected = AccessDeniedException.class)
+    @Test
     public void testUpdateCommentAccessDenied() {
         IssueCommentVO issueCommentVO = new IssueCommentVO();
         issueCommentVO.setText(COMMENT_TEXT);
-        issueApiService.updateComment(createdIssue.getId(), createdIssueComment.getId(), issueCommentVO);
+        assertThrows(AccessDeniedException.class,
+            () -> issueApiService.updateComment(createdIssue.getId(), createdIssueComment.getId(), issueCommentVO));
     }
 
     @WithMockUser(username = NO_PERMISSION_USER)
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    @Test(expected = AccessDeniedException.class)
+    @Test
     public void testDeleteCommentAccessDenied() {
-        issueApiService.deleteComment(createdIssue.getId(), createdIssueComment.getId());
+        assertThrows(AccessDeniedException.class,
+            () -> issueApiService.deleteComment(createdIssue.getId(), createdIssueComment.getId()));
     }
 
     @WithMockUser(username = CAN_READ_USER)
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    @Test(expected = AccessDeniedException.class)
+    @Test
     public void testUpdateIssueAccessDeniedForNotOwner() {
-        issueApiService.updateIssue(createdIssue.getId(), getIssueVO(ISSUE_NAME, ISSUE_TEXT, entityVO));
+        assertThrows(AccessDeniedException.class,
+            () -> issueApiService.updateIssue(createdIssue.getId(), getIssueVO(ISSUE_NAME, ISSUE_TEXT, entityVO)));
     }
 
     @WithMockUser(username = CAN_READ_USER)
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    @Test(expected = AccessDeniedException.class)
+    @Test
     public void testDeleteIssueAccessDeniedForNotOwner() {
-        issueApiService.deleteIssue(createdIssue.getId());
+        assertThrows(AccessDeniedException.class, () -> issueApiService.deleteIssue(createdIssue.getId()));
     }
 
     @WithMockUser(username = CAN_READ_USER)
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    @Test(expected = AccessDeniedException.class)
+    @Test
     public void testUpdateCommentAccessDeniedForNotOwner() {
         IssueCommentVO issueCommentVO = new IssueCommentVO();
         issueCommentVO.setText(COMMENT_TEXT);
-        issueApiService.updateComment(createdIssue.getId(), createdIssueComment.getId(), issueCommentVO);
+        assertThrows(AccessDeniedException.class,
+            () -> issueApiService.updateComment(createdIssue.getId(), createdIssueComment.getId(), issueCommentVO));
     }
 
     @WithMockUser(username = CAN_READ_USER)
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    @Test(expected = AccessDeniedException.class)
+    @Test
     public void testDeleteCommentAccessDeniedForNotOwner() {
-        issueApiService.deleteComment(createdIssue.getId(), createdIssueComment.getId());
+        assertThrows(AccessDeniedException.class,
+            () -> issueApiService.deleteComment(createdIssue.getId(), createdIssueComment.getId()));
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
@@ -298,10 +297,10 @@ public class IssueApiServiceTest extends AbstractManagerTest {
     @Test
     public void testLoadIssueForNotOwner() {
         Issue loaded = issueApiService.loadIssue(createdIssue.getId());
-        Assert.assertNotNull(loaded);
+        assertNotNull(loaded);
 
         List<Issue> loadedIssues = issueApiService.loadIssuesForEntity(entityVO);
-        Assert.assertNotNull(loadedIssues);
+        assertNotNull(loadedIssues);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
@@ -309,14 +308,14 @@ public class IssueApiServiceTest extends AbstractManagerTest {
     @Test
     public void testLoadCommentForNotOwner() {
         IssueComment loadedComment = issueApiService.loadComment(createdIssue.getId(), createdIssueComment.getId());
-        Assert.assertNotNull(loadedComment);
+        assertNotNull(loadedComment);
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     @WithMockUser(username = TEST_USER2)
     public void testDeleteAttachmentFail() {
-        attachmentFileManager.deleteAttachment(attachment.getId());
+        assertThrows(AccessDeniedException.class, () -> attachmentFileManager.deleteAttachment(attachment.getId()));
     }
 
     @Test
@@ -333,9 +332,9 @@ public class IssueApiServiceTest extends AbstractManagerTest {
     public void testLoadMy() {
         PagedResult<List<Issue>> result = issueApiService.loadMy(1, 10);
 
-        Assert.assertFalse(result.getElements().isEmpty());
-        Assert.assertTrue(result.getElements().stream().anyMatch(i -> CollectionUtils.isNotEmpty(i.getComments())));
-        Assert.assertEquals(result.getElements().size(), result.getTotalCount());
+        assertFalse(result.getElements().isEmpty());
+        assertTrue(result.getElements().stream().anyMatch(i -> CollectionUtils.isNotEmpty(i.getComments())));
+        assertEquals(result.getElements().size(), result.getTotalCount());
     }
 
     private IssueVO getIssueVO(String name, String text, EntityVO entity) {

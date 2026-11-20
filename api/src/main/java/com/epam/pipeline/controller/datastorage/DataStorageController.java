@@ -43,29 +43,11 @@ import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StorageMountPath;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
-<<<<<<< ours
 import com.epam.pipeline.manager.datastorage.DataStorageApiService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-||||||| base
-import com.epam.pipeline.acl.datastorage.DataStorageApiService;
-import com.epam.pipeline.entity.datastorage.tag.DataStorageObjectSearchByTagRequest;
-import com.epam.pipeline.entity.datastorage.tag.DataStorageTagSearchResult;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-=======
-import com.epam.pipeline.acl.datastorage.DataStorageApiService;
-import com.epam.pipeline.entity.datastorage.tag.DataStorageObjectSearchByTagRequest;
-import com.epam.pipeline.entity.datastorage.tag.DataStorageTagSearchResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
->>>>>>> theirs
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.fileupload2.core.FileUploadException;
 import org.apache.commons.io.FilenameUtils;
@@ -148,35 +130,13 @@ public class DataStorageController extends AbstractRestController {
 
     @RequestMapping(value = "/datastorage/availableWithMounts", method = RequestMethod.GET)
     @ResponseBody
-<<<<<<< ours
-    @ApiOperation(
-            value = "Returns all data storages allowed for current user (READ or WRITE) and FileShareMount object." +
-                    "If fronRegion is specified this method will return only allowed for mount" +
-||||||| base
-    @ApiOperation(
-            value = "Returns all data storages allowed for current user (READ or WRITE) and FileShareMount object." +
-                    "If fromRegion is specified this method will return only allowed for mount" +
-=======
     @Operation(
             summary = "Returns all data storages allowed for current user (READ or WRITE) and FileShareMount object." +
                     "If fromRegion is specified this method will return only allowed for mount" +
->>>>>>> theirs
                     " storages for specified region.",
-<<<<<<< ours
-            notes = "Returns all data storages allowed for current user (READ or WRITE) and FileShareMount object." +
-                    "If fronRegion is specified this method will return only allowed for mount " +
-                    "storages for specified region.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-||||||| base
-            notes = "Returns all data storages allowed for current user (READ or WRITE) and FileShareMount object." +
-                    "If fromRegion is specified this method will return only allowed for mount " +
-                    "storages for specified region.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-=======
             description = "Returns all data storages allowed for current user (READ or WRITE) and FileShareMount " +
                     "object. If fromRegion is specified this method will return only allowed for mount " +
                     "storages for specified region.")
->>>>>>> theirs
     @ApiResponses(
             value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
@@ -234,37 +194,6 @@ public class DataStorageController extends AbstractRestController {
         return Result.success(dataStorageApiService.loadByPathOrId(identifier));
     }
 
-<<<<<<< ours
-||||||| base
-    @RequestMapping(value = "/datastorage/findAllByPath", method = RequestMethod.GET)
-    @ResponseBody
-    @ApiOperation(
-            value = "Returns a list of datastorage, specified by one of path prefixes.",
-            notes = "Returns a list of datastorage, specified by one of path prefixes.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
-    public Result<List<AbstractDataStorage>> findAllDataStorageByPath(@RequestParam(value = ID)
-                                                                          final String identifier) {
-        return Result.success(dataStorageApiService.loadAllByPath(identifier));
-    }
-
-=======
-    @RequestMapping(value = "/datastorage/findAllByPath", method = RequestMethod.GET)
-    @ResponseBody
-    @Operation(
-            summary = "Returns a list of datastorage, specified by one of path prefixes.",
-            description = "Returns a list of datastorage, specified by one of path prefixes.")
-    @ApiResponses(
-            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
-            })
-    public Result<List<AbstractDataStorage>> findAllDataStorageByPath(@RequestParam(value = ID)
-                                                                          final String identifier) {
-        return Result.success(dataStorageApiService.loadAllByPath(identifier));
-    }
-
->>>>>>> theirs
     @RequestMapping(value = "/datastorage/{id}/list", method = RequestMethod.GET)
     @ResponseBody
     @Operation(
@@ -475,49 +404,6 @@ public class DataStorageController extends AbstractRestController {
         }
     }
 
-<<<<<<< ours
-||||||| base
-    @RequestMapping(value = "/datastorage/{id}/type", method = RequestMethod.GET)
-    @ResponseBody
-    @ApiOperation(
-            value = "Returns data storage item's type.",
-            notes = "Returns data storage item's type",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
-    public Result<DataStorageItemType> getStorageItemType(
-            @PathVariable(value = ID) final Long id,
-            @RequestParam(value = PATH) final String path,
-            @RequestParam(value = VERSION, required = false) final String version) {
-        if (StringUtils.hasText(version)) {
-            return Result.success(dataStorageApiService.getItemTypeOwner(id, path, version));
-        } else {
-            return Result.success(dataStorageApiService.getItemType(id, path, version));
-        }
-    }
-
-=======
-    @RequestMapping(value = "/datastorage/{id}/type", method = RequestMethod.GET)
-    @ResponseBody
-    @Operation(
-            summary = "Returns data storage item's type.",
-            description = "Returns data storage item's type")
-    @ApiResponses(
-            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
-            })
-    public Result<DataStorageItemType> getStorageItemType(
-            @PathVariable(value = ID) final Long id,
-            @RequestParam(value = PATH) final String path,
-            @RequestParam(value = VERSION, required = false) final String version) {
-        if (StringUtils.hasText(version)) {
-            return Result.success(dataStorageApiService.getItemTypeOwner(id, path, version));
-        } else {
-            return Result.success(dataStorageApiService.getItemType(id, path, version));
-        }
-    }
-
->>>>>>> theirs
     @GetMapping(value = "/datastorage/{id}/generateUploadUrl")
     @ResponseBody
     @Operation(
@@ -760,51 +646,8 @@ public class DataStorageController extends AbstractRestController {
             @RequestParam(value = PATH) final String path,
             @RequestParam(defaultValue = FALSE) final Boolean showVersion) {
         return showVersion
-<<<<<<< ours
                 ? Result.success(dataStorageApiService.getDataStorageItemOwnerWithTags(id, path, showVersion))
                 : Result.success(dataStorageApiService.getDataStorageItemWithTags(id, path, showVersion));
-||||||| base
-                ? Result.success(dataStorageApiService.getDataStorageItemOwnerWithTags(
-                        id, path, showVersion, showArchived))
-                : Result.success(dataStorageApiService.getDataStorageItemWithTags(
-                        id, path, showVersion, showArchived));
-    }
-
-    @RequestMapping(value = "/datastorage/tags/search", method = RequestMethod.POST)
-    @ResponseBody
-    @ApiOperation(
-            value = "Search datastorage items by tag.",
-            notes = "Search datastorage items by tag. " +
-                    "Returns map where key is a storage ID and value is a list of DataStorageTag" +
-                    " representing storage item with specified tag",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
-    public Result<List<DataStorageTagSearchResult>> searchDataStorageItemByTag(
-            @RequestBody final DataStorageObjectSearchByTagRequest request) {
-        return Result.success(dataStorageApiService.searchDataStorageItemByTag(request));
-=======
-                ? Result.success(dataStorageApiService.getDataStorageItemOwnerWithTags(
-                        id, path, showVersion, showArchived))
-                : Result.success(dataStorageApiService.getDataStorageItemWithTags(
-                        id, path, showVersion, showArchived));
-    }
-
-    @RequestMapping(value = "/datastorage/tags/search", method = RequestMethod.POST)
-    @ResponseBody
-    @Operation(
-            summary = "Search datastorage items by tag.",
-            description = "Search datastorage items by tag. " +
-                    "Returns map where key is a storage ID and value is a list of DataStorageTag" +
-                    " representing storage item with specified tag")
-    @ApiResponses(
-            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
-            })
-    public Result<List<DataStorageTagSearchResult>> searchDataStorageItemByTag(
-            @RequestBody final DataStorageObjectSearchByTagRequest request) {
-        return Result.success(dataStorageApiService.searchDataStorageItemByTag(request));
->>>>>>> theirs
     }
 
     @GetMapping(value = "/datastorage/{id}/sharedLink")

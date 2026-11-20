@@ -15,18 +15,8 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.security.AuthManager;
-<<<<<<< ours
-import org.junit.Before;
-import org.junit.Test;
-||||||| base
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Before;
-import org.junit.Test;
-=======
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
->>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.transaction.annotation.Transactional;
@@ -80,7 +70,8 @@ public class ToolMetadataDaoTest extends AbstractSpringTest {
     @SpyBean
     private AuthManager authManager;
 
-    @BeforeEach    public void setUp() {
+    @BeforeEach
+    public void setUp() {
         firstRegistry = new DockerRegistry();
         firstRegistry.setPath(TEST_REPO);
         firstRegistry.setOwner(TEST_USER);

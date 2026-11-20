@@ -37,24 +37,8 @@ import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.issue.IssueComment;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.issue.AttachmentFileManager;
-<<<<<<< ours
 import com.epam.pipeline.manager.issue.IssueApiService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import org.apache.commons.fileupload.FileUploadException;
-||||||| base
-import com.epam.pipeline.acl.issue.IssueApiService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import org.apache.commons.fileupload.FileUploadException;
-=======
-import com.epam.pipeline.acl.issue.IssueApiService;
 import org.apache.commons.fileupload2.core.FileUploadException;
->>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.DeleteMapping;

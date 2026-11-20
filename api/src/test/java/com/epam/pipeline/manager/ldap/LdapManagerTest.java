@@ -53,17 +53,8 @@ public class LdapManagerTest {
     private final LdapManager ldapManager = new LdapManager(ldapTemplate, ldapEntityMapper, preferenceManager, 
             messageHelper);
 
-<<<<<<< ours
-    @Before
+    @BeforeEach
     public void setUp() {
-||||||| base
-    @Before
-    public void setUp() {
-        mockLdapTemplate();
-=======
-    @BeforeEach    public void setUp() {
-        mockLdapTemplate();
->>>>>>> theirs
         mockEmptyPreferences();
         mockPreference(SystemPreferences.LDAP_RESPONSE_SIZE, COUNT_LIMIT);
         mockPreference(SystemPreferences.LDAP_BASE_PATH, BASE_PATH);

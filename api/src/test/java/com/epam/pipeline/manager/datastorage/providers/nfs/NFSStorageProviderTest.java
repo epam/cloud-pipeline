@@ -16,17 +16,7 @@
 
 package com.epam.pipeline.manager.datastorage.providers.nfs;
 
-<<<<<<< ours
-import static org.mockito.Matchers.anyString;
-||||||| base
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
-=======
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doReturn;
->>>>>>> theirs
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -58,27 +48,10 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import org.apache.commons.io.FileUtils;
-<<<<<<< ours
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-||||||| base
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-=======
-import org.junit.jupiter.api.Assertions;
-import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
->>>>>>> theirs
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -162,22 +135,6 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
         ReflectionTestUtils.setField(nfsStorageMounter, "rootMountPoint", testMountPoint.getAbsolutePath());
         ReflectionTestUtils.setField(nfsStorageMounter, "cmdExecutor", mockCmdExecutor);
 
-<<<<<<< ours
-||||||| base
-        // NFSStorageMounter.isMounted() reads /proc/mounts; tests use temp dirs that are not real mounts.
-        // Mock getProcMountsPath() to return a nonexistent path so isMounted() falls back to File.exists().
-        NFSStorageMounter spyMounter = spy(nfsStorageMounter);
-        doReturn("/nonexistent/proc/mounts").when(spyMounter).getProcMountsPath();
-        Whitebox.setInternalState(nfsProvider, "nfsStorageMounter", spyMounter);
-
-=======
-        // NFSStorageMounter.isMounted() reads /proc/mounts; tests use temp dirs that are not real mounts.
-        // Mock getProcMountsPath() to return a nonexistent path so isMounted() falls back to File.exists().
-        NFSStorageMounter spyMounter = spy(nfsStorageMounter);
-        doReturn("/nonexistent/proc/mounts").when(spyMounter).getProcMountsPath();
-        ReflectionTestUtils.setField(nfsProvider, "nfsStorageMounter", spyMounter);
-
->>>>>>> theirs
         when(mockCmdExecutor.executeCommand(anyString())).thenReturn("");
 
         CloudRegionManager regionManager = new CloudRegionManager(cloudRegionDao, cloudRegionMapper,
@@ -290,16 +247,8 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
         nfsProvider.createFile(dataStorage, testFileName, "testContent".getBytes());
 
         File dataStorageRoot = new File(testMountPoint, TEST_PATH + "/test");
-<<<<<<< ours
         File testFile = new File(dataStorageRoot, testFileName);
-        Assert.assertTrue(testFile.exists());
-||||||| base
-        File testFile = new File(dataStorageRoot, TEST_FILE_NAME);
-        Assert.assertTrue(testFile.exists());
-=======
-        File testFile = new File(dataStorageRoot, TEST_FILE_NAME);
         assertTrue(testFile.exists());
->>>>>>> theirs
 
         String testFolderName = "testFolder";
         nfsProvider.createFolder(dataStorage, testFolderName);
@@ -315,22 +264,10 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
             .filter(i -> i.getType() == DataStorageItemType.File)
             .findFirst();
 
-<<<<<<< ours
-        Assert.assertTrue(loadedFile.isPresent());
-        Assert.assertEquals(testFileName, loadedFile.get().getName());
-        Assert.assertEquals(testFileName, loadedFile.get().getPath());
-        Assert.assertNotNull(((DataStorageFile) loadedFile.get()).getChanged());
-||||||| base
-        Assert.assertTrue(loadedFile.isPresent());
-        Assert.assertEquals(TEST_FILE_NAME, loadedFile.get().getName());
-        Assert.assertEquals(TEST_FILE_NAME, loadedFile.get().getPath());
-        Assert.assertNotNull(((DataStorageFile) loadedFile.get()).getChanged());
-=======
         assertTrue(loadedFile.isPresent());
-        assertEquals(TEST_FILE_NAME, loadedFile.get().getName());
-        assertEquals(TEST_FILE_NAME, loadedFile.get().getPath());
+        assertEquals(testFileName, loadedFile.get().getName());
+        assertEquals(testFileName, loadedFile.get().getPath());
         assertNotNull(((DataStorageFile) loadedFile.get()).getChanged());
->>>>>>> theirs
 
         Optional<AbstractDataStorageItem>
             loadedFolder = listing.getResults().stream()
@@ -467,334 +404,6 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
         );
     }
 
-<<<<<<< ours
-||||||| base
-    @Test
-    public void shouldUseDefaultUidAndGidWhenExternalDisabled() {
-        setupExternalIdTest(false, null, null);
-
-        createFileForChownTest();
-
-        final Long expectedUid = TEST_USER_ID + UID_SEED;
-        verifyChownCommand(expectedUid, expectedUid);
-    }
-
-    @Test
-    public void shouldUseExternalUidAndGidFromMetadata() {
-        setupExternalIdTest(true, UID_FIELD, GID_FIELD);
-        mockUserMetadata(UID_FIELD, EXTERNAL_UID.toString());
-        mockUserMetadata(GID_FIELD, EXTERNAL_GID.toString());
-        mockRoleMetadata(EXTERNAL_GID.toString());
-
-        createFileForChownTest();
-
-        verifyChownCommand(EXTERNAL_UID, EXTERNAL_GID);
-    }
-
-    @Test
-    public void shouldFallBackToDefaultUidWhenMetadataMissing() {
-        setupExternalIdTest(true, UID_FIELD, null);
-        mockEmptyUserMetadata(UID_FIELD);
-
-        createFileForChownTest();
-
-        final Long expectedUid = TEST_USER_ID + UID_SEED;
-        verifyChownCommand(expectedUid, expectedUid);
-    }
-
-    @Test
-    public void shouldFallBackToDefaultGidWhenGidMetadataMissing() {
-        setupExternalIdTest(true, UID_FIELD, GID_FIELD);
-        mockUserMetadata(UID_FIELD, EXTERNAL_UID.toString());
-        mockEmptyUserMetadata(GID_FIELD);
-
-        createFileForChownTest();
-
-        verifyChownCommand(EXTERNAL_UID, EXTERNAL_UID);
-    }
-
-    @Test
-    public void shouldFallBackToDefaultGidWhenRoleDoesNotMatchGid() {
-        setupExternalIdTest(true, UID_FIELD, GID_FIELD);
-        mockUserMetadata(UID_FIELD, EXTERNAL_UID.toString());
-        mockUserMetadata(GID_FIELD, EXTERNAL_GID.toString());
-        mockRoleMetadata("9999");
-
-        createFileForChownTest();
-
-        verifyChownCommand(EXTERNAL_UID, EXTERNAL_UID);
-    }
-
-    @Test
-    public void shouldFallBackToDefaultGidWhenUserHasNoRoles() {
-        final PipelineUser userNoRoles = PipelineUser.builder()
-                .id(TEST_USER_ID)
-                .userName(TEST_USER_NAME)
-                .roles(Collections.emptyList())
-                .admin(false)
-                .build();
-        setupExternalIdTest(true, UID_FIELD, GID_FIELD, userNoRoles);
-        mockUserMetadata(UID_FIELD, EXTERNAL_UID.toString());
-        mockUserMetadata(GID_FIELD, EXTERNAL_GID.toString());
-
-        createFileForChownTest();
-
-        verifyChownCommand(EXTERNAL_UID, EXTERNAL_UID);
-    }
-
-    private void setupExternalIdTest(final boolean externalEnabled,
-                                     final String uidFieldName,
-                                     final String gidFieldName) {
-        final Role role = new Role();
-        role.setId(ROLE_ID);
-        role.setName("ROLE_TEST_GROUP");
-
-        final PipelineUser user = PipelineUser.builder()
-                .id(TEST_USER_ID)
-                .userName(TEST_USER_NAME)
-                .roles(Collections.singletonList(role))
-                .admin(false)
-                .build();
-        setupExternalIdTest(externalEnabled, uidFieldName, gidFieldName, user);
-    }
-
-    private void setupExternalIdTest(final boolean externalEnabled,
-                                     final String uidFieldName,
-                                     final String gidFieldName,
-                                     final PipelineUser user) {
-        final PreferenceManager mockPreferenceManager = mock(PreferenceManager.class);
-        final AuthManager mockAuthManager = mock(AuthManager.class);
-
-        when(mockPreferenceManager.getPreference(SystemPreferences.SYSTEM_SSH_DEFAULT_ROOT_USER_ENABLED))
-                .thenReturn(false);
-        when(mockPreferenceManager.getPreference(SystemPreferences.LAUNCH_UID_SEED))
-                .thenReturn(UID_SEED);
-        when(mockPreferenceManager.getPreference(SystemPreferences.LAUNCH_EXTERNAL_UID_ENABLE))
-                .thenReturn(externalEnabled);
-        when(mockPreferenceManager.getPreference(SystemPreferences.LAUNCH_EXTERNAL_UID_FIELD_NAME))
-                .thenReturn(uidFieldName);
-        when(mockPreferenceManager.getPreference(SystemPreferences.LAUNCH_EXTERNAL_GID_FIELD_NAME))
-                .thenReturn(gidFieldName);
-        when(mockAuthManager.getCurrentUser()).thenReturn(user);
-
-        Whitebox.setInternalState(nfsProvider, "preferenceManager", mockPreferenceManager);
-        Whitebox.setInternalState(nfsProvider, "authManager", mockAuthManager);
-        Whitebox.setInternalState(externalUIDManager, "preferenceManager", mockPreferenceManager);
-        Whitebox.setInternalState(externalUIDManager, "metadataManager", mockMetadataManager);
-    }
-
-    private void createFileForChownTest() {
-        final NFSDataStorage dataStorage = new NFSDataStorage(0L, TEST_STORAGE_NAME, TEST_PATH + TEST_PREFIX);
-        dataStorage.setFileShareMountId(awsFileShareMount.getId());
-        nfsProvider.createStorage(dataStorage);
-        nfsProvider.createFile(dataStorage, TEST_FILE_NAME, "content".getBytes());
-    }
-
-    private void verifyChownCommand(final Long expectedUid, final Long expectedGid) {
-        final ArgumentCaptor<String> cmdCaptor = ArgumentCaptor.forClass(String.class);
-        verify(mockCmdExecutor).executeCommand(cmdCaptor.capture());
-        final List<String> commands = cmdCaptor.getAllValues();
-        final String chownCmd = commands.stream()
-                .filter(cmd -> cmd.contains("chown"))
-                .reduce((first, second) -> second)
-                .orElse(null);
-        Assert.assertNotNull("Expected chown command to be executed", chownCmd);
-        Assert.assertTrue("Expected uid " + expectedUid + " in command: " + chownCmd,
-                chownCmd.contains(expectedUid + ":" + expectedGid));
-    }
-
-    private void mockUserMetadata(final String key, final String value) {
-        final EntityVO userEntity = new EntityVO(TEST_USER_ID, AclClass.PIPELINE_USER);
-        final MetadataEntry entry = new MetadataEntry();
-        entry.setEntity(userEntity);
-        final Map<String, PipeConfValue> data = new HashMap<>();
-        data.put(key, new PipeConfValue("string", value));
-        entry.setData(data);
-        when(mockMetadataManager.listMetadataItemsByKey(eq(key), eq(Collections.singletonList(userEntity))))
-                .thenReturn(Collections.singletonList(entry));
-    }
-
-    private void mockEmptyUserMetadata(final String key) {
-        final EntityVO userEntity = new EntityVO(TEST_USER_ID, AclClass.PIPELINE_USER);
-        when(mockMetadataManager.listMetadataItemsByKey(eq(key), eq(Collections.singletonList(userEntity))))
-                .thenReturn(Collections.emptyList());
-    }
-
-    private void mockRoleMetadata(final String value) {
-        final EntityVO roleEntity = new EntityVO(ROLE_ID, AclClass.ROLE);
-        final MetadataEntry entry = new MetadataEntry();
-        entry.setEntity(roleEntity);
-        final Map<String, PipeConfValue> data = new HashMap<>();
-        data.put(NFSStorageProviderTest.UID_FIELD, new PipeConfValue("string", value));
-        entry.setData(data);
-        when(mockMetadataManager.listMetadataItemsByKey(eq(NFSStorageProviderTest.UID_FIELD),
-                eq(Collections.singletonList(roleEntity)))).thenReturn(Collections.singletonList(entry));
-    }
-
-=======
-    @Test
-    public void shouldUseDefaultUidAndGidWhenExternalDisabled() {
-        setupExternalIdTest(false, null, null);
-
-        createFileForChownTest();
-
-        final Long expectedUid = TEST_USER_ID + UID_SEED;
-        verifyChownCommand(expectedUid, expectedUid);
-    }
-
-    @Test
-    public void shouldUseExternalUidAndGidFromMetadata() {
-        setupExternalIdTest(true, UID_FIELD, GID_FIELD);
-        mockUserMetadata(UID_FIELD, EXTERNAL_UID.toString());
-        mockUserMetadata(GID_FIELD, EXTERNAL_GID.toString());
-        mockRoleMetadata(EXTERNAL_GID.toString());
-
-        createFileForChownTest();
-
-        verifyChownCommand(EXTERNAL_UID, EXTERNAL_GID);
-    }
-
-    @Test
-    public void shouldFallBackToDefaultUidWhenMetadataMissing() {
-        setupExternalIdTest(true, UID_FIELD, null);
-        mockEmptyUserMetadata(UID_FIELD);
-
-        createFileForChownTest();
-
-        final Long expectedUid = TEST_USER_ID + UID_SEED;
-        verifyChownCommand(expectedUid, expectedUid);
-    }
-
-    @Test
-    public void shouldFallBackToDefaultGidWhenGidMetadataMissing() {
-        setupExternalIdTest(true, UID_FIELD, GID_FIELD);
-        mockUserMetadata(UID_FIELD, EXTERNAL_UID.toString());
-        mockEmptyUserMetadata(GID_FIELD);
-
-        createFileForChownTest();
-
-        verifyChownCommand(EXTERNAL_UID, EXTERNAL_UID);
-    }
-
-    @Test
-    public void shouldFallBackToDefaultGidWhenRoleDoesNotMatchGid() {
-        setupExternalIdTest(true, UID_FIELD, GID_FIELD);
-        mockUserMetadata(UID_FIELD, EXTERNAL_UID.toString());
-        mockUserMetadata(GID_FIELD, EXTERNAL_GID.toString());
-        mockRoleMetadata("9999");
-
-        createFileForChownTest();
-
-        verifyChownCommand(EXTERNAL_UID, EXTERNAL_UID);
-    }
-
-    @Test
-    public void shouldFallBackToDefaultGidWhenUserHasNoRoles() {
-        final PipelineUser userNoRoles = PipelineUser.builder()
-                .id(TEST_USER_ID)
-                .userName(TEST_USER_NAME)
-                .roles(Collections.emptyList())
-                .admin(false)
-                .build();
-        setupExternalIdTest(true, UID_FIELD, GID_FIELD, userNoRoles);
-        mockUserMetadata(UID_FIELD, EXTERNAL_UID.toString());
-        mockUserMetadata(GID_FIELD, EXTERNAL_GID.toString());
-
-        createFileForChownTest();
-
-        verifyChownCommand(EXTERNAL_UID, EXTERNAL_UID);
-    }
-
-    private void setupExternalIdTest(final boolean externalEnabled,
-                                     final String uidFieldName,
-                                     final String gidFieldName) {
-        final Role role = new Role();
-        role.setId(ROLE_ID);
-        role.setName("ROLE_TEST_GROUP");
-
-        final PipelineUser user = PipelineUser.builder()
-                .id(TEST_USER_ID)
-                .userName(TEST_USER_NAME)
-                .roles(Collections.singletonList(role))
-                .admin(false)
-                .build();
-        setupExternalIdTest(externalEnabled, uidFieldName, gidFieldName, user);
-    }
-
-    private void setupExternalIdTest(final boolean externalEnabled,
-                                     final String uidFieldName,
-                                     final String gidFieldName,
-                                     final PipelineUser user) {
-        final PreferenceManager mockPreferenceManager = mock(PreferenceManager.class);
-        final AuthManager mockAuthManager = mock(AuthManager.class);
-
-        when(mockPreferenceManager.getPreference(SystemPreferences.SYSTEM_SSH_DEFAULT_ROOT_USER_ENABLED))
-                .thenReturn(false);
-        when(mockPreferenceManager.getPreference(SystemPreferences.LAUNCH_UID_SEED))
-                .thenReturn(UID_SEED);
-        when(mockPreferenceManager.getPreference(SystemPreferences.LAUNCH_EXTERNAL_UID_ENABLE))
-                .thenReturn(externalEnabled);
-        when(mockPreferenceManager.getPreference(SystemPreferences.LAUNCH_EXTERNAL_UID_FIELD_NAME))
-                .thenReturn(uidFieldName);
-        when(mockPreferenceManager.getPreference(SystemPreferences.LAUNCH_EXTERNAL_GID_FIELD_NAME))
-                .thenReturn(gidFieldName);
-        when(mockAuthManager.getCurrentUser()).thenReturn(user);
-
-        ReflectionTestUtils.setField(nfsProvider, "preferenceManager", mockPreferenceManager);
-        ReflectionTestUtils.setField(nfsProvider, "authManager", mockAuthManager);
-        ReflectionTestUtils.setField(externalUIDManager, "preferenceManager", mockPreferenceManager);
-        ReflectionTestUtils.setField(externalUIDManager, "metadataManager", mockMetadataManager);
-    }
-
-    private void createFileForChownTest() {
-        final NFSDataStorage dataStorage = new NFSDataStorage(0L, TEST_STORAGE_NAME, TEST_PATH + TEST_PREFIX);
-        dataStorage.setFileShareMountId(awsFileShareMount.getId());
-        nfsProvider.createStorage(dataStorage);
-        nfsProvider.createFile(dataStorage, TEST_FILE_NAME, "content".getBytes());
-    }
-
-    private void verifyChownCommand(final Long expectedUid, final Long expectedGid) {
-        final ArgumentCaptor<String> cmdCaptor = ArgumentCaptor.forClass(String.class);
-        verify(mockCmdExecutor).executeCommand(cmdCaptor.capture());
-        final List<String> commands = cmdCaptor.getAllValues();
-        final String chownCmd = commands.stream()
-                .filter(cmd -> cmd.contains("chown"))
-                .reduce((first, second) -> second)
-                .orElse(null);
-        Assertions.assertNotNull(chownCmd, "Expected chown command to be executed");
-        Assertions.assertTrue(chownCmd.contains(expectedUid + ":" + expectedGid),
-                "Expected uid " + expectedUid + " in command: " + chownCmd);
-    }
-
-    private void mockUserMetadata(final String key, final String value) {
-        final EntityVO userEntity = new EntityVO(TEST_USER_ID, AclClass.PIPELINE_USER);
-        final MetadataEntry entry = new MetadataEntry();
-        entry.setEntity(userEntity);
-        final Map<String, PipeConfValue> data = new HashMap<>();
-        data.put(key, new PipeConfValue("string", value));
-        entry.setData(data);
-        when(mockMetadataManager.listMetadataItemsByKey(eq(key), eq(Collections.singletonList(userEntity))))
-                .thenReturn(Collections.singletonList(entry));
-    }
-
-    private void mockEmptyUserMetadata(final String key) {
-        final EntityVO userEntity = new EntityVO(TEST_USER_ID, AclClass.PIPELINE_USER);
-        when(mockMetadataManager.listMetadataItemsByKey(eq(key), eq(Collections.singletonList(userEntity))))
-                .thenReturn(Collections.emptyList());
-    }
-
-    private void mockRoleMetadata(final String value) {
-        final EntityVO roleEntity = new EntityVO(ROLE_ID, AclClass.ROLE);
-        final MetadataEntry entry = new MetadataEntry();
-        entry.setEntity(roleEntity);
-        final Map<String, PipeConfValue> data = new HashMap<>();
-        data.put(NFSStorageProviderTest.UID_FIELD, new PipeConfValue("string", value));
-        entry.setData(data);
-        when(mockMetadataManager.listMetadataItemsByKey(eq(NFSStorageProviderTest.UID_FIELD),
-                eq(Collections.singletonList(roleEntity)))).thenReturn(Collections.singletonList(entry));
-    }
-
->>>>>>> theirs
     private List<CloudRegionHelper> helpers() {
         AzureRegionHelper azure = mock(AzureRegionHelper.class);
         when(azure.getProvider()).thenReturn(CloudProvider.AZURE);

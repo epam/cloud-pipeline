@@ -18,14 +18,6 @@ package com.epam.pipeline.dao.metadata;
 
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dao.DaoHelper;
-<<<<<<< ours
-import com.epam.pipeline.entity.metadata.FireCloudClass;
-||||||| base
-import com.epam.pipeline.entity.metadata.Facet;
-import com.epam.pipeline.entity.metadata.FireCloudClass;
-=======
-import com.epam.pipeline.entity.metadata.Facet;
->>>>>>> theirs
 import com.epam.pipeline.entity.metadata.LogicalSearchOperator;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataClassDescription;
@@ -573,7 +565,6 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         Assert.notNull(deleteMetadataEntityItemQuery, "Required query deleteMetadataEntityItemQuery is not set");
         Assert.notNull(recursiveFilterQuery, "Required query recursiveFilterQuery is not set");
         Assert.notNull(baseFilterQuery, "Required query baseFilterQuery is not set");
-        Assert.notNull(baseFacetQuery, "Required query baseFacetQuery is not set");
         Assert.notNull(searchClauseQuery, "Required query searchClauseQuery is not set");
         Assert.notNull(recursiveFilterCountQuery, "Required query recursiveFilterCountQuery is not set");
         Assert.notNull(baseFilterCountQuery, "Required query baseFilterCountQuery is not set");
@@ -643,21 +634,6 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         this.baseFilterQuery = baseFilterQuery;
     }
 
-<<<<<<< ours
-    @Required
-||||||| base
-    @Required
-    public void setBaseFacetQuery(String baseFacetQuery) {
-        this.baseFacetQuery = baseFacetQuery;
-    }
-
-    @Required
-=======
-    public void setBaseFacetQuery(String baseFacetQuery) {
-        this.baseFacetQuery = baseFacetQuery;
-    }
-
->>>>>>> theirs
     public void setSearchClauseQuery(String searchClauseQuery) {
         this.searchClauseQuery = searchClauseQuery;
     }

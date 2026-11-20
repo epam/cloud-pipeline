@@ -112,32 +112,26 @@ public class NatGatewayDao extends NamedParameterJdbcDaoSupport {
             .build();
     }
 
-    @Required
     public void setRoutingRuleSequence(final String routingRuleSequence) {
         this.routingRuleSequence = routingRuleSequence;
     }
 
-    @Required
     public void setCreateRouteQuery(final String createRouteQuery) {
         this.createRouteQuery = createRouteQuery;
     }
 
-    @Required
     public void setLoadAllQueuedRoutesUpdateQuery(final String loadAllQueuedRoutesUpdateQuery) {
         this.loadAllQueuedRoutesUpdateQuery = loadAllQueuedRoutesUpdateQuery;
     }
 
-    @Required
     public void setUpdateRouteQuery(final String updateRouteQuery) {
         this.updateRouteQuery = updateRouteQuery;
     }
 
-    @Required
     public void setDeleteRouteQuery(final String deleteRouteQuery) {
         this.deleteRouteQuery = deleteRouteQuery;
     }
 
-    @Required
     public void setLoadSimilarRouteQuery(final String loadSimilarRouteQuery) {
         this.loadSimilarRouteQuery = loadSimilarRouteQuery;
     }
@@ -207,62 +201,4 @@ public class NatGatewayDao extends NamedParameterJdbcDaoSupport {
                 .build();
         }
     }
-<<<<<<< ours
-||||||| base
-
-    @Required
-    public void setRoutingRuleSequence(final String routingRuleSequence) {
-        this.routingRuleSequence = routingRuleSequence;
-    }
-
-    @Required
-    public void setCreateRouteQuery(final String createRouteQuery) {
-        this.createRouteQuery = createRouteQuery;
-    }
-
-    @Required
-    public void setLoadAllQueuedRoutesUpdateQuery(final String loadAllQueuedRoutesUpdateQuery) {
-        this.loadAllQueuedRoutesUpdateQuery = loadAllQueuedRoutesUpdateQuery;
-    }
-
-    @Required
-    public void setUpdateRouteQuery(final String updateRouteQuery) {
-        this.updateRouteQuery = updateRouteQuery;
-    }
-
-    @Required
-    public void setDeleteRouteQuery(final String deleteRouteQuery) {
-        this.deleteRouteQuery = deleteRouteQuery;
-    }
-
-    @Required
-    public void setLoadSimilarRouteQuery(final String loadSimilarRouteQuery) {
-        this.loadSimilarRouteQuery = loadSimilarRouteQuery;
-    }
-=======
-
-    public void setRoutingRuleSequence(final String routingRuleSequence) {
-        this.routingRuleSequence = routingRuleSequence;
-    }
-
-    public void setCreateRouteQuery(final String createRouteQuery) {
-        this.createRouteQuery = createRouteQuery;
-    }
-
-    public void setLoadAllQueuedRoutesUpdateQuery(final String loadAllQueuedRoutesUpdateQuery) {
-        this.loadAllQueuedRoutesUpdateQuery = loadAllQueuedRoutesUpdateQuery;
-    }
-
-    public void setUpdateRouteQuery(final String updateRouteQuery) {
-        this.updateRouteQuery = updateRouteQuery;
-    }
-
-    public void setDeleteRouteQuery(final String deleteRouteQuery) {
-        this.deleteRouteQuery = deleteRouteQuery;
-    }
-
-    public void setLoadSimilarRouteQuery(final String loadSimilarRouteQuery) {
-        this.loadSimilarRouteQuery = loadSimilarRouteQuery;
-    }
->>>>>>> theirs
 }

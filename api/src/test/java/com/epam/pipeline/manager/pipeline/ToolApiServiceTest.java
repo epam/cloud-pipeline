@@ -29,24 +29,10 @@ import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
-<<<<<<< ours
 import com.epam.pipeline.util.TestUtils;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mock;
-||||||| base
-import com.epam.pipeline.test.acl.AbstractAclTest;
-import com.epam.pipeline.test.creator.docker.DockerCreatorUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Test;
-=======
-import com.epam.pipeline.test.acl.AbstractAclTest;
-import com.epam.pipeline.test.creator.docker.DockerCreatorUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
->>>>>>> theirs
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -91,7 +77,7 @@ public class ToolApiServiceTest extends AbstractManagerTest {
 
     private AclTestDao.AclSid testUserSid;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         TestUtils.configureDockerClientMock(dockerClient, clientFactory);
 

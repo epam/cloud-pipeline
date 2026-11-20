@@ -16,19 +16,7 @@
 
 package com.epam.pipeline.manager.issue;
 
-<<<<<<< ours
-import static org.mockito.Matchers.eq;
-||||||| base
-import static com.epam.pipeline.util.CustomAssertions.assertThrows;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
-=======
-import static com.epam.pipeline.util.CustomAssertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doReturn;
->>>>>>> theirs
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 

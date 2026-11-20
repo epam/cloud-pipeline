@@ -109,18 +109,6 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void createDataStorage(AbstractDataStorage dataStorage) {
-<<<<<<< ours
-||||||| base
-        createDataStorageRoot(dataStorage.getRoot());
-        final DataStorageRoot dataStorageRoot = loadDataStorageRoot(dataStorage.getRoot())
-                .orElseThrow(() -> new RuntimeException("Data storage root not found"));
-        dataStorage.setRootId(dataStorageRoot.getId());
-=======
-        createDataStorageRoot(dataStorage.getRoot());
-        final DataStorageRoot dataStorageRoot = loadDataStorageRoot(dataStorage.getRoot())
-                .orElseThrow(() -> new RuntimeException("Data storage root not found"));
-        dataStorage.setRootId(dataStorageRoot.id());
->>>>>>> theirs
         dataStorage.setId(createDataStorageId());
         if (dataStorage.getCreatedDate() == null) {
             dataStorage.setCreatedDate(DateUtils.now());
@@ -335,24 +323,6 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
 
     }
 
-<<<<<<< ours
-    @Required
-||||||| base
-    public List<AbstractDataStorage> loadDataStoragesByMountId(final Long fsMountId) {
-        final MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue(DataStorageParameters.FILE_SHARE_MOUNT_ID.name(), fsMountId);
-        return getNamedParameterJdbcTemplate().query(loadDataStoragesByMountIdQuery,
-                params, DataStorageParameters.getRowMapper());
-    }
-
-    @Required
-=======
-    public List<AbstractDataStorage> loadDataStoragesByMountId(final Long fsMountId) {
-        final MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue(DataStorageParameters.FILE_SHARE_MOUNT_ID.name(), fsMountId);
-        return getNamedParameterJdbcTemplate().query(loadDataStoragesByMountIdQuery,
-                params, DataStorageParameters.getRowMapper());
-    }
     @PostConstruct
     public void checkQueryDependencies() {
         Assert.notNull(loadDataStoragesByNFSRootPath, "Required query loadDataStoragesByNFSRootPath is not set");
@@ -381,32 +351,12 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         Assert.notNull(loadToolsToMountsForAllStoragesQuery,
                 "Required query loadToolsToMountsForAllStoragesQuery is not set");
         Assert.notNull(loadToolsToMountByIdsQuery, "Required query loadToolsToMountByIdsQuery is not set");
-        Assert.notNull(loadDataStoragesByRootIdsQuery, "Required query loadDataStoragesByRootIdsQuery is not set");
-        Assert.notNull(loadDataStoragesByMountIdQuery, "Required query loadDataStoragesByMountIdQuery is not set");
-        Assert.notNull(loadDataStoragesByPathPrefixQuery,
-                "Required query loadDataStoragesByPathPrefixQuery is not set");
     }
 
-
->>>>>>> theirs
     public void setLoadDataStoragesByNFSRootPath(String loadDataStoragesByNFSRootPath) {
         this.loadDataStoragesByNFSRootPath = loadDataStoragesByNFSRootPath;
     }
-<<<<<<< ours
-    @Required
-||||||| base
 
-    @Required
-    public void setLoadDataStoragesByPathPrefixQuery(String loadDataStoragesByPathPrefixQuery) {
-        this.loadDataStoragesByPathPrefixQuery = loadDataStoragesByPathPrefixQuery;
-    }
-    @Required
-=======
-
-    public void setLoadDataStoragesByPathPrefixQuery(String loadDataStoragesByPathPrefixQuery) {
-        this.loadDataStoragesByPathPrefixQuery = loadDataStoragesByPathPrefixQuery;
-    }
->>>>>>> theirs
     public void setDataStorageSequence(String dataStorageSequence) {
         this.dataStorageSequence = dataStorageSequence;
     }

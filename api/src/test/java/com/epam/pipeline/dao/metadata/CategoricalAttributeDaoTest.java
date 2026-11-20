@@ -19,22 +19,16 @@ package com.epam.pipeline.dao.metadata;
 import static com.epam.pipeline.util.CategoricalAttributeTestUtils.assertValuesPresentedForKeyInMap;
 import static com.epam.pipeline.util.CategoricalAttributeTestUtils.convertToMap;
 import static com.epam.pipeline.util.CategoricalAttributeTestUtils.fromStrings;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
-<<<<<<< ours
 import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
-import org.junit.Test;
-||||||| base
-import org.junit.Assert;
-import org.junit.Test;
-=======
 import org.junit.jupiter.api.Test;
->>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,21 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-<<<<<<< ours
-||||||| base
-import static com.epam.pipeline.util.CategoricalAttributeTestUtils.assertValuesPresentedForKeyInMap;
-import static com.epam.pipeline.util.CategoricalAttributeTestUtils.convertToMap;
-import static com.epam.pipeline.util.CategoricalAttributeTestUtils.fromStrings;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-=======
-import static com.epam.pipeline.util.CategoricalAttributeTestUtils.assertValuesPresentedForKeyInMap;
-import static com.epam.pipeline.util.CategoricalAttributeTestUtils.convertToMap;
-import static com.epam.pipeline.util.CategoricalAttributeTestUtils.fromStrings;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.jupiter.api.Assertions.*;
->>>>>>> theirs
 
 public class CategoricalAttributeDaoTest extends AbstractSpringTest {
 
@@ -96,48 +75,16 @@ public class CategoricalAttributeDaoTest extends AbstractSpringTest {
                                                         Arrays.asList(ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2))));
         values.add(new CategoricalAttribute(ATTRIBUTE_KEY_2,
                                             fromStrings(ATTRIBUTE_KEY_2,
-<<<<<<< ours
                                                         Arrays.asList(ATTRIBUTE_VALUE_2, ATTRIBUTE_VALUE_3))));
-        Assert.assertTrue(categoricalAttributeDao.insertAttributesValues(values));
-||||||| base
-                                                        Arrays.asList(ATTRIBUTE_VALUE_2, ATTRIBUTE_VALUE_3)),
-                                            OWNER));
-        values.forEach(categoricalAttributeDao::createAttribute);
-        Assert.assertTrue(categoricalAttributeDao.insertAttributesValues(values));
-=======
-                                                        Arrays.asList(ATTRIBUTE_VALUE_2, ATTRIBUTE_VALUE_3)),
-                                            OWNER));
-        values.forEach(categoricalAttributeDao::createAttribute);
         assertTrue(categoricalAttributeDao.insertAttributesValues(values));
->>>>>>> theirs
         values.add(new CategoricalAttribute(ATTRIBUTE_KEY_1,
                                             fromStrings(ATTRIBUTE_KEY_1,
-<<<<<<< ours
                                                         Collections.singletonList(ATTRIBUTE_VALUE_1))));
-        Assert.assertFalse(categoricalAttributeDao.insertAttributesValues(values));
-||||||| base
-                                                        Collections.singletonList(ATTRIBUTE_VALUE_1)),
-                                            OWNER));
-        Assert.assertTrue(categoricalAttributeDao.insertAttributesValues(values));
-=======
-                                                        Collections.singletonList(ATTRIBUTE_VALUE_1)),
-                                            OWNER));
-        assertTrue(categoricalAttributeDao.insertAttributesValues(values));
->>>>>>> theirs
+        assertFalse(categoricalAttributeDao.insertAttributesValues(values));
         values.add(new CategoricalAttribute(ATTRIBUTE_KEY_1,
                                             fromStrings(ATTRIBUTE_KEY_1,
-<<<<<<< ours
                                                         Collections.singletonList(ATTRIBUTE_VALUE_3))));
-        Assert.assertTrue(categoricalAttributeDao.insertAttributesValues(values));
-||||||| base
-                                                        Collections.singletonList(ATTRIBUTE_VALUE_3)),
-                                            OWNER));
-        Assert.assertTrue(categoricalAttributeDao.insertAttributesValues(values));
-=======
-                                                        Collections.singletonList(ATTRIBUTE_VALUE_3)),
-                                            OWNER));
         assertTrue(categoricalAttributeDao.insertAttributesValues(values));
->>>>>>> theirs
     }
 
 
@@ -172,22 +119,12 @@ public class CategoricalAttributeDaoTest extends AbstractSpringTest {
                                                                   Collections.singletonList(ATTRIBUTE_VALUE_3))));
         categoricalAttributeDao.insertAttributesValues(values);
         final CategoricalAttribute attributeWithValues = categoricalAttributeDao.loadAllValuesForKey(ATTRIBUTE_KEY_1);
-<<<<<<< ours
-        Assert.assertNotNull(attributeWithValues);
-        Assert.assertEquals(ATTRIBUTE_KEY_1, attributeWithValues.getKey());
+        assertNotNull(attributeWithValues);
+        assertEquals(ATTRIBUTE_KEY_1, attributeWithValues.getKey());
         final List<CategoricalAttributeValue> attributeValues = Stream.of(ATTRIBUTE_VALUE_1, ATTRIBUTE_VALUE_2)
             .map(v -> new CategoricalAttributeValue(attributeWithValues.getKey(), v))
             .collect(Collectors.toList());
-        Assert.assertThat(attributeWithValues.getValues(), CoreMatchers.is(attributeValues));
-||||||| base
-        Assert.assertNotNull(attributeWithValues);
-        Assert.assertEquals(ATTRIBUTE_KEY_1, attributeWithValues.getName());
-        Assert.assertThat(attributeWithValues.getValues(), containsInAnyOrder(key1Values.toArray()));
-=======
-        assertNotNull(attributeWithValues);
-        assertEquals(ATTRIBUTE_KEY_1, attributeWithValues.getName());
-        assertThat(attributeWithValues.getValues(), containsInAnyOrder(key1Values.toArray()));
->>>>>>> theirs
+        assertThat(attributeWithValues.getValues(), CoreMatchers.is(attributeValues));
     }
 
     @Test

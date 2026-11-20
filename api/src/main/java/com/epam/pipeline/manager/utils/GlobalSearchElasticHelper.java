@@ -2,14 +2,7 @@ package com.epam.pipeline.manager.utils;
 
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-<<<<<<< ours
 import lombok.RequiredArgsConstructor;
-||||||| base
-import com.epam.pipeline.manager.utils.elasticsearch.ELKVersionedRestHighLevelClient;
-import lombok.RequiredArgsConstructor;
-=======
-import com.epam.pipeline.manager.utils.elasticsearch.ELKVersionedRestHighLevelClient;
->>>>>>> theirs
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
@@ -22,33 +15,13 @@ import java.util.Objects;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class GlobalSearchElasticHelper {
 
     private final PreferenceManager preferenceManager;
-<<<<<<< ours
 
     public RestHighLevelClient buildClient() {
         return new RestHighLevelClient(buildLowLevelClientBuilder());
-||||||| base
-
-    @Value("${elasticsearch.client.auth:#{null}}")
-    private final String elasticsearchAuth;
-
-    public ELKVersionedRestHighLevelClient buildClient() {
-        return new ELKVersionedRestHighLevelClient(buildLowLevelClientBuilder());
-=======
-    private final String elasticsearchAuth;
-
-    public GlobalSearchElasticHelper(final PreferenceManager preferenceManager,
-                                     @Value("${elasticsearch.client.auth:#{null}}")
-                                     final String elasticsearchAuth) {
-        this.preferenceManager = preferenceManager;
-        this.elasticsearchAuth = elasticsearchAuth;
-    }
-
-    public ELKVersionedRestHighLevelClient buildClient() {
-        return new ELKVersionedRestHighLevelClient(buildLowLevelClientBuilder());
->>>>>>> theirs
     }
 
     public RestHighLevelClient buildBillingClient() {

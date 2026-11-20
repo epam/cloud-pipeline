@@ -82,77 +82,16 @@ public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
         getJdbcTemplate().update(deleteDtsRegistryQuery, registryId);
     }
 
-<<<<<<< ours
-    @Required
-||||||| base
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void upsertPreferences(final Long registryId, final Map<String, String> preferences) {
-        getNamedParameterJdbcTemplate().update(upsertDtsRegistryPreferencesQuery,
-                                               DtsRegistryParameters.getPreferencesParameters(registryId, preferences));
-    }
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void deletePreferences(final Long registryId, final List<String> preferencesKeys) {
-        getNamedParameterJdbcTemplate()
-            .update(buildDeletePreferencesQuery(preferencesKeys),
-                    DtsRegistryParameters.getParameters(registryId));
-    }
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void updateHeartbeat(final Long registryId, final LocalDateTime heartbeat, final DtsStatus status) {
-        getNamedParameterJdbcTemplate()
-                .update(updateDtsRegistryHeartbeatQuery,
-                        DtsRegistryParameters.getHeartbeatParameters(registryId, heartbeat, status));
-    }
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void updateStatus(final Long registryId, final DtsStatus status) {
-        getNamedParameterJdbcTemplate()
-                .update(updateDtsRegistryStatusQuery,
-                        DtsRegistryParameters.getStatusParameters(registryId, status));
-    }
-
-    @Required
-=======
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void upsertPreferences(final Long registryId, final Map<String, String> preferences) {
-        getNamedParameterJdbcTemplate().update(upsertDtsRegistryPreferencesQuery,
-                                               DtsRegistryParameters.getPreferencesParameters(registryId, preferences));
-    }
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void deletePreferences(final Long registryId, final List<String> preferencesKeys) {
-        getNamedParameterJdbcTemplate()
-            .update(buildDeletePreferencesQuery(preferencesKeys),
-                    DtsRegistryParameters.getParameters(registryId));
-    }
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void updateHeartbeat(final Long registryId, final LocalDateTime heartbeat, final DtsStatus status) {
-        getNamedParameterJdbcTemplate()
-                .update(updateDtsRegistryHeartbeatQuery,
-                        DtsRegistryParameters.getHeartbeatParameters(registryId, heartbeat, status));
-    }
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void updateStatus(final Long registryId, final DtsStatus status) {
-        getNamedParameterJdbcTemplate()
-                .update(updateDtsRegistryStatusQuery,
-                        DtsRegistryParameters.getStatusParameters(registryId, status));
-    }
     @PostConstruct
     public void checkQueryDependencies() {
         Assert.notNull(dtsRegistrySequence, "Required query dtsRegistrySequence is not set");
         Assert.notNull(loadAllDtsRegistriesQuery, "Required query loadAllDtsRegistriesQuery is not set");
-        Assert.notNull(loadDtsRegistryByIdQuery, "Required query loadDtsRegistryByIdQuery is not set");
-        Assert.notNull(loadDtsRegistryByNameQuery, "Required query loadDtsRegistryByNameQuery is not set");
+        Assert.notNull(loadDtsRegistryQuery, "Required query loadDtsRegistryQuery is not set");
         Assert.notNull(createDtsRegistryQuery, "Required query createDtsRegistryQuery is not set");
         Assert.notNull(updateDtsRegistryQuery, "Required query updateDtsRegistryQuery is not set");
         Assert.notNull(deleteDtsRegistryQuery, "Required query deleteDtsRegistryQuery is not set");
     }
 
-
->>>>>>> theirs
     public void setDtsRegistrySequence(String dtsRegistrySequence) {
         this.dtsRegistrySequence = dtsRegistrySequence;
     }
@@ -161,27 +100,8 @@ public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
         this.loadAllDtsRegistriesQuery = loadAllDtsRegistriesQuery;
     }
 
-<<<<<<< ours
-    @Required
     public void setLoadDtsRegistryQuery(String loadDtsRegistryQuery) {
         this.loadDtsRegistryQuery = loadDtsRegistryQuery;
-||||||| base
-    @Required
-    public void setLoadDtsRegistryByIdQuery(String loadDtsRegistryByIdQuery) {
-        this.loadDtsRegistryByIdQuery = loadDtsRegistryByIdQuery;
-    }
-
-    @Required
-    public void setLoadDtsRegistryByNameQuery(String loadDtsRegistryByNameQuery) {
-        this.loadDtsRegistryByNameQuery = loadDtsRegistryByNameQuery;
-=======
-    public void setLoadDtsRegistryByIdQuery(String loadDtsRegistryByIdQuery) {
-        this.loadDtsRegistryByIdQuery = loadDtsRegistryByIdQuery;
-    }
-
-    public void setLoadDtsRegistryByNameQuery(String loadDtsRegistryByNameQuery) {
-        this.loadDtsRegistryByNameQuery = loadDtsRegistryByNameQuery;
->>>>>>> theirs
     }
 
     public void setCreateDtsRegistryQuery(String createDtsRegistryQuery) {
@@ -196,46 +116,6 @@ public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
         this.deleteDtsRegistryQuery = deleteDtsRegistryQuery;
     }
 
-<<<<<<< ours
-||||||| base
-    @Required
-    public void setUpsertDtsRegistryPreferencesQuery(final String upsertDtsRegistryPreferencesQuery) {
-        this.upsertDtsRegistryPreferencesQuery = upsertDtsRegistryPreferencesQuery;
-    }
-
-    @Required
-    public void setDeleteDtsRegistryPreferencesQuery(final String deleteDtsRegistryPreferencesQuery) {
-        this.deleteDtsRegistryPreferencesQuery = deleteDtsRegistryPreferencesQuery;
-    }
-
-    @Required
-    public void setUpdateDtsRegistryHeartbeatQuery(final String updateDtsRegistryHeartbeatQuery) {
-        this.updateDtsRegistryHeartbeatQuery = updateDtsRegistryHeartbeatQuery;
-    }
-
-    @Required
-    public void setUpdateDtsRegistryStatusQuery(final String updateDtsRegistryStatusQuery) {
-        this.updateDtsRegistryStatusQuery = updateDtsRegistryStatusQuery;
-    }
-
-=======
-    public void setUpsertDtsRegistryPreferencesQuery(final String upsertDtsRegistryPreferencesQuery) {
-        this.upsertDtsRegistryPreferencesQuery = upsertDtsRegistryPreferencesQuery;
-    }
-
-    public void setDeleteDtsRegistryPreferencesQuery(final String deleteDtsRegistryPreferencesQuery) {
-        this.deleteDtsRegistryPreferencesQuery = deleteDtsRegistryPreferencesQuery;
-    }
-
-    public void setUpdateDtsRegistryHeartbeatQuery(final String updateDtsRegistryHeartbeatQuery) {
-        this.updateDtsRegistryHeartbeatQuery = updateDtsRegistryHeartbeatQuery;
-    }
-
-    public void setUpdateDtsRegistryStatusQuery(final String updateDtsRegistryStatusQuery) {
-        this.updateDtsRegistryStatusQuery = updateDtsRegistryStatusQuery;
-    }
-
->>>>>>> theirs
     enum DtsRegistryParameters {
         ID,
         NAME,

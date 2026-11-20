@@ -282,7 +282,6 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
     }
     @PostConstruct
     public void checkQueryDependencies() {
-        Assert.notNull(createAttributeQuery, "Required query createAttributeQuery is not set");
         Assert.notNull(insertAttributeValueQuery, "Required query insertAttributeValueQuery is not set");
         Assert.notNull(loadAllAttributesValuesQuery, "Required query loadAllAttributesValuesQuery is not set");
         Assert.notNull(loadAllAttributesValuesWithoutLinksQuery,
@@ -293,28 +292,8 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
         Assert.notNull(deleteAttributeValueQuery, "Required query deleteAttributeValueQuery is not set");
         Assert.notNull(insertAttributeValueLinkQuery, "Required query insertAttributeValueLinkQuery is not set");
         Assert.notNull(deleteAttributeValueLinkQuery, "Required query deleteAttributeValueLinkQuery is not set");
-        Assert.notNull(updateAttributeQuery, "Required query updateAttributeQuery is not set");
-        Assert.notNull(loadAttributeValuesByAttributeIdQuery,
-                "Required query loadAttributeValuesByAttributeIdQuery is not set");
-        Assert.notNull(categoricalAttributeSequence, "Required query categoricalAttributeSequence is not set");
     }
 
-
-<<<<<<< ours
-    @Required
-||||||| base
-    @Required
-    public void setCreateAttributeQuery(String createAttributeQuery) {
-        this.createAttributeQuery = createAttributeQuery;
-    }
-
-    @Required
-=======
-    public void setCreateAttributeQuery(String createAttributeQuery) {
-        this.createAttributeQuery = createAttributeQuery;
-    }
-
->>>>>>> theirs
     public void setInsertAttributeValueQuery(String insertAttributeValueQuery) {
         this.insertAttributeValueQuery = insertAttributeValueQuery;
     }
@@ -349,35 +328,4 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
     public void setDeleteAttributeValueLinkQuery(String deleteAttributeValueLinkQuery) {
         this.deleteAttributeValueLinkQuery = deleteAttributeValueLinkQuery;
     }
-<<<<<<< ours
-||||||| base
-
-    @Required
-    public void setUpdateAttributeQuery(String updateAttributeQuery) {
-        this.updateAttributeQuery = updateAttributeQuery;
-    }
-
-    @Required
-    public void setLoadAttributeValuesByAttributeIdQuery(String loadAttributeValuesByAttributeIdQuery) {
-        this.loadAttributeValuesByAttributeIdQuery = loadAttributeValuesByAttributeIdQuery;
-    }
-
-    @Required
-    public void setCategoricalAttributeSequence(String categoricalAttributeSequence) {
-        this.categoricalAttributeSequence = categoricalAttributeSequence;
-    }
-=======
-
-    public void setUpdateAttributeQuery(String updateAttributeQuery) {
-        this.updateAttributeQuery = updateAttributeQuery;
-    }
-
-    public void setLoadAttributeValuesByAttributeIdQuery(String loadAttributeValuesByAttributeIdQuery) {
-        this.loadAttributeValuesByAttributeIdQuery = loadAttributeValuesByAttributeIdQuery;
-    }
-
-    public void setCategoricalAttributeSequence(String categoricalAttributeSequence) {
-        this.categoricalAttributeSequence = categoricalAttributeSequence;
-    }
->>>>>>> theirs
 }

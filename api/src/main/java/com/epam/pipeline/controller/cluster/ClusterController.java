@@ -39,23 +39,11 @@ import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramB
 import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramType;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
-<<<<<<< ours
 import com.epam.pipeline.manager.cluster.ClusterApiService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-||||||| base
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-=======
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
->>>>>>> theirs
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -313,35 +301,6 @@ public class ClusterController extends AbstractRestController {
         return Result.success(clusterApiService.loadNodeDisks(name));
     }
 
-<<<<<<< ours
-||||||| base
-    @PostMapping(value = "/cluster/node/{name}/disk/attach")
-    @ApiOperation(
-            value = "Creates and attaches a new disk to the node's cloud instance.",
-            notes = "Creates and attaches a new disk by node name (on AWS, the EC2 instance id). "
-                    + "Disk size is specified in GB. Intended for Capacity Blocks and other cases "
-                    + "where the instance is not tagged by pipeline run id.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<NodeInstance> attachDiskToNode(@PathVariable(value = NAME) final String name,
-                                                 @RequestBody final DiskAttachRequest request) {
-        return Result.success(clusterApiService.attachDiskToNode(name, request));
-    }
-
-=======
-    @PostMapping(value = "/cluster/node/{name}/disk/attach")
-    @Operation(
-            summary = "Creates and attaches a new disk to the node's cloud instance.",
-            description = "Creates and attaches a new disk by node name (on AWS, the EC2 instance id). "
-                    + "Disk size is specified in GB. Intended for Capacity Blocks and other cases "
-                    + "where the instance is not tagged by pipeline run id.")
-    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
-    public Result<NodeInstance> attachDiskToNode(@PathVariable(value = NAME) final String name,
-                                                 @RequestBody final DiskAttachRequest request) {
-        return Result.success(clusterApiService.attachDiskToNode(name, request));
-    }
-
->>>>>>> theirs
     @PostMapping("/cluster/dnsrecord")
     @Operation(
             summary = "Creates dns record.",

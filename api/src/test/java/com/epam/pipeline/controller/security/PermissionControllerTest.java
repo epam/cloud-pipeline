@@ -23,14 +23,8 @@ import com.epam.pipeline.entity.security.acl.AclSid;
 import com.epam.pipeline.entity.security.acl.EntityPermission;
 import com.epam.pipeline.manager.security.AclPermissionApiService;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-<<<<<<< ours
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.junit.Test;
-||||||| base
-import org.junit.Test;
-=======
 import org.junit.jupiter.api.Test;
->>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;

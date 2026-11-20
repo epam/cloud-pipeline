@@ -84,20 +84,8 @@ public class AclSecurityConfiguration {
 
     @Bean
     public RoleHierarchy roleHierarchy() {
-<<<<<<< ours
-        RoleHierarchyImpl roleHierarchy = new RoleHierarchyImpl();
-        roleHierarchy.setHierarchy(DefaultRoles.ROLE_ADMIN.getName() +  " > " +
-                DefaultRoles.ROLE_USER.getName());
-        return roleHierarchy;
-||||||| base
-        RoleHierarchyImpl roleHierarchy = new RoleHierarchyImpl();
-        roleHierarchy.setHierarchy(DefaultRoles.ROLE_ADMIN.getName() + " > " +
-                DefaultRoles.ROLE_USER.getName());
-        return roleHierarchy;
-=======
         return RoleHierarchyImpl.fromHierarchy(DefaultRoles.ROLE_ADMIN.getName()
                 + " > " + DefaultRoles.ROLE_USER.getName());
->>>>>>> theirs
     }
 
     @Bean

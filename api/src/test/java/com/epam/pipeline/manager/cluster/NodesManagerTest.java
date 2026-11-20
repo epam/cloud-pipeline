@@ -47,15 +47,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-<<<<<<< ours
-import static org.mockito.Matchers.any;
-||||||| base
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-=======
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
->>>>>>> theirs
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.quality.Strictness.LENIENT;
 

@@ -32,23 +32,10 @@ import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.autoscale.filter.PoolFilterHandler;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
-<<<<<<< ours
-import org.junit.Before;
-import org.junit.Test;
-||||||| base
-import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.preference.SystemPreferences;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mockito;
-=======
 import com.epam.pipeline.manager.pipeline.RunStatusManager;
-import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.preference.SystemPreferences;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
->>>>>>> theirs
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -78,16 +65,10 @@ import static org.mockito.Mockito.verify;
 
 public class ReassignHandlerTest {
 
-<<<<<<< ours
-||||||| base
-    private static final String WINDOWS = "windows";
-=======
-    private static final String WINDOWS = "windows";
     private static final String POOL_NODE_ID = "p-12345";
     private static final String PLAIN_NODE_ID = "1";
     private static final String ANOTHER_OWNER = "ANOTHER_USER";
     private static final String CP_CAP_POOL_ID = "CP_CAP_POOL_ID";
->>>>>>> theirs
     private static final String CP_CREATE_NEW_NODE = "CP_CREATE_NEW_NODE";
     private static final long FREE_NODE_RUN_ID = 2L;
     private static final String FREE_NODE = String.valueOf(FREE_NODE_RUN_ID);
@@ -99,14 +80,8 @@ public class ReassignHandlerTest {
     private final PipelineRunManager pipelineRunManager = mock(PipelineRunManager.class);
     private final MetadataManager metadataManager = mock(MetadataManager.class);
     private final IAMProfileVerifier iamProfileVerifier = mock(IAMProfileVerifier.class);
-<<<<<<< ours
-||||||| base
-    private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
-=======
     private final RunStatusManager runStatusManager = mock(RunStatusManager.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
-    private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
->>>>>>> theirs
     private final InstanceRequest requiredInstance = new InstanceRequest();
 
     private Set<String> scheduledRuns;
@@ -215,65 +190,6 @@ public class ReassignHandlerTest {
         verify(pipelineRunManager, times(1)).findRun(ID);
         verify(metadataManager).prepareCloudResourceTags(run);
         verify(cloudFacade).reassignPoolNode(eq(FREE_POOL_NODE), eq(ID), anyStringMap());
-    }
-
-<<<<<<< ours
-||||||| base
-    @Test
-    public void shouldAllowReassignOfRunWithoutReasonsToRefuseIt() {
-        assertThat(reassignHandler.isReassignAllowed(pipelineRun())).isTrue();
-        assertThat(reassignHandler.isReassignAllowed(getPipelineRun(ID))).isTrue();
-    }
-
-    @Test
-    public void shouldNotAllowReassignOfRunWithReasonsToRefuseIt() {
-        final PipelineRun windowsRun = pipelineRun();
-        windowsRun.setPlatform(WINDOWS);
-        final PipelineRun restrictedRun = pipelineRun();
-        doReturn(true).when(iamProfileVerifier).isImageRestricted(restrictedRun);
-
-        assertThat(reassignHandler.isReassignAllowed(windowsRun)).isFalse();
-        assertThat(reassignHandler.isReassignAllowed(
-                pipelineRun(new PipelineRunParameter(CP_CREATE_NEW_NODE, TRUE)))).isFalse();
-        assertThat(reassignHandler.isReassignAllowed(
-                pipelineRun(new PipelineRunParameter(CP_CAP_DEDICATED_INSTANCE, TRUE)))).isFalse();
-        assertThat(reassignHandler.isReassignAllowed(restrictedRun)).isFalse();
-    }
-
-    @Test
-    public void shouldNotAllowReassignOfAnyRunWhenReassignIsDisabled() {
-        doReturn(true).when(preferenceManager).getPreference(SystemPreferences.CLUSTER_DISABLE_REASSIGN);
-
-        assertThat(reassignHandler.isReassignAllowed(pipelineRun())).isFalse();
-    }
-
-=======
-    @Test
-    public void shouldAllowReassignOfRunWithoutReasonsToRefuseIt() {
-        assertThat(reassignHandler.isReassignAllowed(pipelineRun())).isTrue();
-        assertThat(reassignHandler.isReassignAllowed(getPipelineRun(ID))).isTrue();
-    }
-
-    @Test
-    public void shouldNotAllowReassignOfRunWithReasonsToRefuseIt() {
-        final PipelineRun windowsRun = pipelineRun();
-        windowsRun.setPlatform(WINDOWS);
-        final PipelineRun restrictedRun = pipelineRun();
-        doReturn(true).when(iamProfileVerifier).isImageRestricted(restrictedRun);
-
-        assertThat(reassignHandler.isReassignAllowed(windowsRun)).isFalse();
-        assertThat(reassignHandler.isReassignAllowed(
-                pipelineRun(new PipelineRunParameter(CP_CREATE_NEW_NODE, TRUE)))).isFalse();
-        assertThat(reassignHandler.isReassignAllowed(
-                pipelineRun(new PipelineRunParameter(CP_CAP_DEDICATED_INSTANCE, TRUE)))).isFalse();
-        assertThat(reassignHandler.isReassignAllowed(restrictedRun)).isFalse();
-    }
-
-    @Test
-    public void shouldNotAllowReassignOfAnyRunWhenReassignIsDisabled() {
-        doReturn(true).when(preferenceManager).getPreference(SystemPreferences.CLUSTER_DISABLE_REASSIGN);
-
-        assertThat(reassignHandler.isReassignAllowed(pipelineRun())).isFalse();
     }
 
     @Test
@@ -431,8 +347,9 @@ public class ReassignHandlerTest {
         final InstanceRequest request = new InstanceRequest();
         request.setInstance(new RunInstance());
 
-        final boolean result = reassignHandler.tryReassignNode(null, new HashSet<>(), new HashSet<>(),
-                String.valueOf(ID), ID, request, Collections.singletonList(PLAIN_NODE_ID));
+        final boolean result = reassignHandler(new ArrayList<>())
+                .tryReassignNode(null, new HashSet<>(), new HashSet<>(),
+                        String.valueOf(ID), ID, request, Collections.singletonList(PLAIN_NODE_ID));
 
         assertThat(result).isFalse();
         verify(cloudFacade, never()).reassignNode(anyLong(), anyLong(), any());
@@ -443,7 +360,7 @@ public class ReassignHandlerTest {
         final PipelineRun pipelineRun = getPipelineRun(ID);
         pipelineRun.setPipelineRunParameters(poolIdParameter(ID_2));
 
-        assertThat(reassignHandler.requiredPoolId(pipelineRun)).isEqualTo(Optional.of(ID_2));
+        assertThat(reassignHandler(new ArrayList<>()).requiredPoolId(pipelineRun)).isEqualTo(Optional.of(ID_2));
     }
 
     @Test
@@ -451,7 +368,7 @@ public class ReassignHandlerTest {
         final PipelineRun pipelineRun = getPipelineRun(ID);
         pipelineRun.setPipelineRunParameters(Collections.emptyList());
 
-        assertThat(reassignHandler.requiredPoolId(pipelineRun)).isEqualTo(Optional.empty());
+        assertThat(reassignHandler(new ArrayList<>()).requiredPoolId(pipelineRun)).isEqualTo(Optional.empty());
     }
 
     @Test
@@ -460,10 +377,9 @@ public class ReassignHandlerTest {
         pipelineRun.setPipelineRunParameters(Collections.singletonList(
                 new PipelineRunParameter(CP_CAP_POOL_ID, "not-a-number")));
 
-        assertThat(reassignHandler.requiredPoolId(pipelineRun)).isEqualTo(Optional.empty());
+        assertThat(reassignHandler(new ArrayList<>()).requiredPoolId(pipelineRun)).isEqualTo(Optional.empty());
     }
 
->>>>>>> theirs
     private boolean tryReassign(final String freeNode) {
         return reassignHandler(new ArrayList<>())
                 .tryReassignNode(null, scheduledRuns, reassignedNodes, String.valueOf(ID), ID,
@@ -472,13 +388,7 @@ public class ReassignHandlerTest {
 
     private ReassignHandler reassignHandler(final List<PoolFilterHandler> filterHandlers) {
         return new ReassignHandler(autoscalerService, cloudFacade, pipelineRunManager, filterHandlers,
-<<<<<<< ours
-                metadataManager, iamProfileVerifier);
-||||||| base
-                metadataManager, iamProfileVerifier, preferenceManager);
-=======
-                metadataManager, iamProfileVerifier, runStatusManager, messageHelper, preferenceManager);
->>>>>>> theirs
+                metadataManager, iamProfileVerifier, runStatusManager, messageHelper);
     }
 
     private void mockRun(final PipelineRun run) {
@@ -503,25 +413,6 @@ public class ReassignHandlerTest {
         return pool;
     }
 
-<<<<<<< ours
-||||||| base
-    private RunningInstance getRunningWindowsInstance() {
-        final RunningInstance runningInstance = new RunningInstance();
-        final RunInstance runInstance = new RunInstance();
-        runInstance.setNodePlatform(WINDOWS);
-        runningInstance.setInstance(runInstance);
-        return runningInstance;
-    }
-
-    private PipelineRun pipelineRunWithCreateNewNodeParameter() {
-        final PipelineRunParameter pipelineRunParameter =
-                new PipelineRunParameter(CP_CREATE_NEW_NODE, TRUE);
-        final PipelineRun pipelineRun = getPipelineRun(ID);
-        pipelineRun.setPipelineRunParameters(Collections.singletonList(pipelineRunParameter));
-        return pipelineRun;
-    }
-
-=======
     private List<PipelineRunParameter> poolIdParameter(final Long poolId) {
         return Collections.singletonList(new PipelineRunParameter(CP_CAP_POOL_ID, String.valueOf(poolId)));
     }
@@ -545,7 +436,7 @@ public class ReassignHandlerTest {
         doReturn(requirementsMatch).when(autoscalerService).requirementsMatch(any(), any());
         final InstanceRequest request = new InstanceRequest();
         request.setInstance(new RunInstance());
-        return reassignHandler.tryReassignNode(null, new HashSet<>(), new HashSet<>(),
+        return reassignHandler(new ArrayList<>()).tryReassignNode(null, new HashSet<>(), new HashSet<>(),
                 String.valueOf(ID), ID, request, Collections.singletonList(POOL_NODE_ID));
     }
 
@@ -590,23 +481,6 @@ public class ReassignHandlerTest {
         return pool;
     }
 
-    private RunningInstance getRunningWindowsInstance() {
-        final RunningInstance runningInstance = new RunningInstance();
-        final RunInstance runInstance = new RunInstance();
-        runInstance.setNodePlatform(WINDOWS);
-        runningInstance.setInstance(runInstance);
-        return runningInstance;
-    }
-
-    private PipelineRun pipelineRunWithCreateNewNodeParameter() {
-        final PipelineRunParameter pipelineRunParameter =
-                new PipelineRunParameter(CP_CREATE_NEW_NODE, TRUE);
-        final PipelineRun pipelineRun = getPipelineRun(ID);
-        pipelineRun.setPipelineRunParameters(Collections.singletonList(pipelineRunParameter));
-        return pipelineRun;
-    }
-
->>>>>>> theirs
     private PipelineRun pipelineRun(final PipelineRunParameter... parameters) {
         final PipelineRun run = getPipelineRun(ID);
         final List<PipelineRunParameter> runParameters = new ArrayList<>();

@@ -24,21 +24,9 @@ import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
-<<<<<<< ours
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-||||||| base
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-=======
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
->>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -68,7 +56,8 @@ public class InstanceOfferDaoTest extends AbstractSpringTest  {
 
     private AbstractCloudRegion region;
 
-    @BeforeEach    public void setUp() throws Exception {
+    @BeforeEach
+    public void setUp() throws Exception {
 
         region = createRegion("region1");
         final AbstractCloudRegion anotherRegion = createRegion("region2");

@@ -21,46 +21,16 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
-<<<<<<< ours
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-||||||| base
-import lombok.RequiredArgsConstructor;
-import org.assertj.core.api.Assertions;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-=======
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
->>>>>>> theirs
 
-import java.util.Arrays;
-<<<<<<< ours
-import java.util.Collection;
-||||||| base
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-=======
-import java.util.Collections;
-import java.util.List;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
->>>>>>> theirs
 
 public class NFSHelperTest {
 
@@ -161,117 +131,4 @@ public class NFSHelperTest {
                     true, "host1:1234@tcp:host2:1234@tcp:/lustre"));
         }
     }
-<<<<<<< ours
-||||||| base
-
-    @RunWith(Parameterized.class)
-    @RequiredArgsConstructor
-    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
-    public static class DetermineHostsTests {
-        private static final String TEST_IP_1 = "1.1.1.1";
-        private static final String TEST_IP_2 = "1.1.1.2";
-
-        private final String mountRoot;
-        private final MountType mountType;
-        private final List<String> resultHosts;
-
-        @Parameterized.Parameters
-        public static Collection<Object[]> data() {
-            return Arrays.asList(new Object[][] {
-                {
-                    "fs-12345678:/bucket1",
-                    MountType.NFS,
-                    Collections.singletonList("fs-12345678")
-                },
-                {
-                    "gcfs-12345678:/vol1/bucket1",
-                    MountType.NFS,
-                    Collections.singletonList("gcfs-12345678")
-                },
-                {
-                    "azfs-12345678/vol1/bucket1",
-                    MountType.NFS,
-                    Collections.singletonList("azfs-12345678")
-                },
-                {
-                    "fs-12345678:bucket1",
-                    MountType.NFS,
-                    Collections.singletonList("fs-12345678")
-                },
-                {
-                    "1.1.1.1@tcp1:/demo",
-                    MountType.LUSTRE,
-                    Collections.singletonList(TEST_IP_1)
-                },
-                {
-                    "1.1.1.1@tcp1:1.1.1.2@tcp1:/demo",
-                    MountType.LUSTRE,
-                    Arrays.asList(TEST_IP_1, TEST_IP_2)
-                },
-                {
-                    "lustrefs-1@tcp1:lustrefs-2@tcp1:/demo",
-                    MountType.LUSTRE,
-                    Arrays.asList("lustrefs-1", "lustrefs-2")
-                },
-                {
-                    TEST_IP_1,
-                    MountType.NFS,
-                    Collections.singletonList(TEST_IP_1)
-                },
-                {
-                    "//smb-fs/vol1",
-                    MountType.SMB,
-                    Collections.singletonList("smb-fs")
-                }
-            });
-        }
-
-        @Test
-        public void shouldDetermineHosts() {
-            final FileShareMount fileShareMount = new FileShareMount();
-            fileShareMount.setMountRoot(mountRoot);
-            fileShareMount.setMountType(mountType);
-
-            final List<String> hosts = NFSHelper.determineHosts(fileShareMount);
-            Assertions.assertThat(hosts).hasSize(resultHosts.size());
-            Assertions.assertThat(hosts).containsOnlyElementsOf(resultHosts);
-        }
-    }
-=======
-
-    @Nested
-    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
-    @DisplayName("Determine Hosts Tests")
-    class DetermineHostsTests {
-        private static final String TEST_IP_1 = "1.1.1.1";
-        private static final String TEST_IP_2 = "1.1.1.2";
-
-        @ParameterizedTest
-        @MethodSource("generateData")
-        void shouldDetermineHosts(String mountRoot, MountType mountType, List<String> resultHosts) {
-            final FileShareMount fileShareMount = new FileShareMount();
-            fileShareMount.setMountRoot(mountRoot);
-            fileShareMount.setMountType(mountType);
-
-            final List<String> hosts = NFSHelper.determineHosts(fileShareMount);
-            Assertions.assertThat(hosts).hasSize(resultHosts.size());
-            Assertions.assertThat(hosts).containsOnlyElementsOf(resultHosts);
-        }
-
-        private static Stream<Arguments> generateData() {
-            return Stream.of(
-                Arguments.of("fs-12345678:/bucket1", MountType.NFS, Collections.singletonList("fs-12345678")),
-                Arguments.of("gcfs-12345678:/vol1/bucket1", MountType.NFS, Collections.singletonList("gcfs-12345678")),
-                Arguments.of("azfs-12345678/vol1/bucket1", MountType.NFS, Collections.singletonList("azfs-12345678")),
-                Arguments.of("fs-12345678:bucket1", MountType.NFS, Collections.singletonList("fs-12345678")),
-                Arguments.of("1.1.1.1@tcp1:/demo", MountType.LUSTRE, Collections.singletonList(TEST_IP_1)),
-                Arguments.of("1.1.1.1@tcp1:1.1.1.2@tcp1:/demo", MountType.LUSTRE, Arrays.asList(TEST_IP_1, TEST_IP_2)),
-                Arguments.of("lustrefs-1@tcp1:lustrefs-2@tcp1:/demo", MountType.LUSTRE,
-                    Arrays.asList("lustrefs-1", "lustrefs-2")),
-                Arguments.of(TEST_IP_1, MountType.NFS, Collections.singletonList(TEST_IP_1)),
-                Arguments.of("//smb-fs/vol1", MountType.SMB, Collections.singletonList("smb-fs"))
-            );
-        }
-    }
->>>>>>> theirs
 }

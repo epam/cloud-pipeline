@@ -49,18 +49,6 @@ import com.epam.pipeline.manager.cluster.performancemonitoring.ResourceMonitorin
 import com.epam.pipeline.manager.cluster.pool.NodePoolMonitoringService;
 import com.epam.pipeline.manager.docker.scan.AggregatingToolScanManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
-<<<<<<< ours
-import com.epam.pipeline.manager.firecloud.FirecloudApiService;
-import com.epam.pipeline.manager.firecloud.FirecloudManager;
-||||||| base
-import com.epam.pipeline.manager.dts.DtsMonitoringManager;
-import com.epam.pipeline.manager.firecloud.FirecloudApiService;
-import com.epam.pipeline.manager.firecloud.FirecloudManager;
-import com.epam.pipeline.manager.git.GitTokenRotationService;
-=======
-import com.epam.pipeline.manager.dts.DtsMonitoringManager;
-import com.epam.pipeline.manager.git.GitTokenRotationService;
->>>>>>> theirs
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.quota.BillingQuotasScheduler;
@@ -139,25 +127,6 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
     private NodePoolMonitoringService nodePoolMonitoringService;
     @MockBean
     private ToolScanScheduler toolScanScheduler;
-    @MockBean
-<<<<<<< ours
-    private FirecloudApiService firecloudApiService;
-    @MockBean
-    private FirecloudManager firecloudManager;
-||||||| base
-    private DtsMonitoringManager dtsMonitoringManager;
-    @MockBean
-    private FirecloudApiService firecloudApiService;
-    @MockBean
-    private FirecloudManager firecloudManager;
-    @MockBean
-    private GitTokenRotationService gitTokenRotationService;
-    @MockBean
-=======
-    private DtsMonitoringManager dtsMonitoringManager;
-    @MockBean
-    private GitTokenRotationService gitTokenRotationService;
->>>>>>> theirs
     @MockBean
     private RunScheduleMonitoringManager runScheduleMonitoringManager;
     @MockBean

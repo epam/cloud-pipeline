@@ -16,52 +16,22 @@
 
 package com.epam.pipeline.dao.preference;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.List;
 
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.preference.PreferenceType;
-<<<<<<< ours
-import org.junit.Before;
-import org.junit.Test;
-||||||| base
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Before;
-import org.junit.Test;
-=======
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
->>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-<<<<<<< ours
 public class PreferenceDaoTest extends AbstractSpringTest {
-||||||| base
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-
-public class PreferenceDaoTest extends AbstractJdbcTest {
-=======
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
-public class PreferenceDaoTest extends AbstractJdbcTest {
->>>>>>> theirs
 
     private static final String TEST_VALUE = "test value";
     private static final String TEST_VALUE_2 = "test value2";
@@ -78,7 +48,8 @@ public class PreferenceDaoTest extends AbstractJdbcTest {
     private Preference preference;
     private Preference preference2;
 
-    @BeforeEach    public void setup() {
+    @BeforeEach
+    public void setup() {
         preference = new Preference(TEST_NAME, TEST_VALUE, TEST_GROUP,
                 TEST_DESCRIPTION, TEST_TYPE, TEST_VISIBLE);
         preference2 = new Preference(TEST_NAME_2, TEST_VALUE_2, TEST_GROUP,

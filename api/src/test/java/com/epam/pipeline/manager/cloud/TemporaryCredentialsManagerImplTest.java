@@ -144,41 +144,7 @@ public class TemporaryCredentialsManagerImplTest {
         assertThat(actualActions.get(1).getAccessPointArn()).isNull();
     }
 
-<<<<<<< ours
-    @Test(expected = IllegalStateException.class)
-||||||| base
     @Test
-    public void shouldSetSourceStorageAccessPointArnToLinkActions() {
-        final S3bucketDataStorage source = s3DataStorage(ID_1, TEST_PATH_1);
-        source.setAccessPointArn(ACCESS_POINT_ARN);
-        final S3bucketDataStorage link = s3DataStorage(LINK_ID, TEST_PATH_1);
-        link.setSourceStorageId(ID_1);
-        when(dataStorageManager.load(LINK_ID)).thenReturn(link);
-        when(dataStorageDao.loadDataStorage(ID_1)).thenReturn(source);
-
-        manager.generate(Collections.singletonList(dataStorageAction(LINK_ID, true)));
-
-        assertThat(capture().getLeft().get(0).getAccessPointArn()).isEqualTo(ACCESS_POINT_ARN);
-    }
-
-    @Test(expected = IllegalStateException.class)
-=======
-    @Test
-    public void shouldSetSourceStorageAccessPointArnToLinkActions() {
-        final S3bucketDataStorage source = s3DataStorage(ID_1, TEST_PATH_1);
-        source.setAccessPointArn(ACCESS_POINT_ARN);
-        final S3bucketDataStorage link = s3DataStorage(LINK_ID, TEST_PATH_1);
-        link.setSourceStorageId(ID_1);
-        when(dataStorageManager.load(LINK_ID)).thenReturn(link);
-        when(dataStorageDao.loadDataStorage(ID_1)).thenReturn(source);
-
-        manager.generate(Collections.singletonList(dataStorageAction(LINK_ID, true)));
-
-        assertThat(capture().getLeft().get(0).getAccessPointArn()).isEqualTo(ACCESS_POINT_ARN);
-    }
-
-    @Test
->>>>>>> theirs
     public void shouldFailIfStorageIdWasNotSpecified() {
         assertThrows(IllegalStateException.class,
             () -> manager.generate(Collections.singletonList(dataStorageAction(null, true))));

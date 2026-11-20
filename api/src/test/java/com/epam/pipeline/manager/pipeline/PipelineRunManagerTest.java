@@ -57,27 +57,16 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
-<<<<<<< ours
 import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.util.TestUtils;
 import org.apache.commons.collections.CollectionUtils;
-import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.MockitoAnnotations;
-||||||| base
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.MockitoAnnotations;
-=======
 import org.assertj.core.api.Assertions;
+import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
->>>>>>> theirs
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -98,33 +87,18 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
-<<<<<<< ours
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doNothing;
-||||||| base
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-=======
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
->>>>>>> theirs
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -137,7 +111,7 @@ import static org.mockito.quality.Strictness.LENIENT;
 @Transactional
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = LENIENT)
-@SuppressWarnings({"PMD.TooManyStaticImports", "PMD.UnusedPrivateField"})
+@SuppressWarnings({"PMD.TooManyStaticImports", "PMD.UnusedPrivateField", "PMD.AvoidDuplicateLiterals"})
 public class PipelineRunManagerTest extends AbstractManagerTest {
     private static final String PARAM_NAME_1 = "param-1";
     private static final String ENV_VAR_NAME = "TEST_ENV";
@@ -214,30 +188,14 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     @Autowired
     private PreferenceManager preferenceManager;
 
-<<<<<<< ours
     private static final String TEST_IMAGE = "testImage";
     private Tool notScannedTool;
     private PipelineConfiguration configuration;
     private InstancePrice price;
 
-    @Before
-||||||| base
-    @Before
-=======
     @BeforeEach
->>>>>>> theirs
     public void setUp() throws Exception {
-<<<<<<< ours
-        MockitoAnnotations.initMocks(this);
-
         notScannedTool = new Tool();
-||||||| base
-        MockitoAnnotations.initMocks(this);
-
-        Tool notScannedTool = new Tool();
-=======
-        Tool notScannedTool = new Tool();
->>>>>>> theirs
         notScannedTool.setId(1L);
         notScannedTool.setImage(TEST_IMAGE);
         notScannedTool.setDefaultCommand("sleep");
@@ -522,19 +480,19 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         // case: empty collections
         List<PipelineRunParameter> actualParameters =
             pipelineRunManager.replaceParametersWithEnvVars(parameters, envVars);
-        Assert.assertTrue(CollectionUtils.isEmpty(actualParameters));
+        assertTrue(CollectionUtils.isEmpty(actualParameters));
         // case: empty env_vars
         String paramValue = "simple";
         parameters.add(new PipelineRunParameter(PARAM_NAME_1, paramValue));
         actualParameters = pipelineRunManager.replaceParametersWithEnvVars(parameters, envVars);
-        Assert.assertEquals(parameters, actualParameters);
+        assertEquals(parameters, actualParameters);
         // case: empty params
         envVars.put(ENV_VAR_NAME, ENV_VAR_VALUE);
         actualParameters = pipelineRunManager.replaceParametersWithEnvVars(new ArrayList<>(), envVars);
-        Assert.assertTrue(CollectionUtils.isEmpty(actualParameters));
+        assertTrue(CollectionUtils.isEmpty(actualParameters));
         // case: replacement no needed
         actualParameters = pipelineRunManager.replaceParametersWithEnvVars(parameters, envVars);
-        Assert.assertEquals(paramValue, actualParameters.get(0).getValue());
+        assertEquals(paramValue, actualParameters.get(0).getValue());
         // case: ${TEST_ENV}
         paramValue = String.format("test/${%s}", ENV_VAR_NAME);
         String expectedValue = String.format("test/%s", ENV_VAR_VALUE);
@@ -596,8 +554,8 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         filterVO.setProjectIds(Collections.singletonList(project.getId()));
 
         PipelineRunFilterVO.ProjectFilter projectFilter = pipelineRunManager.resolveProjectFiltering(filterVO);
-        Assert.assertEquals(2, projectFilter.getPipelineIds().size());
-        Assert.assertEquals(2, projectFilter.getConfigurationIds().size());
+        assertEquals(2, projectFilter.getPipelineIds().size());
+        assertEquals(2, projectFilter.getConfigurationIds().size());
 
     }
 
@@ -825,13 +783,13 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
                 .collect(Collectors.toMap(BaseEntity::getId,
                                           Function.identity()));
 
-        Assert.assertEquals(5, stats.size());
-        Assert.assertNull(stats.get(run1.getId()));
-        Assert.assertEquals(2, stats.get(run2.getId()).getRunStatuses().size());
-        Assert.assertEquals(2, stats.get(run3.getId()).getRunStatuses().size());
-        Assert.assertEquals(1, stats.get(run4.getId()).getRunStatuses().size());
-        Assert.assertEquals(3, stats.get(run5.getId()).getRunStatuses().size());
-        Assert.assertEquals(2, stats.get(run6.getId()).getRunStatuses().size());
+        assertEquals(5, stats.size());
+        assertNull(stats.get(run1.getId()));
+        assertEquals(2, stats.get(run2.getId()).getRunStatuses().size());
+        assertEquals(2, stats.get(run3.getId()).getRunStatuses().size());
+        assertEquals(1, stats.get(run4.getId()).getRunStatuses().size());
+        assertEquals(3, stats.get(run5.getId()).getRunStatuses().size());
+        assertEquals(2, stats.get(run6.getId()).getRunStatuses().size());
     }
 
     private PipelineRun launchPipelineRun(final LocalDateTime startDate, final LocalDateTime stopDate) {
@@ -869,8 +827,8 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
 
     private void checkResolvedValue(List<PipelineRunParameter> actualParameters, String paramValue,
             String expectedValue) {
-        Assert.assertEquals(expectedValue, actualParameters.get(0).getResolvedValue());
-        Assert.assertEquals(paramValue, actualParameters.get(0).getValue());
+        assertEquals(expectedValue, actualParameters.get(0).getResolvedValue());
+        assertEquals(paramValue, actualParameters.get(0).getValue());
     }
 
     private void launchTool() {

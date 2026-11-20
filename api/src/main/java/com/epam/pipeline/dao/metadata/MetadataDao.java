@@ -136,25 +136,6 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
                 MetadataParameters.getRowMapper());
     }
 
-<<<<<<< ours
-||||||| base
-    public List<MetadataEntry> loadMetadataItemsByKey(final String key, final List<EntityVO> entities) {
-        List<MetadataEntry> items = getNamedParameterJdbcTemplate().query(
-                convertEntitiesToString(loadMetadataItemsQuery, entities),
-                MetadataParameters.getParametersWithArrays(entities),
-                MetadataParameters.getRowMapper(Collections.singletonList(key)));
-        return items.isEmpty() ? null : items;
-    }
-
-=======
-    public List<MetadataEntry> loadMetadataItemsByKey(final String key, final List<EntityVO> entities) {
-        return getNamedParameterJdbcTemplate().query(
-                convertEntitiesToString(loadMetadataItemsQuery, entities),
-                MetadataParameters.getParametersWithArrays(entities),
-                MetadataParameters.getRowMapper(Collections.singletonList(key)));
-    }
-
->>>>>>> theirs
     public List<MetadataEntryWithIssuesCount> loadMetadataItemsWithIssues(List<EntityVO> entities) {
         return getNamedParameterJdbcTemplate()
                 .query(convertEntitiesToString(loadMetadataItemsWithIssuesQuery, entities),
@@ -209,28 +190,6 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
                         .collect(Collectors.joining(",")));
     }
 
-<<<<<<< ours
-    @Required
-||||||| base
-    private MapSqlParameterSource getSensitiveKeysParams(final List<String> sensitiveMetadataKeys) {
-        final List<String> sensitiveKeysList = CollectionUtils.isEmpty(sensitiveMetadataKeys)
-                                               ? Collections.singletonList(StringUtils.EMPTY)
-                                               : sensitiveMetadataKeys;
-        final MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue(LIST_PARAMETER, sensitiveKeysList);
-        return params;
-    }
-
-    @Required
-=======
-    private MapSqlParameterSource getSensitiveKeysParams(final List<String> sensitiveMetadataKeys) {
-        final List<String> sensitiveKeysList = CollectionUtils.isEmpty(sensitiveMetadataKeys)
-                                               ? Collections.singletonList(StringUtils.EMPTY)
-                                               : sensitiveMetadataKeys;
-        final MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue(LIST_PARAMETER, sensitiveKeysList);
-        return params;
-    }
     @PostConstruct
     public void checkQueryDependencies() {
         Assert.notNull(loadMetadataItemsWithIssuesQuery, "Required query loadMetadataItemsWithIssuesQuery is not set");
@@ -243,15 +202,12 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
         Assert.notNull(uploadMetadataItemQuery, "Required query uploadMetadataItemQuery is not set");
         Assert.notNull(searchMetadataByClassAndKeyValueQuery,
                 "Required query searchMetadataByClassAndKeyValueQuery is not set");
-        Assert.notNull(searchMetadataByClassAndKeyQuery, "Required query searchMetadataByClassAndKeyQuery is not set");
         Assert.notNull(searchMetadataEntriesByClassAndKeyValueQuery,
                 "Required query searchMetadataEntriesByClassAndKeyValueQuery is not set");
         Assert.notNull(searchMetadataEntriesByClassAndKeyQuery,
                 "Required query searchMetadataEntriesByClassAndKeyQuery is not set");
     }
 
-
->>>>>>> theirs
     public void setLoadMetadataItemsWithIssuesQuery(String loadMetadataItemsWithIssuesQuery) {
         this.loadMetadataItemsWithIssuesQuery = loadMetadataItemsWithIssuesQuery;
     }
@@ -300,21 +256,6 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
         this.loadMetadataKeysQuery = loadMetadataKeysQuery;
     }
 
-<<<<<<< ours
-    @Required
-||||||| base
-    @Required
-    public void setSearchMetadataByClassAndKeyQuery(String searchMetadataByClassAndKeyQuery) {
-        this.searchMetadataByClassAndKeyQuery = searchMetadataByClassAndKeyQuery;
-    }
-
-    @Required
-=======
-    public void setSearchMetadataByClassAndKeyQuery(String searchMetadataByClassAndKeyQuery) {
-        this.searchMetadataByClassAndKeyQuery = searchMetadataByClassAndKeyQuery;
-    }
-
->>>>>>> theirs
     public void setSearchMetadataEntriesByClassAndKeyValueQuery(String searchMetadataEntriesByClassAndKeyValueQuery) {
         this.searchMetadataEntriesByClassAndKeyValueQuery = searchMetadataEntriesByClassAndKeyValueQuery;
     }

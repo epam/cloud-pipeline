@@ -50,7 +50,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -224,27 +223,6 @@ public final class DatastorageCreatorUtils {
         return dataStorageRule;
     }
 
-<<<<<<< ours
-||||||| base
-    public static DataStorageTag getDataStorageTag() {
-        return new DataStorageTag(getDataStorageObject(), TEST_STRING, TEST_STRING, TEST_LOCAL_DATE_TIME);
-    }
-
-    private static DataStorageObject getDataStorageObject() {
-        return new DataStorageObject(TEST_STRING, TEST_STRING);
-    }
-
-=======
-    public static DataStorageTag getDataStorageTag() {
-        return new DataStorageTag(getDataStorageObject(), TEST_STRING, TEST_STRING,
-                TEST_LOCAL_DATE_TIME.truncatedTo(ChronoUnit.MILLIS));
-    }
-
-    private static DataStorageObject getDataStorageObject() {
-        return new DataStorageObject(TEST_STRING, TEST_STRING);
-    }
-
->>>>>>> theirs
     public static TemporaryCredentials getTemporaryCredentials() {
         return new TemporaryCredentials(TEST_STRING, TEST_STRING, TEST_STRING, TEST_STRING, TEST_STRING);
     }

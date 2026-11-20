@@ -42,6 +42,7 @@ import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.util.AntPathMatcher;
+import org.springframework.util.Assert;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -162,30 +163,14 @@ public final class PreferenceValidators {
 
     public static BiPredicate<String, Map<String, Preference>> isNullOrGreaterThan(int x) {
         return (pref, dependencies) -> StringUtils.isBlank(pref)
-<<<<<<< ours
-                || StringUtils.isNumeric(pref) && Long.parseLong(pref) > x;
-||||||| base
-                || (StringUtils.isNumeric(pref) && Long.parseLong(pref) > x);
-=======
-            || (StringUtils.isNumeric(pref) && Long.parseLong(pref) > x);
->>>>>>> theirs
+            || StringUtils.isNumeric(pref) && Long.parseLong(pref) > x;
     }
 
     public static BiPredicate<String, Map<String, Preference>> isNotLessThanValueOrNull(String key) {
         return (pref, dependencies) -> {
-<<<<<<< ours
-            Long valueToCompare = dependencies.containsKey(key) ? dependencies.get(key).get(Long::parseLong) : Long.MIN_VALUE;
-            return StringUtils.isBlank(pref) ||
-                    StringUtils.isNumeric(pref) && Long.parseLong(pref) >= valueToCompare;
-||||||| base
-            Long valueToCompare = dependencies.containsKey(key) ? dependencies.get(key).get(Long::parseLong) : Long.MIN_VALUE;
-            return StringUtils.isBlank(pref) ||
-                    (StringUtils.isNumeric(pref) && Long.parseLong(pref) >= valueToCompare);
-=======
             Long valueToCompare = dependencies.containsKey(key) ?
                 dependencies.get(key).get(Long::parseLong) : Long.MIN_VALUE;
-            return StringUtils.isBlank(pref) || (StringUtils.isNumeric(pref) && Long.parseLong(pref) >= valueToCompare);
->>>>>>> theirs
+            return StringUtils.isBlank(pref) || StringUtils.isNumeric(pref) && Long.parseLong(pref) >= valueToCompare;
         };
     }
 
@@ -350,100 +335,6 @@ public final class PreferenceValidators {
         return true;
     };
 
-<<<<<<< ours
-||||||| base
-    public static final BiPredicate<String, Map<String, Preference>> isValidSearchExportTemplateConfig =
-            isNullOrValidJson(new TypeReference<Map<String, SearchTemplateExportConfig>>() {})
-                    .and((pref, dependencies) -> {
-                        final Map<String, SearchTemplateExportConfig> configurations = JsonMapper.parseData(pref,
-                                new TypeReference<Map<String, SearchTemplateExportConfig>>() {});
-                        configurations.forEach(PreferenceValidators::validateSearchExportTemplate);
-                        return true;
-                    });
-
-    private static void validateSearchExportTemplate(final String templateId,
-                                                     final SearchTemplateExportConfig configuration) {
-        final String messagePattern = "Failed to persist template '%s': %s.";
-        Assert.state(StringUtils.isNotBlank(configuration.getTemplatePath()),
-                String.format(messagePattern, templateId, "'template_path' field is required."));
-        Assert.state(MapUtils.isNotEmpty(configuration.getMapping()),
-                String.format(messagePattern, templateId, "No mappings provided."));
-        Assert.state(configuration.getMapping().values().stream()
-                        .flatMap(Collection::stream)
-                        .map(SearchTemplateExportSheetMapping::getStartRow)
-                        .filter(Objects::nonNull)
-                        .noneMatch(value -> value < 1),
-                String.format(messagePattern, templateId, "Row start value shall be greater that 0."));
-    }
-
-    public static final BiPredicate<String, Map<String, Preference>> isValidIdleMonitoringConfig =
-        isNullOrValidJson(new TypeReference<List<IdleMonitoringConfig>>() {})
-            .and((pref, dependencies) -> {
-                if (StringUtils.isBlank(pref)) {
-                    return true;
-                }
-                final List<IdleMonitoringConfig> configs =
-                    JsonMapper.parseData(pref, new TypeReference<List<IdleMonitoringConfig>>() {});
-                ListUtils.emptyIfNull(configs).forEach(PreferenceValidators::validateIdleMonitoringConfig);
-                return true;
-            });
-
-    private static void validateIdleMonitoringConfig(final IdleMonitoringConfig config) {
-        Assert.state(config.getType() != null,
-                "Idle monitoring config entry is missing required field 'type'.");
-        Assert.state(config.getAction() != null,
-                "Idle monitoring config entry is missing required field 'action'.");
-        Assert.state(config.getActionTimeoutMinutes() != null,
-                "Idle monitoring config entry is missing required field 'actionTimeoutMinutes'.");
-        switch (config.getType()) {
-            case CPU:
-                Assert.state(config.getThresholdPercent() != null,
-                        "CPU idle monitoring config requires 'thresholdPercent'.");
-                Assert.state(config.getGracePeriodMinutes() != null,
-                        "CPU idle monitoring config requires 'gracePeriodMinutes'.");
-                break;
-            case GPU:
-                Assert.state(config.getGracePeriodMinutes() != null,
-                        "GPU idle monitoring config requires 'gracePeriodMinutes'.");
-                Assert.state(config.getThresholdPercent() == null,
-                        "GPU idle monitoring config can't have 'thresholdPercent'.");
-                break;
-            case ABSOLUTE:
-                Assert.state(config.getThresholdPercent() == null,
-                        "ABSOLUTE idle monitoring config must not specify 'thresholdPercent'.");
-                Assert.state(config.getGracePeriodMinutes() == null,
-                        "ABSOLUTE idle monitoring config must not specify 'gracePeriodMinutes'.");
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown idle monitoring type: " + config.getType());
-        }
-    }
-
-=======
-    public static final BiPredicate<String, Map<String, Preference>> isValidSearchExportTemplateConfig =
-            isNullOrValidJson(new TypeReference<Map<String, SearchTemplateExportConfig>>() {})
-                    .and((pref, dependencies) -> {
-                        final Map<String, SearchTemplateExportConfig> configurations = JsonMapper.parseData(pref,
-                                new TypeReference<Map<String, SearchTemplateExportConfig>>() {});
-                        configurations.forEach(PreferenceValidators::validateSearchExportTemplate);
-                        return true;
-                    });
-
-    private static void validateSearchExportTemplate(final String templateId,
-                                                     final SearchTemplateExportConfig configuration) {
-        final String messagePattern = "Failed to persist template '%s': %s.";
-        Assert.state(StringUtils.isNotBlank(configuration.getTemplatePath()),
-                String.format(messagePattern, templateId, "'template_path' field is required."));
-        Assert.state(MapUtils.isNotEmpty(configuration.getMapping()),
-                String.format(messagePattern, templateId, "No mappings provided."));
-        Assert.state(configuration.getMapping().values().stream()
-                        .flatMap(Collection::stream)
-                        .map(SearchTemplateExportSheetMapping::getStartRow)
-                        .filter(Objects::nonNull)
-                        .noneMatch(value -> value < 1),
-                String.format(messagePattern, templateId, "Row start value shall be greater that 0."));
-    }
-
     public static final BiPredicate<String, Map<String, Preference>> isValidCapacityReservationMonitorSettings =
         isNullOrValidJson(new TypeReference<CapacityReservationMonitorSettings>() {})
             .and((pref, dependencies) -> {
@@ -457,50 +348,6 @@ public final class PreferenceValidators {
                 return true;
             });
 
-    public static final BiPredicate<String, Map<String, Preference>> isValidIdleMonitoringConfig =
-        isNullOrValidJson(new TypeReference<List<IdleMonitoringConfig>>() {})
-            .and((pref, dependencies) -> {
-                if (StringUtils.isBlank(pref)) {
-                    return true;
-                }
-                final List<IdleMonitoringConfig> configs =
-                    JsonMapper.parseData(pref, new TypeReference<List<IdleMonitoringConfig>>() {});
-                ListUtils.emptyIfNull(configs).forEach(PreferenceValidators::validateIdleMonitoringConfig);
-                return true;
-            });
-
-    private static void validateIdleMonitoringConfig(final IdleMonitoringConfig config) {
-        Assert.state(config.type() != null,
-                "Idle monitoring config entry is missing required field 'type'.");
-        Assert.state(config.action() != null,
-                "Idle monitoring config entry is missing required field 'action'.");
-        Assert.state(config.actionTimeoutMinutes() != null,
-                "Idle monitoring config entry is missing required field 'actionTimeoutMinutes'.");
-        switch (config.type()) {
-            case CPU:
-                Assert.state(config.thresholdPercent() != null,
-                        "CPU idle monitoring config requires 'thresholdPercent'.");
-                Assert.state(config.gracePeriodMinutes() != null,
-                        "CPU idle monitoring config requires 'gracePeriodMinutes'.");
-                break;
-            case GPU:
-                Assert.state(config.gracePeriodMinutes() != null,
-                        "GPU idle monitoring config requires 'gracePeriodMinutes'.");
-                Assert.state(config.thresholdPercent() == null,
-                        "GPU idle monitoring config can't have 'thresholdPercent'.");
-                break;
-            case ABSOLUTE:
-                Assert.state(config.thresholdPercent() == null,
-                        "ABSOLUTE idle monitoring config must not specify 'thresholdPercent'.");
-                Assert.state(config.gracePeriodMinutes() == null,
-                        "ABSOLUTE idle monitoring config must not specify 'gracePeriodMinutes'.");
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown idle monitoring type: " + config.type());
-        }
-    }
-
->>>>>>> theirs
     private PreferenceValidators() {
         // No-op
     }

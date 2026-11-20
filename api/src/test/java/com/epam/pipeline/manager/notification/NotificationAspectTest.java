@@ -22,7 +22,6 @@ import com.epam.pipeline.dao.notification.NotificationSettingsDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.notification.NotificationTemplateDao;
-import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationSettings;
@@ -41,22 +40,8 @@ import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.test.creator.notification.NotificationCreatorUtils;
 import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
 import com.epam.pipeline.test.creator.user.UserCreatorUtils;
-<<<<<<< ours
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-||||||| base
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Optional;
-import org.junit.Assert;
-import org.junit.Test;
-=======
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
->>>>>>> theirs
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,14 +55,10 @@ import java.util.*;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
-<<<<<<< ours
-import static org.mockito.Matchers.any;
-||||||| base
-import static org.mockito.Mockito.any;
-=======
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.any;
->>>>>>> theirs
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 
@@ -131,7 +112,7 @@ public class NotificationAspectTest extends AbstractManagerTest {
     private PipelineUser testOwner;
     private Pipeline pipeline;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         statusTemplate = new NotificationTemplate(5L);
         statusTemplate.setBody("///");
@@ -173,34 +154,14 @@ public class NotificationAspectTest extends AbstractManagerTest {
         mockRole();
 
         pipelineRunManager.updatePipelineStatus(run);
-<<<<<<< ours
         List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
-        Assert.assertFalse(messages.isEmpty());
+        assertFalse(messages.isEmpty());
         NotificationMessage message = messages.get(0);
-        Assert.assertEquals(testOwner.getId(), message.getToUserId());
-        Assert.assertEquals(TaskStatus.SUCCESS.name(), message.getTemplateParameters().get("status"));
+        assertEquals(testOwner.getId(), message.getToUserId());
+        assertEquals(TaskStatus.SUCCESS.name(), message.getTemplateParameters().get("status"));
 
         verify(pipelineRunDao).updateRunStatus(any());
         verify(runStatusManager).saveStatus(any());
-||||||| base
-        final ArgumentCaptor<NotificationMessage> captor =
-            ArgumentCaptor.forClass(NotificationMessage.class);
-        verify(mockMonitoringNotificationDao).createMonitoringNotification(captor.capture());
-
-        final NotificationMessage capturedMessage = captor.getValue();
-        Assert.assertEquals(pipelineUser.getId(), capturedMessage.getToUserId());
-        Assert.assertEquals(TaskStatus.SUCCESS.name(),
-            capturedMessage.getTemplateParameters().get("status"));
-=======
-        final ArgumentCaptor<NotificationMessage> captor =
-            ArgumentCaptor.forClass(NotificationMessage.class);
-        verify(mockMonitoringNotificationDao).createMonitoringNotification(captor.capture());
-
-        final NotificationMessage capturedMessage = captor.getValue();
-        assertEquals(pipelineUser.getId(), capturedMessage.getToUserId());
-        assertEquals(TaskStatus.SUCCESS.name(),
-            capturedMessage.getTemplateParameters().get("status"));
->>>>>>> theirs
     }
 
     @Test
@@ -213,7 +174,7 @@ public class NotificationAspectTest extends AbstractManagerTest {
 
         pipelineRunManager.updatePipelineStatus(run);
         List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
-        Assert.assertTrue(messages.isEmpty());
+        assertTrue(messages.isEmpty());
     }
 
     @Test

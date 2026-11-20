@@ -67,16 +67,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-<<<<<<< ours
-
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
-||||||| base
-
-import javax.servlet.http.HttpServletResponse;
-=======
+import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
->>>>>>> theirs
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.time.LocalDateTime;
@@ -584,44 +576,29 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.loadActiveRunsCharts(filter));
     }
 
-<<<<<<< ours
-||||||| base
-    @PostMapping("/runs/archive")
-    @ApiOperation(
-            value = "Migrate runs to archive table according to owner's metadata configuration",
-            notes = "Migrate runs to archive table according to owner's metadata configuration",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<Boolean> archiveRuns() {
-        runApiService.archiveRuns();
-        return Result.success(true);
+    @PostMapping("/run/{runId}/network/limit")
+    @Operation(
+            summary = "Set limit boundary",
+            description = "Sets a special tag for a run based on boundary param: NETWORK_LIMIT: <boundary> (Bytes/s) " +
+                    "in case of enable = true, otherwise removes the tag.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
+    public Result<Boolean> setLimitBoundary(@PathVariable(value = RUN_ID) final Long runId,
+                                            @RequestParam(defaultValue = "true") final Boolean enable,
+                                            @RequestParam(required = false) final Integer boundary) {
+        runApiService.setLimitBoundary(runId, enable, boundary);
+        return Result.success();
     }
 
-    @PostMapping(value = "/runs/archive/explicit")
-    @ApiOperation(
-            value = "Archive specified runs by their IDs",
-            notes = "Migrate specified pipeline runs (by ID) to the archive table.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<Boolean> archiveRunsByIds(@RequestBody final List<Long> runIds) {
-        runApiService.archiveRuns(runIds);
-        return Result.success(true);
+    @GetMapping("/run/{runId}/metrics")
+    @Operation(
+            summary = "Loads run performance metrics. Metrics can be loaded only for runs in final status.",
+            description = "Loads run performance metrics. Metrics can be loaded only for runs in final status.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
+    public Result<PipelineRunPerformanceMetrics> loadPipelineRunPerformanceMetrics(
+            @PathVariable(value = RUN_ID) final Long runId) {
+        return Result.success(runApiService.loadPipelineRunPerformanceMetrics(runId));
     }
 
-    @PostMapping("/runs/archive/owners")
-    @ApiOperation(
-            value = "Migrate runs to archive table for specified user (or group).",
-            notes = "If no 'days' specified try to find days in metadata. Otherwise, ignore metadata configuration.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<Boolean> archiveRunsByOwner(@RequestParam final String ownerSid,
-                                              @RequestParam final boolean principal,
-                                              @RequestParam(required = false) final Integer days) {
-        runApiService.archiveRuns(ownerSid, principal, days);
-        return Result.success(true);
-    }
-
-=======
     @PostMapping("/runs/archive")
     @Operation(
             summary = "Migrate runs to archive table according to owner's metadata configuration",
@@ -629,16 +606,6 @@ public class PipelineRunController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<Boolean> archiveRuns() {
         runApiService.archiveRuns();
-        return Result.success(true);
-    }
-
-    @PostMapping(value = "/runs/archive/explicit")
-    @Operation(
-            summary = "Archive specified runs by their IDs",
-            description = "Migrate specified pipeline runs (by ID) to the archive table.")
-    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
-    public Result<Boolean> archiveRunsByIds(@RequestBody final List<Long> runIds) {
-        runApiService.archiveRuns(runIds);
         return Result.success(true);
     }
 
@@ -653,255 +620,5 @@ public class PipelineRunController extends AbstractRestController {
                                               @RequestParam(required = false) final Integer days) {
         runApiService.archiveRuns(ownerSid, principal, days);
         return Result.success(true);
-    }
-
->>>>>>> theirs
-    @PostMapping("/run/{runId}/network/limit")
-    @Operation(
-            summary = "Set limit boundary",
-            description = "Sets a special tag for a run based on boundary param: NETWORK_LIMIT: <boundary> (Bytes/s) " +
-                    "in case of enable = true, otherwise removes the tag.")
-    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
-    public Result<Boolean> setLimitBoundary(@PathVariable(value = RUN_ID) final Long runId,
-                                            @RequestParam(defaultValue = "true") final Boolean enable,
-                                            @RequestParam(required = false) final Integer boundary) {
-        runApiService.setLimitBoundary(runId, enable, boundary);
-        return Result.success();
-    }
-
-<<<<<<< ours
-    @GetMapping("/run/{runId}/metrics")
-    @ApiOperation(
-            value = "Loads run performance metrics. Metrics can be loaded only for runs in final status.",
-            notes = "Loads run performance metrics. Metrics can be loaded only for runs in final status.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<PipelineRunPerformanceMetrics> loadPipelineRunPerformanceMetrics(
-            @PathVariable(value = RUN_ID) final Long runId) {
-        return Result.success(runApiService.loadPipelineRunPerformanceMetrics(runId));
-||||||| base
-    @PostMapping("/run/{runId}/runtime/data")
-    @ApiOperation(
-            value = "Get run data for the specific run by ID and data type",
-            notes = "Get run data for the specific run by ID and data type",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<RunRuntimeData> getPipelineRunData(
-            @PathVariable(value = RUN_ID) final Long runId,
-            @RequestParam final RunSyncRuntimeDataType type,
-            @RequestBody(required = false) final Map<String, String> parameters) {
-        return Result.success(runApiService.getPipelineRunRuntimeData(runId, type, parameters));
-    }
-
-    @PostMapping("/run/{runId}/engine/tasks")
-    @ApiOperation(
-            value = "Consumes engine task events for run",
-            notes = "Consumes engine task events for run",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<Integer> consumeRunEngineTaskEvents(@PathVariable(value = RUN_ID) final Long runId,
-                                                      @RequestBody final List<EngineRunTask> tasks) {
-        return Result.success(runApiService.consumeRunEngineTaskEvents(runId, tasks));
-    }
-
-    @DeleteMapping("/run/{runId}/engine/tasks")
-    @ApiOperation(
-            value = "Deletes engine task events for run",
-            notes = "Deletes engine task events for run",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result resetRunEngineTaskEvents(@PathVariable(value = RUN_ID) final Long runId) {
-        runApiService.resetRunEngineTaskEvents(runId);
-        return Result.success();
-    }
-
-    @GetMapping("run/{runId}/engine/{engineType}/tasks/stats")
-    @ApiOperation(
-            value = "Loads engine task statistics for run and engine type",
-            notes = "Loads engine task statistics for run and engine type",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<Map<String, EngineRunTaskGroupStatsEntity>> loadEngineRunTasksStats(
-            @PathVariable(value = RUN_ID) final Long runId,
-            @PathVariable(value = ENGINE_TYPE) final EngineType engineType) {
-        return Result.success(runApiService.loadEngineRunTasksStats(runId, engineType));
-    }
-
-    @PostMapping("run/{runId}/engine/{engineType}/tasks/filter")
-    @ApiOperation(
-            value = "Loads engine task for run with applied filters",
-            notes = "Loads engine task for run with applied filters",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<PagedResult<List<EngineRunTask>>> filterEngineRunTasks(
-            @PathVariable(value = RUN_ID) final Long runId,
-            @PathVariable(value = ENGINE_TYPE) final EngineType engineType,
-            @RequestBody final EngineRunTaskFilter filter) {
-        return Result.success(runApiService.filterEngineRunTasks(runId, engineType, filter));
-    }
-
-    @PostMapping("run/engine/{engineType}/tasks/runInfo")
-    @ApiOperation(
-            value = "Loads pipeline runs for provided engine task keys, response is grouped by pipeline run.",
-            notes = "Loads pipeline runs for provided engine task keys, response is grouped by pipeline run.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<PipelineRunWithEngineTasks>> getPipelineRunInfoByEngineTask(
-            @PathVariable(value = ENGINE_TYPE) final EngineType engineType,
-            @RequestBody final EngineRunTaskKeys keys) {
-        return Result.success(runApiService.getPipelineRunInfoByEngineTask(engineType, keys));
-    }
-
-    @PostMapping("/run/{runId}/result")
-    @ApiOperation(
-            value = "Adds set of run result objects for the specified run",
-            notes = "Adds set of run result objects for the specified run",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result addPipelineRunResults(@PathVariable(value = RUN_ID) final Long runId,
-                                        @RequestBody final List<PipelineRunResult> results) {
-        runApiService.addPipelineRunResults(runId, results);
-        return Result.success();
-=======
-    @PostMapping("/run/{runId}/runtime/data")
-    @Operation(
-            summary = "Get run data for the specific run by ID and data type",
-            description = "Get run data for the specific run by ID and data type")
-    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
-    public Result<RunRuntimeData> getPipelineRunData(
-            @PathVariable(value = RUN_ID) final Long runId,
-            @RequestParam final RunSyncRuntimeDataType type,
-            @RequestBody(required = false) final Map<String, String> parameters) {
-        return Result.success(runApiService.getPipelineRunRuntimeData(runId, type, parameters));
-    }
-
-    @PostMapping("/run/{runId}/engine/tasks")
-    @Operation(
-            summary = "Consumes engine task events for run",
-            description = "Consumes engine task events for run")
-    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
-    public Result<Integer> consumeRunEngineTaskEvents(@PathVariable(value = RUN_ID) final Long runId,
-                                                      @RequestBody final List<EngineRunTask> tasks) {
-        return Result.success(runApiService.consumeRunEngineTaskEvents(runId, tasks));
-    }
-
-    @DeleteMapping("/run/{runId}/engine/tasks")
-    @Operation(
-            summary = "Deletes engine task events for run",
-            description = "Deletes engine task events for run")
-    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
-    public Result resetRunEngineTaskEvents(@PathVariable(value = RUN_ID) final Long runId) {
-        runApiService.resetRunEngineTaskEvents(runId);
-        return Result.success();
-    }
-
-    @GetMapping("run/{runId}/engine/{engineType}/tasks/stats")
-    @Operation(
-            summary = "Loads engine task statistics for run and engine type",
-            description = "Loads engine task statistics for run and engine type")
-    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
-    public Result<Map<String, EngineRunTaskGroupStatsEntity>> loadEngineRunTasksStats(
-            @PathVariable(value = RUN_ID) final Long runId,
-            @PathVariable(value = ENGINE_TYPE) final EngineType engineType) {
-        return Result.success(runApiService.loadEngineRunTasksStats(runId, engineType));
-    }
-
-    @PostMapping("run/{runId}/engine/{engineType}/tasks/filter")
-    @Operation(
-            summary = "Loads engine task for run with applied filters",
-            description = "Loads engine task for run with applied filters")
-    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
-    public Result<PagedResult<List<EngineRunTask>>> filterEngineRunTasks(
-            @PathVariable(value = RUN_ID) final Long runId,
-            @PathVariable(value = ENGINE_TYPE) final EngineType engineType,
-            @RequestBody final EngineRunTaskFilter filter) {
-        return Result.success(runApiService.filterEngineRunTasks(runId, engineType, filter));
-    }
-
-    @PostMapping("run/engine/{engineType}/tasks/runInfo")
-    @Operation(
-            summary = "Loads pipeline runs for provided engine task keys, response is grouped by pipeline run.",
-            description = "Loads pipeline runs for provided engine task keys, response is grouped by pipeline run.")
-    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
-    public Result<List<PipelineRunWithEngineTasks>> getPipelineRunInfoByEngineTask(
-            @PathVariable(value = ENGINE_TYPE) final EngineType engineType,
-            @RequestBody final EngineRunTaskKeys keys) {
-        return Result.success(runApiService.getPipelineRunInfoByEngineTask(engineType, keys));
-    }
-
-    @PostMapping("/run/{runId}/result")
-    @Operation(
-            summary = "Adds set of run result objects for the specified run",
-            description = "Adds set of run result objects for the specified run")
-    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
-    public Result addPipelineRunResults(@PathVariable(value = RUN_ID) final Long runId,
-                                        @RequestBody final List<PipelineRunResult> results) {
-        runApiService.addPipelineRunResults(runId, results);
-        return Result.success();
->>>>>>> theirs
-    }
-
-<<<<<<< ours
-    @PostMapping("/runs/archive")
-    @ApiOperation(
-            value = "Migrate runs to archive table according to owner's metadata configuration",
-            notes = "Migrate runs to archive table according to owner's metadata configuration",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<Boolean> archiveRuns() {
-        runApiService.archiveRuns();
-        return Result.success(true);
-||||||| base
-    @GetMapping("/run/{runId}/result")
-    @ApiOperation(
-            value = "Loads run result objects for the specified run",
-            notes = "Loads run result objects for the specified run",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<PipelineRunResult>> loadPipelineRunResults(@PathVariable(value = RUN_ID) final Long runId) {
-        return Result.success(runApiService.loadPipelineRunResultsForRun(runId));
-=======
-    @GetMapping("/run/{runId}/result")
-    @Operation(
-            summary = "Loads run result objects for the specified run",
-            description = "Loads run result objects for the specified run")
-    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
-    public Result<List<PipelineRunResult>> loadPipelineRunResults(@PathVariable(value = RUN_ID) final Long runId) {
-        return Result.success(runApiService.loadPipelineRunResultsForRun(runId));
->>>>>>> theirs
-    }
-
-<<<<<<< ours
-    @PostMapping("/runs/archive/owners")
-    @ApiOperation(
-            value = "Migrate runs to archive table for specified user (or group).",
-            notes = "If no 'days' specified try to find days in metadata. Otherwise, ignore metadata configuration.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<Boolean> archiveRunsByOwner(@RequestParam final String ownerSid,
-                                              @RequestParam final boolean principal,
-                                              @RequestParam(required = false) final Integer days) {
-        runApiService.archiveRuns(ownerSid, principal, days);
-        return Result.success(true);
-||||||| base
-    @GetMapping("/run/{runId}/metrics")
-    @ApiOperation(
-            value = "Loads run performance metrics. Metrics can be loaded only for runs in final status.",
-            notes = "Loads run performance metrics. Metrics can be loaded only for runs in final status.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<PipelineRunPerformanceMetrics> loadPipelineRunPerformanceMetrics(
-            @PathVariable(value = RUN_ID) final Long runId) {
-        return Result.success(runApiService.loadPipelineRunPerformanceMetrics(runId));
-=======
-    @GetMapping("/run/{runId}/metrics")
-    @Operation(
-            summary = "Loads run performance metrics. Metrics can be loaded only for runs in final status.",
-            description = "Loads run performance metrics. Metrics can be loaded only for runs in final status.")
-    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
-    public Result<PipelineRunPerformanceMetrics> loadPipelineRunPerformanceMetrics(
-            @PathVariable(value = RUN_ID) final Long runId) {
-        return Result.success(runApiService.loadPipelineRunPerformanceMetrics(runId));
->>>>>>> theirs
     }
 }

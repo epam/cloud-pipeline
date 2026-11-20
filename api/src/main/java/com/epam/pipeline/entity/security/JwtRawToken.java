@@ -30,13 +30,7 @@ import org.springframework.security.authentication.AuthenticationServiceExceptio
 
 @Getter
 @AllArgsConstructor
-<<<<<<< ours
-||||||| base
-@EqualsAndHashCode
-=======
-@EqualsAndHashCode
 @NoArgsConstructor
->>>>>>> theirs
 public class JwtRawToken implements Serializable {
     private static final String HEADER_PREFIX = "Bearer ";
     private String token;

@@ -29,9 +29,7 @@ import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class PipelineConfigurationTest {
 
@@ -91,17 +89,7 @@ public class PipelineConfigurationTest {
         final PipeConfValueVO mainFile = pipelineConfiguration.getParameters().get("main_file");
         assertEquals(STRING_TYPE, mainFile.getType());
         assertTrue(mainFile.isRequired());
-<<<<<<< ours
-        assertEquals(mainFile.getSection(), GENERAL_SECTION);
-||||||| base
-        assertEquals(mainFile.getSection(), GENERAL_SECTION);
-        assertEquals(mainFile.getPrettyName(), PRETTY_NAME);
-        assertEquals(mainFile.getIcon(), ICON);
-=======
         assertEquals(GENERAL_SECTION, mainFile.getSection());
-        assertEquals(PRETTY_NAME, mainFile.getPrettyName());
-        assertEquals(ICON, mainFile.getIcon());
->>>>>>> theirs
 
         final PipeConfValueVO mainClass = pipelineConfiguration.getParameters().get("main_class");
         assertEquals(CLASS_TYPE, mainClass.getType());
@@ -112,40 +100,6 @@ public class PipelineConfigurationTest {
         assertFalse(instanceSize.isRequired());
         assertEquals(EMPTY, instanceSize.getValue());
         assertEquals(1, instanceSize.getValidation().size());
-<<<<<<< ours
-||||||| base
-        assertEquals(2, instanceSize.getAnnotation().size());
-        assertTrue(instanceSize.getAnnotation().containsKey("key"));
-        assertTrue(instanceSize.getAnnotation().containsKey("tag"));
-        assertNotNull(instanceSize.getScheme());
-
-        final PipeConfValueVO metadataEntryParam = pipelineConfiguration.getParameters()
-                .get(METADATA_ENTRY_TYPE + "_param");
-        assertEquals(METADATA_ENTRY_TYPE, metadataEntryParam.getType());
-        Map<String, Object> metadataConfig = metadataEntryParam.getMetadataConfig();
-        assertNotNull(metadataConfig);
-        assertEquals(1, metadataConfig.get("folderId"));
-        assertEquals("genome", metadataConfig.get("metadataClass"));
-        assertEquals("Name", metadataConfig.get("nameField"));
-        assertNotNull(metadataConfig.get("params"));
-        assertTrue(metadataConfig.get("params") instanceof Map);
-=======
-        assertEquals(2, instanceSize.getAnnotation().size());
-        assertTrue(instanceSize.getAnnotation().containsKey("key"));
-        assertTrue(instanceSize.getAnnotation().containsKey("tag"));
-        assertNotNull(instanceSize.getScheme());
-
-        final PipeConfValueVO metadataEntryParam = pipelineConfiguration.getParameters()
-                .get(METADATA_ENTRY_TYPE + "_param");
-        assertEquals(METADATA_ENTRY_TYPE, metadataEntryParam.getType());
-        Map<String, Object> metadataConfig = metadataEntryParam.getMetadataConfig();
-        assertNotNull(metadataConfig);
-        assertEquals(1, metadataConfig.get("folderId"));
-        assertEquals("genome", metadataConfig.get("metadataClass"));
-        assertEquals("Name", metadataConfig.get("nameField"));
-        assertNotNull(metadataConfig.get("params"));
-        assertInstanceOf(Map.class, metadataConfig.get("params"));
->>>>>>> theirs
 
         final PipeConfValueVO instanceDisk = pipelineConfiguration.getParameters().get("instance_disk");
         assertEquals(STRING_TYPE, instanceDisk.getType());
