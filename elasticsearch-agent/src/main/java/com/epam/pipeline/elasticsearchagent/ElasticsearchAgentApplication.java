@@ -17,9 +17,11 @@ package com.epam.pipeline.elasticsearchagent;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration;
 
-@SpringBootApplication(exclude = {WebMvcAutoConfiguration.class})
+// The Elasticsearch 6 clients are configured in ElasticsearchConfig
+@SpringBootApplication(exclude = {WebMvcAutoConfiguration.class, ElasticsearchRestClientAutoConfiguration.class})
 @SuppressWarnings("checkstyle:HideUtilityClassConstructor")
 public class ElasticsearchAgentApplication {
 

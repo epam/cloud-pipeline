@@ -46,7 +46,7 @@ public class EventToRequestConverterImpl<T> implements EventToRequestConverter {
                                        final String indexName,
                                        final EntityLoader<T> loader,
                                        final EntityMapper<T> mapper) {
-       this(indexPrefix, indexName, loader, mapper, Collections.emptyList());
+        this(indexPrefix, indexName, loader, mapper, Collections.emptyList());
     }
 
     public EventToRequestConverterImpl(final String indexPrefix,

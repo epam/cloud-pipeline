@@ -39,8 +39,7 @@ public class StorageRequestMapper {
                     .field("total_requests", requests.getTotalRequests())
                     .field("period", requests.getPeriod())
                     .endObject();
-        } catch (
-                IOException e) {
+        } catch (IOException e) {
             throw new IllegalArgumentException("Failed to create elasticsearch document for storage requests: ", e);
         }
     }

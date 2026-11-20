@@ -35,6 +35,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -80,25 +81,27 @@ public class ElasticsearchAgentService {
         log.debug("Start synchronising billing data...");
 
         final LocalDateTime lastSyncTime = getLastSyncTime();
-        final LocalDateTime syncStart = LocalDateTime.now(Clock.systemUTC());
+        final LocalDateTime syncStart = LocalDateTime.now(Clock.systemUTC()).truncatedTo(ChronoUnit.MILLIS);
 
         final List<CompletableFuture<Void>> results = synchronizers.stream()
             .map(synchronizer -> CompletableFuture.runAsync(() -> {
-                LocalDateTime startSyncTime = LocalDateTime.now(Clock.systemUTC());
+                LocalDateTime startSyncTime = LocalDateTime.now(Clock.systemUTC()).truncatedTo(ChronoUnit.MILLIS);
                 log.debug("Synchronizer {} starts work at {} ", synchronizer.getClass().getSimpleName(),
                           startSyncTime);
                 synchronizer.synchronize(lastSyncTime, syncStart);
                 log.debug("Synchronizer {} stops work at {}. Duration is {} seconds.",
                           synchronizer.getClass().getSimpleName(),
-                          LocalDateTime.now(Clock.systemUTC()),
-                          Duration.between(startSyncTime, LocalDateTime.now(Clock.systemUTC()))
+                          LocalDateTime.now(Clock.systemUTC()).truncatedTo(ChronoUnit.MILLIS),
+                          Duration.between(startSyncTime, LocalDateTime.now(Clock.systemUTC())
+                                      .truncatedTo(ChronoUnit.MILLIS))
                               .abs()
                               .getSeconds());
             }, elasticsearchAgentThreadPool)
                 .exceptionally(throwable -> {
                     log.warn("Exception while trying to send data to Elasticsearch service", throwable);
                     log.debug("Synchronizer {} stops work at {}.",
-                              synchronizer.getClass().getSimpleName(), LocalDateTime.now(Clock.systemUTC()));
+                              synchronizer.getClass().getSimpleName(),
+                              LocalDateTime.now(Clock.systemUTC()).truncatedTo(ChronoUnit.MILLIS));
                     return null;
                 })).collect(Collectors.toList());
         try {
@@ -121,7 +124,7 @@ public class ElasticsearchAgentService {
             return billingStartDate;
         }
         try {
-            return LocalDateTime.parse(lastTime, DATE_TIME_FORMATTER);
+            return LocalDateTime.parse(lastTime, DATE_TIME_FORMATTER).truncatedTo(ChronoUnit.MILLIS);
         } catch (DateTimeParseException e) {
             log.error(e.getMessage(), e);
             return billingStartDate;

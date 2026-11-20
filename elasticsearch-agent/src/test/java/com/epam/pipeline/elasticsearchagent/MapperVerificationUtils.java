@@ -16,7 +16,6 @@
 package com.epam.pipeline.elasticsearchagent;
 
 import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
-import com.epam.pipeline.entity.configuration.FirecloudRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
 import com.epam.pipeline.entity.datastorage.NFSDataStorage;
@@ -36,7 +35,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.vo.EntityVO;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.mchange.util.AssertException;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.xcontent.NamedXContentRegistry;
@@ -51,8 +50,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.epam.pipeline.elasticsearchagent.VerificationUtils.verifyStringArray;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 @SuppressWarnings({"PMD.TooManyStaticImports", "unchecked"})
 public final class MapperVerificationUtils {
@@ -221,25 +220,6 @@ public final class MapperVerificationUtils {
         assertNull(puttedObjects.get("methodConfigurationName"));
         assertNull(puttedObjects.get("methodConfigurationSnapshot"));
         assertEquals(pipeline.getName(), puttedObjects.get(PIPELINE_NAME));
-    }
-
-    public static void verifyFirecloudConfigurationEntry(final FirecloudRunConfigurationEntry expected,
-                                                         final XContentBuilder content) throws IOException {
-        Map<String, Object> puttedObjects = getPuttedObject(content);
-
-        assertEquals(expected.getExecutionEnvironment().name(), puttedObjects.get("environment"));
-        assertEquals(expected.getName(), puttedObjects.get("entryName"));
-        assertEquals(toInt(expected.getRootEntityId()), puttedObjects.get("rootEntityId"));
-        assertEquals(expected.getConfigName(), puttedObjects.get("configName"));
-        assertEquals(expected.isDefaultConfiguration(), puttedObjects.get("defaultConfiguration"));
-        assertEquals(expected.getMethodName(), puttedObjects.get("methodName"));
-        assertEquals(expected.getMethodSnapshot(), puttedObjects.get("methodSnapshot"));
-        assertEquals(expected.getMethodConfigurationName(), puttedObjects.get("methodConfigurationName"));
-        assertEquals(expected.getMethodConfigurationSnapshot(), puttedObjects.get("methodConfigurationSnapshot"));
-        assertNull(puttedObjects.get(PIPELINE_NAME));
-        assertNull(puttedObjects.get(PIPELINE_ID));
-        assertNull(puttedObjects.get(PIPELINE_VERSION));
-        assertNull(puttedObjects.get("dockerImage"));
     }
 
     public static void verifyS3Storage(final S3bucketDataStorage expected, final String region,
