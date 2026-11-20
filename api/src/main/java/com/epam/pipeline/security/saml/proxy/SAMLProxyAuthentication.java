@@ -32,9 +32,13 @@ public class SAMLProxyAuthentication implements Authentication {
     private String rawSamlResponse;
     private UserContext userContext;
 
+    /**
+     * The roles and groups of the registered user the SAML response names: the proxy filter chain grants
+     * access by role (ROLE_ADMIN or ROLE_USER), so an empty list would refuse every proxied request.
+     */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.emptyList();
+        return userContext == null ? Collections.emptyList() : userContext.getAuthorities();
     }
 
     @Override

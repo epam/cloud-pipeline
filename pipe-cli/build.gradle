@@ -40,8 +40,8 @@ task buildLinux(type: Exec, dependsOn: ':pipe-cli:test') {
     ignoreExitValue = true
     doLast {
         cleanCLIVersion()
-        if (execResult.exitValue != 0) {
-            throw new GradleException("build_linux.sh failed with exit code ${execResult.exitValue}")
+        if (executionResult.get().exitValue != 0) {
+            throw new GradleException("build_linux.sh failed with exit code ${executionResult.get().exitValue}")
         }
         delete("$project.rootDir/api/src/main/resources/static/pipe")
         copy {

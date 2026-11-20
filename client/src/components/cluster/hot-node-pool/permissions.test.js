@@ -142,39 +142,34 @@ describe('canEditPool', () => {
   });
 });
 
-// The chart button leads to `/cluster/usage`, gated on ADMIN_OR_CLUSTER_READER, so the
-// NODE_POOL_MANAGER role alone does not earn it.
+// The chart button leads to the "Pools Usage" tab, which is shown to admins only.
 describe('canViewPoolUsage', () => {
   test('an admin may view pool usage', () => {
     expect(canViewPoolUsage({value: {admin: true}})).toBe(true);
   });
 
-  test('a cluster reader may view pool usage', () => {
+  test('a cluster reader may not view pool usage', () => {
     expect(canViewPoolUsage({value: {admin: false, roles: [{name: 'ROLE_CLUSTER_READER'}]}}))
-      .toBe(true);
+      .toBe(false);
   });
 
-  // `ADMIN_OR_CLUSTER_READER`, the backend's own gate behind `POST /report/pools`, is
-  // ADMIN, RUN_ADMIN or ROLE_CLUSTER_READER - `hasBlanketManageRights` already treats
-  // RUN_ADMIN as admin's equal for edit/delete, and this must not single it out to lose
-  // the chart button that the other two capabilities on the same card keep for it.
-  test('a RUN_ADMIN may view pool usage', () => {
+  test('a RUN_ADMIN may not view pool usage', () => {
     expect(canViewPoolUsage({value: {admin: false, roles: [{name: 'ROLE_RUN_ADMIN'}]}}))
-      .toBe(true);
+      .toBe(false);
   });
 
   test('a NODE_POOL_MANAGER may not view pool usage', () => {
     expect(canViewPoolUsage({value: nodePoolManager()})).toBe(false);
   });
 
-  test('a NODE_POOL_MANAGER who is also a cluster reader may view pool usage', () => {
+  test('a NODE_POOL_MANAGER who is also a cluster reader may not view pool usage', () => {
     expect(canViewPoolUsage({
       value: {
         admin: false,
         userName: 'MANAGER',
         roles: [{name: 'ROLE_NODE_POOL_MANAGER'}, {name: 'ROLE_CLUSTER_READER'}]
       }
-    })).toBe(true);
+    })).toBe(false);
   });
 
   test('an unloaded user may not view pool usage', () => {

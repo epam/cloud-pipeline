@@ -15,7 +15,7 @@
 # Built like cp-storage-lifecycle-service: the service and pipe-common both come out of the API
 # distribution, so the image carries no copy of the repository.
 #
-# 24.04 and not the 18.04 the lifecycle service uses: setup.py requires Python 3.12.
+# Ubuntu 24.04: setup.py requires Python 3.12, which its packages provide.
 FROM ubuntu:24.04
 
 # nfs-common: the service mounts NFS shares itself. procps: pgrep, which liveness.sh uses.

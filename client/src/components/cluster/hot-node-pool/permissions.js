@@ -16,7 +16,6 @@
 
 import {
   isAdmin,
-  isClusterReader,
   isRunAdmin,
   isNodePoolManager
 } from '../utilities/access-permissions';
@@ -97,14 +96,11 @@ export function canEditPool (pool, authenticatedUserInfo) {
   return isNodePoolManager(user) && isPoolOwner(pool, user);
 }
 
-// The pool card's chart button opens `/cluster/usage`, which reads `POST /report/pools` -
-// `ADMIN_OR_CLUSTER_READER`, i.e. ADMIN, RUN_ADMIN or ROLE_CLUSTER_READER, with no
-// node-pool-manager exception. (The "Pools Usage" tab's own `available` check in
-// `cluster/index.js` reads `isClusterReader` alone, missing the RUN_ADMIN case this
-// reads correctly - a pre-existing gap there, not one to repeat here.)
+// The pool card's chart button opens the "Pools Usage" tab (`/cluster/usage`), which
+// `cluster/index.js` shows to admins only, so only an admin is offered the button.
 export function canViewPoolUsage (authenticatedUserInfo) {
   const user = authenticatedUserInfo && authenticatedUserInfo.value;
-  return isClusterReader(user) || isRunAdmin(user);
+  return Boolean(isAdmin(user));
 }
 
 // `NODE_POOL_ID_OWNER`: ADMIN or RUN_ADMIN outright, or a per-pool OWNER grant - the same

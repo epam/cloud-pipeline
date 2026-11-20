@@ -60,8 +60,9 @@ dependencies {
         exclude group: 'org.bouncycastle', module: 'bcprov-jdk15on'
     }
 
-    implementation 'org.slf4j:slf4j-api:1.7.36'
-    implementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    // SLF4J 2 (springdoc and swagger need it) binds to Log4j 2 through log4j-slf4j2-impl only
+    implementation 'org.slf4j:slf4j-api'
+    implementation "org.apache.logging.log4j:log4j-slf4j2-impl:$log4jVersion"
     implementation "org.apache.logging.log4j:log4j-api:$log4jVersion"
     implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
     implementation "org.apache.logging.log4j:log4j-jcl:$log4jVersion"

@@ -9,7 +9,7 @@ plugins {
 group "com.epam.pipeline"
 
 // Spring Boot manages a newer Elasticsearch client; this module talks to Elasticsearch 6
-ext["elasticsearch.version"] = elasticsearchVersion
+ext["elasticsearch-client.version"] = elasticsearchVersion
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21

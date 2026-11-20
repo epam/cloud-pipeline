@@ -220,9 +220,11 @@ public final class AclExpressions {
             + "hasPermission(#id, 'com.epam.pipeline.entity.cluster.pool.NodePool', 'WRITE')";
     public static final String NODE_POOL_ID_OWNER = ADMIN_ONLY + OR + RUN_ADMIN_ONLY + OR
             + "hasPermission(#id, 'com.epam.pipeline.entity.cluster.pool.NodePool', 'OWNER')";
-    public static final String NODE_POOL_READ_FILTER = ADMIN_OR_CLUSTER_READER + OR
+    // RUN_ADMIN manages every pool (NODE_POOL_ID_WRITE, NODE_POOL_ID_OWNER), so it reads every pool too.
+    // ADMIN_OR_CLUSTER_READER does not include RUN_ADMIN here, and widening it would open other endpoints.
+    public static final String NODE_POOL_READ_FILTER = ADMIN_OR_CLUSTER_READER + OR + RUN_ADMIN_ONLY + OR
             + "hasPermission(filterObject, 'READ')";
-    public static final String NODE_POOL_RETURN_OBJECT_READ = ADMIN_OR_CLUSTER_READER + OR
+    public static final String NODE_POOL_RETURN_OBJECT_READ = ADMIN_OR_CLUSTER_READER + OR + RUN_ADMIN_ONLY + OR
             + "hasPermission(returnObject, 'READ')";
 
     public static final String CAPACITY_RESERVATION_ID_READ = ADMIN_ONLY + OR

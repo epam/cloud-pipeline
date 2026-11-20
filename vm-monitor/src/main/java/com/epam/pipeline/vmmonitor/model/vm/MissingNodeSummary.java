@@ -17,8 +17,16 @@
 package com.epam.pipeline.vmmonitor.model.vm;
 
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 import java.util.List;
 
-public record MissingNodeSummary(VirtualMachine vm, List<PipelineRun> matchingRuns, Long matchingPoolId) {
+@AllArgsConstructor
+@Getter
+public class MissingNodeSummary {
+
+    private final VirtualMachine vm;
+    private final List<PipelineRun> matchingRuns;
+    private final Long matchingPoolId;
 }

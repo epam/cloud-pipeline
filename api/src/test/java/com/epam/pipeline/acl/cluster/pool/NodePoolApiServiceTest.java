@@ -28,6 +28,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 
+import java.util.ArrayList;
+import java.util.Collections;
+
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -37,7 +40,10 @@ public class NodePoolApiServiceTest extends AbstractAclTest {
 
     private static final String NODE_POOL_MANAGER_ROLE = "NODE_POOL_MANAGER";
 
+    private static final Long POOL_ID = 1L;
+
     private final NodePool pool = NodePoolCreatorUtils.getPoolWithoutSchedule();
+    private final NodePool storedPool = NodePoolCreatorUtils.getPoolWithoutSchedule(POOL_ID);
 
     @Autowired
     private NodePoolApiService nodePoolApiService;
@@ -90,6 +96,22 @@ public class NodePoolApiServiceTest extends AbstractAclTest {
     public void shouldDenyAnOrdinaryUserAReservationBackedPool() {
         assertThrows(AccessDeniedException.class,
             () -> nodePoolApiService.create(reservationPoolVO(CapacityReservationType.FUTURE_DATED)));
+    }
+
+    @Test
+    @WithMockUser(roles = RUN_ADMIN_ROLE)
+    public void shouldLoadEveryPoolForARunAdministrator() {
+        doReturn(new ArrayList<>(Collections.singletonList(storedPool))).when(mockNodePoolManager).loadAll(false);
+
+        assertThat(nodePoolApiService.loadAll(false)).containsExactly(storedPool);
+    }
+
+    @Test
+    @WithMockUser(roles = RUN_ADMIN_ROLE)
+    public void shouldLoadAnyPoolByIdForARunAdministrator() {
+        doReturn(storedPool).when(mockNodePoolManager).load(POOL_ID);
+
+        assertThat(nodePoolApiService.load(POOL_ID)).isEqualTo(storedPool);
     }
 
     private static NodePoolVO reservationPoolVO(final CapacityReservationType type) {
