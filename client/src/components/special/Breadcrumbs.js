@@ -271,12 +271,4 @@ export default class Breadcrumbs extends React.Component {
       </div>
     );
   }
-
-  componentWillReceiveProps (nextProps) {
-    if (`${this.props.id}` !== `${nextProps.id}` || this.props.type !== nextProps.type) {
-      (async () => {
-        await this.props.pipelinesLibrary.fetch();
-      })();
-    }
-  }
 }
