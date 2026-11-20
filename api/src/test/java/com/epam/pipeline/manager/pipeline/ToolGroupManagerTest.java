@@ -46,7 +46,8 @@ public class ToolGroupManagerTest extends AbstractManagerTest {
 
     private DockerRegistry registry;
 
-    @BeforeEach    public void setUp() throws Exception {
+    @BeforeEach
+    public void setUp() throws Exception {
         registry = new DockerRegistry();
         registry.setPath(TEST_REPO);
         registry.setOwner(TEST_USER);

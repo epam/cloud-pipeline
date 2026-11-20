@@ -278,7 +278,7 @@ public class ToolController extends AbstractRestController {
     @ResponseBody
     public Result<Long> uploadToolIcon(final HttpServletRequest request, @PathVariable long toolId)
         throws FileUploadException, IOException {
-        final var file = consumeMultipartFile(request);
+        final var file = consumeMultipartFile(request, ALLOWED_ICON_EXTENSIONS);
         if (file.isEmpty()) {
             throw new FileUploadException("File is empty!");
         }

@@ -82,7 +82,8 @@ public class DockerRegistryManagerTest extends AbstractManagerTest {
     @Mock
     private DockerClient dockerClient;
 
-    @BeforeEach    public void setup() {
+    @BeforeEach
+    public void setup() {
         MockitoAnnotations.initMocks(this);
 
         TestUtils.configureDockerClientMock(dockerClient, dockerClientFactoryMock);

@@ -47,7 +47,8 @@ public class DataStorageToVersionedStorageConvertManagerTest {
             new DataStorageToVersionedStorageConvertManager(pipelineManager, messageHelper, entityTransferManagers,
                     storageTransferManagers);
 
-    @BeforeEach    public void setUp() throws Exception {
+    @BeforeEach
+    public void setUp() throws Exception {
         doReturn(PIPELINE).when(pipelineManager).createEmpty(any());
     }
 

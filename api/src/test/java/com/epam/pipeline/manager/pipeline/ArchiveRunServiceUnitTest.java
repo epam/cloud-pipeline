@@ -72,7 +72,8 @@ public class ArchiveRunServiceUnitTest {
     private final ArchiveRunService archiveRunService = new ArchiveRunService(preferenceManager, messageHelper,
             metadataDao, userManager, roleManager, archiveRunAsyncService);
 
-    @BeforeEach    public void setUp() {
+    @BeforeEach
+    public void setUp() {
         doReturn(TEST).when(preferenceManager).getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_METADATA_KEY);
         doReturn(CHUNK_SIZE).when(preferenceManager)
                 .getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_RUNS_CHUNK_SIZE);

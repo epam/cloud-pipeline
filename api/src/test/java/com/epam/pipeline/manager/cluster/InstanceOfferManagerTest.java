@@ -62,7 +62,8 @@ public class InstanceOfferManagerTest extends AbstractManagerTest {
 
     private AwsRegion region;
 
-    @BeforeEach    public void setUp() {
+    @BeforeEach
+    public void setUp() {
         region = ObjectCreatorUtils.getDefaultAwsRegion();
         cloudRegionDao.create(region);
         instanceOfferDao.insertInstanceOffers(Arrays.asList(makeInstanceOffer(M5_INSTANCE_TYPE),

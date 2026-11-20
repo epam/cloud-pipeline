@@ -30,7 +30,8 @@ public class NFSDataStorageToPipelineTransferManagerTest {
     private final NFSDataStorageToPipelineTransferManager manager = new NFSDataStorageToPipelineTransferManager(
             nfsStorageMounter, localPathToPipelineTransferManager);
 
-    @BeforeEach    public void setUp() {
+    @BeforeEach
+    public void setUp() {
         doReturn(MOUNT_DIR.toFile()).when(nfsStorageMounter).mount(any());
     }
 

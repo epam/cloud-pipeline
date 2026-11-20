@@ -68,7 +68,8 @@ public class TemporaryCredentialsManagerImplTest {
     private final TemporaryCredentialsManagerImpl manager = new TemporaryCredentialsManagerImpl(credentialsGenerators,
             messageHelper, dataStorageManager, pathPermissionsService, storagePermissionManager, authManager);
 
-    @BeforeEach    public void setUp() {
+    @BeforeEach
+    public void setUp() {
         when(generator.generate(any(), any())).thenReturn(TemporaryCredentials.builder().build());
     }
 

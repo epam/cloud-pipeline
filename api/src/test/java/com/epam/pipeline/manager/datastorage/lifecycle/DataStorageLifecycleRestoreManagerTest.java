@@ -106,7 +106,8 @@ public class DataStorageLifecycleRestoreManagerTest {
     );
 
 
-    @BeforeEach    public void setUp() {
+    @BeforeEach
+    public void setUp() {
         Mockito.doReturn(filteredAsEffective)
             .when(dataStoragePathRestoreActionRepository)
             .filterBy(

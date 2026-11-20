@@ -59,7 +59,9 @@ public final class TestUtils {
     public static final String DEFAULT_STORAGE_NAME_PATTERN = "@@-home";
     public static final String TEMPLATE_REPLACE_MARK = "@@";
     private static final long PROJECT_ID = 1L;
-    private static final int EXTENDED_DEFAULT_ROLES_NUMBER = 6;
+    // predefined roles the migrations create but DefaultRoles does not list:
+    // ROLE_ADVANCED_USER, ROLE_USER_METADATA_READER and ROLE_USER_READER
+    private static final int EXTENDED_DEFAULT_ROLES_NUMBER = 3;
     public static final int EXPECTED_DEFAULT_ROLES_NUMBER =
             DefaultRoles.values().length + EXTENDED_DEFAULT_ROLES_NUMBER;
 

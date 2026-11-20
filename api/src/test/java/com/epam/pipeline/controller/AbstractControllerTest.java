@@ -16,11 +16,11 @@
 
 package com.epam.pipeline.controller;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.epam.pipeline.config.JsonMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -42,11 +42,11 @@ public abstract class AbstractControllerTest {
     @Autowired
     protected WebApplicationContext wac;
 
-    @Before
+    @BeforeEach
     public void setup() throws Exception {
         // checks that all required dependencies are provided.
-        assertNotNull("WebApplicationContext isn't provided.", wac);
-        assertNotNull("ObjectMapper isn't provided.", objectMapper);
+        assertNotNull(wac, "WebApplicationContext isn't provided.");
+        assertNotNull(objectMapper, "ObjectMapper isn't provided.");
 
         typeFactory = TypeFactory.defaultInstance();
         mockMvc = MockMvcBuilders.webAppContextSetup(wac).build();

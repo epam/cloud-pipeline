@@ -151,7 +151,7 @@ public class ContextualPreferenceDaoTest extends AbstractSpringTest {
         final Optional<ContextualPreference> loadedPreference = contextualPreferenceDao.load(NAME, resource);
 
         assertTrue(loadedPreference.isPresent());
-        assertThat(loadedPreference.get().getCreatedDate(), is(not(oldPreference.getCreatedDate())));
+        assertThat(loadedPreference.get().createdDate(), is(not(oldPreference.createdDate())));
     }
 
     @Test

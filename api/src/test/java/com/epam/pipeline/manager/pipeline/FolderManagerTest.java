@@ -157,7 +157,8 @@ public class FolderManagerTest extends AbstractSpringTest {
 
     private AbstractCloudRegion cloudRegion;
 
-    @BeforeEach    public void setUp() throws Exception {
+    @BeforeEach
+    public void setUp() throws Exception {
         final AWSRegionDTO awsRegionDTO = new AWSRegionDTO();
         awsRegionDTO.setName("US");
         awsRegionDTO.setRegionCode("us-east-1");

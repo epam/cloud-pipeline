@@ -26,7 +26,7 @@ import org.apache.commons.lang.math.NumberUtils;
 @RequiredArgsConstructor
 public enum PreferenceType {
     STRING(0, value -> true),
-    INTEGER(1, NumberUtils::isDigits),
+    INTEGER(1, isDigitOrNegativeDigitValidator()),
     FLOAT(2, NumberUtils::isNumber),
     BOOLEAN(3, value -> "true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)),
     OBJECT(4, value -> PreferenceValidators.isNullOrAnyValidJson.test(value, null)),
@@ -45,5 +45,14 @@ public enum PreferenceType {
 
     public boolean validate(final String value) {
         return validator.test(value);
+    }
+
+    /**
+     * Accepts an optional leading minus: -1 is the documented value that disables
+     * cluster.fallback.instance.types.max.count. Each preference's own validator still decides
+     * whether a negative value is allowed for it.
+     */
+    private static Predicate<String> isDigitOrNegativeDigitValidator() {
+        return value -> NumberUtils.isDigits(value != null && value.startsWith("-") ? value.substring(1) : value);
     }
 }

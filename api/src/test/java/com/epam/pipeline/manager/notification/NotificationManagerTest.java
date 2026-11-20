@@ -84,6 +84,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -178,7 +179,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
     @Autowired
     private IssueDao issueDao;
 
-    @Autowired
+    @SpyBean
     private PreferenceManager preferenceManager;
 
     private PipelineRun longRunnging;

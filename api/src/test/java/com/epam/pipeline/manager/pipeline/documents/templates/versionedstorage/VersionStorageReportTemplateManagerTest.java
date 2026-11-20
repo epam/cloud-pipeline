@@ -83,7 +83,8 @@ public class VersionStorageReportTemplateManagerTest extends AbstractManagerTest
     @InjectMocks
     private VersionStorageReportTemplateManager reportTemplateManager;
 
-    @BeforeEach    public void setup() throws IOException {
+    @BeforeEach
+    public void setup() throws IOException {
         Pipeline mockPipeline = new Pipeline();
         mockPipeline.setName("pipeline");
         mockPipeline.setId(1L);

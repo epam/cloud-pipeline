@@ -73,7 +73,8 @@ public class FolderManagerGetProjectTest extends AbstractSpringTest {
     @MockBean
     protected UserManager userManager;
 
-    @BeforeEach    public void setUp() {
+    @BeforeEach
+    public void setUp() {
         data.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, DATA_VALUE_1));
         dataWithIndicator.put(DATA_KEY_1, new PipeConfValue(DATA_TYPE_1, PROJECT_INDICATOR_VALUE));
 

@@ -87,7 +87,6 @@ public class UserControllerTest extends AbstractControllerTest {
 
     private static MockHttpServletRequestBuilder tokenRequest() {
         return get(USER_TOKEN_URL)
-                .servletPath(SERVLET_PATH)
                 .param(EXPIRATION, String.valueOf(EXPIRATION_SECONDS));
     }
 }

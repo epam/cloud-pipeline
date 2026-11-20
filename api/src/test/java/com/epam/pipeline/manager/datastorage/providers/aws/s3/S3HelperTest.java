@@ -80,7 +80,8 @@ public class S3HelperTest {
     private final S3Helper helper = spy(new S3Helper(events, messageHelper));
     private final S3bucketDataStorage storage = new S3bucketDataStorage();
 
-    @BeforeEach    public void setUp() throws Exception {
+    @BeforeEach
+    public void setUp() throws Exception {
         doReturn(amazonS3).when(helper).getDefaultS3Client();
         storage.setPath(BUCKET);
         // Signing reads the object's head and hands back a url. Only the content-disposition tests
@@ -322,7 +323,7 @@ public class S3HelperTest {
 
     @Test
     public void generateDownloadURLShouldOfferTheKeysOwnNameByDefault() {
-        assertEquals("attachment; filename=\"file.zip\"",
+        assertEquals("attachment; filename=file.zip",
                 dispositionOf(helper.generateDownloadURL(BUCKET, "generated/file.zip", NO_VERSION,
                         ContentDisposition.ATTACHMENT)));
     }
@@ -331,14 +332,14 @@ public class S3HelperTest {
     public void generateDownloadURLShouldOfferTheNameTheCallerAsksFor() {
         // The case this overload exists for: an object keyed by the id of the task that produced it has
         // no name a user would recognise, and the name they asked for is held elsewhere.
-        assertEquals("attachment; filename=\"selection.zip\"",
+        assertEquals("attachment; filename=selection.zip",
                 dispositionOf(helper.generateDownloadURL(BUCKET, "archives/4f1a2c90.zip", NO_VERSION,
                         ContentDisposition.ATTACHMENT, "selection.zip")));
     }
 
     @Test
     public void generateDownloadURLShouldFallBackToTheKeyWhenTheNameIsBlank() {
-        assertEquals("attachment; filename=\"4f1a2c90.zip\"",
+        assertEquals("attachment; filename=4f1a2c90.zip",
                 dispositionOf(helper.generateDownloadURL(BUCKET, "archives/4f1a2c90.zip", NO_VERSION,
                         ContentDisposition.ATTACHMENT, null)));
     }

@@ -68,7 +68,8 @@ public class DataStoragePathLoaderTest extends AbstractSpringTest {
     @MockBean
     private CheckPermissionHelper permissionHelper;
 
-    @BeforeEach    public void setUp() {
+    @BeforeEach
+    public void setUp() {
         doReturn(new MockS3Helper()).when(storageProviderManager)
                 .getS3Helper(any(S3bucketDataStorage.class));
         doReturn(new AwsRegion()).when(regionManager).loadOrDefault(any());

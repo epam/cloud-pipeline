@@ -65,7 +65,8 @@ public class DockerRegistryManagerUnitTest {
     @InjectMocks
     private DockerRegistryManager dockerRegistryManager;
 
-    @BeforeEach    public void setUp() throws Exception {
+    @BeforeEach
+    public void setUp() throws Exception {
         MockitoAnnotations.openMocks(this);
     }
 

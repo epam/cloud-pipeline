@@ -45,7 +45,8 @@ public class PipelineConfigurationPostProcessorTest {
 
     private PipelineConfigurationPostProcessor processor;
 
-    @BeforeEach    public void setUp() throws URISyntaxException {
+    @BeforeEach
+    public void setUp() throws URISyntaxException {
         final JsonMapper jsonMapper = new JsonMapper();
         jsonMapper.afterPropertiesSet();
         final URL fileUrl = Thread.currentThread().getContextClassLoader()

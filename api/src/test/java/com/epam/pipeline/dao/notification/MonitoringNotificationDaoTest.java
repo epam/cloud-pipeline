@@ -92,7 +92,8 @@ public class MonitoringNotificationDaoTest extends AbstractJdbcTest {
     private AbstractCloudRegion region;
 
 
-    @BeforeEach    public void setUp() {
+    @BeforeEach
+    public void setUp() {
         user = UserCreatorUtils.getPipelineUser(TEST_USER1);
         userDao.createUser(user,
                 Arrays.asList(DefaultRoles.ROLE_ADMIN.getId(), DefaultRoles.ROLE_USER.getId()));

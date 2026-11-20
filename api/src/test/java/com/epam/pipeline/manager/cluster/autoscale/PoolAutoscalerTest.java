@@ -65,7 +65,8 @@ public class PoolAutoscalerTest {
     @Mock
     private PreferenceManager preferenceManager;
 
-    @BeforeEach    public void setUp() {
+    @BeforeEach
+    public void setUp() {
         MockitoAnnotations.openMocks(this);
         poolAutoscaler = new PoolAutoscaler(poolManager, poolMapper, kubernetesManager, preferenceManager);
         doReturn(Optional.empty()).when(preferenceManager).findPreference(SystemPreferences.SYSTEM_MAINTENANCE_MODE);

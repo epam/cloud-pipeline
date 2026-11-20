@@ -108,7 +108,8 @@ public class IssueManagerTest extends AbstractSpringTest {
     private Attachment testAttachment;
     private S3bucketDataStorage testSystemDataStorage = new S3bucketDataStorage(1L, TEST_SYSTEM_DATA_STORAGE, "test");
 
-    @BeforeEach    public void setUp() throws Exception {
+    @BeforeEach
+    public void setUp() throws Exception {
         Folder folder = new Folder();
         folder.setName(FOLDER_NAME);
         folder.setOwner(AUTHOR);

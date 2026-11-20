@@ -61,7 +61,8 @@ public class SystemPreferencesValidationTest extends AbstractManagerTest {
     private GitlabVersion supportedVersion;
     private GitlabVersion unsupportedVersion;
 
-    @BeforeEach    public void setUp() {
+    @BeforeEach
+    public void setUp() {
         MockitoAnnotations.initMocks(this);
         assertNotNull(preferences);
 

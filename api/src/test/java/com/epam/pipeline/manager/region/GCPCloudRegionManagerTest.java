@@ -46,7 +46,8 @@ public class GCPCloudRegionManagerTest extends AbstractCloudRegionManagerTest {
             CustomInstanceType.withGpu(2, 3.75, 1, "K80")
     );
 
-    @BeforeEach    public void initGCPPreferences() {
+    @BeforeEach
+    public void initGCPPreferences() {
         doReturn(Collections.singletonList(validRegionId())).when(preferenceManager)
                 .getPreference(SystemPreferences.GCP_REGION_LIST);
     }

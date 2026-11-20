@@ -194,7 +194,8 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     @Autowired
     private MetadataManager metadataManager;
 
-    @BeforeEach    public void setUp() {
+    @BeforeEach
+    public void setUp() {
         doReturn(new MockS3Helper()).when(storageProviderManager).getS3Helper(any(S3bucketDataStorage.class));
         doReturn(new AwsRegion()).when(regionManager).loadOrDefault(any());
         doReturn(new AwsRegion()).when(regionManager).getAwsRegion(any());

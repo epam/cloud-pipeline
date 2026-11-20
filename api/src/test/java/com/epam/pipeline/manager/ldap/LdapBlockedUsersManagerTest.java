@@ -64,7 +64,8 @@ public class LdapBlockedUsersManagerTest {
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
     private final LdapBlockedUsersManager manager = new LdapBlockedUsersManager(ldapManager, preferenceManager);
 
-    @BeforeEach    public void setUp() throws Exception {
+    @BeforeEach
+    public void setUp() throws Exception {
         set(SystemPreferences.LDAP_BLOCKED_USERS_FILTER_PAGE_SIZE, PAGE_SIZE);
         set(SystemPreferences.LDAP_BLOCKED_USER_SEARCH_METHOD,
                 LdapBlockedUserSearchMethod.LOAD_ACTIVE_AND_INTERCEPT.name());

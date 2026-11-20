@@ -70,7 +70,8 @@ public class MetadataManagerUnitTest {
     @InjectMocks
     private MetadataManager metadataManager;
 
-    @BeforeEach    public void setUp() throws Exception {
+    @BeforeEach
+    public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
     }
 

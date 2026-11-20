@@ -42,7 +42,8 @@ public class LocalPathToPipelineTransferManagerTest {
     private final LocalPathToPipelineTransferManager manager = new LocalPathToPipelineTransferManager(
             gitManager, userManager, messageHelper, cmdExecutor, TRANSFER_SCRIPT);
 
-    @BeforeEach    public void setUp() {
+    @BeforeEach
+    public void setUp() {
         doReturn(GIT_CREDENTIALS)
                 .when(gitManager).getGitCredentials(CommonCreatorConstants.ID, false, false);
         doReturn(USER).when(userManager).loadUserByName(USER_NAME);

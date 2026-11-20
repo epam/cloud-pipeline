@@ -51,8 +51,8 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.util.CustomAssertions.notInvoked;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.doReturn;
@@ -87,7 +87,8 @@ public class RunRegionShiftHandlerTest {
     private static final Long NOT_AVAILABLE_REGION_ID = 5L;
     private static final String INSTANCE_TYPE = "instance.type";
 
-    @BeforeEach    public void setup() {
+    @BeforeEach
+    public void setup() {
         doReturn(true).when(preferenceManager).getPreference(SystemPreferences.LAUNCH_RUN_RESCHEDULE_ENABLED);
         doReturn(true).when(instanceOfferManager).isInstanceAllowed(any(), any(), anyBoolean());
         doReturn(true).when(instanceOfferManager).isToolInstanceAllowed(any(), any(), anyBoolean());

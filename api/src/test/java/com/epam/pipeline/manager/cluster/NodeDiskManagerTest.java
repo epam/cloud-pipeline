@@ -35,7 +35,8 @@ public class NodeDiskManagerTest {
     private final MessageHelper messageHelper = mock(MessageHelper.class);
     private final NodeDiskManager manager = new NodeDiskManager(nodeDiskDao, messageHelper);
 
-    @BeforeEach    public void mockInsertingDisk() {
+    @BeforeEach
+    public void mockInsertingDisk() {
         doReturn(Collections.singletonList(disk())).when(nodeDiskDao).insert(any(), any());
         doReturn(Collections.singletonList(disk())).when(nodeDiskDao).insert(any(), any(), any());
     }

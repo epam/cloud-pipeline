@@ -50,7 +50,8 @@ public class GCPInstanceServiceTest {
     private GCPInstanceService service = new GCPInstanceService(
             null, null, null, null, null, null, null, null, null);
 
-    @BeforeEach    public void setup() throws IOException {
+    @BeforeEach
+    public void setup() throws IOException {
         String auth = writeAuthFile("test_region_auth", CRED_TEMPLATE);
         region = new GCPRegion();
         region.setAuthFile(auth);

@@ -17,7 +17,10 @@
 package com.epam.pipeline.app;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dao.JdbcTemplateDryRunWrapper;
 import com.epam.pipeline.dao.region.CloudRegionDao;
+import com.epam.pipeline.manager.access.AccessService;
+import com.epam.pipeline.manager.async.AsyncTaskManager;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
@@ -27,6 +30,9 @@ import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.NatGatewayManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
+import com.epam.pipeline.manager.cluster.capacityreservation.CapacityBlockExtensionService;
+import com.epam.pipeline.manager.cluster.capacityreservation.CapacityBlockOfferingService;
+import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationService;
 import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
 import com.epam.pipeline.manager.cluster.pool.NodeScheduleManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
@@ -52,6 +58,7 @@ import com.epam.pipeline.manager.notification.UserNotificationManager;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.PipelineFileGenerationManager;
+import com.epam.pipeline.manager.pipeline.ArchiveRunService;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunAsManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
@@ -70,6 +77,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.report.NodePoolReportService;
 import com.epam.pipeline.manager.report.UsersUsageReportService;
+import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.manager.user.UsersFileImportManager;
@@ -88,6 +96,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.security.acls.domain.PermissionFactory;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.session.jdbc.JdbcIndexedSessionRepository;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -101,7 +110,7 @@ import javax.sql.DataSource;
  */
 @SpringBootConfiguration
 @Import({AclSecurityConfiguration.class, DBConfiguration.class,
-        MappersConfiguration.class, CacheConfiguration.class})
+    MappersConfiguration.class, CacheConfiguration.class, JdbcTemplateDryRunWrapper.class})
 @ComponentScan(basePackages = {"com.epam.pipeline.manager.security"})
 @TestPropertySource(value={"classpath:test-application.properties"})
 @EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true)
@@ -212,6 +221,30 @@ public class AclTestConfiguration {
 
     @MockBean
     protected UsersFileImportManager usersFileImportManager;
+
+    @MockBean
+    protected RoleManager roleManager;
+
+    @MockBean
+    protected AsyncTaskManager asyncTaskManager;
+
+    @MockBean
+    protected CapacityReservationService capacityReservationService;
+
+    @MockBean
+    protected CapacityBlockOfferingService capacityBlockOfferingService;
+
+    @MockBean
+    protected CapacityBlockExtensionService capacityBlockExtensionService;
+
+    @MockBean
+    protected JdbcIndexedSessionRepository jdbcIndexedSessionRepository;
+
+    @MockBean
+    protected AccessService accessService;
+
+    @MockBean
+    protected ArchiveRunService archiveRunService;
 
     @MockBean
     protected PipelineRunCRUDService runCRUDService;

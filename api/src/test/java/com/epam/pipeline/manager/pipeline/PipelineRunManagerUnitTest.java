@@ -170,7 +170,8 @@ public class PipelineRunManagerUnitTest {
     private final List<PipelineRunParameter> parameters = singletonList(
             new PipelineRunParameter(PARAM_NAME_1, TEST_STRING));
 
-    @BeforeEach    public void setUp() throws Exception {
+    @BeforeEach
+    public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
     }
 

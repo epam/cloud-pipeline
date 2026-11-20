@@ -45,7 +45,7 @@ public class CmdExecutorTest {
         CmdExecutor cmdExecutor = new CmdExecutor();
 
         // bash sleep measured in sec but timeout in mills
-        double timeToSleep = TIMEOUT / 2 / MILLS_IN_SEC;
+        double timeToSleep = (double) (TIMEOUT / 2) / MILLS_IN_SEC;
         cmdExecutor.executeCommand(String.format(COMMAND_WITH_SLEEP, timeToSleep), TIMEOUT);
 
     }
@@ -55,7 +55,7 @@ public class CmdExecutorTest {
         CmdExecutor cmdExecutor = new CmdExecutor();
 
         // bash sleep measured in sec but timeout in mills
-        double timeToSleep = (TIMEOUT + TIMEOUT) / MILLS_IN_SEC;
+        double timeToSleep = (double) (TIMEOUT + TIMEOUT) / MILLS_IN_SEC;
         assertThrows(CmdExecutionException.class,
             () -> cmdExecutor.executeCommand(String.format(COMMAND_WITH_SLEEP, timeToSleep), TIMEOUT));
     }

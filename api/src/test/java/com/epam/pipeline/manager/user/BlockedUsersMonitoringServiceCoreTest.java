@@ -70,7 +70,8 @@ public class BlockedUsersMonitoringServiceCoreTest {
     private final BlockedUsersMonitoringServiceCore monitoringService = new BlockedUsersMonitoringServiceCore(
             userManager, notificationManager, preferenceManager, ldapManager);
 
-    @BeforeEach    public void setup() {
+    @BeforeEach
+    public void setup() {
         set(SystemPreferences.SYSTEM_LDAP_USER_BLOCK_MONITOR_ENABLED, true);
         set(SystemPreferences.SYSTEM_LDAP_USER_BLOCK_MONITOR_GRACE_PERIOD_DAYS, GRACE_DURATION_DAYS);
     }

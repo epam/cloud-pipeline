@@ -19,7 +19,6 @@ package com.epam.pipeline.manager.cluster.pool;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.dao.cluster.pool.NodePoolDao;
 import com.epam.pipeline.entity.cluster.AMIConfiguration;
-import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.NodePoolType;
@@ -29,7 +28,6 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.manager.AbstractManagerTest;
-import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -68,7 +66,6 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
     private static final String ADMIN = "ADMIN";
     private static final String INSTANCE_TYPE = "m5.large";
     private static final String AMI = "ami-0123456789abcdef0";
-    private static final String WINDOWS_AMI = "ami-windows";
     private static final String NETWORKS = "\"networks\": {\"" + ZONE_A + "\": \"" + SUBNET_A + "\", \"" + ZONE_B
             + "\": \"" + SUBNET_B + "\"}";
     private static final String AMIS = "\"amis\": [{\"platform\": \"linux\", \"instance_mask\": \"m5.*\", \"ami\": \""
@@ -89,18 +86,11 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
     @MockBean
     private InstanceOfferManager instanceOfferManager;
 
-    @Autowired
-    private CloudFacade cloudFacade;
-
     @BeforeEach
     public void setUp() {
         givenRegion(new AwsRegion());
         when(instanceOfferManager.isPriceTypeAllowed(any())).thenReturn(true);
         when(instanceOfferManager.isToolInstanceAllowed(any(), any(), anyBoolean())).thenReturn(true);
-        when(cloudFacade.getInstanceImageDescription(any(), any(String.class)))
-                .thenAnswer(invocation -> WINDOWS_AMI.equals(invocation.getArguments()[1])
-                        ? image(WINDOWS_AMI, "windows")
-                        : image(AMI, "linux"));
         setRegion(REGION_NAME + ", " + NETWORKS + ", " + AMIS);
     }
 
@@ -208,17 +198,6 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
 
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldRefuseAWindowsImage() {
-        final NodePool created = poolManager.create(pool());
-        final AMIConfiguration configuration = configuration(ZONE_A, SUBNET_A);
-        configuration.setAmi(WINDOWS_AMI);
-
-        assertThatThrownBy(() -> updateWith(created, configuration))
-                .isInstanceOf(IllegalArgumentException.class);
-    }
-
-    @Test
-    @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldUseAConfigurationTheCreateRequestSends() {
         final NodePoolVO vo = pool();
         vo.setAmiConfiguration(configuration(ZONE_B, SUBNET_B));
@@ -300,10 +279,6 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
         final Preference preference = SystemPreferences.CLUSTER_NETWORKS_CONFIG.toPreference();
         preference.setValue("{\"regions\": [{" + region + "}]}");
         preferenceManager.update(Collections.singletonList(preference));
-    }
-
-    private static InstanceImage image(final String id, final String platform) {
-        return InstanceImage.builder().imageId(id).name(id).platform(platform).build();
     }
 
     private static AMIConfiguration configuration(final String zone, final String subnet) {

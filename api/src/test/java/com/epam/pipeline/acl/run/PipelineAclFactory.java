@@ -30,8 +30,8 @@ import java.util.Optional;
  * limitations under the License.
  */
 
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 
 @RequiredArgsConstructor

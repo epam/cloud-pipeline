@@ -43,7 +43,8 @@ public class ACLUpdateEventProducerTest {
     @Captor
     private ArgumentCaptor<Map<String, String>> eventCapture;
 
-    @BeforeEach    public void setup() {
+    @BeforeEach
+    public void setup() {
         aclUpdateEventProducer = new ACLUpdateEventProducer();
         aclUpdateEventProducer.init(innerProviderSpy);
     }

@@ -108,7 +108,8 @@ public class PipelineConfigurationManagerTest {
     private final PipelineConfigurationManager pipelineConfigurationManager = new PipelineConfigurationManager();
     private final List<AbstractDataStorage> dataStorages = new ArrayList<>();
 
-    @BeforeEach    public void setUp() throws Exception {
+    @BeforeEach
+    public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
         dataStorages.add(getNfsDataStorage(NFS_ID_1, TEST_PATH_1, TEST_OPTIONS_1, TEST_MOUNT_POINT, OWNER1));
         dataStorages.add(getS3bucketDataStorage(S3_ID_1, TEST_PATH_2, OWNER1));

@@ -65,7 +65,8 @@ public class StoragePathPermissionsDaoTest extends AbstractJdbcTest {
     @Autowired
     private StoragePathPermissionsDao storagePathPermissionsDao;
 
-    @BeforeEach    public void setUp() throws Exception {
+    @BeforeEach
+    public void setUp() throws Exception {
         final AwsRegion awsRegion = RegionCreatorUtils.getDefaultAwsRegion();
         cloudRegionDao.create(awsRegion);
 

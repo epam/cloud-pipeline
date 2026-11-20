@@ -36,7 +36,8 @@ public class LdapEntityMapperTest {
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
     private final LdapEntityMapper mapper = new LdapEntityMapper(preferenceManager);
 
-    @BeforeEach    public void setUp() {
+    @BeforeEach
+    public void setUp() {
         mockPreference(SystemPreferences.LDAP_NAME_ATTRIBUTE, NAME_ATTRIBUTE);
     }
 

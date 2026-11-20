@@ -41,7 +41,8 @@ public class StartupApplicationListenerTest {
     private final StartupApplicationListener listener = new StartupApplicationListener(dockerRegistryManager,
             cloudRegionManager, pipelineRunDockerOperationManager, kubernetesManager);
 
-    @BeforeEach    public void setup() {
+    @BeforeEach
+    public void setup() {
         when(event.getApplicationContext()).thenReturn(mock(ApplicationContext.class));
     }
 

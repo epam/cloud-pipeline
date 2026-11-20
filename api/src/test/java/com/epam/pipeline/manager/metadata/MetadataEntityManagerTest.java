@@ -60,7 +60,8 @@ public class MetadataEntityManagerTest extends AbstractSpringTest {
     private MetadataClass sampleClass;
     private MetadataClass pairClass;
 
-    @BeforeEach    public void setUp() {
+    @BeforeEach
+    public void setUp() {
         folder = folderManager.create(ObjectCreatorUtils.createFolder(TEST_FOLDER_NAME, null));
         sampleClass = entityManager.createMetadataClass(SAMPLE_CLASS);
         pairClass = entityManager.createMetadataClass(PAIR_CLASS);

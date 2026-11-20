@@ -51,7 +51,7 @@ public interface UsageMonitoringManager {
      * @return List of monitoring stats.
      */
     default List<MonitoringStats> getStatsForNode(String nodeName) {
-        return getStatsForNode(nodeName, null, null, null, null);
+        return getStatsForNode(nodeName, null, null, null);
     }
 
     /**

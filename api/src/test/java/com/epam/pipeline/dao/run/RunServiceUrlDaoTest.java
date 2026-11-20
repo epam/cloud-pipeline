@@ -61,7 +61,8 @@ public class RunServiceUrlDaoTest extends AbstractJdbcTest {
     private PipelineRunServiceUrl pipelineRunServiceUrl1;
     private PipelineRunServiceUrl pipelineRunServiceUrl2;
 
-    @BeforeEach    public void setup() {
+    @BeforeEach
+    public void setup() {
         final Pipeline testPipeline = new Pipeline();
         testPipeline.setName(TEST_PIPELINE_NAME);
         testPipeline.setRepository(TEST_REPO);

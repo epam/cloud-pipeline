@@ -57,7 +57,8 @@ public class EnvVarsBuilderTest {
     private Map<SystemParams, String> systemParams;
     private PipelineConfiguration configuration;
 
-    @BeforeEach    public void setUp() {
+    @BeforeEach
+    public void setUp() {
         systemParams = matchSystemParams();
         configuration = matchPipeConfig();
     }

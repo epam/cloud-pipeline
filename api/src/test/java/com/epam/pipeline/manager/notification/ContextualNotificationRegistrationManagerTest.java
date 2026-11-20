@@ -62,7 +62,8 @@ public class ContextualNotificationRegistrationManagerTest {
             notificationSettingsManager, notificationTemplateManager, contextualNotificationSettingsManager,
             userManager, messageHelper);
 
-    @BeforeEach    public void setUp() {
+    @BeforeEach
+    public void setUp() {
         mockUser(USER_ID, USER);
         mockUser(ANOTHER_USER_ID, ANOTHER_USER);
         mockUser(OWNER_ID, OWNER);

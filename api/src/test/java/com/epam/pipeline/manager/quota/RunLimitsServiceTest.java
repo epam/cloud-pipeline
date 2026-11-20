@@ -63,7 +63,8 @@ public class RunLimitsServiceTest {
         new RunLimitsService(runManager, roleManager, contextualPreferenceManager, messageHelper, authManager,
                              preferenceManager);
 
-    @BeforeEach    public void init() {
+    @BeforeEach
+    public void init() {
         doReturn(false).when(authManager).isAdmin();
         doReturn(getUser()).when(authManager).getCurrentUser();
         doReturn(1).when(runManager).countPipelineRuns(Mockito.any());

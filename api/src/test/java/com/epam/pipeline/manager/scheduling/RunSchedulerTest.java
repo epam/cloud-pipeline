@@ -88,7 +88,8 @@ public class RunSchedulerTest extends AbstractSpringTest {
     @MockBean
     protected InstanceOfferManager instanceOfferManager;
 
-    @BeforeEach    public void setUp() {
+    @BeforeEach
+    public void setUp() {
         MockitoAnnotations.initMocks(this);
 
         final PipelineRun pipelineRun = createPipelineRun(RUN_ID, RUN_ID);

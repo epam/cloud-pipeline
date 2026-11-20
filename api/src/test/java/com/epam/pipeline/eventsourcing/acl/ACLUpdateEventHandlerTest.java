@@ -58,7 +58,8 @@ public class ACLUpdateEventHandlerTest {
     ArgumentCaptor<ObjectIdentityImpl> childSearchEventCapture;
 
 
-    @BeforeEach    public void setup() {
+    @BeforeEach
+    public void setup() {
         eventHandler = new ACLUpdateEventHandler(TEST_VALUE, TEST_VALUE, aclCache, aclService);
     }
 

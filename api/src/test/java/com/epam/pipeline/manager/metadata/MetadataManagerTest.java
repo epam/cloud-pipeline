@@ -56,7 +56,8 @@ public class MetadataManagerTest extends AbstractSpringTest {
     private static final String TSV_FILE_NAME = "test_file.tsv";
     private static final String CSV_FILE_NAME = "test_file.csv";
 
-    @BeforeEach    public void setup() {
+    @BeforeEach
+    public void setup() {
         expectedData.put(KEY_1, new PipeConfValue(TYPE, VALUE_1));
         expectedData.put(KEY_2, new PipeConfValue(TYPE, VALUE_2));
         metadataEntry.setEntity(entityVO);

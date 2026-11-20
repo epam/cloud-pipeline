@@ -20,6 +20,7 @@ import com.epam.pipeline.app.TestApplicationWithAclSecurity;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.controller.vo.TagsVO;
+import com.epam.pipeline.dao.pipeline.PipelineDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
@@ -186,6 +187,9 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     private PipelineRunDao pipelineRunDao;
 
     @Autowired
+    private PipelineDao pipelineDao;
+
+    @Autowired
     private PreferenceManager preferenceManager;
 
     private static final String TEST_IMAGE = "testImage";
@@ -232,6 +236,8 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
                 .isToolInstanceAllowed(anyString(), any(), eq(NOT_ALLOWED_REGION_ID), eq(true))).thenReturn(false);
         when(instanceOfferManager
                 .isInstanceAllowed(anyString(), eq(NON_DEFAULT_REGION_ID), eq(false))).thenReturn(true);
+        when(instanceOfferManager.isInstanceAllowed(
+                anyString(), any(), eq(NON_DEFAULT_REGION_ID), anyBoolean())).thenReturn(true);
         when(instanceOfferManager.findOffer(anyString(), anyLong())).thenReturn(Optional.empty());
         when(instanceOfferManager.isPriceTypeAllowed(anyString(), any(), anyBoolean())).thenReturn(true);
         when(instanceOfferManager.getInstanceEstimatedPrice(nullable(String.class), nullable(Integer.class),
@@ -390,8 +396,14 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     @Test
     public void testApplyRunInstanceConfigUsesIsInstanceAllowedForPipelineRun() {
         when(instanceOfferManager.isInstanceAllowed(anyString(), any(), eq(REGION_ID), eq(false))).thenReturn(true);
+        final Pipeline pipeline = new Pipeline();
+        pipeline.setName("pipeline");
+        pipeline.setRepository("repository");
+        pipeline.setRepositorySsh("repository-ssh");
+        pipeline.setOwner("owner");
+        pipelineDao.createPipeline(pipeline);
         final PipelineRun run = savedToolRun();
-        run.setPipelineId(1L);
+        run.setPipelineId(pipeline.getId());
         pipelineRunDao.updateRun(run);
 
         final RunInstanceConfigVO vo = new RunInstanceConfigVO();
@@ -741,10 +753,11 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         assertThat(pipelineRun.getInstance().getCloudRegionId(), is(NON_DEFAULT_REGION_ID));
     }
 
-    @Test (expected = IllegalArgumentException.class)
+    @Test
     @WithMockUser
     public void shouldThrowExceptionOnInexistentRunTagUpdate() {
-        pipelineRunManager.updateTags(-1L, new TagsVO(null), true);
+        assertThrows(IllegalArgumentException.class,
+                () -> pipelineRunManager.updateTags(-1L, new TagsVO(null), true));
     }
 
     @Test

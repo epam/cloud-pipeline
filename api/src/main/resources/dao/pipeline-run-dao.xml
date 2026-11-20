@@ -1948,7 +1948,7 @@
                         ar.actual_cmd,
                         ar.timeout,
                         ar.owner,
-                        ar.original_owner,
+                        ar.owner AS original_owner,
                         ar.pod_ip,
                         ar.commit_status,
                         ar.last_change_commit_time,
@@ -2499,6 +2499,7 @@
                         actual_cmd,
                         timeout,
                         owner,
+                        original_owner,
                         pod_ip,
                         commit_status,
                         last_change_commit_time,
@@ -2518,6 +2519,7 @@
                         price_per_hour,
                         compute_price_per_hour,
                         disk_price_per_hour,
+                        fs_price_per_hour,
                         state_reason,
                         non_pause,
                         pause_disabled,
@@ -2529,7 +2531,8 @@
                         pipeline_name,
                         cluster_price,
                         node_pool_id,
-                        node_start_date
+                        node_start_date,
+                        project_id
                     FROM
                         pipeline.pipeline_run
                     WHERE parent_id ISNULL AND status IN (:list) AND ( @WHERE@ )

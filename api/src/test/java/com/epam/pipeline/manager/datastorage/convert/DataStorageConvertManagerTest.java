@@ -44,7 +44,8 @@ public class DataStorageConvertManagerTest {
     private final DataStorageConvertManager manager = new DataStorageConvertManager(dataStorageManager,
             preferenceManager, messageHelper, innerManagers);
 
-    @BeforeEach    public void setUp() {
+    @BeforeEach
+    public void setUp() {
         doReturn(STORAGE).when(dataStorageManager).load(CommonCreatorConstants.ID);
     }
 

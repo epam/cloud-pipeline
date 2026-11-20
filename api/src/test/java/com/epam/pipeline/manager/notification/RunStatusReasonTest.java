@@ -66,6 +66,7 @@ public class RunStatusReasonTest extends AbstractManagerTest {
     @BeforeEach
     public void setUp() throws Exception {
         testOwner = new PipelineUser("testOwner");
+        testOwner.setOwner("testOwner");
         userDao.createUser(testOwner, Collections.emptyList());
     }
 

@@ -111,7 +111,8 @@ public class GCPInstancePriceServiceTest {
         return new GCPInstancePriceService(preferenceManager, instanceOfferDao, Arrays.asList(extractors), priceLoader);
     }
 
-    @BeforeEach    public void setUp() {
+    @BeforeEach
+    public void setUp() {
         when(predefinedMachinesExtractor.extract(any())).thenReturn(predefinedMachines);
         when(customMachinesExtractor.extract(any())).thenReturn(customMachines);
         when(diskExtractor.extract(any())).thenReturn(disks);

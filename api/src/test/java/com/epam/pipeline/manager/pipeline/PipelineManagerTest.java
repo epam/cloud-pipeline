@@ -94,7 +94,8 @@ public class PipelineManagerTest {
     @InjectMocks
     private PipelineManager pipelineManager = new PipelineManager();
 
-    @BeforeEach    public void setUp() throws Exception {
+    @BeforeEach
+    public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
         gitProject.setRepoUrl(REPOSITORY_HTTPS);
         gitProject.setRepoSsh(REPOSITORY_SSH);

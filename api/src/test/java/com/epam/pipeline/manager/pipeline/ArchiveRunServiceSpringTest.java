@@ -49,6 +49,7 @@ import com.epam.pipeline.manager.cluster.performancemonitoring.ResourceMonitorin
 import com.epam.pipeline.manager.cluster.pool.NodePoolMonitoringService;
 import com.epam.pipeline.manager.docker.scan.AggregatingToolScanManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
+import com.epam.pipeline.manager.git.GitTokenRotationService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.quota.BillingQuotasScheduler;
@@ -139,6 +140,8 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
     private BandwidthMonitoringService bandwidthMonitoringService;
     @MockBean
     private CapacityReservationMonitor capacityReservationMonitor;
+    @MockBean
+    private GitTokenRotationService gitTokenRotationService;
 
     @SpyBean
     private PipelineRunDao pipelineRunDao;
@@ -165,7 +168,8 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
     @Autowired
     private ArchiveRunService archiveRunService;
 
-    @BeforeEach    public void setUp() {
+    @BeforeEach
+    public void setUp() {
         doReturn(TEST).when(preferenceManager).getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_METADATA_KEY);
         doReturn(CHUNK_SIZE).when(preferenceManager)
                 .getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_RUNS_CHUNK_SIZE);
@@ -456,7 +460,8 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
                 Arrays.asList(run1.getId(), run2.getId(), run3.getId(), runAfterTestDate.getId())))
                 .hasSize(4);
 
-        verifyDryRunInvoked(7, 6 * 2);
+        // 6 deletes per chunk; RunServiceUrlDao is a mock bean of TestApplication, so 5 reach the wrapper
+        verifyDryRunInvoked(7, 5 * 2);
     }
 
     private PipelineRun run() {

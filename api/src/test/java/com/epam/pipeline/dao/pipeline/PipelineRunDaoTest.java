@@ -183,7 +183,8 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     private static final LocalDateTime SYNC_PERIOD_START = LocalDateTime.of(2019, 4, 2, 0, 0);
     private static final LocalDateTime SYNC_PERIOD_END = LocalDateTime.of(2019, 4, 3, 0, 0);
 
-    @BeforeEach    public void setup() {
+    @BeforeEach
+    public void setup() {
         testPipeline = new Pipeline();
         testPipeline.setName(TEST_PIPELINE_NAME);
         testPipeline.setRepository(TEST_REPO);
@@ -273,6 +274,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     @Test
     public void testShouldReturnNullProjectIdIfAbsent() {
         final PipelineRun run = buildPipelineRun(testPipeline.getId());
+        run.setProjectId(null);
         pipelineRunDao.createPipelineRun(run);
         final List<PipelineRun> pipelineRuns =
                 pipelineRunDao.loadPipelineRuns(Collections.singletonList(run.getId()));
