@@ -31,8 +31,8 @@ import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.net.URI;
@@ -61,7 +61,7 @@ public class OidcTokenVerifierTest {
     private PreferenceManager preferenceManager;
     private OidcTokenVerifier verifier;
 
-    @Before
+    @BeforeEach
     public void setUp() throws JOSEException {
         signingKey = generateKey(KEY_ID);
         preferenceManager = Mockito.mock(PreferenceManager.class);

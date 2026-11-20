@@ -30,9 +30,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping(value = "/notification/settings")
+@Tag(name = "notification-settings-controller", description = "Notification Settings Controller")
 public class NotificationSettingsController extends AbstractRestController {
 
     @Autowired

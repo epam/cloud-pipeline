@@ -17,11 +17,11 @@
 package com.epam.pipeline.security.jwt;
 
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_AUTHORITIES_SCOPED;
-import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_EXCHANGEABLE;
+import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_EXTERNAL;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_GROUPS;
+import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_NON_RENEWABLE;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_ORG_UNIT_ID;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_ROLES;
-import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_EXTERNAL;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_USER_ID;
 
 import java.security.KeyFactory;
@@ -41,7 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.annotation.PostConstruct;
+
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTCreator;
@@ -55,17 +55,17 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.BaseEncoding;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-public class JwtTokenGenerator {
+public class JwtTokenGenerator implements InitializingBean {
     public static final int SEC_IN_MIN = 60;
     public static final int SEC_IN_HOUR = 3600;
     public static final int SEC_IN_DAY = 24 * 3600;
-
     @Autowired
     private PreferenceManager preferenceManager;
 
@@ -80,8 +80,8 @@ public class JwtTokenGenerator {
 
     private RSAPublicKey publicKey;
 
-    @PostConstruct
-    public void initKey() {
+    @Override
+    public void afterPropertiesSet() {
         try {
             this.privateKey = (RSAPrivateKey) KeyFactory.getInstance("RSA").generatePrivate(
                     new PKCS8EncodedKeySpec(Base64.getDecoder().decode(privateKeyString)));
@@ -223,10 +223,10 @@ public class JwtTokenGenerator {
             tokenBuilder.withClaim(CLAIM_AUTHORITIES_SCOPED, claims.isAuthoritiesScoped());
         }
 
-        if (!claims.isExchangeable()) {
+        if (claims.isNonRenewable()) {
             // written only when it withholds something, so an ordinary token carries no such claim
-            // and is exchangeable by its absence
-            tokenBuilder.withClaim(CLAIM_EXCHANGEABLE, false);
+            // and is renewable by its absence
+            tokenBuilder.withClaim(CLAIM_NON_RENEWABLE, true);
         }
 
         return tokenBuilder;

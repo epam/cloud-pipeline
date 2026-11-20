@@ -19,27 +19,28 @@ package com.epam.pipeline.elasticsearch.model.v7.search;
 import com.epam.pipeline.elasticsearch.model.SearchHit;
 import com.epam.pipeline.elasticsearch.model.SearchHits;
 import lombok.RequiredArgsConstructor;
+import org.opensearch.client.opensearch.core.search.HitsMetadata;
 
-import java.util.Arrays;
+import java.util.Map;
 
 @RequiredArgsConstructor
 public class SearchHitsV7 implements SearchHits {
 
-    private final org.opensearch.search.SearchHits inner;
+    private final HitsMetadata<Map<String, Object>> inner;
 
     @Override
     public long getTotalHits() {
-        return inner.getTotalHits().value;
+        return inner.total() != null ? inner.total().value() : 0L;
     }
 
     @Override
     public SearchHit getAt(final int position) {
-        return new SearchHitV7(inner.getAt(position));
+        return new SearchHitV7(inner.hits().get(position));
     }
 
     @Override
     public SearchHit[] getHits() {
-        return Arrays.stream(inner.getHits())
+        return inner.hits().stream()
                 .map(SearchHitV7::new)
                 .toArray(SearchHit[]::new);
     }

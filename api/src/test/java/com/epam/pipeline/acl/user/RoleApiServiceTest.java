@@ -23,7 +23,7 @@ import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import com.epam.pipeline.test.creator.user.UserCreatorUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -38,7 +38,7 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG_LI
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 
 public class RoleApiServiceTest extends AbstractAclTest {
@@ -242,25 +242,24 @@ public class RoleApiServiceTest extends AbstractAclTest {
         assertThat(roleApiService.assignRole(ID, TEST_LONG_LIST)).isEqualTo(extendedRole);
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @WithMockUser(roles = USER_ADMIN_ROLE)
     public void shouldNotAssignAdminRoleForUserAdmin() {
         doReturn(adminRole).when(mockRoleManager).load(eq(adminRole.getId()));
         doReturn(adminRole).when(mockRoleManager).assignRole(adminRole.getId(), TEST_LONG_LIST);
         initAclEntity(UserCreatorUtils.getRole(adminRole.getName(), adminRole.getId(), ANOTHER_SIMPLE_USER));
-
-        roleApiService.assignRole(adminRole.getId(), TEST_LONG_LIST);
+        assertThrows(AccessDeniedException.class, () -> roleApiService.assignRole(adminRole.getId(), TEST_LONG_LIST));
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @WithMockUser(roles = USER_ADMIN_ROLE)
     public void shouldNotAssignScopedAdminRoleForUserAdmin() {
         doReturn(scopedAdminRole).when(mockRoleManager).load(eq(scopedAdminRole.getId()));
         doReturn(scopedAdminRole).when(mockRoleManager).assignRole(scopedAdminRole.getId(), TEST_LONG_LIST);
         initAclEntity(
-                UserCreatorUtils.getRole(scopedAdminRole.getName(), scopedAdminRole.getId(), ANOTHER_SIMPLE_USER));
-
-        roleApiService.assignRole(scopedAdminRole.getId(), TEST_LONG_LIST);
+            UserCreatorUtils.getRole(scopedAdminRole.getName(), scopedAdminRole.getId(), ANOTHER_SIMPLE_USER));
+        assertThrows(AccessDeniedException.class,
+            () -> roleApiService.assignRole(scopedAdminRole.getId(), TEST_LONG_LIST));
     }
 
     @Test

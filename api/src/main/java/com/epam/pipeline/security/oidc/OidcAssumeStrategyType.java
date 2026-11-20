@@ -31,5 +31,12 @@ public enum OidcAssumeStrategyType {
      * The user named by a claim of the subject token. The claim is chosen by the configuration,
      * never by the caller, so this is not impersonation.
      */
-    REQUESTED_USER
+    REQUESTED_USER,
+
+    /**
+     * The user whose metadata matches a claim of the subject token, as
+     * {@link OidcUserMapping} describes. For a provider that identifies a caller by something the
+     * platform does not keep on the user, so no claim names the user directly.
+     */
+    MAPPED_USER
 }

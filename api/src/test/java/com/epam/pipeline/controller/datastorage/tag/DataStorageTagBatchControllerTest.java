@@ -14,7 +14,7 @@ import com.epam.pipeline.entity.datastorage.tag.DataStorageTagLoadBatchRequest;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagLoadRequest;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;

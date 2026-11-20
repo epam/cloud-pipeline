@@ -27,7 +27,6 @@ import styles from './preview.css';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import {getSpotTypeName} from '../../special/spot-instance-names';
 
-const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
 
 @inject('cloudProviders')
@@ -164,12 +163,6 @@ export default class ConfigurationPreview extends React.Component {
   }
 
   @computed
-  get isFireCloudEnvironment () {
-    return this.configurationEntry &&
-      this.configurationEntry.executionEnvironment === FIRE_CLOUD_ENVIRONMENT;
-  }
-
-  @computed
   get ExecEnvString () {
     if (!this.configurationEntry) {
       return null;
@@ -178,8 +171,6 @@ export default class ConfigurationPreview extends React.Component {
     if (this.isDtsEnvironment) {
       const dts = this.dtsList.filter(dts => dts.id === this.configurationEntry.dtsId)[0];
       environment = dts ? `${dts.name}` : `${this.configurationEntry.dtsId}`;
-    } else if (this.isFireCloudEnvironment) {
-      environment = 'FireCloud';
     } else {
       environment = this.props.preferences.deploymentName || 'EPAM Cloud Pipeline';
     }
@@ -199,20 +190,12 @@ export default class ConfigurationPreview extends React.Component {
       if (this.configurationEntry.pipelineVersion && !this.pipeline.unknown) {
         inputValue = `${inputValue} (${this.configurationEntry.pipelineVersion})`;
       }
-    } else if (this.isFireCloudEnvironment &&
-      this.configurationEntry.methodName &&
-      this.configurationEntry.methodSnapshot) {
-      if (this.configurationEntry.methodConfigurationName) {
-        inputValue = `${this.configurationEntry.methodName} (${this.configurationEntry.methodConfigurationName})`;
-      } else {
-        inputValue = `${this.configurationEntry.methodName}`;
-      }
     }
 
     return inputValue
       ? (<tr>
         <td className={classNames(styles.firstCell, styles.bold)}>
-          {this.isFireCloudEnvironment ? 'FireCloud method' : 'Pipeline'}
+          Pipeline
         </td>
         <td>
           {inputValue}
@@ -247,7 +230,7 @@ export default class ConfigurationPreview extends React.Component {
     const dockerImage = this.isDtsEnvironment
       ? configuration.docker_image
       : configuration.configuration && configuration.configuration.docker_image;
-    const cloudRegion = !this.isDtsEnvironment && !this.isFireCloudEnvironment
+    const cloudRegion = !this.isDtsEnvironment
       ? <AWSRegionTag
           regionId={configuration.configuration.cloudRegionId}
           displayName
@@ -344,10 +327,11 @@ export default class ConfigurationPreview extends React.Component {
 
     const cmdTemplate = this.isDtsEnvironment
       ? configuration.cmd_template : configuration.configuration.cmd_template;
-    const timeout = !this.isDtsEnvironment && !this.isFireCloudEnvironment
-      ? configuration.configuration.timeout : null;
+    const timeout = !this.isDtsEnvironment
+      ? configuration.configuration.timeout
+      : null;
 
-    if ((this.isDtsEnvironment || this.isFireCloudEnvironment) &&
+    if ((this.isDtsEnvironment) &&
       timeout === null && !cmdTemplate) {
       return null;
     }
@@ -358,7 +342,7 @@ export default class ConfigurationPreview extends React.Component {
       <div className={styles.contentPreview}>
         <table>
           <tbody>
-            { !this.isDtsEnvironment && !this.isFireCloudEnvironment &&
+            {!this.isDtsEnvironment &&
               <tr>
                 <td className={firstCellClass}>
                   Price type
@@ -441,41 +425,6 @@ export default class ConfigurationPreview extends React.Component {
     );
   };
 
-  renderFireCloudIOList = (listPropName = 'methodInputs') => {
-    if (this.props.configuration.pending) {
-      return (
-        <Row className={styles.contentPreview} type="flex" justify="center">
-          <Icon type="loading" />
-        </Row>
-      );
-    }
-    if (!this.configurationEntry) {
-      return null;
-    }
-
-    const parameters = this.configurationEntry[listPropName];
-
-    return parameters
-      ? (<div className={styles.contentPreview}>
-        <table>
-          <tbody>
-            {
-              parameters.map(param =>
-                (<tr key={param.name}>
-                  <td className={classNames(styles.firstCell, styles.bold)}>
-                    {param.name}
-                  </td>
-                  <td>
-                    {param.value}
-                  </td>
-                </tr>))
-            }
-          </tbody>
-        </table>
-      </div>)
-      : null;
-  };
-
   render () {
     if (!this.props.item) {
       return null;
@@ -486,8 +435,6 @@ export default class ConfigurationPreview extends React.Component {
     const advanced = this.renderAdvancedSection();
     const systemParameters = this.renderParameters(true);
     const parameters = this.renderParameters();
-    const fireCloudInputs = this.renderFireCloudIOList();
-    const fireCloudOutputs = this.renderFireCloudIOList('methodOutputs');
 
     return (
       <div
@@ -515,16 +462,12 @@ export default class ConfigurationPreview extends React.Component {
           {highlights}
           {execEnvSection && renderSeparator()}
           {execEnvSection}
-          {!this.isFireCloudEnvironment && advanced && renderSeparator()}
-          {!this.isFireCloudEnvironment && advanced}
-          {!this.isFireCloudEnvironment && systemParameters && renderSeparator()}
-          {!this.isFireCloudEnvironment && systemParameters}
-          {!this.isFireCloudEnvironment && parameters && renderSeparator()}
-          {!this.isFireCloudEnvironment && parameters}
-          {this.isFireCloudEnvironment && fireCloudInputs && renderSeparator()}
-          {this.isFireCloudEnvironment && fireCloudInputs}
-          {this.isFireCloudEnvironment && fireCloudOutputs && renderSeparator()}
-          {this.isFireCloudEnvironment && fireCloudOutputs}
+          {advanced && renderSeparator()}
+          {advanced}
+          {systemParameters && renderSeparator()}
+          {systemParameters}
+          {parameters && renderSeparator()}
+          {parameters}
         </div>
       </div>
     );

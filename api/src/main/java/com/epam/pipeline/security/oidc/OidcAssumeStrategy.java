@@ -47,6 +47,12 @@ public class OidcAssumeStrategy {
     private String userClaim;
 
     /**
+     * How to find the user from the token's claims and user metadata, for
+     * {@link OidcAssumeStrategyType#MAPPED_USER} only.
+     */
+    private OidcUserMapping userMapping;
+
+    /**
      * The only users this client may act as. Absent means no limit; empty is a configuration
      * error rather than a way of saying "anyone".
      */
@@ -95,20 +101,24 @@ public class OidcAssumeStrategy {
     private boolean ignoreSubjectTokenLifetime;
 
     /**
-     * Whether the issued token may be traded for another one through the platform's own
-     * token-issuing endpoints.
+     * Whether the issued token may be renewed: traded for a fresh platform token through the
+     * platform's own token endpoints.
      * <p>
      * Off unless it is turned on, which is the opposite of the default for a platform token issued
-     * any other way. That is deliberate: an exchanged token lives no longer than the identity
-     * provider's token it came from, and that tie is the point — it is what makes ending a
-     * session at the provider end platform access too. A token that could be traded for another
-     * would let its holder turn five minutes into weeks and keep renewing long after the provider
-     * stopped vouching for them.
+     * any other way. That is deliberate: a token from the exchange lives no longer than the
+     * identity provider's token it came from, and that tie is the point — it is what makes ending
+     * a session at the provider end platform access too. A renewable token would let its holder
+     * turn five minutes into weeks and keep going long after the provider stopped vouching for
+     * them.
+     * <p>
+     * Written in the positive here, unlike the claim it produces, because an administrator opts
+     * in: {@code "renewable": true} reads better than turning off a field named for the
+     * restriction.
      * <p>
      * Turn it on only for a client that genuinely needs to mint platform tokens, knowing the tie
      * is given up.
      */
-    private boolean exchangeable;
+    private boolean renewable;
 
     /**
      * Mark the issued token external, which limits data storage access to shared storages.

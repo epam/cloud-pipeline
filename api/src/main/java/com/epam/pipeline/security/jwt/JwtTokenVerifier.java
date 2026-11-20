@@ -17,11 +17,11 @@
 package com.epam.pipeline.security.jwt;
 
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_AUTHORITIES_SCOPED;
-import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_EXCHANGEABLE;
+import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_EXTERNAL;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_GROUPS;
+import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_NON_RENEWABLE;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_ORG_UNIT_ID;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_ROLES;
-import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_EXTERNAL;
 import static com.epam.pipeline.entity.security.JwtTokenClaims.CLAIM_USER_ID;
 
 import java.security.KeyFactory;
@@ -79,9 +79,9 @@ public class JwtTokenVerifier {
                 // is present but not a boolean and would unbox into an error on every request
                 .authoritiesScoped(Boolean.TRUE.equals(
                           decodedToken.getClaim(CLAIM_AUTHORITIES_SCOPED).asBoolean()))
-                // absent means exchangeable, so only an explicit false withholds it
-                .exchangeable(!Boolean.FALSE.equals(
-                          decodedToken.getClaim(CLAIM_EXCHANGEABLE).asBoolean()))
+                // absent means renewable, so only an explicit true withholds it
+                .nonRenewable(Boolean.TRUE.equals(
+                          decodedToken.getClaim(CLAIM_NON_RENEWABLE).asBoolean()))
                 .build();
 
         return validateClaims(tokenClaims);

@@ -19,11 +19,12 @@ package com.epam.pipeline.dao.dts;
 import com.epam.pipeline.entity.dts.DtsRegistry;
 import com.epam.pipeline.entity.dts.DtsStatus;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,14 +34,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Transactional
 public class DtsRegistryDaoTest extends AbstractJdbcTest {
     private static final String TEST_URL = "token";
     private static final String TEST_PREFIX_1 = "prefix_1";
     private static final String TEST_PREFIX_2 = "prefix_2";
-    private static final LocalDateTime TEST_DATETIME = LocalDateTime.now();
+    private static final LocalDateTime TEST_DATETIME = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS);
     private static final DtsStatus TEST_DTS_STATUS = DtsStatus.OFFLINE;
     private static final DtsStatus TEST_DTS_ANOTHER_STATUS = DtsStatus.ONLINE;
     private static final String DTS = "DTS";

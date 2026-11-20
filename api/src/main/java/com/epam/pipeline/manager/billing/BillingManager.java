@@ -161,22 +161,22 @@ public class BillingManager {
     public List<BillingChartInfo> getBillingChartInfo(final BillingChartRequest request) {
         verifyRequest(request);
         try (RestHighLevelClient elasticsearchClient = elasticHelper.buildBillingClient()) {
-            final LocalDate from = request.getFrom();
-            final LocalDate to = request.getTo();
-            final BillingGrouping grouping = request.getGrouping();
-            final DateHistogramInterval interval = request.getInterval();
-            final Map<String, List<String>> filters = billingHelper.getFilters(request.getFilters());
+            final LocalDate from = request.from();
+            final LocalDate to = request.to();
+            final BillingGrouping grouping = request.grouping();
+            final DateHistogramInterval interval = request.interval();
+            final Map<String, List<String>> filters = billingHelper.getFilters(request.filters());
             final BillingCostDetailsRequest costDetailsRequest = BillingCostDetailsRequest.builder()
-                    .enabled(request.isLoadCostDetails()).filters(filters)
+                    .enabled(request.loadCostDetails()).filters(filters)
                     .isHistogram(interval != null).grouping(grouping).build();
             if (interval != null) {
                 return getBillingStats(elasticsearchClient, from, to, filters, interval, costDetailsRequest);
             }
             if (grouping != null) {
-                final BillingGroupingSortOrder order = Optional.ofNullable(request.getOrder())
+                final BillingGroupingSortOrder order = Optional.ofNullable(request.order())
                         .orElse(BillingGroupingSortOrder.DEFAULT_SORT_ORDER);
                 return getBillingStats(elasticsearchClient.getLowLevelClient(), from, to, filters, grouping,
-                        order, request.isLoadDetails(), costDetailsRequest);
+                        order, request.loadDetails(), costDetailsRequest);
             }
             throw new IllegalArgumentException("Either interval or grouping parameter has to be specified.");
         } catch (IOException e) {
@@ -187,9 +187,9 @@ public class BillingManager {
     public List<BillingChartInfo> getBillingChartInfoPaginated(final BillingChartRequest request) {
         verifyPagingParameters(request);
         return paginateResult(getBillingChartInfo(request),
-                              request.getGrouping(),
-                              request.getPageNum(),
-                              request.getPageSize());
+                              request.grouping(),
+                              request.pageNum(),
+                              request.pageSize());
     }
 
     public ResultWriter export(final BillingExportRequest request) {
@@ -234,8 +234,8 @@ public class BillingManager {
     }
 
     private void verifyPagingParameters(final BillingChartRequest request) {
-        final Long pageSize = request.getPageSize();
-        final Long pageNum = request.getPageNum();
+        final Long pageSize = request.pageSize();
+        final Long pageNum = request.pageNum();
         if (pageNum != null && pageNum < 0
             || pageSize != null && pageSize <= 0) {
             throw new IllegalArgumentException(messageHelper
@@ -244,14 +244,14 @@ public class BillingManager {
     }
 
     private void verifyRequest(final BillingChartRequest request) {
-        final DateHistogramInterval interval = request.getInterval();
-        final BillingGrouping grouping = request.getGrouping();
+        final DateHistogramInterval interval = request.interval();
+        final BillingGrouping grouping = request.grouping();
         if (interval != null
             && grouping != null) {
             throw new UnsupportedOperationException(
                 messageHelper.getMessage(MessageConstants.ERROR_BILLING_FIELD_DATE_GROUPING_NOT_SUPPORTED));
         }
-        final boolean shouldLoadDetails = request.isLoadDetails();
+        final boolean shouldLoadDetails = request.loadDetails();
         if (shouldLoadDetails
             && grouping == null) {
             throw new IllegalArgumentException(messageHelper
@@ -433,8 +433,8 @@ public class BillingManager {
                 final String totalPagesVal = Long.toString((long) Math.ceil(1.0 * resultSize / pageSize));
                 final String pageNumVal = Long.toString(requiredPageNum);
                 finalBilling.forEach(record -> {
-                    record.getGroupingInfo().put(BillingUtils.PAGE, pageNumVal);
-                    record.getGroupingInfo().put(BillingUtils.TOTAL_PAGES, totalPagesVal);
+                    record.groupingInfo().put(BillingUtils.PAGE, pageNumVal);
+                    record.groupingInfo().put(BillingUtils.TOTAL_PAGES, totalPagesVal);
                 });
                 return finalBilling;
             }
@@ -512,14 +512,14 @@ public class BillingManager {
             groupingInfo.putAll(details);
             if (grouping.isRunUsageDetailsRequired()) {
                 final ParsedSum usageAggResult = aggregations.get(BillingUtils.RUN_USAGE_AGG);
-                final long usageVal = new Double(usageAggResult.getValue()).longValue();
+                final long usageVal = Double.valueOf(usageAggResult.getValue()).longValue();
                 groupingInfo.put(BillingUtils.RUN_USAGE_AGG, Long.toString(usageVal));
                 final ParsedScriptedMetric uniqueRunIds = aggregations.get(BillingUtils.RUN_COUNT_AGG);
                 groupingInfo.put(BillingUtils.RUNS, Long.toString((Integer) uniqueRunIds.aggregation()));
             }
             if (grouping.isStorageUsageDetailsRequired()) {
                 final ParsedSimpleValue totalStorageUsage = aggregations.get(BillingUtils.TOTAL_STORAGE_USAGE_AGG);
-                final long storageUsageVal = new Double(totalStorageUsage.value()).longValue();
+                final long storageUsageVal = Double.valueOf(totalStorageUsage.value()).longValue();
                 groupingInfo.put(BillingUtils.TOTAL_STORAGE_USAGE_AGG, Long.toString(storageUsageVal));
                 if (BillingGrouping.STORAGE.equals(grouping)) {
                     final ParsedTopHits hits = aggregations.get(BillingUtils.BUCKET_DOCUMENTS);

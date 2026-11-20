@@ -16,11 +16,11 @@
 
 package com.epam.pipeline.entity.pipeline.run;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class PipelineRunResultTest {
 
@@ -35,27 +35,27 @@ public class PipelineRunResultTest {
         result.validate();
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testPipelineRunResultWithoutRunIdIsNotValid() {
         PipelineRunResult result = new PipelineRunResult(null, NAME, PATTERN, Collections.singletonList(PATH));
-        result.validate();
+        assertThrows(IllegalArgumentException.class, result::validate);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testPipelineRunResultWithoutFileMaskIsNotValid() {
         PipelineRunResult result = new PipelineRunResult(RUN_ID, NAME, null, Collections.singletonList(PATH));
-        result.validate();
+        assertThrows(IllegalArgumentException.class, result::validate);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testPipelineRunResultWithEmptyItemsIsNotValid() {
         PipelineRunResult result = new PipelineRunResult(null, NAME, PATTERN, Collections.emptyList());
-        result.validate();
+        assertThrows(IllegalArgumentException.class, result::validate);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testPipelineRunResultWithNullNotValid() {
         PipelineRunResult result = new PipelineRunResult(null, NAME, PATTERN, null);
-        result.validate();
+        assertThrows(IllegalArgumentException.class, result::validate);
     }
 }

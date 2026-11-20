@@ -22,18 +22,19 @@ import com.epam.pipeline.entity.quota.QuotaActionEntity;
 import com.epam.pipeline.entity.quota.QuotaEntity;
 import com.epam.pipeline.test.creator.quota.QuotaCreatorsUtils;
 import com.epam.pipeline.test.repository.AbstractJpaTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
+import java.util.Optional;
 
 import static com.epam.pipeline.test.creator.quota.QuotaCreatorsUtils.quotaSidEntity;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class QuotaRepositoryTest extends AbstractJpaTest {
 
@@ -59,7 +60,7 @@ public class QuotaRepositoryTest extends AbstractJpaTest {
         entityManager.flush();
         entityManager.clear();
 
-        final QuotaEntity loaded = quotaRepository.findOne(quotaId);
+        final QuotaEntity loaded = quotaRepository.findById(quotaId).orElseThrow();
         QuotaAssertions.assertEquals(quota, loaded);
 
         loaded.setType(QuotaType.GROUP);
@@ -68,15 +69,15 @@ public class QuotaRepositoryTest extends AbstractJpaTest {
         entityManager.flush();
         entityManager.clear();
 
-        final QuotaEntity loadedAfterUpdate = quotaRepository.findOne(quotaId);
+        final QuotaEntity loadedAfterUpdate = quotaRepository.findById(quotaId).orElseThrow();
         assertThat(loadedAfterUpdate.getId(), is(quotaId));
         assertThat(loadedAfterUpdate.getType(), is(QuotaType.GROUP));
 
-        quotaRepository.delete(quotaId);
+        quotaRepository.deleteById(quotaId);
 
         entityManager.flush();
         entityManager.clear();
 
-        assertThat(quotaRepository.findOne(quotaId), nullValue());
+        assertEquals(Optional.empty(), quotaRepository.findById(quotaId));
     }
 }

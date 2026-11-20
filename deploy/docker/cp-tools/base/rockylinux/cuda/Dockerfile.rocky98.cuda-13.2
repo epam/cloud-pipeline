@@ -1,0 +1,48 @@
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+ARG BASE_IMG=rockylinux/rockylinux:9.8
+FROM $BASE_IMG
+
+ENV NVIDIA_REQUIRE_CUDA=cuda>=13.2 brand=unknown,driver>=535,driver<536 brand=grid,driver>=535,driver<536 brand=tesla,driver>=535,driver<536 brand=nvidia,driver>=535,driver<536 brand=quadro,driver>=535,driver<536 brand=quadrortx,driver>=535,driver<536 brand=nvidiartx,driver>=535,driver<536 brand=vapps,driver>=535,driver<536 brand=vpc,driver>=535,driver<536 brand=vcs,driver>=535,driver<536 brand=vws,driver>=535,driver<536 brand=cloudgaming,driver>=535,driver<536 brand=unknown,driver>=570,driver<571 brand=grid,driver>=570,driver<571 brand=tesla,driver>=570,driver<571 brand=nvidia,driver>=570,driver<571 brand=quadro,driver>=570,driver<571 brand=quadrortx,driver>=570,driver<571 brand=nvidiartx,driver>=570,driver<571 brand=vapps,driver>=570,driver<571 brand=vpc,driver>=570,driver<571 brand=vcs,driver>=570,driver<571 brand=vws,driver>=570,driver<571 brand=cloudgaming,driver>=570,driver<571 brand=unknown,driver>=580,driver<581 brand=grid,driver>=580,driver<581 brand=tesla,driver>=580,driver<581 brand=nvidia,driver>=580,driver<581 brand=quadro,driver>=580,driver<581 brand=quadrortx,driver>=580,driver<581 brand=nvidiartx,driver>=580,driver<581 brand=vapps,driver>=580,driver<581 brand=vpc,driver>=580,driver<581 brand=vcs,driver>=580,driver<581 brand=vws,driver>=580,driver<581 brand=cloudgaming,driver>=580,driver<581 brand=unknown,driver>=590,driver<591 brand=grid,driver>=590,driver<591 brand=tesla,driver>=590,driver<591 brand=nvidia,driver>=590,driver<591 brand=quadro,driver>=590,driver<591 brand=quadrortx,driver>=590,driver<591 brand=nvidiartx,driver>=590,driver<591 brand=vapps,driver>=590,driver<591 brand=vpc,driver>=590,driver<591 brand=vcs,driver>=590,driver<591 brand=vws,driver>=590,driver<591 brand=cloudgaming,driver>=590,driver<591
+ENV NV_CUDA_CUDART_VERSION=13.2.51-1
+COPY cuda-rhel9.repo /etc/yum.repos.d/cuda.repo
+ENV CUDA_VERSION=13.2.0
+RUN yum install -y cuda-cudart-13-2-${NV_CUDA_CUDART_VERSION} \
+                    cuda-compat-13-2 && \
+    yum clean all \
+    && rm -rf /var/cache/yum/*
+RUN echo "/usr/local/cuda/lib64" >> /etc/ld.so.conf.d/nvidia.conf
+ENV PATH=/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH
+ENV LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
+ENV NV_CUDA_LIB_VERSION=13.2.0-1
+ENV NV_NVTX_VERSION=13.2.20-1
+ENV NV_LIBNPP_VERSION=13.1.0.44-1
+ENV NV_LIBNPP_PACKAGE=libnpp-13-2-13.1.0.44-1
+ENV NV_LIBCUBLAS_VERSION=13.3.0.5-1
+RUN yum install -y cuda-libraries-13-2-${NV_CUDA_LIB_VERSION} \
+        cuda-nvtx-13-2-${NV_NVTX_VERSION} \
+        ${NV_LIBNPP_PACKAGE} \
+        libcublas-13-2-${NV_LIBCUBLAS_VERSION} && \
+    yum clean all && \
+    rm -rf /var/cache/yum/*
+ENV NVIDIA_PRODUCT_NAME=CUDA
+ENV NV_CUDNN_VERSION=9.20.0.48-1
+ENV NV_CUDNN_PACKAGE=libcudnn9-cuda-13-9.20.0.48-1
+RUN yum install -y ${NV_CUDNN_PACKAGE} && \
+    yum clean all && \
+    rm -rf /var/cache/yum/*
+RUN rm -f /etc/yum.repos.d/cuda.repo

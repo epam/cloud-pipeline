@@ -21,7 +21,7 @@ import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEventEntity;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.data.jpa.domain.Specification;
 
-import javax.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Predicate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;

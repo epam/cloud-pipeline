@@ -70,14 +70,14 @@ public class AbsoluteIdleRunMonitor extends AbstractIdleRunMonitor {
             return;
         }
 
-        final int actionTimeout = absoluteConf.getActionTimeoutMinutes();
+        final int actionTimeout = absoluteConf.actionTimeoutMinutes();
 
         final List<Pair<PipelineRun, Double>> runsToNotify = new ArrayList<>(runs.size());
         final List<PipelineRun> runsToUpdateTags = new ArrayList<>(runs.size());
         for (final PipelineRun run : ListUtils.emptyIfNull(runs)) {
             if (isAbsolutelyIdle(run)) {
                 processIdleRun(run, getType(), ZERO_USAGE_RATE, actionTimeout,
-                        absoluteConf.getAction(), runsToNotify, runsToUpdateTags);
+                        absoluteConf.action(), runsToNotify, runsToUpdateTags);
             } else if (isIdleTagged(run, getType())) {
                 processFormerIdleRun(run, runsToUpdateTags, getType());
             }

@@ -16,24 +16,25 @@
 
 package com.epam.pipeline.manager.utils;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PythonExecutableUtilsTest {
 
     @Test
     public void resolvesToCpPythonPathWhenSet() {
-        Assert.assertEquals("/usr/local/python3.12/bin/python3.12",
+        assertEquals("/usr/local/python3.12/bin/python3.12",
                 PythonExecutableUtils.resolvePythonExecutable("/usr/local/python3.12/bin/python3.12"));
     }
 
     @Test
     public void fallsBackToPythonWhenCpPythonPathIsNull() {
-        Assert.assertEquals("python", PythonExecutableUtils.resolvePythonExecutable(null));
+        assertEquals("python", PythonExecutableUtils.resolvePythonExecutable(null));
     }
 
     @Test
     public void fallsBackToPythonWhenCpPythonPathIsBlank() {
-        Assert.assertEquals("python", PythonExecutableUtils.resolvePythonExecutable("   "));
+        assertEquals("python", PythonExecutableUtils.resolvePythonExecutable("   "));
     }
 }

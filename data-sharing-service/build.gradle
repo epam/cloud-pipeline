@@ -24,6 +24,6 @@ task buildAll() {
 }
 
 task buildFast() {
-    dependsOn ':data-sharing-service:api:bootRepackage', ':data-sharing-service:client:buildUI'
+    dependsOn ':data-sharing-service:api:bootJar', ':data-sharing-service:client:buildUI'
     group = 'build'
 }

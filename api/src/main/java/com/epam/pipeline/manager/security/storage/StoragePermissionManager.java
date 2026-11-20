@@ -116,6 +116,11 @@ public class StoragePermissionManager {
         return grantPermissionManager.storagePermission(storage, permissionName);
     }
 
+    public boolean hasStoragePermission(final Long storageId, final String permissionName) {
+        return (isStorageAdmin() || storagePermissionById(storageId, permissionName))
+                && grantPermissionManager.checkStorageShared(storageId);
+    }
+
     public boolean storagePermissions(final Long storageId,
                                       final List<String> permissionNames) {
         return Optional.ofNullable(permissionNames)
@@ -158,19 +163,19 @@ public class StoragePermissionManager {
 
     private List<String> toTags(final DataStorageTagInsertBatchRequest request) {
         return Optional.ofNullable(request)
-                .map(DataStorageTagInsertBatchRequest::getRequests)
+                .map(DataStorageTagInsertBatchRequest::requests)
                 .map(List::stream)
                 .orElseGet(Stream::empty)
-                .map(DataStorageTagInsertRequest::getKey)
+                .map(DataStorageTagInsertRequest::key)
                 .collect(Collectors.toList());
     }
 
     private List<String> toTags(final DataStorageTagUpsertBatchRequest request) {
         return Optional.ofNullable(request)
-                .map(DataStorageTagUpsertBatchRequest::getRequests)
+                .map(DataStorageTagUpsertBatchRequest::requests)
                 .map(List::stream)
                 .orElseGet(Stream::empty)
-                .map(DataStorageTagUpsertRequest::getKey)
+                .map(DataStorageTagUpsertRequest::key)
                 .collect(Collectors.toList());
     }
 
@@ -259,7 +264,7 @@ public class StoragePermissionManager {
         final ContextualPreference preference = getPreference(resource,
                 SystemPreferences.DATA_STORAGE_MGMT_RESTRICTED_ACCESS_ENABLED);
         return Optional.ofNullable(preference)
-                .map(ContextualPreference::getValue)
+                .map(ContextualPreference::value)
                 .map(BooleanUtils::toBoolean)
                 .orElse(false);
     }

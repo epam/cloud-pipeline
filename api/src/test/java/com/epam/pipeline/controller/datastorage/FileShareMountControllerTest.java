@@ -20,7 +20,7 @@ import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.acl.datastorage.FileShareMountApiService;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;

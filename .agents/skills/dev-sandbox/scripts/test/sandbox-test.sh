@@ -1123,7 +1123,7 @@ FAKE_TUNNEL_STATE=running FAKE_NETWORK=1 FAKE_NO_API_IMAGE=1
 host_stubbed cmd_services --name dev-abcd
 real_repo
 expect "Gradle builds both jars from the checkout, as the calling user, with its home in the state root" \
-  "$(counted "docker run --rm --user $(id -u):$(id -g) --volume $FAKE_REPO:$FAKE_REPO --volume $STATE/.gradle-home:$STATE/.gradle-home --env HOME=$STATE/.gradle-home --env GRADLE_USER_HOME=$STATE/.gradle-home --env GRADLE_OPTS=-Duser.home=$STATE/.gradle-home --workdir $FAKE_REPO eclipse-temurin:8-jdk ./gradlew --no-daemon --quiet :api:bootRepackage :jwt-generator:shadowJar") $([ -d "$STATE/.gradle-home" ] && echo made)" \
+  "$(counted "docker run --rm --user $(id -u):$(id -g) --volume $FAKE_REPO:$FAKE_REPO --volume $STATE/.gradle-home:$STATE/.gradle-home --env HOME=$STATE/.gradle-home --env GRADLE_USER_HOME=$STATE/.gradle-home --env GRADLE_OPTS=-Duser.home=$STATE/.gradle-home --workdir $FAKE_REPO ${GRADLE_IMAGE:?} ./gradlew --no-daemon --quiet ${GRADLE_TASKS:?}") $([ -d "$STATE/.gradle-home" ] && echo made)" \
   '1 made'
 expect "the image's context holds its Dockerfile, the entrypoints, the node scripts' requirements and pipe-common" \
   "$(calls 'context: ')" 'context: api-entrypoint.sh api.Dockerfile pipe-common requirements.txt service-entrypoint.sh tools-entrypoint.sh'
@@ -1270,8 +1270,8 @@ FAKE_TUNNEL_STATE=running FAKE_NETWORK=1
 host_stubbed cmd_services --name dev-abcd --with search,billing
 real_repo
 expect "Gradle builds the API's jars and the bootJar of each service asked for" \
-  "$(calls 'eclipse-temurin:8-jdk ./gradlew' | sed 's/.*eclipse-temurin:8-jdk //')" \
-  './gradlew --no-daemon --quiet :api:bootRepackage :jwt-generator:shadowJar :billing-report-agent:bootJar :elasticsearch-agent:bootJar'
+  "$(calls "${GRADLE_IMAGE:?} ./gradlew" | sed "s|.*${GRADLE_IMAGE:?} ||")" \
+  './gradlew --no-daemon --quiet :api:bootJar :jwt-generator:shadowJar :billing-report-agent:bootJar :elasticsearch-agent:bootJar'
 end_case
 
 start_case "services --with stops, with the log, when a service stops before it has started"

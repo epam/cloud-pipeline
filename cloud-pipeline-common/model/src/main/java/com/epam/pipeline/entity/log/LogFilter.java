@@ -17,6 +17,7 @@
 package com.epam.pipeline.entity.log;
 
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -24,6 +25,7 @@ import java.util.List;
 
 @Data
 @Builder
+@Jacksonized
 public class LogFilter {
     private List<String> hostnames;
     private String message;

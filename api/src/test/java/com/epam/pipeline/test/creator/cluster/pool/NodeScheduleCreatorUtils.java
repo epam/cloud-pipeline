@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.cluster.pool.ScheduleEntry;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,7 +42,7 @@ public final class NodeScheduleCreatorUtils {
                                        final DayOfWeek to, final LocalTime toTime) {
         final NodeSchedule nodeSchedule = new NodeSchedule();
         nodeSchedule.setName(SCHEDULE_NAME);
-        nodeSchedule.setCreated(LocalDateTime.now());
+        nodeSchedule.setCreated(LocalDateTime.now().truncatedTo(ChronoUnit.MICROS));
         final List<ScheduleEntry> entries = new ArrayList<>();
         final ScheduleEntry entry = createScheduleEntry(from, fromTime, to, toTime);
         entries.add(entry);

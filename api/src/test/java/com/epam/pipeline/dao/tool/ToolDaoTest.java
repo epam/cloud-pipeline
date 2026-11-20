@@ -32,9 +32,8 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Propagation;
@@ -53,15 +52,16 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SuppressWarnings("PMD.TooManyStaticImports")
 public class ToolDaoTest extends AbstractJdbcTest {
@@ -129,8 +129,7 @@ public class ToolDaoTest extends AbstractJdbcTest {
     @Autowired
     private EntityManager entityManager;
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         firstRegistry = new DockerRegistry();
         firstRegistry.setPath(TEST_REPO);
         firstRegistry.setOwner(TEST_USER);
@@ -174,13 +173,13 @@ public class ToolDaoTest extends AbstractJdbcTest {
         checkLoadedTool(loaded, firstRegistry.getId(), TEST_REPO);
 
         List<Tool> tools = toolDao.loadAllTools();
-        Assert.assertEquals(1, tools.size());
+        assertEquals(1, tools.size());
 
         loaded = toolDao.loadTool(firstRegistry.getId(), tool.getImage());
         checkLoadedTool(loaded, firstRegistry.getId(), TEST_REPO);
 
         toolDao.deleteTool(loaded.getId());
-        Assert.assertTrue(toolDao.loadAllTools().isEmpty());
+        assertTrue(toolDao.loadAllTools().isEmpty());
     }
 
     @Test
@@ -198,8 +197,8 @@ public class ToolDaoTest extends AbstractJdbcTest {
         verify(notificationManager, times(2)).notifyIssue(any(), any(), any());
 
         List<ToolWithIssuesCount> loaded = toolDao.loadToolsWithIssuesCountByGroup(library1.getId());
-        Assert.assertEquals(1, loaded.size());
-        Assert.assertEquals(2, loaded.get(0).getIssuesCount());
+        assertEquals(1, loaded.size());
+        assertEquals(2, loaded.get(0).getIssuesCount());
     }
 
     @Test
@@ -216,7 +215,7 @@ public class ToolDaoTest extends AbstractJdbcTest {
         toolDao.createTool(tool);
 
         List<Tool> tools = toolDao.loadAllTools();
-        Assert.assertEquals(2, tools.size());
+        assertEquals(2, tools.size());
 
         Tool first = toolDao.loadTool(firstRegistry.getId(), tool.getImage());
         checkLoadedTool(first, firstRegistry.getId(), TEST_REPO);
@@ -225,10 +224,10 @@ public class ToolDaoTest extends AbstractJdbcTest {
         checkLoadedTool(second, secondRegistry.getId(), TEST_REPO_2);
 
         toolDao.deleteTool(second.getId());
-        Assert.assertEquals(1, toolDao.loadAllTools().size());
+        assertEquals(1, toolDao.loadAllTools().size());
 
         toolDao.deleteTool(first.getId());
-        Assert.assertTrue(toolDao.loadAllTools().isEmpty());
+        assertTrue(toolDao.loadAllTools().isEmpty());
     }
 
     @Test
@@ -243,8 +242,8 @@ public class ToolDaoTest extends AbstractJdbcTest {
         long iconId = toolDao.updateIcon(tool.getId(), TEST_FILE_NAME, BYTES);
 
         Tool loaded = toolDao.loadTool(tool.getId());
-        Assert.assertTrue(loaded.isHasIcon());
-        Assert.assertEquals(iconId, loaded.getIconId().longValue());
+        assertTrue(loaded.isHasIcon());
+        assertEquals(iconId, loaded.getIconId().longValue());
 
         List<DockerRegistry> registries = registryDao.loadAllRegistriesContent();
         DockerRegistry registry = registries.stream()
@@ -252,24 +251,24 @@ public class ToolDaoTest extends AbstractJdbcTest {
         ToolGroup group = registry.getGroups().stream()
             .filter(g -> g.getId().equals(library1.getId())).findFirst().get();
         loaded = group.getTools().stream().filter(t -> t.getId().equals(tool.getId())).findFirst().get();
-        Assert.assertTrue(loaded.isHasIcon());
-        Assert.assertEquals(iconId, loaded.getIconId().longValue());
+        assertTrue(loaded.isHasIcon());
+        assertEquals(iconId, loaded.getIconId().longValue());
 
         Optional<Pair<String, InputStream>> loadedImage = toolDao.loadIcon(tool.getId());
-        Assert.assertEquals(TEST_FILE_NAME, loadedImage.get().getLeft());
+        assertEquals(TEST_FILE_NAME, loadedImage.get().getLeft());
         try (InputStream imageStream = loadedImage.get().getRight()) {
             ByteArrayOutputStream os = new ByteArrayOutputStream();
             IOUtils.copy(imageStream, os);
             byte[] loadedBytes = os.toByteArray();
             for (int i = 0; i < loadedBytes.length; i++) {
-                Assert.assertEquals(BYTES[i], loadedBytes[i]);
+                assertEquals(BYTES[i], loadedBytes[i]);
             }
         }
 
         // update again
         toolDao.updateIcon(tool.getId(), TEST_FILE_NAME, BYTES);
         loaded = toolDao.loadTool(tool.getId());
-        Assert.assertTrue(loaded.isHasIcon());
+        assertTrue(loaded.isHasIcon());
 
         deleteTool(loaded);
     }
@@ -291,13 +290,12 @@ public class ToolDaoTest extends AbstractJdbcTest {
         assertSymlinkCanBeLoaded(tool, symlink);
     }
 
-    @Test(expected = DataIntegrityViolationException.class)
+    @Test
     @Transactional
     public void testToolCannotBeDeletedIfThereAreSymlinksForIt() {
         final Tool tool = createTool();
         createSymlink(tool);
-
-        deleteTool(tool);
+        assertThrows(DataIntegrityViolationException.class, () -> deleteTool(tool));
     }
 
     @Test
@@ -408,11 +406,11 @@ public class ToolDaoTest extends AbstractJdbcTest {
         final Tool tool = generateToolWithAllFields();
         toolDao.createTool(tool);
         final Long toolId = tool.getId();
-        Assert.assertTrue(toolDao.loadTool(toolId).isAllowCommit());
+        assertTrue(toolDao.loadTool(toolId).isAllowCommit());
 
         tool.setAllowCommit(false);
         toolDao.updateTool(tool);
-        Assert.assertFalse(toolDao.loadTool(toolId).isAllowCommit());
+        assertFalse(toolDao.loadTool(toolId).isAllowCommit());
     }
 
     @Test
@@ -638,12 +636,12 @@ public class ToolDaoTest extends AbstractJdbcTest {
     }
 
     private void checkLoadedTool(Tool tool, Long registryId, String toolRegistry) {
-        Assert.assertEquals(TEST_IMAGE, tool.getImage());
-        Assert.assertEquals(TEST_CPU, tool.getCpu());
-        Assert.assertEquals(TEST_RAM, tool.getRam());
-        Assert.assertEquals(registryId, tool.getRegistryId());
-        Assert.assertEquals(toolRegistry, tool.getRegistry());
-        Assert.assertTrue(tool.isAllowCommit());
+        assertEquals(TEST_IMAGE, tool.getImage());
+        assertEquals(TEST_CPU, tool.getCpu());
+        assertEquals(TEST_RAM, tool.getRam());
+        assertEquals(registryId, tool.getRegistryId());
+        assertEquals(toolRegistry, tool.getRegistry());
+        assertTrue(tool.isAllowCommit());
     }
 
     private IssueVO getIssueVO(String name, String text, EntityVO entity) {

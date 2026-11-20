@@ -146,14 +146,14 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void deleteSidById(Long sidId) {
-        jdbcTemplate.update(DELETE_ENTRIES_BY_SID_QUERY, sidId);
-        final Integer ownerEntries = jdbcTemplate.queryForObject(
+        jdbcOperations.update(DELETE_ENTRIES_BY_SID_QUERY, sidId);
+        final Integer ownerEntries = jdbcOperations.queryForObject(
                 LOAD_OWNER_ENTRIES_BY_SID_COUNT_QUERY, Integer.class, sidId);
         if (ownerEntries > 0) {
             log.debug("Sid {} in an owner of {} entity(s). Leaving ACL record.", sidId, ownerEntries);
             return;
         }
-        jdbcTemplate.update(DELETE_SID_BY_ID_QUERY, sidId);
+        jdbcOperations.update(DELETE_SID_BY_ID_QUERY, sidId);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -251,11 +251,11 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
 
     public Integer loadEntriesBySidsCount(final Collection<Long> sidIds) {
         final String query = DaoHelper.replaceInClause(LOAD_ENTRIES_BY_SIDS_COUNT_QUERY, sidIds.size());
-        return jdbcTemplate.queryForObject(query, sidIds.toArray(), Integer.class);
+        return jdbcOperations.queryForObject(query, sidIds.toArray(), Integer.class);
     }
 
     public List<AclEntitySummary> loadEntriesWithAuthoritySummary(final Long sidId) {
-        return jdbcTemplate.query(LOAD_ENTRIES_SUMMARY_BY_SID_QUERY, new Long[]{sidId},
+        return jdbcOperations.query(LOAD_ENTRIES_SUMMARY_BY_SID_QUERY, new Long[]{sidId},
             (rs, rowNum) -> new AclEntitySummary(rs.getLong(1),
                                                  rs.getLong(2),
                                                  rs.getString(3)));

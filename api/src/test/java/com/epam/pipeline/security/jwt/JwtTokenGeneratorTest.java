@@ -16,11 +16,12 @@
 
 package com.epam.pipeline.security.jwt;
 
+import com.auth0.jwt.JWT;
 import com.epam.pipeline.entity.security.JwtTokenClaims;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -47,7 +48,7 @@ public class JwtTokenGeneratorTest {
     private JwtTokenGenerator generator;
     private JwtTokenVerifier verifier;
 
-    @Before
+    @BeforeEach
     public void setUp() throws NoSuchAlgorithmException {
         final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
         keyPairGenerator.initialize(KEY_SIZE);
@@ -65,7 +66,7 @@ public class JwtTokenGeneratorTest {
         ReflectionTestUtils.setField(generator, "privateKeyString", privateKey);
         ReflectionTestUtils.setField(generator, "publicKeyString", publicKey);
         ReflectionTestUtils.setField(generator, "preferenceManager", preferenceManager);
-        generator.initKey();
+        generator.afterPropertiesSet();
 
         verifier = new JwtTokenVerifier(publicKey);
     }
@@ -102,16 +103,36 @@ public class JwtTokenGeneratorTest {
     }
 
     /**
-     * Absent means exchangeable, so every token issued before this claim existed keeps working.
+     * Absent means renewable, so every token issued before this claim existed keeps working.
      */
     @Test
-    public void shouldTreatATokenWithoutTheClaimAsExchangeable() {
-        assertThat(roundTrip(claims().build()).isExchangeable()).isTrue();
+    public void shouldTreatATokenWithoutTheClaimAsRenewable() {
+        assertThat(roundTrip(claims().build()).isNonRenewable()).isFalse();
+    }
+
+    /**
+     * Asserted on the raw token, because the verifier reads an absent claim and one present as
+     * {@code false} the same way. The contract the documentation states is the stronger one: an
+     * ordinary token carries no such claim at all.
+     */
+    @Test
+    public void shouldWriteNoClaimAtAllOnARenewableToken() {
+        final String token = generator.encodeToken(claims().build(), (long) EXPIRATION_SECONDS);
+
+        assertThat(JWT.decode(token).getClaim(JwtTokenClaims.CLAIM_NON_RENEWABLE).isNull()).isTrue();
     }
 
     @Test
-    public void shouldCarryAWithheldExchangeableFlagThroughTheToken() {
-        assertThat(roundTrip(claims().exchangeable(false).build()).isExchangeable()).isFalse();
+    public void shouldWriteTheClaimOnANonRenewableToken() {
+        final String token = generator.encodeToken(
+                claims().nonRenewable(true).build(), (long) EXPIRATION_SECONDS);
+
+        assertThat(JWT.decode(token).getClaim(JwtTokenClaims.CLAIM_NON_RENEWABLE).asBoolean()).isTrue();
+    }
+
+    @Test
+    public void shouldCarryTheNonRenewableFlagThroughTheToken() {
+        assertThat(roundTrip(claims().nonRenewable(true).build()).isNonRenewable()).isTrue();
     }
 
     @Test

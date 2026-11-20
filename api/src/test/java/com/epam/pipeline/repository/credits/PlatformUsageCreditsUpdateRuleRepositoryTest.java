@@ -20,7 +20,7 @@ import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateRuleType;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateAction;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateRuleEntity;
 import com.epam.pipeline.test.repository.AbstractJpaTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,7 +53,7 @@ public class PlatformUsageCreditsUpdateRuleRepositoryTest extends AbstractJpaTes
         entityManager.flush();
         entityManager.clear();
 
-        final PlatformUsageCreditsUpdateRuleEntity loaded = repository.findOne(id);
+        final PlatformUsageCreditsUpdateRuleEntity loaded = repository.findById(id).orElse(null);
         assertThat(loaded, notNullValue());
         assertThat(loaded.getName(), is(rule.getName()));
         assertThat(loaded.getDescription(), is(rule.getDescription()));
@@ -77,14 +77,14 @@ public class PlatformUsageCreditsUpdateRuleRepositoryTest extends AbstractJpaTes
         entityManager.flush();
         entityManager.clear();
 
-        final PlatformUsageCreditsUpdateRuleEntity updated = repository.findOne(id);
+        final PlatformUsageCreditsUpdateRuleEntity updated = repository.findById(id).orElse(null);
         assertThat(updated.getActionType(), is(PlatformUsageCreditsUpdateAction.ActionType.INCREASE));
 
-        repository.delete(id);
+        repository.deleteById(id);
 
         entityManager.flush();
         entityManager.clear();
 
-        assertThat(repository.findOne(id), nullValue());
+        assertThat(repository.findById(id).orElse(null), nullValue());
     }
 }

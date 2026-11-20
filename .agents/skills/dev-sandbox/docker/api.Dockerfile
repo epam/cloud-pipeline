@@ -1,5 +1,5 @@
 # The image the dev sandbox runs the platform's API in, on the developer's workstation, and its
-# optional services: Java 8 for them, Python 3.12 with the packages of the node scripts the API
+# optional services: Java 21 for them, Python 3.12 with the packages of the node scripts the API
 # runs (scripts/autoscaling's requirements and pipe-common's), the SSH client the API runs a run's
 # commit, pause and the other operations on its node with, and tun2socks, which routes the VPC
 # through the tunnel's SOCKS proxy.
@@ -8,7 +8,7 @@
 # scripts/autoscaling/requirements.txt and workflows/pipe-common, and tagged with a hash of them.
 # The jars, the node scripts and pipe-common's code come from the checkout at run time.
 
-FROM eclipse-temurin:8-jre-noble
+FROM eclipse-temurin:21-jre-noble
 
 ARG TUN2SOCKS_VERSION=2.7.0
 ARG TUN2SOCKS_URL=https://github.com/xjasonlyu/tun2socks/releases/download

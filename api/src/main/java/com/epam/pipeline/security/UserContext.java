@@ -60,10 +60,15 @@ public class UserContext implements UserDetails {
     private boolean authoritiesScoped;
 
     /**
-     * Whether the token behind this principal may be traded for another. True unless the token
-     * says otherwise, so an ordinary login is unaffected.
+     * Whether the token behind this principal may <em>not</em> be renewed: traded for a fresh
+     * platform token through the platform's own token endpoints.
+     * <p>
+     * Held as the negative so that the permissive meaning is the one Java leaves behind. Every
+     * token is renewable unless it says otherwise, and {@code false} is both the default of a
+     * freshly built context and what deserialization produces for a field the stream does not
+     * carry.
      */
-    private boolean exchangeable = true;
+    private boolean nonRenewable;
 
     public UserContext(JwtRawToken jwtRawToken, JwtTokenClaims claims) {
         this.jwtRawToken = jwtRawToken;
@@ -75,7 +80,7 @@ public class UserContext implements UserDetails {
         this.groups = claims.getGroups();
         this.external = claims.isExternal();
         this.authoritiesScoped = claims.isAuthoritiesScoped();
-        this.exchangeable = claims.isExchangeable();
+        this.nonRenewable = claims.isNonRenewable();
     }
 
     public UserContext(Long id, String userName) {
@@ -106,7 +111,7 @@ public class UserContext implements UserDetails {
                 .authoritiesScoped(authoritiesScoped)
                 // carried over so the restriction cannot be shed by issuing a token from this
                 // context, the same way the narrowed authorities cannot
-                .exchangeable(exchangeable)
+                .nonRenewable(nonRenewable)
                 .build();
     }
 

@@ -59,10 +59,6 @@ import roleModel from '../../../../utils/roleModel';
 import localization from '../../../../utils/localization';
 
 import hints from './hints';
-import FireCloudMethodSnapshotConfigurationsRequest
-from '../../../../models/firecloud/FireCloudMethodSnapshotConfigurations';
-import FireCloudMethodParameters
-from '../../../../models/firecloud/FireCloudMethodParameters';
 import LoadingView from '../../../special/LoadingView';
 import {getSpotTypeName} from '../../../special/spot-instance-names';
 import DTSClusterInfo from '../../../../models/dts/DTSClusterInfo';
@@ -93,6 +89,7 @@ import * as validatorUtilities from './utilities/validator-utilities';
 import RunSchedulingList from '../../../runs/run-scheduling/run-sheduling-list';
 import pipelinesEquals from './utilities/pipelines-equals';
 import LaunchCommand from './utilities/launch-command';
+import {formOffersCapacityBlocks} from './utilities/capacity-blocks';
 import {names} from '../../../../models/utils/ContextualPreference';
 import {
   SubmitButton,
@@ -165,6 +162,7 @@ import {getParameterKeyClassName} from './parameters/utilities';
 import ParametersPayloadSelector from './parameters/payload/selector';
 import ReservationParameters from './components/reservation-parameters';
 import NodeUpRetryCountFormItem from './components/node-up-retry-count';
+import InstanceTypeSuggestion from './components/instance-type-suggestion';
 import {
   applyNodeUpRetryCountDefault,
   getDefaultNodeUpRetryCount,
@@ -177,9 +175,16 @@ import {
 } from './utilities/optional-parameters-filter';
 import {
   buildLaunchParametersFromReservationParameters,
-  findReservationParameterConfig,
   readReservationParameters
 } from './components/reservation-parameters/utilities';
+import capacityBlocks from '../../../../models/cluster/capacity-blocks';
+import {
+  correctCapacityBlockValue,
+  decodeInstanceTypeValue,
+  encodeCapacityBlockValue,
+  getCapacityBlockOptions
+} from '../../../../models/cluster/capacity-blocks/utilities';
+import capacityReservations from '../../../../models/cluster/CapacityReservations';
 import Markdown from '../../../special/markdown';
 import DataStorageItemSize from '../../../../models/dataStorage/DataStorageItemSize';
 import VersionFile from '../../../../models/pipelines/VersionFile';
@@ -191,7 +196,6 @@ const RUN_SELECTED_KEY = 'run selected';
 const RUN_CLUSTER_KEY = 'run cluster';
 
 const CLOUD_PLATFORM_ENVIRONMENT = 'CLOUD_PLATFORM';
-const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
 
 function getFormItemClassName (rootClass, key) {
@@ -203,7 +207,6 @@ function getFormItemClassName (rootClass, key) {
 
 @inject(
   'runDefaultParameters',
-  'googleApi',
   'awsRegions',
   'dtsList',
   'preferences',
@@ -288,13 +291,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     isDetachedConfiguration: PropTypes.bool,
     configurationId: PropTypes.string,
     selectedPipelineParametersIsLoading: PropTypes.bool,
-    fireCloudMethod: PropTypes.shape({
-      name: PropTypes.string,
-      namespace: PropTypes.string,
-      snapshot: PropTypes.string,
-      configuration: PropTypes.string,
-      configurationSnapshot: PropTypes.string
-    }),
     onInitialized: PropTypes.func,
     onModified: PropTypes.func,
     continueRun: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
@@ -380,28 +376,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     showOnlyFolderInBucketBrowser: false,
     allowBucketSelectionInBucketBrowser: false,
     systemParameters: [],
-    fireCloudMethodName: (this.props.fireCloudMethod &&
-      this.props.fireCloudMethod.name) || null,
-    fireCloudMethodNamespace: (this.props.fireCloudMethod &&
-      this.props.fireCloudMethod.namespace) || null,
-    fireCloudMethodSnapshot: (this.props.fireCloudMethod &&
-      this.props.fireCloudMethod.snapshot) || null,
-    fireCloudMethodConfiguration: (this.props.fireCloudMethod &&
-      this.props.fireCloudMethod.configuration) || null,
-    fireCloudMethodConfigurationSnapshot: (this.props.fireCloudMethod &&
-      this.props.fireCloudMethod.configurationSnapshot) || null,
-    fireCloudInputs: {},
-    fireCloudOutputs: {},
-    fireCloudInputsErrors: {},
-    fireCloudOutputsErrors: {},
-    fireCloudDefaultInputs: (
-      this.props.fireCloudMethod &&
-      this.props.fireCloudMethod.methodInputs
-    ) || [],
-    fireCloudDefaultOutputs: (
-      this.props.fireCloudMethod &&
-      this.props.fireCloudMethod.methodOutputs
-    ) || [],
     autoPause: true,
     showLaunchCommands: false,
     runCapabilities: [],
@@ -567,7 +541,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return new Promise((resolve) => {
       if (!this.props.detached && !this.props.editConfigurationMode) {
         this.props.form.validateFields(async (err, values) => {
-          if (!err && this.validateFireCloudConnections()) {
+          if (!err) {
             this.launchCommandPayload = await this.generateLaunchPayload(values);
           } else {
             this.launchCommandPayload = undefined;
@@ -606,7 +580,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   renderAdditionalRunCapabilities = () => {
     if (hasPlatformSpecificCapabilities(this.toolPlatform, this.props.preferences)) {
-      const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
+      const instanceTypeValue = this.selectedInstanceTypeName;
+      // A capability is gated on the launch config of the pool the user
+      // chose; with no pool chosen there is none.
+      const pool = this.selectedCapacityBlockPool;
       return (
         <FormItem
           className={getFormItemClassName(styles.formItem, 'runCapabilities')}
@@ -624,182 +601,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             region={this.currentCloudRegion}
             mode={RUN_CAPABILITIES_MODE.launch}
             instanceType={instanceTypeValue}
+            poolId={pool ? pool.id : undefined}
           />
         </FormItem>
       );
     }
   }
-
-  @observable
-  _fireCloudConfigurations = null;
-  @observable
-  _fireCloudParameters = null;
-
-  @computed
-  get isFireCloudSelected () {
-    return !!(this.state.fireCloudMethodName && this.state.fireCloudMethodNamespace &&
-      this.state.fireCloudMethodSnapshot);
-  }
-
-  @computed
-  get selectedFireCloudConfiguration () {
-    if (this.isFireCloudSelected &&
-      this._fireCloudConfigurations && this._fireCloudConfigurations.loaded) {
-      return (this._fireCloudConfigurations.value || []).filter(
-        config =>
-          config.name === this.state.fireCloudMethodConfiguration &&
-          config.snapshotId === this.state.fireCloudMethodConfigurationSnapshot
-      )[0];
-    }
-    return null;
-  }
-
-  @computed
-  get selectedFireCloudParameters () {
-    if (this.isFireCloudSelected &&
-      this._fireCloudParameters && this._fireCloudParameters.loaded) {
-      return this._fireCloudParameters.value;
-    }
-    return null;
-  }
-
-  loadFireCloudConfigurations = () => {
-    if (this.state.fireCloudMethodNamespace && this.state.fireCloudMethodName &&
-      this.state.fireCloudMethodSnapshot) {
-      if (!this.state.fireCloudDefaultInputs || this.state.fireCloudDefaultInputs.length === 0 ||
-        !this.state.fireCloudDefaultOutputs || this.state.fireCloudDefaultOutputs.length === 0) {
-        this._fireCloudConfigurations = new FireCloudMethodSnapshotConfigurationsRequest(
-          this.props.googleApi,
-          this.state.fireCloudMethodNamespace,
-          this.state.fireCloudMethodName,
-          this.state.fireCloudMethodSnapshot
-        );
-      } else {
-        this._fireCloudConfigurations = null;
-      }
-      this._fireCloudParameters = new FireCloudMethodParameters(
-        this.props.googleApi,
-        this.state.fireCloudMethodNamespace,
-        this.state.fireCloudMethodName,
-        this.state.fireCloudMethodSnapshot
-      );
-    }
-  };
-
-  getFireCloudDefaultInputs = () => {
-    if (this.state.fireCloudDefaultInputs && this.state.fireCloudDefaultInputs.length > 0) {
-      const obj = {};
-      for (let i = 0; i < this.state.fireCloudDefaultInputs.length; i++) {
-        const param = this.state.fireCloudDefaultInputs[i];
-        obj[param.name] = param.value;
-      }
-      return obj;
-    } else if (this.selectedFireCloudConfiguration &&
-      this.selectedFireCloudConfiguration.payloadObject) {
-      return this.selectedFireCloudConfiguration.payloadObject.inputs || {};
-    }
-    return {};
-  };
-
-  getFireCloudDefaultOutputs = () => {
-    if (this.state.fireCloudDefaultOutputs && this.state.fireCloudDefaultOutputs.length > 0) {
-      const obj = {};
-      for (let i = 0; i < this.state.fireCloudDefaultOutputs.length; i++) {
-        const param = this.state.fireCloudDefaultOutputs[i];
-        obj[param.name] = param.value;
-      }
-      return obj;
-    } else if (this.selectedFireCloudConfiguration &&
-      this.selectedFireCloudConfiguration.payloadObject) {
-      return this.selectedFireCloudConfiguration.payloadObject.outputs || {};
-    }
-    return {};
-  };
-
-  validateFireCloudConnections = () => {
-    if (this.props.detached &&
-      this.state.fireCloudMethodName &&
-      this.state.fireCloudMethodNamespace &&
-      this.state.fireCloudMethodSnapshot &&
-      this.selectedFireCloudParameters) {
-      const inputs = (this.selectedFireCloudParameters.inputs || []).map(i => i);
-      const outputs = (this.selectedFireCloudParameters.outputs || []).map(o => o);
-      const defaultInputs = this.getFireCloudDefaultInputs();
-      const defaultOutputs = this.getFireCloudDefaultOutputs();
-      const inputsValues = this.state.fireCloudInputs;
-      const outputsValues = this.state.fireCloudOutputs;
-      let validationFailed = false;
-      const validateParameters = (params, defaultParams, values) => {
-        const validationObj = {};
-        for (let i = 0; i < params.length; i++) {
-          const value = values[params[i].name] === undefined
-            ? defaultParams[params[i].name]
-            : values[params[i].name];
-          if (!value && !params[i].optional) {
-            validationObj[params[i].name] = 'This field is required';
-            validationFailed = true;
-          } else if (value) {
-            switch ((params[i].inputType || params[i].outputType || '').toLowerCase()) {
-              case 'int':
-              case 'int?':
-                if (isNaN(value) || +value !== Math.round(+value)) {
-                  validationObj[params[i].name] = 'This field should be integer';
-                }
-                break;
-            }
-          }
-        }
-        return validationObj;
-      };
-      const inputsValidation = validateParameters(inputs, defaultInputs, inputsValues);
-      const outputsValidation = validateParameters(outputs, defaultOutputs, outputsValues);
-      this.setState({
-        fireCloudInputsErrors: inputsValidation,
-        fireCloudOutputsErrors: outputsValidation
-      });
-      return !validationFailed;
-    }
-    return true;
-  };
-
-  getFireCloudConnections = () => {
-    if (this.props.detached &&
-      this.state.fireCloudMethodName &&
-      this.state.fireCloudMethodNamespace &&
-      this.state.fireCloudMethodSnapshot &&
-      this.selectedFireCloudParameters) {
-      const inputs = (this.selectedFireCloudParameters.inputs || []).map(i => i);
-      const outputs = (this.selectedFireCloudParameters.outputs || []).map(o => o);
-      const defaultInputs = this.getFireCloudDefaultInputs();
-      const defaultOutputs = this.getFireCloudDefaultOutputs();
-      const inputsValues = this.state.fireCloudInputs;
-      const outputsValues = this.state.fireCloudOutputs;
-      const getParameters = (params, defaultParams, values) => {
-        const result = [];
-        for (let i = 0; i < params.length; i++) {
-          const value = values[params[i].name] === undefined
-            ? defaultParams[params[i].name]
-            : values[params[i].name];
-          if (value) {
-            result.push({
-              name: params[i].name,
-              type: params[i].inputType || params[i].outputType,
-              optional: params[i].optional,
-              value
-            });
-          }
-        }
-        return result;
-      };
-      const methodInputs = getParameters(inputs, defaultInputs, inputsValues);
-      const methodOutputs = getParameters(outputs, defaultOutputs, outputsValues);
-      return {
-        methodInputs,
-        methodOutputs
-      };
-    }
-    return null;
-  };
 
   @computed
   get dtsList () {
@@ -962,15 +769,34 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return detachedConfigurations.find((d) => d.name === currentConfigurationName);
   }
 
+  // The node-type field's raw value is either a plain instance type name or a
+  // capacity-block pool encoded by `encodeCapacityBlockValue` (`pool:<id>`).
+  // These two getters are the single place that reads the field's *current*
+  // value for "what is selected" purposes - every such read elsewhere in this
+  // file goes through `selectedInstanceTypeName` rather than re-deriving the
+  // decode. A handler that already holds the value as its own argument
+  // (`instanceTypeChanged`'s `newType`, or a submitted `values[...].type`
+  // inside the two payload builders) decodes it directly instead - decoding
+  // *that* value is exactly as safe, and re-reading the field through this
+  // getter would risk a stale value depending on when it runs. Either way the
+  // raw, possibly-encoded string itself stays touched only by what *sets* it
+  // - the `Select`, and `instanceTypeSuggestionSelected` encoding a specific
+  // pool the same way - and by those few direct decodes plus
+  // `correctInstanceTypeValue` (which must see it raw to validate it).
+  get selectedInstanceTypeName () {
+    const value = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
+    return decodeInstanceTypeValue(value, capacityBlocks.pools).instanceType;
+  }
+
+  get selectedCapacityBlockPool () {
+    const value = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
+    return decodeInstanceTypeValue(value, capacityBlocks.pools).pool;
+  }
+
   getIsInstanceTypeWithReservation () {
-    const {
-      detached,
-      preferences
-    } = this.props;
-    const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
-    return detached
-      ? false
-      : Boolean(findReservationParameterConfig(instanceTypeValue, preferences));
+    // Only a pool picked from "Reserved capacity blocks" is a reservation: a
+    // plain instance type launches without one, even where a pool backs it.
+    return formOffersCapacityBlocks(this.props) && !!this.selectedCapacityBlockPool;
   }
 
   getDefaultRootEntityId () {
@@ -1099,7 +925,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           console.log(nonValidParameter);
         }
       }
-      if (!err && this.validateFireCloudConnections()) {
+      if (!err) {
         let payload;
         try {
           if (this.props.launchProfile) {
@@ -1129,6 +955,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               onSave
             } = launchProfile;
             if (onSave) {
+              // A launch profile offers no capacity blocks
+              // (`formOffersCapacityBlocks`), and `capacityBlockPoolId` is
+              // not a field a saved profile keeps.
+              delete payload.capacityBlockPoolId;
               await onSave(payload);
             }
           }
@@ -1158,7 +988,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   run = ({key}, entitiesIds, metadataClass, expansionExpression, folderId) => {
     this.props.form.validateFields(async (err, values) => {
-      if (!err && this.validateFireCloudConnections()) {
+      if (!err) {
         const payload = await this.generateConfigurationPayload(values, {
           skipReservationParameters: true
         });
@@ -1212,9 +1042,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const [currentConfiguration] = this.props.configurations
       .filter(config => config.name === this.props.currentConfigurationName);
 
-    if (this.isFireCloudSelected) {
-      execEnvSelectValue = FIRE_CLOUD_ENVIRONMENT;
-    } else if (currentConfiguration &&
+    if (currentConfiguration &&
       currentConfiguration.executionEnvironment === DTS_ENVIRONMENT) {
       dtsId = this.state.dtsId || currentConfiguration.dtsId;
       execEnvSelectValue = `${DTS_ENVIRONMENT}.${dtsId}`;
@@ -1314,10 +1142,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             }
           }
         },
-        fireCloudInputs: {},
-        fireCloudOutputs: {},
-        fireCloudInputsErrors: {},
-        fireCloudOutputsErrors: {},
         isRawEditEnabled
       }, () => {
         this.forceValidation = true;
@@ -1378,15 +1202,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             }
           }
         },
-        fireCloudMethodName: null,
-        fireCloudMethodNamespace: null,
-        fireCloudMethodSnapshot: null,
-        fireCloudMethodConfiguration: null,
-        fireCloudMethodConfigurationSnapshot: null,
-        fireCloudInputs: {},
-        fireCloudOutputs: {},
-        fireCloudInputsErrors: {},
-        fireCloudOutputsErrors: {},
         autoPause: true,
         isRawEditEnabled
       }, () => {
@@ -1412,11 +1227,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       parameters,
       conditionalParameters
     } = parameterUtilities.parametersToConfigurationParams(this.getParameters());
-    const instanceType = values[EXEC_ENVIRONMENT].type;
+    // The field's own value may be a capacity-block pool encoded as `pool:<id>`
+    // (see `selectedInstanceTypeName`/`selectedCapacityBlockPool`) - decode it
+    // once here rather than anywhere downstream.
+    const {
+      instanceType,
+      poolId: capacityBlockPoolId
+    } = decodeInstanceTypeValue(values[EXEC_ENVIRONMENT].type, capacityBlocks.pools);
     const fallbackInstanceTypes = this.fallbackInstanceTypesDisabled
       ? []
       : (values[EXEC_ENVIRONMENT].fallbackInstanceTypes || []).slice();
     let payload = {
+      // Always the plain instance type: a saved configuration has no field
+      // for the chosen pool's id, so it launches without a reservation. Do
+      // not "fix" this to carry the encoded value.
       instance_size: instanceType,
       fallback_instance_types: fallbackInstanceTypes.length > 0
         ? fallbackInstanceTypes
@@ -1458,88 +1282,86 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       payload.coresNumber = +values[EXEC_ENVIRONMENT].coresNumber || null;
       payload.dtsId = +this.state.dtsId;
     }
-    if (!this.isFireCloudSelected) {
-      if (values[ADVANCED].limitMounts && !this.isWindowsPlatform) {
-        payload.parameters[CP_CAP_LIMIT_MOUNTS] = {
+    if (values[ADVANCED].limitMounts && !this.isWindowsPlatform) {
+      payload.parameters[CP_CAP_LIMIT_MOUNTS] = {
+        type: 'string',
+        required: false,
+        value: values[ADVANCED].limitMounts
+      };
+    }
+    if (this.state.launchCluster && this.state.autoScaledCluster) {
+      payload.parameters[CP_CAP_AUTOSCALE] = {
+        type: 'boolean',
+        value: true
+      };
+      payload.parameters[CP_CAP_AUTOSCALE_WORKERS] = {
+        type: 'int',
+        value: +this.state.maxNodesCount
+      };
+      if (this.state.autoScaledPriceType) {
+        payload.parameters[CP_CAP_AUTOSCALE_PRICE_TYPE] = {
           type: 'string',
-          required: false,
-          value: values[ADVANCED].limitMounts
+          value: this.state.autoScaledPriceType
         };
+      } else {
+        delete payload.parameters[CP_CAP_AUTOSCALE_PRICE_TYPE];
       }
-      if (this.state.launchCluster && this.state.autoScaledCluster) {
-        payload.parameters[CP_CAP_AUTOSCALE] = {
-          type: 'boolean',
-          value: true
-        };
-        payload.parameters[CP_CAP_AUTOSCALE_WORKERS] = {
-          type: 'int',
-          value: +this.state.maxNodesCount
-        };
-        if (this.state.autoScaledPriceType) {
-          payload.parameters[CP_CAP_AUTOSCALE_PRICE_TYPE] = {
-            type: 'string',
-            value: this.state.autoScaledPriceType
-          };
-        } else {
-          delete payload.parameters[CP_CAP_AUTOSCALE_PRICE_TYPE];
-        }
-        if (this.state.hybridAutoScaledClusterEnabled) {
-          payload.parameters[CP_CAP_AUTOSCALE_HYBRID] = {
-            type: 'boolean',
-            value: true
-          };
-        }
-        if (this.state.gpuScalingConfiguration) {
-          payload.parameters = applyGPUScalingParameters(
-            this.state.gpuScalingConfiguration,
-            payload.parameters
-          );
-        } else if (this.state.childNodeInstanceConfiguration) {
-          applyChildNodeInstanceParameters(
-            payload.parameters,
-            this.state.childNodeInstanceConfiguration,
-            this.state.hybridAutoScaledClusterEnabled
-          );
-        }
-      }
-      if (this.state.launchCluster && this.state.gridEngineEnabled) {
-        payload.parameters[CP_CAP_SGE] = {
+      if (this.state.hybridAutoScaledClusterEnabled) {
+        payload.parameters[CP_CAP_AUTOSCALE_HYBRID] = {
           type: 'boolean',
           value: true
         };
       }
-      if (this.state.launchCluster && this.state.sparkEnabled) {
-        payload.parameters[CP_CAP_SPARK] = {
-          type: 'boolean',
-          value: true
-        };
+      if (this.state.gpuScalingConfiguration) {
+        payload.parameters = applyGPUScalingParameters(
+          this.state.gpuScalingConfiguration,
+          payload.parameters
+        );
+      } else if (this.state.childNodeInstanceConfiguration) {
+        applyChildNodeInstanceParameters(
+          payload.parameters,
+          this.state.childNodeInstanceConfiguration,
+          this.state.hybridAutoScaledClusterEnabled
+        );
       }
-      if (this.state.launchCluster && this.state.slurmEnabled) {
-        payload.parameters[CP_CAP_SLURM] = {
-          type: 'boolean',
-          value: true
-        };
-      }
-      if (this.state.launchCluster && this.state.kubeEnabled) {
-        payload.parameters[CP_CAP_KUBE] = {
-          type: 'boolean',
-          value: true
-        };
-        payload.parameters[CP_CAP_DIND_CONTAINER] = {
-          type: 'boolean',
-          value: true
-        };
-        payload.parameters[CP_CAP_SYSTEMD_CONTAINER] = {
-          type: 'boolean',
-          value: true
-        };
-      }
-      if (this.rescheduleRun !== undefined) {
-        payload.parameters[CP_CAP_RESCHEDULE_RUN] = {
-          type: 'boolean',
-          value: this.rescheduleRun
-        };
-      }
+    }
+    if (this.state.launchCluster && this.state.gridEngineEnabled) {
+      payload.parameters[CP_CAP_SGE] = {
+        type: 'boolean',
+        value: true
+      };
+    }
+    if (this.state.launchCluster && this.state.sparkEnabled) {
+      payload.parameters[CP_CAP_SPARK] = {
+        type: 'boolean',
+        value: true
+      };
+    }
+    if (this.state.launchCluster && this.state.slurmEnabled) {
+      payload.parameters[CP_CAP_SLURM] = {
+        type: 'boolean',
+        value: true
+      };
+    }
+    if (this.state.launchCluster && this.state.kubeEnabled) {
+      payload.parameters[CP_CAP_KUBE] = {
+        type: 'boolean',
+        value: true
+      };
+      payload.parameters[CP_CAP_DIND_CONTAINER] = {
+        type: 'boolean',
+        value: true
+      };
+      payload.parameters[CP_CAP_SYSTEMD_CONTAINER] = {
+        type: 'boolean',
+        value: true
+      };
+    }
+    if (this.rescheduleRun !== undefined) {
+      payload.parameters[CP_CAP_RESCHEDULE_RUN] = {
+        type: 'boolean',
+        value: this.rescheduleRun
+      };
     }
     payload.parameters = getParametersFromFsConfig(
       this.state.fsConfig,
@@ -1554,7 +1376,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         instanceType,
         payload.parameters,
         {
-          applyAdditionalParameters: applyAdditionalReservationParameters
+          applyAdditionalParameters: applyAdditionalReservationParameters,
+          poolId: capacityBlockPoolId
         }
       );
       payload.parameters = appliedReservationParameters;
@@ -1572,26 +1395,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       payload.executionEnvironment = this.state.isDts
         ? DTS_ENVIRONMENT : CLOUD_PLATFORM_ENVIRONMENT;
     }
-    if (this.props.detached &&
-      this.state.fireCloudMethodName &&
-      this.state.fireCloudMethodNamespace &&
-      this.state.fireCloudMethodSnapshot) {
-      payload.methodName =
-        `${this.state.fireCloudMethodNamespace}/${this.state.fireCloudMethodName}`;
-      payload.methodSnapshot = this.state.fireCloudMethodSnapshot;
-      if (this.state.fireCloudMethodConfiguration &&
-        this.state.fireCloudMethodConfigurationSnapshot) {
-        payload.methodConfigurationName =
-          `${this.state.fireCloudMethodNamespace}/${this.state.fireCloudMethodConfiguration}`;
-        payload.methodConfigurationSnapshot = this.state.fireCloudMethodConfigurationSnapshot;
-      }
-      payload.executionEnvironment = FIRE_CLOUD_ENVIRONMENT;
-      const connections = this.getFireCloudConnections();
-      if (connections) {
-        payload.methodInputs = connections.methodInputs;
-        payload.methodOutputs = connections.methodOutputs;
-      }
-    }
     if (this.props.isDetachedConfiguration) {
       payload.rootEntityId = this.state.rootEntityId;
       delete payload.friendly_url;
@@ -1606,7 +1409,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     } else if (this.state.startIdle) {
       cmd = 'sleep infinity';
     }
-    const instanceType = values[EXEC_ENVIRONMENT].type;
+    // See the matching comment in `generateConfigurationPayload`: decode once,
+    // and never let the encoded `pool:<id>` form reach the payload below.
+    const {
+      instanceType,
+      poolId: capacityBlockPoolId
+    } = decodeInstanceTypeValue(values[EXEC_ENVIRONMENT].type, capacityBlocks.pools);
     const tags = filterVisibleTagsSync(
       this.state.userTags,
       this.state.userTagsVisibleTags
@@ -1625,6 +1433,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       : (values[EXEC_ENVIRONMENT].fallbackInstanceTypes || []).slice();
     const payload = {
       instanceType,
+      // The pool backing `instanceType`, if the user picked one explicitly -
+      // not a run API field. `run()` (`ensureValidReservationParametersForLaunchPayloads`)
+      // reads this to apply that pool's launch config - without it the run
+      // has no reservation - and deletes it before the payload becomes a
+      // request body.
+      capacityBlockPoolId,
       fallbackInstanceTypes: fallbackInstanceTypes.length > 0
         ? fallbackInstanceTypes
         : undefined,
@@ -1809,7 +1623,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     } = await buildLaunchParametersFromReservationParameters(
       this.state.reservationParameters,
       instanceType,
-      payload.params
+      payload.params,
+      {poolId: capacityBlockPoolId}
     );
     payload.params = appliedReservationParameters;
     payload.params = parameterUtilities
@@ -1994,7 +1809,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     this.evaluateEstimatedPrice({disk: value});
   };
 
-  prepare = (updateFireCloud = false) => {
+  prepare = () => {
     const autoScaledCluster = autoScaledClusterEnabled(this.props.parameters.parameters);
     const hybridAutoScaledCluster = hybridAutoScaledClusterEnabled(
       this.props.parameters.parameters
@@ -2043,28 +1858,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       version: this.props.version,
       pipelineConfiguration: this.props.pipelineConfiguration
     };
-    if (updateFireCloud) {
-      state = Object.assign(state, {
-        fireCloudMethodName: this.props.fireCloudMethod
-          ? this.props.fireCloudMethod.name : null,
-        fireCloudMethodNamespace: this.props.fireCloudMethod
-          ? this.props.fireCloudMethod.namespace : null,
-        fireCloudMethodSnapshot: this.props.fireCloudMethod
-          ? this.props.fireCloudMethod.snapshot : null,
-        fireCloudMethodConfiguration: this.props.fireCloudMethod
-          ? this.props.fireCloudMethod.configuration : null,
-        fireCloudMethodConfigurationSnapshot: this.props.fireCloudMethod
-          ? this.props.fireCloudMethod.configurationSnapshot : null,
-        fireCloudInputs: {},
-        fireCloudOutputs: {},
-        fireCloudDefaultInputs: this.props.fireCloudMethod
-          ? this.props.fireCloudMethod.methodInputs
-          : null,
-        fireCloudDefaultOutputs: this.props.fireCloudMethod
-          ? this.props.fireCloudMethod.methodOutputs
-          : null
-      });
-    }
     this.setState(state);
   };
 
@@ -2079,7 +1872,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (!type) {
       this.props.allowedInstanceTypes &&
       await this.props.allowedInstanceTypes.fetchIfNeededOrWait();
-      type = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type') ||
+      type = this.selectedInstanceTypeName ||
         this.correctInstanceTypeValue(this.getDefaultValue('instance_size'));
     }
     if (!isSpot) {
@@ -2130,7 +1923,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   instanceTypeChanged = (newType) => {
-    const [instanceType] = this.instanceTypes.filter(t => t.name === newType);
+    // `newType` is the Select's own just-picked value, so it is decoded here
+    // directly rather than through `selectedInstanceTypeName` - that getter
+    // reads the field's committed value, which this very handler is what
+    // commits. A pool is region-scoped by construction (`getCapacityBlockOptions`
+    // only offers one already matching the current region), so resolving an
+    // encoded value's instance type here cannot itself trigger the region
+    // switch below - it is already in the right region.
+    const {instanceType: newInstanceTypeName} = decodeInstanceTypeValue(
+      newType,
+      capacityBlocks.pools
+    );
+    const [instanceType] = this.instanceTypes.filter(t => t.name === newInstanceTypeName);
     if (instanceType) {
       try {
         const formField = `${EXEC_ENVIRONMENT}.cloudRegionId`;
@@ -2316,9 +2120,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     this.setState({pipelineBrowserVisible: false}, this.formFieldsChanged);
   };
 
-  selectPipelineConfirm = async (pipeline, isFireCloud = false) => {
+  selectPipelineConfirm = async (pipeline) => {
     return new Promise((resolve) => {
-      const selectPipeline = () => this.selectPipeline(pipeline, isFireCloud);
+      const selectPipeline = () => this.selectPipeline(pipeline);
       Modal.confirm({
         title: 'Are you sure you want to change configuration?',
         style: {
@@ -2338,69 +2142,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     });
   };
 
-  selectPipeline = (pipeline, isFireCloud = false) => {
-    if (isFireCloud) {
-      if (pipeline.name &&
-        pipeline.namespace &&
-        pipeline.snapshot) {
-        if (this.state.fireCloudMethodName !== pipeline.name ||
-          this.state.fireCloudMethodNamespace !== pipeline.namespace ||
-          this.state.fireCloudMethodSnapshot !== pipeline.snapshot ||
-          this.state.fireCloudMethodConfiguration !== pipeline.configuration ||
-          this.state.fireCloudMethodConfigurationSnapshot !== pipeline.configurationSnapshot) {
-          this.setState({
-            fireCloudMethodName: pipeline.name,
-            fireCloudMethodNamespace: pipeline.namespace,
-            fireCloudMethodSnapshot: pipeline.snapshot,
-            fireCloudMethodConfiguration: pipeline.configuration,
-            fireCloudMethodConfigurationSnapshot: pipeline.configurationSnapshot,
-            fireCloudInputs: {},
-            fireCloudOutputs: {},
-            fireCloudInputsErrors: {},
-            fireCloudOutputsErrors: {},
-            fireCloudDefaultInputs: [],
-            fireCloudDefaultOutputs: [],
-            pipeline: null,
-            version: null,
-            configuration: null
-          }, () => {
-            if (this.props.onSelectPipeline) {
-              this.props.onSelectPipeline({
-                fireCloudMethodName: pipeline.name,
-                fireCloudMethodNamespace: pipeline.namespace,
-                fireCloudMethodSnapshot: pipeline.snapshot,
-                fireCloudMethodConfiguration: pipeline.configuration,
-                fireCloudMethodConfigurationSnapshot: pipeline.configurationSnapshot,
-                isFireCloud: true
-              }, () => {
-                this.reset(true);
-                this.evaluateEstimatedPrice({});
-              });
-            }
-          });
-        }
-      } else {
-        this.setState({
-          fireCloudMethodName: null,
-          fireCloudMethodNamespace: null,
-          fireCloudMethodSnapshot: null,
-          fireCloudMethodConfiguration: null,
-          fireCloudMethodConfigurationSnapshot: null,
-          fireCloudInputs: {},
-          fireCloudOutputs: {},
-          fireCloudInputsErrors: {},
-          fireCloudOutputsErrors: {},
-          fireCloudDefaultInputs: [],
-          fireCloudDefaultOutputs: []
-        }, () => {
-          if (this.props.onSelectPipeline) {
-            this.props.onSelectPipeline(null, () => {
-              this.reset(true);
-            });
-          }
-        });
-      }
-    } else if (pipeline) {
+  selectPipeline = (pipeline) => {
+    if (pipeline) {
       const [existedPipeline] = this.props.pipelines.filter(p => p.id === pipeline.id);
       if (existedPipeline) {
         const hide = message.loading('Updating configuration...', 0);
@@ -2408,18 +2151,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           pipeline: existedPipeline,
           version: pipeline.version,
           pipelineChanged: true,
-          pipelineConfiguration: pipeline.configuration,
-          fireCloudMethodName: null,
-          fireCloudMethodNamespace: null,
-          fireCloudMethodSnapshot: null,
-          fireCloudMethodConfiguration: null,
-          fireCloudMethodConfigurationSnapshot: null,
-          fireCloudInputs: {},
-          fireCloudOutputs: {},
-          fireCloudInputsErrors: {},
-          fireCloudOutputsErrors: {},
-          fireCloudDefaultInputs: [],
-          fireCloudDefaultOutputs: []
+          pipelineConfiguration: pipeline.configuration
         }, () => {
           if (this.props.onSelectPipeline) {
             this.props.onSelectPipeline({
@@ -2516,13 +2248,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         }
         inputValue = `${inputValue} ${versionStr}`;
       }
-    } else if (this.state.fireCloudMethodName &&
-      this.state.fireCloudMethodNamespace &&
-      this.state.fireCloudMethodSnapshot) {
-      inputValue = `${this.state.fireCloudMethodNamespace}/${this.state.fireCloudMethodName}`;
-      if (this.state.fireCloudMethodConfiguration) {
-        inputValue = `${inputValue} (${this.state.fireCloudMethodConfiguration})`;
-      }
     }
     const ref = (input) => {
       if (input && input.refs && input.refs.input) {
@@ -2583,14 +2308,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           value={`${this.state.execEnvSelectValue}`}
           onSelect={onChange}
           disabled={
-            (this.props.readOnly && !this.props.canExecute) || (!!this.state.fireCloudMethodName)
+            (this.props.readOnly && !this.props.canExecute)
           }>
-          {
-            !!this.state.fireCloudMethodName &&
-            <Select.Option key={FIRE_CLOUD_ENVIRONMENT}>
-              FireCloud
-            </Select.Option>
-          }
           <Select.Option key={CLOUD_PLATFORM_ENVIRONMENT}>
             {this.props.preferences.deploymentName || 'EPAM Cloud Pipeline'}
           </Select.Option>
@@ -2656,7 +2375,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   validateCoresNumber = (value, callback) => {
-    if (!!this.state.fireCloudMethodName || !value) {
+    if (!value) {
       callback();
       return;
     }
@@ -2928,13 +2647,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         className={getFormItemClassName(styles.formItem, 'dockerImage')}
         {...this.formItemLayout}
         label="Docker image"
-        required={!this.state.fireCloudMethodName}
+        required
         hasFeedback>
         {this.getSectionFieldDecorator(EXEC_ENVIRONMENT)('dockerImage',
           {
             rules: [
               {
-                required: !this.state.fireCloudMethodName,
+                required: true,
                 message: 'Docker image is required'
               }
             ],
@@ -2942,7 +2661,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           }
         )(
           <DockerImageInput disabled={
-            !!this.state.fireCloudMethodName ||
             (this.props.readOnly && !this.props.canExecute) ||
             (this.state.pipeline && this.props.detached)} />
         )}
@@ -2952,13 +2670,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   @computed
   get disableAutoPauseEnabled () {
-    return !this.state.fireCloudMethodName &&
-      !this.props.detached &&
+    return !this.props.detached &&
       !this.props.editConfigurationMode;
   }
 
   get prettyUrlEnabled () {
-    return !this.state.fireCloudMethodName && !this.props.detached;
+    return !this.props.detached;
   }
 
   @computed
@@ -3058,22 +2775,50 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     ? (cpu / 2.0)
     : cpu;
 
+  instanceTypeSuggestionSelected = (instanceType, pool) => {
+    // `InstanceTypeSuggestion` already knows which specific pool a suggestion
+    // row belongs to and passes it here - encode it, the same way the Select's
+    // own "Reserved capacity blocks" option for that pool would. Skipping this
+    // would set the field to the plain type, which launches without a
+    // reservation.
+    const value = (pool && encodeCapacityBlockValue(pool)) || instanceType;
+    this.props.form.setFieldsValue({
+      [`${EXEC_ENVIRONMENT}.type`]: value
+    });
+    this.instanceTypeChanged(value);
+  };
+
+  get instanceTypeSelectionDisabled () {
+    return (this.props.readOnly && !this.props.canExecute) ||
+      (
+        this.props.allowedInstanceTypes &&
+        (this.props.allowedInstanceTypes.changed || this.props.allowedInstanceTypes.pending)
+      );
+  }
+
   renderInstanceTypeSelection = () => {
     if (this.state.isDts && this.props.detached) {
       return undefined;
     }
+    const capacityBlockPools = !formOffersCapacityBlocks(this.props)
+      ? []
+      : getCapacityBlockOptions(
+        capacityBlocks.pools,
+        this.instanceTypes,
+        {regionId: this.currentCloudRegionId}
+      );
     return (
       <FormItem
         className={getFormItemClassName(styles.formItem, 'type')}
         {...this.formItemLayout}
-        required={!this.state.fireCloudMethodName && !this.state.isDts && !this.props.launchProfile}
+        required={!this.state.isDts && !this.props.launchProfile}
         label="Node type"
         hasFeedback>
         {this.getSectionFieldDecorator(EXEC_ENVIRONMENT)('type',
           {
             rules: [
               {
-                required: !this.state.fireCloudMethodName && !this.state.isDts && !this.props.launchProfile,
+                required: !this.state.isDts && !this.props.launchProfile,
                 message: 'Node type is required'
               }
             ],
@@ -3081,13 +2826,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           }
         )(
           <Select
-            disabled={
-              !!this.state.fireCloudMethodName ||
-              (this.props.readOnly && !this.props.canExecute) ||
-              (
-                this.props.allowedInstanceTypes &&
-                (this.props.allowedInstanceTypes.changed || this.props.allowedInstanceTypes.pending)
-              )}
+            disabled={this.instanceTypeSelectionDisabled}
             showSearch
             allowClear={!!this.props.launchProfile}
             placeholder="Node type"
@@ -3103,14 +2842,35 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 {
                   hyperThreadingDisabled: this.hyperThreadingDisabled,
                   displayRegion: this.instanceTypesMergedForRegions,
-                  preferences: this.props.preferences,
-                  showReservationTag: !this.props.detached
+                  capacityBlockPools
                 }
               )
             }
           </Select>
         )}
       </FormItem>
+    );
+  };
+
+  // Rendered in the summary column, under the CPU/RAM/GPU figures, rather than
+  // beside the node type selector: it is wide, and it is about what the run
+  // could use rather than about the field it would set.
+  renderInstanceTypeSuggestion = () => {
+    if (!formOffersCapacityBlocks(this.props)) {
+      return undefined;
+    }
+    return (
+      <InstanceTypeSuggestion
+        currentPoolId={
+          this.selectedCapacityBlockPool ? this.selectedCapacityBlockPool.id : undefined
+        }
+        instanceTypes={this.instanceTypes}
+        pools={capacityBlocks.pools}
+        reservations={(capacityReservations.value || []).slice()}
+        regionId={this.currentCloudRegionId}
+        disabled={this.instanceTypeSelectionDisabled}
+        onSelect={this.instanceTypeSuggestionSelected}
+      />
     );
   };
 
@@ -3121,8 +2881,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.fallbackInstanceTypesDisabled) {
       return undefined;
     }
-    const disabled = !!this.state.fireCloudMethodName ||
-      (this.props.readOnly && !this.props.canExecute) ||
+    const disabled = (this.props.readOnly && !this.props.canExecute) ||
       (
         this.props.allowedInstanceTypes &&
         (this.props.allowedInstanceTypes.changed || this.props.allowedInstanceTypes.pending)
@@ -3143,7 +2902,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             instanceTypes={this.instanceTypes}
             hyperThreadingDisabled={this.hyperThreadingDisabled}
             displayRegion={this.instanceTypesMergedForRegions}
-            showReservationTag={!this.props.detached}
           />
         )}
       </FormItem>
@@ -3179,14 +2937,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   renderReservationParametersSelector = () => {
-    const {
-      detached
-    } = this.props;
-    if (detached) {
+    if (!formOffersCapacityBlocks(this.props)) {
       return null;
     }
-    const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
-    const instanceType = this.instanceTypes.find(t => t.name === instanceTypeValue);
+    const instanceType = this.instanceTypes.find(t => t.name === this.selectedInstanceTypeName);
+    // The chosen pool (`selectedCapacityBlockPool`) drives the preview the
+    // same way it drives the payload; with no pool chosen there is none.
+    const pool = this.selectedCapacityBlockPool;
     const {
       reservationParameters
     } = this.state;
@@ -3199,6 +2956,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       <ReservationParameters
         className={styles.reservationParameters}
         instanceType={instanceType}
+        poolId={pool ? pool.id : undefined}
         parameters={reservationParameters}
         onChange={onChange}
       />
@@ -3344,7 +3102,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           <Select
             disabled={
               this.regionDisabledByToolSettings ||
-              !!this.state.fireCloudMethodName ||
               (this.props.readOnly && !this.props.canExecute) ||
               (
                 this.props.allowedInstanceTypes &&
@@ -3409,7 +3166,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     };
     const disabled = rescheduleRunInitialValue !== undefined || (
       this.regionDisabledByToolSettings ||
-      !!this.state.fireCloudMethodName ||
       (this.props.readOnly && !this.props.canExecute) ||
       (
         this.props.allowedInstanceTypes &&
@@ -3505,8 +3261,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   renderExecutionEnvironmentSummary = () => {
-    const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
-    const [instanceType] = this.instanceTypes.filter(t => t.name === instanceTypeValue);
+    const [instanceType] = this.instanceTypes.filter(t => t.name === this.selectedInstanceTypeName);
     let cpu = 0;
     let ram = 0;
     let gpu = 0;
@@ -3520,7 +3275,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     let maxRAM = ram;
     let maxGPU = gpu;
     let maxDISK = disk;
-    if (this.state.launchCluster && !this.state.fireCloudMethodName) {
+    if (this.state.launchCluster) {
       cpu *= this.multiplyValueBy;
       gpu *= this.multiplyValueBy;
       ram *= this.multiplyValueBy;
@@ -3597,7 +3352,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         className={getFormItemClassName(styles.formItem, 'disk')}
         {...this.formItemLayout}
         label="Disk (Gb)"
-        required={!this.state.fireCloudMethodName && !this.state.isDts && !this.props.launchProfile}
+        required={!this.state.isDts && !this.props.launchProfile}
         hasFeedback>
         {this.getSectionFieldDecorator(EXEC_ENVIRONMENT)('disk',
           {
@@ -3607,14 +3362,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 message: 'Please enter a valid positive number'
               },
               {
-                required: !this.state.fireCloudMethodName &&
-                  !this.state.isDts &&
+                required: !this.state.isDts &&
                   !this.props.launchProfile,
                 message: 'Instance disk is required'
               },
               {
                 validator: (rule, value, callback) => {
-                  if (!!this.state.fireCloudMethodName || this.state.isDts) {
+                  if (this.state.isDts) {
                     callback();
                     return;
                   }
@@ -3646,7 +3400,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         )(
           <Input
             disabled={
-              !!this.state.fireCloudMethodName ||
               (this.props.readOnly && !this.props.canExecute)
             }
             onChange={this.diskSizeChanged} />
@@ -3656,14 +3409,27 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   correctInstanceTypeValue = (value) => {
-    if (value !== undefined && value !== null && this.instanceTypesLoaded) {
-      const v = this.instanceTypes.find(v => v.name === value);
-      if (v !== undefined) {
-        return v.name;
-      }
-      return null;
+    if (value === undefined || value === null || !this.instanceTypesLoaded) {
+      return value;
     }
-    return value;
+    // `correctCapacityBlockValue` is the pool-aware half, tested on its own -
+    // `undefined` means `value` does not name a pool at all (plain, or
+    // nonsense), which falls through to the plain-value correction below,
+    // exactly as before this field could ever carry a pool.
+    const corrected = correctCapacityBlockValue(
+      value,
+      capacityBlocks.pools,
+      this.instanceTypes,
+      {regionId: this.currentCloudRegionId}
+    );
+    if (corrected !== undefined) {
+      return corrected;
+    }
+    const v = this.instanceTypes.find(v => v.name === value);
+    if (v !== undefined) {
+      return v.name;
+    }
+    return null;
   };
 
   correctPriceTypeValue = (value) => {
@@ -3784,7 +3550,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   onSelect={(isSpot) => this.evaluateEstimatedPrice({isSpot})}
                   disabled={
                     isInstanceTypeWithReservation ||
-                    !!this.state.fireCloudMethodName ||
                     (this.props.readOnly && !this.props.canExecute) ||
                     this.props.defaultPriceTypeIsLoading
                   }
@@ -3881,7 +3646,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               )(
                 <Input
                   disabled={
-                    !!this.state.fireCloudMethodName ||
                     (this.props.readOnly && !this.props.canExecute)
                   } />
               )}
@@ -3975,7 +3739,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         currentValue = defaultValue;
       }
       const noStoragesSelected = /^none$/i.test(currentValue);
-      const instanceType = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type') ||
+      const instanceType = this.selectedInstanceTypeName ||
         this.getDefaultValue('instance_size');
       const instance = this.instanceTypes.find(t => t.name === instanceType);
       const toggleDoNotMountStorages = (e) => {
@@ -4024,7 +3788,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     <LimitMountsInput
                       allowSensitive={this.toolAllowSensitive}
                       disabled={
-                        !!this.state.fireCloudMethodName ||
                         (this.props.readOnly && !this.props.canExecute)
                       }
                       cloudRegion={this.currentCloudRegion}
@@ -4208,7 +3971,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           <Row type="flex" align="top">
             <Checkbox
               disabled={
-                !!this.state.fireCloudMethodName ||
                 (this.props.readOnly && !this.props.canExecute) ||
                 (this.state.pipeline && this.props.detached && !isRawEditEnabled)
               }
@@ -4231,7 +3993,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               <Row type="flex" align="top">
                 <Checkbox
                   disabled={
-                    !!this.state.fireCloudMethodName ||
                     (this.props.readOnly && !this.props.canExecute) ||
                     (this.state.pipeline && this.props.detached && !isRawEditEnabled)
                   }
@@ -4260,11 +4021,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 <Row>
                   <Col span={24}>
                     <FormItem
-                      required={!this.state.fireCloudMethodName && !this.props.launchProfile}>
+                      required={!this.props.launchProfile}>
                       {this.getSectionFieldDecorator(ADVANCED)('cmdTemplate',
                         {
                           rules: [{
-                            required: !this.state.fireCloudMethodName && !this.props.launchProfile,
+                            required: !this.props.launchProfile,
                             message: 'Command template is required'
                           }],
                           initialValue: this.getDefaultValue('cmd_template')
@@ -4280,7 +4041,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       <CodeEditor
                         ref={(editor) => { this.codeEditor = editor; }}
                         readOnly={
-                          !!this.state.fireCloudMethodName ||
                           (this.props.readOnly && !this.props.canExecute) ||
                           (this.state.pipeline && this.props.detached && !isRawEditEnabled)
                         }
@@ -4362,8 +4122,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       const onDropDownSelect = ({key}) => {
         if (
           this.state.currentProjectId &&
-          this.state.rootEntityId &&
-          this.validateFireCloudConnections()
+          this.state.rootEntityId
         ) {
           this.openMetadataBrowser();
           this.setState({currentLaunchKey: key});
@@ -4410,13 +4169,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           }
           dockerImage={this.dockerImage}
           onClick={() => {
-            if (this.validateFireCloudConnections()) {
-              if (this.state.currentProjectId && this.state.rootEntityId) {
-                this.openMetadataBrowser();
-                this.setState({currentLaunchKey: RUN_SELECTED_KEY});
-              } else {
-                this.run({key: RUN_SELECTED_KEY});
-              }
+            if (this.state.currentProjectId && this.state.rootEntityId) {
+              this.openMetadataBrowser();
+              this.setState({currentLaunchKey: RUN_SELECTED_KEY});
+            } else {
+              this.run({key: RUN_SELECTED_KEY});
             }
           }}
           style={{marginRight: 10}}>
@@ -4526,13 +4283,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           )
         );
         if (this.state.launchCluster) {
-          const instanceType = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type') ||
+          const instanceType = this.selectedInstanceTypeName ||
             this.getDefaultValue('instance_size');
           descriptions.push(
             `${instanceType} ${ConfigureClusterDialog.getClusterDescription(this, true)}`
           );
         } else {
-          descriptions.push(this.getSectionFieldValue(EXEC_ENVIRONMENT)('type') ||
+          descriptions.push(this.selectedInstanceTypeName ||
             this.getDefaultValue('instance_size'));
         }
         descriptions.push(`${this.getSectionFieldValue(EXEC_ENVIRONMENT)('disk') ||
@@ -4630,162 +4387,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         <Col span={marginInCols} />
       </Row>
     );
-  };
-
-  renderFireCloudConfigConnectionsList = () => {
-    if (this._fireCloudParameters && this._fireCloudParameters.pending) {
-      return <Row style={{marginTop: 20}}><LoadingView /></Row>;
-    }
-    if (this._fireCloudParameters && this._fireCloudParameters.error) {
-      return (
-        <Row style={{marginTop: 20}}>
-          <Alert type="warning" message={this._fireCloudParameters.error} />
-        </Row>
-      );
-    }
-    if (this._fireCloudParameters && this._fireCloudParameters.googleApi.error) {
-      return (
-        <Row style={{marginTop: 20}}>
-          <Alert type="warning" message="Google auth initialization error" />
-        </Row>
-      );
-    }
-    if (this._fireCloudParameters && !this._fireCloudParameters.isSignedIn) {
-      return (
-        <Row
-          type="flex"
-          align="middle"
-          justify="center"
-          className={classNames(styles.fireCloudSignInContainer, 'cp-content-panel')}
-        >
-          <Row style={{margin: 2}}>
-            You must sign in with your Google account to browse FireCloud method inputs & outputs
-          </Row>
-          <Row style={{margin: 2}}>
-            <Button type="primary" onClick={this.props.googleApi.signIn}>
-              Sign In
-            </Button>
-          </Row>
-        </Row>
-      );
-    }
-    if (!this.selectedFireCloudParameters) {
-      return null;
-    }
-    const inputs = (this.selectedFireCloudParameters.inputs || []).map(i => i);
-    const outputs = (this.selectedFireCloudParameters.outputs || []).map(o => o);
-    const defaultInputs = this.getFireCloudDefaultInputs();
-    const defaultOutputs = this.getFireCloudDefaultOutputs();
-    const renderConnections = (connections, defaultConnections, key, stateKey, errorsStateKey) => {
-      let conns = [];
-      for (let i = 0; i < connections.length; i++) {
-        const conn = connections[i];
-        const onChange = (e) => {
-          const values = this.state[stateKey];
-          values[conn.name] = e.target.value;
-          this.setState({[stateKey]: values}, this.formFieldsChanged);
-        };
-        let value = defaultConnections[conn.name];
-        if (this.state[stateKey][conn.name] !== undefined) {
-          value = this.state[stateKey][conn.name];
-        }
-        const error = this.state[errorsStateKey][conn.name];
-        conns.push(
-          <Row
-            key={conn.name}
-            align="middle"
-            type="flex"
-            style={{margin: '4px 0'}}>
-            {
-              <Popover
-                content={
-                  error
-                    ? (
-                      <div>
-                        <Row>
-                          {conn.name}
-                        </Row>
-                        <Row className="cp-error">
-                          {error}
-                        </Row>
-                      </div>
-                    )
-                    : conn.name
-                }
-                trigger="hover">
-                <Col
-                  style={{
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
-                  }}
-                  span={4}
-                  offset={2}>
-                  <span
-                    className={
-                      classNames(
-                        {
-                          'cp-error': error
-                        }
-                      )
-                    }
-                  >
-                    {conn.name}
-                  </span>
-                </Col>
-              </Popover>
-            }
-            <Col
-              key={conn}
-              span={15}>
-              <Input
-                value={value}
-                onChange={onChange}
-                size="large"
-                className={
-                  classNames({
-                    'cp-error': error
-                  })
-                }
-              />
-            </Col>
-          </Row>
-        );
-      }
-      return <Row key={key}>
-        <Col>
-          {conns}
-        </Col>
-      </Row>;
-    };
-    return [
-      inputs && this.renderSeparator(
-        'FireCloud inputs',
-        0,
-        'FireCloud-inputs-separator',
-        {marginTop: 20, marginBottom: 10}
-      ),
-      inputs && renderConnections(
-        inputs,
-        defaultInputs,
-        'FireCloud-inputs-value',
-        'fireCloudInputs',
-        'fireCloudInputsErrors'
-      ),
-      outputs && this.renderSeparator(
-        'FireCloud outputs',
-        0,
-        'FireCloud-outputs-separator',
-        {marginTop: 20, marginBottom: 10}
-      ),
-      outputs && renderConnections(
-        outputs,
-        defaultOutputs,
-        'FireCloud-outputs-value',
-        'fireCloudOutputs',
-        'fireCloudOutputsErrors'
-      )
-    ];
   };
 
   renderFormItemRow = (renderer, hint, options) => {
@@ -5512,7 +5113,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     {this.renderReservationParametersSelector()}
                     {this.renderFormItemRow(this.renderDiskFormItem, hints.diskHint)}
                     {!this.isWindowsPlatform &&
-                    !this.state.fireCloudMethodName &&
                     !this.state.isDts && (
                       <Row
                         type="flex"
@@ -5544,7 +5144,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       </Row>
                     )}
                     <ConfigureClusterDialog
-                      instanceName={this.getSectionFieldValue(EXEC_ENVIRONMENT)('type')}
+                      instanceName={this.selectedInstanceTypeName}
                       launchCluster={this.state.launchCluster}
                       cloudRegionProvider={this.currentCloudRegionProvider}
                       autoScaledPriceType={this.state.autoScaledPriceType}
@@ -5600,6 +5200,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         this.renderExecutionEnvironmentSummary()
                       }
                     </Row>
+                    {this.renderInstanceTypeSuggestion()}
                   </div>
                 </div>
               </Row>
@@ -5635,7 +5236,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               header={this.getPanelHeader(PARAMETERS)}
             >
               {this.renderParameters(false)}
-              {this.isFireCloudSelected && this.renderFireCloudConfigConnectionsList()}
             </Collapse.Panel>
             {
               !this.state.detached && !this.props.editConfigurationMode && (
@@ -5669,11 +5269,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           version={this.state.version}
           pipelineConfiguration={this.state.pipelineConfiguration}
           allowSelectLatestVersion={!!this.props.isDetachedConfiguration}
-          fireCloudMethod={this.state.fireCloudMethodName}
-          fireCloudNamespace={this.state.fireCloudMethodNamespace}
-          fireCloudMethodSnapshot={this.state.fireCloudMethodSnapshot}
-          fireCloudMethodConfiguration={this.state.fireCloudMethodConfiguration}
-          fireCloudMethodConfigurationSnapshot={this.state.fireCloudMethodConfigurationSnapshot}
         />
         {
           this.state.currentProjectId
@@ -5693,15 +5288,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       </Form>
     );
   }
-
-  fireCloudSelectionChanged = (prevState) => {
-    return (this.state.fireCloudMethodNamespace !== prevState.fireCloudMethodNamespace ||
-      this.state.fireCloudMethodName !== prevState.fireCloudMethodName ||
-      this.state.fireCloudMethodSnapshot !== prevState.fireCloudMethodSnapshot ||
-      this.state.fireCloudMethodConfiguration !== prevState.fireCloudMethodConfiguration ||
-      this.state.fireCloudMethodConfigurationSnapshot !==
-        prevState.fireCloudMethodConfigurationSnapshot);
-  };
 
   fetchUserRunCapabilities = () => {
     this.setState({
@@ -5731,6 +5317,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   componentDidMount () {
+    // A reservation may have started or ended since the list was loaded.
+    capacityBlocks.refresh();
     // --------------------------
     this.updateFromProps();
     this.updateConfigurationsFromProps();
@@ -5742,9 +5330,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       this.loadToolSettings(this.props.parameters.docker_image);
     }
     this.prepare();
-    if (this.props.isDetachedConfiguration && this.isFireCloudSelected) {
-      this.loadFireCloudConfigurations();
-    }
     this.props.onInitialized && this.props.onInitialized(this);
     this.initializeParametersNavigationCheck();
   }
@@ -6215,8 +5800,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const payloads = this.getParametersPayloads();
     const validationFn = async (payload) => {
       const {parameters} = payload;
-      const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
-      const instanceType = this.instanceTypes.find(t => t.name === instanceTypeValue);
+      const instanceType = this.instanceTypes.find(t => t.name === this.selectedInstanceTypeName);
       const opts = {
         form: this.props.form,
         payload,
@@ -6263,11 +5847,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     // ----------------------------------
     this.componentDidUpdateNew(prevProps, prevState);
     // ----------------------------------
-    if (this.state.fireCloudMethodName &&
-      this.state.execEnvSelectValue !== FIRE_CLOUD_ENVIRONMENT) {
-      // eslint-disable-next-line
-      this.setState({execEnvSelectValue: FIRE_CLOUD_ENVIRONMENT});
-    }
     if (prevState.dtsId !== this.state.dtsId && this.state.dtsId) {
       this.loadDtsClusterInfo();
     }
@@ -6285,12 +5864,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       prevProps.pipelineConfiguration !== this.props.pipelineConfiguration) {
       this.evaluateEstimatedPrice({});
       this.prepare();
-    }
-    if (this.props.isDetachedConfiguration && this.isFireCloudSelected &&
-      this.fireCloudSelectionChanged(prevState)) {
-      this.loadFireCloudConfigurations();
-    } else if (this.props.isDetachedConfiguration && !this.isFireCloudSelected) {
-      this._fireCloudConfigurations = null;
     }
     if (this.props.allowedInstanceTypes &&
       this.props.allowedInstanceTypes.loaded &&
@@ -6314,10 +5887,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   }
 
   componentWillReceiveProps (nextProps) {
-    if (nextProps.fireCloudMethod && nextProps.fireCloudMethod.name &&
-      this.state.execEnvSelectValue !== FIRE_CLOUD_ENVIRONMENT) {
-      this.setState({execEnvSelectValue: FIRE_CLOUD_ENVIRONMENT});
-    }
     if (nextProps.detached &&
       (nextProps.currentConfigurationName !== this.props.currentConfigurationName ||
       nextProps.configurationId !== this.props.configurationId)) {
@@ -6333,46 +5902,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           isDts = true;
           execEnvSelectValue = `${DTS_ENVIRONMENT}.${dtsId}`;
           break;
-        case FIRE_CLOUD_ENVIRONMENT:
-          execEnvSelectValue = FIRE_CLOUD_ENVIRONMENT;
-          break;
         default:
           execEnvSelectValue = CLOUD_PLATFORM_ENVIRONMENT;
       }
 
       this.setState({execEnvSelectValue, isDts, dtsId});
-    }
-    if ((!this.props.fireCloudMethod && nextProps.fireCloudMethod) ||
-      (nextProps.fireCloudMethod &&
-        (this.props.fireCloudMethod.name !== nextProps.fireCloudMethod.name ||
-        this.props.fireCloudMethod.namespace !== nextProps.fireCloudMethod.namespace ||
-        this.props.fireCloudMethod.snapshot !== nextProps.fireCloudMethod.snapshot ||
-        this.props.fireCloudMethod.configuration !== nextProps.fireCloudMethod.configuration ||
-        this.props.fireCloudMethod.configurationSnapshot !==
-          nextProps.fireCloudMethod.configurationSnapshot))) {
-      this.setState({
-        fireCloudMethodName: nextProps.fireCloudMethod.name,
-        fireCloudMethodNamespace: nextProps.fireCloudMethod.namespace,
-        fireCloudMethodSnapshot: nextProps.fireCloudMethod.snapshot,
-        fireCloudMethodConfiguration: nextProps.fireCloudMethod.configuration,
-        fireCloudMethodConfigurationSnapshot: nextProps.fireCloudMethod.configurationSnapshot,
-        fireCloudInputs: {},
-        fireCloudOutputs: {},
-        fireCloudDefaultInputs: nextProps.fireCloudMethod.methodInputs,
-        fireCloudDefaultOutputs: nextProps.fireCloudMethod.methodOutputs
-      });
-    } else if (this.props.fireCloudMethod && !nextProps.fireCloudMethod) {
-      this.setState({
-        fireCloudMethodName: null,
-        fireCloudMethodNamespace: null,
-        fireCloudMethodSnapshot: null,
-        fireCloudMethodConfiguration: null,
-        fireCloudMethodConfigurationSnapshot: null,
-        fireCloudInputs: {},
-        fireCloudOutputs: {},
-        fireCloudDefaultInputs: [],
-        fireCloudDefaultOutputs: []
-      });
     }
   }
 
