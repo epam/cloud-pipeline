@@ -247,8 +247,8 @@ def build(scrapes, pods, namespaces):
             'hostname': scrape.target.hostname,
             'host_id': (node.get('spec') or {}).get('externalID') or '',
         }
-        node_set = MetricSet(labels=dict(common, type=TYPE_NODE,
-                                         schedulable='false' if (node.get('spec') or {}).get('unschedulable') else 'true',
+        schedulable = 'false' if (node.get('spec') or {}).get('unschedulable') else 'true'
+        node_set = MetricSet(labels=dict(common, type=TYPE_NODE, schedulable=schedulable,
                                          labels=join_labels((node.get('metadata') or {}).get('labels'))),
                              start_time=summary_node.get('startTime'))
         _put_stats(node_set, summary_node.get('cpu'), summary_node.get('memory'), summary_node.get('network'))
@@ -380,8 +380,14 @@ def aggregate(sets):
 
 
 def _resource(resources, name, convert):
+    """A capacity or allocatable value, 0 where it is missing or unreadable, as heapster's zero Quantity."""
     value = (resources or {}).get(name)
-    return convert(value) if value is not None else 0
+    if value is None:
+        return 0
+    try:
+        return convert(value)
+    except ValueError:
+        return 0
 
 
 def enrich_nodes(sets, scrapes):

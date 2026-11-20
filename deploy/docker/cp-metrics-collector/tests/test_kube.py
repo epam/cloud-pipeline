@@ -103,8 +103,8 @@ def test_list_raises_on_errors():
 TARGET = kube.NodeTarget(name='n', hostname='n', address='10.0.0.1', port=10250)
 
 
-@pytest.mark.parametrize('version, node, name', [('1.15', NODE_1_15, 'cadvisor.txt'),
-                                                  ('1.37', WORKER_1_37, 'cadvisor-cp-mc-137-worker.txt')])
+@pytest.mark.parametrize('version, node, name', [
+    ('1.15', NODE_1_15, 'cadvisor.txt'), ('1.37', WORKER_1_37, 'cadvisor-cp-mc-137-worker.txt')])
 def test_root_filesystems_from_recorded_cadvisor(version, node, name):
     with open(fixture_path(version, name)) as f:
         lines = f.read().splitlines()
@@ -131,6 +131,14 @@ def test_root_filesystems_skip_other_cgroups_bad_lines_and_nan():
     session = FakeSession({('GET', 'https://10.0.0.1:10250/metrics/cadvisor'): FakeResponse(lines=lines)})
     assert kube.KubeletClient(session, Tokens(), False, 5).root_filesystems(TARGET) == \
         {'/dev/sda1': {'filesystem/usage': 7}}
+
+
+def test_a_failed_streamed_response_is_closed():
+    response = FakeResponse(500, text='error')
+    session = FakeSession({('GET', 'https://10.0.0.1:10250/metrics/cadvisor'): response})
+    with pytest.raises(requests.HTTPError):
+        kube.KubeletClient(session, Tokens(), False, 5).root_filesystems(TARGET)
+    assert response.closed
 
 
 def test_root_filesystems_none_without_root_series():

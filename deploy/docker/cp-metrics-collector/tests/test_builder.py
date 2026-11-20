@@ -75,7 +75,8 @@ def test_node_network_sums_every_interface(cluster_1_15):
     network = _metrics(docs, 'network', type='node', nodename=NODE_1_15)
     rx = [sum(i['rxBytes'] for i in stats['interfaces']) for stats in (first, second)]
     assert network['network/rx'] == rx[1]
-    assert network['network/rx_rate'] == pytest.approx(1e9 * (rx[1] - rx[0]) / (_nanos(second['time']) - _nanos(first['time'])))
+    elapsed = _nanos(second['time']) - _nanos(first['time'])
+    assert network['network/rx_rate'] == pytest.approx(1e9 * (rx[1] - rx[0]) / elapsed)
     assert 'network/tx_rate' in network
 
 
@@ -101,6 +102,18 @@ def test_node_tags(cluster):
         assert tags['schedulable'] == 'true'
         assert tags['cluster_name'] == 'default'
         assert tags['labels'] == ','.join(sorted('%s:%s' % kv for kv in node['metadata']['labels'].items()))
+
+
+def test_unreadable_or_missing_capacity_counts_as_zero(cluster_1_15):
+    scrapes = cluster_1_15.scrapes(1)
+    scrapes[0].node['status']['capacity']['cpu'] = 'four'
+    del scrapes[0].node['status']['allocatable']['memory']
+    sets = builder.build(scrapes, cluster_1_15.pods, cluster_1_15.namespaces)
+    builder.enrich_nodes(sets, scrapes)
+    values = sets[builder.node_key(NODE_1_15)].values
+    assert values['cpu/node_capacity'] == 0.0
+    assert values['memory/node_allocatable'] == 0.0
+    assert 'memory/node_utilization' not in values
 
 
 def test_first_scrape_has_no_rates_and_no_cpu_utilization(cluster):
@@ -131,7 +144,8 @@ def test_node_filesystems_1_15_are_heapsters_devices(cluster_1_15):
 
 def test_node_filesystems_1_37_drop_mount_named_tmpfs_and_overlay(cluster_1_37):
     _, docs = cluster_1_37.batch()
-    devices = {d['MetricsTags']['resource_id'] for d in find_docs(docs, 'filesystem', type='node', nodename=WORKER_1_37)}
+    devices = {d['MetricsTags']['resource_id']
+               for d in find_docs(docs, 'filesystem', type='node', nodename=WORKER_1_37)}
     # Recorded: /dev, /dev/root, /dev/shm, /dev/vdb1, /run, /run/credentials/..., /tmp, overlay, overlay_0-51.
     assert devices == {'/dev/root', '/dev/vdb1', 'tmpfs'}
 
@@ -203,8 +217,12 @@ def test_load_pod_and_its_containers(cluster):
     assert len(rootfs) == 1
     expected_device = '/dev/nvme0n1p1' if cluster.version == '1.15' else '/dev/vdb1'
     assert rootfs[0]['MetricsTags']['resource_id'] == expected_device
-    # The container wrote 64 MiB into its root filesystem.
-    assert rootfs[0]['Metrics']['filesystem/usage']['value'] >= 64 * 2 ** 20
+    burn_stats = next(c for c in second['containers'] if c['name'] == 'burn')
+    assert rootfs[0]['Metrics']['filesystem/usage']['value'] == burn_stats['rootfs']['usedBytes']
+    assert rootfs[0]['Metrics']['filesystem/limit']['value'] == burn_stats['rootfs']['capacityBytes']
+    # The container wrote 64 MiB into its root filesystem. Docker's usage comes from cAdvisor's
+    # periodic `du`, which had counted part of it when this was recorded.
+    assert rootfs[0]['Metrics']['filesystem/usage']['value'] > 2 ** 20
 
 
 def test_every_summary_pod_and_container_gets_documents(cluster):
@@ -308,7 +326,7 @@ def test_documents_are_heapsters(cluster):
     assert families == {'cpu', 'memory', 'network', 'filesystem'}
     for family, doc in docs:
         assert set(doc) == {family.title() + 'MetricsTimestamp', 'MetricsTags', 'Metrics'}
-        assert doc[family.title() + 'MetricsTimestamp'] == '2026-11-20T09:01:00Z'
+        assert doc[family.title() + 'MetricsTimestamp'] == '2026-11-20T12:21:00Z'
         assert all(name.startswith(family + '/') and set(value) == {'value'} for name, value in doc['Metrics'].items())
         assert doc['MetricsTags']['type'] in ('node', 'pod', 'pod_container')
         assert (family == 'filesystem') == ('resource_id' in doc['MetricsTags'])
@@ -330,8 +348,8 @@ def test_one_document_per_family_and_device():
     assert all(doc['MetricsTags']['cluster_name'] == 'c' for _, doc in docs)
 
 
-@pytest.mark.parametrize('epoch, text', [(0, '1970-01-01T00:00:00Z'), (1795177230, '2026-11-20T09:00:30Z'),
-                                         (1795177230.5, '2026-11-20T09:00:30.5Z')])
+@pytest.mark.parametrize('epoch, text', [(0, '1970-01-01T00:00:00Z'), (1795177230, '2026-11-20T12:20:30Z'),
+                                         (1795177230.5, '2026-11-20T12:20:30.5Z')])
 def test_timestamp_format(epoch, text):
     assert builder.format_timestamp(epoch) == text
 

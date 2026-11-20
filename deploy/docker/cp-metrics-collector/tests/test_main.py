@@ -16,9 +16,11 @@ import threading
 import urllib.request
 
 import pytest
+import requests
 
 from metrics_collector import config, main
 from metrics_collector.collector import BatchResult
+from metrics_collector.elastic import ElasticError
 
 
 @pytest.mark.parametrize('now, batch, at', [(1000.0, 1020, 1025), (1019.9, 1020, 1025), (1020.0, 1040, 1045)])
@@ -30,15 +32,25 @@ def test_health():
     now = [1000.0]
     health = main.Health(30, clock=lambda: now[0])
     now[0] = 1180
-    assert health.status() == (True, 'ok')
+    assert health.status() == (True, 'ok, nothing written yet')
     now[0] = 1181
     healthy, message = health.status()
-    assert not healthy and '181' in message
-    health.success()
-    assert health.status()[0]
+    assert not healthy and message == 'no batch for 181 seconds, nothing written yet'
+    health.batch_done(written=True)
+    now[0] = 1191
+    assert health.status() == (True, 'ok, last written 10 seconds ago')
     health = main.Health(120, clock=lambda: now[0])
     now[0] += 360
     assert health.status()[0]
+
+
+def test_a_batch_that_could_not_write_still_counts_as_alive():
+    now = [1000.0]
+    health = main.Health(30, clock=lambda: now[0])
+    health.batch_done(written=True)
+    now[0] = 1500
+    health.batch_done(written=False)
+    assert health.status() == (True, 'ok, last written 500 seconds ago')
 
 
 class Clock:
@@ -65,9 +77,9 @@ class Stop:
 
 
 class RecordingCollector:
-    def __init__(self, stop, fail_on=()):
+    def __init__(self, stop, fail_on=None):
         self.stop = stop
-        self.fail_on = fail_on
+        self.fail_on = fail_on or {}
         self.batches = []
 
     def collect(self, epoch):
@@ -75,7 +87,7 @@ class RecordingCollector:
         self.stop.left -= 1
         self.stop.clock.now += 3
         if epoch in self.fail_on:
-            raise RuntimeError('boom')
+            raise self.fail_on[epoch]
         return BatchResult(nodes=1, scraped=1, documents=4, rejected=0)
 
 
@@ -92,14 +104,29 @@ def test_run_collects_each_window_after_its_end():
     assert collector.batches == [(1020, 1025), (1050, 1055), (1080, 1085)]
 
 
-def test_a_failed_batch_does_not_stop_the_loop_or_count_as_healthy():
+@pytest.mark.parametrize('error', [ElasticError('es down'), requests.ConnectionError('refused'),
+                                   FileNotFoundError('token'), RuntimeError('a bug')])
+def test_a_failed_batch_does_not_stop_the_loop(error, caplog):
     clock = Clock(1000.0)
-    stop = Stop(clock, 2)
-    collector = RecordingCollector(stop, fail_on=(1020,))
+    stop = Stop(clock, 3)
+    collector = RecordingCollector(stop, fail_on={1050: error})
     health = main.Health(30, clock=clock)
     main.run(_config(), collector, health, stop, clock=clock)
-    assert [epoch for epoch, _ in collector.batches] == [1020, 1050]
-    assert health._last_success == 1058
+    assert [epoch for epoch, _ in collector.batches] == [1020, 1050, 1080]
+    assert (health._last_batch, health._last_written) == (1088, 1088)
+    failures = [r for r in caplog.records if 'The batch of 1050 failed' in r.getMessage()]
+    assert len(failures) == 1
+    # A stack trace only for what nobody expected.
+    assert (failures[0].exc_info is not None) == isinstance(error, RuntimeError)
+
+
+def test_a_failed_last_batch_leaves_the_last_written_time():
+    clock = Clock(1000.0)
+    stop = Stop(clock, 2)
+    collector = RecordingCollector(stop, fail_on={1050: ElasticError('es down')})
+    health = main.Health(30, clock=clock)
+    main.run(_config(), collector, health, stop, clock=clock)
+    assert (health._last_batch, health._last_written) == (1058, 1028)
 
 
 def test_healthz_endpoint():
@@ -109,7 +136,7 @@ def test_healthz_endpoint():
     try:
         url = 'http://127.0.0.1:%d' % server.server_address[1]
         with urllib.request.urlopen(url + '/healthz') as response:
-            assert response.status == 200 and response.read() == b'ok\n'
+            assert response.status == 200 and response.read() == b'ok, nothing written yet\n'
         with pytest.raises(urllib.error.HTTPError) as error:
             urllib.request.urlopen(url + '/other')
         assert error.value.code == 404

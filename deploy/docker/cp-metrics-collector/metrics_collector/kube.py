@@ -161,8 +161,9 @@ class KubeletClient:
     def root_filesystems(self, target):
         """{device: {metric name: value}} of the root cgroup's filesystems, from /metrics/cadvisor.
 
-        None where the endpoint has no such series. The response is streamed and only the `container_fs_` lines are parsed: on a busy node it
-        runs to megabytes, almost all of it per-container series.
+        None where the endpoint has no such series. The response is streamed and only the
+        `container_fs_` lines are parsed: on a busy node it runs to megabytes, almost all of it
+        per-container series.
         """
         response = self._get(target, '/metrics/cadvisor', stream=True)
         devices = {}
@@ -189,6 +190,9 @@ class KubeletClient:
     def _get(self, target, path, stream=False):
         response = self._session.get(target.url + path, headers=self._tokens.headers(),
                                      verify=self._verify, timeout=self._timeout, stream=stream)
+        if response.status_code >= 400:
+            # A streamed response holds its connection until it is read or closed.
+            response.close()
         response.raise_for_status()
         if stream and response.encoding is None:
             response.encoding = 'utf-8'

@@ -41,13 +41,14 @@ def test_platform_settings():
 
 def test_own_settings_win():
     c = config.from_env(dict(POD, CP_HEAPSTER_METRIC_RESOLUTION='1m', CP_METRICS_COLLECTOR_RESOLUTION='15s',
-                             CP_METRICS_COLLECTOR_ELASTIC_URL='http://other:9200', CP_METRICS_COLLECTOR_INDEX='cp-metrics',
+                             CP_METRICS_COLLECTOR_ELASTIC_URL='http://other:9200',
+                             CP_METRICS_COLLECTOR_INDEX='cp-metrics',
                              CP_METRICS_COLLECTOR_KUBE_URL='https://api:6443', CP_METRICS_COLLECTOR_KUBELET_PORT='1',
                              CP_KUBE_KUBELET_PORT='10255', CP_METRICS_COLLECTOR_TIMEOUT='3',
                              CP_METRICS_COLLECTOR_LOG_LEVEL='debug', CP_METRICS_COLLECTOR_THREADS='32'))
     assert (c.resolution, c.timeout, c.threads, c.log_level) == (15, 3, 32, 'DEBUG')
-    assert (c.elastic_url, c.index, c.kube_url, c.kubelet_port) == ('http://other:9200', 'cp-metrics',
-                                                                   'https://api:6443', 1)
+    assert (c.elastic_url, c.index, c.kube_url, c.kubelet_port) == \
+        ('http://other:9200', 'cp-metrics', 'https://api:6443', 1)
 
 
 def test_ipv6_service_host():

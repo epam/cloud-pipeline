@@ -28,11 +28,12 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+import requests
 import urllib3
 
 from metrics_collector import config as config_module
 from metrics_collector.collector import Collector
-from metrics_collector.elastic import ElasticWriter
+from metrics_collector.elastic import ElasticError, ElasticWriter
 from metrics_collector.kube import KubeClient, KubeletClient, TokenSource, new_session
 
 logger = logging.getLogger('metrics_collector')
@@ -42,26 +43,36 @@ _MAX_DELAY = 180
 
 
 class Health:
+    """Whether the loop still runs: a batch finished, written or not, within the last few minutes.
+
+    A batch that Elasticsearch or the API server failed does not count against it: restarting the
+    collector does not bring them back, and it would lose the counters the next rates need.
+    """
 
     def __init__(self, resolution, clock=time.time):
         self._clock = clock
         self._max_delay = max(_MAX_DELAY, 3 * resolution)
         self._started = clock()
-        self._last_success = None
+        self._last_batch = None
+        self._last_written = None
         self._lock = threading.Lock()
 
-    def success(self):
+    def batch_done(self, written):
         with self._lock:
-            self._last_success = self._clock()
+            self._last_batch = self._clock()
+            if written:
+                self._last_written = self._last_batch
 
     def status(self):
-        """(healthy, message): healthy while the last written batch is recent, or since the start."""
+        """(healthy, message): healthy while the last batch is recent, or since the start."""
         with self._lock:
-            last = self._last_success if self._last_success is not None else self._started
-        age = self._clock() - last
-        if age <= self._max_delay:
-            return True, 'ok'
-        return False, 'no batch written for %d seconds' % age
+            last = self._last_batch if self._last_batch is not None else self._started
+            written = self._last_written
+        now = self._clock()
+        detail = 'last written %d seconds ago' % (now - written) if written is not None else 'nothing written yet'
+        if now - last <= self._max_delay:
+            return True, 'ok, ' + detail
+        return False, 'no batch for %d seconds, %s' % (now - last, detail)
 
 
 def _handler(health):
@@ -98,10 +109,17 @@ def run(config, collector, health, stop, clock=time.time):
         started = clock()
         try:
             result = collector.collect(batch_time)
-        except Exception:
-            logger.exception('The batch of %s failed', batch_time)
+        except (ElasticError, requests.RequestException, OSError, ValueError) as e:
+            # Elasticsearch or the API server is down, or the token is missing: one line, not a
+            # stack trace every batch.
+            logger.error('The batch of %d failed: %s', batch_time, e)
+            health.batch_done(written=False)
             continue
-        health.success()
+        except Exception:
+            logger.exception('The batch of %d failed', batch_time)
+            health.batch_done(written=False)
+            continue
+        health.batch_done(written=True)
         logger.info('Batch %d: %d of %d nodes scraped, %d documents written, %d rejected, in %.1f s',
                     batch_time, result.scraped, result.nodes, result.documents - result.rejected,
                     result.rejected, clock() - started)
