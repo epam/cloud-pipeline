@@ -51,13 +51,13 @@ public class CloudPipelineAPIClient {
 
     public CloudPipelineAPIClient(@Value("${cloud.pipeline.host}") final String cloudPipelineHostUrl,
                                   @Value("${cloud.pipeline.token}") final String cloudPipelineToken,
-                                  final CloudPipelineApiExecutor cloudPipelineApiExecutor) {
+                                  final CloudPipelineApiExecutor cloudPipelineApiExecutor) throws Exception {
         this.cloudPipelineAPI =
                 new CloudPipelineApiBuilder(0, 0, cloudPipelineHostUrl, cloudPipelineToken)
                         .buildClient();
         this.executor = cloudPipelineApiExecutor;
         this.jsonMapper = new JsonMapper();
-        this.jsonMapper.init();
+        this.jsonMapper.afterPropertiesSet();
     }
 
     public OnlineUsers saveOnlineUsers() {
