@@ -71,6 +71,14 @@ def _positive_int(env, name, default):
     return value
 
 
+def elastic_url_from_env(env):
+    """cp-heapster-elk's address, from cp-config-global, unless CP_METRICS_COLLECTOR_ELASTIC_URL is set."""
+    return _first(env, 'CP_METRICS_COLLECTOR_ELASTIC_URL') or '%s://%s:%s' % (
+        _first(env, 'CP_HEAPSTER_ELK_INTERNAL_SCHEME', default='http'),
+        _first(env, 'CP_HEAPSTER_ELK_INTERNAL_HOST', default='cp-heapster-elk.default.svc.cluster.local'),
+        _first(env, 'CP_HEAPSTER_ELK_INTERNAL_PORT', default='30094'))
+
+
 def from_env(env):
     resolution = parse_duration(_first(env, 'CP_METRICS_COLLECTOR_RESOLUTION', 'CP_HEAPSTER_METRIC_RESOLUTION',
                                        default='30s'))
@@ -83,12 +91,7 @@ def from_env(env):
         if not host:
             raise ConfigError('Set CP_METRICS_COLLECTOR_KUBE_URL, or run in a pod (KUBERNETES_SERVICE_HOST)')
         kube_url = 'https://%s:%s' % ('[%s]' % host if ':' in host else host, port)
-    elastic_url = _first(env, 'CP_METRICS_COLLECTOR_ELASTIC_URL')
-    if not elastic_url:
-        elastic_url = '%s://%s:%s' % (
-            _first(env, 'CP_HEAPSTER_ELK_INTERNAL_SCHEME', default='http'),
-            _first(env, 'CP_HEAPSTER_ELK_INTERNAL_HOST', default='cp-heapster-elk.default.svc.cluster.local'),
-            _first(env, 'CP_HEAPSTER_ELK_INTERNAL_PORT', default='30094'))
+    elastic_url = elastic_url_from_env(env)
     index = _first(env, 'CP_METRICS_COLLECTOR_INDEX', default='heapster')
     if not re.match(r'^[a-z0-9][a-z0-9_.-]*$', index):
         raise ConfigError('Not a valid index name: %r' % index)

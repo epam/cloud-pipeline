@@ -257,6 +257,12 @@ docker build    $DOCKERS_SOURCES_PATH/cp-heapster-elk \
                 -t "$CP_HEAPSTER_ELK_DIST_NAME"
 docker push "$CP_HEAPSTER_ELK_DIST_NAME"
 
+# Metrics collector: heapster's replacement, writing into Heapster ELK
+CP_METRICS_COLLECTOR_DIST_NAME=${CP_METRICS_COLLECTOR_DIST_NAME:-"$CP_DIST_REPO_NAME:metrics-collector-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-metrics-collector \
+                -t "$CP_METRICS_COLLECTOR_DIST_NAME"
+docker push "$CP_METRICS_COLLECTOR_DIST_NAME"
+
 # Node logger
 CP_NODE_LOGGER_DIST_NAME=${CP_NODE_LOGGER_DIST_NAME:-"$CP_DIST_REPO_NAME:node-logger-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-node-logger \

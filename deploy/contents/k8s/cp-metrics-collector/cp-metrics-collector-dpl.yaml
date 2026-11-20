@@ -1,0 +1,64 @@
+# The heapster-compatible collector. It runs where heapster runs (the cloud-pipeline/cp-heapster
+# node label) and writes into cp-heapster-elk. CP_METRICS_COLLECTOR_INDEX empty means `heapster`,
+# the indices the platform reads; set another name, not starting with `heapster-`, to run it beside
+# heapster for a comparison (deploy/docker/cp-metrics-collector/README.md).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cp-metrics-collector
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-metrics-collector: "true"
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-metrics-collector: "true"
+        cloud-pipeline/core-component: "Deployment"
+    spec:
+      serviceAccountName: cp-metrics-collector
+      nodeSelector:
+        cloud-pipeline/cp-heapster: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/control-plane
+        effect: NoSchedule
+      containers:
+        - name: cp-metrics-collector
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:metrics-collector-${CP_HEAPSTER_VERSION}
+          imagePullPolicy: "IfNotPresent"
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          env:
+          - name: CP_METRICS_COLLECTOR_INDEX
+            value: "${CP_METRICS_COLLECTOR_INDEX}"
+          ports:
+          - containerPort: 8082
+            name: healthz
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8082
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 1Gi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

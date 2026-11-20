@@ -172,6 +172,10 @@ jobs:
             context: cp-heapster-elk
             tag: heapster-elk-$DOCKERS_VERSION
 
+          - service: cp-metrics-collector
+            context: cp-metrics-collector
+            tag: metrics-collector-$DOCKERS_VERSION
+
           - service: cp-node-logger
             context: cp-node-logger
             tag: node-logger-$DOCKERS_VERSION
