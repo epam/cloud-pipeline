@@ -51,6 +51,17 @@
 - [OIDC token exchange](#oidc-token-exchange)
 - [NICE DCV on Rocky Linux 10](#nice-dcv-on-rocky-linux-10)
 - [NoMachine on Rocky Linux 10](#nomachine-on-rocky-linux-10)
+- [Java 21 and Spring Boot 3 for the platform services](#java-21-and-spring-boot-3-for-the-platform-services)
+- [Future dated node pools backed by a capacity reservation](#future-dated-node-pools-backed-by-a-capacity-reservation)
+- [Reserved capacity blocks in the launch form](#reserved-capacity-blocks-in-the-launch-form)
+- [No estimated price for the runs on a node pool](#no-estimated-price-for-the-runs-on-a-node-pool)
+- [Download storage contents as an archive](#download-storage-contents-as-an-archive)
+- [Upload and extract archives](#upload-and-extract-archives)
+- [Data storage: bulk actions on the permitted items only](#data-storage-bulk-actions-on-the-permitted-items-only)
+- [Data storage: the controls row and the column header stay visible while scrolling](#data-storage-the-controls-row-and-the-column-header-stay-visible-while-scrolling)
+- [FireCloud integration is removed](#firecloud-integration-is-removed)
+- [Failed notifications are kept in a dead-letter queue](#failed-notifications-are-kept-in-a-dead-letter-queue)
+- [Run prices are billed per status period](#run-prices-are-billed-per-status-period)
 
 ***
 
@@ -119,6 +130,7 @@
     - [`pipe storage mount`: removing a folder that is not empty deletes all its content](#pipe-storage-mount-removing-a-folder-that-is-not-empty-deletes-all-its-content)
     - [Rocky Linux 9 and 10 runs: the default repos stay next to the repos mirror](#rocky-linux-9-and-10-runs-the-default-repos-stay-next-to-the-repos-mirror)
     - [Enabling a tool does not register its versions: its custom launch form has no Docker image](#enabling-a-tool-does-not-register-its-versions-its-custom-launch-form-has-no-docker-image)
+    - [Data storage: "Select page" is enabled when no item on the page can be selected](#data-storage-select-page-is-enabled-when-no-item-on-the-page-can-be-selected)
 
 ***
 
@@ -1023,6 +1035,100 @@ For more details see [here](../../manual/10_Manage_Tools/10.3._Add_a_Tool.md#sup
 
 ***
 
+## Java 21 and Spring Boot 3 for the platform services
+
+The Java services of the platform - the API (`cp-api-srv`), the billing service (`cp-billing-srv`), the search service (`cp-search`), the notifier (`cp-notifier`), the monitoring service (`cp-monitoring-srv`), the VM monitor (`cp-vm-monitor`), the data sharing service (`cp-share-srv`), the docker components scanner (`cp-docker-comp`) and the data transfer service (`cp-dts`) - now run on Java 21, with Spring Boot 3 and Spring Security 6. They ran on Java 8, with Spring Boot 1.5. The API updates its database with Flyway 10 instead of Flyway 4. Users see no change from this. An operator needs to know:
+
+- The service images have OpenJDK 21 (`java-21-openjdk` of Rocky Linux 9.8). The `cp-dts` image stays on CentOS 7, with Amazon Corretto 21. A data transfer service that runs on a host, outside of this image, needs Java 21 there.
+- **`CP_API_FLYWAY_OUT_OF_ORDER`** is now `true` by default. This version adds database migrations whose versions are older than the newest migration of a 0.16 database, and Flyway applies them only in this mode. Keep it `true` for the update.
+- **`CP_API_FLYWAY_IGNORE_MISSING`** now sets the Flyway ignore patterns (`spring.flyway.ignore-migration-patterns`), e.g. `*:missing`. It is empty by default. It no longer takes `true`: with that value, the API does not start. Flyway keeps its history in the `schema_version` table, as before.
+- The API keeps the web sessions in new tables (`spring_3_session`) and does not read the sessions of the earlier version, so the users sign in again after the update. Update all the API replicas together.
+- The `application.properties` files of the service images use the Spring Boot 3 property names, e.g. `server.servlet.context-path` and `spring.flyway.*`. A deployment that replaces these files needs the new names. The environment variables of the services stay the same.
+- A new service, the storage task service (`cp-storage-async-task-service`), performs the archive downloads and the archive extractions of the data storages (see [Download storage contents as an archive](#download-storage-contents-as-an-archive)). The installer deploys it on the node that **`CP_STORAGE_ASYNC_TASK_SERVICE_KUBE_NODE_NAME`** names, the master node by default. Its pod is privileged, as it mounts the NFS shares itself, and it needs disk space on the node for the archives it prepares. It reaches a storage through a role of the storage's cloud region, so the node of this service must be able to assume the roles of the regions. The archive downloads also need a data storage for the finished archives: set its ID in `tasks.storageDownloadAsArchive.destinationStorageId` of the **`system.async.tasks.config`** preference. Until then, the archive downloads stay pending.
+
+***
+
+## Future dated node pools backed by a capacity reservation
+
+Previously, a hot node pool started its nodes as any other node, so the cloud provider could have no capacity for them at that time.
+
+In the current version, a node pool can be backed by an AWS capacity reservation, so its nodes are guaranteed. The pool form of the **Hot Node Pools** tab has a new **Mode** field. **Default** is a pool with a weekly schedule, as before. **Future dated** reserves capacity for one window: a search window (**Search from**, **Search until**) and a **Duration (days)** of 14 days or more. Such a pool is on-demand only and cannot be autoscaled. It has no nodes before its reservation is active, and it stops taking new runs shortly before the reservation ends. The pool card shows the reservation status. Deleting a pool now opens a confirmation pop-up: for a reservation that is still open, it warns that the reservation is given up too, and asks to tick **Force deletion**.
+
+Other changes:
+
+- the new **ROLE\_NODE\_POOL\_MANAGER** role allows to create **Future dated** pools, and to edit and remove the pools that the user owns
+- the **Hot Node Pools** tab is now shown to the users with the **ROLE\_RUN\_ADMIN**, **ROLE\_CLUSTER\_READER** or **ROLE\_NODE\_POOL\_MANAGER** role as well, not only to admins
+- the pool form has a new **Pool type** field: **Standard**, or **Shareable node**, where several runs share one pool node
+- the **`cluster.capacity.reservation.policies`** preference sets which reservation requests are refused, which are approved at once, and which wait for an administrator's approval. The owner gets email notifications as the reservation status changes (the `CAPACITY_RESERVATION_*` notification types)
+- an AWS Capacity Block for ML can also back a pool, through the API: the API searches the offerings, buys a block and extends it
+- a run with the `CP_CAP_POOL_ID` parameter is bound to the named pool: it waits for a free node of that pool (**`cluster.occupied.node.pool.wait.sec`**, 24 hours by default) instead of taking another node
+
+The AWS role of the API needs the EC2 permissions to create, describe and cancel capacity reservations, and to search and purchase capacity blocks and their extensions (e.g. `ec2:CreateCapacityReservation`, `ec2:PurchaseCapacityBlock`).
+
+For more details see [here](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md).
+
+## Reserved capacity blocks in the launch form
+
+In the current version, the **Node type** list of the launch form starts with a **Reserved capacity blocks** group, when an active pool backed by a capacity reservation offers an allowed instance type in the selected **Cloud Region**. It has one entry per pool. Only an entry of this group launches the run on the reservation: the same instance type picked in its usual place launches the run without one. The launch form also lists the reserved capacity that is available right now for the selected **Cloud Region**, and a click on an entry selects it. The run confirmation pop-up offers the group as well, where it asks to select an instance type. Pipeline configurations and detached configurations do not offer capacity blocks.
+
+The CPU, RAM and GPU request fields of the launch form (the `CP_CAP_REQUESTS_*` parameters) now take their settings from the selected pool: they are shown when an entry of a **Shareable node** pool is selected in this group, as its run configuration allows. The GUI no longer reads the **`launch.reservation.parameters`** preference for them.
+
+For more details see [here](../../manual/06_Manage_Pipeline/6._Manage_Pipeline.md#configuration).
+
+## No estimated price for the runs on a node pool
+
+In the current version, the runs table, the run cards of the home page and the run page do not show an estimated price for a run on a node pool, or for a run with reservation requests (the `CP_CAP_REQUESTS_CPU`, `CP_CAP_REQUESTS_RAM` or `CP_CAP_REQUESTS_GPU` parameter). A pool node outlives a single run, and a run with reservation requests takes only a share of a node, so a price per run would mislead.
+
+For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md).
+
+## Download storage contents as an archive
+
+Previously, a folder of a data storage could not be downloaded from the GUI, and several files were downloaded one by one.
+
+In the current version, a selection of files **and** folders can be downloaded as one `ZIP` archive, from AWS S3 storages and from NFS storages whose share is mounted as NFS. The new **Download archive** item of the selection menu asks for the archive name. The platform builds the archive in the background. The new **Storage tasks** window, opened by **Show storage tasks** in the presentation menu of the storage, lists the tasks with their status and size, cancels them, and downloads a finished archive. A notification announces a finished archive, also one that finished while the application was closed. The number of archive tasks that a user may have in progress at once is limited, and the limits are set in the **`system.async.tasks.config`** preference. The archives are prepared by the new storage task service (see [Java 21 and Spring Boot 3 for the platform services](#java-21-and-spring-boot-3-for-the-platform-services)).
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8.2._Upload_Download_data.md#download-as-archive).
+
+## Upload and extract archives
+
+Previously, an archive uploaded to a data storage stayed an archive: to get its content into the storage, it had to be extracted locally and uploaded again.
+
+In the current version, when the files to upload include an archive (`ZIP`, `TAR`, `TAR.GZ`, `TGZ`, `TAR.BZ2`, `TAR.XZ`, `GZ`, `BZ2` or `XZ`), on an AWS S3 storage or an NFS storage whose share is mounted as NFS, the **Upload files** pop-up asks first: **Upload** uploads the files as before, and **Upload and extract** also extracts each uploaded archive in the background, into a new folder beside it, named after the archive. An archive that is already in the storage is extracted with the new **Extract archive** item of the selection menu, one archive at a time. The extractions are listed in the **Storage tasks** window, and count against the same limit of archive tasks as the downloads. When the limit is reached, the action is disabled and says why. A notification announces a finished extraction.
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8.2._Upload_Download_data.md#upload-data).
+
+## Data storage: bulk actions on the permitted items only
+
+Previously, the selection menu of a data storage offered **Remove** only when the user could write to every selected item, and **Generate URL** only when every selected item was a file that the user could download. One other item in the selection hid the menu item.
+
+In the current version, **Remove** is offered when you may write to at least one selected item, and removes only such items. **Generate URL** is offered when at least one selected file can be downloaded, and generates URLs only for such files. Where some of the selected items are skipped, the item shows an information icon, and its hint says how many items are taken. The hint is shown above the menu. The confirmation of **Remove** then asks "Remove N of M selected items?". Also, a folder can now be selected for an archive download even where you may not edit it.
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage.md#remove-all-selected).
+
+## Data storage: the controls row and the column header stay visible while scrolling
+
+The controls row of a data storage - **Select page**, **Create**, **Upload** and the others - and the column header now stay at the top while the file list is scrolled.
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage.md#controls).
+
+## FireCloud integration is removed
+
+The integration with FireCloud is removed. The GUI no longer offers FireCloud methods in the pipeline browser of the launch dialog, in the detached configurations and on the run page. The `/firecloud` methods of the API are removed, and the update deletes the FireCloud preferences (`firecloud.*`, `google.client.settings`, `google.client.id` and `google.redirect.url`).
+
+## Failed notifications are kept in a dead-letter queue
+
+Previously, the notifier took a notification out of the queue before it sent it. When the email could not be sent, the notification was lost, with a warning in the notifier log.
+
+In the current version, such a notification is saved to the `notification_queue_dlq` table of the database, with the reason of the failure. The notifier does not send these notifications again.
+
+## Run prices are billed per status period
+
+Previously, the billing service priced the whole run with the price that the run had at the moment of the billing.
+
+In the current version, the API records the price per hour of a run (its compute and disk parts) with each status change of the run. The billing service prices each period between two status changes with the price that was recorded at its start. The status changes recorded before the update have no price, so their periods are priced as before.
+
+***
+
 ## Notable Bug fixes
 
 ### Parameter values changes cannot be saved for a tool
@@ -1527,3 +1633,11 @@ Now, the run removes the repo files of the image's `rocky-repos` package, on Roc
 
 Previously, enabling a tool in a tool group (**Enable tool**) did not register the versions of its image. A version was registered later: by a scheduled security scan of the tool that completed, by a push of the image to the registry, or when the version settings were saved. Until then, the tool had no version settings, and the launch form that **Run** → **Custom settings** opens for it had an empty **Docker image** field ("Docker image is required") and no tool name in its header.
 Now, enabling a tool registers a version for each tag of its image in the registry, as a completed scan does, so the launch form gets the tool's image at once. A tool enabled before the update gets its versions in the same ways as before.
+
+### Data storage: "Select page" is enabled when no item on the page can be selected
+
+[#4846](https://github.com/epam/cloud-pipeline/issues/4846)
+
+Previously, the **Select page** control of a data storage was enabled whenever the current page listed any item that was not selected yet, also when no item there had a checkbox. Clicking the control then selected nothing, with no message.
+Now, **Select page** is disabled unless the page has an item that can be selected and is not selected yet.
+See details in [8. Manage Data Storage](../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage.md#select-page).
