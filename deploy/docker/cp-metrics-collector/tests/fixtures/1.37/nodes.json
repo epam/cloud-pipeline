@@ -1,0 +1,153 @@
+{
+ "apiVersion": "v1",
+ "items": [
+  {
+   "metadata": {
+    "labels": {
+     "beta.kubernetes.io/arch": "arm64",
+     "beta.kubernetes.io/os": "linux",
+     "kubernetes.io/arch": "arm64",
+     "kubernetes.io/hostname": "cp-mc-137-control-plane",
+     "kubernetes.io/os": "linux",
+     "node-role.kubernetes.io/control-plane": "",
+     "node.kubernetes.io/exclude-from-external-load-balancers": ""
+    },
+    "name": "cp-mc-137-control-plane",
+    "uid": "93703d2c-66ed-4a3b-ad05-b5442acb7bc0"
+   },
+   "spec": {
+    "taints": [
+     {
+      "effect": "NoSchedule",
+      "key": "node-role.kubernetes.io/control-plane"
+     }
+    ]
+   },
+   "status": {
+    "addresses": [
+     {
+      "address": "172.20.0.3",
+      "type": "InternalIP"
+     },
+     {
+      "address": "cp-mc-137-control-plane",
+      "type": "Hostname"
+     }
+    ],
+    "allocatable": {
+     "cpu": "6",
+     "ephemeral-storage": "83114070609",
+     "hugepages-1Gi": "0",
+     "hugepages-2Mi": "0",
+     "hugepages-32Mi": "0",
+     "hugepages-64Ki": "0",
+     "memory": "12117912Ki",
+     "pods": "110"
+    },
+    "capacity": {
+     "cpu": "6",
+     "ephemeral-storage": "83953606656",
+     "hugepages-1Gi": "0",
+     "hugepages-2Mi": "0",
+     "hugepages-32Mi": "0",
+     "hugepages-64Ki": "0",
+     "memory": "12220312Ki",
+     "pods": "110"
+    },
+    "conditions": [
+     {
+      "status": "False",
+      "type": "MemoryPressure"
+     },
+     {
+      "status": "False",
+      "type": "DiskPressure"
+     },
+     {
+      "status": "False",
+      "type": "PIDPressure"
+     },
+     {
+      "status": "True",
+      "type": "Ready"
+     }
+    ],
+    "daemonEndpoints": {
+     "kubeletEndpoint": {
+      "Port": 10250
+     }
+    }
+   }
+  },
+  {
+   "metadata": {
+    "labels": {
+     "beta.kubernetes.io/arch": "arm64",
+     "beta.kubernetes.io/os": "linux",
+     "kubernetes.io/arch": "arm64",
+     "kubernetes.io/hostname": "cp-mc-137-worker",
+     "kubernetes.io/os": "linux"
+    },
+    "name": "cp-mc-137-worker",
+    "uid": "a330c86d-4600-43cd-910d-a3ad7c9c1783"
+   },
+   "spec": {},
+   "status": {
+    "addresses": [
+     {
+      "address": "172.20.0.2",
+      "type": "InternalIP"
+     },
+     {
+      "address": "cp-mc-137-worker",
+      "type": "Hostname"
+     }
+    ],
+    "allocatable": {
+     "cpu": "6",
+     "ephemeral-storage": "83114070609",
+     "hugepages-1Gi": "0",
+     "hugepages-2Mi": "0",
+     "hugepages-32Mi": "0",
+     "hugepages-64Ki": "0",
+     "memory": "12117912Ki",
+     "pods": "110"
+    },
+    "capacity": {
+     "cpu": "6",
+     "ephemeral-storage": "83953606656",
+     "hugepages-1Gi": "0",
+     "hugepages-2Mi": "0",
+     "hugepages-32Mi": "0",
+     "hugepages-64Ki": "0",
+     "memory": "12220312Ki",
+     "pods": "110"
+    },
+    "conditions": [
+     {
+      "status": "False",
+      "type": "MemoryPressure"
+     },
+     {
+      "status": "False",
+      "type": "DiskPressure"
+     },
+     {
+      "status": "False",
+      "type": "PIDPressure"
+     },
+     {
+      "status": "True",
+      "type": "Ready"
+     }
+    ],
+    "daemonEndpoints": {
+     "kubeletEndpoint": {
+      "Port": 10250
+     }
+    }
+   }
+  }
+ ],
+ "kind": "NodeList"
+}

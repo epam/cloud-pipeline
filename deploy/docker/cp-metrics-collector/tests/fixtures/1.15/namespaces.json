@@ -1,0 +1,30 @@
+{
+ "apiVersion": "v1",
+ "items": [
+  {
+   "metadata": {
+    "name": "kube-system",
+    "uid": "e1676a4d-f306-449c-9421-3ff3f311ed2e"
+   }
+  },
+  {
+   "metadata": {
+    "name": "kube-public",
+    "uid": "e4e11690-f6b1-41fc-80ae-a52ccba63894"
+   }
+  },
+  {
+   "metadata": {
+    "name": "kube-node-lease",
+    "uid": "3d5b1880-c0c9-4d1a-9cbc-c0ae044706e8"
+   }
+  },
+  {
+   "metadata": {
+    "name": "default",
+    "uid": "b4fda0c0-5695-4396-b1b9-88a2f6b3f36d"
+   }
+  }
+ ],
+ "kind": "NamespaceList"
+}

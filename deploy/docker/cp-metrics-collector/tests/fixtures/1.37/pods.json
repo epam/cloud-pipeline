@@ -1,0 +1,359 @@
+{
+ "apiVersion": "v1",
+ "items": [
+  {
+   "metadata": {
+    "labels": {
+     "app": "mc-load",
+     "runid": "12345"
+    },
+    "name": "mc-load",
+    "namespace": "default",
+    "uid": "0896d8e0-8da2-4cf2-a198-711028ae42ca"
+   },
+   "spec": {
+    "containers": [
+     {
+      "image": "busybox:1.36",
+      "name": "burn",
+      "resources": {
+       "limits": {
+        "cpu": "500m",
+        "memory": "128Mi"
+       },
+       "requests": {
+        "cpu": "250m",
+        "memory": "64Mi"
+       }
+      }
+     },
+     {
+      "image": "busybox:1.36",
+      "name": "chatty",
+      "resources": {}
+     }
+    ],
+    "nodeName": "cp-mc-137-worker"
+   },
+   "status": {
+    "phase": "Running"
+   }
+  },
+  {
+   "metadata": {
+    "labels": {
+     "k8s-app": "kube-dns",
+     "pod-template-hash": "559f6c778d"
+    },
+    "name": "coredns-559f6c778d-8hjzm",
+    "namespace": "kube-system",
+    "uid": "cc5a4027-6589-4ca1-adde-7ddf1389a4c3"
+   },
+   "spec": {
+    "containers": [
+     {
+      "image": "registry.k8s.io/coredns/coredns:v1.14.6",
+      "name": "coredns",
+      "resources": {
+       "limits": {
+        "memory": "170Mi"
+       },
+       "requests": {
+        "cpu": "100m",
+        "memory": "70Mi"
+       }
+      }
+     }
+    ],
+    "nodeName": "cp-mc-137-control-plane"
+   },
+   "status": {
+    "phase": "Running"
+   }
+  },
+  {
+   "metadata": {
+    "labels": {
+     "k8s-app": "kube-dns",
+     "pod-template-hash": "559f6c778d"
+    },
+    "name": "coredns-559f6c778d-rg69l",
+    "namespace": "kube-system",
+    "uid": "00e9c13f-e751-4670-8246-a6d1053e3eee"
+   },
+   "spec": {
+    "containers": [
+     {
+      "image": "registry.k8s.io/coredns/coredns:v1.14.6",
+      "name": "coredns",
+      "resources": {
+       "limits": {
+        "memory": "170Mi"
+       },
+       "requests": {
+        "cpu": "100m",
+        "memory": "70Mi"
+       }
+      }
+     }
+    ],
+    "nodeName": "cp-mc-137-control-plane"
+   },
+   "status": {
+    "phase": "Running"
+   }
+  },
+  {
+   "metadata": {
+    "labels": {
+     "component": "etcd",
+     "tier": "control-plane"
+    },
+    "name": "etcd-cp-mc-137-control-plane",
+    "namespace": "kube-system",
+    "uid": "bc30887e-5937-41d4-9913-8bf515fd67bd"
+   },
+   "spec": {
+    "containers": [
+     {
+      "image": "registry.k8s.io/etcd:3.7.0-0",
+      "name": "etcd",
+      "resources": {
+       "requests": {
+        "cpu": "100m",
+        "memory": "100Mi"
+       }
+      }
+     }
+    ],
+    "nodeName": "cp-mc-137-control-plane"
+   },
+   "status": {
+    "phase": "Running"
+   }
+  },
+  {
+   "metadata": {
+    "labels": {
+     "app": "kindnet",
+     "controller-revision-hash": "7dd7c5466f",
+     "k8s-app": "kindnet",
+     "pod-template-generation": "1",
+     "tier": "node"
+    },
+    "name": "kindnet-lxhh5",
+    "namespace": "kube-system",
+    "uid": "f42cab44-1b62-4d44-b77f-33efda185b87"
+   },
+   "spec": {
+    "containers": [
+     {
+      "image": "docker.io/kindest/kindnetd:v20260820-69b56db7",
+      "name": "kindnet-cni",
+      "resources": {
+       "requests": {
+        "cpu": "100m",
+        "memory": "50Mi"
+       }
+      }
+     }
+    ],
+    "nodeName": "cp-mc-137-worker"
+   },
+   "status": {
+    "phase": "Running"
+   }
+  },
+  {
+   "metadata": {
+    "labels": {
+     "app": "kindnet",
+     "controller-revision-hash": "7dd7c5466f",
+     "k8s-app": "kindnet",
+     "pod-template-generation": "1",
+     "tier": "node"
+    },
+    "name": "kindnet-w2rwp",
+    "namespace": "kube-system",
+    "uid": "aba1cac5-44f3-46f2-808f-e860b343d71d"
+   },
+   "spec": {
+    "containers": [
+     {
+      "image": "docker.io/kindest/kindnetd:v20260820-69b56db7",
+      "name": "kindnet-cni",
+      "resources": {
+       "requests": {
+        "cpu": "100m",
+        "memory": "50Mi"
+       }
+      }
+     }
+    ],
+    "nodeName": "cp-mc-137-control-plane"
+   },
+   "status": {
+    "phase": "Running"
+   }
+  },
+  {
+   "metadata": {
+    "labels": {
+     "component": "kube-apiserver",
+     "tier": "control-plane"
+    },
+    "name": "kube-apiserver-cp-mc-137-control-plane",
+    "namespace": "kube-system",
+    "uid": "deaab37a-5181-4394-be86-7a4162163669"
+   },
+   "spec": {
+    "containers": [
+     {
+      "image": "registry.k8s.io/kube-apiserver:v1.37.0",
+      "name": "kube-apiserver",
+      "resources": {
+       "requests": {
+        "cpu": "250m"
+       }
+      }
+     }
+    ],
+    "nodeName": "cp-mc-137-control-plane"
+   },
+   "status": {
+    "phase": "Running"
+   }
+  },
+  {
+   "metadata": {
+    "labels": {
+     "component": "kube-controller-manager",
+     "tier": "control-plane"
+    },
+    "name": "kube-controller-manager-cp-mc-137-control-plane",
+    "namespace": "kube-system",
+    "uid": "1bc66aa2-617f-4db5-8441-cfea4a4dcf34"
+   },
+   "spec": {
+    "containers": [
+     {
+      "image": "registry.k8s.io/kube-controller-manager:v1.37.0",
+      "name": "kube-controller-manager",
+      "resources": {
+       "requests": {
+        "cpu": "200m"
+       }
+      }
+     }
+    ],
+    "nodeName": "cp-mc-137-control-plane"
+   },
+   "status": {
+    "phase": "Running"
+   }
+  },
+  {
+   "metadata": {
+    "labels": {
+     "controller-revision-hash": "6f6bf99bf5",
+     "k8s-app": "kube-proxy",
+     "pod-template-generation": "1"
+    },
+    "name": "kube-proxy-99jx2",
+    "namespace": "kube-system",
+    "uid": "2d10e57b-0824-4c70-bfd1-4fb65c401acf"
+   },
+   "spec": {
+    "containers": [
+     {
+      "image": "registry.k8s.io/kube-proxy:v1.37.0",
+      "name": "kube-proxy",
+      "resources": {}
+     }
+    ],
+    "nodeName": "cp-mc-137-control-plane"
+   },
+   "status": {
+    "phase": "Running"
+   }
+  },
+  {
+   "metadata": {
+    "labels": {
+     "controller-revision-hash": "6f6bf99bf5",
+     "k8s-app": "kube-proxy",
+     "pod-template-generation": "1"
+    },
+    "name": "kube-proxy-msptl",
+    "namespace": "kube-system",
+    "uid": "97514114-46d7-4fc5-a961-074f5b08247a"
+   },
+   "spec": {
+    "containers": [
+     {
+      "image": "registry.k8s.io/kube-proxy:v1.37.0",
+      "name": "kube-proxy",
+      "resources": {}
+     }
+    ],
+    "nodeName": "cp-mc-137-worker"
+   },
+   "status": {
+    "phase": "Running"
+   }
+  },
+  {
+   "metadata": {
+    "labels": {
+     "component": "kube-scheduler",
+     "tier": "control-plane"
+    },
+    "name": "kube-scheduler-cp-mc-137-control-plane",
+    "namespace": "kube-system",
+    "uid": "bba1ce22-6e2c-4688-bef7-74398aeb6ce3"
+   },
+   "spec": {
+    "containers": [
+     {
+      "image": "registry.k8s.io/kube-scheduler:v1.37.0",
+      "name": "kube-scheduler",
+      "resources": {
+       "requests": {
+        "cpu": "100m"
+       }
+      }
+     }
+    ],
+    "nodeName": "cp-mc-137-control-plane"
+   },
+   "status": {
+    "phase": "Running"
+   }
+  },
+  {
+   "metadata": {
+    "labels": {
+     "app": "local-path-provisioner",
+     "pod-template-hash": "75f7fc7dc5"
+    },
+    "name": "local-path-provisioner-75f7fc7dc5-7pd4l",
+    "namespace": "local-path-storage",
+    "uid": "0fe0ec53-8a09-4fe6-a58a-c91daa519ab2"
+   },
+   "spec": {
+    "containers": [
+     {
+      "image": "docker.io/kindest/local-path-provisioner:v20260820-69b56db7",
+      "name": "local-path-provisioner",
+      "resources": {}
+     }
+    ],
+    "nodeName": "cp-mc-137-control-plane"
+   },
+   "status": {
+    "phase": "Running"
+   }
+  }
+ ],
+ "kind": "PodList"
+}
