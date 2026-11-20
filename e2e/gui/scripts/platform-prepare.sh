@@ -556,11 +556,17 @@ fi
 #    starts) and offer none of these. Each one of fixtures.json "pipeline_templates" that the API does not list is
 #    copied from workflows/pipe-templates/__COMMON of this checkout (E2E_PIPE_TEMPLATES_DIR) into the templates folder
 #    of every API pod (E2E_API_TEMPLATES_DIR), in the folder of the test users' role (role_user_group): only that
-#    role's members and the admins see a template there, and the API reads the folder at every request. A restart of
-#    the API drops them; revert removes them. One that a killed run left is listed, so it is kept until the API restarts.
+#    role's members and the admins see a template there, and the API reads the folder at every request. Their
+#    config.json is filled in as the API does with its templates when it starts (init-api update_resources_templates):
+#    ${CP_PREF_...} with the config map's values, which the API pods get at their next start, ${CP_DOLLAR} with "$".
+#    The image of their runs is fixtures.json "pipeline_templates_docker_image" (default library/rockylinux:latest;
+#    empty keeps the template's own, library/centos:7). A restart of the API drops them; revert removes them. One that a
+#    killed run left is listed, so it is kept until the API restarts.
 _TEMPLATES_SRC="${E2E_PIPE_TEMPLATES_DIR:-$E2E_GUI_DIR/../../workflows/pipe-templates/__COMMON}"
 _API_TEMPLATES_DIR="${E2E_API_TEMPLATES_DIR:-/opt/api/pipe-templates}"
 _template_role="$(jq -r '.role_user_group.name // empty' "$_FIXTURES")"
+_template_image="$(jq -r 'if has("pipeline_templates_docker_image") then (.pipeline_templates_docker_image // "")
+    else "library/rockylinux:latest" end' "$_FIXTURES")"
 _missing=()
 _wanted="$(jq -r '(.pipeline_templates // ["shell", "python"])[]' "$_FIXTURES")"
 # The admin token sees the templates of every role and group folder: one that only another role or group has counts
@@ -592,8 +598,29 @@ if [ ${#_missing[@]} -gt 0 ]; then
                 "create pipelines from it fail"
             continue
         fi
-        # The image of its runs: the platform's templates name library/centos:7, which a deployment may not have
-        _image="$(jq -r '.[0].configuration.docker_image // empty' "$_TEMPLATES_SRC/$_tpl/config.json" 2> /dev/null)"
+        # The copy, filled in here: ${CP_PREF_...} and ${CP_DOLLAR} of config.json, and the image of the runs
+        _copy="$_STATE/pipeline-templates"
+        rm -rf "$_copy/$_tpl" && mkdir -p "$_copy" && cp -r "$_TEMPLATES_SRC/$_tpl" "$_copy/" || \
+            { e2e_warn "Unable to copy the pipeline template $_tpl: the tests that create pipelines from it fail"; continue; }
+        _filled=1
+        while IFS= read -r _cfg; do
+            [ "$_cfg" ] || continue
+            _text="$(cat "$_cfg")"
+            for _var in $(grep -o '\${CP_PREF_[A-Za-z0-9_]*}' "$_cfg" | sort -u | tr -d '${}'); do
+                _value="$(cp_config "$_var")"
+                [ "$_value" ] || e2e_warn "Pipeline template $_tpl: $_var is not in the config map, its value is left empty"
+                _text="$(jq -Rrs --arg p "\${$_var}" --arg v "$_value" 'split($p) | join($v)' <<< "$_text")"
+            done
+            _text="$(jq -Rrs --arg p '${CP_DOLLAR}' 'split($p) | join("$")' <<< "$_text")"
+            if [ "$_template_image" ]; then
+                _text="$(jq --arg i "$_template_image" 'map(if .configuration.docker_image then
+                    .configuration.docker_image = $i else . end)' <<< "$_text")" || { _filled=""; break; }
+            fi
+            printf '%s\n' "$_text" > "$_cfg" || { _filled=""; break; }
+        done <<< "$(find "$_copy/$_tpl" -type f -name config.json)"
+        [ "$_filled" ] || { e2e_warn "Unable to fill in the pipeline template $_tpl: the tests that create pipelines from it fail"; continue; }
+        # The image of its runs must be a tool version of the platform
+        _image="$(jq -r '[.[].configuration.docker_image // empty][0] // empty' "$_copy/$_tpl/config.json" 2> /dev/null)"
         if [ "$_image" ]; then
             _image_tid="$(cp_api_payload GET "tool/load?image=${_image%:*}" 2> /dev/null | jq -r '.id // empty')"
             { [ "$_image_tid" ] && cp_api_payload GET "tool/$_image_tid/tags" 2> /dev/null | jq -e --arg t "${_image##*:}" \
@@ -603,19 +630,12 @@ if [ ${#_missing[@]} -gt 0 ]; then
         _dir="$_API_TEMPLATES_DIR/$_template_role/$_tpl"
         for _pod in $_api_pods; do
             _pod="${_pod#pod/}"
-            # As the API does with its templates when it starts (init-api update_resources_templates): the config.json
-            # values ${CP_PREF_...} of the pod's environment, and ${CP_DOLLAR} for a "$"
-            _out="$(tar -C "$_TEMPLATES_SRC" -cf - "$_tpl" 2> /dev/null | \
+            # a half-made template would be listed as offered and stay until the API restarts
+            _out="$(tar -C "$_copy" -cf - "$_tpl" 2> /dev/null | \
                 kubectl exec -i -n "$CP_KUBE_NAMESPACE" "$_pod" -c cp-api-srv -- sh -c "
                     if [ -e '$_dir' ]; then cat > /dev/null; echo exists; exit 0; fi
                     mkdir -p '${_dir%/*}' || exit 1
-                    ok=1
-                    tar -C '${_dir%/*}' -xf - || ok=
-                    for f in \$([ \"\$ok\" ] && find '$_dir' -type f -name config.json); do
-                        CP_DOLLAR='\$' envsubst < \"\$f\" > \"\$f.e2e\" && mv \"\$f.e2e\" \"\$f\" || { ok=; break; }
-                    done
-                    # a half-made template would be listed as offered and stay until the API restarts
-                    [ \"\$ok\" ] || { rm -rf '$_dir'; rmdir '${_dir%/*}' 2> /dev/null; exit 1; }
+                    tar -C '${_dir%/*}' -xf - || { rm -rf '$_dir'; rmdir '${_dir%/*}' 2> /dev/null; exit 1; }
                     echo added")"
             case "$_out" in
                 added)

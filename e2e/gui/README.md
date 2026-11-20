@@ -101,7 +101,9 @@ class after that at its first page. So:
    does not offer (a deployment can replace the templates of the API image with its own,
    `CP_PREF_TEMPLATES_DIRECTORY_EXT`) are copied from `workflows/pipe-templates/__COMMON` of the checkout into the
    templates folder of the API pods, in the folder of the test users' role: only its members and the admins see them.
-   Their `config.json` gets the values of the API's environment, as the API does at its start. Step 7 removes them;
+   Their `config.json` is filled in as the API does at its start, with the values of the `cp-config-global` config map,
+   and their runs use `"pipeline_templates_docker_image"` (`library/rockylinux:latest`; empty keeps
+   `library/centos:7` of the platform's templates). Step 7 removes them;
    an API restart drops them too. A run needs the checkout's `workflows/pipe-templates/__COMMON` for this
    (`E2E_PIPE_TEMPLATES_DIR` gives another folder, `E2E_API_TEMPLATES_DIR` the templates folder of the API pods).
 3. generates the tests config from the live deployment (`scripts/generate-config.sh`, see below)

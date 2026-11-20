@@ -26,7 +26,9 @@
         "pipeline_templates: the templates the tests create pipelines from (Template.SHELL, PYTHON). One the API does not",
         "  offer (a deployment can replace the templates of the API image with its own) is copied from",
         "  workflows/pipe-templates/__COMMON into the templates folder of the API pods, in the folder of",
-        "  role_user_group (only its members and the admins see it), and removed after the run. Empty adds none."
+        "  role_user_group (only its members and the admins see it), and removed after the run. Empty adds none.",
+        "pipeline_templates_docker_image: the image of the runs of the pipelines made from the templates added above",
+        "  (the platform's own templates name library/centos:7). Empty keeps the templates' image."
     ],
     "tool_groups": [
         {
@@ -98,5 +100,6 @@
     "mute_user_notifications": true,
     "tools_limit_mounts": "None",
     "pipeline_templates": ["shell", "python"],
+    "pipeline_templates_docker_image": "library/rockylinux:latest",
     "preferences": []
 }
