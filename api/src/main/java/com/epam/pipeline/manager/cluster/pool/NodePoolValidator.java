@@ -42,7 +42,9 @@ import com.epam.pipeline.manager.pipeline.ToolUtils;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.utils.DoubleUtils;
 import com.epam.pipeline.utils.InstanceTypePatternMatcher;
+import com.epam.pipeline.vo.CapacitySpecification;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -50,6 +52,7 @@ import org.springframework.util.Assert;
 import java.util.Comparator;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
 import java.util.Arrays;
 import java.util.Collections;
@@ -173,6 +176,9 @@ public class NodePoolValidator {
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_INSTANCE_COUNT_INVALID));
 
         if (CapacityReservationType.CAPACITY_BLOCK == type) {
+            Assert.isTrue(CollectionUtils.isEmpty(request.getFallbackCandidates()),
+                    messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_FALLBACK_NOT_SUPPORTED,
+                            type));
             validateCapacityBlockPurchase(request);
             validateReservationInstance(vo, request);
         } else {
@@ -181,6 +187,7 @@ public class NodePoolValidator {
             validateReservationSize(vo);
             validateReservationWindow(request);
             validateReservationInstance(vo, request);
+            validateFallbackCandidates(vo, request);
         }
     }
 
@@ -195,13 +202,16 @@ public class NodePoolValidator {
     }
 
     private void validateReservationSize(final NodePoolVO vo) {
-        final int instances = vo.getCount();
-        instanceOfferManager.findOffer(vo.getInstanceType(), vo.getRegionId())
+        validateReservationSize(vo.getInstanceType(), vo.getCount(), vo.getRegionId());
+    }
+
+    private void validateReservationSize(final String instanceType, final int count, final Long regionId) {
+        instanceOfferManager.findOffer(instanceType, regionId)
                 .map(InstanceOffer::getVCPU)
                 .filter(vcpus -> vcpus > 0)
-                .ifPresent(vcpus -> Assert.isTrue((long) vcpus * instances >= MIN_RESERVATION_VCPUS,
+                .ifPresent(vcpus -> Assert.isTrue((long) vcpus * count >= MIN_RESERVATION_VCPUS,
                         messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_TOO_FEW_VCPUS,
-                                instances, vo.getInstanceType(), vcpus, MIN_RESERVATION_VCPUS)));
+                                count, instanceType, vcpus, MIN_RESERVATION_VCPUS)));
     }
 
     private void validateReservationInstance(final NodePoolVO vo, final CapacityReservationRequest request) {
@@ -210,16 +220,46 @@ public class NodePoolValidator {
         Assert.isTrue(SUPPORTED_INSTANCE_PLATFORMS.contains(platform),
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_PLATFORM_NOT_SUPPORTED,
                         platform));
+        validateInstanceFamily(vo.getInstanceType(), request.getReservationType());
+    }
 
-        final String pattern = supportedInstanceTypePattern(request.getReservationType());
-        Assert.isTrue(InstanceTypePatternMatcher.matches(vo.getInstanceType(), pattern),
+    private void validateInstanceFamily(final String instanceType, final CapacityReservationType type) {
+        final String pattern = supportedInstanceTypePattern(type);
+        Assert.isTrue(InstanceTypePatternMatcher.matches(instanceType, pattern),
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_FAMILY_NOT_SUPPORTED,
-                        vo.getInstanceType(), request.getReservationType(), pattern));
+                        instanceType, type, pattern));
     }
 
     private String supportedInstanceTypePattern(final CapacityReservationType type) {
         return preferenceManager.getPreference(SystemPreferences.CLUSTER_CAPACITY_RESERVATION_INSTANCE_FAMILIES)
                 .get(type);
+    }
+
+    /**
+     * Validates each fallback candidate the same way the main one is - family pattern, vCPU floor - and
+     * caps the list length. Duplicates are not rejected here; {@code CapacityReservationService#build}
+     * merges them silently instead.
+     */
+    private void validateFallbackCandidates(final NodePoolVO vo, final CapacityReservationRequest request) {
+        final List<CapacitySpecification> fallbacks = request.getFallbackCandidates();
+        if (CollectionUtils.isEmpty(fallbacks)) {
+            return;
+        }
+        final int maxFallbacks = preferenceManager.getPreference(
+                SystemPreferences.CLUSTER_CAPACITY_RESERVATION_FALLBACK_CANDIDATES_MAX_COUNT);
+        Assert.isTrue(maxFallbacks == -1 || fallbacks.size() <= maxFallbacks,
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_FALLBACK_CANDIDATES_EXCEEDS_LIMIT,
+                        fallbacks.size(), maxFallbacks));
+        fallbacks.forEach(candidate -> {
+            Assert.isTrue(StringUtils.isNotBlank(candidate.getInstanceType()),
+                    messageHelper.getMessage(
+                            MessageConstants.ERROR_CAPACITY_RESERVATION_FALLBACK_INSTANCE_TYPE_REQUIRED));
+            Assert.isTrue(candidate.getInstanceCount() != null && candidate.getInstanceCount() >= 1,
+                    messageHelper.getMessage(
+                            MessageConstants.ERROR_CAPACITY_RESERVATION_FALLBACK_INSTANCE_COUNT_REQUIRED));
+            validateReservationSize(candidate.getInstanceType(), candidate.getInstanceCount(), vo.getRegionId());
+            validateInstanceFamily(candidate.getInstanceType(), request.getReservationType());
+        });
     }
 
     private void validateReservationWindow(final CapacityReservationRequest request) {

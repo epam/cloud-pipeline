@@ -48,6 +48,7 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
     private static final String RAM_RESERVED = "2GiB";
     private static final int RESERVED_COUNT = 3;
     private static final String RESERVATION_LABEL = "cp-capacity-reservation";
+    private static final String RESERVED_INSTANCE_TYPE = "p3.2xlarge";
 
     @Autowired
     private NodePoolDao poolDao;
@@ -140,6 +141,7 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
         final NodePool created = poolDao.create(NodePoolCreatorUtils.getPoolWithoutSchedule());
         final String originalName = created.getName();
         created.setName("not written by this statement");
+        created.setInstanceType(RESERVED_INSTANCE_TYPE);
         created.setCount(RESERVED_COUNT);
         created.setStartDate(START_DATE);
         created.setEndDate(END_DATE);
@@ -149,6 +151,7 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
         poolDao.updateReservationState(created);
 
         final NodePool loaded = poolDao.find(created.getId()).orElseThrow(AssertionError::new);
+        assertThat(loaded.getInstanceType()).isEqualTo(RESERVED_INSTANCE_TYPE);
         assertThat(loaded.getCount()).isEqualTo(RESERVED_COUNT);
         assertThat(loaded.getStartDate()).isEqualTo(START_DATE);
         assertThat(loaded.getEndDate()).isEqualTo(END_DATE);

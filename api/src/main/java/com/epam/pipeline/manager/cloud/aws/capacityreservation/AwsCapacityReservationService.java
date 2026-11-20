@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.manager.cloud.aws.capacityreservation;
 
-import com.epam.pipeline.controller.vo.cluster.CapacitySpecification;
 import com.epam.pipeline.controller.vo.cluster.capacityreservation.CapacityBlockOfferingRequest;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockInstanceTypeInfo;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockOffering;
@@ -36,6 +35,7 @@ import com.epam.pipeline.manager.cluster.capacityreservation.cloud.CapacityReser
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.vo.CapacitySpecification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;

@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.manager.cluster.capacityreservation;
 
-import com.epam.pipeline.controller.vo.cluster.CapacitySpecification;
 import com.epam.pipeline.controller.vo.cluster.capacityreservation.CapacityBlockOfferingRequest;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockInstanceTypeInfo;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockOffering;
@@ -29,6 +28,7 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.capacityreservation.cloud.CapacityReservationCloudService;
+import com.epam.pipeline.vo.CapacitySpecification;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;

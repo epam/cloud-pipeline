@@ -45,6 +45,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -78,6 +79,9 @@ import java.util.stream.Stream;
  * <p>An approval records why on the reservation - inherited, an administrator's own request, or the policy that
  * granted it - so the notification and the GUI can say what it rests on. A denial records nothing at all: it throws,
  * and neither the reservation nor its pool is created.
+ *
+ * <p>A {@code FUTURE_DATED} reservation with fallback candidates is decided as all of them together, once, right
+ * here - never re-evaluated later when the state machine switches between them.
  */
 @Service
 @Slf4j
@@ -116,8 +120,15 @@ public class CapacityReservationApprovalService {
     }
 
     /**
-     * @return {@link CapacityReservationStatus#APPROVED} when the request may proceed without a human, and
-     *         {@link CapacityReservationStatus#REQUIRED_APPROVE} when it must wait for one.
+     * Decides whether this request, and every one of its fallback candidates, may proceed without a
+     * human. A candidate denied by policy fails the whole reservation; one needing approval but not
+     * denied leaves the whole reservation waiting for an admin, even if other candidates would
+     * auto-approve on their own.
+     *
+     * @param reservation the request to decide, including its (not yet persisted) fallback candidates
+     * @return {@link CapacityReservationStatus#APPROVED} when every candidate may proceed without a
+     *         human, {@link CapacityReservationStatus#REQUIRED_APPROVE} when at least one must wait for
+     *         one
      */
     public CapacityReservationStatus evaluate(final CapacityReservation reservation) {
         if (inheritsApproval(reservation)) {
@@ -137,18 +148,44 @@ public class CapacityReservationApprovalService {
 
         final List<CapacityReservationPolicy> policies = ListUtils.emptyIfNull(
                 preferenceManager.getPreference(SystemPreferences.CLUSTER_CAPACITY_RESERVATION_POLICIES));
+        final List<CapacityReservation> candidates = candidatesOf(reservation);
 
-        if (matchesAny(policies, CapacityReservationPolicyAction.DENY, reservation)) {
+        final Optional<CapacityReservation> denied = candidates.stream()
+                .filter(candidate -> matchesAny(policies, CapacityReservationPolicyAction.DENY, candidate))
+                .findFirst();
+        if (denied.isPresent()) {
             throw new IllegalArgumentException(messageHelper.getMessage(
                     MessageConstants.ERROR_CAPACITY_RESERVATION_DENIED_BY_POLICY,
-                    reservation.getInstanceCount(), reservation.getInstanceType()));
+                    denied.get().getInstanceCount(), denied.get().getInstanceType()));
         }
-        if (matchesAny(policies, CapacityReservationPolicyAction.AUTO_APPROVE, reservation)) {
+
+        final boolean everyCandidateAutoApproved = candidates.stream()
+                .allMatch(candidate -> matchesAny(policies, CapacityReservationPolicyAction.AUTO_APPROVE, candidate));
+        if (everyCandidateAutoApproved) {
             reservation.setStatusReason(messageHelper.getMessage(
                     MessageConstants.INFO_CAPACITY_RESERVATION_APPROVED_BY_POLICY));
             return CapacityReservationStatus.APPROVED;
         }
         return CapacityReservationStatus.REQUIRED_APPROVE;
+    }
+
+    /**
+     * The reservation itself plus one throwaway copy per fallback, with {@code instanceType}/
+     * {@code instanceCount} swapped to that candidate's pair - all a policy ever reads, so no policy
+     * needs to change to keep applying to every candidate.
+     *
+     * @param reservation the request being decided
+     * @return the reservation, followed by one copy per fallback candidate
+     */
+    private List<CapacityReservation> candidatesOf(final CapacityReservation reservation) {
+        final List<CapacityReservation> candidates = new ArrayList<>();
+        candidates.add(reservation);
+        ListUtils.emptyIfNull(reservation.getFallbackCandidates()).forEach(fallback ->
+                candidates.add(reservation.toBuilder()
+                        .instanceType(fallback.getInstanceType())
+                        .instanceCount(fallback.getInstanceCount())
+                        .build()));
+        return candidates;
     }
 
     /**
@@ -166,6 +203,7 @@ public class CapacityReservationApprovalService {
     private boolean sameEssentials(final CapacityReservation origin, final CapacityReservation retry) {
         return Objects.equals(origin.getInstanceType(), retry.getInstanceType())
                 && origin.getInstanceCount() == retry.getInstanceCount()
+                && Objects.equals(origin.getFallbackCandidates(), retry.getFallbackCandidates())
                 && isNoLongerThanOrigin(origin.getCommitmentDuration(), retry.getCommitmentDuration())
                 && Objects.equals(origin.getReservationType(), retry.getReservationType())
                 && Objects.equals(origin.getCloudProvider(), retry.getCloudProvider())

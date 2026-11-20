@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.manager.cloud.aws.capacityreservation;
 
-import com.epam.pipeline.controller.vo.cluster.CapacitySpecification;
 import com.epam.pipeline.controller.vo.cluster.capacityreservation.CapacityBlockOfferingRequest;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.cluster.NetworkConfiguration;
@@ -35,6 +34,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.test.creator.cluster.capacityreservation.CapacityReservationCreatorUtils;
+import com.epam.pipeline.vo.CapacitySpecification;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

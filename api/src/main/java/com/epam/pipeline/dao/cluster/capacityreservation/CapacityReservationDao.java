@@ -16,10 +16,13 @@
 
 package com.epam.pipeline.dao.cluster.capacityreservation;
 
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.vo.CapacitySpecification;
+import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -175,7 +178,8 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
         INSTANCE_PLATFORM,
         ATTEMPT,
         GRANTED_COMMITMENT_DURATION,
-        CAPACITY_BLOCK_OFFERING_ID;
+        CAPACITY_BLOCK_OFFERING_ID,
+        FALLBACK_CANDIDATES;
 
         static MapSqlParameterSource getParameters(final CapacityReservation reservation) {
             final MapSqlParameterSource params = new MapSqlParameterSource();
@@ -208,6 +212,8 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
             params.addValue(GRANTED_COMMITMENT_DURATION.name(),
                     reservation.getGrantedCommitmentDuration());
             params.addValue(CAPACITY_BLOCK_OFFERING_ID.name(), reservation.getCapacityBlockOfferingId());
+            params.addValue(FALLBACK_CANDIDATES.name(),
+                    JsonMapper.convertListToJsonStringForQuery(reservation.getFallbackCandidates()));
             return params;
         }
 
@@ -242,6 +248,8 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
                 applyLong(rs, GRANTED_COMMITMENT_DURATION.name(),
                         reservation::setGrantedCommitmentDuration);
                 reservation.setCapacityBlockOfferingId(rs.getString(CAPACITY_BLOCK_OFFERING_ID.name()));
+                reservation.setFallbackCandidates(JsonMapper.parseData(rs.getString(FALLBACK_CANDIDATES.name()),
+                        new TypeReference<List<CapacitySpecification>>() {}));
                 return reservation;
             };
         }

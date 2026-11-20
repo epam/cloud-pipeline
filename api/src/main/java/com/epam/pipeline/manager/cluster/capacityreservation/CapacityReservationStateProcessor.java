@@ -25,8 +25,10 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.capacityreservation.cloud.CapacityReservationSubmissionUncertainException;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.vo.CapacitySpecification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -59,9 +61,11 @@ import java.util.Optional;
  *
  * <p>A refusal is not the end of a {@link CapacityReservationType#FUTURE_DATED} request: what a provider refuses
  * is a date and a zone, not the reservation. The request moves to the next candidate zone, then slides its start
- * by {@value #SLIDE_WINDOW_STEP_DAYS} day and starts over, releasing whatever the abandoned attempt had bought. It
- * fails once no zone can take it, once its window has no room left for the commitment, or when the provider cannot
- * be paid. A refused {@link CapacityReservationType#CAPACITY_BLOCK} request fails at once instead. It named one
+ * by {@value #SLIDE_WINDOW_STEP_DAYS} day and starts over, releasing whatever the abandoned attempt had bought.
+ * Once its window has no room left for the commitment, it tries its sorted {@code fallbackCandidates}, in order,
+ * each restarting the same window search from scratch - instance type is the priority, not the nearest date. It
+ * fails once no zone can take it, once every candidate's window is exhausted, or when the provider cannot be
+ * paid. A refused {@link CapacityReservationType#CAPACITY_BLOCK} request fails at once instead. It named one
  * exact offering, not a window to search, so there is nothing to slide to. Another offering means a new request,
  * not a retry of this one.
  */
@@ -381,11 +385,7 @@ public class CapacityReservationStateProcessor {
         final LocalDateTime nextEnd = nextStart.plusSeconds(reservation.getCommitmentDuration());
 
         if (nextEnd.isAfter(reservation.getRequestedEndDate())) {
-            statusService.transition(reservation, CapacityReservationStatus.FAILED, String.format(
-                    "No available start date between %s and %s for a commitment of %ds%s",
-                    reservation.getRequestedStartDate(), reservation.getRequestedEndDate(),
-                    reservation.getCommitmentDuration(),
-                    reason == null ? "" : ". Last provider response: " + reason));
+            nextFallbackCandidateOrFail(reservation, reason);
             return;
         }
 
@@ -395,6 +395,61 @@ public class CapacityReservationStateProcessor {
         reservation.setEndDate(nextEnd);
         reservation.setAvailabilityZone(null);
         resetForNextAttempt(reservation, reason);
+    }
+
+    /**
+     * {@code instanceType}'s window is exhausted everywhere. Moves to the next fallback candidate and
+     * restarts its search from {@code requestedStartDate} - instance type is the priority, not the
+     * nearest date, so a fallback never resumes partway through a window another candidate already
+     * covered. No approval check: every candidate was already evaluated together at creation
+     * ({@link CapacityReservationApprovalService#evaluate}). Fails only once every candidate has been
+     * tried.
+     *
+     * @param reservation the reservation whose current candidate just ran out of window
+     * @param reason the provider's last refusal, if any, folded into the failure message
+     */
+    private void nextFallbackCandidateOrFail(final CapacityReservation reservation, final String reason) {
+        final Optional<CapacitySpecification> next = nextFallbackCandidate(reservation);
+        if (!next.isPresent()) {
+            final int totalCandidates = 1 + ListUtils.emptyIfNull(reservation.getFallbackCandidates()).size();
+            statusService.transition(reservation, CapacityReservationStatus.FAILED, String.format(
+                    "No available start date between %s and %s for a commitment of %ds for any of this "
+                            + "reservation's %d candidate instance type(s), last tried as %s%s",
+                    reservation.getRequestedStartDate(), reservation.getRequestedEndDate(),
+                    reservation.getCommitmentDuration(), totalCandidates, reservation.getInstanceType(),
+                    reason == null ? "" : ". Last provider response: " + reason));
+            return;
+        }
+        log.debug("Capacity reservation {} found no window for instance type {}; trying fallback {}",
+                reservation.getId(), reservation.getInstanceType(), next.get().getInstanceType());
+        reservation.setInstanceType(next.get().getInstanceType());
+        reservation.setInstanceCount(next.get().getInstanceCount());
+        reservation.setStartDate(null);
+        reservation.setEndDate(null);
+        reservation.setAvailabilityZone(null);
+        resetForNextAttempt(reservation, reason);
+    }
+
+    /**
+     * The next candidate, if any - found by position, not stored. Mirrors {@link #fetchNextCandidateZone}.
+     *
+     * @param reservation the reservation to find the next fallback candidate for
+     * @return the next untried candidate, or empty once every candidate has been tried
+     */
+    private Optional<CapacitySpecification> nextFallbackCandidate(final CapacityReservation reservation) {
+        final List<CapacitySpecification> fallbacks = ListUtils.emptyIfNull(reservation.getFallbackCandidates());
+        if (fallbacks.isEmpty()) {
+            return Optional.empty();
+        }
+        final CapacitySpecification current = CapacitySpecification.builder()
+                .instanceType(reservation.getInstanceType())
+                .instanceCount(reservation.getInstanceCount())
+                .build();
+        final int i = fallbacks.indexOf(current);
+        if (i < 0) {
+            return Optional.of(fallbacks.get(0));
+        }
+        return i + 1 < fallbacks.size() ? Optional.of(fallbacks.get(i + 1)) : Optional.empty();
     }
 
     private void resetForNextAttempt(final CapacityReservation reservation, final String reason) {
