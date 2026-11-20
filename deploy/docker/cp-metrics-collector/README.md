@@ -36,7 +36,7 @@ The metrics, and where they come from:
 | Metric | node | pod | pod_container |
 |---|---|---|---|
 | `cpu/usage` (ns, cumulative), `cpu/usage_rate` (millicores) | `node.cpu` | the pod's cgroup | `containers[].cpu` |
-| `memory/usage`, `working_set`, `rss`, `page_faults`, `major_page_faults` and their rates | `node.memory` | the pod's cgroup | `containers[].memory` |
+| `memory/usage`, `working_set`, `rss`, `page_faults`, `major_page_faults` and their rates | `node.memory` | sum of its containers (no cumulative `page_faults`) | `containers[].memory` |
 | `network/rx`, `tx`, `rx_errors`, `tx_errors` and their rates | sum of `node.network.interfaces` | sum of the pod's `interfaces` | - |
 | `cpu/request`, `cpu/limit` (millicores), `memory/request`, `memory/limit` (bytes) | sum of its pods | sum of its containers | the pod spec's container or native sidecar, 0 where unset |
 | `cpu/node_capacity`, `node_allocatable`, `node_utilization`, `node_reservation`, same for `memory/` | node status and usage | - | - |
@@ -55,10 +55,12 @@ start time is the same. `cpu/usage_rate` is an integer, `1000 * delta ns / delta
   `/dev/shm` is written as `tmpfs`, and the other tmpfs, overlay and NFS devices are not written.
 - **No `available` for a device the summary does not know.** cAdvisor's metrics have no available
   bytes. They come from the summary, for the devices of the kubelet's and the runtime's filesystems.
-- **Pod usage comes from the pod's cgroup.** heapster added the containers' usage to the pause
-  container's. It is the same sum. A pod the summary has no pod-level stats for gets its containers'
-  sum. A pod's cumulative `cpu/usage` and `memory/page_faults` were the pause container's own in
-  heapster, and are the pod's here.
+- **A pod's CPU comes from its cgroup.** heapster added the containers' rates to the pause
+  container's, the same sum. A pod the summary has no pod-level CPU for gets its containers' sum.
+  A pod's cumulative `cpu/usage` was the pause container's own in heapster, and is the pod's here.
+- **A pod's memory is its containers' sum, without the pause container's** (a few hundred KB). The
+  pod cgroup is not used: it keeps what finished containers left charged to it. On 1.15, canal's
+  init containers left 34 MB of page cache in its pod cgroup.
 - **`container_base_image` is the image of the pod spec.** heapster wrote the one cAdvisor reported,
   which with Docker is often the image ID (`sha256:...`).
 - **Rate timing.** The summary gives the time of its stats in whole seconds, where heapster had

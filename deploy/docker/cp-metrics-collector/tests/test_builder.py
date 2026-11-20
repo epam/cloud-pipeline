@@ -195,7 +195,7 @@ def test_load_pod_and_its_containers(cluster):
     assert cpu['cpu/usage_rate'] > 0
     memory = _metrics(docs, 'memory', type='pod', pod_name='mc-load')
     assert memory['memory/limit'] == 128 * 2 ** 20
-    assert memory['memory/working_set'] == second['memory']['workingSetBytes']
+    assert memory['memory/working_set'] == sum(c['memory']['workingSetBytes'] for c in second['containers'])
     assert 'network/rx_rate' in _metrics(docs, 'network', type='pod', pod_name='mc-load')
 
     tags = find_docs(docs, 'cpu', type='pod', pod_name='mc-load')[0]['MetricsTags']
@@ -259,6 +259,15 @@ def test_pod_unknown_to_the_api_keeps_its_stats(cluster_1_15):
                   and s.labels['pod_name'] == dns.labels['pod_name']]
     assert containers and all('cpu/limit' not in c.values and 'container_base_image' not in c.labels
                               for c in containers)
+
+
+def test_pod_memory_is_its_running_containers_not_its_cgroup(cluster_1_15):
+    # canal's init containers left their page cache charged to the pod cgroup: 58 MB against 24 MB.
+    sets, _ = cluster_1_15.batch()
+    stats = _pod_stats(_summary(cluster_1_15, NODE_1_15, 2), 'canal-bgg86')
+    containers = sum(c['memory']['workingSetBytes'] for c in stats['containers'])
+    assert stats['memory']['workingSetBytes'] > 2 * containers
+    assert sets[builder.pod_key('kube-system', 'canal-bgg86')].values['memory/working_set'] == containers
 
 
 def test_pod_without_pod_level_stats_sums_its_containers(cluster_1_15):

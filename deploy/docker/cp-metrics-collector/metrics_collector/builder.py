@@ -291,7 +291,11 @@ def _build_pod(sets, pod_stats, common, pods, namespaces, image_device):
     if namespace in namespaces:
         labels['namespace_id'] = namespaces[namespace]
     pod_set = MetricSet(labels=labels, start_time=pod_stats.get('startTime'))
-    _put_stats(pod_set, pod_stats.get('cpu'), pod_stats.get('memory'), pod_stats.get('network'))
+    # Not the pod cgroup's memory: it still holds what finished containers left charged to it (the
+    # page cache of an init container that copied files, for one), which heapster's sum of the
+    # running containers did not count. `aggregate` sums the containers' instead. The CPU and
+    # network rates of the pod cgroup and of its sandbox are heapster's.
+    _put_stats(pod_set, pod_stats.get('cpu'), None, pod_stats.get('network'))
     sets[pod_key(namespace, name)] = pod_set
 
     spec_containers = _running_spec_containers(pod)
@@ -359,10 +363,9 @@ def aggregate(sets):
     """heapster's pod and node aggregators.
 
     A pod takes the sum of its containers' gauges and rates for every metric it has no value of its
-    own for: the requests and limits always, and its usage only where the summary has no pod-level
-    stats. heapster summed the containers onto the pause container's values; the pod-level stats
-    are that sum already, from the pod's cgroup. A node takes the sum of its pods' requests and
-    limits.
+    own for: the memory, the requests and the limits always, and the CPU rate where the summary has
+    no pod-level CPU. heapster summed the containers onto the pause container's values. A node takes
+    the sum of its pods' requests and limits.
     """
     sums = {}
     for key, metric_set in sets.items():
