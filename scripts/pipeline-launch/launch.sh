@@ -1341,24 +1341,38 @@ function symlink_common_locations {
       fi
       user_create_home "$_OWNER" "$_OWNER_HOME"
 
+      # CP_HOME_SYMLINKS_DISABLED skips every symlink below, CP_HOME_CLOUD_DATA_SYMLINK_DISABLED and
+      # CP_HOME_WORKDIR_SYMLINK_DISABLED skip one each. A disabled symlink is not created, and one that is already
+      # in the home dir is left as it is. The /cloud-data/ and $SHARED_WORK_FOLDER folders are created either way.
+
       # Create symlinks to /cloud-data with mounted buckets into account's home dir
       mkdir -p /cloud-data/
-      if [ -L $_OWNER_HOME/cloud-data ]; then
-        unlink $_OWNER_HOME/cloud-data
+      if check_cp_cap CP_HOME_SYMLINKS_DISABLED || check_cp_cap CP_HOME_CLOUD_DATA_SYMLINK_DISABLED; then
+        echo "Symlink $_OWNER_HOME/cloud-data is disabled, it will not be created"
+      else
+        if [ -L $_OWNER_HOME/cloud-data ]; then
+          unlink $_OWNER_HOME/cloud-data
+        fi
+        [ -d /cloud-data/ ] && ln -s -f /cloud-data/ $_OWNER_HOME/cloud-data || echo "/cloud-data/ not found, no buckets will be available"
       fi
-      [ -d /cloud-data/ ] && ln -s -f /cloud-data/ $_OWNER_HOME/cloud-data || echo "/cloud-data/ not found, no buckets will be available"
 
       # Create symlinks to /common with cluster share fs into account's home dir
       mkdir -p "$SHARED_WORK_FOLDER"
-      if [ -L $_OWNER_HOME/workdir ]; then
-        unlink $_OWNER_HOME/workdir
+      if check_cp_cap CP_HOME_SYMLINKS_DISABLED || check_cp_cap CP_HOME_WORKDIR_SYMLINK_DISABLED; then
+        echo "Symlink $_OWNER_HOME/workdir is disabled, it will not be created"
+      else
+        if [ -L $_OWNER_HOME/workdir ]; then
+          unlink $_OWNER_HOME/workdir
+        fi
+        [ -d $SHARED_WORK_FOLDER ] && ln -s -f $SHARED_WORK_FOLDER $_OWNER_HOME/workdir || echo "$SHARED_WORK_FOLDER not found, no shared fs will be available in $_OWNER_HOME"
       fi
-      [ -d $SHARED_WORK_FOLDER ] && ln -s -f $SHARED_WORK_FOLDER $_OWNER_HOME/workdir || echo "$SHARED_WORK_FOLDER not found, no shared fs will be available in $_OWNER_HOME"
 
       # Create symlinks to /code-repository with gitfs repository into account's home dir
       local _REPOSITORY_MOUNT_SRC="${REPOSITORY_MOUNT}/${PIPELINE_NAME}/current"
       local _REPOSITORY_HOME="$_OWNER_HOME/code-repository"
-      if [ ! -z "$GIT_REPO" ] && [ -d "$_REPOSITORY_MOUNT_SRC" ]; then
+      if check_cp_cap CP_HOME_SYMLINKS_DISABLED; then
+            echo "Symlinks in $_OWNER_HOME are disabled, no code repository symlink will be created"
+      elif [ ! -z "$GIT_REPO" ] && [ -d "$_REPOSITORY_MOUNT_SRC" ]; then
             if [ -L "$_REPOSITORY_HOME/${PIPELINE_NAME}" ]; then
                   unlink "$_REPOSITORY_HOME/${PIPELINE_NAME}"
             fi
