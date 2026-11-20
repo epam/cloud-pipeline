@@ -18,6 +18,9 @@ import re
 from dataclasses import dataclass
 
 SERVICE_ACCOUNT_DIR = '/var/run/secrets/kubernetes.io/serviceaccount'
+# The indices the other writers keep in cp-heapster-elk, which the API reads and deletes by prefix:
+# heapster's, the monitoring service's GPU stats and the tinyproxy network events.
+_OTHER_INDEX_PREFIXES = ('heapster-', 'cp-gpu-monitor-', 'cp-network-events-')
 _DURATION = re.compile(r'^(\d+)(ms|s|m|h)?$')
 _DURATION_SECONDS = {'ms': 0.001, 's': 1, 'm': 60, 'h': 3600, None: 1}
 
@@ -95,10 +98,13 @@ def from_env(env):
     index = _first(env, 'CP_METRICS_COLLECTOR_INDEX', default='heapster')
     if not re.match(r'^[a-z0-9][a-z0-9_.-]*$', index):
         raise ConfigError('Not a valid index name: %r' % index)
-    if index.startswith('heapster-'):
+    if index != 'heapster' and any(index.startswith(prefix) or prefix.startswith(index + '-')
+                                   for prefix in _OTHER_INDEX_PREFIXES):
         # The API takes every index starting with `heapster-` for a day of heapster's and parses the
         # rest as the date: `heapster-cmp-YYYY.MM.dd` would stop its retention and fail its charts.
-        raise ConfigError('An index name must be `heapster` or must not start with `heapster-`: %r' % index)
+        # A name like `cp` would put this collector's template (`cp-*`) on the GPU stats indices.
+        raise ConfigError('The index name %r reaches the indices of another writer (%s): choose another'
+                          % (index, ', '.join(p + '*' for p in _OTHER_INDEX_PREFIXES)))
     timeout = float(_first(env, 'CP_METRICS_COLLECTOR_TIMEOUT', default=str(min(10, resolution / 2))))
     if timeout <= 0 or timeout >= resolution:
         raise ConfigError('The timeout must be positive and shorter than the resolution: %s' % timeout)

@@ -293,9 +293,11 @@ def _build_pod(sets, pod_stats, common, pods, namespaces, image_device):
     pod_set = MetricSet(labels=labels, start_time=pod_stats.get('startTime'))
     # Not the pod cgroup's memory: it still holds what finished containers left charged to it (the
     # page cache of an init container that copied files, for one), which heapster's sum of the
-    # running containers did not count. `aggregate` sums the containers' instead. The CPU and
+    # running containers did not count. `aggregate` sums the containers' instead, unless none runs
+    # (between the restarts of a crashing one), when the cgroup's is all there is. The CPU and
     # network rates of the pod cgroup and of its sandbox are heapster's.
-    _put_stats(pod_set, pod_stats.get('cpu'), None, pod_stats.get('network'))
+    memory = pod_stats.get('memory') if not pod_stats.get('containers') else None
+    _put_stats(pod_set, pod_stats.get('cpu'), memory, pod_stats.get('network'))
     sets[pod_key(namespace, name)] = pod_set
 
     spec_containers = _running_spec_containers(pod)

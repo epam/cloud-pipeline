@@ -51,7 +51,7 @@ def test_own_settings_win():
         ('http://other:9200', 'cp-metrics', 'https://api:6443', 1)
 
 
-@pytest.mark.parametrize('index', ['heapster', 'heapsterx', 'cp-metrics-collector', 'kubelet-heapster'])
+@pytest.mark.parametrize('index', ['heapster', 'heapsterx', 'cp-metrics-collector', 'kubelet-heapster', 'cpx'])
 def test_index_names_the_api_leaves_alone(index):
     assert config.from_env(dict(POD, CP_METRICS_COLLECTOR_INDEX=index)).index == index
 
@@ -67,6 +67,10 @@ def test_ipv6_service_host():
     dict(POD, CP_METRICS_COLLECTOR_INDEX='Heapster'),
     dict(POD, CP_METRICS_COLLECTOR_INDEX='heapster-cmp'),
     dict(POD, CP_METRICS_COLLECTOR_INDEX='heapster-'),
+    dict(POD, CP_METRICS_COLLECTOR_INDEX='cp'),
+    dict(POD, CP_METRICS_COLLECTOR_INDEX='cp-gpu'),
+    dict(POD, CP_METRICS_COLLECTOR_INDEX='cp-gpu-monitor'),
+    dict(POD, CP_METRICS_COLLECTOR_INDEX='cp-network-events-x'),
     dict(POD, CP_METRICS_COLLECTOR_TIMEOUT='30'),
     dict(POD, CP_METRICS_COLLECTOR_THREADS='0'),
     dict(POD, CP_METRICS_COLLECTOR_PORT='x'),

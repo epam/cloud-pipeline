@@ -27,9 +27,10 @@ with the window's end, as heapster did.
   `pod_id`, `namespace_name`, `namespace_id` for a pod; also `container_name` and
   `container_base_image` for a container.
 - The index is created with heapster's mapping when it does not exist, and gets the aliases
-  `heapster-cpu`, `heapster-memory`, `heapster-network` and `heapster-filesystem`. An index template,
-  `cp-metrics-collector-heapster` for `heapster-*`, holds the same: an index deleted during the day
-  comes back with the fields the readers query, rather than with Elasticsearch's dynamic mapping.
+  `heapster-cpu`, `heapster-memory`, `heapster-network` and `heapster-filesystem`. It is checked
+  before every batch, as heapster did: one deleted during the day, or lost with Elasticsearch's data,
+  is created again, after the index template `cp-metrics-collector-heapster` for `heapster-*`, which
+  holds the same mapping and aliases.
 
 The metrics, and where they come from:
 
@@ -86,7 +87,9 @@ start time is the same. `cpu/usage_rate` is an integer, `1000 * delta ns / delta
 - The API server: `GET /api/v1/nodes`, `/api/v1/pods` and `/api/v1/namespaces`, with
   `resourceVersion=0`, so the API server answers from its cache. When it does not answer, the last
   node and pod lists stand in for up to 10 minutes, as heapster wrote on from its informers' caches;
-  without the namespaces only `namespace_id` is missing.
+  without the namespaces only `namespace_id` is missing. That carries the collector through an API
+  server restart. A longer outage stops the scrapes sooner anyway: the kubelets check the token with
+  the API server, and keep the answer for a few minutes only (2 by default).
 - Each Ready node's kubelet, at its InternalIP and the port in `status.daemonEndpoints`:
   `/stats/summary` and `/metrics/cadvisor`, with the service account token. Up to
   `CP_METRICS_COLLECTOR_THREADS` nodes at once.
@@ -114,7 +117,7 @@ The `CP_HEAPSTER_*` and `CP_KUBE_*` ones come from `cp-config-global`.
 |---|---|---|
 | `CP_METRICS_COLLECTOR_RESOLUTION` | `CP_HEAPSTER_METRIC_RESOLUTION`, else `30s` | the batch interval: `30`, `30s`, `1m` |
 | `CP_METRICS_COLLECTOR_ELASTIC_URL` | `CP_HEAPSTER_ELK_INTERNAL_SCHEME`://`CP_HEAPSTER_ELK_INTERNAL_HOST`:`CP_HEAPSTER_ELK_INTERNAL_PORT` | |
-| `CP_METRICS_COLLECTOR_INDEX` | `heapster` | the indices are `<index>-YYYY.MM.dd` |
+| `CP_METRICS_COLLECTOR_INDEX` | `heapster` | the indices are `<index>-YYYY.MM.dd`; a name that reaches `heapster-*`, `cp-gpu-monitor-*` or `cp-network-events-*` is refused |
 | `CP_METRICS_COLLECTOR_CLUSTER_NAME` | `default` | `MetricsTags.cluster_name` |
 | `CP_METRICS_COLLECTOR_KUBELET_PORT` | `CP_KUBE_KUBELET_PORT`, else `10250` | for a node that reports no port |
 | `CP_METRICS_COLLECTOR_KUBELET_CA_FILE` | none: not verified | |
@@ -141,7 +144,9 @@ never write to the same indices: the API would average both.
 
 Run the collector under another index name. The collector refuses one that starts with
 `heapster-`: the API takes every such index for a day of heapster's and parses the rest of its name
-as the date, which would stop its index retention and fail the node and run charts.
+as the date, which would stop its index retention and fail the node and run charts. It also refuses
+the names whose indices or template would reach the GPU stats or the network events in the same
+Elasticsearch (`cp`, `cp-gpu-monitor`).
 
 ```bash
 export CP_DOCKER_DIST_SRV=... CP_HEAPSTER_VERSION=... CP_METRICS_COLLECTOR_INDEX=cp-metrics-collector
@@ -158,6 +163,8 @@ the rows that differ by more percent, or that one side lacks.
 
 ### 2. The switch
 
+In the same shell as step 1, so that the image variables are still set:
+
 ```bash
 kubectl delete deployment cp-heapster
 export CP_METRICS_COLLECTOR_INDEX=
@@ -169,7 +176,16 @@ Then remove what the comparison left, which the API does not delete: the indices
 on `cp-heapster-elk`). `vm-monitor` still expects a `cp-heapster` deployment
 (`monitor.k8s.deployment.names`) and reports it missing until that list changes.
 
-Where heapster never ran, the switch alone is the installation.
+Where heapster does not run, there is nothing to compare or switch:
+
+```bash
+export CP_DOCKER_DIST_SRV=... CP_HEAPSTER_VERSION=... CP_METRICS_COLLECTOR_INDEX=
+envsubst < cp-metrics-collector-sa.yaml | kubectl apply -f -
+envsubst < cp-metrics-collector-dpl.yaml | kubectl apply -f -
+```
+
+It runs on the node labelled `cloud-pipeline/cp-heapster=true`, which `install.sh` labels whether
+heapster is installed or not.
 
 ## Tests
 

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import json
+import logging
 
 import pytest
 
@@ -57,7 +58,7 @@ def test_creates_the_index_with_aliases_then_writes():
     writer = elastic.ElasticWriter(ES + '/', 'heapster', session, 5)
     assert writer.write(EPOCH, DOCS) == 0
     methods = [(method, url.replace(ES, '')) for method, url, _ in session.calls]
-    assert methods == [('PUT', '/_template/cp-metrics-collector-heapster'), ('HEAD', '/' + INDEX),
+    assert methods == [('HEAD', '/' + INDEX), ('PUT', '/_template/cp-metrics-collector-heapster'),
                        ('PUT', '/' + INDEX), ('GET', '/%s/_alias' % INDEX), ('POST', '/_aliases'), ('POST', '/_bulk')]
     assert json.loads(session.calls[2][2]['data']) == index_mapping()
     aliases = json.loads(session.calls[4][2]['data'])['actions']
@@ -82,8 +83,10 @@ def test_an_existing_index_is_checked_once_and_missing_aliases_added():
     writer.write(EPOCH, DOCS)
     writer.write(EPOCH + 30, DOCS)
     methods = [(method, url.replace(ES, '')) for method, url, _ in session.calls]
-    assert methods == [('PUT', '/_template/cp-metrics-collector-heapster'), ('HEAD', '/' + INDEX),
-                       ('GET', '/%s/_alias' % INDEX), ('POST', '/_aliases'), ('POST', '/_bulk'), ('POST', '/_bulk')]
+    # The index is checked before every batch, as heapster did; the template and aliases once.
+    assert methods == [('HEAD', '/' + INDEX), ('PUT', '/_template/cp-metrics-collector-heapster'),
+                       ('GET', '/%s/_alias' % INDEX), ('POST', '/_aliases'), ('POST', '/_bulk'),
+                       ('HEAD', '/' + INDEX), ('POST', '/_bulk')]
     assert json.loads(session.calls[3][2]['data']) == {
         'actions': [{'add': {'index': INDEX, 'alias': 'heapster-filesystem'}}]}
 
@@ -102,12 +105,28 @@ def test_a_failed_template_is_tried_again_and_nothing_is_written():
     writer = elastic.ElasticWriter(ES, 'heapster', session, 5)
     with pytest.raises(elastic.ElasticError):
         writer.write(EPOCH, DOCS)
-    assert [url for _, url, _ in session.calls] == [ES + '/_template/cp-metrics-collector-heapster']
+    assert [url for _, url, _ in session.calls] == [ES + '/' + INDEX, ES + '/_template/cp-metrics-collector-heapster']
     assert writer.write(EPOCH, DOCS) == 0
     assert [method for method, _, _ in session.calls].count('PUT') == 3  # template twice, then the index
 
 
+def test_an_index_lost_during_the_day_comes_back_with_the_template(caplog):
+    caplog.set_level(logging.INFO, logger='metrics_collector.elastic')
+    heads = [FakeResponse(404), FakeResponse(200), FakeResponse(404)]
+    session = FakeSession(_routes({('HEAD', ES + '/' + INDEX): heads}))
+    writer = elastic.ElasticWriter(ES, 'heapster', session, 5)
+    for epoch in (EPOCH, EPOCH + 30, EPOCH + 60):
+        writer.write(epoch, DOCS)
+    methods = [(method, url.replace(ES, '')) for method, url, _ in session.calls]
+    # An Elasticsearch that came back empty lost the template too: both are put back.
+    assert methods[-6:] == [('HEAD', '/' + INDEX), ('PUT', '/_template/cp-metrics-collector-heapster'),
+                            ('PUT', '/' + INDEX), ('GET', '/%s/_alias' % INDEX), ('POST', '/_aliases'),
+                            ('POST', '/_bulk')]
+    assert [r.getMessage() for r in caplog.records].count('Created the index ' + INDEX) == 2
+
+
 def test_an_index_another_writer_just_created_is_fine(caplog):
+    caplog.set_level(logging.INFO, logger='metrics_collector.elastic')
     session = FakeSession(_routes({('PUT', ES + '/' + INDEX): FakeResponse(
         400, text='{"error":{"type":"index_already_exists_exception"}}')}))
     assert elastic.ElasticWriter(ES, 'heapster', session, 5).write(EPOCH, DOCS) == 0

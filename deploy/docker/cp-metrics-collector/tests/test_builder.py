@@ -270,6 +270,16 @@ def test_pod_memory_is_its_running_containers_not_its_cgroup(cluster_1_15):
     assert sets[builder.pod_key('kube-system', 'canal-bgg86')].values['memory/working_set'] == containers
 
 
+def test_pod_with_no_running_container_keeps_its_cgroups_memory(cluster_1_15):
+    scrapes = cluster_1_15.scrapes(1)
+    stats = next(p for p in scrapes[0].summary['pods'] if p['podRef']['name'] == 'mc-load')
+    stats['containers'] = []
+    sets = builder.build(scrapes, cluster_1_15.pods, cluster_1_15.namespaces)
+    builder.aggregate(sets)
+    assert sets[builder.pod_key('default', 'mc-load')].values['memory/working_set'] == \
+        stats['memory']['workingSetBytes']
+
+
 def test_pod_without_pod_level_stats_sums_its_containers(cluster_1_15):
     scrapes = cluster_1_15.scrapes(2)
     for pod in scrapes[0].summary['pods']:

@@ -17,9 +17,11 @@
 The index is `<index>-YYYY.MM.dd` of the batch time in UTC, created with heapster's mapping when it
 does not exist, and carries the aliases `<index>-<family>`. The family is the document type.
 
-An index template for `<index>-*` holds the same mapping and aliases: an index deleted during the day
-is created again by the next bulk request, and without the template Elasticsearch would map it
-dynamically, with no `.raw` fields for the readers to match until the next day's index.
+As heapster did, the index is checked before every batch. A missing one, a new day's or one that an
+Elasticsearch which lost its data no longer has, is created again, after the index template for
+`<index>-*`, which holds the same mapping and aliases, is put back too. Without the template, an
+index deleted between the check and the bulk request would be mapped dynamically by Elasticsearch,
+with no `.raw` fields for the readers to match until the next day's index.
 """
 
 import json
@@ -67,16 +69,13 @@ class ElasticWriter:
         if not docs:
             return 0
         name = index_name(self._index, epoch_seconds)
-        self._ensure_template()
         self._ensure_index(name)
         rejected = 0
         for start in range(0, len(docs), self._bulk_size):
             rejected += self._bulk(name, docs[start:start + self._bulk_size])
         return rejected
 
-    def _ensure_template(self):
-        if self._template_ready:
-            return
+    def _put_template(self):
         response = self._request('PUT', '/_template/' + template_name(self._index),
                                  data=json.dumps(index_template(self._index)))
         if response.status_code >= 300:
@@ -85,10 +84,10 @@ class ElasticWriter:
         self._template_ready = True
 
     def _ensure_index(self, name):
-        if name in self._ready:
-            return
         response = self._request('HEAD', '/' + name)
         if response.status_code == 404:
+            self._put_template()
+            self._ready.discard(name)
             response = self._request('PUT', '/' + name, data=json.dumps(index_mapping()))
             if response.status_code < 300:
                 logger.info('Created the index %s', name)
@@ -97,6 +96,10 @@ class ElasticWriter:
                                                                           response.text[:500]))
         elif response.status_code >= 300:
             raise ElasticError('Cannot check the index %s: %s' % (name, response.status_code))
+        elif not self._template_ready:
+            self._put_template()
+        if name in self._ready:
+            return
         self._ensure_aliases(name)
         # Forget the earlier days' indices: the names differ only in the date, so they sort by it.
         self._ready = {ready for ready in self._ready if ready >= name}
