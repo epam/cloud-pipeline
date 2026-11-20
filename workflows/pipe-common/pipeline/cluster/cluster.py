@@ -20,6 +20,8 @@ from . import utils
 
 MAX_RETRY_COUNT = 5
 WAITING_DELAY = 3
+QSTAT_WAITING_DELAY = 60
+QACCT_RETRY_COUNT = 100
 
 
 class AbstractCluster(object):
@@ -90,8 +92,8 @@ class SGECluster(AbstractCluster):
                            .format(MAX_RETRY_COUNT, job_command, run_job_exit_code, run_job_result, run_job_error))
 
     def _is_job_in_queue(self, job_identifier):
-        qacct_command = self.QSTAT_CMD_TEMPLATE % job_identifier
-        _, _, exit_code = utils.run(qacct_command)
+        qstat_command = self.QSTAT_CMD_TEMPLATE % job_identifier
+        _, _, exit_code = utils.run(qstat_command)
         return exit_code == 0
 
     def _verify_error_state(self, job_identifier):
@@ -104,9 +106,15 @@ class SGECluster(AbstractCluster):
             raise RuntimeError("Job is in error state. %s" % error_reason)
 
     def _find_job(self, job_identifier):
-        while True:
-            sleep(WAITING_DELAY)
+        while self._is_job_in_queue(job_identifier):
             self._verify_error_state(job_identifier)
+            sleep(QSTAT_WAITING_DELAY)
+            continue
+        retry_count = 0
+        qacct_output = ""
+        while retry_count < QACCT_RETRY_COUNT:
+            retry_count += 1
+            sleep(WAITING_DELAY)
             qacct_command = self.QACCT_CMD_TEMPLATE % job_identifier
             qacct_output, _, exit_code = utils.run(qacct_command)
             if exit_code == 0:
