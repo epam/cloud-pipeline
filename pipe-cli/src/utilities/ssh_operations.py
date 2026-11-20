@@ -39,7 +39,12 @@ from src.utilities.pipe_shell import plain_shell, interactive_shell, PYTHON3
 from src.utilities.platform_utilities import is_windows, is_mac
 from src.api.pipeline_run import PipelineRun
 from src.api.preferenceapi import PreferenceAPI
-from urllib.parse import urlparse
+
+try:
+    from urllib.parse import urlparse  # Python 3
+except ImportError:
+    # noinspection PyUnresolvedReferences
+    from urlparse import urlparse  # Python 2
 
 DEFAULT_SSH_PORT = 22
 DEFAULT_SSH_USER = 'root'
@@ -66,18 +71,20 @@ class TunnelError(Exception):
 
 class PasswordlessSSHConfig:
 
-    def __init__(self, run_id, conn_info, ssh_users=None, ssh_path=None):
+    def __init__(self, run_id, conn_info, ssh_putty, ssh_users=None, ssh_path=None):
         self.run_ssh_mode = resolve_run_ssh_mode(conn_info)
         self.run_owner = conn_info.owner.split('@')[0]
         _non_unique_users = ssh_users or [resolve_run_ssh_user(self.run_ssh_mode, self.run_owner)]
         self.users = list(set(_non_unique_users))
         self.user = _non_unique_users[0]
         self.key_name = 'pipeline-{}-{}-{}'.format(run_id, int(time.time()), random.randint(0, sys.maxsize))
+        self.putty = ssh_putty
 
         self.remote_keys_path = '/root/.pipe/.keys'
         self.remote_private_key_path = '{}/{}'.format(self.remote_keys_path, self.key_name)
         self.remote_public_key_path = '{}.pub'.format(self.remote_private_key_path)
-        self.remote_ppk_key_path = '{}.ppk'.format(self.remote_private_key_path)
+        if self.putty:
+            self.remote_ppk_key_path = '{}.ppk'.format(self.remote_private_key_path)
         self.remote_host_rsa_public_key_path = '/etc/ssh/ssh_host_rsa_key.pub'
         self.remote_host_ed25519_public_key_path = '/etc/ssh/ssh_host_ed25519_key.pub'
         self.remote_authorized_users = self.users
@@ -85,7 +92,8 @@ class PasswordlessSSHConfig:
         self.local_keys_path = os.path.join(os.path.expanduser('~'), '.pipe', '.keys')
         self.local_private_key_path = os.path.join(self.local_keys_path, self.key_name)
         self.local_public_key_path = '{}.pub'.format(self.local_private_key_path)
-        self.local_ppk_key_path = '{}.ppk'.format(self.local_private_key_path)
+        if self.putty:
+            self.local_ppk_key_path = '{}.ppk'.format(self.local_private_key_path)
         self.local_host_ed25519_public_key_path = os.path.join(self.local_keys_path,
                                                                '{}_{}'.format(self.key_name,
                                                                               'ssh_host_ed25519_key.pub'))
@@ -94,9 +102,10 @@ class PasswordlessSSHConfig:
         self.local_openssh_config_path = os.path.join(self.local_openssh_path, 'config')
         self.local_openssh_known_hosts_path = os.path.join(self.local_openssh_path, 'known_hosts')
 
-        self.local_putty_registry_path = r'Software\SimonTatham\PuTTY'
-        self.local_putty_sessions_registry_path = r'{}\{}'.format(self.local_putty_registry_path, 'Sessions')
-        self.local_putty_ssh_host_keys_registry_path = r'{}\{}'.format(self.local_putty_registry_path, 'SshHostKeys')
+        if self.putty:
+            self.local_putty_registry_path = r'Software\SimonTatham\PuTTY'
+            self.local_putty_sessions_registry_path = r'{}\{}'.format(self.local_putty_registry_path, 'Sessions')
+            self.local_putty_ssh_host_keys_registry_path = r'{}\{}'.format(self.local_putty_registry_path, 'SshHostKeys')
 
 
 class TunnelArgs:
@@ -481,7 +490,7 @@ def parse_scp_location(location):
 
 
 def create_tunnel(host_id, local_ports_str, remote_ports_str, connection_timeout,
-                  ssh, ssh_path, ssh_host, ssh_users, ssh_keep, direct, log_file, log_level,
+                  ssh, ssh_putty, ssh_path, ssh_host, ssh_users, ssh_keep, direct, log_file, log_level,
                   timeout, timeout_stop, foreground,
                   keep_existing, keep_same, replace_existing, replace_different, ignore_owner, ignore_existing,
                   retries, region, parse_tunnel_args):
@@ -512,7 +521,7 @@ def create_tunnel(host_id, local_ports_str, remote_ports_str, connection_timeout
         check_local_ports(local_ports)
     if run_id:
         create_tunnel_to_run(run_id, local_ports, remote_ports, connection_timeout,
-                             ssh, ssh_path, ssh_host, ssh_users, ssh_keep, direct, log_file, log_level,
+                             ssh, ssh_putty, ssh_path, ssh_host, ssh_users, ssh_keep, direct, log_file, log_level,
                              timeout, foreground, retries, region)
     else:
         create_tunnel_to_host(host_id, local_ports, remote_ports, connection_timeout,
@@ -753,7 +762,7 @@ def get_flag_value(proc_args, arg_index, arg_names):
 
 
 def create_tunnel_to_run(run_id, local_ports, remote_ports, connection_timeout,
-                         ssh, ssh_path, ssh_host, ssh_users, ssh_keep, direct, log_file, log_level,
+                         ssh, ssh_putty, ssh_path, ssh_host, ssh_users, ssh_keep, direct, log_file, log_level,
                          timeout, foreground, retries, region=None):
     conn_info = get_conn_info(run_id, region)
     if conn_info.sensitive:
@@ -762,7 +771,7 @@ def create_tunnel_to_run(run_id, local_ports, remote_ports, connection_timeout,
     if foreground:
         if ssh:
             create_foreground_tunnel_with_ssh(run_id, local_ports, remote_ports, connection_timeout, conn_info,
-                                              ssh_path, ssh_users, ssh_keep,
+                                              ssh_putty, ssh_path, ssh_users, ssh_keep,
                                               remote_host, direct, log_file, log_level, retries)
         else:
             create_foreground_tunnel(run_id, local_ports, remote_ports, connection_timeout, conn_info,
@@ -916,25 +925,25 @@ def is_tunnel_listen_all_ports(tunnel_pid, local_ports, serving_procs):
 
 
 def create_foreground_tunnel_with_ssh(run_id, local_ports, remote_ports, connection_timeout, conn_info,
-                                      ssh_path, ssh_users, ssh_keep, remote_host, direct, log_file, log_level, retries):
+                                      ssh_putty, ssh_path, ssh_users, ssh_keep, remote_host, direct, log_file, log_level, retries):
     def _establish_tunnel():
         create_foreground_tunnel(run_id, local_ports, remote_ports, connection_timeout, conn_info,
                                  remote_host, direct, log_level, retries)
     if is_windows():
         configure_ssh_and_execute_on_windows(run_id, local_ports[0], remote_ports[0], conn_info,
-                                             ssh_users, ssh_keep, remote_host,
+                                             ssh_putty, ssh_users, ssh_keep, remote_host,
                                              retries, _establish_tunnel)
     else:
         configure_ssh_and_execute_on_linux(run_id, local_ports[0], remote_ports[0], conn_info,
-                                           ssh_path, ssh_users, ssh_keep, remote_host, log_file,
+                                           ssh_putty, ssh_path, ssh_users, ssh_keep, remote_host, log_file,
                                            retries, _establish_tunnel)
 
 
 def configure_ssh_and_execute_on_windows(run_id, local_port, remote_port, conn_info,
-                                         ssh_users, ssh_keep, remote_host,
+                                         ssh_putty, ssh_users, ssh_keep, remote_host,
                                          retries, func):
-    logging.info('Configuring putty and openssh passwordless ssh...')
-    passwordless_config = PasswordlessSSHConfig(run_id, conn_info, ssh_users)
+    logging.info('Configuring openssh{} passwordless ssh...'.format(' and putty' if ssh_putty else ''))
+    passwordless_config = PasswordlessSSHConfig(run_id, conn_info, ssh_putty, ssh_users)
     if not os.path.exists(passwordless_config.local_openssh_path):
         os.makedirs(passwordless_config.local_openssh_path, mode=stat.S_IRWXU)
     if not os.path.exists(passwordless_config.local_keys_path):
@@ -943,8 +952,9 @@ def configure_ssh_and_execute_on_windows(run_id, local_port, remote_port, conn_i
         logging.info('Initializing passwordless ssh %s:%s:%s...', local_port, remote_host, remote_port)
         generate_remote_openssh_and_putty_keys(run_id, retries, passwordless_config)
         copy_remote_putty_and_private_keys(run_id, retries, passwordless_config)
-        add_record_to_putty_config(local_port, remote_host, passwordless_config)
-        copy_remote_openssh_public_host_key_to_putty_known_hosts(run_id, local_port, retries, passwordless_config)
+        if passwordless_config.putty:
+            add_record_to_putty_config(local_port, remote_host, passwordless_config)
+            copy_remote_openssh_public_host_key_to_putty_known_hosts(run_id, local_port, retries, passwordless_config)
         add_record_to_openssh_config(local_port, remote_host, passwordless_config)
         copy_remote_openssh_public_key_to_openssh_known_hosts(run_id, local_port, retries, passwordless_config)
         func()
@@ -957,18 +967,19 @@ def configure_ssh_and_execute_on_windows(run_id, local_port, remote_port, conn_i
             remove_remote_openssh_and_putty_keys(run_id, retries, passwordless_config)
             remove_remote_openssh_public_key_from_openssh_known_hosts(local_port, passwordless_config)
             remove_record_from_openssh_config(remote_host, passwordless_config)
-            remove_remote_openssh_host_public_key_from_putty_known_hosts(local_port, passwordless_config)
-            remove_record_from_putty_config(remote_host, passwordless_config)
+            if passwordless_config.putty:
+                remove_remote_openssh_host_public_key_from_putty_known_hosts(local_port, passwordless_config)
+                remove_record_from_putty_config(remote_host, passwordless_config)
             remove_ssh_keys(passwordless_config.local_private_key_path,
                             passwordless_config.local_ppk_key_path,
                             passwordless_config.local_host_ed25519_public_key_path)
 
 
-def configure_ssh_and_execute_on_linux(run_id, local_port, remote_port, conn_info,
+def configure_ssh_and_execute_on_linux(run_id, local_port, remote_port, conn_info, use_putty,
                                        ssh_path, ssh_users, ssh_keep, remote_host, log_file,
                                        retries, func):
     logging.info('Configuring openssh passwordless ssh...')
-    passwordless_config = PasswordlessSSHConfig(run_id, conn_info, ssh_users, ssh_path)
+    passwordless_config = PasswordlessSSHConfig(run_id, conn_info, use_putty, ssh_users, ssh_path)
     if not os.path.exists(passwordless_config.local_openssh_path):
         os.makedirs(passwordless_config.local_openssh_path, mode=stat.S_IRWXU)
     if not os.path.exists(passwordless_config.local_keys_path):
@@ -977,6 +988,9 @@ def configure_ssh_and_execute_on_linux(run_id, local_port, remote_port, conn_inf
         logging.info('Initializing passwordless ssh %s:%s:%s...', local_port, remote_host, remote_port)
         generate_remote_openssh_and_putty_keys(run_id, retries, passwordless_config)
         copy_remote_putty_and_private_keys(run_id, retries, passwordless_config)
+        if passwordless_config.putty:
+            add_record_to_putty_config(local_port, remote_host, passwordless_config)
+            copy_remote_openssh_public_host_key_to_putty_known_hosts(run_id, local_port, retries, passwordless_config)
         add_record_to_openssh_config(local_port, remote_host, passwordless_config)
         copy_remote_openssh_public_key_to_openssh_known_hosts(run_id, local_port, retries, passwordless_config)
         func()
@@ -1121,34 +1135,51 @@ def configure_graceful_exiting():
 
 def generate_remote_openssh_and_putty_keys(run_id, retries, passwordless_config):
     logging.info('Generating tunnel remote ssh keys and copying ssh public key to authorized keys...')
+    # pre_cmd = """
+    # if [ -f "${CP_USR_BIN:-/usr/cpbin}"/puttygen ]; then rm -f "${CP_USR_BIN:-/usr/cpbin}"/puttygen; hash -r; fi
+    # if command -v puttygen > /dev/null && command -v apt-get >/dev/null; then apt-get -y uninstall putty-tools; apt-get clean; hash -r; fi
+    # if command -v puttygen > /dev/null && command -v yum > /dev/null; then yum -y remove putty; yum clean all; hash -r; fi
+    # """
+    # pre_exit_code = run_ssh(run_id, pre_cmd, user=DEFAULT_SSH_USER, retries=retries)
+
+    cmd = """
+        mkdir -p $(dirname {remote_private_key_path})
+        ssh-keygen -t rsa -f {remote_private_key_path} -N "" -q
+        for authorized_user in {authorized_users}; do
+            user_home_path="$(getent passwd "$authorized_user" | cut -d: -f6)"
+            user_openssh_path="$user_home_path/.ssh"
+            user_authorized_keys_path="$user_openssh_path/authorized_keys"
+            mkdir -p "$user_openssh_path"
+            touch "$user_authorized_keys_path"
+            chown -R "$authorized_user:$authorized_user" "$user_openssh_path"
+            chmod 700 "$user_openssh_path"
+            chmod 600 "$user_authorized_keys_path"
+            cat "{remote_public_key_path}" | tee -a "$user_authorized_keys_path" > /dev/null
+        done
+        """.format(remote_public_key_path=passwordless_config.remote_public_key_path,
+                    remote_private_key_path=passwordless_config.remote_private_key_path,
+                    authorized_users=' '.join(passwordless_config.remote_authorized_users))
+    putty_cmd = ''
+    if passwordless_config.putty:
+        logging.info('Generating ppk...')
+        putty_cmd = """
+            if ! command -v puttygen > /dev/null; then
+                wget -q "${{GLOBAL_DISTRIBUTION_URL:-"https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/"}}tools/putty/puttygen.tgz" -O "/tmp/puttygen.tgz"
+                tar -zxf "/tmp/puttygen.tgz" -C "${{CP_USR_BIN:-/usr/cpbin}}"
+                rm -f "/tmp/puttygen.tgz"
+            fi
+            if ! command -v puttygen > /dev/null; then apt-get -y install putty-tools; fi
+            if ! command -v puttygen > /dev/null; then yum -y install putty; fi
+            puttygen {remote_private_key_path} -o {remote_ppk_key_path} -O private
+            """.format(remote_private_key_path=passwordless_config.remote_private_key_path,
+                       remote_ppk_key_path=passwordless_config.remote_ppk_key_path)
+
+    cmd_start_dt = time.time()
     exit_code = run_ssh(run_id,
-                        """
-                        mkdir -p $(dirname {remote_private_key_path})
-                        ssh-keygen -t rsa -f {remote_private_key_path} -N "" -q
-                        for authorized_user in {authorized_users}; do
-                            user_home_path="$(getent passwd "$authorized_user" | cut -d: -f6)"
-                            user_openssh_path="$user_home_path/.ssh"
-                            user_authorized_keys_path="$user_openssh_path/authorized_keys"
-                            mkdir -p "$user_openssh_path"
-                            touch "$user_authorized_keys_path"
-                            chown -R "$authorized_user:$authorized_user" "$user_openssh_path"
-                            chmod 700 "$user_openssh_path"
-                            chmod 600 "$user_authorized_keys_path"
-                            cat "{remote_public_key_path}" | tee -a "$user_authorized_keys_path" > /dev/null
-                        done
-                        if ! command -v puttygen; then
-                            wget -q "${{GLOBAL_DISTRIBUTION_URL:-"https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/"}}tools/putty/puttygen.tgz" -O "/tmp/puttygen.tgz"
-                            tar -zxf "/tmp/puttygen.tgz" -C "${{CP_USR_BIN:-/usr/cpbin}}"
-                            rm -f "/tmp/puttygen.tgz"
-                        fi
-                        if ! command -v puttygen; then apt-get -y install putty-tools; fi
-                        if ! command -v puttygen; then yum -y install putty; fi
-                        puttygen {remote_private_key_path} -o {remote_ppk_key_path} -O private
-                        """.format(remote_public_key_path=passwordless_config.remote_public_key_path,
-                                   remote_private_key_path=passwordless_config.remote_private_key_path,
-                                   remote_ppk_key_path=passwordless_config.remote_ppk_key_path,
-                                   authorized_users=' '.join(passwordless_config.remote_authorized_users)),
+                        cmd + '\n' + putty_cmd,
                         user=DEFAULT_SSH_USER, retries=retries)
+    cmd_end_dt = time.time()
+    # logging.info("... command completed in %s sec.", round(cmd_end_dt - cmd_start_dt, 3))
     if exit_code:
         raise RuntimeError('Generating tunnel remote ssh keys and copying ssh public key to authorized keys '
                            'have failed with {} exit code'
@@ -1176,9 +1207,11 @@ def remove_remote_openssh_and_putty_keys(run_id, retries, passwordless_config):
                        ppk_key_path=passwordless_config.remote_ppk_key_path,
                        authorized_user=remote_authorized_user))
     for key_path in [passwordless_config.remote_public_key_path,
-                     passwordless_config.remote_private_key_path,
-                     passwordless_config.remote_ppk_key_path]:
+                     passwordless_config.remote_private_key_path]:
         remove_ssh_keys_from_run_command += '[ -f {key_path} ] && rm {key_path};'.format(key_path=key_path)
+    if passwordless_config.putty:
+        for key_path in [passwordless_config.remote_ppk_key_path]:
+            remove_ssh_keys_from_run_command += '[ -f {key_path} ] && rm {key_path};'.format(key_path=key_path)
     exit_code = run_ssh(run_id, remove_ssh_keys_from_run_command.rstrip(';'),
                         user=DEFAULT_SSH_USER, retries=retries)
     if exit_code:
@@ -1187,9 +1220,10 @@ def remove_remote_openssh_and_putty_keys(run_id, retries, passwordless_config):
 
 
 def copy_remote_putty_and_private_keys(run_id, retries, passwordless_config):
-    logging.info('Copying remote ppk key...')
-    run_scp_download(run_id, passwordless_config.remote_ppk_key_path, passwordless_config.local_ppk_key_path,
-                     user=DEFAULT_SSH_USER, retries=retries)
+    logging.info('Copying remote private key{}...'.format(' and ppk' if passwordless_config.putty else ''))
+    if passwordless_config.putty:
+        run_scp_download(run_id, passwordless_config.remote_ppk_key_path, passwordless_config.local_ppk_key_path,
+                        user=DEFAULT_SSH_USER, retries=retries)
     run_scp_download(run_id, passwordless_config.remote_private_key_path, passwordless_config.local_private_key_path,
                      user=DEFAULT_SSH_USER, retries=retries)
 
