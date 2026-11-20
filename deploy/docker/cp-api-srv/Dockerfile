@@ -24,7 +24,7 @@ FROM rockylinux/rockylinux:9.8
 # libxcrypt-compat provides libcrypt.so.1, which the crypt module of the bundled Python 3.12 links
 RUN dnf install -y \
                 wget \
-                java-1.8.0-openjdk \
+                java-21-openjdk \
                 zip \
                 unzip \
                 openssl \

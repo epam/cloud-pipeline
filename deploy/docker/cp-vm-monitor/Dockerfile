@@ -17,7 +17,7 @@ FROM rockylinux/rockylinux:9.8
 # Prerequisites
 RUN dnf install -y \
                 wget \
-                java-1.8.0-openjdk \
+                java-21-openjdk \
                 unzip && \
     dnf clean all
 

@@ -73,6 +73,11 @@ local api_endpoint = os.getenv("API_EXTERNAL")
 if not api_endpoint then
     api_endpoint = os.getenv("API")
 end
+
+if api_endpoint.sub(api_endpoint, -1) == "/" then
+    api_endpoint = api_endpoint:sub(1, -2)
+end
+
 local api_uri = api_endpoint .. "/route?url=" .. req_uri .. "&type=FORM"
 
 -- Get list of POST params, if a request from API is received

@@ -318,6 +318,13 @@ docker build    $DOCKERS_SOURCES_PATH/cp-storage-lifecycle-service \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
 docker push "$CP_STORAGE_LIFECYCLE_SERVICE_DIST_NAME"
 
+# Storage Async Task Service
+CP_STORAGE_ASYNC_TASK_SERVICE_DIST_NAME=${CP_STORAGE_ASYNC_TASK_SERVICE_DIST_NAME:-"$CP_DIST_REPO_NAME:storage-async-task-service-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-storage-async-task-service \
+                -t "$CP_STORAGE_ASYNC_TASK_SERVICE_DIST_NAME" \
+                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
+docker push "$CP_STORAGE_ASYNC_TASK_SERVICE_DIST_NAME"
+
 ########################
 # Base tools dockers
 ########################

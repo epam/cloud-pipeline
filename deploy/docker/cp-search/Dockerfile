@@ -18,7 +18,7 @@ FROM rockylinux/rockylinux:9.8
 # yum-utils: package-cleanup for the Lustre client
 RUN dnf install -y \
                 wget \
-                java-1.8.0-openjdk \
+                java-21-openjdk \
                 unzip \
                 sudo \
                 yum-utils \
