@@ -51,6 +51,11 @@ def test_own_settings_win():
         ('http://other:9200', 'cp-metrics', 'https://api:6443', 1)
 
 
+@pytest.mark.parametrize('index', ['heapster', 'heapsterx', 'cp-metrics-collector', 'kubelet-heapster'])
+def test_index_names_the_api_leaves_alone(index):
+    assert config.from_env(dict(POD, CP_METRICS_COLLECTOR_INDEX=index)).index == index
+
+
 def test_ipv6_service_host():
     assert config.from_env({'KUBERNETES_SERVICE_HOST': 'fd00::1'}).kube_url == 'https://[fd00::1]:443'
 
@@ -60,6 +65,8 @@ def test_ipv6_service_host():
     dict(POD, CP_METRICS_COLLECTOR_RESOLUTION='2s'),
     dict(POD, CP_METRICS_COLLECTOR_RESOLUTION='30 seconds'),
     dict(POD, CP_METRICS_COLLECTOR_INDEX='Heapster'),
+    dict(POD, CP_METRICS_COLLECTOR_INDEX='heapster-cmp'),
+    dict(POD, CP_METRICS_COLLECTOR_INDEX='heapster-'),
     dict(POD, CP_METRICS_COLLECTOR_TIMEOUT='30'),
     dict(POD, CP_METRICS_COLLECTOR_THREADS='0'),
     dict(POD, CP_METRICS_COLLECTOR_PORT='x'),

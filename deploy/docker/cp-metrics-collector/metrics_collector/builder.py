@@ -231,6 +231,16 @@ def _spec_values(container):
     }
 
 
+def _running_spec_containers(pod):
+    """{name: spec} of the containers that run beside each other: the pod's containers and its native
+    sidecars (Kubernetes 1.28 and later: init containers with `restartPolicy: Always`), which the
+    summary lists among the containers. heapster's Kubernetes had no sidecars."""
+    spec = (pod or {}).get('spec') or {}
+    containers = list(spec.get('containers') or [])
+    containers += [c for c in spec.get('initContainers') or [] if c.get('restartPolicy') == 'Always']
+    return {container.get('name'): container for container in containers}
+
+
 def build(scrapes, pods, namespaces):
     """The metric sets of one batch, keyed as heapster keyed them.
 
@@ -284,8 +294,7 @@ def _build_pod(sets, pod_stats, common, pods, namespaces, image_device):
     _put_stats(pod_set, pod_stats.get('cpu'), pod_stats.get('memory'), pod_stats.get('network'))
     sets[pod_key(namespace, name)] = pod_set
 
-    spec_containers = {container.get('name'): container
-                       for container in ((pod or {}).get('spec') or {}).get('containers') or []}
+    spec_containers = _running_spec_containers(pod)
     for container_stats in pod_stats.get('containers') or []:
         container_name = container_stats.get('name')
         if not container_name:

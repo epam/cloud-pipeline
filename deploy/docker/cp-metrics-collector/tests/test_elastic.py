@@ -36,6 +36,7 @@ def _bulk_ok(kwargs):
 
 def _routes(overrides=None):
     routes = {
+        ('PUT', ES + '/_template/cp-metrics-collector-heapster'): FakeResponse(200, body={'acknowledged': True}),
         ('HEAD', ES + '/' + INDEX): FakeResponse(404),
         ('PUT', ES + '/' + INDEX): FakeResponse(200, body={'acknowledged': True}),
         ('GET', ES + '/%s/_alias' % INDEX): FakeResponse(200, body={INDEX: {'aliases': {}}}),
@@ -56,13 +57,13 @@ def test_creates_the_index_with_aliases_then_writes():
     writer = elastic.ElasticWriter(ES + '/', 'heapster', session, 5)
     assert writer.write(EPOCH, DOCS) == 0
     methods = [(method, url.replace(ES, '')) for method, url, _ in session.calls]
-    assert methods == [('HEAD', '/' + INDEX), ('PUT', '/' + INDEX), ('GET', '/%s/_alias' % INDEX),
-                       ('POST', '/_aliases'), ('POST', '/_bulk')]
-    assert json.loads(session.calls[1][2]['data']) == index_mapping()
-    aliases = json.loads(session.calls[3][2]['data'])['actions']
+    assert methods == [('PUT', '/_template/cp-metrics-collector-heapster'), ('HEAD', '/' + INDEX),
+                       ('PUT', '/' + INDEX), ('GET', '/%s/_alias' % INDEX), ('POST', '/_aliases'), ('POST', '/_bulk')]
+    assert json.loads(session.calls[2][2]['data']) == index_mapping()
+    aliases = json.loads(session.calls[4][2]['data'])['actions']
     assert [a['add']['alias'] for a in aliases] == ['heapster-cpu', 'heapster-filesystem', 'heapster-memory',
                                                     'heapster-network']
-    bulk = session.calls[4][2]
+    bulk = session.calls[5][2]
     assert bulk['headers'] == {'Content-Type': 'application/x-ndjson'}
     lines = bulk['data'].split('\n')
     assert lines[-1] == '' and len(lines) == 5
@@ -81,16 +82,36 @@ def test_an_existing_index_is_checked_once_and_missing_aliases_added():
     writer.write(EPOCH, DOCS)
     writer.write(EPOCH + 30, DOCS)
     methods = [(method, url.replace(ES, '')) for method, url, _ in session.calls]
-    assert methods == [('HEAD', '/' + INDEX), ('GET', '/%s/_alias' % INDEX), ('POST', '/_aliases'),
-                       ('POST', '/_bulk'), ('POST', '/_bulk')]
-    assert json.loads(session.calls[2][2]['data']) == {
+    assert methods == [('PUT', '/_template/cp-metrics-collector-heapster'), ('HEAD', '/' + INDEX),
+                       ('GET', '/%s/_alias' % INDEX), ('POST', '/_aliases'), ('POST', '/_bulk'), ('POST', '/_bulk')]
+    assert json.loads(session.calls[3][2]['data']) == {
         'actions': [{'add': {'index': INDEX, 'alias': 'heapster-filesystem'}}]}
 
 
-def test_an_index_another_writer_just_created_is_fine():
+def test_the_template_has_the_mapping_and_the_aliases():
+    template = elastic.index_template('cp-metrics-collector')
+    assert template['template'] == 'cp-metrics-collector-*'
+    assert template['mappings'] == index_mapping()['mappings']
+    assert set(template['aliases']) == {'cp-metrics-collector-cpu', 'cp-metrics-collector-filesystem',
+                                        'cp-metrics-collector-memory', 'cp-metrics-collector-network'}
+
+
+def test_a_failed_template_is_tried_again_and_nothing_is_written():
+    session = FakeSession(_routes({('PUT', ES + '/_template/cp-metrics-collector-heapster'): [
+        FakeResponse(500, text='busy'), FakeResponse(200, body={'acknowledged': True})]}))
+    writer = elastic.ElasticWriter(ES, 'heapster', session, 5)
+    with pytest.raises(elastic.ElasticError):
+        writer.write(EPOCH, DOCS)
+    assert [url for _, url, _ in session.calls] == [ES + '/_template/cp-metrics-collector-heapster']
+    assert writer.write(EPOCH, DOCS) == 0
+    assert [method for method, _, _ in session.calls].count('PUT') == 3  # template twice, then the index
+
+
+def test_an_index_another_writer_just_created_is_fine(caplog):
     session = FakeSession(_routes({('PUT', ES + '/' + INDEX): FakeResponse(
         400, text='{"error":{"type":"index_already_exists_exception"}}')}))
     assert elastic.ElasticWriter(ES, 'heapster', session, 5).write(EPOCH, DOCS) == 0
+    assert not any('Created the index' in r.getMessage() for r in caplog.records)
 
 
 def test_index_creation_failure_raises():

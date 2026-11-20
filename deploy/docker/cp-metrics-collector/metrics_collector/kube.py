@@ -126,10 +126,12 @@ def is_ready(node):
 
 
 def node_target(node, default_port):
-    """Where to reach a node's kubelet, as heapster chose it; None for a node that is not Ready.
+    """Where to reach a node's kubelet; None for a node that is not Ready, which heapster skipped too.
 
-    The address is the InternalIP, else the LegacyHostIP, else the ExternalIP. The port is the one
-    the kubelet reports in `status.daemonEndpoints`, else `default_port`.
+    The address is the first InternalIP, else the LegacyHostIP, else the ExternalIP, in heapster's
+    order of preference (heapster kept the last InternalIP; the first is the node's primary one).
+    The port is the one the kubelet reports in `status.daemonEndpoints`, else `default_port`;
+    heapster always took its configured port.
     """
     if not is_ready(node):
         return None

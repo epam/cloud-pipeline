@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
 import requests
 
 from metrics_collector.collector import Collector
@@ -23,15 +24,23 @@ from conftest import (CONTROL_PLANE_1_37, FakeResponse, WORKER_1_37, find_docs, 
 class FakeKube:
     def __init__(self, cluster):
         self.cluster = cluster
+        self.errors = {}
+        self.calls = []
+
+    def _answer(self, name, items):
+        self.calls.append(name)
+        if name in self.errors:
+            raise self.errors[name]
+        return items
 
     def nodes(self):
-        return self.cluster.nodes
+        return self._answer('nodes', self.cluster.nodes)
 
     def pods(self):
-        return self.cluster.pod_list
+        return self._answer('pods', self.cluster.pod_list)
 
     def namespaces(self):
-        return self.cluster.namespace_list
+        return self._answer('namespaces', self.cluster.namespace_list)
 
 
 class FakeKubelets:
@@ -63,9 +72,11 @@ class FakeWriter:
         return 0
 
 
-def _collector(cluster):
+def _collector(cluster, clock=None):
     kubelets, writer = FakeKubelets(cluster), FakeWriter()
-    return Collector(FakeKube(cluster), kubelets, writer, 10250, 'default', 4), kubelets, writer
+    collector = Collector(FakeKube(cluster), kubelets, writer, 10250, 'default', 4,
+                          **({'clock': clock} if clock else {}))
+    return collector, kubelets, writer
 
 
 def test_two_batches(cluster):
@@ -128,3 +139,41 @@ def test_nodes_that_are_not_ready_are_not_scraped(cluster_1_37):
     result = collector.collect(1795177230)
     assert (result.nodes, result.scraped) == (1, 1)
     assert not find_docs(writer.batches[0][1], nodename=WORKER_1_37)
+
+
+def test_an_api_server_outage_uses_the_last_lists_for_a_while(cluster_1_37):
+    now = [0.0]
+    collector, kubelets, writer = _collector(cluster_1_37, clock=lambda: now[0])
+    kube = collector._kube
+    collector.collect(1795177230)
+    kube.errors['nodes'] = requests.ConnectionError('refused')
+    kube.calls.clear()
+    now[0] = 600
+    kubelets.scrape = 2
+    result = collector.collect(1795177260)
+    # One failure is enough: the pods and namespaces are not asked again in that batch.
+    assert kube.calls == ['nodes']
+    assert result.scraped == 2
+    _, docs = writer.batches[1]
+    tags = find_docs(docs, 'cpu', type='pod', pod_name='mc-load')[0]['MetricsTags']
+    assert tags['labels'] == 'app:mc-load,runid:12345'
+    now[0] = 601
+    with pytest.raises(requests.ConnectionError):
+        collector.collect(1795177290)
+
+
+def test_a_failing_namespace_list_only_drops_the_namespace_ids(cluster_1_37):
+    collector, _, writer = _collector(cluster_1_37)
+    collector._kube.errors['namespaces'] = requests.HTTPError('403', response=FakeResponse(403))
+    collector.collect(1795177230)
+    _, docs = writer.batches[0]
+    pod_docs = find_docs(docs, 'cpu', type='pod')
+    assert pod_docs and all('namespace_id' not in d['MetricsTags'] for d in pod_docs)
+
+
+def test_without_any_list_yet_an_outage_fails_the_batch(cluster_1_37):
+    collector, _, writer = _collector(cluster_1_37)
+    collector._kube.errors['pods'] = requests.Timeout('slow')
+    with pytest.raises(requests.Timeout):
+        collector.collect(1795177230)
+    assert writer.batches == []

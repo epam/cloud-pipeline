@@ -16,6 +16,10 @@
 
 The index is `<index>-YYYY.MM.dd` of the batch time in UTC, created with heapster's mapping when it
 does not exist, and carries the aliases `<index>-<family>`. The family is the document type.
+
+An index template for `<index>-*` holds the same mapping and aliases: an index deleted during the day
+is created again by the next bulk request, and without the template Elasticsearch would map it
+dynamically, with no `.raw` fields for the readers to match until the next day's index.
 """
 
 import json
@@ -33,6 +37,16 @@ class ElasticError(Exception):
     pass
 
 
+def template_name(index):
+    return 'cp-metrics-collector-' + index
+
+
+def index_template(index):
+    """The body of the template request, in Elasticsearch 5 terms (`template`, not `index_patterns`)."""
+    return dict(index_mapping(), template=index + '-*', order=0,
+                aliases={'%s-%s' % (index, family): {} for family in FAMILIES})
+
+
 def index_name(index, epoch_seconds):
     return '%s-%s' % (index, datetime.fromtimestamp(epoch_seconds, tz=timezone.utc).strftime('%Y.%m.%d'))
 
@@ -46,17 +60,29 @@ class ElasticWriter:
         self._timeout = timeout
         self._bulk_size = bulk_size
         self._ready = set()
+        self._template_ready = False
 
     def write(self, epoch_seconds, docs):
         """Writes [(family, document)]; returns how many Elasticsearch rejected."""
         if not docs:
             return 0
         name = index_name(self._index, epoch_seconds)
+        self._ensure_template()
         self._ensure_index(name)
         rejected = 0
         for start in range(0, len(docs), self._bulk_size):
             rejected += self._bulk(name, docs[start:start + self._bulk_size])
         return rejected
+
+    def _ensure_template(self):
+        if self._template_ready:
+            return
+        response = self._request('PUT', '/_template/' + template_name(self._index),
+                                 data=json.dumps(index_template(self._index)))
+        if response.status_code >= 300:
+            raise ElasticError('Cannot put the index template %s: %s %s' % (
+                template_name(self._index), response.status_code, response.text[:500]))
+        self._template_ready = True
 
     def _ensure_index(self, name):
         if name in self._ready:
@@ -64,10 +90,11 @@ class ElasticWriter:
         response = self._request('HEAD', '/' + name)
         if response.status_code == 404:
             response = self._request('PUT', '/' + name, data=json.dumps(index_mapping()))
-            if response.status_code >= 300 and not any(text in response.text for text in _ALREADY_EXISTS):
+            if response.status_code < 300:
+                logger.info('Created the index %s', name)
+            elif not any(text in response.text for text in _ALREADY_EXISTS):
                 raise ElasticError('Cannot create the index %s: %s %s' % (name, response.status_code,
                                                                           response.text[:500]))
-            logger.info('Created the index %s', name)
         elif response.status_code >= 300:
             raise ElasticError('Cannot check the index %s: %s' % (name, response.status_code))
         self._ensure_aliases(name)

@@ -95,6 +95,10 @@ def from_env(env):
     index = _first(env, 'CP_METRICS_COLLECTOR_INDEX', default='heapster')
     if not re.match(r'^[a-z0-9][a-z0-9_.-]*$', index):
         raise ConfigError('Not a valid index name: %r' % index)
+    if index.startswith('heapster-'):
+        # The API takes every index starting with `heapster-` for a day of heapster's and parses the
+        # rest as the date: `heapster-cmp-YYYY.MM.dd` would stop its retention and fail its charts.
+        raise ConfigError('An index name must be `heapster` or must not start with `heapster-`: %r' % index)
     timeout = float(_first(env, 'CP_METRICS_COLLECTOR_TIMEOUT', default=str(min(10, resolution / 2))))
     if timeout <= 0 or timeout >= resolution:
         raise ConfigError('The timeout must be positive and shorter than the resolution: %s' % timeout)

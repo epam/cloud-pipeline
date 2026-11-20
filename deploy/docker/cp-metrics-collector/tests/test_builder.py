@@ -362,3 +362,28 @@ def test_node_that_is_not_ready_is_not_scraped(cluster_1_37):
         if condition['type'] == 'Ready':
             condition['status'] = 'False'
     assert kube.node_target(node, 10250) is None
+
+
+def test_native_sidecars_count_and_plain_init_containers_do_not(cluster_1_37):
+    pods = copy.deepcopy(cluster_1_37.pods)
+    spec = pods[('default', 'mc-load')]['spec']
+    spec['initContainers'] = [
+        {'name': 'proxy', 'image': 'envoy:1', 'restartPolicy': 'Always',
+         'resources': {'requests': {'cpu': '100m', 'memory': '32Mi'}, 'limits': {'cpu': '200m', 'memory': '64Mi'}}},
+        {'name': 'setup', 'image': 'busybox:1', 'resources': {'limits': {'cpu': '4', 'memory': '1Gi'}}},
+    ]
+    scrapes = cluster_1_37.scrapes(1)
+    worker = next(s for s in scrapes if s.target.name == WORKER_1_37)
+    load = next(p for p in worker.summary['pods'] if p['podRef']['name'] == 'mc-load')
+    burn = next(c for c in load['containers'] if c['name'] == 'burn')
+    load['containers'] += [dict(copy.deepcopy(burn), name='proxy'), dict(copy.deepcopy(burn), name='setup')]
+    sets = builder.build(scrapes, pods, cluster_1_37.namespaces)
+    builder.aggregate(sets)
+    proxy = sets[builder.container_key('default', 'mc-load', 'proxy')]
+    assert proxy.values['cpu/limit'] == 200 and proxy.values['memory/request'] == 32 * 2 ** 20
+    assert proxy.labels['container_base_image'] == 'envoy:1'
+    setup = sets[builder.container_key('default', 'mc-load', 'setup')]
+    assert 'cpu/limit' not in setup.values and 'container_base_image' not in setup.labels
+    pod = sets[builder.pod_key('default', 'mc-load')]
+    assert pod.values['cpu/limit'] == 500 + 200
+    assert pod.values['memory/limit'] == 128 * 2 ** 20 + 64 * 2 ** 20

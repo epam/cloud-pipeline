@@ -27,7 +27,9 @@ with the window's end, as heapster did.
   `pod_id`, `namespace_name`, `namespace_id` for a pod; also `container_name` and
   `container_base_image` for a container.
 - The index is created with heapster's mapping when it does not exist, and gets the aliases
-  `heapster-cpu`, `heapster-memory`, `heapster-network` and `heapster-filesystem`.
+  `heapster-cpu`, `heapster-memory`, `heapster-network` and `heapster-filesystem`. An index template,
+  `cp-metrics-collector-heapster` for `heapster-*`, holds the same: an index deleted during the day
+  comes back with the fields the readers query, rather than with Elasticsearch's dynamic mapping.
 
 The metrics, and where they come from:
 
@@ -36,11 +38,11 @@ The metrics, and where they come from:
 | `cpu/usage` (ns, cumulative), `cpu/usage_rate` (millicores) | `node.cpu` | the pod's cgroup | `containers[].cpu` |
 | `memory/usage`, `working_set`, `rss`, `page_faults`, `major_page_faults` and their rates | `node.memory` | the pod's cgroup | `containers[].memory` |
 | `network/rx`, `tx`, `rx_errors`, `tx_errors` and their rates | sum of `node.network.interfaces` | sum of the pod's `interfaces` | - |
-| `cpu/request`, `cpu/limit` (millicores), `memory/request`, `memory/limit` (bytes) | sum of its pods | sum of its containers | the pod spec, 0 where unset |
+| `cpu/request`, `cpu/limit` (millicores), `memory/request`, `memory/limit` (bytes) | sum of its pods | sum of its containers | the pod spec's container or native sidecar, 0 where unset |
 | `cpu/node_capacity`, `node_allocatable`, `node_utilization`, `node_reservation`, same for `memory/` | node status and usage | - | - |
 | `filesystem/usage`, `limit`, `inodes`, `inodes_free`, `available` | root cgroup's devices from `/metrics/cadvisor` | - | `usage` and `limit` of `containers[].rootfs` |
 
-Rates are computed as heapster computed them: between two batches, when the stats are newer and the
+Rates are computed by heapster's rules: between two batches, when the stats are newer and the
 start time is the same. `cpu/usage_rate` is an integer, `1000 * delta ns / delta ns`.
 `cpu/node_utilization` is `cpu/usage_rate` over the allocatable millicores, and
 `memory/node_utilization` is `memory/usage` (not the working set) over the allocatable bytes.
@@ -59,6 +61,13 @@ start time is the same. `cpu/usage_rate` is an integer, `1000 * delta ns / delta
   heapster, and are the pod's here.
 - **`container_base_image` is the image of the pod spec.** heapster wrote the one cAdvisor reported,
   which with Docker is often the image ID (`sha256:...`).
+- **Rate timing.** The summary gives the time of its stats in whole seconds, where heapster had
+  cAdvisor's nanoseconds. One 30 s rate can be off by up to about 3% (10% at 10 s), and a busy node's
+  `cpu/node_utilization` can go a little above 1 for one batch. The errors do not add up: over the
+  windows the readers average, the totals are exact.
+- **Native sidecars** (init containers with `restartPolicy: Always`, Kubernetes 1.28 and later) run
+  beside the containers, and their requests, limits and image count as theirs. Pod-level
+  `spec.resources` is not read.
 - **No utilization on a node's first batch.** heapster wrote 0 there, before it had a rate.
 - **No rate when a counter goes down.**
 - **Not written:** the `sys_container`, `ns` and `cluster` sets, the `general` family (`uptime`,
@@ -73,7 +82,9 @@ start time is the same. `cpu/usage_rate` is an integer, `1000 * delta ns / delta
 ## How it reads the cluster
 
 - The API server: `GET /api/v1/nodes`, `/api/v1/pods` and `/api/v1/namespaces`, with
-  `resourceVersion=0`, so the API server answers from its cache.
+  `resourceVersion=0`, so the API server answers from its cache. When it does not answer, the last
+  node and pod lists stand in for up to 10 minutes, as heapster wrote on from its informers' caches;
+  without the namespaces only `namespace_id` is missing.
 - Each Ready node's kubelet, at its InternalIP and the port in `status.daemonEndpoints`:
   `/stats/summary` and `/metrics/cadvisor`, with the service account token. Up to
   `CP_METRICS_COLLECTOR_THREADS` nodes at once.
@@ -81,7 +92,13 @@ start time is the same. `cpu/usage_rate` is an integer, `1000 * delta ns / delta
   rotated. Proxy settings in the environment are ignored: all of this traffic is in the cluster.
 - The kubelets of a kubeadm cluster serve self-signed certificates, so they are not verified, as
   heapster's `insecure=true`. Set `CP_METRICS_COLLECTOR_KUBELET_CA_FILE` to verify them.
-- The RBAC it needs is in `deploy/contents/k8s/cp-metrics-collector/cp-metrics-collector-sa.yaml`.
+- The RBAC it needs is in `deploy/contents/k8s/cp-metrics-collector/cp-metrics-collector-sa.yaml`:
+  reading nodes, pods and namespaces, and the kubelets' stats and metrics. heapster ran as the
+  `default` service account, which `install-master.sh` binds to `cluster-admin`.
+
+The token is still worth guarding: the pod list carries the pods' environment, and with it the API
+tokens of the runs. With unverified kubelet certificates, whatever answers at a node's address on
+the kubelet port is sent the token.
 
 `GET /healthz` on port 8082 answers 200 while batches keep finishing. A batch that Elasticsearch or
 the API server failed still counts, since restarting the collector would not bring them back; the
@@ -115,20 +132,18 @@ The image is `lifescience/cloud-pipeline:metrics-collector-<version>`, built by
 (`CP_DOCKER_DIST_SRV`, and `CP_HEAPSTER_VERSION` for the tag) and run the collector where heapster
 runs, on the node labelled `cloud-pipeline/cp-heapster=true`. `pipectl` does not install it yet.
 
+Where heapster runs, start the collector beside it, and switch once the two agree. The two must
+never write to the same indices: the API would average both.
+
+### 1. Beside heapster
+
+Run the collector under another index name. The collector refuses one that starts with
+`heapster-`: the API takes every such index for a day of heapster's and parses the rest of its name
+as the date, which would stop its index retention and fail the node and run charts.
+
 ```bash
-export CP_DOCKER_DIST_SRV=... CP_HEAPSTER_VERSION=...
+export CP_DOCKER_DIST_SRV=... CP_HEAPSTER_VERSION=... CP_METRICS_COLLECTOR_INDEX=cp-metrics-collector
 envsubst < cp-metrics-collector-sa.yaml | kubectl apply -f -
-envsubst < cp-metrics-collector-dpl.yaml | kubectl apply -f -
-```
-
-### Beside heapster first
-
-The two must not write to the same indices: the API would average both. Run the collector under
-another index name first, which must **not** start with `heapster-`: the API's index retention
-parses the date after `heapster-`, and fails on any other text there.
-
-```bash
-export CP_METRICS_COLLECTOR_INDEX=cp-metrics-collector
 envsubst < cp-metrics-collector-dpl.yaml | kubectl apply -f -
 # after 30 minutes or more
 kubectl exec deploy/cp-metrics-collector -- python3 -m metrics_collector.compare \
@@ -137,12 +152,22 @@ kubectl exec deploy/cp-metrics-collector -- python3 -m metrics_collector.compare
 
 The compare tool prints, for each node, node device and pod, the averages the platform reads from
 `heapster-*` and from `cp-metrics-collector-*`, with their difference, and with `--threshold` only
-the rows that differ by more percent, or that one side lacks. The API does not delete the
-comparison indices: delete them once the comparison is over (`curl -XDELETE
-http://<cp-heapster-elk>/cp-metrics-collector-*`).
+the rows that differ by more percent, or that one side lacks.
 
-To switch: delete the `cp-heapster` deployment, and apply the collector's spec again with
-`CP_METRICS_COLLECTOR_INDEX` empty.
+### 2. The switch
+
+```bash
+kubectl delete deployment cp-heapster
+export CP_METRICS_COLLECTOR_INDEX=
+envsubst < cp-metrics-collector-dpl.yaml | kubectl apply -f -
+```
+
+Then remove what the comparison left, which the API does not delete: the indices
+`cp-metrics-collector-*` and the template `cp-metrics-collector-cp-metrics-collector` (`curl -XDELETE`
+on `cp-heapster-elk`). `vm-monitor` still expects a `cp-heapster` deployment
+(`monitor.k8s.deployment.names`) and reports it missing until that list changes.
+
+Where heapster never ran, the switch alone is the installation.
 
 ## Tests
 

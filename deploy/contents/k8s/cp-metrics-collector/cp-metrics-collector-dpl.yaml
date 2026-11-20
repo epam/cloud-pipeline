@@ -55,10 +55,13 @@ spec:
               memory: 128Mi
             limits:
               memory: 1Gi
+          # No seccompProfile: Kubernetes 1.15 does not know the field, and kubectl rejects the spec.
           securityContext:
             runAsNonRoot: true
             runAsUser: 65534
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret
