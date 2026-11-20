@@ -119,7 +119,7 @@ install_slurm_debian() {
                  /run/munge
     chmod +t /run/munge
 
-    wget -q "$CP_SLURM_PACKAGE_DEB_URL" -O /tmp/slurm.deb
+    wget --no-verbose "$CP_SLURM_PACKAGE_DEB_URL" -O /tmp/slurm.deb
     if ! apt-get install -y -f /tmp/slurm.deb; then
         return 1
     fi
