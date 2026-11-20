@@ -223,19 +223,41 @@ const checkPermissionsSetConflicting = (testMask, objectMasks = [], extendedMask
 };
 
 /**
+ * The types of a SID, in the order the API resolves them: a rule set for the user itself wins over
+ * one set for a group the user belongs to, which in turn wins over one set for a system role.
+ * A group is any non-predefined role plus the user's external groups; a role is a predefined one.
+ * @type {string[]}
+ */
+const SID_TYPES_PRIORITY = ['principal', 'group', 'role'];
+
+const getSidType = ({principal, predefined} = {}) => {
+  if (principal) {
+    return 'principal';
+  }
+  return predefined ? 'role' : 'group';
+};
+
+/**
  * Checks if user or group specified by `sid` has conflicting permissions (`mask`) with ones
  * provided for the object (objectPermissions). "Conflict" means that "allow" permission was
- * requested but there is at least one "deny" permission for user/group or/and user groups.
+ * requested but there is a "deny" permission for the user, its groups or its roles.
+ *
+ * SIDs are resolved the way the API resolves them (`PermissionGrantingStrategyImpl`): the user
+ * itself first, then its groups, then its roles, and the first of those three that has a rule for
+ * the permission decides it - so a group's rule is never overruled by a role's one. Within a single
+ * type a "deny" wins over an "allow". A permission no type has a rule for is reported as a
+ * conflict, since then the access relies on the parent object's permissions.
+ *
  * Exceptions: if user is owner or admin, no conflicts will occur.
  * @param mask {number} requested access permissions (6-bit format)
- * @param sid {{name: string, principal: boolean}} requester
- * @param sidRoles {{name: string}[]} user's roles
+ * @param sid {{name: string, principal: boolean, predefined: boolean?}} requester
+ * @param sidRoles {{name: string, predefined: boolean?}[]} user's groups and roles
  * @param objectOwner {string} object's owner.
  * @param objectPermissions {{mask: number, sid: {name: string, principal: boolean}}[]}
  * object permissions
  * @returns {{read: boolean, write: boolean, execute: boolean}}
  * For each permission (read, write, execute): `true` if permissions conflict (i.e. "allow"
- * requested, but object has at least one "deny" rule), `false` if dont
+ * requested, but object has a "deny" rule of the same or of a higher priority), `false` if dont
  */
 const checkObjectPermissionsConflict = (mask, sid, sidRoles, objectOwner, objectPermissions) => {
   const {name, principal} = sid;
@@ -262,37 +284,33 @@ const checkObjectPermissionsConflict = (mask, sid, sidRoles, objectOwner, object
     }
     return {};
   };
-  const sids = [sid, ...sidRoles.map(({name}) => ({name, principal: false}))];
-  const getResolution = conflictResults => {
-    const filtered = (conflictResults || []).filter(result => result !== undefined);
-    if (filtered.length === 0) {
-      // conflict!
-      return true;
-    }
-    // if we have at least one "true" - there is a conflict
-    return !!filtered.find(o => o);
-  };
-  const merged = sids
-    .map(findConflicts)
-    .reduce((acc, cur) => ({
-      read: [...(acc.read || []), cur.read],
-      write: [...(acc.write || []), cur.write],
-      execute: [...(acc.execute || []), cur.execute]
-    }), {});
-  if (principal) {
-    // If user has suitable permissions, ignore user's roles permissions
-    const principalConflicts = findConflicts(sid);
-    for (const permission of ['read', 'write', 'execute']) {
-      if (principalConflicts[permission] === false) {
-        // No conflict (i.e., "false") for "permission"
-        merged[permission] = [false];
+  const conflictsBySidType = [sid, ...(sidRoles || []).map((sidRole) => ({
+    ...sidRole,
+    principal: false
+  }))]
+    .reduce((acc, testSid) => {
+      const type = getSidType(testSid);
+      acc[type] = acc[type] || [];
+      acc[type].push(findConflicts(testSid));
+      return acc;
+    }, {});
+  const getResolution = permission => {
+    for (const sidType of SID_TYPES_PRIORITY) {
+      const results = (conflictsBySidType[sidType] || [])
+        .map(conflicts => conflicts[permission])
+        .filter(result => result !== undefined);
+      if (results.length > 0) {
+        // if we have at least one "true" - there is a conflict
+        return !!results.find(o => o);
       }
     }
-  }
+    // nothing grants the permission; it is inherited, i.e. a conflict
+    return true;
+  };
   return {
-    read: getResolution(merged.read),
-    write: getResolution(merged.write),
-    execute: getResolution(merged.execute)
+    read: getResolution('read'),
+    write: getResolution('write'),
+    execute: getResolution('execute')
   };
 };
 
