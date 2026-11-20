@@ -218,6 +218,8 @@ def test_load_pod_and_its_containers(cluster):
     expected_device = '/dev/nvme0n1p1' if cluster.version == '1.15' else '/dev/vdb1'
     assert rootfs[0]['MetricsTags']['resource_id'] == expected_device
     burn_stats = next(c for c in second['containers'] if c['name'] == 'burn')
+    # Not the filesystem's inodes and free space, which the rootfs stats carry too.
+    assert set(rootfs[0]['Metrics']) == {'filesystem/usage', 'filesystem/limit'}
     assert rootfs[0]['Metrics']['filesystem/usage']['value'] == burn_stats['rootfs']['usedBytes']
     assert rootfs[0]['Metrics']['filesystem/limit']['value'] == burn_stats['rootfs']['capacityBytes']
     # The container wrote 64 MiB into its root filesystem. Docker's usage comes from cAdvisor's

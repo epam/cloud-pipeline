@@ -51,6 +51,7 @@ _NETWORK_CUMULATIVES = (('rxBytes', 'network/rx'), ('rxErrors', 'network/rx_erro
 _FS_FIELDS = (('usedBytes', 'filesystem/usage'), ('capacityBytes', 'filesystem/limit'),
               ('availableBytes', 'filesystem/available'), ('inodes', 'filesystem/inodes'),
               ('inodesFree', 'filesystem/inodes_free'))
+_CONTAINER_FS_METRICS = ('filesystem/usage', 'filesystem/limit')
 _EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
 
@@ -297,8 +298,11 @@ def _build_pod(sets, pod_stats, common, pods, namespaces, image_device):
             container_labels['container_base_image'] = spec.get('image') or ''
             container_set.values.update(_spec_values(spec))
         if image_device is not None:
+            # A container's rootfs stats carry the whole filesystem's inodes and free space; heapster
+            # wrote only the container's usage and the filesystem's size that mean anything here.
             for metric, value in _fs_values(container_stats.get('rootfs')).items():
-                container_set.labeled.append(LabeledMetric(metric, {'resource_id': image_device}, value))
+                if metric in _CONTAINER_FS_METRICS:
+                    container_set.labeled.append(LabeledMetric(metric, {'resource_id': image_device}, value))
         sets[container_key(namespace, name, container_name)] = container_set
 
 

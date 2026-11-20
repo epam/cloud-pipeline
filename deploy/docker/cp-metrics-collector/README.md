@@ -38,7 +38,7 @@ The metrics, and where they come from:
 | `network/rx`, `tx`, `rx_errors`, `tx_errors` and their rates | sum of `node.network.interfaces` | sum of the pod's `interfaces` | - |
 | `cpu/request`, `cpu/limit` (millicores), `memory/request`, `memory/limit` (bytes) | sum of its pods | sum of its containers | the pod spec, 0 where unset |
 | `cpu/node_capacity`, `node_allocatable`, `node_utilization`, `node_reservation`, same for `memory/` | node status and usage | - | - |
-| `filesystem/usage`, `limit`, `inodes`, `inodes_free`, `available` | root cgroup's devices from `/metrics/cadvisor` | - | `containers[].rootfs` |
+| `filesystem/usage`, `limit`, `inodes`, `inodes_free`, `available` | root cgroup's devices from `/metrics/cadvisor` | - | `usage` and `limit` of `containers[].rootfs` |
 
 Rates are computed as heapster computed them: between two batches, when the stats are newer and the
 start time is the same. `cpu/usage_rate` is an integer, `1000 * delta ns / delta ns`.
@@ -55,12 +55,16 @@ start time is the same. `cpu/usage_rate` is an integer, `1000 * delta ns / delta
   bytes. They come from the summary, for the devices of the kubelet's and the runtime's filesystems.
 - **Pod usage comes from the pod's cgroup.** heapster added the containers' usage to the pause
   container's. It is the same sum. A pod the summary has no pod-level stats for gets its containers'
-  sum.
+  sum. A pod's cumulative `cpu/usage` and `memory/page_faults` were the pause container's own in
+  heapster, and are the pod's here.
+- **`container_base_image` is the image of the pod spec.** heapster wrote the one cAdvisor reported,
+  which with Docker is often the image ID (`sha256:...`).
 - **No utilization on a node's first batch.** heapster wrote 0 there, before it had a rate.
 - **No rate when a counter goes down.**
 - **Not written:** the `sys_container`, `ns` and `cluster` sets, the `general` family (`uptime`,
-  `restart_count`), `memory/cache`, disk I/O, accelerators, and the stub sets heapster made for
-  containers with no stats yet. Nothing on the platform reads them.
+  `restart_count`), `memory/cache`, disk I/O, accelerators, the pods' own filesystem documents (the
+  pause container's), the `available` and `inodes` of a container's filesystem, and the stub sets
+  heapster made for containers with no stats yet. Nothing on the platform reads them.
 - **A node with no root cgroup series** (a Windows node; `/metrics/cadvisor` absent or empty) gets
   the summary's filesystems, as `rootfs` and, when it is another device, `imagefs`. A
   `/metrics/cadvisor` that fails for a moment writes no filesystem documents for that node in that
