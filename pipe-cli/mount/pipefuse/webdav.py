@@ -31,7 +31,8 @@ from requests import cookies
 from pipefuse import fuseutils
 from pipefuse.chain import ChainingService
 from pipefuse.fsclient import File, FileSystemClient, \
-    ForbiddenOperationException, NotFoundOperationException, InvalidOperationException
+    ForbiddenOperationException, NotFoundOperationException, InvalidOperationException, \
+    NotEmptyOperationException
 
 py_version, _, _ = platform.python_version_tuple()
 if py_version == '2':
@@ -271,6 +272,28 @@ class WebDavClient(easywebdav.Client, FileSystemClient):
         headers = {'Destination': self._get_url(new_path),
                    'Overwrite': 'T'}
         self._send('MOVE', old_path, (201, 204), headers=headers, allow_redirects=True)
+
+    def rmdir(self, path):
+        """
+        Removes an empty folder.
+
+        WebDav DELETE of a folder removes everything in it (RFC 4918, section 9.6.1),
+        so the folder is checked first. Only the files that the mount does not list
+        (see fuseutils.is_hidden_file) are allowed to remain in it.
+
+        :raises NotEmptyOperationException: if the folder holds any other file or folder.
+        """
+        folder_path = fuseutils.append_delimiter(path)
+        for item in self.ls(folder_path, depth=1):
+            name = item.name.rstrip(self.cwd)
+            if not name:
+                # The folder itself
+                continue
+            if item.is_dir or not fuseutils.is_hidden_file(name):
+                raise NotEmptyOperationException()
+        # WebDav has no DELETE of an empty folder only. So a file that another client
+        # writes into the folder after the check above is deleted with the folder.
+        easywebdav.Client.rmdir(self, folder_path)
 
     def _send(self, method, path, expected_code, allow_redirects=False, **kwargs):
         url = self._get_url(path)
