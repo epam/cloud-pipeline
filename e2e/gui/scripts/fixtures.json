@@ -22,7 +22,11 @@
         "  ui.notifications.mute for the run (only the GUI reads it, emails are still sent), restored afterwards.",
         "tools_limit_mounts: CP_CAP_LIMIT_MOUNTS set in the settings of the latest version of each tool above for the run",
         "  (restored afterwards), so that a run with default settings mounts no storage: without a limit a run mounts every",
-        "  storage its user can see, one after another. Empty keeps the tools' settings."
+        "  storage its user can see, one after another. Empty keeps the tools' settings.",
+        "pipeline_templates: the templates the tests create pipelines from (Template.SHELL, PYTHON). One the API does not",
+        "  offer (a deployment can replace the templates of the API image with its own) is copied from",
+        "  workflows/pipe-templates/__COMMON into the templates folder of the API pods, in the folder of",
+        "  role_user_group (only its members and the admins see it), and removed after the run. Empty adds none."
     ],
     "tool_groups": [
         {
@@ -93,5 +97,6 @@
     "deactivate_blocking_notifications": true,
     "mute_user_notifications": true,
     "tools_limit_mounts": "None",
+    "pipeline_templates": ["shell", "python"],
     "preferences": []
 }

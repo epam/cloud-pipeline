@@ -36,10 +36,13 @@
 #     unread ones over the top right of every page (fixtures.json "mute_user_notifications": false keeps them)
 #   - the fixture tools' runs mount no data storage by default (CP_CAP_LIMIT_MOUNTS=None in the settings of their latest
 #     version), as a run without a limit mounts every storage its user can see (fixtures.json "tools_limit_mounts")
+#   - the pipeline templates the tests create pipelines from (fixtures.json "pipeline_templates") that the API does not
+#     offer are added for the run, for the test users' role and the admins only
 # revert:  removes what prepare created or took over (registered tools are unregistered, their registry images are
 #          kept; a tool group taken over is deleted only if it is empty), restores the settings of the other tools,
 #          activates the deactivated notifications back, restores the permissions, preferences, notification
-#          mutes and tool version settings it changed. The test users it created are kept (blocked) for the next runs.
+#          mutes and tool version settings it changed, removes the pipeline templates it added. The test users it
+#          created are kept (blocked) for the next runs.
 
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
@@ -201,6 +204,19 @@ if [ "$_CMD" == "revert" ]; then
         cp_api DELETE "toolGroup?id=$(jq -r '.id' <<< "$_g")&force=true" > /dev/null || \
             { e2e_warn "Failed"; _errors=$((_errors + 1)); }
     done <<< "$(jq -c '.tool_groups[]?' "$_RECORD")"
+    while read -r _pt; do
+        [ "$_pt" ] || continue
+        _pod="$(jq -r '.pod' <<< "$_pt")"
+        _dir="$(jq -r '.path' <<< "$_pt")"
+        if ! kubectl get po -n "$CP_KUBE_NAMESPACE" "$_pod" > /dev/null 2>&1; then
+            e2e_log "Pipeline template $_dir is gone with the API pod $_pod"
+            continue
+        fi
+        e2e_log "Removing the pipeline template $_dir from $_pod"
+        kubectl exec -n "$CP_KUBE_NAMESPACE" "$_pod" -c cp-api-srv -- \
+            sh -c "rm -rf '$_dir' && { rmdir '${_dir%/*}' 2> /dev/null; true; }" < /dev/null || \
+            { e2e_warn "Failed"; _errors=$((_errors + 1)); }
+    done <<< "$(jq -c '.pipeline_templates[]?' "$_RECORD")"
     [ "$(jq '.users | length' "$_RECORD")" -gt 0 ] && \
         e2e_log "Test users created by the preparation are kept (blocked): $(jq -r '[.users[].userName] | join(", ")' "$_RECORD")"
     mv "$_RECORD" "$_RECORD.reverted"
@@ -533,6 +549,86 @@ if [ "$_LIMIT_MOUNTS" ]; then
         _record version_settings "$(jq -cn --argjson id "$_tid" --arg r "$_reg" --arg i "$_image" --argjson p "$_previous" \
             --argjson a "$_allow_commit" '{id: $id, registry: $r, image: $i, version: "latest", allowCommit: $a, previous: $p}')"
     done <<< "$(jq -c '.tools[]?' "$_FIXTURES")"
+fi
+
+# 9. Pipeline templates the tests create pipelines from (Template.SHELL, PYTHON): a deployment can replace the templates
+#    of the API image with its own (CP_PREF_TEMPLATES_DIRECTORY_EXT, copied over the templates folder when the API
+#    starts) and offer none of these. Each one of fixtures.json "pipeline_templates" that the API does not list is
+#    copied from workflows/pipe-templates/__COMMON of this checkout (E2E_PIPE_TEMPLATES_DIR) into the templates folder
+#    of every API pod (E2E_API_TEMPLATES_DIR), in the folder of the test users' role (role_user_group): only that
+#    role's members and the admins see a template there, and the API reads the folder at every request. A restart of
+#    the API drops them; revert removes them. One that a killed run left is listed, so it is kept until the API restarts.
+_TEMPLATES_SRC="${E2E_PIPE_TEMPLATES_DIR:-$E2E_GUI_DIR/../../workflows/pipe-templates/__COMMON}"
+_API_TEMPLATES_DIR="${E2E_API_TEMPLATES_DIR:-/opt/api/pipe-templates}"
+_template_role="$(jq -r '.role_user_group.name // empty' "$_FIXTURES")"
+_missing=()
+_wanted="$(jq -r '(.pipeline_templates // ["shell", "python"])[]' "$_FIXTURES")"
+# The admin token sees the templates of every role and group folder: one that only another role or group has counts
+# as offered here, although the test users do not see it
+_listed=""
+if [ "$_wanted" ]; then
+    if _templates="$(cp_api_payload GET templates/list)"; then
+        _listed="$(jq -r '.[]?.id // empty' <<< "$_templates")"
+    else
+        e2e_warn "Unable to list the pipeline templates: none is added, the tests that create pipelines from SHELL or" \
+            "PYTHON fail if the platform does not offer them"
+        _wanted=""
+    fi
+fi
+for _tpl in $_wanted; do
+    grep -qixF "$_tpl" <<< "$_listed" || _missing+=("$_tpl")
+done
+if [ ${#_missing[@]} -gt 0 ]; then
+    _api_pods="$(kubectl get po -n "$CP_KUBE_NAMESPACE" -l cloud-pipeline/cp-api-srv=true \
+        --field-selector=status.phase=Running -o name 2> /dev/null)"
+    if [ -z "$_template_role" ] || [ -z "$_api_pods" ]; then
+        e2e_warn "Pipeline templates ${_missing[*]} are not offered, and no role_user_group or no running API pod is" \
+            "found: the tests that create pipelines from them fail"
+    fi
+    for _tpl in "${_missing[@]}"; do
+        [ "$_template_role" ] && [ "$_api_pods" ] || break
+        if [ ! -d "$_TEMPLATES_SRC/$_tpl" ]; then
+            e2e_warn "Pipeline template $_tpl is not offered, and $_TEMPLATES_SRC/$_tpl is not there: the tests that" \
+                "create pipelines from it fail"
+            continue
+        fi
+        # The image of its runs: the platform's templates name library/centos:7, which a deployment may not have
+        _image="$(jq -r '.[0].configuration.docker_image // empty' "$_TEMPLATES_SRC/$_tpl/config.json" 2> /dev/null)"
+        if [ "$_image" ]; then
+            _image_tid="$(cp_api_payload GET "tool/load?image=${_image%:*}" 2> /dev/null | jq -r '.id // empty')"
+            { [ "$_image_tid" ] && cp_api_payload GET "tool/$_image_tid/tags" 2> /dev/null | jq -e --arg t "${_image##*:}" \
+                'index($t) != null' > /dev/null; } || \
+                e2e_warn "Pipeline template $_tpl runs $_image, which is not a tool version of the platform: its pipelines' runs fail"
+        fi
+        _dir="$_API_TEMPLATES_DIR/$_template_role/$_tpl"
+        for _pod in $_api_pods; do
+            _pod="${_pod#pod/}"
+            # As the API does with its templates when it starts (init-api update_resources_templates): the config.json
+            # values ${CP_PREF_...} of the pod's environment, and ${CP_DOLLAR} for a "$"
+            _out="$(tar -C "$_TEMPLATES_SRC" -cf - "$_tpl" 2> /dev/null | \
+                kubectl exec -i -n "$CP_KUBE_NAMESPACE" "$_pod" -c cp-api-srv -- sh -c "
+                    if [ -e '$_dir' ]; then cat > /dev/null; echo exists; exit 0; fi
+                    mkdir -p '${_dir%/*}' || exit 1
+                    ok=1
+                    tar -C '${_dir%/*}' -xf - || ok=
+                    for f in \$([ \"\$ok\" ] && find '$_dir' -type f -name config.json); do
+                        CP_DOLLAR='\$' envsubst < \"\$f\" > \"\$f.e2e\" && mv \"\$f.e2e\" \"\$f\" || { ok=; break; }
+                    done
+                    # a half-made template would be listed as offered and stay until the API restarts
+                    [ \"\$ok\" ] || { rm -rf '$_dir'; rmdir '${_dir%/*}' 2> /dev/null; exit 1; }
+                    echo added")"
+            case "$_out" in
+                added)
+                    e2e_log "Pipeline template $_tpl is added for the run ($_dir of $_pod: $_template_role and the admins see it)"
+                    _record pipeline_templates "$(jq -cn --arg p "$_pod" --arg d "$_dir" '{pod: $p, path: $d}')" ;;
+                exists)
+                    e2e_warn "Pipeline template $_tpl: $_dir of $_pod exists already, kept as it is" ;;
+                *)
+                    e2e_warn "Unable to add the pipeline template $_tpl to $_dir of $_pod: the tests that create pipelines" \
+                        "from it fail" ;;
+            esac
+        done
+    done
 fi
 
 if [ $_ERRORS -gt 0 ]; then

@@ -96,7 +96,14 @@ class after that at its first page. So:
    minutes on a platform with many storages, and a run with default settings takes the limit only from there or from
    the user's own `CP_CAP_LIMIT_MOUNTS` attribute. The
    tests set the limit on every launch form themselves: none, or the storages a test checks in the run.
-   `"tools_limit_mounts"` in `scripts/fixtures.json` sets another value; empty keeps the tools' settings.
+   `"tools_limit_mounts"` in `scripts/fixtures.json` sets another value; empty keeps the tools' settings. The
+   **pipeline templates** the tests create pipelines from (`"pipeline_templates"`: `shell`, `python`) that the platform
+   does not offer (a deployment can replace the templates of the API image with its own,
+   `CP_PREF_TEMPLATES_DIRECTORY_EXT`) are copied from `workflows/pipe-templates/__COMMON` of the checkout into the
+   templates folder of the API pods, in the folder of the test users' role: only its members and the admins see them.
+   Their `config.json` gets the values of the API's environment, as the API does at its start. Step 7 removes them;
+   an API restart drops them too. A run needs the checkout's `workflows/pipe-templates/__COMMON` for this
+   (`E2E_PIPE_TEMPLATES_DIR` gives another folder, `E2E_API_TEMPLATES_DIR` the templates folder of the API pods).
 3. generates the tests config from the live deployment (`scripts/generate-config.sh`, see below)
 4. TC-TEST-ENVIRONMENT-1: unblocks the test users (`scripts/test-users.sh unblock`)
 5. records the platform state (`scripts/platform-state.sh snapshot`): preferences, library, tools, registry catalog,

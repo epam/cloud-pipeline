@@ -334,7 +334,9 @@ e2e.ui.backup.storage.offset=<hours>
   version: the version is read from the run's log), `library/rstudio:latest`.
 * default.registry ACL: RoleModelTest (572, 573) removes the entries of `role.user` and clean.history.login and restores the recorded values;
   clean.history.login must see only this one registry.
-* Pipeline templates `DEFAULT`, `PYTHON`, `SHELL` in Create > Pipeline (GitLab working).
+* Pipeline templates `DEFAULT`, `PYTHON`, `SHELL` in Create > Pipeline (GitLab working). `platform-prepare.sh` adds
+  `shell` and `python` for the run, for the test users' role, when the platform does not offer them (fixtures.json
+  `pipeline_templates`).
 
 ### 4.3 Preferences / platform settings
 * `cluster.allowed.instance.types` and `.docker`: allow the family of default.instance.type (`m6i`, which the 0.16 default
