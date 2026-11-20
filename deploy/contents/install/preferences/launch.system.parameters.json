@@ -713,5 +713,26 @@
         "type": "string",
         "description": "Absolute path to the folder the VS Code extension opens on connect, instead of the home folder. Used only if the user who connects can open the folder.",
         "passToWorkers": false
+    },
+    {
+        "name": "CP_HOME_SYMLINKS_DISABLED",
+        "type": "boolean",
+        "description": "Do not create the cloud-data, workdir and code-repository symlinks in the home folders of the run owner and root. A symlink that is already there is left as it is.",
+        "defaultValue": "true",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_HOME_CLOUD_DATA_SYMLINK_DISABLED",
+        "type": "boolean",
+        "description": "Do not create the cloud-data symlink to the mounted data storages in the home folders of the run owner and root. A symlink that is already there is left as it is.",
+        "defaultValue": "true",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_HOME_WORKDIR_SYMLINK_DISABLED",
+        "type": "boolean",
+        "description": "Do not create the workdir symlink to the cluster shared folder in the home folders of the run owner and root. A symlink that is already there is left as it is.",
+        "defaultValue": "true",
+        "passToWorkers": true
     }
 ]
