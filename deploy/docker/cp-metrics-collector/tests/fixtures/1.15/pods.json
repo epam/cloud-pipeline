@@ -1,0 +1,296 @@
+{
+ "apiVersion": "v1",
+ "items": [
+  {
+   "metadata": {
+    "labels": {
+     "k8s-app": "kube-dns",
+     "pod-template-hash": "7b9c8bf4fc"
+    },
+    "name": "kube-dns-7b9c8bf4fc-rbvwx",
+    "namespace": "kube-system",
+    "uid": "c1e6cb18-85d6-4190-9d28-fae948e35819"
+   },
+   "spec": {
+    "containers": [
+     {
+      "image": "k8s.gcr.io/k8s-dns-kube-dns:1.14.13",
+      "name": "kubedns",
+      "resources": {
+       "limits": {
+        "memory": "170Mi"
+       },
+       "requests": {
+        "cpu": "100m",
+        "memory": "70Mi"
+       }
+      }
+     },
+     {
+      "image": "k8s.gcr.io/k8s-dns-dnsmasq-nanny:1.14.13",
+      "name": "dnsmasq",
+      "resources": {
+       "requests": {
+        "cpu": "150m",
+        "memory": "20Mi"
+       }
+      }
+     },
+     {
+      "image": "k8s.gcr.io/k8s-dns-sidecar:1.14.13",
+      "name": "sidecar",
+      "resources": {
+       "requests": {
+        "cpu": "10m",
+        "memory": "20Mi"
+       }
+      }
+     }
+    ],
+    "nodeName": "ip-10-0-0-10.ec2.internal"
+   },
+   "status": {
+    "phase": "Running"
+   }
+  },
+  {
+   "metadata": {
+    "labels": {
+     "component": "kube-controller-manager",
+     "tier": "control-plane"
+    },
+    "name": "kube-controller-manager-ip-10-0-0-10.ec2.internal",
+    "namespace": "kube-system",
+    "uid": "3ffefd77-da00-4b58-b959-54b6f57613b8"
+   },
+   "spec": {
+    "containers": [
+     {
+      "image": "k8s.gcr.io/kube-controller-manager:v1.15.4",
+      "name": "kube-controller-manager",
+      "resources": {
+       "requests": {
+        "cpu": "200m"
+       }
+      }
+     }
+    ],
+    "nodeName": "ip-10-0-0-10.ec2.internal"
+   },
+   "status": {
+    "phase": "Running"
+   }
+  },
+  {
+   "metadata": {
+    "labels": {
+     "component": "kube-scheduler",
+     "tier": "control-plane"
+    },
+    "name": "kube-scheduler-ip-10-0-0-10.ec2.internal",
+    "namespace": "kube-system",
+    "uid": "aa9b6987-0350-410c-bee2-1088956912a5"
+   },
+   "spec": {
+    "containers": [
+     {
+      "image": "k8s.gcr.io/kube-scheduler:v1.15.4",
+      "name": "kube-scheduler",
+      "resources": {
+       "requests": {
+        "cpu": "100m"
+       }
+      }
+     }
+    ],
+    "nodeName": "ip-10-0-0-10.ec2.internal"
+   },
+   "status": {
+    "phase": "Running"
+   }
+  },
+  {
+   "metadata": {
+    "labels": {
+     "component": "etcd",
+     "tier": "control-plane"
+    },
+    "name": "etcd-ip-10-0-0-10.ec2.internal",
+    "namespace": "kube-system",
+    "uid": "7740b714-656e-4702-8cc3-82464b23d385"
+   },
+   "spec": {
+    "containers": [
+     {
+      "image": "k8s.gcr.io/etcd:3.3.10",
+      "name": "etcd",
+      "resources": {}
+     }
+    ],
+    "nodeName": "ip-10-0-0-10.ec2.internal"
+   },
+   "status": {
+    "phase": "Running"
+   }
+  },
+  {
+   "metadata": {
+    "labels": {
+     "component": "kube-apiserver",
+     "tier": "control-plane"
+    },
+    "name": "kube-apiserver-ip-10-0-0-10.ec2.internal",
+    "namespace": "kube-system",
+    "uid": "389d3545-8026-4e21-8647-1899c9fe4c32"
+   },
+   "spec": {
+    "containers": [
+     {
+      "image": "k8s.gcr.io/kube-apiserver:v1.15.4",
+      "name": "kube-apiserver",
+      "resources": {
+       "requests": {
+        "cpu": "250m"
+       }
+      }
+     }
+    ],
+    "nodeName": "ip-10-0-0-10.ec2.internal"
+   },
+   "status": {
+    "phase": "Running"
+   }
+  },
+  {
+   "metadata": {
+    "labels": {
+     "k8s-app": "calico-kube-controllers",
+     "pod-template-hash": "59757ccf85"
+    },
+    "name": "calico-kube-controllers-59757ccf85-5sfjb",
+    "namespace": "kube-system",
+    "uid": "ee510a0f-5e64-4db2-84d0-6d24b7e875c2"
+   },
+   "spec": {
+    "containers": [
+     {
+      "image": "calico/kube-controllers:v3.14.1",
+      "name": "calico-kube-controllers",
+      "resources": {}
+     }
+    ],
+    "nodeName": "ip-10-0-0-10.ec2.internal"
+   },
+   "status": {
+    "phase": "Running"
+   }
+  },
+  {
+   "metadata": {
+    "labels": {
+     "controller-revision-hash": "67c9f4dd59",
+     "k8s-app": "canal",
+     "pod-template-generation": "1"
+    },
+    "name": "canal-bgg86",
+    "namespace": "kube-system",
+    "uid": "ae08bfd9-bdf1-44a9-a378-acf7ae15d2ad"
+   },
+   "spec": {
+    "containers": [
+     {
+      "image": "calico/node:v3.14.1",
+      "name": "calico-node",
+      "resources": {
+       "requests": {
+        "cpu": "200m"
+       }
+      }
+     },
+     {
+      "image": "quay.io/coreos/flannel:v0.11.0",
+      "name": "kube-flannel",
+      "resources": {
+       "limits": {
+        "cpu": "500m",
+        "memory": "512Mi"
+       },
+       "requests": {
+        "cpu": "100m",
+        "memory": "128Mi"
+       }
+      }
+     }
+    ],
+    "nodeName": "ip-10-0-0-10.ec2.internal"
+   },
+   "status": {
+    "phase": "Running"
+   }
+  },
+  {
+   "metadata": {
+    "labels": {
+     "app": "mc-load",
+     "runid": "12345"
+    },
+    "name": "mc-load",
+    "namespace": "default",
+    "uid": "b2765179-d64c-40c9-a3f9-da4872f64601"
+   },
+   "spec": {
+    "containers": [
+     {
+      "image": "busybox:1.36",
+      "name": "burn",
+      "resources": {
+       "limits": {
+        "cpu": "500m",
+        "memory": "128Mi"
+       },
+       "requests": {
+        "cpu": "250m",
+        "memory": "64Mi"
+       }
+      }
+     },
+     {
+      "image": "busybox:1.36",
+      "name": "chatty",
+      "resources": {}
+     }
+    ],
+    "nodeName": "ip-10-0-0-10.ec2.internal"
+   },
+   "status": {
+    "phase": "Running"
+   }
+  },
+  {
+   "metadata": {
+    "labels": {
+     "controller-revision-hash": "5b5755ccd4",
+     "k8s-app": "kube-proxy",
+     "pod-template-generation": "1"
+    },
+    "name": "kube-proxy-ds4ql",
+    "namespace": "kube-system",
+    "uid": "83057c0a-f4c4-442d-a0e0-7d22278fd827"
+   },
+   "spec": {
+    "containers": [
+     {
+      "image": "k8s.gcr.io/kube-proxy:v1.15.4",
+      "name": "kube-proxy",
+      "resources": {}
+     }
+    ],
+    "nodeName": "ip-10-0-0-10.ec2.internal"
+   },
+   "status": {
+    "phase": "Running"
+   }
+  }
+ ],
+ "kind": "PodList"
+}

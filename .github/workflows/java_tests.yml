@@ -17,6 +17,7 @@ on:
       - 'monitoring-service/**'
       - 'workflows/pipe-common/**'
       - 'scripts/autoscaling/**'
+      - 'deploy/docker/cp-metrics-collector/**'
 
 jobs:
   CalculateCodeChanges:
@@ -51,7 +52,7 @@ jobs:
           echo "docker-scan=$(detect   '^docker-comp-scan/')"                                       >> $GITHUB_OUTPUT
           echo "elasticsearch=$(detect '^(elasticsearch-agent|elasticsearch-common|cloud-pipeline-common)/')" >> $GITHUB_OUTPUT
           echo "monitoring=$(detect    '^(vm-monitor|billing-report-agent|monitoring-service)/')"   >> $GITHUB_OUTPUT
-          echo "python=$(detect        '^(workflows/pipe-common|scripts/autoscaling)/')"            >> $GITHUB_OUTPUT
+          echo "python=$(detect        '^(workflows/pipe-common|scripts/autoscaling|deploy/docker/cp-metrics-collector)/')" >> $GITHUB_OUTPUT
 
   api-tests:
     needs: CalculateCodeChanges
@@ -294,6 +295,12 @@ jobs:
         if: success() || failure()
         working-directory: scripts/autoscaling/aws/test
         run: python -m pytest . --junitxml="$GITHUB_WORKSPACE/python-test-results/autoscaling.xml"
+      - name: Run metrics collector tests
+        if: success() || failure()
+        working-directory: deploy/docker/cp-metrics-collector
+        run: |
+          python -m pip install -r requirements.txt
+          python -m pytest tests --junitxml="$GITHUB_WORKSPACE/python-test-results/metrics-collector.xml"
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
