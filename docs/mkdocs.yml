@@ -158,4 +158,5 @@ nav:
   - Management:
     - Environments sync: 'operation/environments_sync/environments_sync.md'
   - Change Kubernetes certificates: 'operation/change_kube_certificates.md'
+  - Replace heapster with cp-metrics-collector: 'operation/migrate_heapster_to_metrics_collector.md'
   - Support Windows runs: 'operation/support_windows_runs.md'

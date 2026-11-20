@@ -137,55 +137,20 @@ The image is `lifescience/cloud-pipeline:metrics-collector-<version>`, built by
 (`CP_DOCKER_DIST_SRV`, and `CP_HEAPSTER_VERSION` for the tag) and run the collector where heapster
 runs, on the node labelled `cloud-pipeline/cp-heapster=true`. `pipectl` does not install it yet.
 
-Where heapster runs, start the collector beside it, and switch once the two agree. The two must
-never write to the same indices: the API would average both.
+The steps, with the commands and their expected results, for a deployment that runs heapster and
+for one that does not: `docs/md/operation/migrate_heapster_to_metrics_collector.md`. In short, the
+collector runs beside heapster under another index name first (`cp-metrics-collector`), the compare
+tool checks it against heapster, and then `cp-heapster` is scaled to 0 and the collector writes into
+`heapster-*`. The two must never write to the same indices: the API would average both.
 
-### 1. Beside heapster
-
-Run the collector under another index name. The collector refuses one that starts with
-`heapster-`: the API takes every such index for a day of heapster's and parses the rest of its name
-as the date, which would stop its index retention and fail the node and run charts. It also refuses
-the names whose indices or template would reach the GPU stats or the network events in the same
-Elasticsearch (`cp`, `cp-gpu-monitor`).
-
-```bash
-export CP_DOCKER_DIST_SRV=... CP_HEAPSTER_VERSION=... CP_METRICS_COLLECTOR_INDEX=cp-metrics-collector
-envsubst < cp-metrics-collector-sa.yaml | kubectl apply -f -
-envsubst < cp-metrics-collector-dpl.yaml | kubectl apply -f -
-# after 30 minutes or more
-kubectl exec deploy/cp-metrics-collector -- python3 -m metrics_collector.compare \
-    --right cp-metrics-collector --minutes 30 --threshold 10
-```
+The collector refuses an index name that starts with `heapster-`: the API takes every such index for
+a day of heapster's and parses the rest of its name as the date, which would stop its index
+retention and fail the node and run charts. It also refuses the names whose indices or template
+would reach the GPU stats or the network events in the same Elasticsearch (`cp`, `cp-gpu-monitor`).
 
 The compare tool prints, for each node, node device and pod, the averages the platform reads from
-`heapster-*` and from `cp-metrics-collector-*`, with their difference, and with `--threshold` only
+`heapster-*` and from the collector's indices, with their difference, and with `--threshold` only
 the rows that differ by more percent, or that one side lacks.
-
-### 2. The switch
-
-In the same shell as step 1, so that the image variables are still set:
-
-```bash
-kubectl delete deployment cp-heapster
-export CP_METRICS_COLLECTOR_INDEX=
-envsubst < cp-metrics-collector-dpl.yaml | kubectl apply -f -
-```
-
-Then remove what the comparison left, which the API does not delete: the indices
-`cp-metrics-collector-*` and the template `cp-metrics-collector-cp-metrics-collector` (`curl -XDELETE`
-on `cp-heapster-elk`). `vm-monitor` still expects a `cp-heapster` deployment
-(`monitor.k8s.deployment.names`) and reports it missing until that list changes.
-
-Where heapster does not run, there is nothing to compare or switch:
-
-```bash
-export CP_DOCKER_DIST_SRV=... CP_HEAPSTER_VERSION=... CP_METRICS_COLLECTOR_INDEX=
-envsubst < cp-metrics-collector-sa.yaml | kubectl apply -f -
-envsubst < cp-metrics-collector-dpl.yaml | kubectl apply -f -
-```
-
-It runs on the node labelled `cloud-pipeline/cp-heapster=true`, which `install.sh` labels whether
-heapster is installed or not.
 
 ## Tests
 

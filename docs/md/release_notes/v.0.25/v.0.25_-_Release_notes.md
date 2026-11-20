@@ -34,7 +34,7 @@ The monitoring data behind the node and run charts, the idle, network and overlo
 
 In the current version, a new service, `cp-metrics-collector`, reads each kubelet's stats summary and cAdvisor metrics and writes documents of heapster's shape into the same `heapster-*` indices of `cp-heapster-elk`, so the platform reads them unchanged. Over 30 minutes side by side with heapster on Kubernetes **1.15.4**, the node's CPU, memory, network and disk averages that the platform's monitors, charts and autoscaler read agreed within 1%, and a test run's CPU and network within 0.2%; a pod's memory is lower by its pause container's few hundred KB. The service's README lists where its documents still differ from heapster's. It works on Kubernetes **1.15** and on current releases (checked on **1.15.4** and **1.37.0**).
 
-Before heapster is removed, the collector can run beside it under another index name, and its compare tool shows, per node and pod, how the two differ. `pipectl` does not install it yet: its image, specs and the steps are described in `deploy/docker/cp-metrics-collector/README.md`.
+Before heapster is removed, the collector can run beside it under another index name, and its compare tool shows, per node and pod, how the two differ. `pipectl` does not install it yet: see [Replace heapster with cp-metrics-collector](../../operation/migrate_heapster_to_metrics_collector.md) for the steps, and `deploy/docker/cp-metrics-collector/README.md` for the service.
 
 ***
 
