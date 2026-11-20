@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud.aws.capacityreservation;
 
+import com.epam.pipeline.controller.vo.cluster.CapacitySpecification;
 import com.epam.pipeline.controller.vo.cluster.capacityreservation.CapacityBlockOfferingRequest;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.cluster.NetworkConfiguration;
@@ -852,7 +853,8 @@ public class AwsCapacityReservationServiceTest {
     public void shouldMapAnInstanceOfferingFromAws() {
         client.capacityBlockOfferings = Collections.singletonList(awsOffering(null));
 
-        final List<CapacityBlockOffering> offerings = service.listCapacityBlockOfferings(region(), offeringRequest());
+        final List<CapacityBlockOffering> offerings =
+                service.listCapacityBlockOfferings(region(), offeringRequest(), candidate());
 
         assertThat(offerings).hasSize(1);
         final CapacityBlockOffering offering = offerings.get(0);
@@ -871,7 +873,8 @@ public class AwsCapacityReservationServiceTest {
     public void shouldMapAnUltraserverOfferingWhenAwsReturnsOne() {
         client.capacityBlockOfferings = Collections.singletonList(awsOffering("u-p6e-gb200-36xl"));
 
-        final List<CapacityBlockOffering> offerings = service.listCapacityBlockOfferings(region(), offeringRequest());
+        final List<CapacityBlockOffering> offerings =
+                service.listCapacityBlockOfferings(region(), offeringRequest(), candidate());
 
         assertThat(offerings.get(0).getResourceType()).isEqualTo(CapacityBlockResourceType.ULTRASERVER);
     }
@@ -894,7 +897,7 @@ public class AwsCapacityReservationServiceTest {
                 .endDateRange(end)
                 .build();
 
-        service.listCapacityBlockOfferings(region(), request);
+        service.listCapacityBlockOfferings(region(), request, candidate());
 
         assertThat(client.capacityBlockOfferingsRequest.instanceType())
                 .isEqualTo(CapacityReservationCreatorUtils.INSTANCE_TYPE);
@@ -913,18 +916,18 @@ public class AwsCapacityReservationServiceTest {
                 .capacityDurationHours(HOURS_PER_DAY + 1)
                 .build();
 
-        assertThatThrownBy(() -> service.listCapacityBlockOfferings(region(), request))
+        assertThatThrownBy(() -> service.listCapacityBlockOfferings(region(), request, candidate()))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThat(client.capacityBlockOfferingsRequest).isNull();
     }
 
     @Test
     public void shouldNotCallAwsWhenTheInstanceCountIsInvalid() {
-        final CapacityBlockOfferingRequest request = offeringRequest().toBuilder()
+        final CapacitySpecification candidate = candidate().toBuilder()
                 .instanceCount(MAX_CAPACITY_BLOCK_INSTANCE_COUNT + 1)
                 .build();
 
-        assertThatThrownBy(() -> service.listCapacityBlockOfferings(region(), request))
+        assertThatThrownBy(() -> service.listCapacityBlockOfferings(region(), offeringRequest(), candidate))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThat(client.capacityBlockOfferingsRequest).isNull();
     }
@@ -935,7 +938,7 @@ public class AwsCapacityReservationServiceTest {
                 .startDateRange(DateUtils.nowUTC().plusWeeks(MAX_CAPACITY_BLOCK_START_DATE_LEAD_WEEKS).plusDays(1))
                 .build();
 
-        assertThatThrownBy(() -> service.listCapacityBlockOfferings(region(), request))
+        assertThatThrownBy(() -> service.listCapacityBlockOfferings(region(), request, candidate()))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThat(client.capacityBlockOfferingsRequest).isNull();
     }
@@ -946,7 +949,7 @@ public class AwsCapacityReservationServiceTest {
                 .startDateRange(null)
                 .build();
 
-        assertThatThrownBy(() -> service.listCapacityBlockOfferings(region(), request))
+        assertThatThrownBy(() -> service.listCapacityBlockOfferings(region(), request, candidate()))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThat(client.capacityBlockOfferingsRequest).isNull();
     }
@@ -1191,10 +1194,15 @@ public class AwsCapacityReservationServiceTest {
     private static CapacityBlockOfferingRequest offeringRequest() {
         return CapacityBlockOfferingRequest.builder()
                 .regionId(REGION_ID)
-                .instanceType(CapacityReservationCreatorUtils.INSTANCE_TYPE)
-                .instanceCount(INSTANCE_COUNT)
                 .capacityDurationHours(ONE_DAY_STEP_MAX_DAYS * HOURS_PER_DAY)
                 .startDateRange(DateUtils.nowUTC().plusDays(LEAD_DAYS).withNano(0))
+                .build();
+    }
+
+    private static CapacitySpecification candidate() {
+        return CapacitySpecification.builder()
+                .instanceType(CapacityReservationCreatorUtils.INSTANCE_TYPE)
+                .instanceCount(INSTANCE_COUNT)
                 .build();
     }
 
