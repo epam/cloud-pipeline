@@ -212,7 +212,7 @@ class NotificationForm extends React.Component {
             <Col
               {...fullWidthLayout.labelCol}
               style={{
-                padding: '0px 10px 3px 0px',
+                paddingRight: '10px',
                 textAlign: 'right'
               }}
             >
@@ -220,12 +220,7 @@ class NotificationForm extends React.Component {
             </Col>
             <Col {...fullWidthLayout.wrapperCol}>
               <EmailPreview
-                iFrameStyle={{
-                  height: 34,
-                  width: '100%',
-                  overflow: 'hidden',
-                  border: 'transparent'
-                }}
+                renderIntoDiv
                 value={form.getFieldValue('notification.subject')}
               />
             </Col>
