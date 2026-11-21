@@ -102,7 +102,8 @@ public class UserNotificationManager {
         userNotificationRepository.readAll(getPipelineUserId(), LocalDateTime.now());
     }
 
-    @Scheduled(fixedDelayString = "${scheduled.notifications.cleanup.sec:86400}")
+    // the property is in seconds, fixedDelay in milliseconds
+    @Scheduled(fixedDelayString = "#{${scheduled.notifications.cleanup.sec:86400} * 1000L}")
     @Transactional(propagation = Propagation.REQUIRED)
     public void cleanUp() {
         final Integer expPeriod = preferenceManager.getPreference(SystemPreferences.SYSTEM_NOTIFICATIONS_EXP_PERIOD);
