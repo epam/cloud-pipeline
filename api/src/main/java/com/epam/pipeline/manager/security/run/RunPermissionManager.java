@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.security.run;
 
+import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.contextual.ContextualPreference;
@@ -54,10 +55,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -67,6 +72,9 @@ import static java.util.stream.Collectors.toList;
 @Service
 @RequiredArgsConstructor
 public class RunPermissionManager {
+
+    private static final String CHECKED_PARENT_RUNS_ATTRIBUTE = RunPermissionManager.class.getName()
+            + ".checkedParentRuns";
 
     private static final RunVisibilityPolicy DEFAULT_POLICY = RunVisibilityPolicy.INHERIT;
 
@@ -88,6 +96,10 @@ public class RunPermissionManager {
      * @return
      */
     public boolean runPermission(final PipelineRun run, final String permissionName) {
+        return hasRunPermission(run, permissionName) || isReadableChildRun(run, permissionName);
+    }
+
+    private boolean hasRunPermission(final PipelineRun run, final String permissionName) {
         //add assert run not null
         if (permissionsHelper.isOwnerOrAdmin(run.getOwner()) || isRunSshAllowed(run)) {
             return true;
@@ -101,6 +113,58 @@ public class RunPermissionManager {
         return Optional.ofNullable(runManager.loadRunParent(run))
                 .map(parent -> pipelineInheritPermissions(permissionName, (Pipeline) parent))
                 .orElse(false);
+    }
+
+    /**
+     * A child run with no pipeline, of the same owner as its parent run, can be read by whoever can read the parent
+     * run. A worker that an auto-scaled cluster starts is such a run: a tool run of the cluster's owner, which no
+     * other rule lets the readers of the cluster see. Only READ is given this way, only by the direct parent run and
+     * by the rules of {@link #hasRunPermission}, so that a chain of runs gives nothing more. A child run of a
+     * pipeline keeps the rules of its pipeline, and a run that another user attached to the parent stays theirs.
+     */
+    private boolean isReadableChildRun(final PipelineRun run, final String permissionName) {
+        if (!AclPermission.READ_NAME.equals(permissionName) || run.getParentRunId() == null || hasPipeline(run)) {
+            return false;
+        }
+        return findReadableParentRunOwner(run.getParentRunId())
+                .map(owner -> owner.equalsIgnoreCase(run.getOwner()))
+                .orElse(false);
+    }
+
+    /**
+     * The owner of the parent run, if the user can read the run. A request checks each parent run once: a list of
+     * nodes or runs asks for every worker of a cluster.
+     */
+    private Optional<String> findReadableParentRunOwner(final Long parentRunId) {
+        final Map<Long, Optional<String>> checkedParentRuns = getCheckedParentRunsOfRequest();
+        return checkedParentRuns == null
+                ? checkParentRun(parentRunId)
+                : checkedParentRuns.computeIfAbsent(parentRunId, this::checkParentRun);
+    }
+
+    private Optional<String> checkParentRun(final Long parentRunId) {
+        return runCRUDService.findRunByRunId(parentRunId)
+                .filter(parent -> hasRunPermission(parent, AclPermission.READ_NAME))
+                .map(PipelineRun::getOwner);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<Long, Optional<String>> getCheckedParentRunsOfRequest() {
+        final RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
+        if (attributes == null) {
+            return null;
+        }
+        Map<Long, Optional<String>> checkedParentRuns = (Map<Long, Optional<String>>) attributes.getAttribute(
+                CHECKED_PARENT_RUNS_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST);
+        if (checkedParentRuns == null) {
+            checkedParentRuns = new HashMap<>();
+            attributes.setAttribute(CHECKED_PARENT_RUNS_ATTRIBUTE, checkedParentRuns, RequestAttributes.SCOPE_REQUEST);
+        }
+        return checkedParentRuns;
+    }
+
+    private static boolean hasPipeline(final PipelineRun run) {
+        return run.getPipelineId() != null && run.getPipelineId() != 0;
     }
 
     public boolean runPermission(final Long runId, final String permissionName) {
@@ -176,6 +240,19 @@ public class RunPermissionManager {
                         || findPipelineInheritPolicy(pipeline).orElse(globalInheritPolicy))
                 .map(BaseEntity::getId)
                 .collect(toList()));
+        if (filter instanceof PipelineRunFilterVO) {
+            final PipelineRunFilterVO runFilter = (PipelineRunFilterVO) filter;
+            runFilter.setAllowedParentRunId(findReadableParentRunId(runFilter));
+        }
+    }
+
+    /**
+     * The parent run of a search for child runs, if the user can read it: its child runs with no pipeline are then
+     * allowed as well, as {@link #isReadableChildRun} lets the user read them.
+     */
+    private Long findReadableParentRunId(final PipelineRunFilterVO filter) {
+        final Long parentId = filter.getParentId();
+        return parentId != null && findReadableParentRunOwner(parentId).isPresent() ? parentId : null;
     }
 
     public boolean hasEntityPermissionToRunAs(final PipelineStart runVO, final AbstractSecuredEntity entity,

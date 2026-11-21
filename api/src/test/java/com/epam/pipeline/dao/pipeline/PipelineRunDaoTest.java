@@ -105,6 +105,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     private static final String TEST_REVISION_2 = "abcdefg2";
     private static final String TEST_REVISION_3 = "abcdefg3";
     private static final String USER = "test_user";
+    private static final String ANOTHER_USER = "another_test_user";
 
     private static final Long CONFIGURATION_ID_1 = 1L;
     private static final Long CONFIGURATION_ID_2 = 2L;
@@ -714,6 +715,40 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         List<PipelineRun> runs = pipelineRunDao.searchPipelineRuns(filterVO);
         assertFalse(runs.isEmpty());
         assertEquals(1, runs.size());
+    }
+
+    @Test
+    public void shouldAllowChildRunsWithoutPipelineOfAllowedParentRun() {
+        final PipelineRun parentRun = pipelineRun(
+                TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, null, testPipeline.getId());
+        pipelineRunDao.createPipelineRun(parentRun);
+        final PipelineRun toolChildRun = childRun(parentRun, USER, null);
+        childRun(parentRun, USER, testPipeline.getId());
+        childRun(parentRun, ANOTHER_USER, null);
+
+        final PagingRunFilterVO filter = new PagingRunFilterVO();
+        filter.setPage(1);
+        filter.setPageSize(TEST_PAGE_SIZE);
+        filter.setParentId(parentRun.getId());
+        filter.setOwnershipFilter(TEST_USER);
+        filter.setAllowedPipelines(Collections.singletonList(testPipeline.getId() + 1));
+        assertTrue(pipelineRunDao.searchPipelineRuns(filter).isEmpty());
+
+        filter.setAllowedParentRunId(parentRun.getId());
+        final List<PipelineRun> runs = pipelineRunDao.searchPipelineRuns(filter);
+        assertEquals(1, runs.size());
+        assertEquals(toolChildRun.getId(), runs.get(0).getId());
+        assertEquals(1, pipelineRunDao.countFilteredPipelineRuns(filter, null));
+
+        filter.setAllowedPipelines(null);
+        assertEquals(1, pipelineRunDao.searchPipelineRuns(filter).size());
+    }
+
+    private PipelineRun childRun(final PipelineRun parentRun, final String owner, final Long pipelineId) {
+        final PipelineRun run = pipelineRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, owner, null, pipelineId);
+        run.setParentRunId(parentRun.getId());
+        pipelineRunDao.createPipelineRun(run);
+        return run;
     }
 
     @Test

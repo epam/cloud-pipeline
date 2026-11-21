@@ -44,12 +44,16 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.*;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.IMAGE1;
@@ -64,10 +68,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class RunApiServiceTest extends AbstractAclTest {
 
+    private static final String THIRD_USER = "THIRD_USER";
     private static final String VISIBILITY_PREFERENCE_KEY = SystemPreferences.RUN_VISIBILITY_POLICY.getKey();
     private final PipelineRun pipelineRun = getPipelineRun(ID, ANOTHER_SIMPLE_USER);
     private final Pipeline pipeline = getPipeline(ANOTHER_SIMPLE_USER);
@@ -345,6 +351,135 @@ public class RunApiServiceTest extends AbstractAclTest {
 
         assertThat(filter.getOwnershipFilter()).isEqualToIgnoringCase(SIMPLE_USER);
         assertThat(filter.getAllowedPipelines()).isEmpty();
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldLoadChildRunWhenUserCanReadParentRun() {
+        final PipelineRun childRun = mockChildRun(parentRunOfAnotherUser(true), null);
+        doReturn(childRun).when(mockRunManager).loadPipelineRun(ID_2);
+
+        assertThat(runApiService.loadPipelineRun(ID_2)).isEqualTo(childRun);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyLoadChildRunWhenUserCannotReadParentRun() {
+        mockChildRun(parentRunOfAnotherUser(false), null);
+
+        assertThrows(AccessDeniedException.class, () -> runApiService.loadPipelineRun(ID_2));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyLoadChildRunWhenParentRunDoesNotExist() {
+        mockChildRun(parentRunOfAnotherUser(true), null);
+        doReturn(Optional.empty()).when(mockRunCRUDService).findRunByRunId(ID);
+
+        assertThrows(AccessDeniedException.class, () -> runApiService.loadPipelineRun(ID_2));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyLoadChildRunOfPipelineWhenUserCanReadParentRunOnly() {
+        final Pipeline childPipeline = getPipeline(ANOTHER_SIMPLE_USER);
+        childPipeline.setId(ID_3);
+        final PipelineRun childRun = mockChildRun(parentRunOfAnotherUser(true), childPipeline.getId());
+        doReturn(childPipeline).when(mockRunManager).loadRunParent(childRun);
+        initAclEntity(childPipeline);
+
+        assertThrows(AccessDeniedException.class, () -> runApiService.loadPipelineRun(ID_2));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyLoadGrandchildRunWhenUserCanReadGrandparentRunOnly() {
+        final PipelineRun childRun = mockChildRun(parentRunOfAnotherUser(true), null);
+        final PipelineRun grandchildRun = getPipelineRun(ID_3, ANOTHER_SIMPLE_USER);
+        grandchildRun.setPipelineId(null);
+        grandchildRun.setParentRunId(childRun.getId());
+        doReturn(grandchildRun).when(mockRunCRUDService).loadRunById(ID_3);
+        doReturn(Optional.of(childRun)).when(mockRunCRUDService).findRunByRunId(ID_2);
+
+        assertThrows(AccessDeniedException.class, () -> runApiService.loadPipelineRun(ID_3));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyExecuteForChildRunWhenUserCanExecuteParentRun() {
+        final PipelineRun parentRun = getPipelineRun(ID, ANOTHER_SIMPLE_USER);
+        final Pipeline parentPipeline = getPipeline(ANOTHER_SIMPLE_USER);
+        doReturn(parentPipeline).when(mockRunManager).loadRunParent(parentRun);
+        initAclEntity(parentPipeline, Arrays.asList(
+                new UserPermission(SIMPLE_USER, AclPermission.READ.getMask()),
+                new UserPermission(SIMPLE_USER, AclPermission.EXECUTE.getMask())));
+        mockChildRun(parentRun, null);
+
+        assertThrows(AccessDeniedException.class, () -> runApiService.updatePrettyUrl(ID_2, TEST_STRING));
+        notInvoked(mockRunManager).updatePrettyUrl(ID_2, TEST_STRING);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyLoadChildRunOfAnotherOwnerWhenUserCanReadParentRun() {
+        final PipelineRun childRun = mockChildRun(parentRunOfAnotherUser(true), null);
+        childRun.setOwner(THIRD_USER);
+
+        assertThrows(AccessDeniedException.class, () -> runApiService.loadPipelineRun(ID_2));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldCheckParentRunOncePerRequest() {
+        final PipelineRun parentRun = parentRunOfAnotherUser(true);
+        final PipelineRun childRun = mockChildRun(parentRun, null);
+        final PipelineRun anotherChildRun = getPipelineRun(ID_3, ANOTHER_SIMPLE_USER);
+        anotherChildRun.setPipelineId(null);
+        anotherChildRun.setParentRunId(parentRun.getId());
+        doReturn(anotherChildRun).when(mockRunCRUDService).loadRunById(ID_3);
+        doReturn(childRun).when(mockRunManager).loadPipelineRun(ID_2);
+        doReturn(anotherChildRun).when(mockRunManager).loadPipelineRun(ID_3);
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(new MockHttpServletRequest()));
+        try {
+            assertThat(runApiService.loadPipelineRun(ID_2)).isEqualTo(childRun);
+            assertThat(runApiService.loadPipelineRun(ID_3)).isEqualTo(anotherChildRun);
+        } finally {
+            RequestContextHolder.resetRequestAttributes();
+        }
+
+        verify(mockRunCRUDService, times(1)).findRunByRunId(parentRun.getId());
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldAllowChildRunsInSearchWhenUserCanReadParentRun() {
+        final PipelineRun childRun = mockChildRun(parentRunOfAnotherUser(true), null);
+        final PagingRunFilterVO filter = new PagingRunFilterVO();
+        filter.setParentId(ID);
+        doReturn(new PagedResult<>(Collections.singletonList(childRun), 1))
+                .when(mockRunManager).searchPipelineRuns(eq(filter), eq(false));
+
+        final PagedResult<List<PipelineRun>> result = runApiService.searchPipelineRuns(filter, false);
+
+        assertThat(filter.getOwnershipFilter()).isEqualToIgnoringCase(SIMPLE_USER);
+        assertThat(filter.getAllowedParentRunId()).isEqualTo(ID);
+        assertThat(result.getElements()).containsExactly(childRun);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldNotAllowChildRunsInSearchWhenUserCannotReadParentRun() {
+        mockChildRun(parentRunOfAnotherUser(false), null);
+        final PagingRunFilterVO filter = new PagingRunFilterVO();
+        filter.setParentId(ID);
+        filter.setAllowedParentRunId(ID);
+        doReturn(new PagedResult<>(Collections.emptyList(), 0))
+                .when(mockRunManager).searchPipelineRuns(eq(filter), eq(false));
+
+        runApiService.searchPipelineRuns(filter, false);
+
+        assertThat(filter.getOwnershipFilter()).isEqualToIgnoringCase(SIMPLE_USER);
+        assertThat(filter.getAllowedParentRunId()).isNull();
     }
 
     @Test
@@ -891,5 +1026,35 @@ public class RunApiServiceTest extends AbstractAclTest {
         final PipelineStart pipelineStart = getPipelineStart(Collections.emptyMap(), IMAGE1);
         pipelineStart.setPipelineId(ID);
         return pipelineStart;
+    }
+
+    /**
+     * A run (ID) that another user started from a pipeline: SIMPLE_USER can read the pipeline, and so the run,
+     * only when {@code readable}.
+     */
+    private PipelineRun parentRunOfAnotherUser(final boolean readable) {
+        final PipelineRun parentRun = getPipelineRun(ID, ANOTHER_SIMPLE_USER);
+        final Pipeline parentPipeline = getPipeline(ANOTHER_SIMPLE_USER);
+        doReturn(parentPipeline).when(mockRunManager).loadRunParent(parentRun);
+        if (readable) {
+            initAclEntity(parentPipeline, AclPermission.READ);
+        } else {
+            initAclEntity(parentPipeline);
+        }
+        return parentRun;
+    }
+
+    /**
+     * A child run (ID_2) of the parent run, owned by another user. With no pipeline it is a tool run, as the workers
+     * of an auto-scaled cluster are.
+     */
+    private PipelineRun mockChildRun(final PipelineRun parentRun, final Long pipelineId) {
+        final PipelineRun childRun = getPipelineRun(ID_2, ANOTHER_SIMPLE_USER);
+        childRun.setPipelineId(pipelineId);
+        childRun.setParentRunId(parentRun.getId());
+        doReturn(childRun).when(mockRunCRUDService).loadRunById(ID_2);
+        doReturn(Optional.of(parentRun)).when(mockRunCRUDService).findRunByRunId(parentRun.getId());
+        mockAuthUser(SIMPLE_USER);
+        return childRun;
     }
 }
