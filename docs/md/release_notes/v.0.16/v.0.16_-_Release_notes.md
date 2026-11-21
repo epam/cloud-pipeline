@@ -122,6 +122,7 @@
     - [Rocky Linux runs without a repos mirror URL: the warning names the Ubuntu parameter](#rocky-linux-runs-without-a-repos-mirror-url-the-warning-names-the-ubuntu-parameter)
     - [Preferences cannot be saved while `system.notifications.exp.period` has no value](#preferences-cannot-be-saved-while-systemnotificationsexpperiod-has-no-value)
     - [The cleanup of the in-app notifications runs every 86.4 seconds](#the-cleanup-of-the-in-app-notifications-runs-every-864-seconds)
+    - [A user who can see a cluster run does not see its auto-scaled workers](#a-user-who-can-see-a-cluster-run-does-not-see-its-auto-scaled-workers)
     - [`cluster.keep.alive.minutes` of 60 or more stops every free node at once](#clusterkeepaliveminutes-of-60-or-more-stops-every-free-node-at-once)
 
 ***
@@ -1552,6 +1553,13 @@ Now, the preference has a default of `3` days, as on version 0.24 and later, and
 
 Previously, the API ran the cleanup of the old in-app notifications every 86.4 seconds: its period, the API property `scheduled.notifications.cleanup.sec`, was read in milliseconds.
 Now, it is read in seconds, as its name says: with the default `86400`, the cleanup runs when the API starts and then once a day. A deployment that set this property in milliseconds has to set it in seconds.
+
+### A user who can see a cluster run does not see its auto-scaled workers
+
+[#4915](https://github.com/epam/cloud-pipeline/issues/4915)
+
+Previously, a user who could see a cluster run - e.g. a reader of its pipeline - did not see the workers of an auto-scaled cluster when expanding the run in the runs table, and could not open them. A worker is a tool run of the cluster's owner with no pipeline, and each child run was checked on its own.
+Now, a child run with no pipeline that belongs to the owner of its parent run - such as a worker of an auto-scaled cluster - can be viewed, with its logs and its node, by every user who can view the parent run by its own permissions. A child run of a pipeline keeps the rules of its pipeline, and stopping a child run or changing it still requires the permissions on the child run itself. See [13. Permissions](../../manual/13_Permissions/13._Permissions.md).
 
 ### `cluster.keep.alive.minutes` of 60 or more stops every free node at once
 

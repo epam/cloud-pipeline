@@ -60,6 +60,9 @@ public class PipelineRunFilterVO implements AclSecuredRunFilter {
     //these filters are used for ACL filtering
     @JsonIgnore
     private List<Long> allowedPipelines;
+    // the child runs of this run with no pipeline and of its owner are allowed as well: the run is readable
+    @JsonIgnore
+    private Long allowedParentRunId;
     @JsonIgnore
     public boolean isEmpty() {
         return areSimpleArgumentsEmpty() && areGroupArgumentsEmpty();
