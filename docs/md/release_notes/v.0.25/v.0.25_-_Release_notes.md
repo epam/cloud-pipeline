@@ -6,6 +6,7 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [The cleanup of the in-app notifications runs every 86.4 seconds](#the-cleanup-of-the-in-app-notifications-runs-every-864-seconds)
 
 ***
 
@@ -28,3 +29,10 @@ How many candidates one request may carry is bounded by the `cluster.capacity.bl
 ***
 
 ## Notable Bug fixes
+
+### The cleanup of the in-app notifications runs every 86.4 seconds
+
+[#4918](https://github.com/epam/cloud-pipeline/issues/4918)
+
+Previously, the API removed the old in-app notifications (older than `system.notifications.exp.period` days) every 86.4 seconds: the period of this cleanup, the API property `scheduled.notifications.cleanup.sec`, was read in milliseconds.
+Now, it is read in seconds, as its name says: with the default `86400`, the cleanup runs when the API starts and then once a day. A deployment that set this property in milliseconds has to set it in seconds.
