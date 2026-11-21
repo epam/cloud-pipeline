@@ -25,8 +25,14 @@ import com.epam.pipeline.mapper.notification.UserNotificationMapper;
 import com.epam.pipeline.repository.notification.UserNotificationRepository;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.config.EmbeddedValueResolver;
+import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.mock.env.MockEnvironment;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -39,6 +45,8 @@ import static org.mockito.Mockito.verify;
 public class UserNotificationManagerTest {
 
     private static final int EXP_PERIOD_DAYS = 3;
+    private static final String CLEANUP_PERIOD_PROPERTY = "scheduled.notifications.cleanup.sec";
+    private static final long THIRTY_DAYS = 30;
 
     private final UserNotificationRepository userNotificationRepository = mock(UserNotificationRepository.class);
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
@@ -74,5 +82,39 @@ public class UserNotificationManagerTest {
         verify(userNotificationRepository).deleteByCreatedDateLessThan(date.capture());
         assertFalse(date.getValue().isBefore(before));
         assertFalse(date.getValue().isAfter(after));
+    }
+
+    @Test
+    public void cleanUpShouldRunOnceADayByDefault() throws NoSuchMethodException {
+        assertEquals(String.valueOf(TimeUnit.DAYS.toMillis(1)), resolveCleanUpDelay(new MockEnvironment()));
+    }
+
+    @Test
+    public void cleanUpPeriodShouldBeTakenInSeconds() throws NoSuchMethodException {
+        final MockEnvironment environment = new MockEnvironment()
+                .withProperty(CLEANUP_PERIOD_PROPERTY, String.valueOf(TimeUnit.HOURS.toSeconds(1)));
+
+        assertEquals(String.valueOf(TimeUnit.HOURS.toMillis(1)), resolveCleanUpDelay(environment));
+    }
+
+    @Test
+    public void cleanUpPeriodShouldNotOverflowForLongPeriods() throws NoSuchMethodException {
+        final MockEnvironment environment = new MockEnvironment()
+                .withProperty(CLEANUP_PERIOD_PROPERTY, String.valueOf(TimeUnit.DAYS.toSeconds(THIRTY_DAYS)));
+
+        assertEquals(String.valueOf(TimeUnit.DAYS.toMillis(THIRTY_DAYS)), resolveCleanUpDelay(environment));
+    }
+
+    /**
+     * Resolves the delay of the cleanup's schedule as the scheduling of Spring does: the property placeholders
+     * first, then the expression.
+     */
+    private String resolveCleanUpDelay(final ConfigurableEnvironment environment) throws NoSuchMethodException {
+        final Scheduled scheduled = UserNotificationManager.class.getMethod("cleanUp").getAnnotation(Scheduled.class);
+        try (GenericApplicationContext context = new GenericApplicationContext()) {
+            context.setEnvironment(environment);
+            context.refresh();
+            return new EmbeddedValueResolver(context.getBeanFactory()).resolveStringValue(scheduled.fixedDelayString());
+        }
     }
 }
