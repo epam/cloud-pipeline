@@ -1,0 +1,162 @@
+.pick-up-application-modal {
+  width: 75vw;
+  max-height: 85vh;
+  min-height: 50vh;
+}
+
+.authentication-error {
+  color: #c24949;
+  margin-top: 10px;
+}
+
+.pick-up-loading {
+  margin-top: 10px;
+  color: #999;
+  font-style: italic;
+}
+
+.filter {
+  display: flex;
+  align-items: center;
+}
+
+.filter .filter-input {
+  line-height: 26px;
+  font-size: 16px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid transparent;
+  outline: none;
+  border-radius: 5px;
+  color: white;
+  flex: 1;
+}
+
+.users {
+  margin-top: 5px;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.users .user {
+  cursor: pointer;
+  margin: 2px;
+  width: calc(33% - 12px);
+  color: #ccc;
+  padding: 5px;
+  background-color: rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: flex-start;
+  border-radius: 5px;
+  line-height: 16px;
+}
+
+.users .user .attributes {
+  font-size: x-small;
+  display: flex;
+  flex-wrap: wrap;
+  color: #999;
+}
+
+.users .user .attributes .user-attribute {
+  margin: 2px 2px 2px 0;
+}
+
+.users .user .attributes .user-attribute:not(:last-child)::after {
+  content: ',';
+}
+
+.users .user.current {
+  background-color: rgba(200, 200, 255, 0.2);
+}
+
+.users .user:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.back-to-users {
+  margin-right: 10px;
+  color: #ccc;
+  cursor: pointer;
+}
+
+.back-to-users:hover {
+  color: white;
+}
+
+.pick-up-applications {
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.pick-up-applications .pick-up-application {
+  cursor: pointer;
+  margin: 2px;
+  min-width: 200px;
+  width: calc(33% - 12px);
+  color: #ccc;
+  padding: 5px;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 5px;
+}
+
+.pick-up-applications .pick-up-application.ignored {
+  cursor: not-allowed;
+  opacity: 0.25;
+}
+
+.pick-up-application-modal.pick-up-mounts-modal {
+  display: flex;
+  flex-direction: column;
+}
+
+.pick-up-application-modal.pick-up-mounts-modal .mounts-modal-content {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.mounts-modal-content .pick-up-applications {
+  flex: 0 1 auto;
+  overflow: auto;
+}
+
+.pick-up-applications .pick-up-application.mount {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #999;
+}
+
+.pick-up-applications .pick-up-application.mount.selected,
+.pick-up-applications .pick-up-application.mount:hover {
+  color: #fff;
+}
+
+.pick-up-applications .pick-up-application.mount .mount-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pick-up-applications .pick-up-application.mount .mount-title.sensitive {
+  color: #c24949;
+}
+
+.pick-up-applications .pick-up-application.mount.selected .mount-title.sensitive,
+.pick-up-applications .pick-up-application.mount:hover .mount-title.sensitive {
+  color: #e12b2b;
+}
+
+.pick-up-applications .pick-up-application.mount .check {
+  visibility: hidden;
+}
+
+.pick-up-applications .pick-up-application.mount.selected .check {
+  visibility: visible;
+}
