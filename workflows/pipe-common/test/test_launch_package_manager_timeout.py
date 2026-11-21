@@ -16,7 +16,8 @@
 # upgrade commands, configure_package_manager (the Debian 8 refresh, and the Cloud Pipeline repo setup on Ubuntu 22.04
 # and Rocky Linux 8.7) with a package manager call that hangs, and a check that every downloading call has a limit.
 # Also how configure_package_manager adds the Cloud Pipeline apt repo, with no apt-key on the host, and the extra
-# repositories mirror on Rocky Linux 8, 9 and 10, with and without the default repo files of the image.
+# repositories mirror on Rocky Linux 8, 9 and 10, with and without the default repo files of the image, and the
+# warning of a Rocky Linux or Ubuntu run that has no mirror URL.
 # Runs the shell code with bash and stub package managers that hang, with the absolute paths replaced with temporary
 # ones. Needs bash and GNU coreutils. A test that hangs takes 2-4 s. Runs on Python 2.7 and 3.
 
@@ -400,6 +401,15 @@ class ConfigurePackageManagerUbuntuTest(ConfigurePackageManagerTestCase):
         self.assertFalse(os.path.exists(self.path(CP_APT_LIST)))
         self.assertEqual(UBUNTU_SOURCES, _read(self.path('/etc/apt/sources.list')))
 
+    def test_without_a_mirror_url_there_is_no_mirror_and_the_default_list_stays(self):
+        proc = self.configure('ubuntu', '22.04', CP_REPO_EXTRA_ENABLED='true',
+                              CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS='true')
+        self.assert_repo_set_up(proc)
+        self.assertIn('[WARN] Extra repositories mirrors are requested for ubuntu, but no URL is provided via '
+                      'CP_REPO_BASE_EXTRA_URL_UBUNTU or CP_REPO_BASE_EXTRA_URL_DEFAULT', proc.stdout)
+        self.assertFalse(os.path.exists(self.path('/etc/apt/sources.list.d/cloud-pipeline-extra.list')))
+        self.assertEqual(UBUNTU_SOURCES, _read(self.path('/etc/apt/sources.list')))
+
 
 class ConfigurePackageManagerDebian8Test(ConfigurePackageManagerTestCase):
 
@@ -500,13 +510,16 @@ class ConfigurePackageManagerRockyMirrorTest(ConfigurePackageManagerTestCase):
         _stub(self.stub_bin, 'curl', CURL_REPO_STUB)
         _stub(self.stub_bin, 'rpm', RPM_ROCKY_REPOS_STUB)
 
+    def write_repo_files(self, image_repos):
+        for name, ids in list(image_repos.items()) + list(OTHER_REPOS.items()):
+            with open(self.path('/etc/yum.repos.d/' + name), 'w') as f:
+                f.write(''.join('[%s]\nname=%s\nenabled=1\n' % (repo_id, name) for repo_id in ids))
+
     def configure_mirror(self, cp_ver, image_repos, rocky_repos_installed=True, **env):
         os.makedirs(os.path.dirname(self.path(ROCKY_REPOS_DNF_VAR)))
         with open(self.path(ROCKY_REPOS_DNF_VAR), 'w') as f:
             f.write('pub/sig\n')
-        for name, ids in list(image_repos.items()) + list(OTHER_REPOS.items()):
-            with open(self.path('/etc/yum.repos.d/' + name), 'w') as f:
-                f.write(''.join('[%s]\nname=%s\nenabled=1\n' % (repo_id, name) for repo_id in ids))
+        self.write_repo_files(image_repos)
         run_env = {'CP_REPO_EXTRA_ENABLED': 'true', 'CP_REPO_BASE_EXTRA_URL_DEFAULT': MIRROR_URL,
                    'CP_PKG_MANAGER_INSTALL_TIMEOUT_SEC': '2'}
         if rocky_repos_installed:
@@ -575,6 +588,15 @@ class ConfigurePackageManagerRockyMirrorTest(ConfigurePackageManagerTestCase):
         self.assertNotIn('is requested to be delete', proc.stdout)
         # As before: the ids of the mirror file are defined by the image files as well
         self.assertEqual(['cloud-pipeline-extra.repo', 'rocky.repo'], self.repo_ids()['baseos'])
+
+    def test_without_a_mirror_url_there_is_no_mirror_and_the_default_repo_files_stay(self):
+        self.write_repo_files(ROCKY_10_REPOS)
+        proc = self.configure('rocky', '10.2', CP_REPO_EXTRA_ENABLED='true',
+                              CP_REPO_EXTRA_DISABLE_DEFAULT_REPOS_ROCKY='true')
+        self.assertEqual(0, proc.returncode, proc.stderr)
+        self.assertIn('[WARN] Extra repositories mirrors are requested for rocky, but no URL is provided via '
+                      'CP_REPO_BASE_EXTRA_URL_ROCKY or CP_REPO_BASE_EXTRA_URL_DEFAULT', proc.stdout)
+        self.assertEqual(sorted(list(ROCKY_10_REPOS) + list(OTHER_REPOS) + ['cloud-pipeline.repo']), self.repo_files())
 
 
 class LaunchPackageManagerCallsTest(unittest.TestCase):

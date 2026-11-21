@@ -661,7 +661,7 @@ gpgcheck=0
 enabled=0
 EOF
                   else
-                        echo "[WARN] Extra repositories mirrors are requested for ${CP_OS}, but no URL is provided via CP_REPO_BASE_EXTRA_URL_UBUNTU or CP_REPO_BASE_EXTRA_URL_DEFAULT"
+                        echo "[WARN] Extra repositories mirrors are requested for ${CP_OS}, but no URL is provided via CP_REPO_BASE_EXTRA_URL_ROCKY or CP_REPO_BASE_EXTRA_URL_DEFAULT"
                   fi
             fi
       fi
