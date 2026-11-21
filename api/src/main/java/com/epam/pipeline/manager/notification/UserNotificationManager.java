@@ -41,6 +41,7 @@ import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -103,7 +104,9 @@ public class UserNotificationManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public void cleanUp() {
         final Integer expPeriod = preferenceManager.getPreference(SystemPreferences.SYSTEM_NOTIFICATIONS_EXP_PERIOD);
-        cleanUp(LocalDateTime.now().minusDays(expPeriod));
+        if (Objects.nonNull(expPeriod)) {
+            cleanUp(LocalDateTime.now().minusDays(expPeriod));
+        }
     }
 
     private List<UserNotificationEntity> toEntity(final List<UserNotification> notifications) {
