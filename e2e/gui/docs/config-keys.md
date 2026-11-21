@@ -149,6 +149,8 @@ Legend for "pre-exist": what must exist on the platform before the run. "Derive"
 | `e2e.ui.another.testing.tool` | ANOTHER_TESTING_TOOL_NAME | EXEC `RunsTest.platformUsageInfo/Tools` (as another.login, default launch options, stopped after 3 min, must offer RERUN); `Launch_InstanceConfigTest` (`<registry.ip>/<another.group>/<v>` written to config.json; launch form docker image `value()` contains it); notexec LaunchClusterTest | **tool name only**, the group is prepended: `rstudio` | `library/rstudio:latest` runnable by another.login | - |
 | `e2e.ui.test.docker.image` | TEST_DOCKER_IMAGE | EXEC: `DataStoragesCLITest` (`yum install attr`, xattrs on `/cloud-data/<prefix><storage>`), `LaunchLimitMountsTest` lifecycle (unticks "Allow sensitive storages"); `PackageManagerTimeoutsTest` (4781_3) | **tool name only** (another.group prepended): `rockylinux` | `library/rockylinux:latest`, yum works | - |
 | `e2e.ui.dind.docker.image` | DIND_DOCKER_IMAGE | EXEC: RunToolsInSandBox DinD (`docker pull`/`create`, its repository and tag in `docker image ls`) and Singularity (`singularity build <name>.sif docker://<image>`, without the run's registry credentials) | a Docker Hub image as `repository[:tag]` (no tag: `latest`): `rockylinux/rockylinux:9.8` | pullable from the run's node (Docker Hub limits anonymous pulls per IP; the two cases pull it twice), CMD `/bin/bash`; a missing key fails these two cases only | - |
+| `e2e.ui.edge.dns.record.format` | EDGE_DNS_RECORD_FORMAT | EXEC: DNSrecordForRunsTest (1615_1, 1615_2: the expected links of the sub-domain endpoints) | the DNS record name the edge gives a sub-domain endpoint, `{job_name}` for the endpoint location (`pipeline-<run>-<port>-0`, `<friendly URL>-e2e-endpoint`), e.g. `{job_name}-us-east-1`; empty: `{job_name}` | - | `CP_EDGE_DNS_RECORD_FORMAT` of the config map (default `{job_name}.{region_name}`), `{region_name}` filled in with preference `default.edge.region`, or with `CP_EDGE_REGION` of the `cp-edge` deployment when no edge has that region name: the GUI shows the link of the edge nearest to the browser, that one on a tie |
+| `e2e.ui.dns.hosted.zone.base` | DNS_HOSTED_ZONE_BASE | EXEC: DNSrecordForRunsTest (the domain of the sub-domain endpoint links) | DNS zone the API appends to the record, e.g. `example.com`; empty: the test reads preference `instance.dns.hosted.zone.base` in the GUI | - | `dnsHostedZoneBase` of the cloud region of that edge (its `CP_EDGE_REGION_ID`, else preference `default.edge.region.id`, else the default region), else preference `instance.dns.hosted.zone.base` |
 
 ### 2.4 Instances, price types, cloud
 
@@ -260,6 +262,8 @@ e2e.ui.another.group=library
 e2e.ui.another.testing.tool=rstudio
 e2e.ui.test.docker.image=rockylinux
 e2e.ui.dind.docker.image=rockylinux/rockylinux:9.8
+e2e.ui.edge.dns.record.format={job_name}-us-east-1
+e2e.ui.dns.hosted.zone.base=<zone>
 e2e.ui.default.instance.type=m6i.xlarge
 e2e.ui.another.instance.type=m6i.2xlarge
 e2e.ui.default.instance.family.name=m6i
@@ -330,7 +334,9 @@ e2e.ui.backup.storage.offset=<hours>
   version: the version is read from the run's log), `library/rstudio:latest`.
 * default.registry ACL: RoleModelTest (572, 573) removes the entries of `role.user` and clean.history.login and restores the recorded values;
   clean.history.login must see only this one registry.
-* Pipeline templates `DEFAULT`, `PYTHON`, `SHELL` in Create > Pipeline (GitLab working).
+* Pipeline templates `DEFAULT`, `PYTHON`, `SHELL` in Create > Pipeline (GitLab working). `platform-prepare.sh` adds
+  `shell` and `python` for the run, for the test users' role, when the platform does not offer them (fixtures.json
+  `pipeline_templates`), with `library/rockylinux:latest` as the image of their runs (`pipeline_templates_docker_image`).
 
 ### 4.3 Preferences / platform settings
 * `cluster.allowed.instance.types` and `.docker`: allow the family of default.instance.type (`m6i`, which the 0.16 default
@@ -344,8 +350,11 @@ e2e.ui.backup.storage.offset=<hours>
 * `storage.allow.signed.urls=false` (DataStoragesFeaturesTest asserts it when auth.token=true).
 * `storage.object.prefix`: any. A storage the tests create with the path `<name>` gets the bucket `<prefix><name>` and
   is mounted at `/cloud-data/<prefix><name>`; the tests read the prefix (`e2e.ui.storage.name.prefix`).
-* `instance.dns.hosted.zone.base` set, with working wildcard DNS for `pipeline-<run>-<port>-0.<zone>` and
-  `<friendly>-e2e-endpoint.<zone>` (DNSrecordForRunsTest clicks the sub-domain endpoint).
+* A DNS hosted zone (base and id) for the cloud region of the `default.edge.region` edge (the region's own, or
+  `instance.dns.hosted.zone.*`), where the edge creates the records of the sub-domain endpoints, named by
+  `CP_EDGE_DNS_RECORD_FORMAT` (e.g. `pipeline-<run>-<port>-0-<region>` and `<friendly>-e2e-endpoint-<region>` for
+  `{job_name}-{region_name}`): DNSrecordForRunsTest clicks such an endpoint. With several edges, the GUI shows the link
+  of the edge nearest to the browser, so the tests browser must be nearest to that edge, or as near as to the others.
 * `launch.capabilities` contains a `conda` capability (LaunchParametersTest TC-PARAMETERS-7); built-in `NoMachine`
   must produce an endpoint on port 8089 (DNSrecordForRunsTest).
 * `ui.pipe.cli.install.template` with pipe.operation.system and `Linux-Binary` keys; `ui.pipe.cli.configure.template`.

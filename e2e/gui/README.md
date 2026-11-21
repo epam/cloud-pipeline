@@ -96,7 +96,16 @@ class after that at its first page. So:
    minutes on a platform with many storages, and a run with default settings takes the limit only from there or from
    the user's own `CP_CAP_LIMIT_MOUNTS` attribute. The
    tests set the limit on every launch form themselves: none, or the storages a test checks in the run.
-   `"tools_limit_mounts"` in `scripts/fixtures.json` sets another value; empty keeps the tools' settings.
+   `"tools_limit_mounts"` in `scripts/fixtures.json` sets another value; empty keeps the tools' settings. The
+   **pipeline templates** the tests create pipelines from (`"pipeline_templates"`: `shell`, `python`) that the platform
+   does not offer (a deployment can replace the templates of the API image with its own,
+   `CP_PREF_TEMPLATES_DIRECTORY_EXT`) are copied from `workflows/pipe-templates/__COMMON` of the checkout into the
+   templates folder of the API pods, in the folder of the test users' role: only its members and the admins see them.
+   Their `config.json` is filled in as the API does at its start, with the values of the `cp-config-global` config map,
+   and their runs use `"pipeline_templates_docker_image"` (`library/rockylinux:latest`; empty keeps
+   `library/centos:7` of the platform's templates). Step 7 removes them;
+   an API restart drops them too. A run needs the checkout's `workflows/pipe-templates/__COMMON` for this
+   (`E2E_PIPE_TEMPLATES_DIR` gives another folder, `E2E_API_TEMPLATES_DIR` the templates folder of the API pods).
 3. generates the tests config from the live deployment (`scripts/generate-config.sh`, see below)
 4. TC-TEST-ENVIRONMENT-1: unblocks the test users (`scripts/test-users.sh unblock`)
 5. records the platform state (`scripts/platform-state.sh snapshot`): preferences, library, tools, registry catalog,
@@ -195,7 +204,7 @@ Besides the fixtures `platform-prepare.sh` creates, set these before a full run:
 | `E2E_NODE_SSH_KEY`: a private key file on the node of `run-e2e.sh` that logs in to the nodes of the runs | `NodeUnavailableTest` (3297) |
 | `sync_storage.owner` in `scripts/fixtures.json`: the user of the storage synchronization service, or `e2e.ui.sync.storage.*` in the overrides | `StorageSynchronizationTest` |
 | `e2e.ui.nfs.prefix` in the overrides: the path prefix of a new NFS storage, e.g. `<NFS host>:/` | `NfsDataStorageTest` |
-| `CP_EDGE_DNS_RECORD_FORMAT={job_name}` in the `cp-config-global` config map (the edge default is `{job_name}.{region_name}`), with the edge restarted | `DNSrecordForRunsTest` (1615_1, 1615_2) |
+| a DNS hosted zone (base and id) for the cloud region of the `default.edge.region` edge (the region's own, or `instance.dns.hosted.zone.*`), and the tests browser nearest to that edge when there are several; any `CP_EDGE_DNS_RECORD_FORMAT` with `{job_name}`: `generate-config.sh` writes the expected record name and zone (`e2e.ui.edge.dns.record.format`, `e2e.ui.dns.hosted.zone.base`) | `DNSrecordForRunsTest` (1615_1, 1615_2) |
 | `cluster.allowed.instance.types` and `cluster.allowed.instance.types.docker` allow the family of `default_instance_type` (`scripts/fixtures.json`, `m6i`, which the 0.16 default `m5.*,c5.*,r4.*,t2.*` does not), and `c6i.*` and `r6i.*` | `PlatformPreferencesTest` (TC-PARAMETERS-4), `LaunchParametersTest` (TC-PARAMETERS-6, 3433) |
 | `launch.capabilities` has a `conda` capability that loads conda from a shared EFS file system | `LaunchParametersTest` (TC-PARAMETERS-7), excluded in `testng.xml`: a general deployment has no such capability |
 | `PIPELINE_RUN_STATUS` email notifications enabled, an SMTP server for the notifier, and an `email` attribute of the admin (with `--dummy-session`: `--dummy-session-email`); the notifier and the VM monitor on the node of `run-e2e.sh` | `RunStatusNotificationTest`, `CertificateExpirationNotificationTest`, `NodeThresholdNotificationTest` |

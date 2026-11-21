@@ -9,7 +9,8 @@ The Selenide/TestNG suite that drives the platform GUI in a browser. Run it for 
 - Those runs are billed cloud instances, and an abandoned suite keeps them running.
 - `run-e2e.sh` also changes the platform around the tests: it creates and unblocks the test users,
   registers the fixture tools and makes their runs mount no storage by default, deactivates blocking system
-  notifications, mutes the test accounts' in-app notifications, extends the admin's session in the API
+  notifications, mutes the test accounts' in-app notifications, adds the pipeline templates the tests need that the
+  platform does not offer (inside the API pods, for the test users' role), extends the admin's session in the API
   database and acts on the nodes of test runs. It reverts all that when it exits, also on Ctrl-C; a killed
   runner leaves it in place. `--dummy-session` leaves a standing `ROLE_ADMIN` account in place on purpose,
   blocked between runs, with the `email` attribute `--dummy-session-email` gave it and its in-app
