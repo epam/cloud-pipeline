@@ -126,6 +126,8 @@ import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOr
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidCapacityReservationMonitorSettings;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidInstanceTags;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidKeepAliveMinutesForPolicy;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidKeepAlivePolicyForMinutes;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidMapOfLaunchCommands;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidSearchExportTemplateConfig;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
@@ -723,10 +725,14 @@ public class SystemPreferences {
      */
     public static final BooleanPreference CLUSTER_HIGH_NON_BATCH_PRIORITY = new BooleanPreference(
         "cluster.high.non.batch.priority", false, CLUSTER_GROUP, pass);
+    // depends on cluster.keep.alive.policy, see the static block
     public static final IntPreference CLUSTER_KEEP_ALIVE_MINUTES = new IntPreference("cluster.keep.alive.minutes",
-                                                                                10, CLUSTER_GROUP, isGreaterThan(0));
+            10, CLUSTER_GROUP, isGreaterThan(0).and(isValidKeepAliveMinutesForPolicy("cluster.keep.alive.policy")));
     public static final StringPreference CLUSTER_KEEP_ALIVE_POLICY = new StringPreference("cluster.keep.alive.policy",
-            ClusterKeepAlivePolicy.MINUTES_TILL_HOUR.name(), CLUSTER_GROUP, isValidEnum(ClusterKeepAlivePolicy.class));
+            ClusterKeepAlivePolicy.MINUTES_TILL_HOUR.name(), CLUSTER_GROUP,
+            isValidEnum(ClusterKeepAlivePolicy.class)
+                    .and(isValidKeepAlivePolicyForMinutes(CLUSTER_KEEP_ALIVE_MINUTES.getKey())),
+            CLUSTER_KEEP_ALIVE_MINUTES);
     public static final BooleanPreference CLUSTER_SPOT = new BooleanPreference("cluster.spot", true, CLUSTER_GROUP,
                                                                                pass);
     public static final StringPreference CLUSTER_SPOT_ALLOC_STRATEGY = new StringPreference(
@@ -1868,6 +1874,7 @@ public class SystemPreferences {
         GIT_TOKEN.setDependencies(GIT_HOST, GIT_USER_ID, GIT_USER_NAME);
         GIT_USER_ID.setDependencies(GIT_TOKEN, GIT_HOST, GIT_USER_NAME);
         GIT_USER_NAME.setDependencies(GIT_HOST, GIT_TOKEN, GIT_USER_ID);
+        CLUSTER_KEEP_ALIVE_MINUTES.setDependencies(CLUSTER_KEEP_ALIVE_POLICY);
     }
 
     @Autowired

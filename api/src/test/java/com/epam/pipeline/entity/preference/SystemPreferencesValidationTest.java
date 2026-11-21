@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.preference;
 
+import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.AbstractManagerTest;
@@ -174,6 +175,39 @@ public class SystemPreferencesValidationTest extends AbstractManagerTest {
         assertThrows(IllegalArgumentException.class, this::validateGitPreferences);
     }
 
+
+    @Test
+    public void testValidateKeepAliveMinutesAgainstStoredPolicy() {
+        Mockito.doReturn(new Preference(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY.getKey(),
+                        ClusterKeepAlivePolicy.MINUTES_TILL_HOUR.name()))
+                .when(preferenceManager).getSystemPreference(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY);
+        final Preference keepAliveMinutes = new Preference(SystemPreferences.CLUSTER_KEEP_ALIVE_MINUTES.getKey(),
+                String.valueOf(THOUSAND));
+
+        assertThrows(IllegalArgumentException.class,
+            () -> preferences.validate(Collections.singletonList(keepAliveMinutes)));
+    }
+
+    @Test
+    public void testValidateKeepAliveMinutesAgainstStoredIdlePolicy() {
+        Mockito.doReturn(new Preference(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY.getKey(),
+                        ClusterKeepAlivePolicy.IDLE_MINUTES.name()))
+                .when(preferenceManager).getSystemPreference(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY);
+        final Preference keepAliveMinutes = new Preference(SystemPreferences.CLUSTER_KEEP_ALIVE_MINUTES.getKey(),
+                String.valueOf(THOUSAND));
+
+        preferences.validate(Collections.singletonList(keepAliveMinutes));
+    }
+
+    @Test
+    public void testValidateKeepAliveMinutesWithPolicyOfTheSameUpdate() {
+        final Preference keepAliveMinutes = new Preference(SystemPreferences.CLUSTER_KEEP_ALIVE_MINUTES.getKey(),
+                String.valueOf(THOUSAND));
+        final Preference keepAlivePolicy = new Preference(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY.getKey(),
+                ClusterKeepAlivePolicy.IDLE_MINUTES.name());
+
+        preferences.validate(Arrays.asList(keepAliveMinutes, keepAlivePolicy));
+    }
 
     @Test
     public void testDependentPreferencesMapAppropriateFilling() {
