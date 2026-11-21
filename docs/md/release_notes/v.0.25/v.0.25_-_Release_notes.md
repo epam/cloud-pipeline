@@ -6,6 +6,7 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [A user who can see a cluster run does not see its auto-scaled workers](#a-user-who-can-see-a-cluster-run-does-not-see-its-auto-scaled-workers)
 
 ***
 
@@ -28,3 +29,10 @@ How many candidates one request may carry is bounded by the `cluster.capacity.bl
 ***
 
 ## Notable Bug fixes
+
+### A user who can see a cluster run does not see its auto-scaled workers
+
+[#4915](https://github.com/epam/cloud-pipeline/issues/4915)
+
+Previously, a user who could see a cluster run - e.g. a reader of its pipeline - did not see the workers of an auto-scaled cluster when expanding the run in the runs table, and could not open them. A worker is a tool run of the cluster's owner with no pipeline, and each child run was checked on its own.
+Now, a child run with no pipeline that belongs to the owner of its parent run - such as a worker of an auto-scaled cluster - can be viewed, with its logs and its node, by every user who can view the parent run by its own permissions. A child run of a pipeline keeps the rules of its pipeline, and stopping a child run or changing it still requires the permissions on the child run itself.
