@@ -1,0 +1,12 @@
+{
+    "short_description": "Dash is the original low-code framework for rapidly building data apps in Python, R, Julia, and F# ",
+    "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
+    "disk_size": "50",
+    "default_command": "/start.sh",
+    "endpoints": [
+        "{ \"name\": \"Dash\", \"nginx\": { \"port\": \"8050\" }, \"isDefault\": true }"
+    ],
+    "metadata": {
+        "app_type": "${CP_TOOL_LAUNCHER_EXTERNAL_HOST}"
+    }
+}
