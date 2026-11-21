@@ -120,6 +120,8 @@
     - [Rocky Linux 9 and 10 runs: the default repos stay next to the repos mirror](#rocky-linux-9-and-10-runs-the-default-repos-stay-next-to-the-repos-mirror)
     - [Enabling a tool does not register its versions: its custom launch form has no Docker image](#enabling-a-tool-does-not-register-its-versions-its-custom-launch-form-has-no-docker-image)
     - [Rocky Linux runs without a repos mirror URL: the warning names the Ubuntu parameter](#rocky-linux-runs-without-a-repos-mirror-url-the-warning-names-the-ubuntu-parameter)
+    - [Preferences cannot be saved while `system.notifications.exp.period` has no value](#preferences-cannot-be-saved-while-systemnotificationsexpperiod-has-no-value)
+    - [The cleanup of the in-app notifications runs every 86.4 seconds](#the-cleanup-of-the-in-app-notifications-runs-every-864-seconds)
 
 ***
 
@@ -1535,3 +1537,17 @@ Now, enabling a tool registers a version for each tag of its image in the regist
 
 Previously, a Rocky Linux run with the extra repositories mirror (`CP_REPO_EXTRA_ENABLED`) and no mirror URL logged "Extra repositories mirrors are requested for rocky, but no URL is provided via `CP_REPO_BASE_EXTRA_URL_UBUNTU` or `CP_REPO_BASE_EXTRA_URL_DEFAULT`". `CP_REPO_BASE_EXTRA_URL_UBUNTU` is the mirror URL of the Ubuntu runs, so it does not help a Rocky Linux run.
 Now, the warning names `CP_REPO_BASE_EXTRA_URL_ROCKY` or `CP_REPO_BASE_EXTRA_URL_DEFAULT`. As before, such a run uses no mirror and keeps the default repos of the image. See [10.3. Add a Tool](../../manual/10_Manage_Tools/10.3._Add_a_Tool.md#supported-os-families).
+
+### Preferences cannot be saved while `system.notifications.exp.period` has no value
+
+[#4914](https://github.com/epam/cloud-pipeline/issues/4914)
+
+Previously, the system preference `system.notifications.exp.period` - the number of days the in-app notifications are kept - had no default value. On a deployment that never set it, the **System** tab of **Settings** → **Preferences** could not be saved: the empty field of this preference showed "Please enter a valid number". The cleanup of old in-app notifications failed with an error each time it ran, so no notification was removed.
+Now, the preference has a default of `3` days, as on version 0.24 and later, and the cleanup no longer fails. **On a deployment that never set this preference, the in-app notifications older than 3 days are removed as soon as the updated API starts.** To keep them longer, set `system.notifications.exp.period` to the number of days before the update (for example, find it with the search of the **Preferences** page, which checks only the rows it shows).
+
+### The cleanup of the in-app notifications runs every 86.4 seconds
+
+[#4918](https://github.com/epam/cloud-pipeline/issues/4918)
+
+Previously, the API ran the cleanup of the old in-app notifications every 86.4 seconds: its period, the API property `scheduled.notifications.cleanup.sec`, was read in milliseconds.
+Now, it is read in seconds, as its name says: with the default `86400`, the cleanup runs when the API starts and then once a day. A deployment that set this property in milliseconds has to set it in seconds.
