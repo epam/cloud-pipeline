@@ -38,6 +38,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -151,6 +152,12 @@ public class PreferenceManager {
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public void delete(String name) {
+        // a deleted cluster.keep.alive.policy falls back to its default, MINUTES_TILL_HOUR, which has to fit
+        // cluster.keep.alive.minutes
+        if (SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY.getKey().equals(name)) {
+            systemPreferences.validate(
+                    Collections.singletonList(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY.toPreference()));
+        }
         preferenceDao.deletePreference(name);
 
         notifyPreferenceChanged(name, null);

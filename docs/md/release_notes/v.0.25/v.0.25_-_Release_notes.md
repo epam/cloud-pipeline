@@ -6,6 +6,7 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [`cluster.keep.alive.minutes` of 60 or more stops every free node at once](#clusterkeepaliveminutes-of-60-or-more-stops-every-free-node-at-once)
 
 ***
 
@@ -28,3 +29,10 @@ How many candidates one request may carry is bounded by the `cluster.capacity.bl
 ***
 
 ## Notable Bug fixes
+
+### `cluster.keep.alive.minutes` of 60 or more stops every free node at once
+
+[#4919](https://github.com/epam/cloud-pipeline/issues/4919)
+
+Previously, `cluster.keep.alive.minutes` accepted any value greater than 0. With the default keep-alive policy, `MINUTES_TILL_HOUR`, a free node is shut down when 2 to this many minutes are left until the next whole hour since it started, so a value of 60 or more shut every free node down at once: free nodes were not kept for the next runs.
+Now, with `MINUTES_TILL_HOUR`, `cluster.keep.alive.minutes` must be from 1 to 59, and `cluster.keep.alive.policy` cannot be set to `MINUTES_TILL_HOUR` - nor deleted back to it - while `cluster.keep.alive.minutes` is 60 or more; the error says why. With `IDLE_MINUTES` any value greater than 0 is accepted, as before. A value already set is not changed: check it on a deployment that uses `MINUTES_TILL_HOUR`.
