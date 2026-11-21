@@ -123,6 +123,7 @@
     - [Preferences cannot be saved while `system.notifications.exp.period` has no value](#preferences-cannot-be-saved-while-systemnotificationsexpperiod-has-no-value)
     - [The cleanup of the in-app notifications runs every 86.4 seconds](#the-cleanup-of-the-in-app-notifications-runs-every-864-seconds)
     - [A user who can see a cluster run does not see its auto-scaled workers](#a-user-who-can-see-a-cluster-run-does-not-see-its-auto-scaled-workers)
+    - [`cluster.keep.alive.minutes` of 60 or more stops every free node at once](#clusterkeepaliveminutes-of-60-or-more-stops-every-free-node-at-once)
 
 ***
 
@@ -1559,3 +1560,10 @@ Now, it is read in seconds, as its name says: with the default `86400`, the clea
 
 Previously, a user who could see a cluster run - e.g. a reader of its pipeline - did not see the workers of an auto-scaled cluster when expanding the run in the runs table, and could not open them. A worker is a tool run of the cluster's owner with no pipeline, and each child run was checked on its own.
 Now, a child run with no pipeline that belongs to the owner of its parent run - such as a worker of an auto-scaled cluster - can be viewed, with its logs and its node, by every user who can view the parent run by its own permissions. A child run of a pipeline keeps the rules of its pipeline, and stopping a child run or changing it still requires the permissions on the child run itself. See [13. Permissions](../../manual/13_Permissions/13._Permissions.md).
+
+### `cluster.keep.alive.minutes` of 60 or more stops every free node at once
+
+[#4919](https://github.com/epam/cloud-pipeline/issues/4919)
+
+Previously, `cluster.keep.alive.minutes` accepted any value greater than 0. With the default keep-alive policy, `MINUTES_TILL_HOUR`, a free node is shut down when 2 to this many minutes are left until the next whole hour since it started, so a value of 60 or more shut every free node down at once: free nodes were not kept for the next runs.
+Now, with `MINUTES_TILL_HOUR`, `cluster.keep.alive.minutes` must be from 1 to 59, and `cluster.keep.alive.policy` cannot be set to `MINUTES_TILL_HOUR` - nor deleted back to it - while `cluster.keep.alive.minutes` is 60 or more; the error says why. With `IDLE_MINUTES` any value greater than 0 is accepted, as before. A value already set is not changed: check it on a deployment that uses `MINUTES_TILL_HOUR`. See [12.10. Manage system-level settings](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#cluster).
