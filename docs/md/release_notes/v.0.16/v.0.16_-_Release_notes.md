@@ -119,6 +119,7 @@
     - [`pipe storage mount`: removing a folder that is not empty deletes all its content](#pipe-storage-mount-removing-a-folder-that-is-not-empty-deletes-all-its-content)
     - [Rocky Linux 9 and 10 runs: the default repos stay next to the repos mirror](#rocky-linux-9-and-10-runs-the-default-repos-stay-next-to-the-repos-mirror)
     - [Enabling a tool does not register its versions: its custom launch form has no Docker image](#enabling-a-tool-does-not-register-its-versions-its-custom-launch-form-has-no-docker-image)
+    - [Rocky Linux runs without a repos mirror URL: the warning names the Ubuntu parameter](#rocky-linux-runs-without-a-repos-mirror-url-the-warning-names-the-ubuntu-parameter)
 
 ***
 
@@ -1527,3 +1528,10 @@ Now, the run removes the repo files of the image's `rocky-repos` package, on Roc
 
 Previously, enabling a tool in a tool group (**Enable tool**) did not register the versions of its image. A version was registered later: by a scheduled security scan of the tool that completed, by a push of the image to the registry, or when the version settings were saved. Until then, the tool had no version settings, and the launch form that **Run** → **Custom settings** opens for it had an empty **Docker image** field ("Docker image is required") and no tool name in its header.
 Now, enabling a tool registers a version for each tag of its image in the registry, as a completed scan does, so the launch form gets the tool's image at once. A tool enabled before the update gets its versions in the same ways as before.
+
+### Rocky Linux runs without a repos mirror URL: the warning names the Ubuntu parameter
+
+[#4912](https://github.com/epam/cloud-pipeline/issues/4912)
+
+Previously, a Rocky Linux run with the extra repositories mirror (`CP_REPO_EXTRA_ENABLED`) and no mirror URL logged "Extra repositories mirrors are requested for rocky, but no URL is provided via `CP_REPO_BASE_EXTRA_URL_UBUNTU` or `CP_REPO_BASE_EXTRA_URL_DEFAULT`". `CP_REPO_BASE_EXTRA_URL_UBUNTU` is the mirror URL of the Ubuntu runs, so it does not help a Rocky Linux run.
+Now, the warning names `CP_REPO_BASE_EXTRA_URL_ROCKY` or `CP_REPO_BASE_EXTRA_URL_DEFAULT`. As before, such a run uses no mirror and keeps the default repos of the image. See [10.3. Add a Tool](../../manual/10_Manage_Tools/10.3._Add_a_Tool.md#supported-os-families).
