@@ -81,6 +81,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
     private final String childNodesField = "Child nodes:";
     private final String autoScaledUpToField = "Auto-scaled up to:";
     private final String defaultChildNodesField = "Default child nodes:";
+    private static final String CP_CAP_AUTOSCALE_PRICE_TYPE = "CP_CAP_AUTOSCALE_PRICE_TYPE";
 
     @AfterMethod(alwaysRun = true)
     @Override
@@ -651,61 +652,43 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
     }
 
     @Test
-    @TestCase({"EPMCMBIBPC-3160"})
-    public void autoScaledClusterWorkersPriceTypeOnDemand() {
-        library()
-                .createPipeline(Template.SHELL, getPipelineName())
-                .clickOnPipeline(getPipelineName())
-                .firstVersion()
-                .runPipeline()
-                .setDefaultLaunchOptions()
-                .enableClusterLaunch()
-                .clusterSettingsForm(autoScaledSettingForm)
-                .setWorkingNodesCount("1")
-                .setWorkersPriceType(onDemandPrice)
-                .ok()
-                .setPriceType(spotPrice)
-                .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 1d && sleep infinity")
-                .withoutMounts()
-                .launch(this)
-                .shouldContainRun(getPipelineName(), getRunId())
-                .showLog(getRunId())
-                .instanceParameters(instance ->
-                        instance.ensure(PRICE_TYPE, text(spotPrice)))
-                .waitForSshLink()
-                .waitForNestedRunsLink()
-                .clickOnNestedRunLink()
-                .instanceParameters(instance ->
-                        instance.ensure(PRICE_TYPE, text(onDemandPrice)));
-    }
-
-    @Test
     @TestCase({"EPMCMBIBPC-3161"})
     public void autoScaledClusterWorkersPriceTypeMastersConfig() {
-        library()
-                .createPipeline(Template.SHELL, getPipelineName())
-                .clickOnPipeline(getPipelineName())
-                .firstVersion()
-                .runPipeline()
-                .setDefaultLaunchOptions()
-                .enableClusterLaunch()
-                .clusterSettingsForm(autoScaledSettingForm)
-                .setWorkingNodesCount("1")
-                .setWorkersPriceType(mastersConfigPrice)
-                .ok()
-                .setPriceType(spotPrice)
-                .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 1d && sleep infinity")
-                .withoutMounts()
-                .launch(this)
-                .shouldContainRun(getPipelineName(), getRunId())
-                .showLog(getRunId())
-                .instanceParameters(instance ->
-                        instance.ensure(PRICE_TYPE, text(spotPrice)))
-                .waitForSshLink()
-                .waitForNestedRunsLink()
-                .clickOnNestedRunLink()
-                .instanceParameters(instance ->
-                        instance.ensure(PRICE_TYPE, text(spotPrice)));
+        String childRunId = null;
+        try {
+            final LogAO parentRun = library()
+                    .createPipeline(Template.SHELL, getPipelineName())
+                    .clickOnPipeline(getPipelineName())
+                    .firstVersion()
+                    .runPipeline()
+                    .setDefaultLaunchOptions()
+                    .enableClusterLaunch()
+                    .clusterSettingsForm(autoScaledSettingForm)
+                    .setWorkingNodesCount("1")
+                    .setWorkersPriceType(mastersConfigPrice)
+                    .ok()
+                    .setPriceType(onDemandPrice)
+                    .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 1d && sleep infinity")
+                    .withoutMounts()
+                    .launch(this)
+                    .shouldContainRun(getPipelineName(), getRunId())
+                    .showLog(getRunId())
+                    .instanceParameters(instance ->
+                            instance.ensure(PRICE_TYPE, text(onDemandPrice)))
+                    // Master's config sends no workers price type: the workers get the master run's own price type
+                    .expandTab(PARAMETERS)
+                    .ensure(configurationParameter("CP_CAP_AUTOSCALE", "true"), exist)
+                    .ensure(configurationParameter(CP_CAP_AUTOSCALE_PRICE_TYPE), not(exist))
+                    .waitForSshLink()
+                    .waitForNestedRunsLink();
+            childRunId = parentRun.getNestedRunID(1);
+            parentRun
+                    .clickOnNestedRunLink()
+                    .instanceParameters(instance ->
+                            instance.ensure(PRICE_TYPE, text(onDemandPrice)));
+        } finally {
+            stopClusterRuns(getRunId(), childRunId);
+        }
     }
 
     private static PipelineRunFormAO onLaunchPage() {
