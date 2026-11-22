@@ -37,11 +37,13 @@ import java.util.stream.StreamSupport;
 
 import static com.codeborne.selenide.Condition.appears;
 import static com.codeborne.selenide.Condition.empty;
+import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
+import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.Configuration.confirmConfigurationChange;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
@@ -108,9 +110,6 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
 
     @BeforeClass
     public void initialLogout() {
-        // read before any restriction of the class, as the admin the base class has signed in
-        restrictedFamily = allowedFamilyOtherThan(PlatformApi.get("cluster/instance/allowed"),
-                familyOf(defaultInstanceType));
         logout();
     }
 
@@ -214,7 +213,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     public void validationOfInstanceTypesRestrictionsExistingObjects() {
         try {
             loginAs(admin);
-            setMaskForUser(user.login, instanceTypesMask, format("%s.*", restrictedFamily));
+            setMaskForUser(user.login, instanceTypesMask, format("%s.*", restrictedFamily()));
             logout();
             validationOfInstanceTypesRestrictions();
         } finally {
@@ -229,7 +228,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     public void validationOfInstanceTypesRestrictionsCreatingObjects() {
         try {
             loginAs(admin);
-            setMaskForUser(user.login, instanceTypesMask, format("%s.*", restrictedFamily));
+            setMaskForUser(user.login, instanceTypesMask, format("%s.*", restrictedFamily()));
             logout();
             loginAs(user);
             library()
@@ -240,7 +239,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                     .editConfiguration("default", profile ->
                             profile
                                     .expandTab(EXEC_ENVIRONMENT)
-                                    .checkValueIsInDropDown(INSTANCE_TYPE, restrictedFamily)
+                                    .checkValueIsInDropDown(INSTANCE_TYPE, restrictedFamily())
                     )
                     .click(CODE_TAB)
                     .exitFromConfigurationWithoutSaved();
@@ -251,7 +250,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                             configuration
                                     .sleep(2, SECONDS)
                                     .expandTabs(execEnvironmentTab)
-                                    .checkValueIsInDropDown(INSTANCE_TYPE, restrictedFamily)
+                                    .checkValueIsInDropDown(INSTANCE_TYPE, restrictedFamily())
                     );
         } finally {
             logout();
@@ -265,7 +264,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     public void validationOfInstanceTypesRestrictionsForUserGroup() {
         try {
             loginAs(admin);
-            setMaskForGroup(testGroup, instanceTypesMask, format("%s.*", restrictedFamily));
+            setMaskForGroup(testGroup, instanceTypesMask, format("%s.*", restrictedFamily()));
             logout();
             validationOfInstanceTypesRestrictions();
         } finally {
@@ -365,14 +364,15 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                     )
                                     // the configuration loads the pipeline's settings after "Yes", and they can
                                     // overwrite a disk typed earlier (develop's test, ec614de3b2)
-                                    .ensure(byClassName("ant-modal-body"), not(visible))
+                                    // antd renders a dialog under the body, not in the configuration's page
+                                    .ensure($$(byClassName("ant-modal-body")).filterBy(visible).first(), not(exist))
                                     .sleep(2, SECONDS)
                                     .setValue(DISK, customDisk)
                                     .sleep(3, SECONDS)
                                     .click(SAVE)
                                     .ensureDisable(SAVE))
                     .sleep(2, SECONDS);
-            setClusterAllowedStringPreference(clusterAllowedInstanceTypes, format("%s.*", restrictedFamily));
+            setClusterAllowedStringPreference(clusterAllowedInstanceTypes, format("%s.*", restrictedFamily()));
             logout();
             loginAs(user);
             library()
@@ -384,7 +384,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                     .expandTab(EXEC_ENVIRONMENT)
                                     .ensure(INSTANCE_TYPE, empty)
                                     .ensure(DISK, not(empty))
-                                    .checkValueIsInDropDown(INSTANCE_TYPE, restrictedFamily)
+                                    .checkValueIsInDropDown(INSTANCE_TYPE, restrictedFamily())
                     )
                     .click(CODE_TAB)
                     .exitFromConfigurationWithoutSaved();
@@ -407,7 +407,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                     .sleep(4, SECONDS)
                                     .ensure(DISK, value(customDisk))
                                     .ensure(INSTANCE_TYPE, empty)
-                                    .checkValueIsInDropDown(INSTANCE_TYPE, restrictedFamily)
+                                    .checkValueIsInDropDown(INSTANCE_TYPE, restrictedFamily())
                     )
                     .sleep(5, SECONDS)
                     .exitFromConfigurationWithoutSaved();
@@ -711,6 +711,18 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     }
 
     /**
+     * The family the pipeline instance types are restricted to, read once, as the admin and before that case sets its
+     * restriction (each case resets its own): a failure fails only the cases that use it.
+     */
+    private String restrictedFamily() {
+        if (restrictedFamily == null) {
+            restrictedFamily = allowedFamilyOtherThan(PlatformApi.get("cluster/instance/allowed"),
+                    familyOf(defaultInstanceType));
+        }
+        return restrictedFamily;
+    }
+
+    /**
      * The first family, by name, of the pipeline instance types allowed for the admin (cluster/instance/allowed) other
      * than the given one: the platform offers and allows its types, so the drop-down lists them once the instance types
      * are restricted to it.
@@ -740,7 +752,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                         profile
                                 .expandTab(EXEC_ENVIRONMENT)
                                 .ensure(INSTANCE_TYPE, empty)
-                                .checkValueIsInDropDown(INSTANCE_TYPE, restrictedFamily)
+                                .checkValueIsInDropDown(INSTANCE_TYPE, restrictedFamily())
                 )
                 .click(CODE_TAB)
                 .exitFromConfigurationWithoutSaved();
@@ -753,7 +765,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                 .ensure(DISK, value(customDisk))
                                 .ensure(DOCKER_IMAGE, value(defaultGroup), value(testingTool))
                                 .ensure(INSTANCE_TYPE, empty)
-                                .checkValueIsInDropDown(INSTANCE_TYPE, restrictedFamily)
+                                .checkValueIsInDropDown(INSTANCE_TYPE, restrictedFamily())
                 )
                 .exitFromConfigurationWithoutSaved();
     }

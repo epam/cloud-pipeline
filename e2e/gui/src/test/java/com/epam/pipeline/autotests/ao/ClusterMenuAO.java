@@ -65,25 +65,24 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     /**
-     * A label of a node row that starts with the text, e.g. "CP-" for the Cloud Pipeline services that run on a node.
+     * A label of a node row that the GUI marks with the master or a Cloud Pipeline role: the cluster page's tags carry
+     * the roles of their labels (client/.../cluster/renderers.js, data-master and data-cloud-pipeline-role).
      */
-    public static By nodeLabelStartingWith(final String text) {
-        return byXpath(String.format(
-            ".//*[@class = 'cluster__cluster-node-row-labels']/*[starts-with(normalize-space(.), '%s')]", text
-        ));
+    public static By platformRoleLabel() {
+        return byXpath(".//*[@class = 'cluster__cluster-node-row-labels']"
+                + "/*[@data-master = 'true' or @data-cloud-pipeline-role = 'true']");
     }
 
     /**
-     * A node the GUI does not let terminate: a master node, or a node that runs Cloud Pipeline services - any
-     * {@code cloud-pipeline/<service>} label, shown as "CP-..." (client/.../cluster/node-roles.js, Cluster.js
-     * nodeIsSlave). A deployment can run its services on several nodes.
+     * A node the GUI does not let terminate: one with a label of the master or of a Cloud Pipeline role, as
+     * Cluster.js nodeIsSlave decides. A deployment can run its services on several nodes.
      */
     public static Condition master() {
         return new Condition("master node") {
             @Override
             public boolean apply(Driver driver, final WebElement element) {
                 return $(element).has(or("master node", contains(nodeLabel("MASTER")),
-                        contains(nodeLabelStartingWith("CP-")),
+                        contains(platformRoleLabel()),
                         contains(nodeLabel("EDGE")),
                         contains(nodeLabel("CP-SEARCH-ELK")),
                         contains(nodeLabel("HEAPSTER")),
