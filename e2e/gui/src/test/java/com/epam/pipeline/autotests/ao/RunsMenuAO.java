@@ -131,10 +131,22 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
             throw new AssertionError(format("Run %s is %s, not %s, after %d ms", runId, current, status,
                     COMPLETION_TIMEOUT));
         }
-        final String filters = PlatformApi.get("preferences/" + RUNS_FILTERS).path("value").asText("");
-        $(byId(runsTabKey(filters, status) + "-runs-button")).shouldBe(visible).click();
+        $(byId(runsTabKey(runsFilters(), status) + "-runs-button")).shouldBe(visible).click();
         tableShouldAppear();
         return new RunsMenuAO();
+    }
+
+    /**
+     * The value of ui.runs.filters, or none where the user may not read it (a preference made invisible): the GUI
+     * then shows the default tabs too, as it loads the preferences visible to the user. PlatformApi reports a
+     * refused request as an assertion.
+     */
+    private static String runsFilters() {
+        try {
+            return PlatformApi.get("preferences/" + RUNS_FILTERS).path("value").asText("");
+        } catch (AssertionError e) {
+            return "";
+        }
     }
 
     private static String runStatus(final String runId) {
