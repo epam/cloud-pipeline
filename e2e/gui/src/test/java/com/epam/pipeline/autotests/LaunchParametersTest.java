@@ -352,12 +352,13 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                             .assertNextStringIsVisible("Grid engine profile has been found: main.q", prompt)
                             .assertPageAfterCommandContainsStrings(command[0],
                                     "Initiating grid engine profiles listing...")
+                            .clearScreen(prompt)
                             .execute(command[1])
                             .assertPageContains(format("Grid engine %s profile.", testProfile))
                             .execute(":q!")
-                            .waitUntilTextAppears(parentRunId)
-                            .assertPageAfterCommandContainsStrings(command[1],
-                                    format("Grid engine %s profile has been created.", testProfile))
+                            // the terminal does not give the screen before the editor back, so the create's
+                            // command line is gone after it: its message is checked on the screen instead
+                            .assertPageContains(format("Grid engine %s profile has been created.", testProfile))
                             .execute(command[0])
                             .assertNextStringIsVisible(format("Grid engine profile has been found: %s", testProfile),
                                     prompt)

@@ -123,7 +123,7 @@ public class LogAO implements AccessObject<LogAO> {
         get(SSH_LINK).shouldBe(visible).click();
         switchTo().window(1);
         switchTo().frame(0);
-        return new ShellAO();
+        return new ShellAO().waitForFirstPrompt();
     }
 
     /**

@@ -46,7 +46,9 @@ import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.matchText;
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
+import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.LogAO.containsMessages;
@@ -162,7 +164,7 @@ public class LaunchLimitMountsTest
                 .ensureVisible(SEARCH_INPUT)
                 .ensureAll(disabled, SELECT_ALL, SELECT_ALL_NON_SENSITIVE)
                 .ensureAll(enabled, CLEAR_SELECTION, CANCEL, OK)
-                .validateFields("", "Name", "Type")
+                .validateStorageRows()
                 .storagesCountShouldBeGreaterThan(2)
                 .clearSelection()
                 .ensureAll(enabled, SELECT_ALL, SELECT_ALL_NON_SENSITIVE, OK)
@@ -219,7 +221,10 @@ public class LaunchLimitMountsTest
                 .ensure(LIMIT_MOUNTS, text("All available non-sensitive storages"))
                 .launch(this)
                 .showLog(getLastRunId())
-                .ensureNotVisible(PARAMETERS)
+                // the launch form sends the run capabilities with every run (CP_CAP_DCV, CP_CAP_SGE etc., false), so
+                // the run has parameters: without a limit, CP_CAP_LIMIT_MOUNTS is not one of them
+                .expandTab(PARAMETERS)
+                .ensure(byXpath(format(".//*[starts-with(normalize-space(.), '%s:')]", CP_CAP_LIMIT_MOUNTS)), not(exist))
                 .waitForSshLink()
                 .waitForTask(mountDataStoragesTask)
                 .clickMountBuckets()
@@ -257,7 +262,7 @@ public class LaunchLimitMountsTest
                 .ensureVisible(SEARCH_INPUT)
                 .ensureAll(disabled, SELECT_ALL_NON_SENSITIVE)
                 .ensureAll(enabled, SELECT_ALL, CLEAR_SELECTION, CANCEL, OK)
-                .validateFields("", "Name", "Type")
+                .validateStorageRows()
                 .storagesCountShouldBeGreaterThan(2)
                 .clearSelection()
                 .ensureAll(enabled, SELECT_ALL, SELECT_ALL_NON_SENSITIVE, OK)

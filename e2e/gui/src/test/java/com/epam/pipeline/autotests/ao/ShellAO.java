@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.ex.UIAssertionError;
 import com.epam.pipeline.autotests.ao.ShellThemeSettingsAO.Theme;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.Utils;
@@ -40,6 +41,7 @@ import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.Conditions.backgroundColor;
 import static com.epam.pipeline.autotests.utils.Conditions.textColor;
 import static com.codeborne.selenide.CollectionCondition.size;
+import static com.codeborne.selenide.CollectionCondition.sizeGreaterThan;
 import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
@@ -79,7 +81,23 @@ public class ShellAO implements AccessObject<ShellAO> {
 
     private static ShellAO open() {
         switchTo().frame(0);
-        return new ShellAO();
+        return new ShellAO().waitForFirstPrompt();
+    }
+
+    /**
+     * Waits until the terminal shows a prompt, a row that ends with "#" or "$", before anything is typed. Keys typed
+     * while the web terminal is still connecting are lost, and only an Enter that comes after the connection
+     * reaches the shell: an empty second prompt, and the command never runs (EPMCMBIBPC-1590, 3154). The wait
+     * fails nothing: a terminal that does not connect is left to the callers, which reopen it
+     * ({@link #waitUntilTextAppears}).
+     */
+    ShellAO waitForFirstPrompt() {
+        try {
+            $$("x-row").filterBy(matchText("[#$]\\s*$")).shouldHave(sizeGreaterThan(0), ofMillis(DEFAULT_TIMEOUT));
+        } catch (UIAssertionError e) {
+            System.out.printf("[WARN] The terminal shows no prompt after %d ms%n", DEFAULT_TIMEOUT);
+        }
+        return this;
     }
 
     public ShellAO assertPageContains(String text) {
@@ -163,9 +181,16 @@ public class ShellAO implements AccessObject<ShellAO> {
         return this;
     }
 
+    /**
+     * Returns the text shown from the first occurrence of the command on, without line breaks and without the
+     * command itself. The terminal keeps only the rows on the screen: a command that has scrolled off is not found.
+     */
     public String lastCommandResult(String command) {
-        return context().text().substring(context().text().indexOf(command))
-                .replace("\n", "").replace(command, "");
+        final String page = context().text();
+        final int commandIndex = page.indexOf(command);
+        assertTrue(commandIndex >= 0, format("Command '%s' is not shown in the terminal: "
+                + "it may have scrolled off the screen", command));
+        return page.substring(commandIndex).replace("\n", "").replace(command, "");
     }
 
     /**

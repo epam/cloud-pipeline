@@ -64,11 +64,26 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
         ));
     }
 
+    /**
+     * A label of a node row that starts with the text, e.g. "CP-" for the Cloud Pipeline services that run on a node.
+     */
+    public static By nodeLabelStartingWith(final String text) {
+        return byXpath(String.format(
+            ".//*[@class = 'cluster__cluster-node-row-labels']/*[starts-with(normalize-space(.), '%s')]", text
+        ));
+    }
+
+    /**
+     * A node the GUI does not let terminate: a master node, or a node that runs Cloud Pipeline services - any
+     * {@code cloud-pipeline/<service>} label, shown as "CP-..." (client/.../cluster/node-roles.js, Cluster.js
+     * nodeIsSlave). A deployment can run its services on several nodes.
+     */
     public static Condition master() {
         return new Condition("master node") {
             @Override
             public boolean apply(Driver driver, final WebElement element) {
                 return $(element).has(or("master node", contains(nodeLabel("MASTER")),
+                        contains(nodeLabelStartingWith("CP-")),
                         contains(nodeLabel("EDGE")),
                         contains(nodeLabel("CP-SEARCH-ELK")),
                         contains(nodeLabel("HEAPSTER")),
