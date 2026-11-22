@@ -50,6 +50,12 @@ import static org.testng.Assert.assertEquals;
 
 public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
 
+    // The pages of the library's content list (contentListItem)
+    private static final By CONTENT_NEXT_PAGE =
+            byCssSelector("#pipelines-library-content ul.ant-pagination li.ant-pagination-next");
+    private static final By CONTENT_FIRST_PAGE =
+            byCssSelector("#pipelines-library-content ul.ant-pagination li.ant-pagination-item-1");
+
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
             entry(CREATE, context().find(byId("create-button"))),
             entry(CREATE_PIPELINE, $(byClassName("create-pipeline-sub-menu-button"))),
@@ -330,21 +336,46 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
 
     public PipelinesLibraryAO validatePipelineInTreeAndList(final String pipelineName) {
         $(byId("pipelines-library-tree-container")).find(pipelineWithName(pipelineName)).shouldBe(visible);
-        $(byId("pipelines-library-content")).find(objectInList(pipelineName)).shouldBe(visible);
+        contentListItem(pipelineName);
         return this;
     }
 
     public PipelinesLibraryAO validatePipelineInFolder(final String folderName, final String pipelineName) {
         $(byId("pipelines-library-tree-container")).find(treeItemInFolder(folderName, pipelineName))
                 .shouldBe(visible);
-        $(byId("pipelines-library-content")).find(objectInList(pipelineName)).shouldBe(visible);
+        contentListItem(pipelineName);
         return this;
     }
 
     public PipelinesLibraryAO validateFolderInTreeAndList(final String folderName) {
         $(byId("pipelines-library-tree-container")).find(titleOfTreeItem(treeItem(folderName))).shouldBe(visible);
-        $(byId("pipelines-library-content")).find(objectInList(folderName)).shouldBe(visible);
+        contentListItem(folderName);
         return this;
+    }
+
+    /**
+     * The item of the library's content list with the name, on whichever page of the list it is. The list shows 40
+     * items a page (the antd table pagination of the library root and of a folder, Browser.js and Folder.js), so on a
+     * library with more items a new one can be on any page. The pages are of the items the GUI has loaded, so a page
+     * shows at once. The pages are looked through until the item is shown, from the first page again after the last,
+     * as a new item is listed only once the list has reloaded; it fails as before when the item does not appear within
+     * the default timeout.
+     */
+    private SelenideElement contentListItem(final String name) {
+        final SelenideElement item = $(byId("pipelines-library-content")).find(objectInList(name));
+        final long deadline = System.currentTimeMillis() + C.DEFAULT_TIMEOUT;
+        while (!item.is(visible) && System.currentTimeMillis() < deadline) {
+            final SelenideElement next = $(CONTENT_NEXT_PAGE);
+            if (next.exists() && !next.has(cssClass("ant-pagination-disabled"))) {
+                next.click();
+                continue;
+            }
+            if ($(CONTENT_FIRST_PAGE).exists()) {
+                $(CONTENT_FIRST_PAGE).click();
+            }
+            sleep(1, SECONDS);
+        }
+        return item.shouldBe(visible);
     }
 
     private static By objectInList(final String name) {
@@ -417,7 +448,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
      * Clicks the RUN button of the pipeline row in the objects list. The first button of the row is the issues one.
      */
     public PipelineRunFormAO runPipelineFromTable(String name) {
-        $(byId("pipelines-library-content")).find(objectInList(name)).shouldBe(visible)
+        contentListItem(name)
                 .closest("tr").find(byCssSelector("button[id$='-launch-button']")).shouldBe(visible).click();
         return new PipelineRunFormAO();
     }
