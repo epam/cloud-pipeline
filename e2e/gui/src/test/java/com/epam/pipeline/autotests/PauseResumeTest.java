@@ -214,10 +214,14 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 .setPriceType(priceType)
                 .doNotMountStoragesSelect(true)
                 .launchTool(this, nameWithoutGroup(tool))
-                .activeRuns()
+                // the run is looked for on the tab that lists its status, once it has it: a deployment can list the
+                // PAUSED runs on a tab of their own (ui.runs.filters), and by default "Active Runs" lists them all
+                .runsTabWithStatus(getLastRunId(), "RUNNING")
                 .waitUntilPauseButtonAppear(getLastRunId())
                 .pause(getLastRunId(), nameWithoutGroup(tool))
+                .runsTabWithStatus(getLastRunId(), "PAUSING")
                 .pausingLabelShouldAppear(getLastRunId())
+                .runsTabWithStatus(getLastRunId(), "PAUSED")
                 .waitUntilResumeButtonAppear(getLastRunId())
                 .showLog(getLastRunId())
                 .ensure(runId(), matchText(String.format("#%s\\b", getLastRunId())))
@@ -229,8 +233,11 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 .ensure(ENDPOINT, hidden)
                 .ensure(SSH_LINK, hidden);
         runsMenu()
+                .runsTabWithStatus(getLastRunId(), "PAUSED")
                 .resume(getLastRunId(), nameWithoutGroup(tool))
+                .runsTabWithStatus(getLastRunId(), "RESUMING")
                 .resumingLabelShouldAppear(getLastRunId())
+                .runsTabWithStatus(getLastRunId(), "RUNNING")
                 .waitUntilPauseButtonAppear(getLastRunId())
                 .showLog(getLastRunId())
                 // the endpoint is back when cp-edge recreates its route: its sync runs once a minute, after the pod
