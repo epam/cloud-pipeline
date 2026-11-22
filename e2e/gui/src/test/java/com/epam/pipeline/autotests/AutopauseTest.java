@@ -95,16 +95,17 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
 
         final String run1 = launchTool(onDemand, enabled);
         final String run2 = launchTool(defaultPriceType, hidden);
+        // each run is looked for on the tab that lists its status, once it has it: a deployment can list the PAUSED
+        // runs on a tab of their own (ui.runs.filters), and by default "Active Runs" lists them
         runsMenu()
-                .activeRuns()
+                .runsTabWithStatus(run1, "PAUSED")
                 .waitUntilResumeButtonAppear(run1)
                 .validateStatus(run1, LogAO.Status.PAUSED)
-                .waitForCompletion(run2)
-                .ensure(runWithId(run2), hidden)
-                .completedRuns()
+                .runsTabWithStatus(run2, "STOPPED")
                 .ensure(runWithId(run2), visible)
-                .activeRuns()
+                .runsTabWithStatus(run1, "PAUSED")
                 .resume(run1, nameWithoutGroup(tool))
+                .runsTabWithStatus(run1, "RUNNING")
                 .waitUntilStopButtonAppear(run1)
                 .stopRun(run1);
     }
@@ -118,10 +119,11 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
         final String runId = launchTool(onDemand, enabled);
 
         runsMenu()
-                .activeRuns()
+                .runsTabWithStatus(runId, "PAUSED")
                 .waitUntilResumeButtonAppear(runId)
                 .validateStatus(runId, LogAO.Status.PAUSED)
                 .resume(runId, nameWithoutGroup(tool))
+                .runsTabWithStatus(runId, "RUNNING")
                 .waitUntilStopButtonAppear(runId)
                 .stopRun(runId);
     }
