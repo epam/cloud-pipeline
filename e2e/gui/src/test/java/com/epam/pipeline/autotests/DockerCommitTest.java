@@ -117,10 +117,12 @@ public class DockerCommitTest
                 .perform(registry, group, tool, tool ->
                         tool.settings()
                                 .ensure(PORT, value(endpoint))
-                                .ensure(INSTANCE_TYPE, value(defaultInstanceType))
-                                .ensure(PRICE_TYPE, value(defaultPriceType))
+                                // a select's element is a div, with the chosen option as its text and no value
+                                .ensure(INSTANCE_TYPE, text(defaultInstanceType))
+                                .ensure(PRICE_TYPE, text(defaultPriceType))
                                 .ensure(DISK, value(defaultDiskSize))
-                                .ensure(DEFAULT_COMMAND, value(defaultCommand))
+                                // the command is the text of the editor's first line (a pre element, with no value)
+                                .ensure(DEFAULT_COMMAND, text(defaultCommand))
                                 .run(this)
                 )
                 .showLog(getLastRunId())
@@ -184,10 +186,10 @@ public class DockerCommitTest
                 .perform(registry, group, tool, tool ->
                         tool.settings()
                                 .ensure(PORT, value(endpoint))
-                                .ensure(INSTANCE_TYPE, value(defaultInstanceType))
-                                .ensure(PRICE_TYPE, value(defaultPriceType))
+                                .ensure(INSTANCE_TYPE, text(defaultInstanceType))
+                                .ensure(PRICE_TYPE, text(defaultPriceType))
                                 .ensure(DISK, value(defaultDiskSize))
-                                .ensure(DEFAULT_COMMAND, value(defaultCommand))
+                                .ensure(DEFAULT_COMMAND, text(defaultCommand))
                                 .run(this)
                 )
                 .log(getLastRunId(), log ->
@@ -276,10 +278,10 @@ public class DockerCommitTest
                 .perform(registry, group, tool, tool ->
                         tool.settings()
                                 .ensure(PORT, value(endpoint))
-                                .ensure(INSTANCE_TYPE, value(defaultInstanceType))
-                                .ensure(PRICE_TYPE, value(defaultPriceType))
+                                .ensure(INSTANCE_TYPE, text(defaultInstanceType))
+                                .ensure(PRICE_TYPE, text(defaultPriceType))
                                 .ensure(DISK, value(defaultDiskSize))
-                                .ensure(DEFAULT_COMMAND, value(defaultCommand))
+                                .ensure(DEFAULT_COMMAND, text(defaultCommand))
                                 .run(this)
                 )
                 .log(getLastRunId(), log ->
@@ -310,8 +312,8 @@ public class DockerCommitTest
                 .perform(registry, personalGroup, toolInPersonalGroup, tool ->
                         tool.settings()
                                 .ensure(PORT, value(endpoint))
-                                .ensure(INSTANCE_TYPE, value(defaultInstanceType))
-                                .ensure(PRICE_TYPE, value(defaultPriceType))
+                                .ensure(INSTANCE_TYPE, text(defaultInstanceType))
+                                .ensure(PRICE_TYPE, text(defaultPriceType))
                                 .ensure(DISK, value(defaultDiskSize))
                                 .setDefaultCommand(defaultCommand)
                                 .save()
@@ -337,10 +339,10 @@ public class DockerCommitTest
                 .perform(registry, group, tool, tool ->
                         tool.settings()
                                 .ensure(PORT, value(endpoint))
-                                .ensure(INSTANCE_TYPE, value(defaultInstanceType))
-                                .ensure(PRICE_TYPE, value(defaultPriceType))
+                                .ensure(INSTANCE_TYPE, text(defaultInstanceType))
+                                .ensure(PRICE_TYPE, text(defaultPriceType))
                                 .ensure(DISK, value(defaultDiskSize))
-                                .ensure(DEFAULT_COMMAND, value(defaultCommand))
+                                .ensure(DEFAULT_COMMAND, text(defaultCommand))
                                 .run(this)
                 )
                 .log(getLastRunId(), log ->

@@ -1136,6 +1136,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 private final GroupsTabAO parentAO;
                 public final Map<Primitive, SelenideElement> elements = initialiseElements(
                         entry(OK, context().find(By.id("close-edit-user-form"))),
+                        entry(CANCEL, context().find(byXpath(".//button[normalize-space(.) = 'CANCEL']"))),
                         entry(PRICE_TYPE, context().find(byXpath(
                                 format(".//div/b[text()='%s']/following::div/input", "Allowed price types"))))
                 );
@@ -1150,9 +1151,19 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     return elements;
                 }
 
+                /**
+                 * Closes the dialog. OK saves the changes and is disabled while there is none
+                 * (client/.../settings/forms/EditRoleDialog.js), e.g. when a cleared field was already empty:
+                 * CANCEL closes the dialog then, as {@link EditUserPopup#ok()} does.
+                 */
                 @Override
                 public GroupsTabAO ok() {
-                    click(OK);
+                    if (get(OK).isEnabled()) {
+                        click(OK);
+                    } else {
+                        click(CANCEL);
+                    }
+                    get(OK).shouldNotBe(visible);
                     return parentAO;
                 }
 

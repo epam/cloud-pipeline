@@ -16,14 +16,15 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
-import com.epam.pipeline.autotests.utils.SelenideElements;
-import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 
 import java.util.Map;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.CollectionCondition.sizeGreaterThan;
-import static com.codeborne.selenide.CollectionCondition.texts;
+import static com.codeborne.selenide.Condition.cssClass;
+import static com.codeborne.selenide.Condition.exactText;
+import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
@@ -43,6 +44,10 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class SelectLimitMountsPopupAO<PARENT_TYPE>
         extends PopupAO<SelectLimitMountsPopupAO<PARENT_TYPE>, PARENT_TYPE> {
+    // a checkbox, the name and the type of a storage
+    private static final int STORAGE_ROW_CELLS = 3;
+    private static final String NFS_TYPE = "NFS";
+
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
             entry(CANCEL, context().find(byText("Cancel")).parent()),
             entry(OK, context().find(byClassName("ant-btn-primary"))),
@@ -130,25 +135,41 @@ public class SelectLimitMountsPopupAO<PARENT_TYPE>
         return this;
     }
 
-    public SelectLimitMountsPopupAO<PARENT_TYPE> validateFields(final String... names) {
-        By columnHeader = byXpath("//thead[@class='ant-table-thead']//th");
-        SelenideElements.of(columnHeader)
-                .shouldHave(texts(names));
+    /**
+     * Checks the columns of the storages table. The table has no header (showHeader={false},
+     * client/.../launch/dialogs/AvailableStoragesBrowser.js), so a row's cells are checked instead: a checkbox,
+     * the name and the type of a storage.
+     */
+    public SelectLimitMountsPopupAO<PARENT_TYPE> validateStorageRows() {
+        final SelenideElement table = elements().get(TABLE);
+        table.find("thead").shouldNot(exist);
+        final SelenideElement row = table.find(byClassName("ant-table-row")).shouldBe(visible);
+        row.findAll("td").shouldHave(size(STORAGE_ROW_CELLS));
+        row.find("td").find(byClassName("ant-checkbox")).should(exist);
         return this;
     }
 
+    /**
+     * Counts the selected object storages, NFS ones left out, on every page of the dialog, then closes it. The
+     * dialog shows 20 storages a page (PAGE_SIZE, client/.../launch/dialogs/AvailableStoragesBrowser.js), and has
+     * no pagination when they fit on one page.
+     */
     public int countObjectStorages() {
-        return $$(byXpath("//tbody[@class='ant-table-tbody']//span[@class='ant-checkbox ant-checkbox-checked']")).size() -
-                            countStoragesWithType("NFS");
-    }
-
-    private int countStoragesWithType(String type) {
-        int listTypeSize = (int) $(byClassName("ant-table-tbody")).$$(byClassName("ant-table-row"))
-                .stream()
-                .map(e -> e.find(byXpath("./td[3]")))
-                .filter(e -> e.text().equals(type))
-                .count();
+        int count = 0;
+        for (int page = 1; ; page++) {
+            count += (int) context().find(byClassName("ant-table-tbody")).findAll(byClassName("ant-table-row"))
+                    .stream()
+                    .filter(row -> row.find(byClassName("ant-checkbox-checked")).exists())
+                    .filter(row -> !NFS_TYPE.equals(row.find(byXpath("./td[3]")).text()))
+                    .count();
+            final SelenideElement next = context().find(byClassName("ant-pagination-next"));
+            if (!next.exists() || next.has(cssClass("ant-pagination-disabled"))) {
+                break;
+            }
+            next.click();
+            context().find(byClassName("ant-pagination-item-active")).shouldHave(exactText(String.valueOf(page + 1)));
+        }
         click(CANCEL);
-        return listTypeSize;
+        return count;
     }
 }

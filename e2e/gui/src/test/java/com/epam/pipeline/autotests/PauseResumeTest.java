@@ -118,9 +118,18 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 .launchTool(this, nameWithoutGroup(tool))
                 .log(getLastRunId(), log ->
                         log.waitForSshLink()
+                                // the tab is closed right after the last command: it has to be done by then, and
+                                // the file is checked before the pause, so that the check after the resume tells
+                                // whether the pause kept it
                                 .sshInNewTab(shell -> shell
                                         .waitUntilTextAppears(getLastRunId())
-                                        .execute(String.format("echo '%s' > %s", testFileContent, testFileName)))
+                                        .executeAndWaitForPrompt(
+                                                String.format("echo '%s' > %s", testFileContent, testFileName),
+                                                String.format("pipeline-%s", getLastRunId()))
+                                        .executeAndWaitForPrompt(String.format("cat %s", testFileName),
+                                                String.format("pipeline-%s", getLastRunId()))
+                                        .assertOutputOfLastCommandMatches(String.format("cat %s", testFileName),
+                                                String.format("^%s", testFileContent)))
                                 .waitForPauseButton()
                                 .pause(nameWithoutGroup(tool))
                                 .assertPausingFinishedSuccessfully()

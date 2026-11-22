@@ -352,12 +352,14 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                             .assertNextStringIsVisible("Grid engine profile has been found: main.q", prompt)
                             .assertPageAfterCommandContainsStrings(command[0],
                                     "Initiating grid engine profiles listing...")
+                            .clearScreen(prompt)
                             .execute(command[1])
                             .assertPageContains(format("Grid engine %s profile.", testProfile))
                             .execute(":q!")
-                            .waitUntilTextAppears(parentRunId)
-                            .assertPageAfterCommandContainsStrings(command[1],
-                                    format("Grid engine %s profile has been created.", testProfile))
+                            // the terminal does not give the screen before the editor back, so what was printed
+                            // before it is gone: the script's message after the editor is checked instead
+                            // (manage_sge_profiles.py _configure_profile)
+                            .assertPageContains(format("Grid engine %s profile has not been changed.", testProfile))
                             .execute(command[0])
                             .assertNextStringIsVisible(format("Grid engine profile has been found: %s", testProfile),
                                     prompt)

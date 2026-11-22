@@ -457,8 +457,10 @@ public class ToolsTest
                 .ensure(LAUNCH, visible)
                 .ensure(PIPELINE, text(nameWithoutGroup(toolWithoutDefaultSettings)))
                 .ensure(VERSION, text("latest"))
-                .ensure(ESTIMATED_PRICE, not(visible))
-                .ensure(INFORMATION_ICON, not(visible))
+                // with no node type and disk, the form shows the price as not estimated: an em dash
+                .checkEstimatedPriceValue("\u2014")
+                .ensure(INFORMATION_ICON, visible)
+                .checkEstimatedPriceTooltip("Price cannot be estimated for the selected node type / disk configuration")
                 .expandTabs(execEnvironmentTab, advancedTab, parametersTab)
                 .ensure(DOCKER_IMAGE, attribute("value", image + ":latest"))
                 .ensure(DEFAULT_COMMAND, empty)
