@@ -16,7 +16,6 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
-import com.epam.pipeline.autotests.ao.ToolSettings;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
@@ -88,6 +87,8 @@ public class LaunchLimitMountsTest
     private String storageID = "";
     private String sensitiveStorageID = "";
     private String testRunID = "";
+    // the runs of the test user (2682, 2683), stopped as that user by stopUserRuns
+    private final List<String> userRunIds = new ArrayList<>();
     private String message = "Selection contains sensitive storages. This will apply a number of restrictions " +
             "for the job: no Internet access, all the storages will be available in a read-only mode, " +
             "you won't be able to extract the data from the running job and other.";
@@ -121,19 +122,47 @@ public class LaunchLimitMountsTest
                         tool.settings()
                                 .disableAllowSensitiveStorage()
                                 .doNotMountStoragesSelect(false)
-                                .performIf(SAVE, enabled, ToolSettings::save)
+                                .save()
                 );
         tools()
                 .performWithin(registry, group, tool, description ->
                         description.settings()
                                 .doNotMountStoragesSelect(false)
-                                .performIf(SAVE, enabled, ToolSettings::save)
+                                .save()
                 );
     }
 
     @BeforeMethod
     public void openPage() {
         open(C.ROOT_ADDRESS);
+    }
+
+    /**
+     * Stops the runs of the test user as that user: the active runs page of the admin lists only the admin's own runs,
+     * so stopRuns would not find them. TestNG runs it before the @AfterClass methods of the superclass, stopRuns and
+     * removeNodes among them.
+     */
+    @AfterClass(alwaysRun = true)
+    public void stopUserRuns() {
+        if (userRunIds.isEmpty()) {
+            return;
+        }
+        open(C.ROOT_ADDRESS);
+        try {
+            logoutIfNeeded();
+            loginAs(user);
+            userRunIds.forEach(runId -> {
+                try {
+                    open(C.ROOT_ADDRESS);
+                    runsMenu().stopRunIfPresent(runId);
+                } catch (Throwable e) {
+                    System.out.printf("Run %s could not be stopped: %s%n", runId, e.getMessage());
+                }
+            });
+        } finally {
+            logoutIfNeeded();
+            loginAs(admin);
+        }
     }
 
     @AfterClass(alwaysRun = true)
@@ -147,7 +176,7 @@ public class LaunchLimitMountsTest
                 .performWithin(registry, anotherGroup, testSensitiveTool, tool ->
                         tool.settings()
                                 .disableAllowSensitiveStorage()
-                                .performIf(SAVE, enabled, ToolSettings::save)
+                                .save()
                 );
         ToolVersionSettings.restore(sensitiveToolSettings);
         ToolVersionSettings.restore(toolSettings);
@@ -180,69 +209,87 @@ public class LaunchLimitMountsTest
     @Test(priority = 1)
     @TestCase(value = {"EPMCMBIBPC-2682"})
     public void runPipelineWithLimitMounts() {
-        tools()
-                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-                .expandTab(ADVANCED_PANEL)
-                .selectDataStoragesToLimitMounts()
-                .clearSelection()
-                .searchStorage(storage1)
-                .selectStorage(storage1)
-                .ok()
-                .launch(this)
-                .showLog(testRunID = getLastRunId())
-                .expandTab(PARAMETERS)
-                .ensure(configurationParameter(CP_CAP_LIMIT_MOUNTS, storage1), exist)
-                .waitForSshLink()
-                .waitForTask(mountDataStoragesTask)
-                .click(taskWithName(mountDataStoragesTask))
-                .ensure(log(), containsMessages("Found 1 available storage(s). Checking mount options."))
-                .ensure(log(), containsMessages(format("Run is launched with mount limits (%s) Only 1 storages will be mounted", storageID)))
-                .ensure(log(), containsMessages(mountStorageMessage(storage1)))
-                .ssh(shell -> shell
-                        .execute("ls /cloud-data/")
-                        .assertOutputContains(storage1.toLowerCase())
-                        .assertPageDoesNotContain(storage2.toLowerCase())
-                        .close());
+        // as the test user, given READ on storage1 and storage2, who sees far fewer storages than an admin: 2683
+        // reruns this run with all of them, and a run mounts each one before its SSH link shows
+        allowUserToRead(storage1);
+        allowUserToRead(storage2);
+        try {
+            logoutIfNeeded();
+            loginAs(user);
+            tools()
+                    .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                    .expandTab(ADVANCED_PANEL)
+                    .selectDataStoragesToLimitMounts()
+                    .clearSelection()
+                    .searchStorage(storage1)
+                    .selectStorage(storage1)
+                    .ok()
+                    .launch(this)
+                    .showLog(testRunID = userRun(getLastRunId()))
+                    .expandTab(PARAMETERS)
+                    .ensure(configurationParameter(CP_CAP_LIMIT_MOUNTS, storage1), exist)
+                    .waitForSshLink()
+                    .waitForTask(mountDataStoragesTask)
+                    .click(taskWithName(mountDataStoragesTask))
+                    .ensure(log(), containsMessages("Found 1 available storage(s). Checking mount options."))
+                    .ensure(log(), containsMessages(format("Run is launched with mount limits (%s) Only 1 storages will be mounted", storageID)))
+                    .ensure(log(), containsMessages(mountStorageMessage(storage1)))
+                    .ssh(shell -> shell
+                            .execute("ls /cloud-data/")
+                            .assertOutputContains(storage1.toLowerCase())
+                            .assertPageDoesNotContain(storage2.toLowerCase())
+                            .close());
+        } finally {
+            logoutIfNeeded();
+            loginAs(admin);
+        }
     }
 
     @Test(priority = 1, dependsOnMethods = {"runPipelineWithLimitMounts"})
     @TestCase(value = {"EPMCMBIBPC-2683"})
     public void rerunPipelineWithoutLimitMounts() {
-        final Set<String> logMess =
-                 runsMenu()
-                .showLog(testRunID)
-                .stop(format("pipeline-%s", testRunID))
-                .clickOnRerunButton()
-                .expandTab(ADVANCED_PANEL)
-                .ensure(LIMIT_MOUNTS, text(storage1))
-                .selectDataStoragesToLimitMounts()
-                .selectAllNonSensitive()
-                .ok()
-                .ensure(LIMIT_MOUNTS, text("All available non-sensitive storages"))
-                .launch(this)
-                .showLog(getLastRunId())
-                // the launch form sends the run capabilities with every run (CP_CAP_DCV, CP_CAP_SGE etc., false), so
-                // the run has parameters: without a limit, CP_CAP_LIMIT_MOUNTS is not one of them
-                .expandTab(PARAMETERS)
-                .ensure(byXpath(format(".//*[starts-with(normalize-space(.), '%s:')]", CP_CAP_LIMIT_MOUNTS)), not(exist))
-                .waitForSshLink()
-                .waitForTask(mountDataStoragesTask)
-                .clickMountBuckets()
-                .logMessages()
-                .collect(toSet());
+        try {
+            logoutIfNeeded();
+            loginAs(user);
+            final Set<String> logMess =
+                     runsMenu()
+                    .showLog(testRunID)
+                    .stop(format("pipeline-%s", testRunID))
+                    .clickOnRerunButton()
+                    .expandTab(ADVANCED_PANEL)
+                    .ensure(LIMIT_MOUNTS, text(storage1))
+                    .selectDataStoragesToLimitMounts()
+                    .selectAllNonSensitive()
+                    .ok()
+                    .ensure(LIMIT_MOUNTS, text("All available non-sensitive storages"))
+                    .launch(this)
+                    .showLog(userRun(getLastRunId()))
+                    // the launch form sends the run capabilities with every run (CP_CAP_DCV, CP_CAP_SGE etc., false), so
+                    // the run has parameters: without a limit, CP_CAP_LIMIT_MOUNTS is not one of them
+                    .expandTab(PARAMETERS)
+                    .ensure(byXpath(format(".//*[starts-with(normalize-space(.), '%s:')]", CP_CAP_LIMIT_MOUNTS)), not(exist))
+                    .waitForSshLink()
+                    .waitForTask(mountDataStoragesTask)
+                    .clickMountBuckets()
+                    .logMessages()
+                    .collect(toSet());
 
-        runsMenu()
-                .showLog(getLastRunId())
-                .logContainsMessage(logMess, " available storage(s). Checking mount options.")
-                .checkAvailableStoragesCount(logMess, 2)
-                .logNotContainsMessage(logMess, "Run is launched with mount limits")
-                .logContainsMessage(logMess, mountStorageMessage(storage1))
-                .logContainsMessage(logMess, mountStorageMessage(storage2))
-                .ssh(shell -> shell
-                        .execute("ls /cloud-data/")
-                        .assertOutputContains(storage1.toLowerCase())
-                        .assertOutputContains(storage2.toLowerCase())
-                        .close());
+            runsMenu()
+                    .showLog(getLastRunId())
+                    .logContainsMessage(logMess, " available storage(s). Checking mount options.")
+                    .checkAvailableStoragesCount(logMess, 2)
+                    .logNotContainsMessage(logMess, "Run is launched with mount limits")
+                    .logContainsMessage(logMess, mountStorageMessage(storage1))
+                    .logContainsMessage(logMess, mountStorageMessage(storage2))
+                    .ssh(shell -> shell
+                            .execute("ls /cloud-data/")
+                            .assertOutputContains(storage1.toLowerCase())
+                            .assertOutputContains(storage2.toLowerCase())
+                            .close());
+        } finally {
+            logoutIfNeeded();
+            loginAs(admin);
+        }
     }
 
     @Test(priority = 2)
@@ -252,7 +299,7 @@ public class LaunchLimitMountsTest
                 .performWithin(registry, anotherGroup, testSensitiveTool, tool ->
                         tool.settings()
                                 .enableAllowSensitiveStorage()
-                                .performIf(SAVE, enabled, ToolSettings::save)
+                                .save()
                 );
         tools()
                 .perform(registry, anotherGroup, testSensitiveTool, ToolTab::runWithCustomSettings)
@@ -460,6 +507,20 @@ public class LaunchLimitMountsTest
                 .ensure(log(), containsMessages(logMessages))
                 .expandTab(PARAMETERS)
                 .checkMountLimitsParameter(storage5, storage6);
+    }
+
+    /**
+     * Lets the test user read the storage (READ), as its runs mount only the storages it can read. The permission goes
+     * with the storage, which removeEntities deletes.
+     */
+    private void allowUserToRead(final String storage) {
+        addAccountToStoragePermissions(user, storage);
+        givePermissions(user, BucketPermission.allow(READ, storage));
+    }
+
+    private String userRun(final String runId) {
+        userRunIds.add(runId);
+        return runId;
     }
 
     private String mountStorageMessage(String storage) {
