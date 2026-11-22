@@ -120,6 +120,10 @@
     - [Rocky Linux 9 and 10 runs: the default repos stay next to the repos mirror](#rocky-linux-9-and-10-runs-the-default-repos-stay-next-to-the-repos-mirror)
     - [Enabling a tool does not register its versions: its custom launch form has no Docker image](#enabling-a-tool-does-not-register-its-versions-its-custom-launch-form-has-no-docker-image)
     - [Rocky Linux runs without a repos mirror URL: the warning names the Ubuntu parameter](#rocky-linux-runs-without-a-repos-mirror-url-the-warning-names-the-ubuntu-parameter)
+    - [Preferences cannot be saved while `system.notifications.exp.period` has no value](#preferences-cannot-be-saved-while-systemnotificationsexpperiod-has-no-value)
+    - [The cleanup of the in-app notifications runs every 86.4 seconds](#the-cleanup-of-the-in-app-notifications-runs-every-864-seconds)
+    - [A user who can see a cluster run does not see its auto-scaled workers](#a-user-who-can-see-a-cluster-run-does-not-see-its-auto-scaled-workers)
+    - [`cluster.keep.alive.minutes` of 60 or more stops every free node at once](#clusterkeepaliveminutes-of-60-or-more-stops-every-free-node-at-once)
 
 ***
 
@@ -1535,3 +1539,31 @@ Now, enabling a tool registers a version for each tag of its image in the regist
 
 Previously, a Rocky Linux run with the extra repositories mirror (`CP_REPO_EXTRA_ENABLED`) and no mirror URL logged "Extra repositories mirrors are requested for rocky, but no URL is provided via `CP_REPO_BASE_EXTRA_URL_UBUNTU` or `CP_REPO_BASE_EXTRA_URL_DEFAULT`". `CP_REPO_BASE_EXTRA_URL_UBUNTU` is the mirror URL of the Ubuntu runs, so it does not help a Rocky Linux run.
 Now, the warning names `CP_REPO_BASE_EXTRA_URL_ROCKY` or `CP_REPO_BASE_EXTRA_URL_DEFAULT`. As before, such a run uses no mirror and keeps the default repos of the image. See [10.3. Add a Tool](../../manual/10_Manage_Tools/10.3._Add_a_Tool.md#supported-os-families).
+
+### Preferences cannot be saved while `system.notifications.exp.period` has no value
+
+[#4914](https://github.com/epam/cloud-pipeline/issues/4914)
+
+Previously, the system preference `system.notifications.exp.period` - the number of days the in-app notifications are kept - had no default value. On a deployment that never set it, the **System** tab of **Settings** → **Preferences** could not be saved: the empty field of this preference showed "Please enter a valid number". The cleanup of old in-app notifications failed with an error each time it ran, so no notification was removed.
+Now, the preference has a default of `3` days, as on version 0.24 and later, and the cleanup no longer fails. **On a deployment that never set this preference, the in-app notifications older than 3 days are removed as soon as the updated API starts.** To keep them longer, set `system.notifications.exp.period` to the number of days before the update (for example, find it with the search of the **Preferences** page, which checks only the rows it shows).
+
+### The cleanup of the in-app notifications runs every 86.4 seconds
+
+[#4918](https://github.com/epam/cloud-pipeline/issues/4918)
+
+Previously, the API ran the cleanup of the old in-app notifications every 86.4 seconds: its period, the API property `scheduled.notifications.cleanup.sec`, was read in milliseconds.
+Now, it is read in seconds, as its name says: with the default `86400`, the cleanup runs when the API starts and then once a day. A deployment that set this property in milliseconds has to set it in seconds.
+
+### A user who can see a cluster run does not see its auto-scaled workers
+
+[#4915](https://github.com/epam/cloud-pipeline/issues/4915)
+
+Previously, a user who could see a cluster run - e.g. a reader of its pipeline - did not see the workers of an auto-scaled cluster when expanding the run in the runs table, and could not open them. A worker is a tool run of the cluster's owner with no pipeline, and each child run was checked on its own.
+Now, a child run with no pipeline that belongs to the owner of its parent run - such as a worker of an auto-scaled cluster - can be viewed, with its logs and its node, by every user who can view the parent run by its own permissions. A child run of a pipeline keeps the rules of its pipeline, and stopping a child run or changing it still requires the permissions on the child run itself. See [13. Permissions](../../manual/13_Permissions/13._Permissions.md).
+
+### `cluster.keep.alive.minutes` of 60 or more stops every free node at once
+
+[#4919](https://github.com/epam/cloud-pipeline/issues/4919)
+
+Previously, `cluster.keep.alive.minutes` accepted any value greater than 0. With the default keep-alive policy, `MINUTES_TILL_HOUR`, a free node is shut down when 2 to this many minutes are left until the next whole hour since it started, so a value of 60 or more shut every free node down at once: free nodes were not kept for the next runs.
+Now, with `MINUTES_TILL_HOUR`, `cluster.keep.alive.minutes` must be from 1 to 59, and `cluster.keep.alive.policy` cannot be set to `MINUTES_TILL_HOUR` - nor deleted back to it - while `cluster.keep.alive.minutes` is 60 or more; the error says why. With `IDLE_MINUTES` any value greater than 0 is accepted, as before. A value already set is not changed: check it on a deployment that uses `MINUTES_TILL_HOUR`. See [12.10. Manage system-level settings](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#cluster).

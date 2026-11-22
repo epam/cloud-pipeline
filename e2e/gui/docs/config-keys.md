@@ -344,6 +344,8 @@ e2e.ui.backup.storage.offset=<hours>
   (r6i.xlarge/8xlarge). RestrictionsOnInstanceTypeTest picks a family that neither preference allows itself.
 * `cluster.spot` consistent with default.instance.price.type; `cluster.allowed.price.types` includes spot and
   on_demand (menus must show both).
+* `cluster.allowed.price.types.master` includes on_demand (the default `spot,on_demand` does): the LaunchClusterTest
+  cases start their masters On-demand, or with the default price type, which the launch form turns into an allowed one.
 * `cluster.aws.ebs.type` set and visible; `ui.support.template` set and visible; `lustre.fs.mount.options`,
   `launch.container.cpu.resource` set; `launch.system.parameters` contains the CP_FSBROWSER_ENABLED snippet.
 * `cluster.instance.hdd.scale.enabled=true`, `cluster.instance.hdd.scale.delta.ratio=0.5`.

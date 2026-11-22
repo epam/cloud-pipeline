@@ -526,6 +526,13 @@ public class LogAO implements AccessObject<LogAO> {
         return byXpath(format(".//*/*[normalize-space(translate(., ' \t\n', '   ')) = '%s:%s']", name, value));
     }
 
+    /**
+     * A run parameter with the name, whatever its value: the run page writes every parameter as "name:value".
+     */
+    public static By configurationParameter(final String name) {
+        return byXpath(format(".//*/*[starts-with(normalize-space(translate(., ' \t\n', '   ')), '%s:')]", name));
+    }
+
     public LogAO validateRunTitle(String title) {
         return ensure(TITLE, text(title));
     }
