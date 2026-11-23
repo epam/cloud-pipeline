@@ -92,8 +92,10 @@ public class ToolsParametersTest
         } finally {
             if (launchCapabilitiesBefore != null && launchCapabilitiesBefore.isObject()) {
                 final ObjectNode preference = JsonNodeFactory.instance.objectNode();
+                // only the fields the preference has: this Jackson writes a missing one with no value, which is not JSON
                 Stream.of("name", "value", "type", "preferenceGroup", "visible", "description")
-                        .forEach(field -> preference.set(field, launchCapabilitiesBefore.path(field)));
+                        .filter(launchCapabilitiesBefore::has)
+                        .forEach(field -> preference.set(field, launchCapabilitiesBefore.get(field)));
                 PlatformApi.call("POST", "preferences",
                         JsonNodeFactory.instance.arrayNode().add(preference).toString());
             }
