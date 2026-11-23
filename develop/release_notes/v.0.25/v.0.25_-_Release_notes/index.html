@@ -63,6 +63,10 @@
     <li class="toctree-l2"><a class="reference internal" href="#capacity-block-offering-search-over-several-instance-types">Capacity block offering search over several instance types</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#notable-bug-fixes">Notable Bug fixes</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#unavailable-cluster-nodes-are-not-detected">Unavailable cluster nodes are not detected</a>
+    </li>
+        </ul>
     </li>
     </ul>
                   </li>
@@ -427,7 +431,10 @@
 </ul>
 <hr />
 <ul>
-<li><a href="#notable-bug-fixes">Notable Bug fixes</a></li>
+<li><a href="#notable-bug-fixes">Notable Bug fixes</a><ul>
+<li><a href="#unavailable-cluster-nodes-are-not-detected">Unavailable cluster nodes are not detected</a></li>
+</ul>
+</li>
 </ul>
 <hr />
 <h2 id="migration-to-java-21">Migration to Java 21</h2>
@@ -440,6 +447,12 @@
 <p>How many candidates one request may carry is bounded by the <code>cluster.capacity.block.offering.candidates.max.count</code> preference - <strong>5</strong> by default, <code>-1</code> to disable the limit.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
+<h3 id="unavailable-cluster-nodes-are-not-detected">Unavailable cluster nodes are not detected</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/4647">#4647</a></p>
+<p>Previously, the platform checked only the first Kubernetes condition of a node to find out whether the node is unavailable. On clusters with <code>Flannel</code>, the first condition is <code>NetworkUnavailable</code>, which does not change when a node stops reporting its status. So such nodes were never detected as unavailable: their runs did not get the <code>NODE_UNAVAILABLE</code> tag, and the nodes were not terminated after the grace period.
+Now, a node is unavailable when its <code>Ready</code> condition is <code>Unknown</code>, and the grace period (<strong><code>cluster.node.unavailable.grace.period.minutes</code></strong>) is counted from the moment Kubernetes marked the node unavailable.
+Also, a free node is reused for a new run only if its <code>Ready</code> condition is <code>True</code>. Before, a node that was not ready, or not reachable at all, could be reused, and the new run could get stuck on it.
+Please note: after the update, nodes that have already been unavailable for longer than the grace period are terminated during the first autoscaler cycle, and their runs fail.</p>
               
             </div>
           </div><footer>

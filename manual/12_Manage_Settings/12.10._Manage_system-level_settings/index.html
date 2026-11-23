@@ -720,7 +720,7 @@
 </tr>
 <tr>
 <td><strong><code>cluster.kill.not.matching.nodes</code></strong></td>
-<td>If this property is true, any free node that doesn't match configuration of a pending pod will be scaled down immediately, otherwise it will be left until it will be reused or expired. If most of the time we use nodes with the same configuration set this to true. When the cluster has reached <code>cluster.max.size</code>, every free node is treated as not matching for a pending run that may not get a free node, e.g. a run with the <code>CP_CREATE_NEW_NODE</code> parameter set to <code>true</code>. A free node of a hot node pool or of a local cluster is not scaled down this way, and no free node is scaled down this way while <code>cluster.disable.reassign</code> is <code>true</code></td>
+<td>If this property is true, any free node that doesn't match configuration of a pending pod will be scaled down immediately, otherwise it will be left until it will be reused or expired. If most of the time we use nodes with the same configuration set this to true. A free node whose Kubernetes <code>Ready</code> condition is <code>False</code> is treated as not matching. When the cluster has reached <code>cluster.max.size</code>, every free node is treated as not matching for a pending run that may not get a free node, e.g. a run with the <code>CP_CREATE_NEW_NODE</code> parameter set to <code>true</code>. A free node of a hot node pool or of a local cluster is not scaled down this way, and no free node is scaled down this way while <code>cluster.disable.reassign</code> is <code>true</code></td>
 </tr>
 <tr>
 <td><strong><code>cluster.spot</code></strong></td>
@@ -745,6 +745,10 @@
 <tr>
 <td><strong><code>cluster.nodeup.retry.count</code></strong></td>
 <td>Maximal number of tries to start the node. Can be overridden for a specific run by the <code>CP_NODEUP_RETRY_COUNT</code> parameter</td>
+</tr>
+<tr>
+<td><strong><code>cluster.node.unavailable.grace.period.minutes</code></strong></td>
+<td>How long a node may stay unavailable before it is terminated (in minutes). A node is unavailable when its Kubernetes <code>Ready</code> condition is <code>Unknown</code>, i.e. the node has stopped reporting its status. The period is counted from the moment Kubernetes marked the node unavailable. During the period, the node's run gets the <code>NODE_UNAVAILABLE</code> tag and a message in the <code>NodeAvailabilityMonitor</code> task logs. If the node reports its status again, the tag is removed. When the period ends, the node is terminated and its run fails. If the node is already stopped in the Cloud Provider when it is first marked unavailable, it is terminated at once. Can be overridden for a specific run by the <code>NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES</code> parameter</td>
 </tr>
 <tr>
 <td><strong><code>cluster.high.non.batch.priority</code></strong></td>
