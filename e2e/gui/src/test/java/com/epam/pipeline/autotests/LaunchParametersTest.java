@@ -352,13 +352,17 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                             .assertNextStringIsVisible("Grid engine profile has been found: main.q", prompt)
                             .assertPageAfterCommandContainsStrings(command[0],
                                     "Initiating grid engine profiles listing...")
+                            // manage_sge_profiles.py opens VISUAL or EDITOR, or else the first of nano, vi and vim
+                            // it finds (_find_editor): the profiles are edited below with vi's commands, so vi is
+                            // chosen, and has to be in the image
+                            .execute("export VISUAL=vi")
+                            .executeAndWaitForPrompt("type -P vi", prompt)
+                            .assertOutputOfLastCommandContains("type -P vi", "/vi")
                             .clearScreen(prompt)
                             .execute(command[1])
                             .assertPageContains(format("Grid engine %s profile.", testProfile))
                             .execute(":q!")
-                            // the terminal does not give the screen before the editor back, so what was printed
-                            // before it is gone: the script's message after the editor is checked instead
-                            // (manage_sge_profiles.py _configure_profile)
+                            // the script's message after the editor (manage_sge_profiles.py _configure_profile)
                             .assertPageContains(format("Grid engine %s profile has not been changed.", testProfile))
                             .execute(command[0])
                             .assertNextStringIsVisible(format("Grid engine profile has been found: %s", testProfile),

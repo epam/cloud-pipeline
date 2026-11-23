@@ -28,6 +28,8 @@ import com.epam.pipeline.autotests.utils.PlatformApi;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
+import static com.epam.pipeline.autotests.utils.Conditions.selectedTab;
+import static com.codeborne.selenide.ClickOptions.usingJavaScript;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
@@ -102,15 +104,34 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO activeRuns() {
-        $(byId("active-runs-button")).shouldBe(visible).click();
+        openRunsTab("active");
         tableShouldAppear();
         return new RunsMenuAO();
     }
 
     public RunsMenuAO completedRuns() {
-        $(byId("completed-runs-button")).shouldBe(visible).click();
+        openRunsTab("completed");
         tableShouldAppear();
         return new RunsMenuAO();
+    }
+
+    /**
+     * Checks that "Active Runs" is the selected runs tab, under whatever name ui.runs.filters gives it, e.g. "ACTIVE
+     * RUNS (2)" with a count: the GUI opens it after a launch (LaunchPipeline.js navigateToActiveRuns). A tab's id is
+     * its key (AllRuns.js: the link's id, inside the menu item that is selected).
+     */
+    public RunsMenuAO ensureActiveRunsTabSelected() {
+        $(byId("active-runs-button")).shouldBe(visible).closest(".ant-menu-item").shouldBe(selectedTab);
+        return this;
+    }
+
+    /**
+     * Opens the runs tab of the key with a click by script. A runs tab shows the description of its filter in a
+     * popover while the mouse is on it (AllRuns.js), and a real click leaves the mouse there: the popover then lies
+     * over the table's header and takes the clicks meant for the column filters (filterBy).
+     */
+    private void openRunsTab(final String key) {
+        $(byId(key + "-runs-button")).shouldBe(visible).click(usingJavaScript());
     }
 
     /**
@@ -131,7 +152,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
             throw new AssertionError(format("Run %s is %s, not %s, after %d ms", runId, current, status,
                     COMPLETION_TIMEOUT));
         }
-        $(byId(runsTabKey(runsFilters(), status) + "-runs-button")).shouldBe(visible).click();
+        openRunsTab(runsTabKey(runsFilters(), status));
         tableShouldAppear();
         return new RunsMenuAO();
     }
