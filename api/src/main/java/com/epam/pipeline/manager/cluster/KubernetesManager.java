@@ -986,8 +986,8 @@ public class KubernetesManager {
     }
 
     /**
-     * Only a node with Ready condition True can take a new run: Kubernetes does not schedule pods
-     * on a node which is not ready.
+     * Only a node with Ready condition True is reused for a new run: on a node which is not ready,
+     * the run cannot start until the node recovers.
      */
     public boolean isNodeReady(final KubernetesClient client, final String nodeId) {
         return findNotPausedNode(client, nodeId)

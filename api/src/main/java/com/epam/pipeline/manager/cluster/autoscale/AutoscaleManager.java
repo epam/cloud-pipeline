@@ -384,7 +384,8 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
                     log.debug("Current cluster size {} has reached limit {}. Checking free nodes.",
                             currentClusterSize, maxClusterSize);
 
-                    // a free node which is not ready can't take the run either, so it can be scaled down as well
+                    // a free node whose Ready condition is False can't take the run either,
+                    // so it can be scaled down as well
                     List<String> nonMatchingFreeNodes = disableReassign ? Collections.emptyList()
                             : getFreeNodes(nodes, allPods, reassignedNodes,
                                 nodeId -> isRunNode(nodeId) && kubernetesManager.isNodeAvailable(client, nodeId));
