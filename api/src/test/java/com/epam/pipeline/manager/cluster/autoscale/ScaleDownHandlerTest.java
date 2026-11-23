@@ -97,6 +97,8 @@ public class ScaleDownHandlerTest {
         final NodeList nodes = new NodeList();
         nodes.setItems(Collections.singletonList(getNode(FREE_NODE_LABEL)));
         doReturn(nodes).when(kubernetesManager).getAvailableNodes(client);
+        // the node has reported its readiness, so it is processed as a free node
+        doReturn(true).when(kubernetesManager).isNodeAvailable(any(Node.class));
 
         final RunningInstance freeNode = new RunningInstance();
         freeNode.setInstance(new RunInstance());

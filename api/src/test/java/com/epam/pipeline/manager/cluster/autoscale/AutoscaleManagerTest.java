@@ -68,6 +68,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -108,6 +109,8 @@ public class AutoscaleManagerTest {
     private static final String FREE_POOL_NODE_ID = AutoscaleContants.NODE_POOL_PREFIX + "1";
     private static final String FREE_LOCAL_NODE_ID = AutoscaleContants.NODE_LOCAL_PREFIX + "1";
     private static final String NODE_PENDING_TAG = "NODE_PENDING";
+    private static final String READY_FREE_NODE_ID = "222";
+    private static final String NOT_READY_FREE_NODE_ID = "333";
 
     @Mock
     private PipelineRunManager pipelineRunManager;
@@ -546,6 +549,41 @@ public class AutoscaleManagerTest {
     }
 
     @Test
+    public void testOnlyReadyFreeNodesOfferedForReassign() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+        when(kubernetesManager.getSchedulableNodesIds(kubernetesClient))
+                .thenReturn(new HashSet<>(Arrays.asList(READY_FREE_NODE_ID, NOT_READY_FREE_NODE_ID)));
+        when(kubernetesManager.isNodeReady(kubernetesClient, READY_FREE_NODE_ID)).thenReturn(true);
+        when(kubernetesManager.isNodeReady(kubernetesClient, NOT_READY_FREE_NODE_ID)).thenReturn(false);
+        when(cloudFacade.scaleUpNode(any(), any(), any(), any())).thenReturn(new RunInstance());
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(reassignHandler).tryReassignNode(eq(kubernetesClient), any(), any(), eq(TEST_RUN_ID.toString()),
+                eq(TEST_RUN_ID), any(), eq(Collections.singletonList(READY_FREE_NODE_ID)));
+    }
+
+    @Test
+    public void testNotReadyFreeNodeScaledDownWhenClusterIsFull() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_KILL_NOT_MATCHING_NODES)).thenReturn(true);
+        when(kubernetesManager.getSchedulableNodesIds(kubernetesClient))
+                .thenReturn(Collections.singleton(NOT_READY_FREE_NODE_ID));
+        when(kubernetesManager.isNodeReady(kubernetesClient, NOT_READY_FREE_NODE_ID)).thenReturn(false);
+        when(kubernetesManager.isNodeAvailable(kubernetesClient, NOT_READY_FREE_NODE_ID)).thenReturn(true);
+        // the free node takes the only place in the cluster
+        doReturn(new NodeList("", Collections.singletonList(new Node()), "", null))
+                .when(kubernetesManager).getAvailableNodes(any());
+        when(cloudFacade.scaleUpNode(any(), any(), any(), any())).thenReturn(new RunInstance());
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(reassignHandler).tryReassignNode(eq(kubernetesClient), any(), any(), eq(TEST_RUN_ID.toString()),
+                eq(TEST_RUN_ID), any(), eq(Collections.emptyList()));
+        verify(cloudFacade).scaleDownNode(Long.valueOf(NOT_READY_FREE_NODE_ID));
+    }
+
+    @Test
     public void testNodeUpTaskReleasedWhenRegionShiftFails() {
         mockNodeUpFailure(AutoscaleContants.NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE);
         doThrow(new IllegalArgumentException("restart failed"))
@@ -620,6 +658,7 @@ public class AutoscaleManagerTest {
         when(kubernetesManager.getSchedulableNodesIds(kubernetesClient))
                 .thenReturn(new LinkedHashSet<>(Arrays.asList(nodeIds)));
         for (final String nodeId : nodeIds) {
+            when(kubernetesManager.isNodeReady(kubernetesClient, nodeId)).thenReturn(true);
             when(kubernetesManager.isNodeAvailable(kubernetesClient, nodeId)).thenReturn(true);
         }
         doReturn(new NodeList("", Collections.singletonList(new Node()), "", null))
