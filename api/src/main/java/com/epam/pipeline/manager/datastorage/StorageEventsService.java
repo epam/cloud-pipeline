@@ -43,7 +43,7 @@ import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PreDestroy;
 
 @Service
 @Slf4j
@@ -108,9 +108,9 @@ public class StorageEventsService {
 
     private String eventToString(final NFSObserverEvent event) {
         final String eventString = String.join(Constants.COMMA,
-                                               event.getTimestamp().toString(), event.getEventType().getEventCode(),
-                                               event.getStorage(), event.getFilePathFrom());
-        return Optional.ofNullable(event.getFilePathTo())
+                                               event.timestamp().toString(), event.eventType().getEventCode(),
+                                               event.storage(), event.filePathFrom());
+        return Optional.ofNullable(event.filePathTo())
             .map(pathTo -> eventString + Constants.COMMA + pathTo)
             .orElse(eventString);
     }

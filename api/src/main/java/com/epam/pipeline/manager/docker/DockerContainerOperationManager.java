@@ -393,7 +393,10 @@ public class DockerContainerOperationManager {
             final String runInstanceType = maybeRunInstanceType.get();
             if (!runInstanceType.equals(run.getInstance().getNodeType())) {
                 run.getInstance().setNodeType(runInstanceType);
-                runManager.updateRunInstance(run.getId(), run.getInstance());
+                PipelineRun updatedRun = runManager.updateRunInstanceAndPrices(run.getId(), run.getInstance());
+                run.setPricePerHour(updatedRun.getPricePerHour());
+                run.setComputePricePerHour(updatedRun.getComputePricePerHour());
+                run.setDiskPricePerHour(updatedRun.getDiskPricePerHour());
             }
 
             kubernetesManager.waitForNodeReady(run.getInstance().getNodeName(),
@@ -425,7 +428,8 @@ public class DockerContainerOperationManager {
         try {
             if (Objects.isNull(kubernetesManager.findPodById(run.getPodId()))) {
                 final PipelineConfiguration configuration = getResumeConfiguration(run);
-                launcher.launch(run, configuration, endpoints, true, run.getPodId(), null, ImagePullPolicy.NEVER);
+                launcher.launch(run, configuration, endpoints, true, run.getPodId(), null, ImagePullPolicy.NEVER,
+                        false);
             }
         } finally {
             resumeLock.unlock();

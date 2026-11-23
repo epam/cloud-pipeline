@@ -27,7 +27,7 @@ import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import lombok.AllArgsConstructor;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.acls.domain.AclAuthorizationStrategy;
 import org.springframework.security.acls.domain.AclImpl;
@@ -42,7 +42,7 @@ import org.springframework.security.acls.model.Permission;
 import org.springframework.security.acls.model.PermissionGrantingStrategy;
 import org.springframework.security.acls.model.Sid;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.*;
 import java.util.function.Function;
@@ -50,16 +50,16 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Matchers.anySet;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 
 /**
  * Superclass for all ACL layer tests
  */
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @AclTestConfiguration
 public abstract class AbstractAclTest {
 
@@ -77,7 +77,10 @@ public abstract class AbstractAclTest {
     protected static final String USER_READER_ROLE = "USER_READER";
     protected static final String SIMPLE_USER_ROLE = "SIMPLE_USER";
     protected static final String STORAGE_MANAGER_ROLE = "STORAGE_MANAGER";
+    protected static final String STORAGE_ADMIN_ROLE = "STORAGE_ADMIN";
     protected static final String STORAGE_READER_ROLE = "STORAGE_READER";
+    protected static final String PIPELINE_READER_ROLE = "PIPELINE_READER";
+    protected static final String PIPELINE_EXECUTOR_ROLE = "PIPELINE_EXECUTOR";
     protected static final String SIMPLE_USER = "SIMPLE_USER";
     protected static final String ANOTHER_SIMPLE_USER = "ANOTHER_SIMPLE_USER";
     protected static final String TEST_NAME = "TEST_NAME";

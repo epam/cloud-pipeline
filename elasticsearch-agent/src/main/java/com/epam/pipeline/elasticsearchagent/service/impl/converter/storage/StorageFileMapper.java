@@ -35,7 +35,10 @@ import org.slf4j.Logger;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
 
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -53,9 +56,28 @@ public class StorageFileMapper {
     private static final String DELIMITER = "/";
     private static final String DEFAULT_MOUNT_POINT = "/cloud-data";
     public static final String STANDARD_TIER = "STANDARD";
+    private static final int MAX_DOCUMENT_ID_BYTES = 512;
+    private static final String HASHED_DOCUMENT_ID_PREFIX = "sha256:";
+    private static final String HASH_ALGORITHM = "SHA-256";
 
     private final Map<String, Set<String>> hiddenMasks = new HashMap<>();
     private final Map<String, Set<String>> indexContentMasks = new HashMap<>();
+
+    /**
+     * Elasticsearch rejects a document id longer than 512 bytes, and a storage path may be longer.
+     * Such a path is replaced by its hash, which stays the same between syncs.
+     */
+    public String getDocumentId(final DataStorageFile dataStorageFile) {
+        final String path = dataStorageFile.getPath();
+        if (path == null) {
+            return null;
+        }
+        final byte[] pathBytes = path.getBytes(StandardCharsets.UTF_8);
+        if (pathBytes.length <= MAX_DOCUMENT_ID_BYTES) {
+            return path;
+        }
+        return HASHED_DOCUMENT_ID_PREFIX + toHash(pathBytes);
+    }
 
     public Map<String, ?> fileToDocument(final DataStorageFile dataStorageFile,
                                          final AbstractDataStorage dataStorage,
@@ -138,6 +160,15 @@ public class StorageFileMapper {
             );
         }
         return result;
+    }
+
+    private static String toHash(final byte[] content) {
+        try {
+            final byte[] digest = MessageDigest.getInstance(HASH_ALGORITHM).digest(content);
+            return String.format("%064x", new BigInteger(1, digest));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     // This method construct mount path assuming that default mount point is /cloud-data/,

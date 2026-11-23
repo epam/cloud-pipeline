@@ -3,7 +3,7 @@
 Test verifies the initial layout of the DOCUMENTS tab for a new pipeline.
 
 **Prerequisites**:
-- Perform the [EPMCMBIBPC-343](EPMCMBIBPC-343.md) case
+- Perform the [EPMCMBIBPC-285](../Pipeline_editing/EPMCMBIBPC-285.md) case
 
 | Steps | Actions | Expected results |
 | :---: | --- | --- |

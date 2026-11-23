@@ -42,6 +42,8 @@ import {
 } from '../../../runs/actions';
 import {autoScaledClusterEnabled} from '../../../pipelines/launch/form/utilities/launch-cluster';
 import {CP_CAP_LIMIT_MOUNTS} from '../../../pipelines/launch/form/utilities/parameters';
+import capacityBlocks from '../../../../models/cluster/capacity-blocks';
+import {decodeInstanceTypeValue} from '../../../../models/cluster/capacity-blocks/utilities';
 import AllowedInstancesCountWarning from
 '../../../pipelines/launch/form/utilities/allowed-instances-count-warning';
 import RunName from '../../../runs/run-name';
@@ -50,6 +52,7 @@ import CardsPanel from './components/CardsPanel';
 import {getDisplayOnlyFavourites} from '../utils/favourites';
 import styles from './Panel.css';
 import HiddenObjects from '../../../../utils/hidden-objects';
+import {getToolDefaultVersion} from '../../../../utils/tool-default-version';
 import PlatformIcon from '../../../tools/platform-icon';
 import {withCurrentUserAttributes} from '../../../../utils/current-user-attributes';
 import {
@@ -246,7 +249,16 @@ export default class PersonalToolsPanel extends React.Component {
         payload.isSpot = runToolInfo.isSpot;
       }
       if (runToolInfo.instanceType !== undefined) {
-        payload.instanceType = runToolInfo.instanceType;
+        // The dialog's select may hold a capacity-block pool (`pool:<id>`):
+        // the run API gets the plain type, and `run()` gets the pool.
+        const {instanceType, poolId} = decodeInstanceTypeValue(
+          runToolInfo.instanceType,
+          capacityBlocks.pools
+        );
+        payload.instanceType = instanceType;
+        if (poolId !== undefined) {
+          payload.capacityBlockPoolId = poolId;
+        }
       }
       if (runToolInfo.hddSize !== undefined) {
         payload.hddSize = runToolInfo.hddSize;
@@ -361,22 +373,15 @@ export default class PersonalToolsPanel extends React.Component {
         .map(v => ({[v.version]: v}))
         .reduce((r, c) => ({...r, ...c}), {});
 
-      let defaultTag;
-      let anyTag;
-      if (versions['latest']) {
-        defaultTag = 'latest';
-      } else if (Object.keys(versions).length === 1) {
-        defaultTag = Object.keys(versions)[0];
-      } else {
-        anyTag = Object.keys(versions)[0];
-      }
+      const defaultTag = getToolDefaultVersion(toolValue, Object.keys(versions));
+      const anyTag = defaultTag ? undefined : Object.keys(versions)[0];
       const parameterIsNotEmpty = (parameter, additionalCriteria) =>
         parameter !== null &&
         parameter !== undefined &&
         `${parameter}`.trim().length > 0 &&
         (!additionalCriteria || additionalCriteria(parameter));
       const [versionSettings] = (toolSettings.value || [])
-        .filter(v => (v.version || '').toLowerCase() === defaultTag);
+        .filter(v => v.version === defaultTag);
       const versionSettingValue = (settingName) => {
         if (versionSettings &&
           versionSettings.settings &&
@@ -413,7 +418,8 @@ export default class PersonalToolsPanel extends React.Component {
           scanPolicy.value,
           this.isAdmin(),
           this.props.preferences,
-          registry);
+          registry,
+          toolValue);
         hide();
         if (allowedToExecute) {
           this.runToolWithCustomSettings(tool.id, defaultTag, launchTooltip);
@@ -550,7 +556,8 @@ export default class PersonalToolsPanel extends React.Component {
           scanPolicy.value,
           this.isAdmin(),
           this.props.preferences,
-          registry);
+          registry,
+          toolValue);
         if (allowedToExecute) {
           const runCapabilities = getEnabledCapabilities(defaultPayload.params);
           const visibility = await getVisibleUserTags(defaultPayload);

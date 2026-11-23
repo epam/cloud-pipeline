@@ -17,11 +17,13 @@
 package com.epam.pipeline.manager.cloud;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
+import com.epam.pipeline.manager.cloud.aws.S3AccessPointArnResolver;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.permissions.StoragePathPermissionsService;
@@ -29,8 +31,8 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.storage.StoragePermissionManager;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.Arrays;
@@ -38,10 +40,11 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.epam.pipeline.manager.ObjectCreatorUtils.createS3Bucket;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -51,8 +54,11 @@ public class TemporaryCredentialsManagerImplTest {
 
     private static final Long ID_1 = 1L;
     private static final Long ID_2 = 2L;
+    private static final Long LINK_ID = 3L;
     private static final String TEST_PATH_1 = "path1";
     private static final String TEST_PATH_2 = "path2";
+    private static final String ACCESS_POINT_ARN = "arn:aws:s3:us-east-1:123456789012:accesspoint/test-ap";
+    private static final String OTHER_ACCESS_POINT_ARN = "arn:aws:s3:us-east-1:123456789012:accesspoint/other-ap";
 
     private final TemporaryCredentialsGenerator generator = buildAWSCredentialsGeneratorMock();
     private final List<TemporaryCredentialsGenerator> credentialsGenerators = Collections.singletonList(generator);
@@ -61,12 +67,13 @@ public class TemporaryCredentialsManagerImplTest {
     private final StoragePathPermissionsService pathPermissionsService = mock(StoragePathPermissionsService.class);
     private final StoragePermissionManager storagePermissionManager = mock(StoragePermissionManager.class);
     private final AuthManager authManager = mock(AuthManager.class);
+    private final DataStorageDao dataStorageDao = mock(DataStorageDao.class);
 
     private final TemporaryCredentialsManagerImpl manager = new TemporaryCredentialsManagerImpl(credentialsGenerators,
-            messageHelper, dataStorageManager, pathPermissionsService, storagePermissionManager, authManager);
+            messageHelper, dataStorageManager, pathPermissionsService, storagePermissionManager, authManager,
+            new S3AccessPointArnResolver(dataStorageDao));
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         when(generator.generate(any(), any())).thenReturn(TemporaryCredentials.builder().build());
     }
 
@@ -123,20 +130,53 @@ public class TemporaryCredentialsManagerImplTest {
         });
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void shouldFailIfStorageIdWasNotSpecified() {
-        manager.generate(Collections.singletonList(dataStorageAction(null, true)));
+    @Test
+    public void shouldSetStorageAccessPointArnToActions() {
+        final DataStorageAction actionWithArn = dataStorageAction(ID_1, true);
+        final DataStorageAction actionWithoutArn = dataStorageAction(ID_2, true);
+        actionWithoutArn.setAccessPointArn(OTHER_ACCESS_POINT_ARN);
+        final S3bucketDataStorage storage1 = s3DataStorage(ID_1, TEST_PATH_1);
+        storage1.setAccessPointArn(ACCESS_POINT_ARN);
+        final S3bucketDataStorage storage2 = s3DataStorage(ID_2, TEST_PATH_2);
+        when(dataStorageManager.load(ID_1)).thenReturn(storage1);
+        when(dataStorageManager.load(ID_2)).thenReturn(storage2);
+
+        manager.generate(Arrays.asList(actionWithArn, actionWithoutArn));
+
+        final List<DataStorageAction> actualActions = capture().getLeft();
+        assertThat(actualActions).hasSize(2);
+        assertThat(actualActions.get(0).getAccessPointArn()).isEqualTo(ACCESS_POINT_ARN);
+        assertThat(actualActions.get(1).getAccessPointArn()).isNull();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
+    public void shouldSetSourceStorageAccessPointArnToLinkActions() {
+        final S3bucketDataStorage source = s3DataStorage(ID_1, TEST_PATH_1);
+        source.setAccessPointArn(ACCESS_POINT_ARN);
+        final S3bucketDataStorage link = s3DataStorage(LINK_ID, TEST_PATH_1);
+        link.setSourceStorageId(ID_1);
+        when(dataStorageManager.load(LINK_ID)).thenReturn(link);
+        when(dataStorageDao.loadDataStorage(ID_1)).thenReturn(source);
+
+        manager.generate(Collections.singletonList(dataStorageAction(LINK_ID, true)));
+
+        assertThat(capture().getLeft().get(0).getAccessPointArn()).isEqualTo(ACCESS_POINT_ARN);
+    }
+
+    @Test
+    public void shouldFailIfStorageIdWasNotSpecified() {
+        assertThrows(IllegalStateException.class,
+            () -> manager.generate(Collections.singletonList(dataStorageAction(null, true))));
+    }
+
+    @Test
     public void shouldFailIfStorageTypesNotSame() {
         final List<DataStorageAction> actions = Arrays.asList(
                 dataStorageAction(ID_2, true),
                 dataStorageAction(ID_1, false));
         when(dataStorageManager.load(ID_1)).thenReturn(s3DataStorage(ID_1, TEST_PATH_1));
         when(dataStorageManager.load(ID_2)).thenReturn(azureDataStorage(ID_2, TEST_PATH_2));
-
-        manager.generate(actions);
+        assertThrows(IllegalStateException.class, () -> manager.generate(actions));
     }
 
     @Test

@@ -1,0 +1,164 @@
+name: Configure the Cloud Pipeline docker registry
+description: >-
+  Exchanges this workflow run's GitHub OIDC token for a Cloud Pipeline API token, finds the
+  deployment's docker registry, and logs the runner's docker client into it.
+
+inputs:
+  api-url:
+    description: >-
+      The Cloud Pipeline URL, which must be https. Either the API root, as `pipe` expects it in API
+      (https://cloud-pipeline.example.com/pipeline/restapi), or just the host
+      (https://cloud-pipeline.example.com), in which case /pipeline/restapi is appended.
+      Whatever it resolves to is both the endpoint called and the audience requested from
+      GitHub, so it has to match an entry of the deployment's
+      system.oidc.token.exchange.issuers preference.
+    required: true
+  insecure-tls:
+    description: >-
+      Skip TLS certificate verification on the Cloud Pipeline requests, for a deployment serving a
+      self-signed certificate that the runner does not trust. Off by default. It never applies to
+      the request to GitHub, whose certificate is publicly trusted. Prefer trusting the CA on the
+      runner; this is the fallback where that is not possible.
+    required: false
+    default: 'false'
+  registry:
+    description: >-
+      The registry to log into, as host:port. Optional: by default the deployment is asked, and
+      the first registry it reports that uses Cloud Pipeline authentication is used. Set this
+      where a deployment has several and the first is not the one you want.
+    required: false
+    default: ''
+
+outputs:
+  registry:
+    description: The registry that was logged into, as host:port.
+    value: ${{ steps.login.outputs.registry }}
+  token:
+    description: The Cloud Pipeline API token. Masked in the log, but treat it as a secret.
+    value: ${{ steps.exchange.outputs.token }}
+  api-url:
+    description: The API root the token was issued by, after the input was resolved.
+    value: ${{ steps.exchange.outputs.api-url }}
+  expires-in:
+    description: How long the token is valid for, in seconds.
+    value: ${{ steps.exchange.outputs.expires-in }}
+
+runs:
+  using: composite
+  steps:
+    - id: exchange
+      shell: bash
+      env:
+        INPUT_API_URL: ${{ inputs.api-url }}
+        INPUT_INSECURE_TLS: ${{ inputs.insecure-tls }}
+      run: bash "$GITHUB_ACTION_PATH/../_lib/exchange-token.sh"
+
+    - id: login
+      shell: bash
+      env:
+        INPUT_REGISTRY: ${{ inputs.registry }}
+        INPUT_INSECURE_TLS: ${{ inputs.insecure-tls }}
+      run: |
+        set -euo pipefail
+
+        fail() {
+          echo "::error::$1"
+          shift
+          for line in "$@"; do
+            echo "$line"
+          done
+          exit 1
+        }
+
+        command -v docker >/dev/null 2>&1 || fail \
+          "docker is required and was not found on this runner." \
+          "GitHub-hosted runners have it; a self-hosted runner may need it installed."
+
+        API_ROOT="${API%/}"
+
+        CP_INSECURE=""
+        case "${INPUT_INSECURE_TLS:-false}" in
+          true|TRUE|True|yes|1) CP_INSECURE="insecure" ;;
+        esac
+
+        WANT="$INPUT_REGISTRY"
+        case "$WANT" in
+          *[[:space:]]*) fail "The registry input contains whitespace: '$WANT'." ;;
+        esac
+        WANT="${WANT#https://}"
+        WANT="${WANT#http://}"
+        WANT="${WANT%/}"
+
+        # The body is returned in API_RESPONSE, not on stdout. If a caller ran this
+        # inside $( ) instead, a failure message would be captured as the response
+        # and the exit would end only the subshell.
+        API_RESPONSE=""
+        call_api() {
+          local path="$1" response status
+          response="$(printf '%s\n' \
+            "url = \"$API_ROOT/$path\"" \
+            "header = \"Authorization: Bearer $API_TOKEN\"" \
+            "$CP_INSECURE" \
+            | curl -sS -w '\n%{http_code}' --config - )" || fail \
+              "Could not reach $API_ROOT/$path."
+          status="${response##*$'\n'}"
+          if [ "$status" != "200" ]; then
+            fail "$API_ROOT/$path answered HTTP $status." \
+                 "The token was accepted for the exchange, so this is a permission or routing" \
+                 "problem rather than an authentication one."
+          fi
+          API_RESPONSE="${response%$'\n'*}"
+        }
+
+        # loadCerts, not loadTree: same permission filtering, without the tool
+        # catalogue that makes up most of a loadTree response. Its certificates are
+        # not read; this action installs none.
+        call_api 'dockerRegistry/loadCerts'
+
+        # Only a registry using Cloud Pipeline authentication takes a platform token
+        # as its docker password. One with its own credentials would refuse this login.
+        REGISTRY="$(printf '%s' "$API_RESPONSE" | jq -r --arg want "$WANT" '
+          [ .payload.registries[]?
+            | { addr: (if (.externalUrl // "") != "" then .externalUrl else .path end),
+                path: (.path // ""),
+                external: (.externalUrl // ""),
+                auth: (.pipelineAuth == true) }
+            | select(.addr != "") ]
+          | (if $want == ""
+             then map(select(.auth))
+             else map(select(.addr == $want or .path == $want or .external == $want))
+             end)
+          | .[0].addr // empty')"
+
+        if [ -z "$REGISTRY" ]; then
+          if [ -n "$WANT" ]; then
+            echo "The deployment did not report $WANT; using it as given."
+            REGISTRY="$WANT"
+          else
+            fail \
+              "The deployment reported no docker registry this token may use." \
+              "Either the user the exchange acts as cannot read any registry, or none of them use" \
+              "Cloud Pipeline authentication. Pass the 'registry' input to name one explicitly."
+          fi
+        else
+          echo "Registry: $REGISTRY"
+        fi
+
+        # The registry checks the token's user, and the token's subject claim holds
+        # the IdP subject, not the platform user. So the name comes from the API.
+        call_api 'whoami'
+        USER_NAME="$(printf '%s' "$API_RESPONSE" | jq -r '.payload.userName // empty')"
+        [ -n "$USER_NAME" ] || fail "The API did not report which user this token acts as."
+
+        echo "Logging in to $REGISTRY as $USER_NAME"
+        printf '%s' "$API_TOKEN" \
+          | docker login --username "$USER_NAME" --password-stdin "$REGISTRY" >/dev/null || fail \
+            "docker login was refused by $REGISTRY." \
+            "The user may lack read permission on the registry, or the registry may not be" \
+            "configured to use Cloud Pipeline authentication." \
+            "On an 'x509: certificate signed by unknown authority' error the cause is neither:" \
+            "the registry's certificate is not trusted on this runner, and this action installs" \
+            "no certificate. Trust the CA in the runner image."
+
+        echo "registry=$REGISTRY" >>"$GITHUB_OUTPUT"
+        echo "Logged in. Images may be pulled and pushed as $REGISTRY/<group>/<tool>:<version>"

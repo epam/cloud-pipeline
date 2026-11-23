@@ -27,7 +27,7 @@ public final class GitRepositoryUrl {
     // Username could be either placeholder ${GIT_USER} or a real username
     private static final String USERNAME_PATTERN = "\\$\\{GIT_USER}|[-._A-Za-z0-9]++";
     // Password could be either placeholder ${GIT_TOKEN} or a real password
-    private static final String PASSWORD_PATTERN = "\\$\\{GIT_TOKEN}|[-_A-Za-z0-9]++";
+    private static final String PASSWORD_PATTERN = "\\$\\{GIT_TOKEN}|[-._A-Za-z0-9]++";
     private static final String HOST_PATTERN = "[-._A-Za-z0-9]++(?::[0-9]++)?";
     private static final String PATH_PART_PATTERN = "[-_A-Za-z0-9]++";
     private static final Pattern GIT_REPOSITORY_URL_PATTERN = Pattern.compile(
@@ -86,11 +86,11 @@ public final class GitRepositoryUrl {
         final StringBuffer builder = new StringBuffer();
         builder.append(protocol);
         Optional.ofNullable(username).map(builder::append);
-        Optional.ofNullable(password).map(p -> builder.append(":").append(p));
-        Optional.ofNullable(username).map(u -> builder.append("@"));
+        Optional.ofNullable(password).map(p -> builder.append(':').append(p));
+        Optional.ofNullable(username).map(u -> builder.append('@'));
         builder.append(host);
-        Optional.ofNullable(namespace).map(n -> builder.append("/").append(n));
-        Optional.ofNullable(project).map(p -> builder.append("/").append(p).append(".git"));
+        Optional.ofNullable(namespace).map(n -> builder.append('/').append(n));
+        Optional.ofNullable(project).map(p -> builder.append('/').append(p).append(".git"));
         return builder.toString();
     }
 

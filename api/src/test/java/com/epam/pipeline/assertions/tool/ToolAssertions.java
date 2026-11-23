@@ -24,7 +24,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 
 public final class ToolAssertions {
@@ -96,6 +96,7 @@ public final class ToolAssertions {
         assertThat(actualTool.getCpu(), is(expectedTool.getCpu()));
         assertThat(actualTool.getRam(), is(expectedTool.getRam()));
         assertThat(actualTool.getDefaultCommand(), is(expectedTool.getDefaultCommand()));
+        assertThat(actualTool.getDefaultVersion(), is(expectedTool.getDefaultVersion()));
         assertThat(actualTool.getLabels(), is(expectedTool.getLabels()));
         assertThat(actualTool.getEndpoints(), is(expectedTool.getEndpoints()));
         assertThat(actualTool.getShortDescription(), is(expectedTool.getShortDescription()));

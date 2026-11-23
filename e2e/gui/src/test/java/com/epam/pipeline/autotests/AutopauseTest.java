@@ -17,7 +17,7 @@ package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.LogAO;
-import com.epam.pipeline.autotests.ao.SettingsPageAO.PreferencesAO.SystemTabAO;
+import com.epam.pipeline.autotests.ao.PreferencesAO.SystemTabAO;
 import com.epam.pipeline.autotests.ao.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;

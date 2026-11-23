@@ -62,6 +62,7 @@ public class DataStorageVO {
     private String tempCredentialsRole;
     private String kmsKeyArn;
     private boolean useAssumedCredentials;
+    private String accessPointArn;
 
     private Long sourceStorageId;
     private Set<String> linkingMasks;

@@ -5,8 +5,9 @@
 # with ip, tun2socks, keytool and curl replaced by stubs that record their calls, and with what it
 # hands over to replaced by one that records the environment it gets. openssl is real, and so are
 # the keys and the certificate it reads. Then of docker/service-entrypoint.sh, which the optional
-# services' containers start with, the same way. Runs in the tools image, in a container of its
-# own, which sandbox-test.sh starts as root and throws away.
+# services' containers start with, and of docker/ui-entrypoint.sh, which the GUI's dev server starts
+# with, the same way. Runs in the tools image, in a container of its own, which sandbox-test.sh
+# starts as root and throws away.
 set -euo pipefail
 
 TEST_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
@@ -17,6 +18,9 @@ STUBS=$WORK/stubs
 SANDBOX=$WORK/state/dev-api
 export STUB_CALLS=$WORK/calls STUB_KEYSTORES=$WORK/keystores HANDED=$WORK/handed
 OUTPUT=$WORK/output
+# Where the copy of the sandbox's SSH key goes: a directory that is not there yet.
+NODE_KEY=$WORK/ssh/node-key.pem
+NODE_KEY_BODY=ZmFrZSBub2RlIGtleQ
 TOKEN=abcdef.0123456789abcdef
 FAILURES=0
 STATUS=
@@ -51,7 +55,7 @@ run() {
   if PATH=$STUBS:$PATH TOOLS_ENTRYPOINT=$STUBS/handed-to JAVA_HOME=$WORK/java ROUTE_CHECK_SECONDS=0 \
     SANDBOX_DIR=$SANDBOX SANDBOX_VPC_CIDRS="10.0.0.0/16 10.1.0.0/16" \
     SANDBOX_SOCKS_PROXY=cp-sandbox-dev-api-master:1080 SANDBOX_MASTER_IP=10.0.0.7 \
-    bash "$ENTRYPOINT" "$@" >"$OUTPUT" 2>&1; then
+    SANDBOX_NODE_SSH_KEY=$NODE_KEY bash "$ENTRYPOINT" "$@" >"$OUTPUT" 2>&1; then
     STATUS=0
   else
     STATUS=$?
@@ -96,6 +100,10 @@ EOF
   openssl pkey -in "$SANDBOX/jwt-private-key.pem" -pubout -out "$SANDBOX/jwt-public-key.pem"
   printf '%s\n' "$TOKEN" >"$SANDBOX/kube-join-token.secret"
   printf 'kind: Config\n' >"$SANDBOX/kubeconfig.secret"
+  # As a mounted file may look: readable by others.
+  printf '%s\n' '-----BEGIN OPENSSH PRIVATE KEY-----' "$NODE_KEY_BODY" '-----END OPENSSH PRIVATE KEY-----' \
+    >"$SANDBOX/ssh-key.pem"
+  chmod 0644 "$SANDBOX/ssh-key.pem"
 }
 
 test_entrypoint() {
@@ -130,8 +138,10 @@ test_entrypoint() {
   check "the kubeconfig is where the node scripts read it, for root only, and KUBECONFIG names it" \
     "$(handed KUBECONFIG) $(cmp -s "$HOME/.kube/config" "$SANDBOX/kubeconfig.secret" && echo copied) $(stat -c %a "$HOME/.kube/config")" \
     "$HOME/.kube/config copied 600"
+  check "the sandbox's SSH key is where SANDBOX_NODE_SSH_KEY says, for root only, for the API to log in to the nodes with" \
+    "$(cmp -s "$NODE_KEY" "$SANDBOX/ssh-key.pem" && echo copied) $(stat -c '%a %u' "$NODE_KEY")" 'copied 600 0'
   check "it prints no secret" \
-    "$(grep -c -e "$TOKEN" -e "$(sed -n 2p "$SANDBOX/jwt-private-key.pem")" "$OUTPUT" || true)" 0
+    "$(grep -c -e "$TOKEN" -e "$(sed -n 2p "$SANDBOX/jwt-private-key.pem")" -e "$NODE_KEY_BODY" "$OUTPUT" || true)" 0
 
   run java -jar api.jar
   check "it runs again in the same container, as after docker start: the tun device is kept, the certificate trusted again" \
@@ -147,6 +157,13 @@ test_entrypoint() {
     >"$OUTPUT" 2>&1; then STATUS=0; else STATUS=$?; fi
   check "it refuses to start without the sandbox's settings, before it changes anything" \
     "$STATUS $(grep -c 'SANDBOX_VPC_CIDRS' "$OUTPUT") $(wc -l <"$STUB_CALLS")" '1 1 0'
+
+  : >"$STUB_CALLS"
+  if PATH=$STUBS:$PATH TOOLS_ENTRYPOINT=$STUBS/handed-to SANDBOX_DIR=$SANDBOX SANDBOX_VPC_CIDRS=10.0.0.0/16 \
+    SANDBOX_SOCKS_PROXY=cp-sandbox-dev-api-master:1080 SANDBOX_MASTER_IP=10.0.0.7 bash "$ENTRYPOINT" true \
+    >"$OUTPUT" 2>&1; then STATUS=0; else STATUS=$?; fi
+  check "and without where to copy the SSH key to" \
+    "$STATUS $(grep -c 'SANDBOX_NODE_SSH_KEY' "$OUTPUT") $(wc -l <"$STUB_CALLS")" '1 1 0'
 }
 
 # docker/service-entrypoint.sh, which the optional services' containers start with, in the same
@@ -181,9 +198,43 @@ EOF
     '1 1 '
 }
 
+# docker/ui-entrypoint.sh, which the GUI's dev server starts with: it hands the command over with
+# the admin's token as the dev proxy's bearer token, and nothing else.
+test_ui_entrypoint() {
+  local entrypoint admin=header.payload.signature token=$WORK/ui/admin-token.secret
+  entrypoint=$(dirname "$ENTRYPOINT")/ui-entrypoint.sh
+  mkdir -p "$(dirname "$token")"
+  printf '%s\n' "$admin" >"$token"
+  cat >"$STUBS/ui-handed-to" <<'EOF'
+#!/bin/bash
+printf 'args=%s\nPROXY_BEARER_TOKEN=%s\n' "$*" "${PROXY_BEARER_TOKEN-}" >"$HANDED"
+EOF
+  chmod +x "$STUBS/ui-handed-to"
+  rm -f "$HANDED"
+  if SANDBOX_TOKEN_FILE=$token bash "$entrypoint" "$STUBS/ui-handed-to" start >"$OUTPUT" 2>&1; then
+    STATUS=0
+  else
+    STATUS=$?
+  fi
+  check "the GUI's entrypoint hands the command over, with the admin's token for the dev proxy, without its newline" \
+    "$STATUS $(handed args) $(handed PROXY_BEARER_TOKEN)" "0 start $admin"
+  check "and prints nothing" "$(wc -c <"$OUTPUT" | tr -d ' ')" 0
+
+  rm -f "$HANDED" "$token"
+  if SANDBOX_TOKEN_FILE=$token bash "$entrypoint" "$STUBS/ui-handed-to" >"$OUTPUT" 2>&1; then
+    STATUS=0
+  else
+    STATUS=$?
+  fi
+  check "without the token, it says so and runs nothing" \
+    "$STATUS $(grep -c "no admin token in $token: run sandbox.sh services" "$OUTPUT") $([[ -e $HANDED ]] && echo ran)" \
+    '1 1 '
+}
+
 set_up
 test_entrypoint
 test_service_entrypoint
+test_ui_entrypoint
 rm -rf "$WORK"
 if ((FAILURES)); then
   printf '%s check(s) failed\n' "$FAILURES"

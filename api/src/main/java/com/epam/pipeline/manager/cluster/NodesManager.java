@@ -56,6 +56,7 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
@@ -64,7 +65,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
-import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -82,7 +82,7 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
-public class NodesManager {
+public class NodesManager implements InitializingBean {
 
     private static final String MASTER_LABEL = "node-role.kubernetes.io/master";
     private static final int NODE_DOWN_ATTEMPTS = 10;
@@ -123,8 +123,8 @@ public class NodesManager {
 
     private Map<String, String> protectedNodeLabels;
 
-    @PostConstruct
-    public void init() {
+    @Override
+    public void afterPropertiesSet() throws Exception {
         protectedNodeLabels = new HashMap<>();
         protectedNodeLabels.put(MASTER_LABEL, null);
         if (StringUtils.isBlank(protectedNodesString)) {
@@ -145,7 +145,6 @@ public class NodesManager {
                 protectedNodeLabels.put(labelAndValue[0], labelAndValue[1]);
             }
         });
-
     }
 
     public List<NodeInstance> filterNodes(final FilterNodesVO filterNodesVO, final MachineType machineType) {
@@ -473,10 +472,10 @@ public class NodesManager {
      * Intended for workloads such as AWS Capacity Blocks where the instance is not tagged by run id.
      */
     public NodeInstance attachDiskToNode(final String nodeId, final DiskAttachRequest request) {
-        Assert.notNull(request.getSize(),
+        Assert.notNull(request.size(),
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_DISK_SIZE_NOT_FOUND));
-        Assert.isTrue(request.getSize() > 0,
-                messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, request.getSize()));
+        Assert.isTrue(request.size() > 0,
+                messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, request.size()));
         final NodeInstance nodeInstance = getNode(nodeId);
         final AbstractCloudRegion region = loadRegionFromLabels(nodeInstance);
         cloudFacade.attachDiskToNode(region.getId(), nodeId, request, Collections.emptyMap());

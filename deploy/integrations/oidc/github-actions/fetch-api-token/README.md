@@ -1,0 +1,191 @@
+# Fetch a Cloud Pipeline API token
+
+A composite GitHub Action that exchanges a workflow run's GitHub OIDC token for a short-lived
+Cloud Pipeline API token, as [RFC 8693](https://www.rfc-editor.org/rfc/rfc8693) describes, and
+exports it for the steps that follow.
+
+No Cloud Pipeline secret is stored in GitHub. The job proves which repository, branch and
+environment it is running in with a token GitHub mints for it, and Cloud Pipeline decides what that
+is worth.
+
+**If you only want to use a storage or a registry, one of the sibling actions is shorter**, because
+each performs this same exchange and then does the setup you would otherwise write yourself:
+
+| Action | Use it when |
+|---|---|
+| [`configure-pipe-cli`](../configure-pipe-cli/README.md) | the job runs `pipe` — installs the CLI the deployment serves and leaves it authenticated |
+| [`configure-docker-registry`](../configure-docker-registry/README.md) | the job pulls or pushes images — finds the deployment's registry and logs docker into it |
+
+Use this action directly when the job calls the API itself, or needs the token for something those
+two do not cover.
+
+## Usage
+
+```yaml
+permissions:
+  id-token: write          # without this no OIDC token is available to the job
+  contents: read
+
+steps:
+  - uses: epam/cloud-pipeline/deploy/integrations/oidc/github-actions/fetch-api-token@develop
+    with:
+      api-url: https://cloud-pipeline.example.com
+
+  - run: pipe storage ls cp://my-bucket/
+```
+
+`API` and `API_TOKEN` are exported to the rest of the job, which is all `pipe` needs, so later
+steps require no further configuration. To use the token directly instead:
+
+```yaml
+  - uses: epam/cloud-pipeline/deploy/integrations/oidc/github-actions/fetch-api-token@develop
+    id: cp
+    with:
+      api-url: https://cloud-pipeline.example.com
+
+  - run: |
+      curl -sS -H "Authorization: Bearer ${{ steps.cp.outputs.token }}" \
+        "${{ steps.cp.outputs.api-url }}/whoami"
+```
+
+## Inputs
+
+| Name | Required | Description |
+|---|---|---|
+| `api-url` | yes | The Cloud Pipeline URL, which must be `https`. Either the API root as `pipe` expects it in `API` — `https://host/pipeline/restapi` — or just the host, in which case `/pipeline/restapi` is appended. The resolved value is printed at the start of the step. |
+| `insecure-tls` | no | Skip TLS verification on the Cloud Pipeline requests, for a self-signed certificate the runner does not trust. Off by default, and never applied to the request to GitHub. |
+
+**The resolved value is also the audience requested from GitHub**, so it has to match one of the
+`audiences` of the issuer entry configured on the deployment. A mismatch there is the most common
+reason for a refusal.
+
+## Outputs
+
+| Name | Description |
+|---|---|
+| `token` | The Cloud Pipeline API token. Masked in the log, but it is a credential: do not echo it or write it to an artefact. |
+| `api-url` | The API root the token was issued by, after the input was resolved. |
+| `expires-in` | How long the token is valid for, in seconds. |
+
+## What the deployment needs
+
+This action is only half of the setup; an administrator has to configure the other half once. In
+full, see
+[12.16. OIDC token exchange](../../../../../docs/md/manual/12_Manage_Settings/12.16._OIDC_token_exchange.md).
+
+1. A platform user for the job to act as. The exchange never creates one.
+2. `oidc.token.exchange.enabled=true` on the API service, and a restart. Until then the endpoint is
+   not registered and answers `404`.
+3. An entry in the `system.oidc.token.exchange.issuers` preference, for example:
+
+   ```json
+   [
+     {
+       "issuer": "https://token.actions.githubusercontent.com",
+       "audiences": ["https://cloud-pipeline.example.com/pipeline/restapi"],
+       "algorithms": ["RS256"],
+       "clients": [
+         {
+           "id": "github-actions",
+           "rules": [
+             { "claim": "repository_id", "operator": "EQUALS", "value": "<repository id>" },
+             { "claim": "ref", "operator": "EQUALS", "value": "refs/heads/main" }
+           ],
+           "assumeStrategy": {
+             "type": "SPECIFIC_USER",
+             "user": "<platform user>",
+             "rolesToKeep": ["ROLE_USER"],
+             "maxTokenLifetime": 3600,
+             "ignoreSubjectTokenLifetime": true
+           }
+         }
+       ]
+     }
+   ]
+   ```
+
+   `gh api repos/<org>/<repo> --jq .id` gives the repository id. Pin the id rather than the name: a
+   name can be released and claimed by somebody else.
+
+   The second condition matters as much as the first. Every repository on github.com shares one
+   issuer and any workflow can ask for any audience, so the claim conditions are the only boundary
+   there is — with `repository_id` alone, anyone able to push a branch in that repository can obtain
+   the token.
+
+   `ignoreSubjectTokenLifetime` is needed because a GitHub token expires minutes after it is issued;
+   without it the Cloud Pipeline token is capped at whatever is left of it and a long transfer dies
+   midway.
+
+## A self-signed Cloud Pipeline certificate
+
+A deployment serving a certificate the runner does not trust fails every request here with
+`curl: (60) SSL certificate problem`. The fix in order of preference:
+
+1. **trust the CA on the runner** — add it to the image's trust store. The actions then need no
+   option, and nothing is sent over an unverified connection;
+2. **`insecure-tls: true`** where that is not possible.
+
+```yaml
+  - uses: epam/cloud-pipeline/deploy/integrations/oidc/github-actions/fetch-api-token@develop
+    with:
+      api-url: https://cloud-pipeline.example.com
+      insecure-tls: true
+```
+
+It applies **only to the Cloud Pipeline requests**. The request to GitHub keeps verifying, because
+that certificate is publicly trusted and skipping it would expose the OIDC token for no benefit.
+
+Understand what you give up: the platform token is sent over a connection whose certificate is not
+checked, so anything on the network path between the runner and the API can read it, and a host that
+answers for that address cannot be told from the real one. The action prints a warning in the log
+whenever it is on. It does not weaken what the API will accept — only what this runner checks.
+
+## Requirements
+
+- `jq` and `curl` on the runner. Both are present on GitHub-hosted runners; a minimal self-hosted
+  runner may need `jq` installed. The action checks for both and says which is missing.
+- An `https` URL. The action refuses anything else, because the GitHub OIDC token is sent to it.
+- The runner must be able to reach the Cloud Pipeline API. GitHub-hosted runners are on the public
+  internet, so a deployment with a private API needs a self-hosted runner inside the network.
+- The API must be able to reach `https://token.actions.githubusercontent.com` to fetch GitHub's
+  signing keys, unless the issuer entry carries an inline `jwks`.
+
+## When it fails
+
+The API answers a refusal with an error code and nothing else, by design: the endpoint needs no
+platform token, so a caller must not be able to learn which check refused them. The action maps the
+code to the likeliest cause and prints that.
+
+For more than that, look in the Cloud Pipeline API log. A refusal is logged there at `WARN` with
+the reason, and a successful exchange at `INFO` with the issuer, subject, matched client, user and
+token id. Two cases log nothing useful: a malformed request is logged at `DEBUG`, which a default
+configuration does not show, and a `404` never reaches the endpoint at all, so there is nothing to
+find.
+
+| Code | Likeliest cause |
+|---|---|
+| `404` | The exchange is not enabled, or the API was not restarted after enabling it. Nothing reaches the API log in this case |
+| `unauthorized_client` | No configured client matched this run — wrong repository id, or the ref or environment does not match |
+| `invalid_grant` | The configured audience does not match `api-url`, or the platform user named by the client does not exist |
+
+A missing `permissions: id-token: write` is caught before any request is made, with a message
+saying so.
+
+## Note on the issued token
+
+It is a normal platform token, accepted by the API, the edge and `pipe` alike. It is **not
+renewable**: `GET /restapi/user/token` is refused for it, which is what keeps its life tied to
+GitHub's. A job that genuinely needs to mint platform tokens needs `"renewable": true` inside its
+client's `assumeStrategy`, accepting that the tie is given up.
+
+## The exchange itself lives one directory up
+
+The shell that performs the exchange is `../_lib/exchange-token.sh`, shared by this action and its
+two siblings so that all three behave identically and one fix reaches them together. The action
+calls it through `$GITHUB_ACTION_PATH`.
+
+This is invisible to `uses: epam/cloud-pipeline/...@<ref>`, which checks out the whole repository, so
+the sibling directory is always there at the ref you pinned. **It does matter if you vendor the
+action**: copying or sparse-checking-out only `fetch-api-token/` and running it as `uses: ./...` gives a
+step that fails on the first line, because the script it calls was left behind. Take the
+`_lib/` directory with it, or call this action by its full `owner/repo/path@ref`.

@@ -16,6 +16,8 @@
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
 import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
+import com.epam.pipeline.elasticsearch.model.IndexRequest;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.service.lock.LockService;
 import com.epam.pipeline.entity.datastorage.*;
@@ -24,13 +26,16 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.exception.PipelineResponseApiException;
 import com.epam.pipeline.vo.EntityPermissionVO;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -38,6 +43,9 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_NAME;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -52,6 +60,7 @@ public class ObjectStorageIndexTest {
     private static final String EXCLUDE_KEY = "key";
     private static final String EXCLUDE_VALUE = "value";
     private static final Long DELETED_STORAGE_ID = 3L;
+    private static final int MAX_DOCUMENT_ID_BYTES = 512;
 
     private final AbstractDataStorage dataStorage = new GSBucketStorage(
             1L, "storage", "storage", new StoragePolicy(), null
@@ -123,6 +132,23 @@ public class ObjectStorageIndexTest {
 
         verify(objectStorageIndex).indexStorage(dataStorage);
         verifyNumberOfInsertions(1);
+    }
+
+    @Test
+    public void shouldIndexFileWithPathLongerThanDocumentIdLimit() {
+        final String longPath = StringUtils.repeat('a', MAX_DOCUMENT_ID_BYTES + 1);
+        setUpReturnValues(Collections.singletonList(createFile(longPath)));
+
+        objectStorageIndex.indexStorage(dataStorage);
+
+        final ArgumentCaptor<DocWriteRequest> captor = ArgumentCaptor.forClass(DocWriteRequest.class);
+        verify(requestContainer).add(captor.capture());
+        final IndexRequest request = (IndexRequest) captor.getValue();
+        assertAll(
+            () -> assertTrue(request.id().getBytes(StandardCharsets.UTF_8).length <= MAX_DOCUMENT_ID_BYTES),
+            () -> assertEquals(longPath, request.sourceAsMap().get("id")),
+            () -> assertEquals(longPath, request.sourceAsMap().get("path"))
+        );
     }
 
     private void verifyRequestContainerState(final List<DataStorageFile> files, final int numberOfInvocation) {

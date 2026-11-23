@@ -47,6 +47,17 @@ def get_tool_from_run(api, run_id, max_attempts=10):
     raise RuntimeError("Failed to fetch tool from run for run_id: {}.".format(run_id))
 
 
+def get_run_image(api, run_id, max_attempts=10):
+    attempts = 0
+    while attempts < max_attempts:
+        attempts += 1
+        try:
+            return api.load_run(run_id)['dockerImage']
+        except Exception as e:
+            print('There is exception with message:{e} \n Retry: ({attempts}/{max_attempts})'.format(e=e, attempts=attempts, max_attempts=max_attempts))
+    raise RuntimeError("Failed to fetch docker image of run for run_id: {}.".format(run_id))
+
+
 def update_commit_status(api, run_id, commit_status, max_attempts=10):
     attempts = 0
     while attempts < max_attempts:
@@ -115,6 +126,11 @@ def tool_version_exist(new_image_name, version, max_attempts=10):
     raise RuntimeError("Failed to invoke tool_version_exist for tool: {}".format(new_image_name))
 
 
+def tool_default_version_set(new_image_name, max_attempts=10):
+    new_tool = load_tool(new_image_name, max_attempts)
+    return True if new_tool and new_tool.default_version else False
+
+
 def get_tool_version_settings(tool_id, version, max_attempts=10):
     attempts = 0
     while attempts < max_attempts:
@@ -169,11 +185,19 @@ def parse_image(image):
     return image_name, image_tag
 
 
-def get_image_name_and_tag(image_name_with_tag):
+def get_image_name_and_tag(image_name_with_tag, default_tag=None):
     image_name, image_tag = parse_image(image_name_with_tag)
     if image_tag is None:
-        image_tag = 'latest'
+        image_tag = default_tag or 'latest'
     return image_name, image_tag
+
+
+def get_image_tag(image, default_tag=None):
+    # an image may start with a registry, which has a port: <registry>:<port>/<group>/<name>:<tag>
+    image_name = image.split('@')[0].split('/')[-1]
+    if ':' in image_name:
+        return image_name.split(':')[1]
+    return default_tag or 'latest'
 
 
 def add_settings(new_tool_id, new_version, initial_tool_id, initial_version):
@@ -207,6 +231,10 @@ if __name__ == '__main__':
         new_tool_name = sys.argv[3]
         version_to_check = sys.argv[4]
         print(tool_version_exist(new_tool_name, version_to_check))
+
+    elif command == "idvs":
+        new_tool_name = sys.argv[3]
+        print(tool_default_version_set(new_tool_name))
 
     elif command == "etwc":
 
@@ -247,11 +275,13 @@ if __name__ == '__main__':
         new_image_name, new_image_tag = get_image_name_and_tag(new_image)
 
         initial_tool = get_tool_from_run(api, run_id)
-        initial_image_name, initial_image_tag = get_image_name_and_tag(initial_tool.image)
-        # case when commit in the same tool and version
+        initial_image_name, initial_image_tag = get_image_name_and_tag(initial_tool.image,
+                                                                       initial_tool.default_version)
+        run_image_tag = get_image_tag(get_run_image(api, run_id), initial_tool.default_version)
+        # case when commit in the same tool and version: the run's one, or the one the settings come from
         if new_tool.tool_id == initial_tool.tool_id and \
                 new_image_name == initial_image_name and \
-                new_image_tag == initial_image_tag:
+                new_image_tag in (run_image_tag, initial_image_tag):
             sys.exit(0)
         add_settings(new_tool.tool_id, new_image_tag, initial_tool.tool_id, initial_image_tag)
 

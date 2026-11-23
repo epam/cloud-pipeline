@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 #
 # Prepares an Amazon Linux 2023 host (kernel 6.1 or later) for Kubernetes 1.15: the packages, the
-# legacy iptables, btrfs, Python 2, jq, the kernel settings, SELinux in permissive mode, and cgroup
-# v1, which takes effect at the next boot. The dev sandbox's shared host image is a host this
-# prepared and then rebooted; sandbox masters and the platform's workers start from that image.
+# legacy iptables, btrfs, Python 2, the platform's Python 3.12 as the python3 on PATH, jq, the
+# kernel settings, SELinux in permissive mode, and cgroup v1, which takes effect at the next boot.
+# The dev sandbox's shared host image is a host this prepared and then rebooted; sandbox masters and
+# the platform's workers start from that image.
 #
 # Runs as root on the host. Safe to run again: a step already done is skipped.
 #
@@ -20,6 +21,15 @@ BTRFS_VERSION=6.17
 BTRFS_URL=$DISTRIBUTION_URL_US_EAST_1/tools/btrfs/$BTRFS_VERSION/btrfs.box.static
 MINICONDA2_ARCHIVE=Miniconda2-4.7.12.1-Linux-x86_64.tar.gz
 MINICONDA2_URL=$DISTRIBUTION_URL_US_EAST_1/tools/python/2/$MINICONDA2_ARCHIVE
+PYTHON3_VERSION=3.12
+PYTHON3_URL=$DISTRIBUTION_URL/tools/python/3/python$PYTHON3_VERSION.tar.gz
+# The archive holds the Python and the OpenSSL it is built with, for /usr/local, where the
+# platform's own node image unpacks it too (deploy/infra/aws/install-common-node.sh).
+PYTHON3_ROOT=/usr/local
+PYTHON3_BIN=$PYTHON3_ROOT/python$PYTHON3_VERSION/bin/python$PYTHON3_VERSION
+# Ahead of /usr/bin on every PATH that matters: sudo's secure_path, and the one the platform's node
+# init script writes into root's .bashrc, which a login shell reads after /etc/profile.d.
+PYTHON3_LINK=/usr/local/bin/python3
 JQ_VERSION=1.6
 JQ_URL=$DISTRIBUTION_URL/tools/jq/jq-$JQ_VERSION/jq-linux64
 
@@ -87,6 +97,23 @@ install_python2() {
   ln -sfn "$CONDA_BIN/pip" /usr/bin/pip
 }
 
+# The commit and pause scripts that the API runs on a node, over SSH, in a login shell as root
+# (sudo bash --login), take the python3 on PATH when there is one, and install pipe-common for it,
+# from the platform's mirror. The system's python3 is 3.9, for which pipe-common asks for packages
+# the mirror does not have, so the platform's 3.12 is the python3 found first, as in the platform's
+# own images. The system's stays /usr/bin/python3, which dnf, cloud-init and the AWS CLI name.
+install_python3() {
+  local archive=$CLOUD_PIPELINE_DIR/python$PYTHON3_VERSION.tar.gz
+  if [[ ! -x $PYTHON3_BIN ]]; then
+    log "Installing Python $PYTHON3_VERSION, the platform's build."
+    mkdir -p "$CLOUD_PIPELINE_DIR"
+    download "$PYTHON3_URL" "$archive"
+    tar -zxf "$archive" -C "$PYTHON3_ROOT"
+    rm -f "$archive"
+  fi
+  ln -sfn "$PYTHON3_BIN" "$PYTHON3_LINK"
+}
+
 install_jq() {
   if [[ $(/usr/bin/jq --version 2>/dev/null || true) != "jq-$JQ_VERSION" ]]; then
     log "Installing jq $JQ_VERSION."
@@ -131,6 +158,7 @@ prepare() {
   install_packages
   install_btrfs
   install_python2
+  install_python3
   install_jq
   configure_kernel
   configure_selinux

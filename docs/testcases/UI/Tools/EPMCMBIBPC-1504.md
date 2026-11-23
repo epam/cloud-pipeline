@@ -2,6 +2,9 @@
 
 Test verifies the content of the **Login into cloud registry** dialog opened from **How to configure**.
 
+**Prerequisites**:
+- The selected registry has certificate ("pipeline") authentication enabled
+
 | Steps | Actions | Expected results |
 | :---: | --- | --- |
 | 1 | Login as a user that has read permissions on the registry |  |

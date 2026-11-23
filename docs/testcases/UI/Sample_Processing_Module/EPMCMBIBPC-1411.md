@@ -5,7 +5,7 @@ Test verifies creating a project folder with a "type: project" attribute.
 | Steps | Actions | Expected results |
 | :---: | --- | --- |
 | 1 | Open the **Library** page |  |
-| 2 | Hover over **+ Create v** |  |
+| 2 | Click on **+ Create v** |  |
 | 3 | In the drop-down list that appears, select **Folder** and click it |  |
 | 4 | Enter a folder name and click **OK** |  |
 | 5 | Click on the created folder |  |

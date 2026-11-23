@@ -17,19 +17,22 @@
 package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.docker.ToolVersion;
+import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
+import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -47,12 +50,15 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils.getNfsDataStorage;
 import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils.getS3bucketDataStorage;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineStart;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class PipelineConfigurationManagerTest {
     public static final String NODE_LABEL_VALUE = "true";
@@ -65,6 +71,7 @@ public class PipelineConfigurationManagerTest {
     private static final Long NFS_ID_2 = 3L;
     private static final Long S3_ID_2 = 4L;
     private static final String TEST_DOCKER_IMAGE = TEST_REPO + "/" + TEST_IMAGE;
+    private static final String DEFAULT_VERSION = "1.0";
     private static final Map<String, PipeConfValueVO> TEST_PARAMS = Collections.singletonMap("testParam",
             new PipeConfValueVO("testParamValue", "int", true));
     private static final String TEST_MOUNT_POINT = "/some/path";
@@ -102,13 +109,18 @@ public class PipelineConfigurationManagerTest {
     @Mock
     private PipelineConfigurationLaunchCapabilitiesProcessor launchCapabilitiesProcessor;
 
+    @Mock
+    private ToolManager toolManager;
+
+    @Mock
+    private ToolVersionManager toolVersionManager;
+
     @InjectMocks
     private final PipelineConfigurationManager pipelineConfigurationManager = new PipelineConfigurationManager();
 
     private final List<AbstractDataStorage> dataStorages = new ArrayList<>();
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach    public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
         dataStorages.add(getNfsDataStorage(NFS_ID_1, TEST_PATH_1, TEST_OPTIONS_1, TEST_MOUNT_POINT, OWNER1));
         dataStorages.add(getS3bucketDataStorage(S3_ID_1, TEST_PATH_2, OWNER1));
@@ -142,6 +154,23 @@ public class PipelineConfigurationManagerTest {
     }
 
     @Test
+    public void shouldGetConfigurationOfVersionResolvedForToolIfImageHasNoTag() {
+        final Tool tool = new Tool();
+        tool.setId(TEST_LONG);
+        final ConfigurationEntry entry = new ConfigurationEntry();
+        entry.setName(TEST_STRING);
+        entry.setDefaultConfiguration(true);
+        entry.setConfiguration(new PipelineConfiguration());
+        doReturn(DEFAULT_VERSION).when(toolManager).resolveDefaultVersion(tool);
+        doReturn(DEFAULT_VERSION).when(toolManager).getTagFromImageName(TEST_DOCKER_IMAGE, DEFAULT_VERSION);
+        doReturn(Collections.singletonList(ToolVersion.builder().settings(Collections.singletonList(entry)).build()))
+                .when(toolVersionManager).loadToolVersionSettings(TEST_LONG, DEFAULT_VERSION);
+
+        assertThat(pipelineConfigurationManager.getConfigurationForToolVersion(tool, TEST_DOCKER_IMAGE, null))
+                .isEqualTo(entry);
+    }
+
+    @Test
     public void shouldPropagateRunAssignPolicyFromStartObjectToConfiguration() {
         final PipelineStart runVO = getPipelineStart(TEST_PARAMS, TEST_IMAGE);
         runVO.setPodAssignPolicy(
@@ -152,9 +181,9 @@ public class PipelineConfigurationManagerTest {
         final PipelineConfiguration config = pipelineConfigurationManager
                 .mergeParameters(runVO, new PipelineConfiguration());
 
-        Assert.assertNotNull(config.getPodAssignPolicy());
-        Assert.assertEquals(NODE_LABEL, config.getPodAssignPolicy().getSelector().getLabel());
-        Assert.assertEquals(NODE_LABEL_VALUE, config.getPodAssignPolicy().getSelector().getValue());
+        assertNotNull(config.getPodAssignPolicy());
+        assertEquals(NODE_LABEL, config.getPodAssignPolicy().getSelector().getLabel());
+        assertEquals(NODE_LABEL_VALUE, config.getPodAssignPolicy().getSelector().getValue());
     }
 
     @Test
@@ -163,20 +192,20 @@ public class PipelineConfigurationManagerTest {
         runVO.setParentNodeId(2L);
         PipelineConfiguration config = pipelineConfigurationManager.mergeParameters(runVO, new PipelineConfiguration());
 
-        Assert.assertNotNull(config.getPodAssignPolicy());
-        Assert.assertEquals(KubernetesConstants.RUN_ID_LABEL, config.getPodAssignPolicy().getSelector().getLabel());
-        Assert.assertEquals("2", config.getPodAssignPolicy().getSelector().getValue());
+        assertNotNull(config.getPodAssignPolicy());
+        assertEquals(KubernetesConstants.RUN_ID_LABEL, config.getPodAssignPolicy().getSelector().getLabel());
+        assertEquals("2", config.getPodAssignPolicy().getSelector().getValue());
 
         runVO = getPipelineStart(TEST_PARAMS, TEST_IMAGE);
         runVO.setUseRunId(3L);
         config = pipelineConfigurationManager.mergeParameters(runVO, new PipelineConfiguration());
 
-        Assert.assertNotNull(config.getPodAssignPolicy());
-        Assert.assertEquals(KubernetesConstants.RUN_ID_LABEL, config.getPodAssignPolicy().getSelector().getLabel());
-        Assert.assertEquals("3", config.getPodAssignPolicy().getSelector().getValue());
+        assertNotNull(config.getPodAssignPolicy());
+        assertEquals(KubernetesConstants.RUN_ID_LABEL, config.getPodAssignPolicy().getSelector().getLabel());
+        assertEquals("3", config.getPodAssignPolicy().getSelector().getValue());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldFailIfBothRunAssignPolicyOrParentNodeIdIsProvided() {
         final PipelineStart runVO = getPipelineStart(TEST_PARAMS, TEST_IMAGE);
         runVO.setPodAssignPolicy(
@@ -185,7 +214,8 @@ public class PipelineConfigurationManagerTest {
                 ).build()
         );
         runVO.setParentNodeId(1L);
-        pipelineConfigurationManager.mergeParameters(runVO, new PipelineConfiguration());
+        assertThrows(IllegalArgumentException.class,
+            () -> pipelineConfigurationManager.mergeParameters(runVO, new PipelineConfiguration()));
     }
 
     @Test
@@ -200,9 +230,9 @@ public class PipelineConfigurationManagerTest {
         );
         PipelineConfiguration config = pipelineConfigurationManager.mergeParameters(runVO, defaultConfig);
 
-        Assert.assertNotNull(config.getPodAssignPolicy());
-        Assert.assertEquals(KubernetesConstants.RUN_ID_LABEL, config.getPodAssignPolicy().getSelector().getLabel());
-        Assert.assertEquals("2", config.getPodAssignPolicy().getSelector().getValue());
+        assertNotNull(config.getPodAssignPolicy());
+        assertEquals(KubernetesConstants.RUN_ID_LABEL, config.getPodAssignPolicy().getSelector().getLabel());
+        assertEquals("2", config.getPodAssignPolicy().getSelector().getValue());
 
         runVO = getPipelineStart(TEST_PARAMS, TEST_IMAGE);
         runVO.setPodAssignPolicy(
@@ -219,9 +249,9 @@ public class PipelineConfigurationManagerTest {
         );
         config = pipelineConfigurationManager.mergeParameters(runVO, defaultConfig);
 
-        Assert.assertNotNull(config.getPodAssignPolicy());
-        Assert.assertEquals(NODE_LABEL, config.getPodAssignPolicy().getSelector().getLabel());
-        Assert.assertEquals(NODE_LABEL_VALUE, config.getPodAssignPolicy().getSelector().getValue());
+        assertNotNull(config.getPodAssignPolicy());
+        assertEquals(NODE_LABEL, config.getPodAssignPolicy().getSelector().getLabel());
+        assertEquals(NODE_LABEL_VALUE, config.getPodAssignPolicy().getSelector().getValue());
     }
 
     @Test
@@ -242,9 +272,9 @@ public class PipelineConfigurationManagerTest {
         final PipelineConfiguration workerConfig = pipelineConfigurationManager.generateWorkerConfiguration(
                 PARENT_ID, new PipelineStart(), configuration, false, true);
 
-        Assert.assertEquals(INHERITED_PARAM_VALUE1, workerConfig.getParameters()
+        assertEquals(INHERITED_PARAM_VALUE1, workerConfig.getParameters()
                 .get(INHERITED_PARAM1_MATCHING_PREFIX).getValue());
-        Assert.assertEquals(INHERITED_PARAM_VALUE2, workerConfig.getParameters()
+        assertEquals(INHERITED_PARAM_VALUE2, workerConfig.getParameters()
                 .get(INHERITED_PARAM2_MATCHING_PREFIX).getValue());
     }
 
@@ -264,7 +294,7 @@ public class PipelineConfigurationManagerTest {
         final PipelineConfiguration workerConfig = pipelineConfigurationManager.generateWorkerConfiguration(
                 PARENT_ID, new PipelineStart(), configuration, false, true);
 
-        Assert.assertEquals(INHERITED_PARAM_VALUE1, workerConfig.getParameters().get(INHERITED_PARAM_NAME).getValue());
+        assertEquals(INHERITED_PARAM_VALUE1, workerConfig.getParameters().get(INHERITED_PARAM_NAME).getValue());
     }
 
     @Test
@@ -279,9 +309,9 @@ public class PipelineConfigurationManagerTest {
         final PipelineConfiguration workerConfig = pipelineConfigurationManager.generateWorkerConfiguration(
                 PARENT_ID, new PipelineStart(), configuration, false, true);
 
-        Assert.assertEquals(INHERITED_PARAM_VALUE1, workerConfig.getParameters()
+        assertEquals(INHERITED_PARAM_VALUE1, workerConfig.getParameters()
                 .get(INHERITED_PARAM1_MATCHING_PREFIX).getValue());
-        Assert.assertEquals(INHERITED_PARAM_VALUE2, workerConfig.getParameters()
+        assertEquals(INHERITED_PARAM_VALUE2, workerConfig.getParameters()
                 .get(INHERITED_PARAM2_MATCHING_PREFIX).getValue());
 
     }
@@ -297,7 +327,7 @@ public class PipelineConfigurationManagerTest {
         final PipelineConfiguration workerConfig = pipelineConfigurationManager.generateWorkerConfiguration(
                 PARENT_ID, new PipelineStart(), configuration, false, true);
 
-        Assert.assertEquals(INHERITED_PARAM_VALUE1, workerConfig.getParameters().get(INHERITED_PARAM_NAME).getValue());
+        assertEquals(INHERITED_PARAM_VALUE1, workerConfig.getParameters().get(INHERITED_PARAM_NAME).getValue());
     }
 
     @Test
@@ -310,13 +340,18 @@ public class PipelineConfigurationManagerTest {
         pipelineConfigurationManager.validateFallbackInstanceTypesCount(configuration.getFallbackInstanceTypes());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldFailFallbackTypesCountValidationWhenLimitExceeded() {
         when(preferenceManager.getPreference(SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT))
                 .thenReturn(2);
         final PipelineConfiguration configuration = new PipelineConfiguration();
         configuration.setFallbackInstanceTypes(Arrays.asList("m5.large", "c5.large", "r4.large"));
-        pipelineConfigurationManager.validateFallbackInstanceTypesCount(configuration.getFallbackInstanceTypes());
+        assertThrows(IllegalArgumentException.class,
+                () -> pipelineConfigurationManager.validateFallbackInstanceTypesCount(
+                        configuration.getFallbackInstanceTypes()
+                )
+        );
+
     }
 
     private PipelineConfiguration buildConfigWithParams(final Map<String, PipeConfValueVO> parameters) {

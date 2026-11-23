@@ -141,12 +141,20 @@ public class PipelineLauncher {
     public String launch(final PipelineRun run, final PipelineConfiguration configuration, final List<String> endpoints,
                          final boolean useLaunch, final String pipelineId, final String clusterId) {
         return launch(run, configuration, endpoints, useLaunch, pipelineId,
-                clusterId, getImagePullPolicy(configuration));
+                clusterId, getImagePullPolicy(configuration), true);
     }
 
+    /**
+     * Launches a pod of a run.
+     *
+     * @param pinImageDigest whether the pod shall be created with the run's docker image digest, if the run
+     *                       has one, rather than with the docker image tag. A paused run is resumed from the image,
+     *                       which the pause committed under the tag, so it is never resumed by the digest.
+     */
     public String launch(final PipelineRun run, final PipelineConfiguration configuration,
                          final List<String> endpoints, final boolean useLaunch, final String pipelineId,
-                         final String clusterId, final ImagePullPolicy imagePullPolicy) {
+                         final String clusterId, final ImagePullPolicy imagePullPolicy,
+                         final boolean pinImageDigest) {
         validateLaunchConfiguration(configuration);
         final GitCredentials gitCredentials = configuration.getGitCredentials();
         //TODO: AZURE fix
@@ -184,7 +192,7 @@ public class PipelineLauncher {
                 commandTemplate = PodLaunchCommandHelper.pickLaunchCommandTemplate(
                         preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_LINUX),
                         toolOSVersion, configuration.getDockerImage());
-                final String effectiveLaunchCommand = commandTemplate.getCommand();
+                final String effectiveLaunchCommand = commandTemplate.command();
                 Assert.notNull(effectiveLaunchCommand, "Fail to evaluate pod launch command.");
                 rootPodCommand = PodLaunchCommandHelper.evaluateLaunchCommandTemplate(
                         effectiveLaunchCommand,
@@ -202,7 +210,7 @@ public class PipelineLauncher {
         executor.launchRootPod(rootPodCommand, run, envVars, endpoints, pipelineId,
                 configuration.getPodAssignPolicy(), configuration.getSecretName(),
                 clusterId, imagePullPolicy, configuration.getKubeLabels(),
-                configuration.getKubeServiceAccount(), commandTemplate);
+                configuration.getKubeServiceAccount(), commandTemplate, pinImageDigest);
         return pipelineCommand;
     }
 

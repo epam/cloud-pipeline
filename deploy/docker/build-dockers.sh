@@ -218,6 +218,14 @@ docker build    $DOCKERS_SOURCES_PATH/cp-git \
                 --build-arg BASE_IMAGE="gitlab/gitlab-ce:17.4.1-ce.0"
 docker push "$CP_GITLAB_17_DIST_NAME"
 
+# 19.5.3 version
+CP_GITLAB_19_DIST_NAME=${CP_GITLAB_19_DIST_NAME:-"$CP_DIST_REPO_NAME:git-19-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-git \
+                -t "$CP_GITLAB_19_DIST_NAME" \
+                -f $DOCKERS_SOURCES_PATH/cp-git/Dockerfile.19.5 \
+                --build-arg BASE_IMAGE="gitlab/gitlab-ce:19.5.3-ce.0"
+docker push "$CP_GITLAB_19_DIST_NAME"
+
 # Notifier
 CP_NOTIFIER_DIST_NAME=${CP_NOTIFIER_DIST_NAME:-"$CP_DIST_REPO_NAME:notifier-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-notifier \
@@ -348,6 +356,13 @@ docker build    $DOCKERS_SOURCES_PATH/cp-storage-lifecycle-service \
                 -t "$CP_STORAGE_LIFECYCLE_SERVICE_DIST_NAME" \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
 docker push "$CP_STORAGE_LIFECYCLE_SERVICE_DIST_NAME"
+
+# Storage Async Task Service
+CP_STORAGE_ASYNC_TASK_SERVICE_DIST_NAME=${CP_STORAGE_ASYNC_TASK_SERVICE_DIST_NAME:-"$CP_DIST_REPO_NAME:storage-async-task-service-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-storage-async-task-service \
+                -t "$CP_STORAGE_ASYNC_TASK_SERVICE_DIST_NAME" \
+                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
+docker push "$CP_STORAGE_ASYNC_TASK_SERVICE_DIST_NAME"
 
 # MLFlow server
 CP_MLFLOW_DIST_NAME=${CP_MLFLOW_DIST_NAME:-"$CP_DIST_REPO_NAME:mlflow-server-${DOCKERS_VERSION}"}

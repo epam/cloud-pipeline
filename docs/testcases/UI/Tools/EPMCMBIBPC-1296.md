@@ -15,7 +15,7 @@ Test verifies launching a tool with no execution defaults filled in, using custo
 | 6 | Expand **EXECUTION ENVIRONMENT** section if it's minimized |  |
 | 7 | Check whether **Instance type**, **Disk (Gb)** and **Cmd template** fields are empty |  |
 | 8 | Click the **v** button on the right of the **Run** button |  |
-| 9 | Click **Custom settings** in the appeared dropdown list | The **Launch** page appears that contains: <li> the sign `Launch {tool_name} {tool_version_name}` <li> the **Docker image** field shows the image name as `{registry_address}/{group_name}/{tool_name}:{version_name}` <li> the **Cmd template** field is empty <li> **Node type**, **Disk (Gb)** fields are empty <li> a dash is displayed near the estimated price label |
+| 9 | Click **Custom settings** in the appeared dropdown list | The **Launch** page appears that contains: <li> the sign `Launch {tool_name}:{tool_version_name}` <li> the **Docker image** field shows the image name as `{registry_address}/{group_name}/{tool_name}:{version_name}` <li> the **Cmd template** field is empty <li> **Node type**, **Disk (Gb)** fields are empty <li> a dash is displayed near the estimated price label |
 | 10 | Input valid values into the **Node type**, **Disk (Gb)** fields |  |
 | 11 | Click the **Price type** combobox and select **On-demand** item |  |
 | 12 | Input a natural number into the **Timeout (min)** field |  |

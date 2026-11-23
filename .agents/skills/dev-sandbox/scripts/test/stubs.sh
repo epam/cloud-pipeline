@@ -44,6 +44,8 @@ RUN_STATUS=
 ME=dev@example.com
 FAKE_TOKEN=abcdef.0123456789abcdef
 FAKE_HASH=4f0c6d7e5b8a9c1d2e3f405162738495a6b7c8d9e0f1a2b3c4d5e6f708192a3b
+# The password of the master's registry user, as install-services.sh makes them.
+FAKE_REGISTRY_PASSWORD=0123456789abcdef0123456789abcdef01234567
 # Made-up credentials, as the AWS CLI exports them: temporary ones, by default.
 TEMPORARY_KEY_ID=ASIAFAKEFAKEFAKEFAKE
 LONG_TERM_KEY_ID=AKIAFAKEFAKEFAKEFAKE
@@ -282,15 +284,17 @@ ssm_run() {
 
 # SSH, stubbed: records the command, and answers what the master holds. Freeing the API port
 # answers from the "released" queue, nothing once it is empty; an answer written ! fails, as SSH
-# does.
+# does. What instance_ssh_file copies is kept as ssh-file.<name of the file on the master>.
 instance_ssh() {
   local answer
   printf '%s\n' "$4" >>"$SSH_COMMANDS"
   case $4 in
+    *' && cat >'*) cat >"$STUB_DIR/ssh-file.$(basename "$(sed -E 's/.* && cat >([^ ]+)\.part .*/\1/' <<<"$4")")" ;;
     *admin.conf) admin_conf ;;
     *join-token) printf '%s\n' "$FAKE_TOKEN" ;;
     *ca-cert-hash) printf '%s\n' "$FAKE_HASH" ;;
     *registry.crt) printf '%s\n' '-----BEGIN CERTIFICATE-----' 'ZmFrZS1yZWdpc3RyeQ==' '-----END CERTIFICATE-----' ;;
+    *registry/password.secret) printf '%s\n' "$FAKE_REGISTRY_PASSWORD" ;;
     'ss '*) [[ -z $SS_LISTENING ]] || printf '%s\n' "$SS_LISTENING" ;;
     *'sudo kill'*)
       answer=$(next_answer released '')

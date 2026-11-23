@@ -1,0 +1,5 @@
+Sample:ID,Name,Name_short,Location:Path,AnotherLocation:Path
+1,CantonS.09-28_test.bai,CantonS_test.bai,https://ngb-oss-builds.s3.amazonaws.com/public/data/demo/ngb_demo_data/CantonS.09-28.trim.dm606.realign.bai,https://ngb-oss-builds.s3.amazonaws.com/public/data/demo/ngb_demo_data/CantonS.09-28.trim.dm606.realign.bai
+2,CantonS.09-28_test.bam,CantonS_test.bam,https://ngb-oss-builds.s3.amazonaws.com/public/data/demo/ngb_demo_data/CantonS.09-28.trim.dm606.realign.bam,https://ngb-oss-builds.s3.amazonaws.com/public/data/demo/ngb_demo_data/CantonS.09-28.trim.dm606.realign.bam
+3,CantonS.09-28_test.vcf.gz,CantonS_test.vcf.gz,https://ngb-oss-builds.s3.amazonaws.com/public/data/demo/ngb_demo_data/CantonS.09-28.trim.dm606.realign.vcf.gz,https://ngb-oss-builds.s3.amazonaws.com/public/data/demo/ngb_demo_data/CantonS.09-28.trim.dm606.realign.vcf.gz
+4,Homo_sapiens.GRCh38.fa,GRCh38.fa,https://ngb-oss-builds.s3.amazonaws.com/public/data/genome/grch38/Homo_sapiens.GRCh38.fa,https://ngb-oss-builds.s3.amazonaws.com/public/data/genome/grch38/Homo_sapiens.GRCh38.fa

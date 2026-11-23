@@ -10,6 +10,7 @@ import {
   WhoamiPayload,
   MetadataEntityPayload,
 } from './api';
+import { defaultVersionTag } from './toolVersions';
 
 const ALLOWED_DOCKER = 'cluster.allowed.instance.types.docker';
 const ALLOWED_PIPE = 'cluster.allowed.instance.types';
@@ -274,17 +275,6 @@ async function showToolQuickPick(items: ToolQuickPickItem[]): Promise<ToolQuickP
   });
 }
 
-/** Mirrors the web UI default tag when opening Run → Run default. */
-function defaultVersionTag(versionNames: string[]): string | undefined {
-  if (versionNames.includes('latest')) {
-    return 'latest';
-  }
-  if (versionNames.length === 1) {
-    return versionNames[0];
-  }
-  return undefined;
-}
-
 export async function runStartNewRunFlow(
   api: CloudPipelineApi,
   brand: string,
@@ -375,7 +365,8 @@ export async function runStartNewRunFlow(
   }
 
   const fallbackDefault =
-    defaultVersionTag(versionNames) ?? (versionNames.length === 1 ? versionNames[0] : undefined);
+    defaultVersionTag(versionNames, t.defaultVersion) ??
+    (versionNames.length === 1 ? versionNames[0] : undefined);
 
   type VerPick = vscode.QuickPickItem & { version: string };
 

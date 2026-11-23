@@ -4,3 +4,4 @@ src/**
 tsconfig.json
 .gitignore
 **/*.map
+out/test/**

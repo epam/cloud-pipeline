@@ -69,6 +69,8 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_PREF_CLUSTER_CADVISOR_DISABLE_PROXY= \      # Disables the proxy settings when API communicates to the cAdvisor service within worker nodes (Default: true)
 
                 # GitLab
+                -env CP_GITLAB_VERSION= \                           # GitLab version: 9 (default), 15, 17 or 19. See docs/md/installation/gitlab/gitlab_versions.md
+                -env GITLAB_DATABASE_VERSION= \                     # Tag of the postgres image of the GitLab DB: 9.6 (default) for 9, 12.4 for 15, 14.11 for 17, 17 (or a 17.x tag) for 19
                 -env CP_GITLAB_SSO_TARGET_URL= \                    # Sets idp_sso_target_url value of the gitlab.rb, if not defined - it will be constructed as "https://${CP_IDP_EXTERNAL_HOST}:${CP_IDP_EXTERNAL_PORT}${CP_GITLAB_SSO_TARGET_URL_TRAIL}"
                 -env CP_GITLAB_SLO_TARGET_URL= \                    # Sets idp_slo_target_url value of the gitlab.rb, if not defined - it will be constructed as "https://${CP_IDP_EXTERNAL_HOST}:${CP_IDP_EXTERNAL_PORT}${CP_GITLAB_SLO_TARGET_URL_TRAIL}"
                 -env CP_GITLAB_SSO_TARGET_URL_TRAIL= \              # Allows to add a trailing part to the idp_sso_target_url (default: "/saml/sso")

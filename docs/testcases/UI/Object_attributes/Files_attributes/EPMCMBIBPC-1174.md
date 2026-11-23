@@ -1,4 +1,4 @@
-# Add several keys to Object_attributes/Files_attributes
+# Add several keys to file attributes
 
 *Note: For Azure, step 2 should be skipped*
 

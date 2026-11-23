@@ -41,7 +41,8 @@ public abstract class AbstractDataStorageFactory {
             Long id, String name, String path, DataStorageType type,
             StoragePolicy policy, String mountOptions, String mountPoint,
             List<String> allowedCidrs, Long regionId, Long fileShareMountId, boolean mountExactPath,
-            String kmsKey, String tempRole, boolean useAssumedCreds, String mountStatus,
+            String kmsKey, String tempRole, boolean useAssumedCreds, String accessPointArn,
+            String mountStatus,
             Set<String> masks, Long sourceStorageId);
 
     public AbstractDataStorage convertToDataStorage(DataStorageVO vo, final CloudProvider provider) {
@@ -51,6 +52,7 @@ public abstract class AbstractDataStorageFactory {
                         vo.getMountOptions(), vo.getMountPoint(), vo.getAllowedCidrs(),
                         vo.getRegionId(), vo.getFileShareMountId(), vo.isMountExactPath(),
                         vo.getKmsKeyArn(), vo.getTempCredentialsRole(), vo.isUseAssumedCredentials(),
+                        vo.getAccessPointArn(),
                         NFSStorageMountStatus.ACTIVE.name(), vo.getLinkingMasks(), vo.getSourceStorageId());
         storage.setDescription(vo.getDescription());
         storage.setParentFolderId(vo.getParentFolderId());
@@ -83,6 +85,7 @@ public abstract class AbstractDataStorageFactory {
                                                         final boolean mountExactPath,
                                                         final String kmsKey, final String tempRole,
                                                         final boolean useAssumedCreds,
+                                                        final String accessPointArn,
                                                         final String mountStatus,
                                                         final Set<String> masks,
                                                         final Long sourceStorageId) {
@@ -95,6 +98,7 @@ public abstract class AbstractDataStorageFactory {
                     bucket.setKmsKeyArn(kmsKey);
                     bucket.setTempCredentialsRole(tempRole);
                     bucket.setUseAssumedCredentials(useAssumedCreds);
+                    bucket.setAccessPointArn(accessPointArn);
                     resultStorage = bucket;
                     break;
                 case NFS:

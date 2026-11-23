@@ -18,8 +18,10 @@ package com.epam.pipeline.controller.vo.pipeline.issue;
 
 import com.epam.pipeline.entity.git.GitlabIssueLabelsFilter;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class GitlabIssueFilter {
     private String search;
     private GitlabIssueLabelsFilter labelsFilter;

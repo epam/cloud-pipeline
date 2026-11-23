@@ -24,9 +24,8 @@ import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
 import com.epam.pipeline.entity.scan.ToolOSVersion;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Propagation;
@@ -43,7 +42,12 @@ import java.util.stream.Collectors;
 import static com.epam.pipeline.assertions.tool.ToolAssertions.assertRegistryGroups;
 import static com.epam.pipeline.assertions.tool.ToolAssertions.assertRegistryTools;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DockerRegistryDaoTest extends AbstractJdbcTest {
 
@@ -71,7 +75,9 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
     private static final String REGISTRY_CERT = "cert";
     private static final String TEST_OS = "ubuntu";
     private static final String TEST_OS_VERSION = "20.04";
+    private static final String ANOTHER_TEST_OS_VERSION = "22.04";
     private static final String LATEST_VERSION = "latest";
+    private static final String DEFAULT_VERSION = "1.0";
 
     @Autowired
     private DockerRegistryDao registryDao;
@@ -93,9 +99,9 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
 
         DockerRegistry loaded = registryDao.loadDockerRegistry(created.getId());
 
-        Assert.assertEquals(created.getId(), loaded.getId());
-        Assert.assertEquals(created.getDescription(), loaded.getDescription());
-        Assert.assertEquals(created.getPath(), loaded.getPath());
+        assertEquals(created.getId(), loaded.getId());
+        assertEquals(created.getDescription(), loaded.getDescription());
+        assertEquals(created.getPath(), loaded.getPath());
 
         ToolGroup library = createToolGroup(created);
         toolGroupDao.createToolGroup(library);
@@ -107,13 +113,13 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
         toolDao.createTool(tool2);
 
         loaded = registryDao.loadDockerRegistry(created.getId());
-        Assert.assertEquals(loaded.getTools().size(), EXPECTED_TOOLS_TOTAL_COUNT);
+        assertEquals(loaded.getTools().size(), EXPECTED_TOOLS_TOTAL_COUNT);
         Tool loadedTool = loaded.getTools().get(0);
         Tool loadedTool2 = loaded.getTools().get(1);
 
-        Assert.assertNotEquals(loadedTool.getImage(), loadedTool2.getImage());
-        Assert.assertEquals(loaded.getPath(), loadedTool.getRegistry());
-        Assert.assertEquals(loaded.getPath(), loadedTool2.getRegistry());
+        assertNotEquals(loadedTool.getImage(), loadedTool2.getImage());
+        assertEquals(loaded.getPath(), loadedTool.getRegistry());
+        assertEquals(loaded.getPath(), loadedTool2.getRegistry());
     }
 
     private ToolGroup createToolGroup(DockerRegistry created) {
@@ -144,7 +150,7 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
         registryDao.updateDockerRegistry(created);
 
         DockerRegistry loaded = registryDao.loadDockerRegistry(created.getId());
-        Assert.assertEquals(EMPTY, loaded.getDescription());
+        assertEquals(EMPTY, loaded.getDescription());
     }
 
     @Test
@@ -155,10 +161,10 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
         registryDao.deleteDockerRegistry(created.getId());
 
         DockerRegistry loaded = registryDao.loadDockerRegistry(created.getId());
-        Assert.assertNull(loaded);
+        assertNull(loaded);
     }
 
-    @Test(expected = DataIntegrityViolationException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void deleteDockerRegistryWithToolShouldThrowsException() throws Exception {
         DockerRegistry created = getDockerRegistry();
@@ -166,9 +172,7 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
 
         ToolGroup library = createToolGroup(created);
         Tool tool = createTool(TOOL_IMAGE, created.getId(), library);
-        toolDao.createTool(tool);
-
-        registryDao.deleteDockerRegistry(created.getId());
+        assertThrows(DataIntegrityViolationException.class, () -> toolDao.createTool(tool));
     }
 
     @Test
@@ -215,12 +219,21 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
         final ToolOSVersion expectedOsVersion = ToolOSVersion.builder()
                 .version(TEST_OS_VERSION)
                 .distribution(TEST_OS).build();
+        final ToolOSVersion latestOsVersion = ToolOSVersion.builder()
+                .version(ANOTHER_TEST_OS_VERSION)
+                .distribution(TEST_OS).build();
         expectedRegistries.stream()
                 .flatMap(registry -> registry.getGroups().stream())
                 .flatMap(group -> group.getTools().stream())
-                .forEach(tool -> toolVulnerabilityDao.insertToolVersionScan(tool.getId(), LATEST_VERSION,
-                        expectedOsVersion, TEST_USER, TEST_USER, ToolScanStatus.COMPLETED, new Date(),
-                        Collections.emptyMap(), TEST_USER, 1, false));
+                .forEach(tool -> {
+                    // a tool's OS is taken from the scan of its default version, a symlink has no own one
+                    final boolean hasDefaultVersion = tool.isNotSymlink() && tool.getDefaultVersion() != null;
+                    insertToolVersionScan(tool, LATEST_VERSION, hasDefaultVersion ? latestOsVersion
+                            : expectedOsVersion);
+                    if (hasDefaultVersion) {
+                        insertToolVersionScan(tool, tool.getDefaultVersion(), expectedOsVersion);
+                    }
+                });
 
         final List<DockerRegistry> loadedRegistries = registryDao.loadAllRegistriesContent();
 
@@ -303,32 +316,32 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
 
     // TODO 02.06.2020: Why is it ignored out?
     @Test
-    @Ignore
+    @Disabled
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testLoadAllRegistriesContent() {
         List<DockerRegistry> created = initTestHierarchy();
         Set<Long> createdRegistryIds = created.stream().map(BaseEntity::getId).collect(Collectors.toSet());
 
         List<DockerRegistry> dockerRegistries = registryDao.loadAllRegistriesContent();
-        Assert.assertFalse(dockerRegistries.isEmpty());
+        assertFalse(dockerRegistries.isEmpty());
         for (int i = 0; i < dockerRegistries.size(); i++) {
             DockerRegistry loadedRegistry = dockerRegistries.get(i);
 
             if (createdRegistryIds.contains(loadedRegistry.getId())) {
-                Assert.assertFalse(loadedRegistry.getGroups().isEmpty());
-                Assert.assertEquals(loadedRegistry.getGroups().get(0).getName(),
+                assertFalse(loadedRegistry.getGroups().isEmpty());
+                assertEquals(loadedRegistry.getGroups().get(0).getName(),
                                     created.get(i).getGroups().get(0).getName());
-                Assert.assertEquals(loadedRegistry.getGroups().get(0).getDescription(),
+                assertEquals(loadedRegistry.getGroups().get(0).getDescription(),
                                     created.get(i).getGroups().get(0).getDescription());
-                /*Assert.assertEquals(loadedRegistry.getGroups().get(0).getId(),
+                /*assertEquals(loadedRegistry.getGroups().get(0).getId(),
                                     created.get(i).getGroups().get(0).getId());*/
 
                 for (int j = 0; j < created.get(i).getGroups().get(0).getTools().size(); j++) {
                     Tool tool = created.get(i).getGroups().get(0).getTools().get(j);
                     Tool loadedTool = loadedRegistry.getGroups().get(0).getTools().get(j);
-                    Assert.assertEquals(tool.getId(), loadedTool.getId());
-                    Assert.assertEquals(tool.getImage(), loadedTool.getImage());
-                    Assert.assertEquals(tool.getCpu(), loadedTool.getCpu());
+                    assertEquals(tool.getId(), loadedTool.getId());
+                    assertEquals(tool.getImage(), loadedTool.getImage());
+                    assertEquals(tool.getCpu(), loadedTool.getCpu());
                 }
             }
         }
@@ -358,6 +371,8 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
 
         Tool tool = createTool(TOOL_IMAGE, createdRegistry.getId(), library);
         toolDao.createTool(tool);
+        toolDao.updateDefaultVersion(tool.getId(), DEFAULT_VERSION);
+        tool.setDefaultVersion(DEFAULT_VERSION);
         library.setTools(Collections.singletonList(tool));
         createdRegistry.setTools(Collections.singletonList(tool));
 
@@ -369,6 +384,8 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
         Tool symlink = createTool(TOOL_IMAGE, createdRegistry2.getId(), library2);
         symlink.setLink(tool.getId());
         toolDao.createTool(symlink);
+        // a symlink has the default version of the tool it refers to
+        symlink.setDefaultVersion(DEFAULT_VERSION);
         library2.setTools(Arrays.asList(tool2, symlink));
         createdRegistry2.setTools(Arrays.asList(tool2, symlink));
 
@@ -391,6 +408,11 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
         tool.setDisk(DISK);
         tool.setInstanceType(INSTANCE_TYPE);
         return tool;
+    }
+
+    private void insertToolVersionScan(final Tool tool, final String version, final ToolOSVersion osVersion) {
+        toolVulnerabilityDao.insertToolVersionScan(tool.getId(), version, osVersion, TEST_USER, TEST_USER,
+                ToolScanStatus.COMPLETED, new Date(), Collections.emptyMap(), TEST_USER, 1, false);
     }
 
     private void assertToolOsVersions(final List<DockerRegistry> actualRegistries,

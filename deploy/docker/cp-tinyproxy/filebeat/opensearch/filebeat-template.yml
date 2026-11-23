@@ -1,6 +1,6 @@
 setup.template.name: "security_log_template"
 setup.template.pattern: "security_log*"
-setup.tempalte.enabled: false
+setup.template.enabled: false
 setup.ilm.enabled: false
 output.elasticsearch:
   hosts: ["${CP_SEARCH_ELK_INTERNAL_SCHEME}://${CP_SEARCH_ELK_INTERNAL_HOST}:${CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT}"]
@@ -18,3 +18,6 @@ filebeat:
 processors:
   - drop_fields:
       fields: ["log", "offset", "beat", "agent", "log.offset", "esc" ]
+
+# The seccomp policy of filebeat 7.10 does not allow clone3, which glibc 2.34+ (Rocky Linux 9) uses to start threads
+seccomp.enabled: false

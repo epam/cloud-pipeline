@@ -7,7 +7,7 @@ import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.test.creator.security.SecurityCreatorUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.Map;
@@ -15,7 +15,7 @@ import java.util.Map;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;

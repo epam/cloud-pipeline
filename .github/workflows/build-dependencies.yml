@@ -1,0 +1,215 @@
+name: Build-Dependencies
+
+##############################################################
+# Builds the third-party software that the platform ships but that is not
+# part of its source code, from the recipes in deploy/dependencies/: one
+# folder per dependency, e.g.
+#
+#   python3   the Python 3.12 distribution that the runs, the node hosts and
+#             the platform images install into /usr/local/python3.12
+#
+# A pull request, or a push to develop, builds only the dependencies whose
+# folder it changed (or this workflow, or the files of deploy/dependencies/
+# itself). A manual run builds the folder it names, or all of them.
+#
+# A dependency is a folder with:
+#   build.sh <output dir>               builds it into the output dir
+#   check.sh <image> <output dir>       checks the build in a docker image
+#   check-images.txt                    the images to check it in
+#   test.sh                             optional: tests its scripts, before the build
+#   publish.sh <output dir>             optional: publishes a checked build
+# The workflow needs no change for a new one.
+#
+# On develop (a push, or a manual run), when every build and every check of
+# the run passed, each dependency with a publish.sh is published by it, e.g.
+# python3 to s3://cloud-pipeline-oss-builds/tools/python/3/python3.12.tar.gz.
+# publish.sh keeps a newer build from being replaced by an older one.
+# Pull requests only build and check.
+#
+# Repository configuration the publishing uses (the same as main.yml):
+#   Secrets  AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_DEFAULT_REGION:
+#            s3:ListBucket on cloud-pipeline-oss-builds, s3:GetObject and
+#            s3:PutObject on what the publish.sh scripts write
+#
+# Outputs: workflow artifacts, one per dependency, named after its folder,
+# kept 30 days; what publish.sh publishes.
+##############################################################
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - 'deploy/dependencies/**'
+      - '.github/workflows/build-dependencies.yml'
+
+  pull_request:
+    paths:
+      - 'deploy/dependencies/**'
+      - '.github/workflows/build-dependencies.yml'
+
+  workflow_dispatch:
+    inputs:
+      dependency:
+        description: 'Folder of deploy/dependencies/ to build, or "all"'
+        type: string
+        default: all
+
+permissions:
+  contents: read
+
+# A newer commit of a pull request replaces the run of the older one. Each push to develop, and each manual
+# run, has a group of its own, so none is cancelled: the next push only builds what it changed itself.
+concurrency:
+  group: Build-Dependencies-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  Changes:
+    runs-on: ubuntu-22.04
+    outputs:
+      dependencies: ${{ steps.select.outputs.dependencies }}
+      checks: ${{ steps.select.outputs.checks }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Test the selection
+        shell: bash
+        run: bash deploy/dependencies/test-select-changed.sh
+
+      - name: Select the dependencies to build
+        id: select
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SELECTED: ${{ inputs.dependency }}
+          BEFORE_SHA: ${{ github.event.before }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: bash deploy/dependencies/select-changed.sh | tee -a "$GITHUB_OUTPUT"
+
+  Build:
+    needs: Changes
+    if: needs.Changes.outputs.dependencies != '[]'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        dependency: ${{ fromJSON(needs.Changes.outputs.dependencies) }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Test the scripts of ${{ matrix.dependency }}
+        shell: bash
+        env:
+          DEPENDENCY: ${{ matrix.dependency }}
+        run: |
+          if [ -f "deploy/dependencies/$DEPENDENCY/test.sh" ]; then
+              bash "deploy/dependencies/$DEPENDENCY/test.sh"
+          else
+              echo "deploy/dependencies/$DEPENDENCY has no test.sh"
+          fi
+
+      - name: Build ${{ matrix.dependency }}
+        shell: bash
+        env:
+          DEPENDENCY: ${{ matrix.dependency }}
+          # a pull request builds its merge commit: record the commit of the branch
+          GIT_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash "deploy/dependencies/$DEPENDENCY/build.sh" "$RUNNER_TEMP/$DEPENDENCY"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.dependency }}
+          path: ${{ runner.temp }}/${{ matrix.dependency }}/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+  # The checks of one dependency do not wait for the builds of the others: those of a failed build fail on
+  # its missing artifact
+  Check:
+    needs: [Changes, Build]
+    if: ${{ !cancelled() && needs.Changes.result == 'success' && needs.Changes.outputs.checks != '[]' }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.Changes.outputs.checks) }}
+    name: Check ${{ matrix.dependency }} in ${{ matrix.image }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ matrix.dependency }}
+          path: ${{ runner.temp }}/${{ matrix.dependency }}
+
+      - name: Check
+        shell: bash
+        env:
+          DEPENDENCY: ${{ matrix.dependency }}
+          IMAGE: ${{ matrix.image }}
+        run: bash "deploy/dependencies/$DEPENDENCY/check.sh" "$IMAGE" "$RUNNER_TEMP/$DEPENDENCY"
+
+  # On develop only, and only when every build and check of the run passed. The publications run one at a
+  # time; publish.sh does not replace a build of a newer commit with this one. GitHub keeps one waiting
+  # publication and cancels an older waiting one: re-run a Publish job that shows as cancelled.
+  Publish:
+    needs: [Changes, Build, Check]
+    if: >-
+      ${{ !cancelled() && needs.Build.result == 'success' && needs.Check.result == 'success'
+      && github.ref == 'refs/heads/develop'
+      && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    concurrency:
+      group: Build-Dependencies-Publish
+      cancel-in-progress: false
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        dependency: ${{ fromJSON(needs.Changes.outputs.dependencies) }}
+    steps:
+      # the whole history: publish.sh compares the commit of the published build with this one
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Decide whether to publish
+        id: decide
+        shell: bash
+        env:
+          DEPENDENCY: ${{ matrix.dependency }}
+        run: |
+          if [ -f "deploy/dependencies/$DEPENDENCY/publish.sh" ]; then
+              echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+              echo "deploy/dependencies/$DEPENDENCY has no publish.sh: nothing to publish"
+              echo "publish=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/download-artifact@v8
+        if: steps.decide.outputs.publish == 'true'
+        with:
+          name: ${{ matrix.dependency }}
+          path: ${{ runner.temp }}/${{ matrix.dependency }}
+
+      - name: Configure AWS credentials
+        if: steps.decide.outputs.publish == 'true'
+        uses: aws-actions/configure-aws-credentials@v6.2.2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+      - name: Publish ${{ matrix.dependency }}
+        if: steps.decide.outputs.publish == 'true'
+        shell: bash
+        env:
+          DEPENDENCY: ${{ matrix.dependency }}
+        run: bash "deploy/dependencies/$DEPENDENCY/publish.sh" "$RUNNER_TEMP/$DEPENDENCY"

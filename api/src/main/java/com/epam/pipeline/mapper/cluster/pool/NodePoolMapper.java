@@ -33,9 +33,15 @@ public interface NodePoolMapper {
 
     @Mapping(target = "created", ignore = true)
     @Mapping(target = "schedule", ignore = true)
+    @Mapping(target = "owner", ignore = true)
+    @Mapping(target = "capacityReservation", ignore = true)
+    @Mapping(target = "usage", ignore = true)
+    @Mapping(target = "startDate", ignore = true)
+    @Mapping(target = "endDate", ignore = true)
     NodePool toEntity(NodePoolVO vo);
 
     @Mapping(target = "scheduleId", ignore = true)
+    @Mapping(target = "capacityReservationRequest", ignore = true)
     NodePoolVO toVO(NodePool entity);
 
     @AfterMapping

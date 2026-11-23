@@ -2,12 +2,15 @@ package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
 import com.epam.pipeline.billingreportagent.model.pricing.AwsService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -15,6 +18,11 @@ import java.util.Map;
 class AwsStoragePriceListLoaderTest {
 
     public static final String US_EAST_1_REGION = "us-east-1";
+    private static final String US_EAST_1_LOCATION = "US East (N. Virginia)";
+    private static final String EU_CENTRAL_1_REGION = "eu-central-1";
+    private static final String EU_CENTRAL_1_LOCATION = "EU (Frankfurt)";
+    private static final String GENERAL_PURPOSE = "General Purpose";
+    private static final String TERM_KEY = "term";
     public static final String S3_PRICE_LIST_JSON = "{\n" +
             "  \"formatVersion\" : \"v1.0\",\n" +
             "  \"disclaimer\" : \"This pricing list is for informational purposes only. All prices are subject to " +
@@ -276,5 +284,128 @@ class AwsStoragePriceListLoaderTest {
         Assertions.assertEquals(2.1, prices.get(STANDARD_SC).get(2).getPriceCentsPerGb().doubleValue());
         Assertions.assertEquals(1, prices.get(DEEP_ARCHIVE_SC).size());
         Assertions.assertEquals(0.099, prices.get(DEEP_ARCHIVE_SC).get(0).getPriceCentsPerGb().doubleValue());
+    }
+
+    @Test
+    public void loadS3FullPriceListShouldTakeOnlyBilledTimedStorageProductsTest() throws IOException {
+        final String priceList = priceList("AmazonS3",
+                product("STANDARD1", US_EAST_1_LOCATION, GENERAL_PURPOSE, "Standard", "TimedStorage-ByteHrs",
+                        tier(0, "51200", "0.023"), tier(51200, "512000", "0.022"), tier(512000, "Inf", "0.021")),
+                product("ANNOTATIONS1", US_EAST_1_LOCATION, GENERAL_PURPOSE, "Annotations",
+                        "Annotation-TimedStorage-ByteHrs", tier(0, "Inf", "0.023")),
+                product("UNKNOWN1", US_EAST_1_LOCATION, GENERAL_PURPOSE, "Unknown Volume Type",
+                        "TimedStorage-ByteHrs", tier(0, "Inf", "0.05")),
+                product("GIR1", US_EAST_1_LOCATION, "Archive Instant Retrieval", "Glacier Instant Retrieval",
+                        "TimedStorage-GIR-ByteHrs", tier(0, "Inf", "0.004")),
+                product("GLACIER1", US_EAST_1_LOCATION, "Archive", "Amazon Glacier",
+                        "TimedStorage-GlacierByteHrs", tier(0, "Inf", "0.0036")),
+                product("STANDARD2", EU_CENTRAL_1_LOCATION, GENERAL_PURPOSE, "Standard", "EUC1-TimedStorage-ByteHrs",
+                        tier(0, "Inf", "0.0245")),
+                product("ANNOTATIONS2", EU_CENTRAL_1_LOCATION, GENERAL_PURPOSE, "Annotations",
+                        "EUC1-Annotation-TimedStorage-ByteHrs", tier(0, "Inf", "0.0245")));
+        final AwsStoragePriceListLoader loader = loader(AwsService.S3_SERVICE, priceList);
+
+        final Map<String, StoragePricing> pricingMap = loader.loadFullPriceList();
+
+        Assertions.assertEquals(2, pricingMap.size());
+        final Map<String, List<StoragePricing.StoragePricingEntity>> usEast1 =
+                pricingMap.get(US_EAST_1_REGION).getPrices();
+        Assertions.assertEquals(3, usEast1.size());
+        assertPrices(usEast1.get(STANDARD_SC), 2.3, 2.2, 2.1);
+        assertPrices(usEast1.get("GLACIER_IR"), 0.4);
+        assertPrices(usEast1.get("GLACIER"), 0.36);
+        final Map<String, List<StoragePricing.StoragePricingEntity>> euCentral1 =
+                pricingMap.get(EU_CENTRAL_1_REGION).getPrices();
+        Assertions.assertEquals(1, euCentral1.size());
+        assertPrices(euCentral1.get(STANDARD_SC), 2.45);
+    }
+
+    @Test
+    public void loadEfsFullPriceListShouldTakeOnlyStandardTimedStorageTest() throws IOException {
+        final String priceList = priceList("AmazonEFS",
+                product("EFS1", US_EAST_1_LOCATION, GENERAL_PURPOSE, null, "USE1-TimedStorage-ByteHrs",
+                        tier(0, "Inf", "0.30")),
+                product("EFS2", US_EAST_1_LOCATION, "Archive", null, "USE1-ArchiveTimedStorage-ByteHrs",
+                        tier(0, "Inf", "0.008")),
+                product("EFS3", US_EAST_1_LOCATION, "Infrequent Access", null, "USE1-IATimedStorage-ByteHrs",
+                        tier(0, "Inf", "0.016")));
+        final AwsStoragePriceListLoader loader = loader(AwsService.EFS_SERVICE, priceList);
+
+        final Map<String, StoragePricing> pricingMap = loader.loadFullPriceList();
+
+        Assertions.assertEquals(1, pricingMap.size());
+        final Map<String, List<StoragePricing.StoragePricingEntity>> prices =
+                pricingMap.get(US_EAST_1_REGION).getPrices();
+        Assertions.assertEquals(1, prices.size());
+        assertPrices(prices.get(STANDARD_SC), 30.0);
+    }
+
+    private static AwsStoragePriceListLoader loader(final AwsService service,
+                                                    final String priceList) throws IOException {
+        final AwsStoragePriceListLoader loader = Mockito.spy(
+                new AwsStoragePriceListLoader(service, PriceLoadingMode.JSON, "https://localhost/mock.json"));
+        Mockito.doReturn(priceList).when(loader).readStringFromURL(Mockito.anyString());
+        return loader;
+    }
+
+    private static void assertPrices(final List<StoragePricing.StoragePricingEntity> prices,
+                                     final double... expectedCentsPerGb) {
+        Assertions.assertNotNull(prices);
+        Assertions.assertArrayEquals(expectedCentsPerGb, prices.stream()
+                .mapToDouble(price -> price.getPriceCentsPerGb().doubleValue())
+                .toArray());
+    }
+
+    private static Map<String, Object> tier(final long beginRange, final String endRange, final String usd) {
+        final Map<String, Object> tier = new LinkedHashMap<>();
+        tier.put("beginRange", String.valueOf(beginRange));
+        tier.put("endRange", endRange);
+        tier.put("unit", "GB-Mo");
+        tier.put("pricePerUnit", Collections.singletonMap("USD", usd));
+        return tier;
+    }
+
+    @SafeVarargs
+    private static Map<String, Object> product(final String sku, final String location, final String storageClass,
+                                               final String volumeType, final String usageType,
+                                               final Map<String, Object>... tiers) {
+        final Map<String, Object> attributes = new LinkedHashMap<>();
+        attributes.put("location", location);
+        attributes.put("storageClass", storageClass);
+        if (volumeType != null) {
+            attributes.put("volumeType", volumeType);
+        }
+        attributes.put("usagetype", usageType);
+        final Map<String, Object> product = new LinkedHashMap<>();
+        product.put("sku", sku);
+        product.put("productFamily", "Storage");
+        product.put("attributes", attributes);
+        final Map<String, Object> dimensions = new LinkedHashMap<>();
+        for (int i = 0; i < tiers.length; i++) {
+            dimensions.put(sku + ".TERM." + i, tiers[i]);
+        }
+        final Map<String, Object> term = new LinkedHashMap<>();
+        term.put("sku", sku);
+        term.put("priceDimensions", dimensions);
+        product.put(TERM_KEY, Collections.singletonMap(sku + ".TERM", term));
+        return product;
+    }
+
+    @SafeVarargs
+    private static String priceList(final String offerCode,
+                                    final Map<String, Object>... products) throws IOException {
+        final Map<String, Object> productsBySku = new LinkedHashMap<>();
+        final Map<String, Object> termsBySku = new LinkedHashMap<>();
+        for (final Map<String, Object> product : products) {
+            final Map<String, Object> productOnly = new LinkedHashMap<>(product);
+            termsBySku.put((String) product.get("sku"), productOnly.remove(TERM_KEY));
+            productsBySku.put((String) product.get("sku"), productOnly);
+        }
+        final Map<String, Object> priceList = new LinkedHashMap<>();
+        priceList.put("offerCode", offerCode);
+        priceList.put("version", "20261104174445");
+        priceList.put("products", productsBySku);
+        priceList.put("terms", Collections.singletonMap("OnDemand", termsBySku));
+        return new ObjectMapper().writeValueAsString(priceList);
     }
 }

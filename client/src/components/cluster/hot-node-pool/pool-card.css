@@ -85,6 +85,17 @@
   font-weight: normal;
 }
 
+.header .title .reservation-status {
+  margin-left: 5px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: smaller;
+  font-weight: normal;
+  text-transform: uppercase;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
 .header .title .sub {
   font-weight: bold;
   font-size: smaller;

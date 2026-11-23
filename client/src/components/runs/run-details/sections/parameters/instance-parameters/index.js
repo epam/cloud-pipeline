@@ -6,6 +6,7 @@ import RunCmdTemplate from './run-cmd-template';
 import RunCores from './run-cores';
 import RunNodeDisk from './run-node-disk';
 import RunDockerImage from './run-docker-image';
+import RunDockerImageDigest from './run-docker-image-digest';
 import RunIpAddress from './run-ip-address';
 import RunNodeImage from './run-node-image';
 import RunNodeType from './run-node-type';
@@ -74,6 +75,14 @@ const instanceParameters = [
     available: RunDockerImage.available,
     render: (run, props) => (
       <RunDockerImage {...props} run={run} />
+    )
+  },
+  {
+    key: 'runDockerImageDigest',
+    title: 'Docker image digest',
+    available: RunDockerImageDigest.available,
+    render: (run, props) => (
+      <RunDockerImageDigest {...props} run={run} />
     )
   },
   {

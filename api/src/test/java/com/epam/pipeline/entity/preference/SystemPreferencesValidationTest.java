@@ -25,9 +25,8 @@ import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.github.tomakehurst.wiremock.WireMockServer;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -38,7 +37,8 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class SystemPreferencesValidationTest extends AbstractManagerTest {
     private static final int THOUSAND = 1000;
@@ -61,10 +61,9 @@ public class SystemPreferencesValidationTest extends AbstractManagerTest {
     private GitlabVersion supportedVersion;
     private GitlabVersion unsupportedVersion;
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         MockitoAnnotations.initMocks(this);
-        Assert.assertNotNull(preferences);
+        assertNotNull(preferences);
 
         supportedVersion = new GitlabVersion();
         supportedVersion.setVersion("9.0");
@@ -115,13 +114,13 @@ public class SystemPreferencesValidationTest extends AbstractManagerTest {
         testNoValidation(SystemPreferences.LAUNCH_CMD_TEMPLATE);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testValidateFail() {
         Preference preference = new Preference();
         preference.setName(SystemPreferences.CLUSTER_AUTOSCALE_RATE.getKey());
         preference.setValue("ggg");
 
-        preferences.validate(Collections.singletonList(preference));
+        assertThrows(IllegalArgumentException.class, () -> preferences.validate(Collections.singletonList(preference)));
     }
 
     @Test
@@ -137,11 +136,11 @@ public class SystemPreferencesValidationTest extends AbstractManagerTest {
         preferences.validate(Arrays.asList(preference, pref2));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testValidateDockerSecurityScanGroupFail() {
         Preference preference = SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ENABLED.toPreference();
         preference.setValue("true");
-        preferences.validate(Collections.singletonList(preference));
+        assertThrows(IllegalArgumentException.class, () -> preferences.validate(Collections.singletonList(preference)));
     }
 
     @Test
@@ -155,10 +154,24 @@ public class SystemPreferencesValidationTest extends AbstractManagerTest {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testValidateGitInvalidVersion() throws GitClientException {
         Mockito.when(mockGitlabClient.getVersion()).thenReturn(unsupportedVersion);
-        validateGitPreferences();
+        assertThrows(IllegalArgumentException.class, this::validateGitPreferences);
+    }
+
+    @Test
+    public void testValidateGitVersionsWithMultiDigitNumbers() throws GitClientException {
+        for (String version : Arrays.asList("15.5.4", "18.2.8", "19.4.1", "19.5.0")) {
+            Mockito.when(mockGitlabClient.getVersion()).thenReturn(gitlabVersion(version));
+            validateGitPreferences();
+        }
+    }
+
+    @Test
+    public void testValidateGitInvalidMinorVersion() throws GitClientException {
+        Mockito.when(mockGitlabClient.getVersion()).thenReturn(gitlabVersion("8.2.1"));
+        assertThrows(IllegalArgumentException.class, this::validateGitPreferences);
     }
 
 
@@ -179,7 +192,7 @@ public class SystemPreferencesValidationTest extends AbstractManagerTest {
         Preference pref = new Preference();
         pref.setName(preference.getKey());
         pref.setValue("whatever");
-        Assert.assertTrue(preferences.isValid(pref, null));
+        assertTrue(preferences.isValid(pref, null));
     }
 
     private void testBoolean(AbstractSystemPreference preference) {
@@ -187,13 +200,13 @@ public class SystemPreferencesValidationTest extends AbstractManagerTest {
         pref.setName(preference.getKey());
 
         pref.setValue("true");
-        Assert.assertTrue(preferences.isValid(pref, null));
+        assertTrue(preferences.isValid(pref, null));
 
         pref.setValue("false");
-        Assert.assertTrue(preferences.isValid(pref, null));
+        assertTrue(preferences.isValid(pref, null));
 
         pref.setValue("whatever");
-        Assert.assertFalse(preferences.isValid(pref, null));
+        assertFalse(preferences.isValid(pref, null));
     }
 
     private void testGreater(AbstractSystemPreference preference, int value) {
@@ -201,16 +214,16 @@ public class SystemPreferencesValidationTest extends AbstractManagerTest {
         pref.setName(preference.getKey());
 
         pref.setValue(Integer.toString(value + 1));
-        Assert.assertTrue(preferences.isValid(pref, null));
+        assertTrue(preferences.isValid(pref, null));
 
         pref.setValue(Integer.toString(value - 1));
-        Assert.assertFalse(preferences.isValid(pref, null));
+        assertFalse(preferences.isValid(pref, null));
     }
 
     private void testGreaterOrEquals(AbstractSystemPreference<?> preference, int value) {
-        Assert.assertTrue(preference.getValidator().test(Integer.toString(value + 1), null));
-        Assert.assertTrue(preference.getValidator().test(Integer.toString(value), null));
-        Assert.assertFalse(preference.getValidator().test(Integer.toString(value - 1), null));
+        assertTrue(preference.getValidator().test(Integer.toString(value + 1), null));
+        assertTrue(preference.getValidator().test(Integer.toString(value), null));
+        assertFalse(preference.getValidator().test(Integer.toString(value - 1), null));
     }
 
     private void validateDockerSecurityScanGroup() {
@@ -220,6 +233,12 @@ public class SystemPreferencesValidationTest extends AbstractManagerTest {
         required.setValue("http://localhost:9000/");
 
         preferences.validate(Arrays.asList(preference, required));
+    }
+
+    private static GitlabVersion gitlabVersion(final String version) {
+        final GitlabVersion gitlabVersion = new GitlabVersion();
+        gitlabVersion.setVersion(version);
+        return gitlabVersion;
     }
 
     private void validateGitPreferences() {

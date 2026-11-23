@@ -8,7 +8,7 @@ Test verifies creating a configuration in a directory as a user granted the ROLE
 **Preparations**:
 1. Login as admin
 2. Press the settings button at the navigation panel
-3. Open the **User Management** tab
+3. Open the **User management** tab
 4. Find the user from the prerequisites
 5. Press the edit button opposite the user name
 6. Add ROLE_CONFIGURATION_MANAGER

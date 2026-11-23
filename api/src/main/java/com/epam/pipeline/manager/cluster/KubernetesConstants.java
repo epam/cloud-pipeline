@@ -49,6 +49,9 @@ public final class KubernetesConstants {
     public static final String PAUSED_NODE_LABEL = "Paused";
     public static final String UNAVAILABLE_NODE_LABEL = "Unavailable";
     public static final String OWNER_LABEL = "owner";
+    // a label value cannot hold an image name, so the tag of a pod pinned to a digest is kept in an annotation
+    public static final String DOCKER_IMAGE_ANNOTATION = "docker_image";
+    public static final String PIPELINE_CONTAINER_NAME = "pipeline";
 
     public static final String CP_CAP_DIND_NATIVE = "CP_CAP_DIND_NATIVE";
     public static final String CP_CAP_SYSTEMD_CONTAINER = "CP_CAP_SYSTEMD_CONTAINER";
@@ -116,16 +119,10 @@ public final class KubernetesConstants {
     public static final List<DockerMount> DEFAULT_DOCKER_IN_DOCKER_MOUNTS = new ArrayList<>();
 
     static {
-        DEFAULT_DOCKER_IN_DOCKER_MOUNTS.add(DockerMount.builder()
-                .name("docker-sock")
-                .hostPath("/var/run/docker.sock")
-                .mountPath("/var/run/docker.sock")
-                .build());
-        DEFAULT_DOCKER_IN_DOCKER_MOUNTS.add(DockerMount.builder()
-                .name("docker-bin")
-                .hostPath("/bin/docker")
-                .mountPath("/usr/bin/docker")
-                .build());
+        DEFAULT_DOCKER_IN_DOCKER_MOUNTS.add(new DockerMount(
+                "docker-sock", "/var/run/docker.sock", "/var/run/docker.sock", false));
+        DEFAULT_DOCKER_IN_DOCKER_MOUNTS.add(new DockerMount(
+                "docker-bin", "/bin/docker", "/usr/bin/docker", false));
     }
 
     public static final DateTimeFormatter KUBE_DATE_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;

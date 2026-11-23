@@ -34,6 +34,8 @@ import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.cluster.PriceType;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.cluster.pool.NodePoolLaunchConfig;
 import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
@@ -176,6 +178,7 @@ public class PipelineRunManager {
     public static final String CP_CAP_REQUESTS_CPU = "CP_CAP_REQUESTS_CPU";
     public static final String CP_CAP_REQUESTS_GPU = "CP_CAP_REQUESTS_GPU";
     public static final String CP_CAP_REQUESTS_RAM = "CP_CAP_REQUESTS_RAM";
+    public static final String CP_CAP_POOL_ID = "CP_CAP_POOL_ID";
     public static final long BYTES_PER_GIB = 1024L * 1024L * 1024L;
     public static final String GIB_UNIT = "GiB";
     private static final String RESOLVE_ACTION_MSG =
@@ -477,6 +480,7 @@ public class PipelineRunManager {
         final Optional<InstanceOffer> instance = instanceOfferManager.findOffer(instanceType, region.getId());
         checkGPUInstance(configuration, instance);
         checkCapacityRequirements(configuration, instance);
+        checkCapacityPoolCompatibility(configuration);
 
         final List<String> endpoints = configuration.isEraseRunEndpoints()
                 ? Collections.emptyList() : tool.getEndpoints();
@@ -489,6 +493,7 @@ public class PipelineRunManager {
         final PipelineRun run = createPipelineRun(pipelineVersion.orElse(null), configuration, pipeline,
                 tool, toolVersion.orElse(null),
                 region, parentRun.orElse(null), entityIds, configurationId, sensitive);
+        run.setActualDockerImageDigest(findDigestToPin(run.getActualDockerImage(), tool));
 
         // If there is no podAssignPolicy, then run is scheduled to a dedicated node
         if (configuration.getPodAssignPolicy() == null || !configuration.getPodAssignPolicy().isValid()) {
@@ -551,6 +556,62 @@ public class PipelineRunManager {
             }
             Assert.isTrue(violations.isEmpty(), String.join("; ", violations));
         });
+    }
+
+    /**
+     * Rejects a run that names a pool with {@link #CP_CAP_POOL_ID} right away, for the things that are known
+     * without a live free node: the pool id is not a number, the pool does not exist, or the run explicitly asked
+     * for an instance type or a region that the pool's nodes do not provide. Every node of a pool is created the
+     * same way, from the static config of the pool, so no live node is needed to check this.
+     *
+     * <p>These are plain field comparisons. The default-filling of {@code AutoscalerService}
+     * ({@code configurationToInstance}) is not reused on purpose: a run that did not ask for a type or a region
+     * has nothing concrete to compare, and it must not be rejected because of a platform default it never
+     * requested.
+     *
+     * <p>Two things are not checked here: a pool that has no free node right now, and a pool whose filter the
+     * run does not match. Both stay the job of the autoscaler ({@code ReassignHandler}), which works
+     * asynchronously and limits the retries. "No free node yet" is often temporary - a reservation pool is
+     * legitimately empty before its window starts - and filter matching lives there, not here.
+     *
+     * <p>Once the pool passes every check above, the launch configuration of the pool is applied to
+     * {@code configuration}. Only a shareable pool has one, see {@code NodePoolLaunchConfigBuilder}. It names
+     * the node selector of the pool ({@code pool_id}) and is the authoritative source for it, so it overrides
+     * any {@code podAssignPolicy} the caller sent. The launch form already works the same way for a pool it
+     * offers. Every other pool type has no launch configuration, so this step does nothing for them and the
+     * default or caller-supplied policy stays as it is.
+     */
+    private void checkCapacityPoolCompatibility(final PipelineConfiguration configuration) {
+        final PipeConfValueVO poolIdParam = MapUtils.emptyIfNull(configuration.getParameters()).get(CP_CAP_POOL_ID);
+        if (poolIdParam == null || StringUtils.isBlank(poolIdParam.getValue())) {
+            return;
+        }
+        final String poolIdValue = poolIdParam.getValue();
+        final Long poolId = parsePoolId(poolIdValue);
+        Assert.notNull(poolId, messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_POOL_ID_INVALID, poolIdValue));
+        final NodePool pool = nodePoolManager.find(poolId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_NOT_FOUND, poolId)));
+        final String instanceType = configuration.getInstanceType();
+        Assert.isTrue(StringUtils.isBlank(instanceType) || StringUtils.equals(instanceType, pool.getInstanceType()),
+                messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_INSTANCE_MISMATCH, pool.getName()));
+        final Long regionId = configuration.getCloudRegionId();
+        Assert.isTrue(regionId == null || pool.getRegionId() == null || regionId.equals(pool.getRegionId()),
+                messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_REGION_MISMATCH, pool.getName()));
+        Optional.ofNullable(pool.getLaunchConfig())
+                .map(NodePoolLaunchConfig::getKubeAssignPolicy)
+                .ifPresent(configuration::setPodAssignPolicy);
+    }
+
+    private Long parsePoolId(final String value) {
+        if (!NumberUtils.isDigits(value)) {
+            return null;
+        }
+        try {
+            return Long.valueOf(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private static void calculateDynamicParameterValues(final PipelineConfiguration configuration) {
@@ -784,6 +845,17 @@ public class PipelineRunManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun updateRunInstanceAndPrices(Long id, RunInstance instance) {
+        PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(id);
+        if (!instance.isEmpty()) {
+            pipelineRun.setInstance(instance);
+            setRunPrice(instance, pipelineRun);
+            pipelineRunDao.updateRunInstanceAndPrices(pipelineRun);
+        }
+        return pipelineRun;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
     public void applyRunInstanceConfig(final Long runId, final RunInstanceConfigVO vo) {
         Assert.notNull(vo, "RunInstanceConfigVO must not be null");
         final PipelineRun pipelineRun = loadPipelineRun(runId);
@@ -804,7 +876,7 @@ public class PipelineRunManager {
                 pipelineRun.getPipelineId() != null,
                 true
         );
-        updateRunInstance(pipelineRun.getId(), instance);
+        updateRunInstanceAndPrices(pipelineRun.getId(), instance);
     }
 
     private void validateCPURunIsNotUpgradedToGPU(final RunInstance instance, final RunInstanceConfigVO vo) {
@@ -1289,10 +1361,10 @@ public class PipelineRunManager {
         Assert.notNull(run,
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
         if (overwrite) {
-            run.setTags(newTags.getTags());
+            run.setTags(newTags.tags());
         } else {
             final Map<String, String> currentTags = new HashMap<>(MapUtils.emptyIfNull(run.getTags()));
-            currentTags.putAll(MapUtils.emptyIfNull(newTags.getTags()));
+            currentTags.putAll(MapUtils.emptyIfNull(newTags.tags()));
             run.setTags(currentTags);
         }
         pipelineRunDao.updateRunTags(run);
@@ -1367,6 +1439,7 @@ public class PipelineRunManager {
         final PipelineConfiguration configuration = configurationManager.getConfigurationFromRun(run);
         final PipelineRun restartedRun = createRestartRun(run);
         final Tool tool = getToolForRun(configuration);
+        restartedRun.setActualDockerImageDigest(findDigestToInherit(run));
         final List<String> endpoints = configuration.isEraseRunEndpoints() ?
                 Collections.emptyList() : tool.getEndpoints();
         configuration.setSecretName(tool.getSecretName());
@@ -1428,10 +1501,10 @@ public class PipelineRunManager {
         Assert.state(pipelineRun.getStatus() == TaskStatus.RUNNING || pipelineRun.getStatus().isPause(),
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_DISK_ATTACHING_WRONG_STATUS, runId,
                         pipelineRun.getStatus()));
-        Assert.notNull(request.getSize(),
+        Assert.notNull(request.size(),
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_DISK_SIZE_NOT_FOUND));
-        Assert.isTrue(request.getSize() > 0,
-                messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, request.getSize()));
+        Assert.isTrue(request.size() > 0,
+                messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, request.size()));
         final Map<String, String> resourceTags = metadataManager.prepareCloudResourceTags(pipelineRun);
         nodesManager.attachDisk(pipelineRun, request, resourceTags);
         return pipelineRun;
@@ -1471,20 +1544,6 @@ public class PipelineRunManager {
     @Transactional(propagation = Propagation.SUPPORTS)
     public List<PipelineRun> loadRunsByStatuses(final List<TaskStatus> statuses) {
         return pipelineRunDao.loadRunsByStatuses(statuses);
-    }
-
-    /**
-     * Adjusts run price per hour including provided node disks.
-     *
-     * @param runId of {@link PipelineRun} to update price for.
-     * @param disks of {@link PipelineRun} instance.
-     * @return Updated pipeline run.
-     */
-    @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineRun updateRunPrice(final Long runId, final RunInstance instance) {
-        final PipelineRun run = loadPipelineRun(runId, false);
-        setRunPrice(instance, run);
-        return updateRunInfo(run);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -1645,7 +1704,7 @@ public class PipelineRunManager {
     }
 
     private int getTotalSize(final List<InstanceDisk> disks) {
-        return (int) disks.stream().mapToLong(InstanceDisk::getSize).sum();
+        return (int) disks.stream().mapToLong(InstanceDisk::size).sum();
     }
 
     private void adjustInstanceDisk(final PipelineConfiguration configuration) {
@@ -1691,6 +1750,57 @@ public class PipelineRunManager {
         List<PipelineRun> runs = pipelineRunDao.searchPipelineRuns(filter, projectFilter);
         int totalCount = pipelineRunDao.countFilteredPipelineRuns(filter, projectFilter);
         return new PagedResult<>(runs, totalCount);
+    }
+
+    /**
+     * Resolves the digest to pin a run's pod to, if the pinning is enabled.
+     * <p>
+     * The digest is resolved for the very image the pod is created with, so the pinned image always names
+     * the repository the digest belongs to. A digest, which cannot be resolved, is not a launch error:
+     * such a run is launched with the docker image tag, just as it is launched while the pinning is disabled.
+     *
+     * @param dockerImage the run's docker image, in the registry/group/tool:tag form
+     * @param tool object corresponded to dockerImage
+     * @return the digest, or {@code null} if the pinning is disabled or the digest cannot be resolved
+     */
+    private String findDigestToPin(final String dockerImage, Tool tool) {
+        if (!isImageDigestPinningEnabled()) {
+            return null;
+        }
+        final Optional<String> digest = toolManager.resolveImageDigest(
+                dockerImage,  toolManager.resolveDefaultVersion(tool)
+        );
+        if (!digest.isPresent()) {
+            log.warn("Docker image {} will be pulled by the tag: its digest is not resolved.", dockerImage);
+        }
+        return digest.orElse(null);
+    }
+
+    /**
+     * Resolves the digest to pin a restarted run's pod to, if the pinning is enabled.
+     *
+     * A restarted run continues the run it restarts, so it keeps the very digest that run was pinned to,
+     * rather than the digest its image tag points to now. A restarted run, whose parent run carries no digest,
+     * is launched with the docker image tag.
+     *
+     * @param parentRun the run being restarted
+     * @return the digest, or {@code null} if the pinning is disabled or the parent run carries no digest
+     */
+    private String findDigestToInherit(final PipelineRun parentRun) {
+        if (!isImageDigestPinningEnabled()) {
+            return null;
+        }
+        final String digest = parentRun.getActualDockerImageDigest();
+        if (StringUtils.isBlank(digest)) {
+            log.debug("Docker image {} will be pulled by the tag: run {}, which is being restarted, "
+                    + "is not pinned to a digest.", parentRun.getActualDockerImage(), parentRun.getId());
+            return null;
+        }
+        return digest;
+    }
+
+    private boolean isImageDigestPinningEnabled() {
+        return Boolean.TRUE.equals(preferenceManager.getPreference(SystemPreferences.LAUNCH_DOCKER_IMAGE_PIN_DIGEST));
     }
 
     private void setParentInstance(PipelineRun run, Long parentNodeId) {
@@ -2326,7 +2436,7 @@ public class PipelineRunManager {
         final Tool tool = toolManager.loadByNameOrId(dockerImage);
         // tool version setting has single default configuration
         final ConfigurationEntry toolConfiguration = configurationManager
-                .getConfigurationForToolVersion(tool.getId(), dockerImage, null);
+                .getConfigurationForToolVersion(tool, dockerImage, null);
         if (Objects.isNull(toolConfiguration)) {
             return;
         }

@@ -107,7 +107,11 @@ class ProxyHandler(BaseHTTPRequestHandler):
 
     def rewriteLinks(self, page, targetHost):
         if isinstance(page, bytes):
-            page = page.decode('utf-8', errors='replace')
+            try:
+                page = page.decode('utf-8')
+            except UnicodeDecodeError:
+                # Not a text page, e.g. an image or a font: it is passed as is
+                return page
         target = "{0}proxy:{1}/".format(URL_PREFIX, targetHost)
         page = page.replace('href="/', 'href="' + target)
         page = page.replace("'<div><a href=' + logUrl + '>'",

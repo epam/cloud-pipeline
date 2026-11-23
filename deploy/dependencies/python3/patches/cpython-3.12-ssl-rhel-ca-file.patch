@@ -1,0 +1,24 @@
+--- a/Lib/ssl.py
++++ b/Lib/ssl.py
+@@ -417,6 +417,9 @@
+     """
+     SERVER_AUTH = '1.3.6.1.5.5.7.3.1'
+     CLIENT_AUTH = '1.3.6.1.5.5.7.3.2'
++
++
++_RHEL_CA_FILE = "/etc/pki/tls/cert.pem"
+ 
+ 
+ class SSLContext(_SSLContext):
+@@ -532,6 +535,11 @@
+             for storename in self._windows_cert_stores:
+                 self._load_windows_store_certs(storename, purpose)
+         self.set_default_verify_paths()
++        # OpenSSL of this distribution looks for its CA file in /etc/ssl. The RHEL
++        # family (CentOS, Rocky Linux, Amazon Linux) keeps it in /etc/pki/tls instead.
++        if (sys.platform.startswith("linux") and get_default_verify_paths().cafile is None
++                and os.path.isfile(_RHEL_CA_FILE)):
++            self.load_verify_locations(cafile=_RHEL_CA_FILE)
+ 
+     if hasattr(_SSLContext, 'minimum_version'):
+         @property

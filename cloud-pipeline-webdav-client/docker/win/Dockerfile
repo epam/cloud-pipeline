@@ -13,10 +13,12 @@
 # limitations under the License.
 
 FROM node:14.17.5-stretch
+ARG DEBIAN_REPO=http://snapshot.debian.org/archive/debian/20210816T000000Z
+ARG DEBIAN_SECURITY_REPO=http://snapshot.debian.org/archive/debian-security/20210816T000000Z
 RUN dpkg --add-architecture i386
-RUN sed -i -e 's/deb.debian.org/archive.debian.org/g' \
-           -e 's|security.debian.org|archive.debian.org/|g' \
-           -e '/stretch-updates/d' /etc/apt/sources.list
+RUN printf 'deb [check-valid-until=no] %s stretch main\ndeb [check-valid-until=no] %s stretch/updates main\n' \
+      "$DEBIAN_REPO" "$DEBIAN_SECURITY_REPO" > /etc/apt/sources.list \
+  && echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/99-retries
 RUN apt-get -yq update \
   && apt-get -yq --allow-downgrades install software-properties-common=0.96.20.2-1+deb9u1 apt-transport-https=1.4.10 zip=3.0-11+b1 \
   && apt-get clean \

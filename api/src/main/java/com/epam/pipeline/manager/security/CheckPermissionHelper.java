@@ -35,7 +35,9 @@ import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.model.Sid;
 import org.springframework.security.acls.model.SidRetrievalStrategy;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Service;
 
@@ -73,9 +75,35 @@ public class CheckPermissionHelper {
         if (AclPermission.READ_NAME.equals(permissionName) && isScopedReader(entity)) {
             return true;
         }
+        if (AclPermission.EXECUTE_NAME.equals(permissionName) && isScopedExecutor(entity)) {
+            return true;
+        }
         return permissionEvaluator
                 .hasPermission(authManager.getAuthentication(), entity.getId(),
                         entity.getClass().getName(), permissionName);
+    }
+
+    /**
+     * Checks the permission as {@link #isAllowed(String, AbstractSecuredEntity)} does, but without the READ and
+     * EXECUTE that {@link DefaultRoles#ROLE_PIPELINE_READER} and {@link DefaultRoles#ROLE_PIPELINE_EXECUTOR}
+     * grant on every pipeline: the roles give access to a pipeline itself, and not to the actions that only
+     * start with it, e.g. to the runs of the pipeline, which inherit its permissions.
+     * For an entity other than a pipeline, it is the same as {@link #isAllowed(String, AbstractSecuredEntity)}.
+     */
+    public boolean isAllowedIgnoringScopedReaderAndExecutor(final String permissionName,
+                                                            final AbstractSecuredEntity entity) {
+        final List<Sid> sids = getSids();
+        if (!(entity instanceof Pipeline)
+                || !hasAnyRole(sids, DefaultRoles.ROLE_PIPELINE_READER, DefaultRoles.ROLE_PIPELINE_EXECUTOR)) {
+            return isAllowed(permissionName, entity);
+        }
+        if (isOwnerOrAdmin(entity.getOwner()) || isScopedAdmin(entity, sids)) {
+            return true;
+        }
+        return permissionEvaluator.hasPermission(
+                withoutRoles(authManager.getAuthentication(),
+                        DefaultRoles.ROLE_PIPELINE_READER, DefaultRoles.ROLE_PIPELINE_EXECUTOR),
+                entity.getId(), entity.getClass().getName(), permissionName);
     }
 
     public boolean isAllowed(final String permissionName, final AbstractSecuredEntity entity,
@@ -190,6 +218,8 @@ public class CheckPermissionHelper {
 
         if (entity instanceof AbstractDataStorage) {
             return hasAnyRole(sids, DefaultRoles.ROLE_STORAGE_READER);
+        } else if (entity instanceof Pipeline) {
+            return hasAnyRole(sids, DefaultRoles.ROLE_PIPELINE_READER);
         }
         return false;
     }
@@ -205,8 +235,22 @@ public class CheckPermissionHelper {
 
         if (aclClass == AclClass.DATA_STORAGE) {
             return hasAnyRole(sids, DefaultRoles.ROLE_STORAGE_READER);
+        } else if (aclClass == AclClass.PIPELINE) {
+            return hasAnyRole(sids, DefaultRoles.ROLE_PIPELINE_READER);
         }
         return false;
+    }
+
+    /**
+     * Checks whether the SIDs are granted EXECUTE on the entity by a role that grants it to every entity of
+     * its type, regardless of the entity's ACL. Such a role grants nothing but EXECUTE.
+     */
+    public boolean isScopedExecutor(final AbstractSecuredEntity entity) {
+        return isScopedExecutor(entity, getSids());
+    }
+
+    public boolean isScopedExecutor(final AbstractSecuredEntity entity, final List<Sid> sids) {
+        return entity instanceof Pipeline && hasAnyRole(sids, DefaultRoles.ROLE_PIPELINE_EXECUTOR);
     }
 
     public boolean hasAnyRole(final DefaultRoles... roles) {
@@ -250,5 +294,14 @@ public class CheckPermissionHelper {
     private Authentication getAuthentication(final String userName) {
         final UserContext userContext = userManager.loadUserContext(userName);
         return new JwtAuthenticationToken(userContext, userContext.getAuthorities());
+    }
+
+    private Authentication withoutRoles(final Authentication authentication, final DefaultRoles... roles) {
+        final List<String> roleNames = Arrays.stream(roles).map(DefaultRoles::getName).collect(Collectors.toList());
+        final List<GrantedAuthority> authorities = authentication.getAuthorities().stream()
+                .filter(authority -> !roleNames.contains(authority.getAuthority()))
+                .collect(Collectors.toList());
+        return new UsernamePasswordAuthenticationToken(authentication.getPrincipal(),
+                authentication.getCredentials(), authorities);
     }
 }

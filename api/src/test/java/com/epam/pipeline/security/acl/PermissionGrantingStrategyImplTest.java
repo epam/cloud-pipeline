@@ -17,8 +17,8 @@ package com.epam.pipeline.security.acl;
 
 import com.epam.pipeline.manager.security.PermissionsService;
 import com.epam.pipeline.security.acl.redis.AllowAllAuthStrategy;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.security.acls.domain.*;
 import org.springframework.security.acls.model.NotFoundException;
@@ -26,8 +26,9 @@ import org.springframework.security.acls.model.NotFoundException;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PermissionGrantingStrategyImplTest {
 
@@ -60,13 +61,15 @@ public class PermissionGrantingStrategyImplTest {
     GrantedAuthoritySid scopedRunAdminSid;
     GrantedAuthoritySid scopedStorageAdminSid;
     GrantedAuthoritySid scopedStorageReaderSid;
+    GrantedAuthoritySid scopedPipelineReaderSid;
+    GrantedAuthoritySid scopedPipelineExecutorSid;
     GrantedAuthoritySid scopedToolAdminSid;
     GrantedAuthoritySid scopedPipelineAdminSid;
     GrantedAuthoritySid scopedUserAdminSid;
 
     PermissionGrantingStrategyImpl permissionGrantingStrategy;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         userSid = new PrincipalSid("USER");
         user2Sid = new PrincipalSid("USER2");
@@ -75,6 +78,8 @@ public class PermissionGrantingStrategyImplTest {
         scopedRunAdminSid = new GrantedAuthoritySid("ROLE_RUN_ADMIN");
         scopedStorageAdminSid = new GrantedAuthoritySid("ROLE_STORAGE_ADMIN");
         scopedStorageReaderSid = new GrantedAuthoritySid("ROLE_STORAGE_READER");
+        scopedPipelineReaderSid = new GrantedAuthoritySid("ROLE_PIPELINE_READER");
+        scopedPipelineExecutorSid = new GrantedAuthoritySid("ROLE_PIPELINE_EXECUTOR");
         scopedToolAdminSid = new GrantedAuthoritySid("ROLE_TOOL_ADMIN");
         scopedPipelineAdminSid = new GrantedAuthoritySid("ROLE_PIPELINE_ADMIN");
         scopedUserAdminSid = new GrantedAuthoritySid("ROLE_USER_ADMIN");
@@ -114,16 +119,16 @@ public class PermissionGrantingStrategyImplTest {
         );
     }
 
-    @Test(expected = NotFoundException.class)
+    @Test
     public void shouldThrowIfEntityACLDoesNotHaveRequiredACE() {
         AclImpl folder = new AclImpl(new ObjectIdentityImpl(FOLDER_ENTITY_TYPE, IDENTIFIER), IDENTIFIER,
                 new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
                 null, true, userSid);
 
-        permissionGrantingStrategy.isGranted(
+        assertThrows(NotFoundException.class, () -> permissionGrantingStrategy.isGranted(
                 folder, Collections.singletonList(AclPermission.READ),
                 Collections.singletonList(user2Sid), false
-        );
+        ));
     }
 
     @Test
@@ -356,16 +361,16 @@ public class PermissionGrantingStrategyImplTest {
         );
     }
 
-    @Test(expected = NotFoundException.class)
+    @Test
     public void writeShouldNotBeGrantedForDatastorageByStorageReader() {
         AclImpl s3Storage = new AclImpl(new ObjectIdentityImpl(S3_STORAGE_ENTITY_TYPE, IDENTIFIER), IDENTIFIER,
                 new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
                 null, true, userSid);
 
-        permissionGrantingStrategy.isGranted(
+        assertThrows(NotFoundException.class, () -> permissionGrantingStrategy.isGranted(
                 s3Storage, Collections.singletonList(AclPermission.WRITE),
                 Arrays.asList(user2Sid, scopedStorageReaderSid), false
-        );
+        ));
     }
 
     @Test
@@ -383,16 +388,94 @@ public class PermissionGrantingStrategyImplTest {
         );
     }
 
-    @Test(expected = NotFoundException.class)
+    @Test
     public void readShouldNotBeGrantedForNonStorageEntityByStorageReader() {
         AclImpl folder = new AclImpl(new ObjectIdentityImpl(FOLDER_ENTITY_TYPE, IDENTIFIER), IDENTIFIER,
                 new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
                 null, true, userSid);
 
-        permissionGrantingStrategy.isGranted(
+        assertThrows(NotFoundException.class, () -> permissionGrantingStrategy.isGranted(
                 folder, Collections.singletonList(AclPermission.READ),
                 Arrays.asList(user2Sid, scopedStorageReaderSid), false
+        ));
+    }
+
+    @Test
+    public void readShouldBeGrantedForPipelineIfUserHasPipelineReaderAndDeny() {
+        AclImpl pipeline = new AclImpl(new ObjectIdentityImpl(PIPELINE_ENTITY_TYPE, IDENTIFIER), IDENTIFIER,
+                new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
+                null, true, userSid);
+        pipeline.insertAce(0, AclPermission.NO_READ, user2Sid, false);
+
+        assertTrue(
+                permissionGrantingStrategy.isGranted(
+                        pipeline, Collections.singletonList(AclPermission.READ),
+                        Arrays.asList(user2Sid, scopedPipelineReaderSid), false
+                )
         );
+    }
+
+    @Test
+    public void executeShouldNotBeGrantedForPipelineByPipelineReader() {
+        AclImpl pipeline = new AclImpl(new ObjectIdentityImpl(PIPELINE_ENTITY_TYPE, IDENTIFIER), IDENTIFIER,
+                new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
+                null, true, userSid);
+
+        assertThrows(NotFoundException.class, () -> permissionGrantingStrategy.isGranted(
+                pipeline, Collections.singletonList(AclPermission.EXECUTE),
+                Arrays.asList(user2Sid, scopedPipelineReaderSid), false
+        ));
+    }
+
+    @Test
+    public void executeShouldBeGrantedForPipelineIfUserHasPipelineExecutorAndDeny() {
+        AclImpl pipeline = new AclImpl(new ObjectIdentityImpl(PIPELINE_ENTITY_TYPE, IDENTIFIER), IDENTIFIER,
+                new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
+                null, true, userSid);
+        pipeline.insertAce(0, AclPermission.NO_EXECUTE, user2Sid, false);
+
+        assertTrue(
+                permissionGrantingStrategy.isGranted(
+                        pipeline, Collections.singletonList(AclPermission.EXECUTE),
+                        Arrays.asList(user2Sid, scopedPipelineExecutorSid), false
+                )
+        );
+    }
+
+    @Test
+    public void readShouldNotBeGrantedForPipelineByPipelineExecutor() {
+        AclImpl pipeline = new AclImpl(new ObjectIdentityImpl(PIPELINE_ENTITY_TYPE, IDENTIFIER), IDENTIFIER,
+                new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
+                null, true, userSid);
+
+        assertThrows(NotFoundException.class, () -> permissionGrantingStrategy.isGranted(
+                pipeline, Collections.singletonList(AclPermission.READ),
+                Arrays.asList(user2Sid, scopedPipelineExecutorSid), false
+        ));
+    }
+
+    @Test
+    public void writeShouldNotBeGrantedForPipelineByPipelineReaderAndExecutor() {
+        AclImpl pipeline = new AclImpl(new ObjectIdentityImpl(PIPELINE_ENTITY_TYPE, IDENTIFIER), IDENTIFIER,
+                new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
+                null, true, userSid);
+
+        assertThrows(NotFoundException.class, () -> permissionGrantingStrategy.isGranted(
+                pipeline, Collections.singletonList(AclPermission.WRITE),
+                Arrays.asList(user2Sid, scopedPipelineReaderSid, scopedPipelineExecutorSid), false
+        ));
+    }
+
+    @Test
+    public void permissionShouldNotBeGrantedForRunConfigurationByPipelineReaderAndExecutor() {
+        AclImpl configuration = new AclImpl(new ObjectIdentityImpl(RUN_CONFIGURATION_ENTITY_TYPE, IDENTIFIER),
+                IDENTIFIER, new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
+                null, true, userSid);
+
+        assertThrows(NotFoundException.class, () -> permissionGrantingStrategy.isGranted(
+                configuration, Arrays.asList(AclPermission.READ, AclPermission.EXECUTE),
+                Arrays.asList(user2Sid, scopedPipelineReaderSid, scopedPipelineExecutorSid), false
+        ));
     }
 
     @Test

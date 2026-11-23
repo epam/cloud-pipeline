@@ -36,17 +36,16 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpRequest;
-import org.apache.http.HttpResponse;
-import org.apache.http.ProtocolException;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.TrustStrategy;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.DefaultRedirectStrategy;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.protocol.HttpContext;
+import org.apache.hc.client5.http.impl.DefaultRedirectStrategy;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.HttpRequest;
+import org.apache.hc.core5.http.protocol.HttpContext;
+import org.apache.hc.core5.ssl.SSLContexts;
+import org.apache.hc.core5.ssl.TrustStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -55,6 +54,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpRequestFactory;
@@ -69,7 +69,6 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
-import javax.xml.ws.http.HTTPException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -82,6 +81,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -91,6 +91,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static org.apache.hc.core5.http.HttpHeaders.AUTHORIZATION;
+import static org.apache.hc.core5.http.HttpHeaders.COOKIE;
 
 /**
  * Provides methods to operate Docker Registry API
@@ -165,7 +168,7 @@ public class DockerClient {
         String uri = String.format(HEALTH_ENTRY_POINT, hostName);
         try {
             getRestTemplate().exchange(uri, HttpMethod.GET, entity, String.class);
-        } catch (HTTPException | ResourceAccessException e) {
+        } catch (ResourceAccessException e) {
             if (e.getCause() instanceof SSLHandshakeException) {
                 throw new DockerCertificateException(hostName, e.getCause());
             } else {
@@ -184,9 +187,8 @@ public class DockerClient {
         try {
             URI uri = new URI(String.format(LIST_REGISTRY_URL, hostName));
             HttpEntity entity = getAuthHeaders();
-            ResponseEntity<RegistryListing>
-                    response = getRestTemplate().exchange(uri, HttpMethod.GET, entity,
-                    new ParameterizedTypeReference<RegistryListing>() {});
+            ResponseEntity<RegistryListing> response = getRestTemplate().exchange(uri, HttpMethod.GET, entity,
+                new ParameterizedTypeReference<>() {});
             if (response.getStatusCode() == HttpStatus.OK) {
                 return response.getBody().getRepositories();
             } else {
@@ -205,7 +207,7 @@ public class DockerClient {
             HttpEntity entity = getAuthHeaders();
             ResponseEntity<TagsListing>
                     response = getRestTemplate().exchange(uri, HttpMethod.GET, entity,
-                    new ParameterizedTypeReference<TagsListing>() {});
+                        new ParameterizedTypeReference<>() {});
             if (response.getStatusCode() == HttpStatus.OK) {
                 return response.getBody().getTags();
             } else {
@@ -328,7 +330,7 @@ public class DockerClient {
     private boolean executeDeletion(final String url, final String image) {
         try {
             URI uri = new URI(url);
-            HttpStatus status = getRestTemplate().execute(uri, HttpMethod.DELETE,
+            HttpStatusCode status = getRestTemplate().execute(uri, HttpMethod.DELETE,
                 request -> request.getHeaders().putAll(getAuthHeaders().getHeaders()),
                 ClientHttpResponse::getStatusCode);
 
@@ -656,32 +658,30 @@ public class DockerClient {
                 (x509Certificates, s) -> Arrays.stream(x509Certificates).anyMatch(cert ->
                     cert.getSerialNumber().equals(providedCert.getSerialNumber()));
 
-            SSLContext sslContext = org.apache.http.ssl.SSLContexts.custom()
+            SSLContext sslContext = SSLContexts.custom()
                     .loadTrustMaterial(null, acceptingTrustStrategy)
                     .build();
-            SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(sslContext);
-
-            HttpClientBuilder builder = HttpClients.custom()
-                    .setSSLSocketFactory(csf);
-//            drop Authorization headers when handling a cross-origin redirect
-            builder.setRedirectStrategy(new DefaultRedirectStrategy() {
-                @Override
-                public HttpUriRequest getRedirect(HttpRequest request,
-                                                  HttpResponse response,
-                                                  HttpContext context) throws ProtocolException {
-                    HttpUriRequest redirect = super.getRedirect(request, response, context);
-                    URI originalUri = URI.create(request.getRequestLine().getUri());
-                    URI redirectUri = redirect.getURI();
-
-                    if (!Objects.equals(originalUri, redirectUri)) {
-                        redirect.setHeaders(request.getAllHeaders());
-                        redirect.removeHeaders("Authorization");
-                    }
-
-                    return redirect;
-                }
-            });
-            CloseableHttpClient httpClient = builder.build();
+            var tlsStrategy = new DefaultClientTlsStrategy(sslContext);
+            var connectionManager = PoolingHttpClientConnectionManagerBuilder.create()
+                    .setTlsSocketStrategy(tlsStrategy)
+                    .build();
+            CloseableHttpClient httpClient = HttpClients.custom()
+                    .setConnectionManager(connectionManager)
+                    .setRedirectStrategy(new DefaultRedirectStrategy() {
+                        @Override
+                        public boolean isRedirectAllowed(
+                                final HttpHost currentTarget,
+                                final HttpHost newTarget,
+                                final HttpRequest redirect,
+                                final HttpContext context) {
+                            if (currentTarget != null && newTarget != null && !currentTarget.equals(newTarget)) {
+                                redirect.removeHeaders(AUTHORIZATION);
+                                redirect.removeHeaders(COOKIE);
+                            }
+                            return super.isRedirectAllowed(currentTarget, newTarget, redirect, context);
+                        }
+                    })
+                    .build();
 
             HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
             requestFactory.setHttpClient(httpClient);
@@ -717,14 +717,14 @@ public class DockerClient {
                 .additionalMessageConverters(new RestTemplate().getMessageConverters());
 
         if (StringUtils.isNotBlank(caCert)) {
-            builder = builder.requestFactory(getHttpRequestFactory(caCert));
+            builder = builder.requestFactory(() -> getHttpRequestFactory(caCert));
         }
         if (mapper != null) {
             builder = builder.additionalMessageConverters(getMessageConverters(mapper));
         }
 
         return builder
-                .setConnectTimeout(REQUEST_TIMEOUT)
+                .setConnectTimeout(Duration.ofMillis(REQUEST_TIMEOUT))
                 .build();
     }
 

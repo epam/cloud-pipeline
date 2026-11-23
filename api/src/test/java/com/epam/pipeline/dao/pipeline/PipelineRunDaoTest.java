@@ -49,8 +49,8 @@ import com.epam.pipeline.manager.filter.FilterOperandType;
 import com.epam.pipeline.manager.filter.WrongFilterException;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import com.epam.pipeline.util.TestUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
@@ -81,12 +81,12 @@ import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.CoreMatchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Transactional
 public class PipelineRunDaoTest extends AbstractJdbcTest {
@@ -133,6 +133,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     private static final ZoneId ZONE_ID = ZoneId.systemDefault();
     private static final String DOCKER_IMAGE = "dockerImage";
     private static final String ACTUAL_DOCKER_IMAGE = "actualDockerImage";
+    private static final String ACTUAL_DOCKER_IMAGE_DIGEST = "sha256:actualDockerImageDigest";
     private static final String TEST_PIPELINE_NAME = "Test";
     private static final String TEST_NEW_PIPELINE_NAME = "AnotherName";
     private static final String NODE_NAME = "node-12323";
@@ -183,8 +184,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     private static final LocalDateTime SYNC_PERIOD_START = LocalDateTime.of(2019, 4, 2, 0, 0);
     private static final LocalDateTime SYNC_PERIOD_END = LocalDateTime.of(2019, 4, 3, 0, 0);
 
-    @Before
-    public void setup() {
+    @BeforeEach    public void setup() {
         testPipeline = new Pipeline();
         testPipeline.setName(TEST_PIPELINE_NAME);
         testPipeline.setRepository(TEST_REPO);
@@ -432,6 +432,42 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
         assertEquals(loadedRun.getDockerImage(), DOCKER_IMAGE);
         assertEquals(loadedRun.getActualDockerImage(), ACTUAL_DOCKER_IMAGE);
+    }
+
+    @Test
+    @Transactional
+    public void pipelineRunShouldHaveActualDockerImageDigest() {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId());
+        run.setActualDockerImage(ACTUAL_DOCKER_IMAGE);
+        run.setActualDockerImageDigest(ACTUAL_DOCKER_IMAGE_DIGEST);
+        pipelineRunDao.createPipelineRun(run);
+
+        assertEquals(ACTUAL_DOCKER_IMAGE_DIGEST,
+                pipelineRunDao.loadPipelineRun(run.getId()).getActualDockerImageDigest());
+    }
+
+    @Test
+    @Transactional
+    public void pipelineRunShouldHaveNoActualDockerImageDigestIfNotPinned() {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId());
+        run.setActualDockerImage(ACTUAL_DOCKER_IMAGE);
+        pipelineRunDao.createPipelineRun(run);
+
+        assertNull(pipelineRunDao.loadPipelineRun(run.getId()).getActualDockerImageDigest());
+    }
+
+    @Test
+    @Transactional
+    public void updateRunShouldNotChangeActualDockerImageDigest() {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId());
+        run.setActualDockerImageDigest(ACTUAL_DOCKER_IMAGE_DIGEST);
+        pipelineRunDao.createPipelineRun(run);
+
+        run.setActualDockerImageDigest(null);
+        pipelineRunDao.updateRun(run);
+
+        assertEquals(ACTUAL_DOCKER_IMAGE_DIGEST,
+                pipelineRunDao.loadPipelineRun(run.getId()).getActualDockerImageDigest());
     }
 
     @Test

@@ -13,7 +13,7 @@ Test verifies that locking a folder shows lock icons on it and everything inside
 | 4 | Open the just-created folder |  |
 | 5 | Hover over the gear icon in the right upper corner -> click **Edit folder** in the appeared list |  |
 | 6 | Click **Permissions** tab |  |
-| 7 | Click **Add group** button |  |
+| 7 | Click the **Add group** icon |  |
 | 8 | In the appeared pop-up, input `ROLE_USER`, click **OK** button |  |
 | 9 | In the **Groups and users** table click on the `ROLE_USER` item |  |
 | 10 | Set the **Allow** checkboxes for **Read**, **Write** and **Execute** permissions |  |
@@ -27,6 +27,6 @@ Test verifies that locking a folder shows lock icons on it and everything inside
 | 18 | Repeat steps 2-3 |  |
 | 19 | Hover over the gear icon in the right upper corner -> click **Lock** in the appeared list | Pop-up appears with the text `Are you sure you want to lock folder {folder_name}`, where `{folder_name}` equals the value specified at step 3 |
 | 20 | Click **OK** button in the appeared pop-up | At the library-tree, in front of the folder (created at step 3), pipeline (created at step 13), storage (created at step 15), configuration (created at step 17) and folder (created at step 18), there are lock icons |
-| 21 | Repeat steps 5-6 | At the **Permissions** tab: <li> **Add user**, **Add group** buttons are disabled <li> only the `ROLE_USER` role is displayed in the permissions table <li> the **Delete** button next to `ROLE_USER` is disabled |
+| 21 | Repeat steps 5-6 | At the **Permissions** tab: <li> **Add user**, **Add group** icons are disabled <li> only the `ROLE_USER` role is displayed in the permissions table <li> the **Delete** button next to `ROLE_USER` is disabled |
 | 22 | Click on the `ROLE_USER` item | All permission checkboxes are disabled for clicking |
 | 23 | Close the pop-up |  |

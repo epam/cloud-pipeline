@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.springframework.util.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 
 /**
  * {@link AbstractHierarchicalEntity} class represents a tree of entities' hierarchy.

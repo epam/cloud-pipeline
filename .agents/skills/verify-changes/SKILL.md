@@ -18,7 +18,7 @@ Some declare it as `project(path: ":x", configuration: "y")` instead, so treat t
 rather than a complete one.
 
 **Never the whole platform.** `buildAll`, `buildAllFast`, `distZip`/`distTar`, `buildDoc`, the
-`bootRepackage`/`buildUI`/`buildPipe` artifact tasks and everything under `e2e/` cost between an hour
+`bootJar`/`buildUI`/`buildPipe` artifact tasks and everything under `e2e/` cost between an hour
 and half a day, and belong to post-merge CI or to release time by hand. Never escalate to a heavier
 check because a lighter one was unavailable.
 

@@ -33,8 +33,7 @@ import com.epam.pipeline.test.creator.docker.DockerCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -57,6 +56,7 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.junit.jupiter.api.Assertions.*;
 
 @WebMvcTest(controllers = ToolController.class)
 public class ToolControllerTest extends AbstractControllerTest {
@@ -78,6 +78,7 @@ public class ToolControllerTest extends AbstractControllerTest {
     private static final String ICON_TOOL_URL = TOOL_URL + "/%d/icon";
     private static final String ATTRIBUTES_TOOL_URL = TOOL_URL + "/%d/attributes";
     private static final String SETTINGS_TOOL_URL = TOOL_URL + "/%d/settings";
+    private static final String DEFAULT_VERSION_TOOL_URL = TOOL_URL + "/%d/defaultVersion";
     private static final String SYMLINK_TOOL_URL = TOOL_URL + "/symlink";
 
     private static final String ID_AS_STRING = String.valueOf(ID);
@@ -439,7 +440,7 @@ public class ToolControllerTest extends AbstractControllerTest {
                 MediaType.IMAGE_PNG_VALUE);
 
         verify(mockToolApiService).loadToolIcon(ID);
-        Assert.assertEquals(TEST_STRING, mvcResult.getResponse().getContentAsString());
+        assertEquals(TEST_STRING, mvcResult.getResponse().getContentAsString());
         assertFileResponse(mvcResult, FILE_NAME, TEST_STRING.getBytes());
     }
 
@@ -520,6 +521,41 @@ public class ToolControllerTest extends AbstractControllerTest {
     @Test
     public void shouldFailLoadToolVersionSettings() {
         performUnauthorizedRequest(get(String.format(SETTINGS_TOOL_URL, ID)));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldUpdateToolDefaultVersion() {
+        final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add(VERSION, TEST_STRING);
+        doReturn(tool).when(mockToolApiService).updateToolDefaultVersion(ID, TEST_STRING);
+
+        final MvcResult mvcResult = performRequest(post(String.format(DEFAULT_VERSION_TOOL_URL, ID))
+                .params(params));
+
+        verify(mockToolApiService).updateToolDefaultVersion(ID, TEST_STRING);
+        assertResponse(mvcResult, tool, DockerCreatorUtils.TOOL_INSTANCE_TYPE);
+    }
+
+    @Test
+    public void shouldFailUpdateToolDefaultVersion() {
+        performUnauthorizedRequest(post(String.format(DEFAULT_VERSION_TOOL_URL, ID)));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldDeleteToolDefaultVersion() {
+        doReturn(tool).when(mockToolApiService).deleteToolDefaultVersion(ID);
+
+        final MvcResult mvcResult = performRequest(delete(String.format(DEFAULT_VERSION_TOOL_URL, ID)));
+
+        verify(mockToolApiService).deleteToolDefaultVersion(ID);
+        assertResponse(mvcResult, tool, DockerCreatorUtils.TOOL_INSTANCE_TYPE);
+    }
+
+    @Test
+    public void shouldFailDeleteToolDefaultVersion() {
+        performUnauthorizedRequest(delete(String.format(DEFAULT_VERSION_TOOL_URL, ID)));
     }
 
     @Test

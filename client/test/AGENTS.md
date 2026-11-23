@@ -24,7 +24,8 @@ client/
     ├── config.js                defaults + the CP_TEST_* knobs — env-mechanism-bearing
     ├── render.js                render/cleanup/act      — React-version-bearing
     ├── events.js                click/change/type/hover — React-version-bearing
-    ├── providers.js              renderWithStores/renderWithRouter — MobX + router-bearing
+    ├── providers.js              renderWithStores/renderWithRouter/renderWithLocale — MobX +
+    │                             router + antd-locale-bearing
     ├── runner.js                 fn/spyOn/useFakeTimers/describeLive — framework-bearing
     ├── http.js                   stubApi() — the Result<T> fetch stub
     ├── factories/index.js        payload builders
@@ -129,9 +130,10 @@ These are the deliverable as much as the tests are. A test file may cite one of 
     `observable({...})` object is a sufficient test double for a store; it does not need
     `@observable` class fields. MobX 3 decorators become `makeObservable` at MobX 6; public
     methods and `@computed` reads do not change.
-11. **Provider and router wiring only via `renderWithStores` / `renderWithRouter`** from `@test`.
-    Never a hand-rolled `<Provider>` or `<Router>` in a test file — react-router 3 → 6 rewrites
-    those wrappers, and it should rewrite one file, not every test that uses one.
+11. **Provider, router and antd-locale wiring only via `renderWithStores` / `renderWithRouter` /
+    `renderWithLocale`** from `@test`. Never a hand-rolled `<Provider>`, `<Router>` or antd
+    `<LocaleProvider>` in a test file — react-router 3 → 6 and an antd major both rewrite those
+    wrappers, and each should rewrite one file, not every test that uses one.
 12. **No test file reads `process.env`.** Import `liveApi` and `liveTestsEnabled` from `@test`
     instead. Vite loads env through `loadEnv` with its own `envPrefix` rules rather than dotenv,
     and `config.js` is the one file that absorbs that difference.
@@ -142,11 +144,9 @@ These are the deliverable as much as the tests are. A test file may cite one of 
 ## Two things that are easy to get wrong here
 
 - **Run `nvm use` inside `client` before any check here, including `test:live`.** A shell's
-  default Node is often a newer LTS, not the 14 this app needs (`client/.nvmrc`,
-  `.agents/localenv/node.md`). Under the wrong Node, `jest`/`babel-jest` fail every suite —
-  unit or live — with `[BABEL] ... Requires Babel "^7.22.0 || ^8.0.0-0", but was loaded with
-  "7.2.2"`. That message points at a plugin version mismatch, but the actual cause is the Node
-  version; reinstalling or touching `node_modules` will not fix it.
+  default Node is often a newer LTS, not the 14 this app is built and checked with
+  (`client/.nvmrc`, `.agents/localenv/node.md`), and a pass on another Node proves nothing about
+  that one.
 - **Raw `Date` local-time methods (`getHours`, `toString`, ...) still follow the machine's
   timezone**, even though `setup/timezone.js` pins `moment-timezone`'s default to UTC.
   Assigning `process.env.TZ` does not work either — Node reads the zone once at startup, before any

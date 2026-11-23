@@ -17,12 +17,14 @@
 package com.epam.pipeline.controller.vo;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.util.List;
 
 
 @Data
+@NoArgsConstructor
 public class PipelineUserExportVO {
     private boolean includeId;
     private boolean includeUserName;

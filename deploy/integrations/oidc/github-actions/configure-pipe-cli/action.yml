@@ -1,0 +1,133 @@
+name: Configure the Cloud Pipeline CLI
+description: >-
+  Exchanges this workflow run's GitHub OIDC token for a Cloud Pipeline API token, installs the
+  `pipe` CLI the deployment itself serves, and leaves it on PATH ready to use.
+
+inputs:
+  api-url:
+    description: >-
+      The Cloud Pipeline URL, which must be https. Either the API root, as `pipe` expects it in API
+      (https://cloud-pipeline.example.com/pipeline/restapi), or just the host
+      (https://cloud-pipeline.example.com), in which case /pipeline/restapi is appended.
+      Whatever it resolves to is both the endpoint called and the audience requested from
+      GitHub, so it has to match an entry of the deployment's
+      system.oidc.token.exchange.issuers preference.
+    required: true
+  insecure-tls:
+    description: >-
+      Skip TLS certificate verification on the Cloud Pipeline requests, for a deployment serving a
+      self-signed certificate that the runner does not trust. Off by default. It never applies to
+      the request to GitHub, whose certificate is publicly trusted. Prefer trusting the CA on the
+      runner; this is the fallback where that is not possible.
+    required: false
+    default: 'false'
+  install-dir:
+    description: >-
+      Where to put the `pipe` binary. Defaults to $HOME/.local/bin, which is created if missing
+      and added to PATH for the steps that follow.
+    required: false
+    default: ''
+
+outputs:
+  pipe-path:
+    description: The full path of the installed `pipe` binary.
+    value: ${{ steps.install.outputs.pipe-path }}
+  token:
+    description: The Cloud Pipeline API token. Masked in the log, but treat it as a secret.
+    value: ${{ steps.exchange.outputs.token }}
+  api-url:
+    description: The API root the token was issued by, after the input was resolved.
+    value: ${{ steps.exchange.outputs.api-url }}
+  expires-in:
+    description: How long the token is valid for, in seconds.
+    value: ${{ steps.exchange.outputs.expires-in }}
+
+runs:
+  using: composite
+  steps:
+    - id: exchange
+      shell: bash
+      env:
+        INPUT_API_URL: ${{ inputs.api-url }}
+        INPUT_INSECURE_TLS: ${{ inputs.insecure-tls }}
+      run: bash "$GITHUB_ACTION_PATH/../_lib/exchange-token.sh"
+
+    # No `pipe configure` here. The CLI counts itself configured when API and
+    # API_TOKEN are both set and then never reads its config file, so the step
+    # above has already configured it and no token is written to disk.
+    - id: install
+      shell: bash
+      env:
+        INPUT_INSTALL_DIR: ${{ inputs.install-dir }}
+        INPUT_INSECURE_TLS: ${{ inputs.insecure-tls }}
+      run: |
+        set -euo pipefail
+
+        fail() {
+          echo "::error::$1"
+          shift
+          for line in "$@"; do
+            echo "$line"
+          done
+          exit 1
+        }
+
+        # /pipe is an x86_64 Linux build and there is no ARM one, so both halves are
+        # checked: otherwise the binary installs fine and fails when something runs it.
+        case "$(uname -s)" in
+          Linux) ;;
+          *) fail \
+            "This action installs the Linux build of the CLI, and this runner is $(uname -s)." \
+            "A macOS or Windows runner needs a different artifact than the one served at /pipe." ;;
+        esac
+        case "$(uname -m)" in
+          x86_64|amd64) ;;
+          *) fail \
+            "The CLI served at /pipe is an x86_64 build, and this runner is $(uname -m)." \
+            "Use an x86_64 runner; the deployment serves no Linux build for this architecture." ;;
+        esac
+
+        INSTALL_DIR="${INPUT_INSTALL_DIR:-$HOME/.local/bin}"
+        case "$INSTALL_DIR" in
+          *[[:space:]]*) fail "The install-dir input contains whitespace: '$INSTALL_DIR'." ;;
+          /*) ;;
+          *) fail "The install-dir input must be an absolute path: '$INSTALL_DIR'." ;;
+        esac
+        mkdir -p "$INSTALL_DIR" || fail "Could not create $INSTALL_DIR."
+
+        # The CLI sits beside the API root, not under it, and needs no credential:
+        # /pipe is on the API's public URL list.
+        API_ROOT="${API%/}"
+        PIPE_URL="${API_ROOT%/restapi}/pipe"
+        PIPE_PATH="$INSTALL_DIR/pipe"
+
+        # only the download needs this: the CLI itself does not verify the API's certificate
+        INSECURE=""
+        case "${INPUT_INSECURE_TLS:-false}" in
+          true|TRUE|True|yes|1) INSECURE="--insecure" ;;
+        esac
+
+        echo "Downloading $PIPE_URL"
+        STATUS="$(curl -sS -L ${INSECURE:+"$INSECURE"} \
+            -o "$PIPE_PATH" -w '%{http_code}' "$PIPE_URL")" || fail \
+          "Could not reach $PIPE_URL." \
+          "A GitHub-hosted runner is on the public internet, so a deployment with a private API" \
+          "needs a self-hosted runner inside the network."
+        if [ "$STATUS" != "200" ]; then
+          rm -f "$PIPE_PATH"
+          fail "$PIPE_URL answered HTTP $STATUS." \
+               "Check that api-url names the host the GUI is served on; the binary sits beside" \
+               "the API, not under /restapi."
+        fi
+        [ -s "$PIPE_PATH" ] || fail "$PIPE_URL returned an empty file."
+
+        chmod +x "$PIPE_PATH"
+        echo "$INSTALL_DIR" >>"$GITHUB_PATH"
+        echo "pipe-path=$PIPE_PATH" >>"$GITHUB_OUTPUT"
+
+        # --help, not --version: --version also asks the API for its version and still
+        # exits 0 when it cannot reach it, so it could not fail this step.
+        "$PIPE_PATH" --help >/dev/null || fail \
+          "The downloaded CLI did not run on this runner."
+
+        echo "Installed to $PIPE_PATH, and on PATH for the steps that follow."

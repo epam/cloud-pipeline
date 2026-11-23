@@ -15,6 +15,8 @@
 
 package com.epam.pipeline.manager.cluster.autoscale;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.cluster.pool.InstanceRequest;
@@ -39,6 +41,7 @@ import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunRegionShiftHandler;
+import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
@@ -54,13 +57,14 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -84,13 +88,14 @@ import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.CP_N
 import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE;
 import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODEUP_LIMIT_EXCEEDED_EXIT_CODE;
 import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODEUP_SPOT_FAILED_EXIT_CODE;
+import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODE_LOCAL_PREFIX;
 import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODE_POOL_PREFIX;
 
 @Service
 @Slf4j
 @ConditionalOnProperty(value = "cluster.disable.autoscaling", matchIfMissing = true, havingValue = "false")
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
-public class AutoscaleManager extends AbstractSchedulingManager {
+public class AutoscaleManager extends AbstractSchedulingManager implements InitializingBean {
     private final AutoscaleManagerCore core;
 
     @Autowired
@@ -98,8 +103,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         this.core = core;
     }
 
-    @PostConstruct
-    public void init() {
+    @Override
+    public void afterPropertiesSet() {
         if (preferenceManager.getPreference(SystemPreferences.CLUSTER_ENABLE_AUTOSCALING)) {
             scheduleFixedDelaySecured(core::runAutoscaling, SystemPreferences.CLUSTER_AUTOSCALE_RATE,
                     "Autoscaling job");
@@ -109,6 +114,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
     @Component
     static class AutoscaleManagerCore {
         private static final String NODE_PENDING_TAG = "NODE_PENDING";
+        private static final String POOL_PENDING_TAG = "POOL_PENDING";
 
         private final PipelineRunManager pipelineRunManager;
         private final ParallelExecutorService executorService;
@@ -125,12 +131,14 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         private final PoolAutoscaler poolAutoscaler;
         private final RunRegionShiftHandler runRegionShiftHandler;
         private final MetadataManager metadataManager;
+        private final MessageHelper messageHelper;
         private final String haDeployEnabled;
         private final Set<Long> nodeUpTaskInProgress = ConcurrentHashMap.newKeySet();
         private final Map<Long, Integer> nodeUpAttempts = new ConcurrentHashMap<>();
         private final Map<Long, Integer> spotNodeUpAttempts = new ConcurrentHashMap<>();
         private final Map<Long, Integer> poolNodeUpTaskInProgress = new ConcurrentHashMap<>();
         private final Map<Long, Integer> lostRunIds = new ConcurrentHashMap<>();
+        private final RunStatusManager runStatusManager;
 
         @Autowired
         AutoscaleManagerCore(final PipelineRunManager pipelineRunManager,
@@ -148,7 +156,9 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                              final PoolAutoscaler poolAutoscaler,
                              final RunRegionShiftHandler runRegionShiftHandler,
                              final MetadataManager metadataManager,
-                             final @Value("${ha.deploy.enabled:false}") String haDeployEnabled) {
+                             final MessageHelper messageHelper,
+                             final @Value("${ha.deploy.enabled:false}") String haDeployEnabled,
+                             final RunStatusManager runStatusManager) {
             this.pipelineRunManager = pipelineRunManager;
             this.executorService = executorService;
             this.autoscalerService = autoscalerService;
@@ -164,7 +174,9 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             this.poolAutoscaler = poolAutoscaler;
             this.runRegionShiftHandler = runRegionShiftHandler;
             this.metadataManager = metadataManager;
+            this.messageHelper = messageHelper;
             this.haDeployEnabled = haDeployEnabled;
+            this.runStatusManager = runStatusManager;
         }
 
         @SchedulerLock(name = "AutoscaleManager_runAutoscaling", lockAtMostForString = "PT10M")
@@ -327,9 +339,10 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             try {
                 final PipelineRun run = pipelineRunManager.findRun(longId)
                         .orElseThrow(() -> new IllegalArgumentException("Failed to find run " + longId));
-                //check max nodeup retry count
+                final Optional<Long> requiredPoolId = reassignHandler.requiredPoolId(run);
+                // A pool-bound run waits by time, not by attempt count. So skip the attempt budget for it.
                 int retryCount = nodeUpAttempts.getOrDefault(longId, 0); // TODO: should we lock here?
-                if (retryCount >= getNodeUpRetryCount(run, nodeUpRetryCount)) {
+                if (!requiredPoolId.isPresent() && retryCount >= getNodeUpRetryCount(run, nodeUpRetryCount)) {
                     log.debug("Exceeded max nodeup attempts ({}) for run ID {}. Setting run status 'FAILURE'.",
                             retryCount, runId);
                     pipelineRunManager.updatePipelineStatusIfNotFinal(longId, TaskStatus.FAILURE);
@@ -357,6 +370,11 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                         return;
                     }
                 }
+                if (requiredPoolId.isPresent()) {
+                    // No free node matched this cycle. The run is bound to one pool, so wait for that pool.
+                    handleOccupiedPoolRun(longId, runId, run, requiredPoolId.get());
+                    return;
+                }
                 if (!hasClusterCapacity(nodeCount, maxClusterSize)) {
                     labelPendingRun(run);
                     return;
@@ -369,7 +387,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                     // a free node which is not ready can't take the run either, so it can be scaled down as well
                     List<String> nonMatchingFreeNodes = disableReassign ? Collections.emptyList()
                             : getFreeNodes(nodes, allPods, reassignedNodes,
-                                nodeId -> kubernetesManager.isNodeAvailable(client, nodeId));
+                                nodeId -> isRunNode(nodeId) && kubernetesManager.isNodeAvailable(client, nodeId));
 
                     if (!CollectionUtils.isEmpty(nonMatchingFreeNodes)) {
                         String nodeId = nonMatchingFreeNodes.get(0);
@@ -390,6 +408,11 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 scheduledRuns.add(runId);
                 unLabelPendingRun(run);
                 createNodeForRun(tasks, runId, requiredInstance);
+            } catch (PoolReservationIncompatibleException e) {
+                log.error("Run {} can never be assigned to its required pool: {}", runId, e.getMessage());
+                pipelineRunManager.updateStateReasonMessageById(longId, e.getMessage());
+                pipelineRunManager.updatePipelineStatusIfNotFinal(longId, TaskStatus.FAILURE);
+                removeNodeUpTask(longId);
             } catch (Exception e) {
                 log.error("Failed to create node for run {}.", runId);
                 log.error("An error during pod processing: {}" + e.getMessage(), e);
@@ -404,8 +427,17 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                     .collect(Collectors.toList());
         }
 
+        /**
+         * A pool node or a local node is not a node of a run: it has no run ID to scale it down by.
+         * The pools keep their nodes, and the local nodes are never scaled down.
+         */
+        private boolean isRunNode(final String nodeId) {
+            return !nodeId.startsWith(NODE_POOL_PREFIX) && !nodeId.startsWith(NODE_LOCAL_PREFIX);
+        }
+
         private void labelPendingRun(final PipelineRun run) {
-            final Map<String, String> tags = MapUtils.emptyIfNull(run.getTags());
+            // a copy: for a run with null tags, emptyIfNull gives an immutable map
+            final Map<String, String> tags = new HashMap<>(MapUtils.emptyIfNull(run.getTags()));
             if (!tags.containsKey(NODE_PENDING_TAG)) {
                 tags.put(NODE_PENDING_TAG, KubernetesConstants.TRUE_LABEL_VALUE);
                 pipelineRunManager.updateTags(run.getId(), new TagsVO(tags), false);
@@ -413,11 +445,67 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         }
 
         private void unLabelPendingRun(final PipelineRun run) {
-            final Map<String, String> tags = MapUtils.emptyIfNull(run.getTags());
-            if (tags.containsKey(NODE_PENDING_TAG)) {
-                tags.remove(NODE_PENDING_TAG);
+            // a copy: for a run with null tags, emptyIfNull gives an immutable map
+            final Map<String, String> tags = new HashMap<>(MapUtils.emptyIfNull(run.getTags()));
+            final boolean hadNodePending = tags.remove(NODE_PENDING_TAG) != null;
+            final boolean hadPoolPending = tags.remove(POOL_PENDING_TAG) != null;
+            if (hadNodePending || hadPoolPending) {
                 pipelineRunManager.updateTags(run.getId(), new TagsVO(tags), true);
             }
+            if (hadPoolPending) {
+                pipelineRunManager.updateStateReasonMessageById(run.getId(), null);
+            }
+        }
+
+        private void handleOccupiedPoolRun(final long longId, final String runId,
+                                           final PipelineRun run, final long poolId) {
+            nodePoolManager.find(poolId).ifPresent(pool -> {
+                if (pool.getEndDate() != null && DateUtils.nowUTC().isAfter(pool.getEndDate())) {
+                    throw new PoolReservationIncompatibleException(
+                            messageHelper.getMessage(
+                                    MessageConstants.ERROR_NODE_POOL_ID_NO_LONGER_ACTIVE,
+                                    pool.getName()));
+                }
+            });
+            final Map<String, String> tags = new HashMap<>(MapUtils.emptyIfNull(run.getTags()));
+            if (!tags.containsKey(POOL_PENDING_TAG)) {
+                labelPoolPendingRun(longId, runId, run, poolId, tags);
+            } else {
+                checkPoolOccupiedTimeout(longId, runId, run, poolId);
+            }
+        }
+
+        private void labelPoolPendingRun(final long longId, final String runId,
+                                         final PipelineRun run, final long poolId,
+                                         final Map<String, String> tags) {
+            tags.put(POOL_PENDING_TAG, KubernetesConstants.TRUE_LABEL_VALUE);
+            pipelineRunManager.updateTags(run.getId(), new TagsVO(tags), false);
+            pipelineRunManager.updateStateReasonMessageById(longId,
+                    messageHelper.getMessage(MessageConstants.INFO_NODE_POOL_ID_WAITING, poolId));
+            log.debug("Run {} is waiting for pool {} to become available.", runId, poolId);
+        }
+
+        private void checkPoolOccupiedTimeout(final long longId, final String runId,
+                                               final PipelineRun run, final long poolId) {
+            final int poolOccupiedWaitSec = preferenceManager.getPreference(
+                    SystemPreferences.CLUSTER_OCCUPIED_NODE_POOL_WAIT_SEC);
+            if (poolOccupiedWaitSec <= 0) {
+                log.debug("Run {} is waiting for pool {} indefinitely (cluster.occupied.node.pool.wait.sec=0).",
+                        runId, poolId);
+                return;
+            }
+            final long elapsedSec = (System.currentTimeMillis() - run.getStartDate().getTime()) / 1000;
+            if (elapsedSec < poolOccupiedWaitSec) {
+                log.debug("Run {} has been waiting for pool {} for {} s (limit: {} s).",
+                        runId, poolId, elapsedSec, poolOccupiedWaitSec);
+                return;
+            }
+            log.debug("Run {} timed out after {} s waiting for pool {}.", runId, elapsedSec, poolId);
+            pipelineRunManager.updateStateReasonMessageById(longId,
+                    messageHelper.getMessage(
+                            MessageConstants.ERROR_NODE_POOL_ID_BUSY_WAIT_TIMEOUT, poolId, elapsedSec));
+            pipelineRunManager.updatePipelineStatusIfNotFinal(longId, TaskStatus.FAILURE);
+            removeNodeUpTask(longId);
         }
 
         private boolean hasClusterCapacity(final int nodeCount, final int maxClusterSize) {
@@ -555,7 +643,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         }
 
         private Long getParameterValue(List<PipelineRunParameter> runParameters, String paramName, Long defaultValue) {
-            Optional<PipelineRunParameter> value = runParameters.stream()
+            Optional<PipelineRunParameter> value = ListUtils.emptyIfNull(runParameters).stream()
                     .filter(parameter -> parameter.getName().equals(paramName)).findAny();
             if (value.isPresent() && NumberUtils.isDigits(value.get().getValue())) {
                 return Long.parseLong(value.get().getValue());
@@ -604,12 +692,10 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                                 requiredInstance.getTags()
                         );
                         //save instance ID and IP
-                        pipelineRunManager.updateRunInstance(longId, startedInstance);
-                        if (!initialInstanceType.equals(nodeType)) {
-                            pipelineRunManager.updateRunPrice(longId, startedInstance);
-                        }
+                        pipelineRunManager.updateRunInstanceAndPrices(longId, startedInstance);
                         pipelineRunManager.updateRunInstanceStartDate(longId, DateUtils.nowUTC());
                         autoscalerService.registerDisks(longId, startedInstance);
+                        runStatusManager.updatePriceForCurrentActiveRunStatus(longId);
                         removeNodeUpTask(longId);
                         Instant end = Instant.now();
                         log.debug("Time to create a node for run {} : {} s.", runId,
@@ -725,7 +811,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             if (instance.getSpot() != null && instance.getSpot() &&
                     spotNodeUpAttempts.getOrDefault(run.getId(), 0) >= spotMaxAttempts) {
                 instance.setSpot(false);
-                pipelineRunManager.updateRunInstance(run.getId(), instance);
+                pipelineRunManager.updateRunInstanceAndPrices(run.getId(), instance);
             }
             final InstanceRequest instanceRequest = new InstanceRequest();
             instanceRequest.setInstance(instance);

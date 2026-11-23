@@ -21,12 +21,11 @@ import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.FilterFieldVO;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateRule;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,7 +39,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@Api(value = "Platform usage credits rules management")
+@Tag(name = "platform-usage-credits-rule-controller", description = "Platform usage credits rules management")
 @RequestMapping("/usage/credits/rules")
 @RequiredArgsConstructor
 public class PlatformUsageCreditsRuleController extends AbstractRestController {
@@ -48,48 +47,48 @@ public class PlatformUsageCreditsRuleController extends AbstractRestController {
     private final PlatformUsageCreditsRuleApiService apiService;
 
     @GetMapping
-    @ApiOperation(
-            value = "Loads all registered platform usage credits update rules.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Loads all registered platform usage credits update rules.",
+            description = "Loads all registered platform usage credits update rules.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<List<PlatformUsageCreditsUpdateRule>> loadAll() {
         return Result.success(apiService.loadAll());
     }
 
     @PostMapping
-    @ApiOperation(
-            value = "Registers a new platform usage credits update rule. Admin only.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Registers a new platform usage credits update rule. Admin only.",
+            description = "Registers a new platform usage credits update rule. Admin only.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<PlatformUsageCreditsUpdateRule> create(@RequestBody final PlatformUsageCreditsUpdateRule rule) {
         return Result.success(apiService.create(rule));
     }
 
     @PutMapping("/{id}")
-    @ApiOperation(
-            value = "Updates platform usage credits update rule by ID. Admin only.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Updates platform usage credits update rule by ID. Admin only.",
+            description = "Updates platform usage credits update rule by ID. Admin only.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<PlatformUsageCreditsUpdateRule> update(@PathVariable final Long id,
                                                          @RequestBody final PlatformUsageCreditsUpdateRule rule) {
         return Result.success(apiService.update(id, rule));
     }
 
     @DeleteMapping("/{id}")
-    @ApiOperation(
-            value = "Deletes platform usage credits update rule by ID. Admin only.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Deletes platform usage credits update rule by ID. Admin only.",
+            description = "Deletes platform usage credits update rule by ID. Admin only.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<Void> delete(@PathVariable final Long id) {
         apiService.delete(id);
         return Result.success(null);
     }
 
     @GetMapping("/keywords")
-    @ApiOperation(
-            value = "Returns allowed filter fields for platform usage credits update rule expressions.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Returns allowed filter fields for platform usage credits update rule expressions.",
+            description = "Returns allowed filter fields for platform usage credits update rule expressions.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<Map<String, List<FilterFieldVO>>> getKeywords() {
         return Result.success(apiService.getKeywords());
     }

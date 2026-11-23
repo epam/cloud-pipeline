@@ -615,10 +615,11 @@ function configure_package_manager {
                               /etc/apt/sources.list.d/tensorRT.list
 
                         # todo: Remove these dependencies because their installation requires internet access
-                        if ! check_installed curl || ! check_installed gpg; then
+                        # apt before 1.5 (Ubuntu 16.04, Debian 9) has no https method without apt-transport-https
+                        if ! check_installed curl || [ ! -e /usr/lib/apt/methods/https ]; then
                             echo "Installing additional dependencies using default apt repos..."
                             apt-get update -qq -y --allow-insecure-repositories && \
-                            apt-get install curl apt-transport-https gnupg -y -qq
+                            apt-get install curl apt-transport-https -y -qq
                         fi
 
                         if check_cp_cap CP_CAP_OFFLINE; then
@@ -628,14 +629,18 @@ function configure_package_manager {
                         fi
 
                         echo "Enabling Cloud Pipeline apt repo..."
-                        sed -i "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list && \
-                        curl -sk "${CP_REPO_BASE_URL_DEFAULT}/cloud-pipeline.key" | apt-key add - && \
-                        sed -i "1 i\deb ${CP_REPO_BASE_URL} stable main" /etc/apt/sources.list && \
+                        # The repo is trusted rather than checked with a key: apt 2.9+ (Ubuntu 25.10+) has no apt-key,
+                        # and most capability scripts install from the repo without --allow-unauthenticated.
+                        # The older runs put it into /etc/apt/sources.list, which a committed image may still carry
+                        { [ ! -f /etc/apt/sources.list ] || sed -i "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list; } && \
+                        mkdir -p /etc/apt/sources.list.d && \
+                        echo "deb [trusted=yes] ${CP_REPO_BASE_URL} stable main" > /etc/apt/sources.list.d/cloud-pipeline.list && \
                         apt-get update -qq -y --allow-insecure-repositories
 
                         if [ $? -ne 0 ]; then
                             echo "[ERROR] (attempt: $_CP_REPO_RETRY_ITER) Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
-                            sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
+                            rm -f /etc/apt/sources.list.d/cloud-pipeline.list
+                            [ ! -f /etc/apt/sources.list ] || sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
                         else
                             echo "Using apt repo $CP_REPO_BASE_URL..."
                             break
@@ -666,11 +671,9 @@ function get_install_command_by_current_distr {
          { [[ "$CP_VER" == "8"* ]] || [[ "$CP_VER" == "9"* ]]; }; then
             _TOOLS_TO_INSTALL="$(sed -e "s/python/python2/g" <<< "$_TOOLS_TO_INSTALL")"
       fi
-      if [[ "$_TOOLS_TO_INSTALL" == *"coreutils"* ]] && [ "$CP_OS" == "rocky" ]; then
-            _TOOLS_TO_INSTALL="$(sed -e "s/coreutils/coreutils-single/g" <<< "$_TOOLS_TO_INSTALL")"
-      fi
-      if [[ "$_TOOLS_TO_INSTALL" == *"procps"* ]] && [ "$CP_OS" == "rocky" ]; then
-            _TOOLS_TO_INSTALL="$(sed -e "s/procps/procps-ng/g" <<< "$_TOOLS_TO_INSTALL")"
+      # Rocky Linux and RHEL name it procps-ng
+      if [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
+            _TOOLS_TO_INSTALL="$(sed "s/\( \|^\)procps\( \|$\)/ procps-ng /g" <<< "$_TOOLS_TO_INSTALL")"
       fi
 
       local _TOOL_TO_CHECK=
@@ -678,6 +681,20 @@ function get_install_command_by_current_distr {
       for _TOOL_TO_CHECK in $_TOOLS_TO_INSTALL; do
             check_package_installed "$_TOOL_TO_CHECK"
             if [ $? -ne 0 ]; then
+                  # The RPM-based images (e.g. Rocky Linux, RHEL, Amazon Linux 2023) may have coreutils-single instead
+                  # of coreutils, and curl-minimal instead of curl. Each has the commands of the full package, and yum
+                  # fails the whole install if the full package is asked for next to it. Checked with rpm itself, as
+                  # CP_IGNORE_INSTALLED_PACKAGES does not make the full package installable next to it
+                  if [ "$_TOOL_TO_CHECK" == "coreutils" ] && \
+                     check_installed "rpm" && rpm -q coreutils-single &> /dev/null; then
+                        echo "[INFO] coreutils is not installed: the image has coreutils-single, which has the same commands" >&2
+                        continue
+                  fi
+                  if [ "$_TOOL_TO_CHECK" == "curl" ] && \
+                     check_installed "rpm" && rpm -q curl-minimal &> /dev/null; then
+                        echo "[INFO] curl is not installed: the image has curl-minimal, its curl supports file, ftp(s) and http(s) only" >&2
+                        continue
+                  fi
                   _TOOLS_TO_INSTALL_VERIFIED="$_TOOLS_TO_INSTALL_VERIFIED $_TOOL_TO_CHECK"
             fi
       done
@@ -767,15 +784,40 @@ function install_private_packages {
 
 function install_python3_packages {
       local _install_path="$1"
-      local _tmp_install_dir="/tmp/"
-      rm -rf "${_install_path}/python3.12" "${_install_path}/openssl"
       CP_PYTHON3_DISTRO_URL="${CP_PYTHON3_DISTRO_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/python/3/python3.12.tar.gz"}"
 
+      # The distro is unpacked next to its place and swapped in only when it is complete: a failed download or unpack
+      # keeps the python3.12, python3 and pip3 the image already has (e.g. a committed run, or a python:3.x image).
+      # A folder left by an init that was killed during the download is removed first, so a commit doesn't keep it
+      rm -rf "${_install_path}"/.cp-python3.*
+      local _tmp_install_dir
+      _tmp_install_dir="$(mktemp -d "${_install_path}/.cp-python3.XXXXXX")" || {
+            echo "[WARN] Unable to create a temporary folder in ${_install_path} for the python3 distro"
+            return 1
+      }
       echo "Getting python3 distro from $CP_PYTHON3_DISTRO_URL"
-      wget -q "${CP_PYTHON3_DISTRO_URL}" -O "${_tmp_install_dir}/python3.tgz" &>/dev/null
-
-      tar -zxf "${_tmp_install_dir}/python3.tgz" -C "${_install_path}"
-      rm -f "${_tmp_install_dir}/python3.tgz"
+      if ! wget -q "${CP_PYTHON3_DISTRO_URL}" -O "${_tmp_install_dir}/python3.tgz" &>/dev/null \
+            || ! tar -zxf "${_tmp_install_dir}/python3.tgz" -C "${_tmp_install_dir}" \
+            || [ ! -x "${_tmp_install_dir}/python3.12/bin/python3.12" ]; then
+            rm -rf "${_tmp_install_dir}"
+            echo "[WARN] Unable to install the python3 distro from $CP_PYTHON3_DISTRO_URL, keeping the python3 of the image"
+            return 1
+      fi
+      # Not moved aside: on a committed image the old folder is in a lower layer, so a move would copy all of it.
+      # The new folder is in the container's own layer, next to its place, so moving it in is a plain rename
+      rm -rf "${_install_path}/python3.12"
+      if ! mv "${_tmp_install_dir}/python3.12" "${_install_path}/python3.12"; then
+            rm -rf "${_tmp_install_dir}"
+            echo "[WARN] Unable to move the python3 distro into ${_install_path}/python3.12, the python3 and pip3 links are not changed"
+            return 1
+      fi
+      # The distro has its OpenSSL built in, and /usr/local/openssl may be the image's own: only a distro that brings
+      # an openssl folder (the previous python3.12.0 build) replaces it
+      if [ -d "${_tmp_install_dir}/openssl" ]; then
+            rm -rf "${_install_path}/openssl"
+            mv "${_tmp_install_dir}/openssl" "${_install_path}/openssl"
+      fi
+      rm -rf "${_tmp_install_dir}"
 
       ln -sf "${_install_path}/python3.12/bin/python3.12" "${_install_path}/bin/python3"
       ln -sf "${_install_path}/python3.12/bin/pip3.12"    "${_install_path}/bin/pip3"
@@ -1299,24 +1341,38 @@ function symlink_common_locations {
       fi
       user_create_home "$_OWNER" "$_OWNER_HOME"
 
+      # CP_HOME_SYMLINKS_DISABLED skips every symlink below, CP_HOME_CLOUD_DATA_SYMLINK_DISABLED and
+      # CP_HOME_WORKDIR_SYMLINK_DISABLED skip one each. A disabled symlink is not created, and one that is already
+      # in the home dir is left as it is. The /cloud-data/ and $SHARED_WORK_FOLDER folders are created either way.
+
       # Create symlinks to /cloud-data with mounted buckets into account's home dir
       mkdir -p /cloud-data/
-      if [ -L $_OWNER_HOME/cloud-data ]; then
-        unlink $_OWNER_HOME/cloud-data
+      if check_cp_cap CP_HOME_SYMLINKS_DISABLED || check_cp_cap CP_HOME_CLOUD_DATA_SYMLINK_DISABLED; then
+        echo "Symlink $_OWNER_HOME/cloud-data is disabled, it will not be created"
+      else
+        if [ -L $_OWNER_HOME/cloud-data ]; then
+          unlink $_OWNER_HOME/cloud-data
+        fi
+        [ -d /cloud-data/ ] && ln -s -f /cloud-data/ $_OWNER_HOME/cloud-data || echo "/cloud-data/ not found, no buckets will be available"
       fi
-      [ -d /cloud-data/ ] && ln -s -f /cloud-data/ $_OWNER_HOME/cloud-data || echo "/cloud-data/ not found, no buckets will be available"
 
       # Create symlinks to /common with cluster share fs into account's home dir
       mkdir -p "$SHARED_WORK_FOLDER"
-      if [ -L $_OWNER_HOME/workdir ]; then
-        unlink $_OWNER_HOME/workdir
+      if check_cp_cap CP_HOME_SYMLINKS_DISABLED || check_cp_cap CP_HOME_WORKDIR_SYMLINK_DISABLED; then
+        echo "Symlink $_OWNER_HOME/workdir is disabled, it will not be created"
+      else
+        if [ -L $_OWNER_HOME/workdir ]; then
+          unlink $_OWNER_HOME/workdir
+        fi
+        [ -d $SHARED_WORK_FOLDER ] && ln -s -f $SHARED_WORK_FOLDER $_OWNER_HOME/workdir || echo "$SHARED_WORK_FOLDER not found, no shared fs will be available in $_OWNER_HOME"
       fi
-      [ -d $SHARED_WORK_FOLDER ] && ln -s -f $SHARED_WORK_FOLDER $_OWNER_HOME/workdir || echo "$SHARED_WORK_FOLDER not found, no shared fs will be available in $_OWNER_HOME"
 
       # Create symlinks to /code-repository with gitfs repository into account's home dir
       local _REPOSITORY_MOUNT_SRC="${REPOSITORY_MOUNT}/${PIPELINE_NAME}/current"
       local _REPOSITORY_HOME="$_OWNER_HOME/code-repository"
-      if [ ! -z "$GIT_REPO" ] && [ -d "$_REPOSITORY_MOUNT_SRC" ]; then
+      if check_cp_cap CP_HOME_SYMLINKS_DISABLED; then
+            echo "Symlinks in $_OWNER_HOME are disabled, no code repository symlink will be created"
+      elif [ ! -z "$GIT_REPO" ] && [ -d "$_REPOSITORY_MOUNT_SRC" ]; then
             if [ -L "$_REPOSITORY_HOME/${PIPELINE_NAME}" ]; then
                   unlink "$_REPOSITORY_HOME/${PIPELINE_NAME}"
             fi
@@ -1926,7 +1982,7 @@ if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
             if [ "$CP_PYTHON_VERSION" == "2" ]; then
                   $CP_PYTHON_PATH -m pip install $_PIPE_COMMON_PIP_ARGS -I -q setuptools==44.1.1
             else
-                  $CP_PYTHON_PATH -m pip install $_PIPE_COMMON_PIP_ARGS -I -q setuptools==68.0.0
+                  $CP_PYTHON_PATH -m pip install $_PIPE_COMMON_PIP_ARGS -I -q setuptools==81.0.0
             fi
             download_file ${DISTRIBUTION_URL}pipe-common.tar.gz
             _DOWNLOAD_RESULT=$?
@@ -2607,7 +2663,7 @@ echo "-"
 # Force SystemD capability if the Kubernetes is requested
 if ( check_cp_cap "CP_CAP_SYSTEMD_CONTAINER" || check_cp_cap "CP_CAP_KUBE" ) \
     && check_installed "systemctl" && \
-    [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
+    ( [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ] ); then
 
         # Make sure sysctl is available
         _SYSCTL_INSTALL_COMMAND=
@@ -2830,6 +2886,12 @@ if [ "$CP_CAP_NFS_MNT_OBSERVER_DISABLED" == "true" ]; then
 elif [ "$CP_SENSITIVE_RUN" == "true" ]; then
     echo "NFS event watching is disabled for sensitive runs"
 else
+    # sysctl comes with procps (procps-ng on Rocky Linux and RHEL), which some images do not have
+    if ! check_installed "sysctl"; then
+        _SYSCTL_INSTALL_COMMAND=
+        get_install_command_by_current_distr _SYSCTL_INSTALL_COMMAND "procps"
+        eval "$_SYSCTL_INSTALL_COMMAND"
+    fi
     inotify_watchers=${CP_CAP_NFS_MNT_OBSERVER_RUN_WATCHERS:-65535}
     sysctl -w fs.inotify.max_user_watches=$inotify_watchers
     sysctl -w fs.inotify.max_queued_events=$((inotify_watchers*2))

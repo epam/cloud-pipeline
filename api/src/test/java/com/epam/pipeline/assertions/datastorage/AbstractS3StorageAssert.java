@@ -45,4 +45,13 @@ public abstract class AbstractS3StorageAssert<S extends AbstractS3StorageAssert<
         }
         return myself;
     }
+
+    public S hasAccessPointArn(String accessPointArn) {
+        isNotNull();
+        if (!Objects.equals(actual.getAccessPointArn(), accessPointArn)) {
+            failWithMessage("Expected S3 storage access point ARN to be <%s> but was <%s>.",
+                    accessPointArn, actual.getAccessPointArn());
+        }
+        return myself;
+    }
 }

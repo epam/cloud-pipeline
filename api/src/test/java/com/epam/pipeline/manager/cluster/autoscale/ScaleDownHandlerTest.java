@@ -16,206 +16,190 @@
 
 package com.epam.pipeline.manager.cluster.autoscale;
 
-import com.epam.pipeline.config.Constants;
-import com.epam.pipeline.controller.vo.TagsVO;
-import com.epam.pipeline.entity.cloud.CloudInstanceState;
+import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.cluster.pool.InstanceRequest;
+import com.epam.pipeline.entity.cluster.pool.RunningInstance;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
-import com.epam.pipeline.entity.pipeline.RunLog;
-import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
+import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import io.fabric8.kubernetes.api.model.Node;
-import io.fabric8.kubernetes.api.model.NodeCondition;
 import io.fabric8.kubernetes.api.model.NodeList;
+import io.fabric8.kubernetes.api.model.ObjectMeta;
+import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodList;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
-import static com.epam.pipeline.test.creator.cluster.NodeCreatorUtils.getNodeCondition;
-import static com.epam.pipeline.test.creator.cluster.NodeCreatorUtils.getNodeWithConditions;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doNothing;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 public class ScaleDownHandlerTest {
 
-    private static final Long RUN_ID = 1L;
-    private static final String NODE_LABEL = String.valueOf(RUN_ID);
-    private static final String NODE_NAME = TEST_STRING;
-    private static final String INSTANCE_ID = "i-123";
-    private static final int GRACE_MINUTES = 30;
-    private static final String READY = "Ready";
-    private static final String NETWORK_UNAVAILABLE = "NetworkUnavailable";
-    private static final String TRUE = "True";
-    private static final String FALSE = "False";
-    private static final String UNKNOWN = "Unknown";
-    private static final DateTimeFormatter RUN_LOG_DATE_FORMATTER =
-            DateTimeFormatter.ofPattern(Constants.FMT_ISO_LOCAL_DATE);
+    private static final Long FREE_NODE_RUN_ID = 1L;
+    private static final String FREE_NODE_LABEL = String.valueOf(FREE_NODE_RUN_ID);
+    private static final Long PENDING_RUN_ID = 2L;
+    private static final String CP_CREATE_NEW_NODE = "CP_CREATE_NEW_NODE";
+    private static final String CP_CAP_DEDICATED_INSTANCE = "CP_CAP_DEDICATED_INSTANCE";
 
     private final AutoscalerService autoscalerService = mock(AutoscalerService.class);
     private final CloudFacade cloudFacade = mock(CloudFacade.class);
     private final PipelineRunManager pipelineRunManager = mock(PipelineRunManager.class);
-    private final RunLogManager runLogManager = mock(RunLogManager.class);
-    private final KubernetesManager kubernetesManager = spy(new KubernetesManager());
+    private final KubernetesManager kubernetesManager = mock(KubernetesManager.class);
     private final PipelineRunCRUDService runCRUDService = mock(PipelineRunCRUDService.class);
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
     private final KubernetesClient client = mock(KubernetesClient.class);
+    private final IAMProfileVerifier iamProfileVerifier = mock(IAMProfileVerifier.class);
+    private final ReassignHandler reassignHandler = new ReassignHandler(autoscalerService, cloudFacade,
+            pipelineRunManager, Collections.emptyList(), mock(MetadataManager.class), iamProfileVerifier,
+            mock(RunStatusManager.class), mock(MessageHelper.class), preferenceManager);
 
     private final ScaleDownHandler scaleDownHandler = new ScaleDownHandler(autoscalerService, cloudFacade,
-            pipelineRunManager, runLogManager, kubernetesManager, runCRUDService, preferenceManager);
+            pipelineRunManager, mock(RunLogManager.class), kubernetesManager, runCRUDService, preferenceManager,
+            reassignHandler);
 
-    private final LocalDateTime now = DateUtils.nowUTC().truncatedTo(ChronoUnit.SECONDS);
-    private final LocalDateTime nodeStart = now.minusHours(2);
+    private PipelineRun pendingRun;
 
-    @Before
+    /**
+     * A free run node matches the pending run and has expired, so it is kept only for the pending run.
+     */
+    @BeforeEach
     public void setUp() {
+        pendingRun = new PipelineRun();
+        pendingRun.setId(PENDING_RUN_ID);
+        pendingRun.setInstance(new RunInstance());
+        pendingRun.setPipelineRunParameters(Collections.emptyList());
+        doReturn(pendingRun).when(runCRUDService).loadRunById(PENDING_RUN_ID);
+        doReturn(false).when(preferenceManager).getPreference(SystemPreferences.CLUSTER_DISABLE_REASSIGN);
+
         final PodList pods = new PodList();
-        pods.setItems(Collections.emptyList());
+        pods.setItems(Collections.singletonList(getPod(PENDING_RUN_ID)));
         doReturn(pods).when(kubernetesManager).getPodList(client);
-        doReturn(Collections.emptyMap()).when(kubernetesManager).getNodeLabels(eq(client), anyString());
-        doNothing().when(kubernetesManager).addNodeLabel(anyString(), anyString(), anyString());
-        doNothing().when(kubernetesManager).removeNodeLabel(anyString(), anyString());
-        doReturn(GRACE_MINUTES).when(preferenceManager)
-                .getPreference(SystemPreferences.CLUSTER_NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES);
-        doReturn(Optional.of(getRun())).when(pipelineRunManager).findRun(RUN_ID);
-        doReturn(CloudInstanceState.RUNNING).when(cloudFacade).getInstanceState(RUN_ID);
-    }
-
-    @Test
-    public void shouldMarkUnavailableNodeSinceReadyTransitionAndKeepItWithinGracePeriod() {
-        final LocalDateTime unavailableSince = now.minusMinutes(5);
-        final LocalDateTime lastHeartbeat = now.minusMinutes(GRACE_MINUTES + 10);
-        final Node node = getNode(getNodeLabels(),
-                getCondition(READY, UNKNOWN, lastHeartbeat, unavailableSince));
-
-        checkFreeNodes(node, Collections.emptySet());
-
-        verify(kubernetesManager).addNodeLabel(NODE_NAME, KubernetesConstants.UNAVAILABLE_NODE_LABEL,
-                KubernetesConstants.KUBE_LABEL_DATE_FORMATTER.format(unavailableSince));
-        verify(pipelineRunManager).updateTags(eq(RUN_ID), any(TagsVO.class), eq(false));
-        verify(cloudFacade, never()).scaleDownNode(anyLong());
-    }
-
-    @Test
-    public void shouldScaleDownUnavailableNodeAfterGracePeriod() {
-        final Node node = getNode(getNodeLabels(),
-                getCondition(READY, UNKNOWN, now.minusMinutes(45), now.minusMinutes(40)));
-
-        checkFreeNodes(node, Collections.emptySet());
-
-        verify(cloudFacade).scaleDownNode(RUN_ID);
-    }
-
-    @Test
-    public void shouldSkipNodeWithoutReadyCondition() {
-        final Node node = getNode(getNodeLabels());
-
-        checkFreeNodes(node, Collections.emptySet());
-
-        verify(cloudFacade, never()).scaleDownNode(anyLong());
-        verify(kubernetesManager, never()).addNodeLabel(anyString(), anyString(), anyString());
-        verify(pipelineRunManager, never()).updateTags(anyLong(), any(TagsVO.class), anyBoolean());
-    }
-
-    @Test
-    public void shouldScaleDownFreeNodeWhichIsNotReady() {
-        final Node node = getNode(getNodeLabels(), getCondition(READY, FALSE, now, now.minusMinutes(5)));
-
-        checkFreeNodes(node, Collections.emptySet());
-
-        verify(kubernetesManager, never()).addNodeLabel(anyString(), anyString(), anyString());
-        verify(cloudFacade).scaleDownNode(RUN_ID);
-    }
-
-    @Test
-    public void shouldMarkRecoveredNodeAvailableSinceReadyTransition() {
-        final LocalDateTime availableSince = now.minusMinutes(1);
-        final Map<String, String> labels = getNodeLabels();
-        labels.put(KubernetesConstants.UNAVAILABLE_NODE_LABEL, TEST_STRING);
-        final Node node = getNode(labels, getCondition(READY, TRUE, now, availableSince));
-
-        checkFreeNodes(node, Collections.singleton(NODE_LABEL));
-
-        verify(kubernetesManager).removeNodeLabel(NODE_NAME, KubernetesConstants.UNAVAILABLE_NODE_LABEL);
-        final ArgumentCaptor<RunLog> runLog = ArgumentCaptor.forClass(RunLog.class);
-        verify(runLogManager).saveLog(runLog.capture());
-        assertThat(runLog.getValue().getLogText()).contains(RUN_LOG_DATE_FORMATTER.format(availableSince));
-        verify(cloudFacade, never()).scaleDownNode(anyLong());
-    }
-
-    private void checkFreeNodes(final Node node, final Set<String> pods) {
+        doReturn(true).when(kubernetesManager).isPodUnscheduled(any(Pod.class));
         final NodeList nodes = new NodeList();
-        nodes.setItems(Collections.singletonList(node));
+        nodes.setItems(Collections.singletonList(getNode(FREE_NODE_LABEL)));
         doReturn(nodes).when(kubernetesManager).getAvailableNodes(client);
-        scaleDownHandler.checkFreeNodes(Collections.emptySet(), client, pods);
+        // the node has reported its readiness, so it is processed as a free node
+        doReturn(true).when(kubernetesManager).isNodeAvailable(any(Node.class));
+
+        final RunningInstance freeNode = new RunningInstance();
+        freeNode.setInstance(new RunInstance());
+        doReturn(freeNode).when(autoscalerService).getPreviousRunInstance(FREE_NODE_LABEL, client);
+        doReturn(true).when(autoscalerService).requirementsMatch(eq(freeNode), any(InstanceRequest.class));
+        doReturn(Optional.empty()).when(autoscalerService).findPool(FREE_NODE_LABEL, client);
+        doReturn(true).when(cloudFacade).isNodeExpired(FREE_NODE_RUN_ID);
     }
 
-    private Node getNode(final Map<String, String> labels) {
-        return getNodeWithConditions(labels, getNetworkCondition());
+    @Test
+    public void shouldKeepFreeNodeForPendingRunWhichMayGetIt() {
+        checkFreeNodes();
+
+        verifyFreeNodeKept();
     }
 
-    private Node getNode(final Map<String, String> labels, final NodeCondition readyCondition) {
-        return getNodeWithConditions(labels, getNetworkCondition(), readyCondition);
+    @Test
+    public void shouldKeepFreeNodeForPendingRunWithNullParameterList() {
+        pendingRun.setPipelineRunParameters(null);
+
+        checkFreeNodes();
+
+        verifyFreeNodeKept();
+    }
+
+    @Test
+    public void shouldNotKeepFreeNodeForPendingRunWithCreateNewNodeParameter() {
+        pendingRun.setPipelineRunParameters(Collections.singletonList(
+                new PipelineRunParameter(CP_CREATE_NEW_NODE, "true")));
+
+        checkFreeNodes();
+
+        verify(cloudFacade).scaleDownNode(FREE_NODE_RUN_ID);
+    }
+
+    @Test
+    public void shouldNotKeepFreeNodeForPendingRunWithDedicatedInstanceParameter() {
+        pendingRun.setPipelineRunParameters(Collections.singletonList(
+                new PipelineRunParameter(CP_CAP_DEDICATED_INSTANCE, "true")));
+
+        checkFreeNodes();
+
+        verify(cloudFacade).scaleDownNode(FREE_NODE_RUN_ID);
+    }
+
+    @Test
+    public void shouldNotKeepFreeNodeForPendingWindowsRun() {
+        pendingRun.setPlatform(KubernetesConstants.WINDOWS);
+
+        checkFreeNodes();
+
+        verify(cloudFacade).scaleDownNode(FREE_NODE_RUN_ID);
+    }
+
+    @Test
+    public void shouldNotKeepFreeNodeForPendingRunWithRestrictedImage() {
+        doReturn(true).when(iamProfileVerifier).isImageRestricted(pendingRun);
+
+        checkFreeNodes();
+
+        verify(cloudFacade).scaleDownNode(FREE_NODE_RUN_ID);
+    }
+
+    @Test
+    public void shouldNotKeepFreeNodeForPendingRunWhenReassignIsDisabled() {
+        doReturn(true).when(preferenceManager).getPreference(SystemPreferences.CLUSTER_DISABLE_REASSIGN);
+
+        checkFreeNodes();
+
+        verify(cloudFacade).scaleDownNode(FREE_NODE_RUN_ID);
     }
 
     /**
-     * Flannel puts NetworkUnavailable first and never updates it after the node start.
+     * The node is matched with the pending run and kept for it: its expiration is not checked.
      */
-    private NodeCondition getNetworkCondition() {
-        return getCondition(NETWORK_UNAVAILABLE, FALSE, nodeStart, nodeStart);
+    private void verifyFreeNodeKept() {
+        verify(autoscalerService).requirementsMatch(any(RunningInstance.class), any(InstanceRequest.class));
+        verify(cloudFacade, never()).isNodeExpired(anyLong());
+        verify(cloudFacade, never()).scaleDownNode(anyLong());
     }
 
-    private NodeCondition getCondition(final String type, final String status,
-                                       final LocalDateTime heartbeat, final LocalDateTime transition) {
-        return getNodeCondition(type, status, TEST_STRING, toKubeDateTime(heartbeat), toKubeDateTime(transition));
+    private void checkFreeNodes() {
+        scaleDownHandler.checkFreeNodes(Collections.emptySet(), client, Collections.emptySet());
     }
 
-    private String toKubeDateTime(final LocalDateTime dateTime) {
-        return DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(dateTime) + "Z";
+    private Pod getPod(final Long runId) {
+        final Pod pod = new Pod();
+        pod.setMetadata(getMetadata(String.valueOf(runId)));
+        return pod;
     }
 
-    private Map<String, String> getNodeLabels() {
-        final Map<String, String> labels = new HashMap<>();
-        labels.put(KubernetesConstants.RUN_ID_LABEL, NODE_LABEL);
-        labels.put(KubernetesConstants.CLOUD_INSTANCE_ID, INSTANCE_ID);
-        return labels;
+    private Node getNode(final String runIdLabel) {
+        final Node node = new Node();
+        node.setMetadata(getMetadata(runIdLabel));
+        return node;
     }
 
-    private PipelineRun getRun() {
-        final RunInstance instance = new RunInstance();
-        instance.setNodeId(INSTANCE_ID);
-        final PipelineRun run = new PipelineRun();
-        run.setId(RUN_ID);
-        run.setInstance(instance);
-        run.setTags(new HashMap<>());
-        return run;
+    private ObjectMeta getMetadata(final String runIdLabel) {
+        final ObjectMeta metadata = new ObjectMeta();
+        metadata.setName(runIdLabel);
+        metadata.setLabels(Collections.singletonMap(KubernetesConstants.RUN_ID_LABEL, runIdLabel));
+        return metadata;
     }
 }

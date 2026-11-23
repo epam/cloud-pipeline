@@ -34,9 +34,8 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +49,7 @@ import java.util.stream.Collectors;
 
 import static com.epam.pipeline.assertions.ProjectAssertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Transactional
 public class DataStorageDaoTest extends AbstractJdbcTest {
@@ -61,6 +61,8 @@ public class DataStorageDaoTest extends AbstractJdbcTest {
     private static final int LTS_DURATION = 2;
     private static final int STS_DURATION = 3;
     private static final String UPDATED_VALUE = "UPDATED";
+    private static final String TEST_ACCESS_POINT_ARN = "arn:aws:s3:us-east-1:123456789012:accesspoint/test-ap";
+    private static final String UPDATED_ACCESS_POINT_ARN = "arn:aws:s3:us-east-1:123456789012:accesspoint/updated-ap";
     private static final String STRING = "string";
     private static final String KEY_1 = "key1";
     private static final String VALUE_1 = "value1";
@@ -86,8 +88,7 @@ public class DataStorageDaoTest extends AbstractJdbcTest {
     private AwsRegion awsRegion;
     private StoragePolicy policy;
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         testFolder = buildFolder(null);
 
         awsRegion = new AwsRegion();
@@ -106,6 +107,7 @@ public class DataStorageDaoTest extends AbstractJdbcTest {
         s3Bucket.setMountOptions("testMountOptions");
         s3Bucket.setShared(true);
         s3Bucket.setAllowedCidrs(Arrays.asList("test1", "test2"));
+        s3Bucket.setAccessPointArn(TEST_ACCESS_POINT_ARN);
 
         policy = new StoragePolicy();
 
@@ -209,6 +211,15 @@ public class DataStorageDaoTest extends AbstractJdbcTest {
         s3Bucket.setOwner(UPDATED_VALUE);
         s3Bucket.setMountOptions(UPDATED_VALUE);
         s3Bucket.setMountPoint(UPDATED_VALUE);
+        s3Bucket.setAccessPointArn(UPDATED_ACCESS_POINT_ARN);
+        dataStorageDao.updateDataStorage(s3Bucket);
+        validateS3Storage(dataStorageDao.loadDataStorage(s3Bucket.getId()), s3Bucket);
+    }
+
+    @Test
+    public void shouldClearAccessPointArnOnUpdate() {
+        dataStorageDao.createDataStorage(s3Bucket);
+        s3Bucket.setAccessPointArn(null);
         dataStorageDao.updateDataStorage(s3Bucket);
         validateS3Storage(dataStorageDao.loadDataStorage(s3Bucket.getId()), s3Bucket);
     }
@@ -485,6 +496,7 @@ public class DataStorageDaoTest extends AbstractJdbcTest {
         assertThat(bucket)
                 .hasRegionId(expected.getRegionId())
                 .hasAllowedCidrs(expected.getAllowedCidrs())
+                .hasAccessPointArn(expected.getAccessPointArn())
                 .hasSourceStorageId(expected.getSourceStorageId())
                 .hasLinkingMasks(expected.getLinkingMasks());
     }
@@ -517,8 +529,8 @@ public class DataStorageDaoTest extends AbstractJdbcTest {
     }
 
     private void verifyFolderTree(final Folder expected, final Folder actual) {
-        Assert.assertEquals(expected.getId(), actual.getId());
-        Assert.assertEquals(expected.getParentId(), actual.getParentId());
+        assertEquals(expected.getId(), actual.getId());
+        assertEquals(expected.getParentId(), actual.getParentId());
         if (expected.getParent() != null) {
             verifyFolderTree(expected.getParent(), actual.getParent());
         }

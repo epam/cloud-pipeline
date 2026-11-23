@@ -81,7 +81,6 @@ public class ConfigurationRunner {
      * For each resolved {@link MetadataEntity} instance a separate {@link PipelineRun} or several ones
      * will be created.
      *
-     * @param refreshToken      authorization token for Firecloud
      * @param runConfiguration  to run. Must specify {@code id} parameter of existing in DB
      *                          {@link RunConfiguration} instance. Any other parameter may be specified,
      *                          in this case it will override the same parameter from DB instance.
@@ -96,8 +95,7 @@ public class ConfigurationRunner {
      *                              to required {@code rootEntityId} specified in {@link RunConfigurationEntry}
      * @return list of scheduled {@link PipelineRun}
      */
-    public List<PipelineRun> runConfiguration(String refreshToken,
-                                              RunConfigurationWithEntitiesVO runConfiguration,
+    public List<PipelineRun> runConfiguration(RunConfigurationWithEntitiesVO runConfiguration,
                                               String expansionExpression) {
         RunConfiguration dbConfiguration = configurationManager.load(runConfiguration.getId());
         RunConfiguration configuration = mergeRunConfigurations(dbConfiguration, runConfigurationMapper
@@ -125,7 +123,6 @@ public class ConfigurationRunner {
                             .entitiesIds(entitiesIds)
                             .expansionExpression(expansionExpression)
                             .notifications(notifications)
-                            .refreshToken(refreshToken)
                             .build();
                 })
                 .collect(Collectors.toList());

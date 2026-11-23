@@ -72,7 +72,7 @@
       "Bash(./gradlew distZip:*)",
       "Bash(./gradlew distTar:*)",
       "Bash(./gradlew buildDoc:*)",
-      "Bash(./gradlew bootRepackage:*)",
+      "Bash(./gradlew bootJar:*)",
       "Bash(./gradlew buildUI:*)",
       "Bash(./gradlew buildPipe:*)",
       "Bash(e2e/gui/gradlew:*)",

@@ -94,10 +94,8 @@ public class PipelineExecutor {
     private static final String TRUE = "true";
     private static final String USE_HOST_NETWORK = "CP_USE_HOST_NETWORK";
     private static final String DEFAULT_CPU_REQUEST = "1";
-    private static final DockerMount HOST_CGROUP_MOUNT = DockerMount.builder()
-            .name("host-cgroups")
-            .hostPath("/sys/fs/cgroup")
-            .mountPath("/sys/fs/cgroup").build();
+    private static final DockerMount HOST_CGROUP_MOUNT = new DockerMount(
+        "host-cgroups", "/sys/fs/cgroup", "/sys/fs/cgroup", false);
     private static final String DOMAIN_DELIMITER = "@";
     private static final String DEFAULT_KUBE_SERVICE_ACCOUNT = "default";
     private static final String CP_CAP_NETWORK_POLICY_TYPE = "CP_CAP_NETWORK_POLICY_TYPE";
@@ -131,7 +129,7 @@ public class PipelineExecutor {
                               final List<String> endpoints, final String pipelineId,
                               final RunContainerSpec podAssignPolicy, final String secretName, final String clusterId) {
         launchRootPod(command, run, envVars, endpoints, pipelineId, podAssignPolicy,
-                secretName, clusterId, ImagePullPolicy.ALWAYS, Collections.emptyMap(), null, null);
+                secretName, clusterId, ImagePullPolicy.ALWAYS, Collections.emptyMap(), null, null, true);
     }
 
     public void launchRootPod(final String command, final PipelineRun run, final List<EnvVar> envVars,
@@ -139,7 +137,8 @@ public class PipelineExecutor {
                               final RunContainerSpec podAssignPolicy, final String secretName, final String clusterId,
                               final ImagePullPolicy imagePullPolicy, Map<String, String> kubeLabels,
                               final String kubeServiceAccount,
-                              final OSSpecificLaunchCommandTemplate commandTemplate) {
+                              final OSSpecificLaunchCommandTemplate commandTemplate,
+                              final boolean pinImageDigest) {
         try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
             final Map<String, String> labels = new HashMap<>();
             labels.put("spawned_by", "pipeline-api");
@@ -176,12 +175,14 @@ public class PipelineExecutor {
             labels.putAll(getServiceLabels(endpoints));
 
             final OkHttpClient httpClient = HttpClientUtils.createHttpClient(client.getConfiguration());
-            final ObjectMeta metadata = getObjectMeta(run, labels);
+            final Optional<String> pinnedDockerImage = PodSpecMapperHelper.buildPinnedDockerImage(run,
+                    pinImageDigest);
+            final ObjectMeta metadata = getObjectMeta(run, labels, pinnedDockerImage.isPresent());
             final String verifiedKubeServiceAccount = fetchVerifiedKubeServiceAccount(client, kubeServiceAccount);
             boolean assignContainerRequests = podAssignPolicy.isMatch(KubernetesConstants.RUN_ID_LABEL, runIdLabel) ||
                     !podAssignPolicy.isSkipContainerRequests();
             final PodSpec spec = getPodSpec(run, envVars, secretName, nodeSelector, podAssignPolicy.loadTolerances(),
-                    run.getActualDockerImage(), command, imagePullPolicy,
+                    pinnedDockerImage.orElse(run.getActualDockerImage()), command, imagePullPolicy,
                     assignContainerRequests,
                     verifiedKubeServiceAccount, commandTemplate, podAssignPolicy);
             final Pod pod = new Pod("v1", "Pod", metadata, spec, null);
@@ -370,7 +371,7 @@ public class PipelineExecutor {
                                    final List<DockerMount> commonMounts,
                                    final RunContainerSpec policy) {
         Container container = new Container();
-        container.setName("pipeline");
+        container.setName(KubernetesConstants.PIPELINE_CONTAINER_NAME);
         container.setEnv(envVars);
         container.setImage(dockerImage);
         container.setSecurityContext(buildSecurityContext(policy));
@@ -382,11 +383,11 @@ public class PipelineExecutor {
             container.setVolumeMounts(getWindowsMounts());
             container.setTerminationMessagePath("c:\\termination-log");
         } else {
-            String entryPoint = Optional.ofNullable(template.getEntrypoint()).orElse("/bin/bash");
+            String entryPoint = Optional.ofNullable(template.entrypoint()).orElse("/bin/bash");
             container.setCommand(Collections.singletonList(entryPoint));
             if (!StringUtils.isEmpty(command)) {
-                List<String> args = CollectionUtils.isEmpty(template.getArgs()) ?
-                        Collections.singletonList("-c") : template.getArgs();
+                List<String> args = CollectionUtils.isEmpty(template.args()) ?
+                        Collections.singletonList("-c") : template.args();
                 List<String> mergedArgs = new ArrayList<>(args);
                 mergedArgs.add(command);
                 container.setArgs(mergedArgs);
@@ -489,13 +490,13 @@ public class PipelineExecutor {
                 SystemPreferences.DOCKER_IN_DOCKER_MOUNTS);
         if (isDockerInDockerEnabled &&
                 CollectionUtils.isNotEmpty(dockerMounts)) {
-            dockerMounts.forEach(mount -> volumes.add(createVolume(mount.getName(), mount.getHostPath())));
+            dockerMounts.forEach(mount -> volumes.add(createVolume(mount.name(), mount.hostPath())));
         }
         if (CollectionUtils.isNotEmpty(commonMounts)) {
-            commonMounts.forEach(mount -> volumes.add(createVolume(mount.getName(), mount.getHostPath())));
+            commonMounts.forEach(mount -> volumes.add(createVolume(mount.name(), mount.hostPath())));
         }
         if (isSystemdEnabled) {
-            volumes.add(createVolume(HOST_CGROUP_MOUNT.getName(), HOST_CGROUP_MOUNT.getHostPath()));
+            volumes.add(createVolume(HOST_CGROUP_MOUNT.name(), HOST_CGROUP_MOUNT.hostPath()));
         }
         return volumes;
     }
@@ -520,14 +521,14 @@ public class PipelineExecutor {
         if (isDockerInDockerEnabled &&
                 CollectionUtils.isNotEmpty(dockerMounts)) {
             dockerMounts.forEach(mount -> mounts.add(
-                    getVolumeMount(mount.getName(), mount.getMountPath(), mount.isReadOnly())));
+                    getVolumeMount(mount.name(), mount.mountPath(), mount.readOnly())));
         }
         if (CollectionUtils.isNotEmpty(commonMounts)) {
             commonMounts.forEach(mount -> mounts.add(
-                    getVolumeMount(mount.getName(), mount.getMountPath(), mount.isReadOnly())));
+                    getVolumeMount(mount.name(), mount.mountPath(), mount.readOnly())));
         }
         if (isSystemdEnabled) {
-            mounts.add(getVolumeMount(HOST_CGROUP_MOUNT.getName(), HOST_CGROUP_MOUNT.getMountPath()));
+            mounts.add(getVolumeMount(HOST_CGROUP_MOUNT.name(), HOST_CGROUP_MOUNT.mountPath()));
         }
         return mounts;
     }
@@ -544,10 +545,15 @@ public class PipelineExecutor {
         return mount;
     }
 
-    private ObjectMeta getObjectMeta(PipelineRun run, Map<String, String> labels) {
+    private ObjectMeta getObjectMeta(final PipelineRun run, final Map<String, String> labels,
+                                     final boolean pinnedDockerImage) {
         ObjectMeta metadata = new ObjectMeta();
         metadata.setName(run.getPodId());
         metadata.setLabels(labels);
+        if (pinnedDockerImage) {
+            metadata.setAnnotations(Collections.singletonMap(KubernetesConstants.DOCKER_IMAGE_ANNOTATION,
+                    run.getActualDockerImage()));
+        }
         return metadata;
     }
 

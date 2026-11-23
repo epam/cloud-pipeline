@@ -145,7 +145,7 @@ class Cluster:
         Logger.info('Using distributed cluster for data transfer. Master node will be used.', task_name=task_name)
         child_runs = api.load_child_pipelines(os.getenv('RUN_ID'))
         nodes = [Node('localhost')]
-        static_runs = filter(lambda run: cls.is_static_run(run), child_runs)
+        static_runs = [run for run in child_runs if cls.is_static_run(run)]
         if len(static_runs) > 0:
             child_hosts = [static_run['podId'] for static_run in static_runs]
             Logger.info('Found %d running child nodes for data transfer: %s.' % (len(static_runs), ','.join(child_hosts)),
@@ -173,7 +173,7 @@ class Cluster:
         cpu_number = multiprocessing.cpu_count()
         if 'CP_TRANSFER_PROC_RATIO' in os.environ:
             ratio = int(os.environ['CP_TRANSFER_PROC_RATIO'])
-            return max(1, cpu_number/ratio)
+            return max(1, cpu_number // ratio)
         if cpu_number < 32:
             return 1
         if 32 <= cpu_number < 64:

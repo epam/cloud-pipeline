@@ -39,7 +39,7 @@ import com.epam.pipeline.test.acl.AbstractAclTest;
 import com.epam.pipeline.test.creator.docker.DockerCreatorUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -172,6 +172,82 @@ public class ToolApiServiceTest extends AbstractAclTest {
         mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> toolApiService.updateTool(tool));
+    }
+
+    @Test
+    @WithMockUser(roles = ADMIN_ROLE)
+    public void shouldUpdateToolDefaultVersionForAdmin() {
+        doReturn(tool).when(mockToolManager).updateToolDefaultVersion(ID, TEST_STRING);
+
+        assertThat(toolApiService.updateToolDefaultVersion(ID, TEST_STRING)).isEqualTo(tool);
+    }
+
+    @Test
+    @WithMockUser(roles = TOOL_ADMIN_ROLE)
+    public void shouldUpdateToolDefaultVersionForToolAdmin() {
+        doReturn(tool).when(mockToolManager).updateToolDefaultVersion(ID, TEST_STRING);
+
+        assertThat(toolApiService.updateToolDefaultVersion(ID, TEST_STRING)).isEqualTo(tool);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldUpdateToolDefaultVersionWhenPermissionIsGranted() {
+        doReturn(tool).when(mockToolManager).updateToolDefaultVersion(ID, TEST_STRING);
+        initAclEntity(tool, AclPermission.WRITE);
+        mockSecurityContext();
+
+        final Tool returnedTool = toolApiService.updateToolDefaultVersion(ID, TEST_STRING);
+
+        assertThat(returnedTool.getMask()).isEqualTo(WRITE_PERMISSION);
+        assertThat(returnedTool).isEqualTo(tool);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyUpdateToolDefaultVersionWhenPermissionIsNotGranted() {
+        initAclEntity(tool, AclPermission.READ);
+        mockSecurityContext();
+
+        assertThrows(AccessDeniedException.class, () -> toolApiService.updateToolDefaultVersion(ID, TEST_STRING));
+    }
+
+    @Test
+    @WithMockUser(roles = ADMIN_ROLE)
+    public void shouldDeleteToolDefaultVersionForAdmin() {
+        doReturn(tool).when(mockToolManager).deleteToolDefaultVersion(ID);
+
+        assertThat(toolApiService.deleteToolDefaultVersion(ID)).isEqualTo(tool);
+    }
+
+    @Test
+    @WithMockUser(roles = TOOL_ADMIN_ROLE)
+    public void shouldDeleteToolDefaultVersionForToolAdmin() {
+        doReturn(tool).when(mockToolManager).deleteToolDefaultVersion(ID);
+
+        assertThat(toolApiService.deleteToolDefaultVersion(ID)).isEqualTo(tool);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDeleteToolDefaultVersionWhenPermissionIsGranted() {
+        doReturn(tool).when(mockToolManager).deleteToolDefaultVersion(ID);
+        initAclEntity(tool, AclPermission.WRITE);
+        mockSecurityContext();
+
+        final Tool returnedTool = toolApiService.deleteToolDefaultVersion(ID);
+
+        assertThat(returnedTool.getMask()).isEqualTo(WRITE_PERMISSION);
+        assertThat(returnedTool).isEqualTo(tool);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyDeleteToolDefaultVersionWhenPermissionIsNotGranted() {
+        initAclEntity(tool, AclPermission.READ);
+        mockSecurityContext();
+
+        assertThrows(AccessDeniedException.class, () -> toolApiService.deleteToolDefaultVersion(ID));
     }
 
     @Test

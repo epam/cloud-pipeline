@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.entity.git;
 
-import org.springframework.util.Assert;
+import org.apache.commons.lang3.Validate;
 
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -31,8 +31,9 @@ public final class GitRepositoryUrl {
     // For Bitbucket Cloud provider emails shall be supported via URLs. The email shall be encoded: user%40example.com.
     private static final String BITBUCKET_CLOUD_USERNAME_PATTERN =
             "\\$\\{GIT_USER}|[-._A-Za-z0-9]++(?:%40[-._A-Za-z0-9.]++)?";
-    // Password could be either placeholder ${GIT_TOKEN} or a real password
-    private static final String PASS_PATTERN = "\\$\\{GIT_TOKEN}|[-_A-Za-z0-9]++";
+    // Password could be either placeholder ${GIT_TOKEN} or a real password.
+    // Recent GitLab versions issue tokens with dots, e.g. glpat-<payload>.01.<checksum> on GitLab 19.4
+    private static final String PASS_PATTERN = "\\$\\{GIT_TOKEN}|[-._A-Za-z0-9]++";
     private static final String HOST_PATTERN = "[-._A-Za-z0-9]++(?::[0-9]++)?";
     private static final String PATH_PART_PATTERN = "[-_A-Za-z0-9]++";
     private static final String AZURE_DEVOPS_PATH_PATTERN = "[^/]+";
@@ -217,7 +218,7 @@ public final class GitRepositoryUrl {
 
     private static String ensureMatches(final String value, final String pattern, final boolean matchesIfAbsent) {
         final Boolean matches = Optional.ofNullable(value).map(v -> v.matches(pattern)).orElse(matchesIfAbsent);
-        Assert.isTrue(matches, "Should match pattern " + pattern);
+        Validate.isTrue(matches, "Should match pattern " + pattern);
         return value;
     }
 
@@ -234,7 +235,7 @@ public final class GitRepositoryUrl {
     }
 
     private static GitRepositoryUrl parseUrl(final Matcher matcher, final boolean hasRepository) {
-        Assert.isTrue(matcher.matches(), INVALID_URL_FORMAT_MESSAGE);
+        Validate.isTrue(matcher.matches(), INVALID_URL_FORMAT_MESSAGE);
         return new GitRepositoryUrl(
                 matcher.group("protocol"),
                 matcher.group("username"),

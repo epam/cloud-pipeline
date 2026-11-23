@@ -46,7 +46,7 @@ import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -61,8 +61,8 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 
 public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest {
@@ -71,6 +71,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     private static final int WRITE_PERMISSION = 2;
     private static final int READ_AND_WRITE_PERMISSION = 3;
     private static final int ALL_PERMISSIONS = 15;
+    private static final String ACCESS_POINT_ARN = "arn:aws:s3:us-east-1:123456789012:accesspoint/test-ap";
     private static final DataStorageConvertRequest CONVERT_REQUEST = new DataStorageConvertRequest(
             DataStorageConvertRequestType.VERSIONED_STORAGE, DataStorageConvertRequestAction.LEAVE);
     public static final long SECS_IN_HOUR = 3600L;
@@ -127,12 +128,13 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
         dataStorageApiService.requestDataStorageDavMount(s3bucket.getId(), SECS_IN_HOUR);
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldNotAbleToRequestDavMountWhenOnlyReadIsGranted() {
         initAclEntity(s3bucket, AclPermission.READ);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
-        dataStorageApiService.requestDataStorageDavMount(s3bucket.getId(), SECS_IN_HOUR);
+        assertThrows(AccessDeniedException.class,
+            () -> dataStorageApiService.requestDataStorageDavMount(s3bucket.getId(), SECS_IN_HOUR));
     }
 
     @Test
@@ -143,28 +145,31 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
         dataStorageApiService.callOffDataStorageDavMount(s3bucket.getId());
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldNotBeAbleToCallOffRequestDavMountWhenPermissionIsNotGranted() {
         initAclEntity(s3bucket, AclPermission.NO_READ);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
-        dataStorageApiService.callOffDataStorageDavMount(s3bucket.getId());
+        assertThrows(AccessDeniedException.class,
+            () -> dataStorageApiService.callOffDataStorageDavMount(s3bucket.getId()));
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldNotBeAbleToCallOffRequestDavMountWhenOnlyReadIsGranted() {
         initAclEntity(s3bucket, AclPermission.READ);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
-        dataStorageApiService.callOffDataStorageDavMount(s3bucket.getId());
+        assertThrows(AccessDeniedException.class,
+            () -> dataStorageApiService.callOffDataStorageDavMount(s3bucket.getId()));
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldNotAbleToRequestDavMountWhenPermissionIsNotGranted() {
         initAclEntity(s3bucket, AclPermission.NO_READ);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
-        dataStorageApiService.requestDataStorageDavMount(s3bucket.getId(), SECS_IN_HOUR);
+        assertThrows(AccessDeniedException.class,
+            () -> dataStorageApiService.requestDataStorageDavMount(s3bucket.getId(), SECS_IN_HOUR));
     }
 
     @Test
@@ -514,6 +519,54 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
         doReturn(s3bucket).when(target).update(dataStorageVO);
 
         assertThrows(AccessDeniedException.class, () -> dataStorageApiService.update(dataStorageVO));
+    }
+
+    @Test
+    @WithMockUser(roles = ADMIN_ROLE)
+    public void shouldUpdateAccessPointArnForAdmin() {
+        final DataStorageVO storageVO = getDataStorageVOWithAccessPointArn(ACCESS_POINT_ARN);
+        initAclEntity(s3bucket);
+        final DataStorageManager target = AopTestUtils.getUltimateTargetObject(mockDataStorageManager);
+        doReturn(s3bucket).when(target).update(storageVO);
+
+        assertThat(dataStorageApiService.update(storageVO)).isEqualTo(s3bucket);
+    }
+
+    @Test
+    @WithMockUser(roles = STORAGE_ADMIN_ROLE)
+    public void shouldUpdateAccessPointArnForStorageAdmin() {
+        final DataStorageVO storageVO = getDataStorageVOWithAccessPointArn(ACCESS_POINT_ARN);
+        initAclEntity(s3bucket);
+        final DataStorageManager target = AopTestUtils.getUltimateTargetObject(mockDataStorageManager);
+        doReturn(s3bucket).when(target).update(storageVO);
+
+        assertThat(dataStorageApiService.update(storageVO)).isEqualTo(s3bucket);
+    }
+
+    @Test
+    @WithMockUser(username = OWNER_USER)
+    public void shouldDenyUpdateAccessPointArnForOwner() {
+        final DataStorageVO storageVO = getDataStorageVOWithAccessPointArn(ACCESS_POINT_ARN);
+        initAclEntity(s3bucket);
+        initUserAndEntityMocks(OWNER_USER, s3bucket, context);
+        mockDataStorageMgmtRestrictedMode(false, s3bucket);
+        final DataStorageManager target = AopTestUtils.getUltimateTargetObject(mockDataStorageManager);
+        doReturn(s3bucket).when(target).update(storageVO);
+
+        assertThrows(AccessDeniedException.class, () -> dataStorageApiService.update(storageVO));
+    }
+
+    @Test
+    @WithMockUser(username = OWNER_USER)
+    public void shouldDenyClearAccessPointArnForOwner() {
+        final DataStorageVO storageVO = getDataStorageVOWithAccessPointArn("");
+        initAclEntity(s3bucket);
+        initUserAndEntityMocks(OWNER_USER, s3bucket, context);
+        mockDataStorageMgmtRestrictedMode(false, s3bucket);
+        final DataStorageManager target = AopTestUtils.getUltimateTargetObject(mockDataStorageManager);
+        doReturn(s3bucket).when(target).update(storageVO);
+
+        assertThrows(AccessDeniedException.class, () -> dataStorageApiService.update(storageVO));
     }
 
     @Test
@@ -986,6 +1039,12 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
         final ContextualPreferenceExternalResource resource = new ContextualPreferenceExternalResource(
                 ContextualPreferenceLevel.STORAGE, storage.getId().toString());
         doReturn(preference).when(contextualPreferenceManager)
-                .search(eq(Collections.singletonList(preference.getName())), eq(resource));
+                .search(eq(Collections.singletonList(preference.name())), eq(resource));
+    }
+
+    private DataStorageVO getDataStorageVOWithAccessPointArn(final String accessPointArn) {
+        final DataStorageVO storageVO = DatastorageCreatorUtils.getDataStorageVO();
+        storageVO.setAccessPointArn(accessPointArn);
+        return storageVO;
     }
 }

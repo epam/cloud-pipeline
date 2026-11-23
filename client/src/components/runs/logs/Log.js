@@ -76,6 +76,7 @@ import DataStorageList from '../controls/data-storage-list';
 import CommitRunDialog from './forms/CommitRunDialog';
 import DockerImageLink from './DockerImageLink';
 import {getResumeFailureReason} from '../utilities/map-resume-failure-reason';
+import {hasDockerImageDigest} from '../utilities/docker-image-digest';
 import RunTags, {KNOWN_TAG_NAMES, networkLimitValueRender} from '../run-tags';
 import RunSchedules from '../../../models/runSchedule/RunSchedules';
 import UpdateRunSchedules from '../../../models/runSchedule/UpdateRunSchedules';
@@ -104,10 +105,8 @@ import NestedRunsModal from './forms/NestedRunsModal';
 import RunStatuses, {isRunStatusNodePending} from '../../special/run-status-icon/run-statuses';
 import {confirmRunContinuation, continueRun, runSupportsContinue} from '../actions/continue-run';
 import {checkRunActionAvailable, runActions} from '../actions/actions-availability';
+import {isCapacityBlockRun} from '../../../models/cluster/capacity-blocks';
 import runNodeIsUnavailable from '../actions/node-availability';
-import {
-  findReservationParameterConfig
-} from '../../pipelines/launch/form/components/reservation-parameters/utilities';
 import {
   normalizeRunParameters,
   sortRunParameters
@@ -117,7 +116,6 @@ import ParameterValueRepresentation from '../../pipelines/launch/form/parameters
 import ShareWith from '../ShareWith';
 import LogsModeButton from './logs-mode';
 
-const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
 const MAX_PARAMETER_VALUES_TO_DISPLAY = 5;
 const MAX_NESTED_RUNS_TO_DISPLAY = 10;
@@ -746,8 +744,6 @@ class Logs extends localization.LocalizedReactComponent {
     if (this.isDtsEnvironment) {
       const dts = this.dtsList.filter(dts => dts.id === run.executionPreferences.dtsId)[0];
       environment = dts ? `${dts.name}` : `${run.executionPreferences.dtsId}`;
-    } else if (this.isFireCloudEnvironment) {
-      environment = 'FireCloud';
     } else {
       environment = this.props.preferences.deploymentName || 'EPAM Cloud Pipeline';
     }
@@ -1092,6 +1088,9 @@ class Logs extends localization.LocalizedReactComponent {
       }
       if (run.dockerImage) {
         details.push({key: 'Docker image', value: (<DockerImageLink path={run.dockerImage} />)});
+      }
+      if (hasDockerImageDigest(run)) {
+        details.push({key: 'Docker image digest', value: `${run.actualDockerImageDigest}`});
       }
       if (instance.nodeImage) {
         details.push({key: 'Node image', value: `${instance.nodeImage}`});
@@ -1548,13 +1547,6 @@ class Logs extends localization.LocalizedReactComponent {
   }
 
   @computed
-  get isFireCloudEnvironment () {
-    const {run} = this.state;
-    return run && run.executionPreferences &&
-      run.executionPreferences.environment === FIRE_CLOUD_ENVIRONMENT;
-  }
-
-  @computed
   get initializeEnvironmentFinished () {
     const {run} = this.state;
     return run && run.initialized;
@@ -1835,8 +1827,7 @@ class Logs extends localization.LocalizedReactComponent {
       platform,
       sshPassword
     } = run || {};
-    const {nodeType: instanceType} = instance || {};
-    const isReservationParameterInstance = Boolean(findReservationParameterConfig(instanceType));
+    const isReservationParameterInstance = isCapacityBlockRun(run);
 
     if (pending || !run) {
       Title = <h1>Run </h1>;

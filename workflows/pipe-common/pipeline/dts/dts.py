@@ -45,11 +45,11 @@ class DataTransferServiceClient:
     def transfer_data(self, data_paths, log_task):
         if len(data_paths) > 0:
             Logger.info('Transferring %d path(s)' % len(data_paths), task_name=log_task)
-            transfers = map(self.__schedule_transfer_task, data_paths)
+            transfers = list(map(self.__schedule_transfer_task, data_paths))
             for transfer in transfers:
                 if transfer is None:
                     raise RuntimeError('Upload via DTS failed')
-            remaining_ids = map(lambda transfer: transfer['id'], transfers)
+            remaining_ids = [transfer['id'] for transfer in transfers]
             while remaining_ids:
                 current_ids = list(remaining_ids)
                 for id in current_ids:

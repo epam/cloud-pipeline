@@ -1,6 +1,6 @@
 ---
 name: verify-client-live
-description: Open a user-visible client/ change in a browser against a real Cloud Pipeline deployment. Use when the diff changes UI layout, routing, client state or rendered data — not for tests, the test/ harness, lint/build config, or non-visual edits. Needs a deployment someone has already set up, and a browser tool in the session.
+description: Open a user-visible client/ change in a browser against a real Cloud Pipeline deployment, or a dev sandbox. Use when the diff changes UI layout, routing, client state or rendered data — not for tests, the test/ harness, lint/build config, or non-visual edits. Needs a deployment someone has already set up, or a dev sandbox running its services, and a browser tool in the session.
 ---
 
 # Browser-checking a client/ change
@@ -12,6 +12,12 @@ It needs a deployment to point at and a browser tool in this session. Where eith
 which, skip the check, and say in the hand-back that nobody looked at the change in a browser. Never
 set one up: deploying the platform is never an agent's job, and a browser stack is opt-in under
 `configure-dev-environment`.
+
+**A dev sandbox is the other deployment to point at**, where one runs its services already
+(`dev-sandbox` skill, `sandbox.sh status`), or someone asks for one to check the change against.
+`.agents/skills/dev-sandbox/scripts/sandbox.sh ui`, in the background, takes the place of steps 1
+and 2: it runs the checkout's GUI against the sandbox's API, as its admin, on the same ports, and
+waits for the first compile. Then step 3; `sandbox.sh ui --stop` once the check is over.
 
 ## 1. Check availability
 

@@ -39,3 +39,13 @@ export function getSearchPrompt (
   }
   return result;
 }
+
+/**
+ * Search results are sorted by the document's `id` field last, and the next page starts
+ * after the value returned here. That field is not always the Elasticsearch `_id`
+ * (`elasticId`): a storage file with a long path, an NFS file and a pipeline code file
+ * each carry a different one.
+ */
+export function getScrollingDocumentId (document) {
+  return document.id ?? document.elasticId;
+}

@@ -26,10 +26,4 @@ import lombok.*;
 public class MetadataClass {
     private Long id;
     private String name;
-    private FireCloudClass fireCloudClassName;
-
-    public MetadataClass(Long id, String name) {
-        this.id = id;
-        this.name = name;
-    }
 }

@@ -12,11 +12,6 @@ Test verifies creating a folder and a file on an NFS mount.
 | 3 | Specify a valid folder name in the appeared pop-up window |  |
 | 4 | Click **OK** button |  |
 | 5 | Click **+ Create v** button |  |
-| 6 | Click on the **File** item |  |
+| 6 | Click on the **File** item | a folder with the name from step 3 appears in the storage content |
 | 7 | Specify a valid file name in the appeared pop-up window, input text into the **Content** field |  |
-| 8 | Click **OK** button |  |
-
-**Expected results**:
-
-- After step 6: a folder with the name from step 3 appears in the storage content
-- After step 8: a file with the name from step 7 appears in the storage content. Its size is more than zero
+| 8 | Click **OK** button | a file with the name from step 7 appears in the storage content. Its size is more than zero |

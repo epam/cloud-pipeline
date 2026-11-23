@@ -111,6 +111,7 @@ fi'
 
   printf '#!/bin/sh\necho jq-1.6\n' >"$FIXTURES/jq-linux64"
   fixture_archive Miniconda2-4.7.12.1-Linux-x86_64.tar.gz conda/bin python2 pip
+  fixture_archive python3.12.tar.gz python3.12/bin python3.12 pip3.12
   fixture_archive docker-20.10.24.tgz docker dockerd docker docker-init containerd
   fixture_archive kube-1.15.4.el7.tgz kube kubeadm-1.15.4-0.x86_64.rpm kubelet-1.15.4-0.x86_64.rpm \
     kubectl-1.15.4-0.x86_64.rpm kubernetes-cni-0.7.5-0.x86_64.rpm cri-tools-1.13.0-0.x86_64.rpm
@@ -123,6 +124,11 @@ fi'
     >/etc/default/grub
   printf 'SELINUX=enforcing\nSELINUXTYPE=targeted\n' >/etc/selinux/config
   printf '0123456789abcdef0123456789abcdef\n' >/etc/machine-id
+  # The system's python3, which a PATH that has /usr/local/bin after /usr/bin would find first.
+  if [[ ! -e /usr/bin/python3 ]]; then
+    printf '#!/bin/sh\necho system\n' >/usr/bin/python3
+    chmod +x /usr/bin/python3
+  fi
   mkdir -p /etc/ssh
   touch /etc/ssh/ssh_host_ed25519_key /etc/ssh/ssh_host_ed25519_key.pub /etc/ssh/ssh_config
   touch /root/.bashrc
@@ -154,17 +160,19 @@ EOF
 }
 
 test_prepare_host() {
+  SYSTEM_PYTHON3=$(readlink -f /usr/bin/python3 || echo none)
   run "$PREPARE"
   check "prepare-host.sh succeeds" "$STATUS" 0
   check "it installs the packages, and switches to the legacy iptables" \
     "$(called yum; called update-alternatives)" \
     "$(printf '%s\n' 'yum install -y nc iproute-tc iptables-legacy' \
       'update-alternatives --set iptables /usr/sbin/iptables-legacy')"
-  check "it downloads btrfs, Miniconda 2 and jq, from the platform's distribution" \
+  check "it downloads btrfs, Miniconda 2, Python 3.12 and jq, from the platform's distribution" \
     "$(called wget | sed -E 's/ -O .*//')" \
     "$(printf 'wget -q %s\n' \
       https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/btrfs/6.17/btrfs.box.static \
       https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz \
+      https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/3/python3.12.tar.gz \
       https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64)"
   check "package upgrades at boot leave the kernel, NVIDIA, CUDA and Kubernetes alone" \
     "$(cat /etc/cloud/cloud.cfg.d/99_no_upgrades.cfg)" \
@@ -174,9 +182,20 @@ test_prepare_host() {
   check "python, python2, pip and pip2 are Miniconda's" \
     "$(readlink /usr/bin/python) $(readlink /usr/bin/python2) $(readlink /usr/bin/pip) $(readlink /usr/bin/pip2)" \
     '/var/cloud-pipeline/conda/bin/python2 /var/cloud-pipeline/conda/bin/python2 /var/cloud-pipeline/conda/bin/pip /var/cloud-pipeline/conda/bin/pip'
-  check "the Miniconda archive is removed once unpacked" \
-    "$(find /var/cloud-pipeline -maxdepth 1 -name '*.tar.gz' | wc -l) $([[ -x /var/cloud-pipeline/conda/bin/python2 ]] && echo unpacked)" \
-    '0 unpacked'
+  check "the Miniconda and Python 3.12 archives are removed once unpacked, Python 3.12's in /usr/local, where its build expects it" \
+    "$(find /var/cloud-pipeline -maxdepth 1 -name '*.tar.gz' | wc -l) $([[ -x /var/cloud-pipeline/conda/bin/python2 ]] && echo unpacked) $([[ -x /usr/local/python3.12/bin/python3.12 ]] && echo unpacked)" \
+    '0 unpacked unpacked'
+  check "python3 in /usr/local/bin is Python 3.12, and the system's python3 is left as it was" \
+    "$(readlink /usr/local/bin/python3) $(readlink -f /usr/bin/python3 || echo none)" \
+    "/usr/local/python3.12/bin/python3.12 $SYSTEM_PYTHON3"
+  # As the API starts its commit and pause scripts on a node: sudo's PATH, then a login shell as
+  # root, whose .bashrc the platform's node init script has given a PATH of its own; here a
+  # .bash_profile, which a login shell reads last, holds it.
+  mkdir -p "$WORK/root-home"
+  printf 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/opt/local/docker\n' >"$WORK/root-home/.bash_profile"
+  check "a login shell as root finds it as python3, with the PATH sudo gives and the one the node's init script sets" \
+    "$(env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin HOME="$WORK/root-home" \
+      bash --login -c 'command -v python3' 2>/dev/null)" /usr/local/bin/python3
   check "jq 1.6 is installed" "$(/usr/bin/jq --version)" jq-1.6
   check "bridged traffic goes through iptables, and the host forwards packets" \
     "$(cat /etc/sysctl.d/k8s.conf) $(cat /etc/modules-load.d/k8s.conf) $(called modprobe) $(called sysctl)" \

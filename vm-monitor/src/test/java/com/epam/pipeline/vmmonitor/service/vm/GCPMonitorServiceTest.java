@@ -24,13 +24,11 @@ import com.google.api.services.compute.Compute;
 import com.google.api.services.compute.model.Instance;
 import com.google.api.services.compute.model.InstanceList;
 import com.google.api.services.compute.model.NetworkInterface;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assertions;
-import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.mockito.Spy;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -39,11 +37,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
 public class GCPMonitorServiceTest {
     private static final String CREDENTIALS_PATH = ""; // path to the Google credentials
@@ -61,7 +61,7 @@ public class GCPMonitorServiceTest {
     private final GCPMonitorService service = new GCPMonitorService(TAG);
     private final GCPRegion testGcpRegion = new GCPRegion();
 
-    @Before
+    @BeforeEach
     public void initializeTestGcpRegion() {
         testGcpRegion.setAuthFile(CREDENTIALS_PATH);
         testGcpRegion.setProject(PROJECT_NAME);
@@ -145,11 +145,13 @@ public class GCPMonitorServiceTest {
             new Instance().setName(TEST_INSTANCE_NAME1)
                           .setId(new BigInteger(TEST_INSTANCE_ID1))
                           .setZone(REGION_CODE)
-                          .setNetworkInterfaces(networkInterfaces1),
+                          .setNetworkInterfaces(networkInterfaces1)
+                          .setCreationTimestamp("2024-07-15T08:30:00Z"),
             new Instance().setName(TEST_INSTANCE_NAME2)
                           .setId(new BigInteger(TEST_INSTANCE_ID2))
                           .setZone(REGION_CODE)
-                          .setNetworkInterfaces(networkInterfaces2));
+                          .setNetworkInterfaces(networkInterfaces2)
+                          .setCreationTimestamp("2024-07-15T08:30:00Z"));
     }
 
     private static boolean assertVMs(final VirtualMachine expected, final VirtualMachine actual) {

@@ -18,7 +18,6 @@ package com.epam.pipeline.dao.user;
 
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.user.GroupStatus;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -64,9 +63,9 @@ public class GroupStatusDao extends NamedParameterJdbcDaoSupport {
 
         private static MapSqlParameterSource getParameters(final GroupStatus groupStatus) {
             final MapSqlParameterSource params = new MapSqlParameterSource();
-            params.addValue(GROUP_NAME.name(), groupStatus.getGroupName());
-            params.addValue(GROUP_BLOCKED_STATUS.name(), groupStatus.isBlocked());
-            params.addValue(GROUP_BLOCK_DATE.name(), groupStatus.getLastModifiedData());
+            params.addValue(GROUP_NAME.name(), groupStatus.groupName());
+            params.addValue(GROUP_BLOCKED_STATUS.name(), groupStatus.blocked());
+            params.addValue(GROUP_BLOCK_DATE.name(), groupStatus.lastModifiedData());
             return params;
         }
 
@@ -83,22 +82,18 @@ public class GroupStatusDao extends NamedParameterJdbcDaoSupport {
         }
     }
 
-    @Required
     public void setUpsertGroupStatusQuery(final String upsertGroupStatusQuery) {
         this.upsertGroupStatusQuery = upsertGroupStatusQuery;
     }
 
-    @Required
     public void setLoadGroupsBlockedStatusQuery(final String loadGroupsBlockedStatusQuery) {
         this.loadGroupsBlockedStatusQuery = loadGroupsBlockedStatusQuery;
     }
 
-    @Required
     public void setDeleteGroupStatusQuery(final String deleteGroupStatusQuery) {
         this.deleteGroupStatusQuery = deleteGroupStatusQuery;
     }
 
-    @Required
     public void setLoadAllGroupsStatusesQuery(final String loadAllGroupsStatusesQuery) {
         this.loadAllGroupsStatusesQuery = loadAllGroupsStatusesQuery;
     }

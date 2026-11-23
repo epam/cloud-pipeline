@@ -38,9 +38,23 @@ The list **updates automatically** so you can see when something finishes starti
 
 ---
 
+## Folder opened on connect
+
+The remote window opens the folder in the run's **`CP_VSCODE_WORKSPACE_DIR`** parameter, for any user, if it is an absolute path to a folder that user can open. Set it at launch, or as a default parameter of a tool, for example to open a project folder in the image. Do not point it into a mounted data storage (under `/cloud-data`): the settings below do not apply inside it, so search there is very slow again.
+
+Otherwise, it opens the home folder of the user it connects as:
+
+- **The run owner** — the folder in the run's `OWNER_HOME` environment variable. If it is not set, or cannot be read, `/home/<user name>`.
+- **`root`** — `/root`.
+- **Any other user** (for example, on a shared run) — `/home/<user name>`.
+
+If `CP_VSCODE_WORKSPACE_DIR` cannot be opened, a warning says why, and the home folder opens.
+
+---
+
 ## Remote settings on connect
 
-The remote window opens your home folder on the run, and `~/cloud-data` there links to the mounted data storages. Searching them is very slow, so without extra settings a chat assistant (for example GitHub Copilot Chat) can wait for a very long time while it collects workspace context.
+By default, the remote window opens your home folder on the run, and `~/cloud-data` there links to the mounted data storages. Searching them is very slow, so without extra settings a chat assistant (for example GitHub Copilot Chat) can wait for a very long time while it collects workspace context.
 
 So on **Connect**, the extension adds these settings to the run's **Remote [SSH]** settings (`~/.vscode-server/data/Machine/settings.json`, or `~/.cursor-server/...` in Cursor):
 
@@ -58,3 +72,9 @@ So on **Connect**, the extension adds these settings to the run's **Remote [SSH]
 - `~/cloud-data` is hidden from the Explorer. The storages stay available in the terminal.
 - To change what is added, edit **`cloudPipeline.remoteMachineSettings.values`**. Set a key to `null` to skip it — for example `"search.followSymlinks": null`.
 - To turn this off, set **`cloudPipeline.remoteMachineSettings.enabled`** to `false`.
+
+---
+
+## Development
+
+Node 20 and `npm ci` in this directory. `npm run compile` builds the extension into `out/`, `npm test` builds it and runs the unit tests under `src/test/` with the Node test runner. A tested module must not import `vscode`, which is only available inside the editor.

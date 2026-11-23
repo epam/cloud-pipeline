@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
@@ -169,8 +170,10 @@ public class RunPermissionManager {
         }
         filter.setOwnershipFilter(authManager.getAuthorizedUser().toLowerCase());
         final boolean globalInheritPolicy = inheritPermissions();
+        final boolean pipelineReader = permissionsHelper.isScopedReader(AclClass.PIPELINE);
         filter.setAllowedPipelines(pipelineApiService.loadAllPipelinesWithoutVersion().stream()
-                .filter(pipeline -> findPipelineInheritPolicy(pipeline).orElse(globalInheritPolicy))
+                .filter(pipeline -> pipelineReader
+                        || findPipelineInheritPolicy(pipeline).orElse(globalInheritPolicy))
                 .map(BaseEntity::getId)
                 .collect(toList()));
     }
@@ -222,7 +225,7 @@ public class RunPermissionManager {
         final ContextualPreference visibilityPreference = preferenceManager.search(
                 Collections.singletonList(SystemPreferences.RUN_VISIBILITY_POLICY.getKey()));
         final RunVisibilityPolicy visibilityPolicy = Optional.ofNullable(visibilityPreference)
-                .map(ContextualPreference::getValue)
+                .map(ContextualPreference::value)
                 .filter(value -> EnumUtils.isValidEnum(RunVisibilityPolicy.class, value))
                 .map(RunVisibilityPolicy::valueOf)
                 .orElse(DEFAULT_POLICY);
@@ -230,8 +233,13 @@ public class RunPermissionManager {
     }
 
     private boolean pipelineInheritPermissions(final String permissionName, final Pipeline parent) {
+        // ROLE_PIPELINE_READER is allowed to view all runs of all pipelines, regardless of the visibility policy
+        if (permissionName.equals(AclPermission.READ_NAME) && permissionsHelper.isScopedReader(parent)) {
+            return true;
+        }
         return findPipelineInheritPolicy(parent)
-                .orElse(inheritPermissions() && permissionsHelper.isAllowed(permissionName, parent));
+                .orElse(inheritPermissions()
+                        && permissionsHelper.isAllowedIgnoringScopedReaderAndExecutor(permissionName, parent));
     }
 
     private Optional<Boolean> findPipelineInheritPolicy(final Pipeline parent) {

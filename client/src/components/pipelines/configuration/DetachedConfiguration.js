@@ -46,6 +46,7 @@ import {ItemTypes} from '../model/treeStructureFunctions';
 import HiddenObjects from '../../../utils/hidden-objects';
 import getPathParameters from '../browser/metadata-controls/get-path-parameters';
 import {applyCustomCapabilitiesParameters} from '../launch/form/utilities/run-capabilities';
+import refreshConfigurationParent from './utilities/refresh-configuration-parent';
 
 const DTS_ENVIRONMENT = 'DTS';
 
@@ -425,30 +426,6 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
     }
     return false;
   };
-
-  @computed
-  get selectedFireCloudMethod () {
-    if (this.selectedConfiguration) {
-      const configuration = this.selectedConfiguration;
-      if (configuration &&
-        configuration.methodName &&
-        configuration.methodSnapshot) {
-        const nameParts = configuration.methodName.split('/');
-        const configurationNameParts = configuration.methodConfigurationName
-          ? configuration.methodConfigurationName.split('/') : [];
-        return {
-          namespace: nameParts[0],
-          name: nameParts[1],
-          snapshot: configuration.methodSnapshot,
-          configuration: configurationNameParts.pop(),
-          configurationSnapshot: configuration.methodConfigurationSnapshot,
-          methodInputs: (configuration.methodInputs || []).map(i => i),
-          methodOutputs: (configuration.methodOutputs || []).map(o => o)
-        };
-      }
-    }
-    return undefined;
-  }
 
   getPipelines = () => {
     if (!this.props.pipelines.loaded || this.props.pipelines.error || !this.props.pipelines.value) {
@@ -887,6 +864,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
       this.props.configurationsCache.invalidateConfigurationCache(this.props.configurationId);
       hide();
       this.closeEditConfigurationForm();
+      refreshConfigurationParent(this.props.configurations.value, this.props);
       this.props.router.push(`/configuration/${this.props.configurationId}/${this.selectedConfigurationName}`);
     }
   };
@@ -911,9 +889,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
       this.props.configurationsCache.invalidateConfigurationCache(this.props.configurationId);
       hide();
       this.closeEditConfigurationForm();
-      if (this.props.onReloadTree) {
-        this.props.onReloadTree(!this.props.configurations.value.parent);
-      }
+      refreshConfigurationParent(this.props.configurations.value, this.props);
       return true;
     }
   };
@@ -929,17 +905,10 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
       hide();
       this.closeEditConfigurationForm();
       this.props.configurationsCache.invalidateConfigurationCache(this.props.configurationId);
-      const parentFolderId = this.props.configurations.value.parent
-        ? this.props.configurations.value.parent.id
-        : undefined;
-      if (parentFolderId) {
-        this.props.folders.invalidateFolder(parentFolderId);
-      } else {
-        this.props.pipelinesLibrary.invalidateCache();
-      }
-      if (this.props.onReloadTree) {
-        this.props.onReloadTree(!parentFolderId);
-      }
+      const parentFolderId = refreshConfigurationParent(
+        this.props.configurations.value,
+        this.props
+      );
       if (parentFolderId) {
         this.props.router.push(`/folder/${parentFolderId}`);
       } else {
@@ -954,7 +923,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
       this.setState(st, () => resolve());
     });
     try {
-      if (opts && !opts.isFireCloud) {
+      if (opts) {
         const {pipeline, version, configuration} = opts;
         const request = new PipelineConfigurations(pipeline.id, version);
         await request.fetch();
@@ -1114,7 +1083,6 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
               isDetachedConfiguration
               configurationId={this.props.configurationId}
               selectedPipelineParametersIsLoading={this.state.selectedPipelineParametersIsLoading}
-              fireCloudMethod={this.selectedFireCloudMethod}
               onModified={this.onConfigurationModified}
             />
           </Row>
