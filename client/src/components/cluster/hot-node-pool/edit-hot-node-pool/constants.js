@@ -73,5 +73,6 @@ export const CAPACITY_BLOCK_RESOURCE_TYPE_INSTANCE = 'INSTANCE';
 // AWS sells a block by the hour; the form asks for whole days, and one day is the floor.
 export const MIN_ML_BLOCK_DURATION_DAYS = 1;
 export const HOURS_PER_DAY = 24;
+export const SECONDS_PER_HOUR = 60 * 60;
 // A nodes count is typed digit by digit, so the search waits for the typing to settle.
 export const ML_BLOCK_OFFERINGS_FETCH_DELAY_MS = 500;

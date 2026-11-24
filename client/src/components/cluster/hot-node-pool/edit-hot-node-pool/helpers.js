@@ -23,6 +23,7 @@ import {
   DISK_MAX_SIZE,
   COUNT_MIN_SIZE,
   MODE_FUTURE_DATED,
+  MODE_ML_BLOCK,
   COMMITMENT_DATE_TIME_FORMAT,
   RESERVATION_COUNT_MIN_SIZE,
   SECONDS_PER_DAY,
@@ -30,6 +31,11 @@ import {
   MIN_RESERVATION_LEAD_DAYS,
   MAX_RESERVATION_LEAD_DAYS,
   RESERVATION_TYPE_FUTURE_DATED,
+  RESERVATION_TYPE_CAPACITY_BLOCK,
+  CAPACITY_BLOCK_RESOURCE_TYPE_INSTANCE,
+  MIN_ML_BLOCK_DURATION_DAYS,
+  HOURS_PER_DAY,
+  SECONDS_PER_HOUR,
   RESERVATION_STATUS_PENDING,
   RESERVATION_STATUS_APPROVED,
   RESERVATION_STATUS_REQUIRED_APPROVE,
@@ -67,6 +73,146 @@ export function arraysAreEqual (a, b) {
   return true;
 }
 
+// The two fields the offering search sends per candidate.
+function isCompleteMlBlockCandidate (candidate) {
+  const {instanceType, instanceCount} = candidate || {};
+  return Boolean((instanceType || '').trim()) &&
+    Number.isInteger(Number(instanceCount)) &&
+    Number(instanceCount) >= 1;
+}
+
+export function getCompleteMlBlockCandidates (candidates) {
+  return (candidates || []).filter(isCompleteMlBlockCandidate);
+}
+
+// One AWS call per candidate, but a flat response list - `getOfferingsForCandidate`
+// attributes a result back to its row by this same `instanceType` string.
+export function buildCapacityBlockOfferingRequest (values) {
+  const {
+    region,
+    commitmentStart,
+    commitmentEnd,
+    commitmentDurationDays,
+    mlBlockCandidates
+  } = values;
+  const request = {
+    regionId: Number(region),
+    resourceType: CAPACITY_BLOCK_RESOURCE_TYPE_INSTANCE,
+    candidates: getCompleteMlBlockCandidates(mlBlockCandidates)
+      .map(({instanceType, instanceCount}) => ({
+        instanceType,
+        instanceCount: Number(instanceCount)
+      })),
+    startDateRange: moment(commitmentStart, COMMITMENT_DATE_TIME_FORMAT, true)
+      .format(COMMITMENT_DATE_TIME_FORMAT),
+    capacityDurationHours: Number(commitmentDurationDays) * HOURS_PER_DAY
+  };
+  const end = moment(commitmentEnd, COMMITMENT_DATE_TIME_FORMAT, true);
+  if (commitmentEnd && end.isValid()) {
+    request.endDateRange = end.format(COMMITMENT_DATE_TIME_FORMAT);
+  }
+  return request;
+}
+
+export function canSearchCapacityBlockOfferings (values) {
+  const {region, commitmentStart, commitmentDurationDays, mlBlockCandidates} = values;
+  if (!region) {
+    return false;
+  }
+  const start = moment(commitmentStart, COMMITMENT_DATE_TIME_FORMAT, true);
+  if (!commitmentStart || !start.isValid()) {
+    return false;
+  }
+  const durationDays = Number(commitmentDurationDays);
+  if (!Number.isInteger(durationDays) || durationDays < MIN_ML_BLOCK_DURATION_DAYS) {
+    return false;
+  }
+  return getCompleteMlBlockCandidates(mlBlockCandidates).length > 0;
+}
+
+export function getOfferingsForCandidate (offerings, candidate) {
+  const type = ((candidate || {}).instanceType || '').toLowerCase();
+  if (!type) {
+    return [];
+  }
+  return (offerings || []).filter(o => (o.instanceType || '').toLowerCase() === type);
+}
+
+export function getSelectedOffering (values) {
+  const {mlBlockOfferings, mlBlockOfferingId} = values;
+  if (!mlBlockOfferingId) {
+    return undefined;
+  }
+  return (mlBlockOfferings || []).find(o => o.offeringId === mlBlockOfferingId);
+}
+
+// The catalogue reports memory in MiB; this line shows it in GB.
+export function formatCapacityBlockInstanceType (info) {
+  const {instanceType, vCPU, memoryInMiB, gpuCount, gpuDeviceName} = info || {};
+  const parts = [instanceType];
+  if (gpuCount) {
+    parts.push(gpuDeviceName ? `${gpuCount} x ${gpuDeviceName}` : `${gpuCount} GPU`);
+  }
+  if (vCPU !== undefined && vCPU !== null) {
+    parts.push(`${vCPU} vCPU`);
+  }
+  if (memoryInMiB !== undefined && memoryInMiB !== null) {
+    parts.push(`${(memoryInMiB / 1024).toFixed(1)} GB`);
+  }
+  return parts.filter(Boolean).join(', ');
+}
+
+// Shared by the future-dated and ML Block branches below, which differ only in the
+// minimum duration and whether a lead-time window applies to the start date.
+function getCommitmentWindowErrors (values, minDurationDays, leadTime) {
+  const {commitmentStart, commitmentEnd, commitmentDurationDays} = values;
+  const start = moment(commitmentStart, COMMITMENT_DATE_TIME_FORMAT, true);
+  const end = moment(commitmentEnd, COMMITMENT_DATE_TIME_FORMAT, true);
+  const now = moment();
+  let commitmentStartError, commitmentEndError, commitmentDurationError;
+  if (!commitmentStart || !start.isValid()) {
+    commitmentStartError = 'Search from date is required';
+  } else if (!start.isAfter(now)) {
+    commitmentStartError = 'Search from date should be in the future';
+  } else if (leadTime) {
+    // Matches `ChronoUnit.DAYS.between` on the backend: `Math.floor` on the
+    // fractional diff, not a plain integer `diff(now, 'days')` (which truncates
+    // toward zero and happens to agree here, but is not the same operation).
+    const leadDays = Math.floor(start.diff(now, 'days', true));
+    if (leadDays < leadTime.min || leadDays > leadTime.max) {
+      commitmentStartError = 'Search from date should be between ' +
+        `${leadTime.min} and ${leadTime.max} days from now`;
+    }
+  }
+  if (!commitmentEnd || !end.isValid()) {
+    commitmentEndError = 'Search until date is required';
+  } else if (start.isValid() && !end.isAfter(start)) {
+    commitmentEndError = 'Search until date should be after the search from date';
+  }
+  if (
+    commitmentDurationDays === undefined ||
+    commitmentDurationDays === null ||
+    commitmentDurationDays === '' ||
+    Number.isNaN(Number(commitmentDurationDays)) ||
+    Number(commitmentDurationDays) <= 0
+  ) {
+    commitmentDurationError = 'Duration should be a positive number of days';
+  } else if (!Number.isInteger(Number(commitmentDurationDays))) {
+    commitmentDurationError = 'Duration should be a whole number of days';
+  } else if (Number(commitmentDurationDays) < minDurationDays) {
+    commitmentDurationError = 'Duration should be at least ' +
+      `${minDurationDays} day${minDurationDays === 1 ? '' : 's'}`;
+  } else if (
+    start.isValid() &&
+    end.isValid() &&
+    end.isAfter(start) &&
+    end.diff(start, 'seconds') < Number(commitmentDurationDays) * SECONDS_PER_DAY
+  ) {
+    commitmentDurationError = 'Duration should fit between "Search from" and "Search until"';
+  }
+  return {commitmentStartError, commitmentEndError, commitmentDurationError};
+}
+
 export function getValidationErrors (values) {
   const {
     disk,
@@ -85,9 +231,7 @@ export function getValidationErrors (values) {
     scaleStep,
     labels = [],
     mode,
-    commitmentStart,
-    commitmentEnd,
-    commitmentDurationDays,
+    mlBlockCandidates,
     isExistingReservation
   } = values;
   let diskError,
@@ -106,7 +250,9 @@ export function getValidationErrors (values) {
     labelsError,
     commitmentStartError,
     commitmentEndError,
-    commitmentDurationError;
+    commitmentDurationError,
+    mlBlockCandidatesError,
+    mlBlockOfferingError;
   if (
     Number.isNaN(Number(disk)) ||
     Number(disk) < DISK_MIN_SIZE ||
@@ -211,49 +357,11 @@ export function getValidationErrors (values) {
     // the form intentionally leaves empty for an existing reservation pool (the
     // requested duration is never echoed back by GET).
     if (!isExistingReservation) {
-      const start = moment(commitmentStart, COMMITMENT_DATE_TIME_FORMAT, true);
-      const end = moment(commitmentEnd, COMMITMENT_DATE_TIME_FORMAT, true);
-      const now = moment();
-      if (!commitmentStart || !start.isValid()) {
-        commitmentStartError = 'Search from date is required';
-      } else if (!start.isAfter(now)) {
-        commitmentStartError = 'Search from date should be in the future';
-      } else {
-        // Matches `ChronoUnit.DAYS.between` on the backend: `Math.floor` on the
-        // fractional diff, not a plain integer `diff(now, 'days')` (which truncates
-        // toward zero and happens to agree here, but is not the same operation).
-        const leadDays = Math.floor(start.diff(now, 'days', true));
-        if (leadDays < MIN_RESERVATION_LEAD_DAYS || leadDays > MAX_RESERVATION_LEAD_DAYS) {
-          commitmentStartError = 'Search from date should be between ' +
-            `${MIN_RESERVATION_LEAD_DAYS} and ${MAX_RESERVATION_LEAD_DAYS} days from now`;
-        }
-      }
-      if (!commitmentEnd || !end.isValid()) {
-        commitmentEndError = 'Search until date is required';
-      } else if (start.isValid() && !end.isAfter(start)) {
-        commitmentEndError = 'Search until date should be after the search from date';
-      }
-      if (
-        commitmentDurationDays === undefined ||
-        commitmentDurationDays === null ||
-        commitmentDurationDays === '' ||
-        Number.isNaN(Number(commitmentDurationDays)) ||
-        Number(commitmentDurationDays) <= 0
-      ) {
-        commitmentDurationError = 'Duration should be a positive number of days';
-      } else if (!Number.isInteger(Number(commitmentDurationDays))) {
-        commitmentDurationError = 'Duration should be a whole number of days';
-      } else if (Number(commitmentDurationDays) < MIN_COMMITMENT_DURATION_DAYS) {
-        commitmentDurationError = 'Duration should be at least ' +
-          `${MIN_COMMITMENT_DURATION_DAYS} days`;
-      } else if (
-        start.isValid() &&
-        end.isValid() &&
-        end.isAfter(start) &&
-        end.diff(start, 'seconds') < Number(commitmentDurationDays) * SECONDS_PER_DAY
-      ) {
-        commitmentDurationError = 'Duration should fit between "Search from" and "Search until"';
-      }
+      ({commitmentStartError, commitmentEndError, commitmentDurationError} =
+        getCommitmentWindowErrors(values, MIN_COMMITMENT_DURATION_DAYS, {
+          min: MIN_RESERVATION_LEAD_DAYS,
+          max: MAX_RESERVATION_LEAD_DAYS
+        }));
     }
     // The backend enforces count >= 1 on the reservation request, but it then stores
     // the pool with count 0 until the reservation is activated - so an existing
@@ -262,6 +370,29 @@ export function getValidationErrors (values) {
     if (!isExistingReservation && (Number.isNaN(Number(count)) ||
         Number(count) < RESERVATION_COUNT_MIN_SIZE)) {
       countError = 'Count should be at least 1 for a Future dated pool';
+    }
+  }
+  // Nothing about a purchased block is editable, so none of this runs once the pool
+  // already holds one.
+  if (mode === MODE_ML_BLOCK && !isExistingReservation) {
+    ({commitmentStartError, commitmentEndError, commitmentDurationError} =
+      getCommitmentWindowErrors(values, MIN_ML_BLOCK_DURATION_DAYS));
+    const candidates = mlBlockCandidates || [];
+    const hasIncompleteTypedRow = candidates.some(c =>
+      (c.instanceType || '').trim() && !isCompleteMlBlockCandidate(c)
+    );
+    if (hasIncompleteTypedRow) {
+      mlBlockCandidatesError = 'Specify the nodes count for every instance type';
+    } else if (getCompleteMlBlockCandidates(candidates).length === 0) {
+      mlBlockCandidatesError = 'Add at least one instance type';
+    }
+    if (!getSelectedOffering(values)) {
+      mlBlockOfferingError = 'Select one of the offerings';
+    }
+    // `count`/`instanceType` are filled from the selected offering, so this only
+    // fails while nothing is selected.
+    if (Number.isNaN(Number(count)) || Number(count) < RESERVATION_COUNT_MIN_SIZE) {
+      countError = 'Count should be at least 1 for an ML Block pool';
     }
   }
   const labelsNames = [...new Set(labels.map((lb) => (lb.name || '').trim().toLowerCase()))];
@@ -286,7 +417,9 @@ export function getValidationErrors (values) {
     !labelsError &&
     !commitmentStartError &&
     !commitmentEndError &&
-    !commitmentDurationError;
+    !commitmentDurationError &&
+    !mlBlockCandidatesError &&
+    !mlBlockOfferingError;
   return {
     valid,
     errors: {
@@ -306,7 +439,9 @@ export function getValidationErrors (values) {
       labelsError,
       commitmentStart: commitmentStartError,
       commitmentEnd: commitmentEndError,
-      commitmentDurationDays: commitmentDurationError
+      commitmentDurationDays: commitmentDurationError,
+      mlBlockCandidates: mlBlockCandidatesError,
+      mlBlockOffering: mlBlockOfferingError
     }
   };
 }
@@ -372,6 +507,21 @@ export function isModified (values) {
 // conversion happens exactly once, here, on the way out. `instancePlatform`/`originId`
 // are deliberately not sent (the backend defaults `instancePlatform` to `Linux/UNIX`).
 export function buildCapacityReservationRequest (values) {
+  const {mode} = values;
+  if (mode === MODE_ML_BLOCK) {
+    // The offering has already fixed the window, so its own dates go out verbatim -
+    // `CapacityReservationService.build()` copies them straight into the reservation.
+    const offering = getSelectedOffering(values) || {};
+    const {offeringId, availabilityZone, startDate, endDate, capacityDurationHours} = offering;
+    return {
+      reservationType: RESERVATION_TYPE_CAPACITY_BLOCK,
+      capacityBlockOfferingId: offeringId,
+      availabilityZone,
+      requestedStartDate: startDate,
+      requestedEndDate: endDate,
+      commitmentDuration: Number(capacityDurationHours) * SECONDS_PER_HOUR
+    };
+  }
   const {commitmentStart, commitmentEnd, commitmentDurationDays} = values;
   return {
     reservationType: RESERVATION_TYPE_FUTURE_DATED,
@@ -439,7 +589,7 @@ export function buildPoolPayload (values) {
   // only reads it on create — its UPDATE statement does not include the `pool_type`
   // column — so sending it unconditionally can never overwrite an existing pool's type.
   payload.poolType = poolType;
-  if (mode === MODE_FUTURE_DATED) {
+  if (mode === MODE_FUTURE_DATED || mode === MODE_ML_BLOCK) {
     // `NodePoolManager.update()` never reads `capacityReservationRequest` on an
     // existing reservation pool — the window cannot be changed through this
     // endpoint at all (a separate "extend" flow, out of scope) — so it is only ever
