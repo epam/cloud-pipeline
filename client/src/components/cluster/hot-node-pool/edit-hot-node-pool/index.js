@@ -481,11 +481,16 @@ class EditHotNodePool extends React.Component {
     }
   };
 
-  // Follows `updateInstanceTypes`'s own shape: applies a response only while the region
-  // and mode it was fetched for still match the current state.
+  // Follows `updateInstanceTypes`'s own shape, but never for an existing reservation pool:
+  // its candidates control never renders, so nothing would consume the catalogue.
   updateMlBlockInstanceTypes = () => {
-    const {mode, region, mlBlockInstanceTypesRegion} = this.state;
-    if (mode !== MODE_ML_BLOCK || !region || region === mlBlockInstanceTypesRegion) {
+    const {mode, region, mlBlockInstanceTypesRegion, isExistingReservation} = this.state;
+    if (
+      mode !== MODE_ML_BLOCK ||
+      !region ||
+      region === mlBlockInstanceTypesRegion ||
+      isExistingReservation
+    ) {
       return;
     }
     this.setState({

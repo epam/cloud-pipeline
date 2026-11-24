@@ -545,7 +545,7 @@ test(
     // caller is the authority on which modes exist, so a caller that offers ML Block (as
     // `hot-node-pool/index.js` now does) is modelled explicitly here too. A decoy record for
     // another pool id proves the match is by id, not merely "the only record given".
-    await renderPool({
+    const {api} = await renderPool({
       pool: reservationPool({id: 54}),
       allowedModes: ['DEFAULT', 'FUTURE_DATED', 'ML_BLOCK'],
       reservations: [
@@ -560,6 +560,11 @@ test(
     // as a future-dated pool's does, with no candidates control at all.
     expect(screen.getByText('Reservation window:')).toBeInTheDocument();
     expect(screen.queryByText('Instance types:')).not.toBeInTheDocument();
+    // Nothing on screen can consume either: the catalogue has no candidates control to
+    // feed, and `canSearchCapacityBlockOfferings` has no candidate to search with.
+    expect(api.calls.some(c => /capacity-reservation\/instance-types/.test(c.path)))
+      .toBe(false);
+    expect(offeringsCalls(api)).toHaveLength(0);
   }
 );
 
