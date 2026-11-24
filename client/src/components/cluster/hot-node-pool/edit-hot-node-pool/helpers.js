@@ -163,9 +163,9 @@ export function formatCapacityBlockInstanceType (info) {
   return parts.filter(Boolean).join(', ');
 }
 
-// Shared by the future-dated and ML Block branches below, which differ only in the
-// minimum duration and whether a lead-time window applies to the start date.
-function getCommitmentWindowErrors (values, minDurationDays, leadTime) {
+// Shared by the future-dated and ML Block branches below, which differ in the minimum
+// duration, the lead-time window, and whether an end of window is required at all.
+function getCommitmentWindowErrors (values, minDurationDays, leadTime, endRequired = true) {
   const {commitmentStart, commitmentEnd, commitmentDurationDays} = values;
   const start = moment(commitmentStart, COMMITMENT_DATE_TIME_FORMAT, true);
   const end = moment(commitmentEnd, COMMITMENT_DATE_TIME_FORMAT, true);
@@ -185,7 +185,11 @@ function getCommitmentWindowErrors (values, minDurationDays, leadTime) {
         `${leadTime.min} and ${leadTime.max} days from now`;
     }
   }
-  if (!commitmentEnd || !end.isValid()) {
+  if (!commitmentEnd) {
+    if (endRequired) {
+      commitmentEndError = 'Search until date is required';
+    }
+  } else if (!end.isValid()) {
     commitmentEndError = 'Search until date is required';
   } else if (start.isValid() && !end.isAfter(start)) {
     commitmentEndError = 'Search until date should be after the search from date';
@@ -377,7 +381,7 @@ export function getValidationErrors (values) {
   // already holds one.
   if (mode === MODE_ML_BLOCK && !isExistingReservation) {
     ({commitmentStartError, commitmentEndError, commitmentDurationError} =
-      getCommitmentWindowErrors(values, MIN_ML_BLOCK_DURATION_DAYS));
+      getCommitmentWindowErrors(values, MIN_ML_BLOCK_DURATION_DAYS, undefined, false));
     const candidates = mlBlockCandidates || [];
     const hasIncompleteTypedRow = candidates.some(c =>
       (c.instanceType || '').trim() && !isCompleteMlBlockCandidate(c)

@@ -1213,6 +1213,9 @@ async function renderMlBlockPool (props = {}) {
   );
   await waitFor(() => expect(api.calls.length).toBeGreaterThan(0));
   await flushPromises();
+  // Antd's Modal can still be clearing a previous test's portal node on its own real
+  // timer - settle on one "Mode:" before a caller queries by text.
+  await waitFor(() => expect(screen.getAllByText('Mode:')).toHaveLength(1));
   return {api, instance: () => wrapper.wrappedInstance};
 }
 
@@ -1509,6 +1512,101 @@ test('CREATE on a complete ML Block pool sends the capacity-block payload helper
     expect(payload.instanceType).toBe(offering.instanceType);
     expect(payload.count).toBe(offering.instanceCount);
   });
+
+// `updateInstanceTypes`'s SPOT auto-correction only skipped future-dated mode, so a
+// race landing after a switch to ML Block still picks SPOT, a type the form cannot fix.
+test(
+  'switching to ML Block before the allowed-types response settles never auto-selects Spot',
+  async () => {
+    const api = stubApi();
+    let resolveAllowed;
+    api.handle(/\/cluster\/instance\/allowed/, () => new Promise((resolve) => {
+      resolveAllowed = () => resolve({status: 'OK', payload: instanceAllowedPayload});
+    }));
+    let wrapper;
+    renderWithStores(
+      <EditHotNodePool
+        ref={(r) => { wrapper = r; }}
+        visible
+        disabled={false}
+        currentUserName="USER1"
+        allowedModes={['DEFAULT', 'ML_BLOCK']}
+      />,
+      stores()
+    );
+    await waitFor(() => expect(api.calls.length).toBeGreaterThan(0));
+    // Antd's Modal can still be clearing a previous test's portal node on its own real
+    // timer - settle on one "Mode:" before `row('Mode:')` queries by text.
+    await waitFor(() => expect(screen.getAllByText('Mode:')).toHaveLength(1));
+
+    await click(within(row('Mode:')).getByRole('combobox'));
+    await click(screen.getByText('ML Block'));
+
+    resolveAllowed();
+    await flushPromises();
+
+    expect(wrapper.wrappedInstance.state.spot).not.toBe('SPOT');
+  }
+);
+
+// The selection stayed in state until the next search's response, at least a debounce
+// later - long enough for CREATE to still buy it after its own row was deleted.
+test(
+  'deleting the row an offering was selected from clears the selection immediately, not ' +
+ 'only once the next search settles',
+  async () => {
+    const onSave = fn();
+    const {instance} = await renderMlBlockPoolWithOffering({onSave});
+    const [selectedCandidate] = instance().state.mlBlockCandidates;
+    expect(instance().state.mlBlockOfferingId).toBeDefined();
+
+    // A second, independently complete row, so removing the first still leaves a
+    // search worth making rather than the already-correct empty-candidates branch.
+    await act(() => instance().onChangeField('mlBlockCandidates', {action: 'add'}));
+    const addedId = instance().state.mlBlockCandidates
+      .find(c => c.id !== selectedCandidate.id).id;
+    await act(() => instance().onChangeField(
+      'mlBlockCandidates',
+      {action: 'update', id: addedId, field: 'instanceType', value: 'p4d.24xlarge'}
+    ));
+    await act(() => instance().onChangeField(
+      'mlBlockCandidates', {action: 'update', id: addedId, field: 'instanceCount', value: 1}
+    ));
+
+    await act(() => instance().onChangeField(
+      'mlBlockCandidates', {action: 'remove', id: selectedCandidate.id}
+    ));
+
+    expect(instance().state.mlBlockOfferingId).toBeUndefined();
+    expect(instance().state.instanceType).toBeUndefined();
+    expect(instance().state.count).toBeUndefined();
+
+    await click(screen.getByRole('button', {name: 'CREATE'}));
+    expect(onSave).not.toHaveBeenCalled();
+  }
+);
+
+// The `update` branch scheduled a search even when the complete candidates were
+// unchanged (a still-incomplete row staying incomplete), firing a duplicate request.
+test(
+  'an edit that leaves the complete candidates unchanged does not fire a duplicate search',
+  async () => {
+    const {api, instance} = await renderMlBlockPoolWithOffering();
+    const callsBefore = offeringsCalls(api).length;
+    const selectedBefore = instance().state.mlBlockOfferingId;
+
+    await act(() => instance().onChangeField('mlBlockCandidates', {action: 'add'}));
+    const added = instance().state.mlBlockCandidates.find(c => c.instanceType === undefined);
+    await act(() => instance().onChangeField(
+      'mlBlockCandidates', {action: 'update', id: added.id, field: 'instanceCount', value: 3}
+    ));
+
+    await new Promise((resolve) => setTimeout(resolve, ML_BLOCK_SEARCH_TIMEOUT));
+
+    expect(offeringsCalls(api).length).toBe(callsBefore);
+    expect(instance().state.mlBlockOfferingId).toBe(selectedBefore);
+  }
+);
 
 test('switching ML Block back to Default leaves a working Default form', async () => {
   const {instance} = await renderMlBlockPool();

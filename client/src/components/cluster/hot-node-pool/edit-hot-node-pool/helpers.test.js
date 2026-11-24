@@ -630,14 +630,23 @@ describe('getValidationErrors', () => {
       expect(errors.commitmentStart).toBe('Search from date should be in the future');
     });
 
-    it('requires an end date after the start date', () => {
-      const {errors} = getValidationErrors(mlBlockValues({commitmentEnd: undefined}));
-      expect(errors.commitmentEnd).toBe('Search until date is required');
-      const {errors: beforeStart} = getValidationErrors(mlBlockValues({
+    // The search never needs an end of window, and the purchase carries the offering's
+    // own - requiring it here only blocked CREATE on a field nothing downstream reads.
+    it('Search until is optional: the form is valid and the search omits endDateRange', () => {
+      const values = mlBlockValues({commitmentEnd: undefined});
+      const {valid, errors} = getValidationErrors(values);
+      expect(errors.commitmentEnd).toBeUndefined();
+      expect(valid).toBe(true);
+      const request = buildCapacityBlockOfferingRequest(values);
+      expect(Object.keys(request)).not.toContain('endDateRange');
+    });
+
+    it('when given, still requires the end date to be after the start date', () => {
+      const {errors} = getValidationErrors(mlBlockValues({
         commitmentStart: inDays(10),
         commitmentEnd: inDays(5)
       }));
-      expect(beforeStart.commitmentEnd)
+      expect(errors.commitmentEnd)
         .toBe('Search until date should be after the search from date');
     });
 

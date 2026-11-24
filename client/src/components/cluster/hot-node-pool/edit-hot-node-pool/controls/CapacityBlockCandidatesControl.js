@@ -30,6 +30,9 @@ import styles from '../../edit-hot-node-pool.css';
 // it - the same rule the search itself uses. "No offerings" is gated on `offeringsSearched`
 // rather than on `offerings` being non-empty: a settled search that matched nothing and a
 // search that has not run yet both leave the list empty, and only the flag tells them apart.
+//
+// The endpoint can return more than one offering per candidate (every AWS match, not just
+// the nearest), so one offering keeps the row as the band; several make each card its own.
 function CapacityBlockCandidatesControl ({
   candidates,
   instanceTypes,
@@ -54,9 +57,8 @@ function CapacityBlockCandidatesControl ({
   const addDisabled = disabled || instanceTypesPending || Boolean(instanceTypesError);
 
   // The search covers every complete row at once, so its pending/error state is shown
-  // once for the whole control rather than repeated in every row's own right half. Cards
-  // are plain (not `interactive`): the row below is the selectable unit now.
-  const renderRowOfferings = (row, rowOfferings) => {
+  // once for the whole control rather than repeated in every row's own right half.
+  const renderRowOfferings = (row, rowOfferings, multipleOfferings) => {
     if (!completeIds.includes(row.id) || offeringsPending || offeringsError) {
       return null;
     }
@@ -64,7 +66,14 @@ function CapacityBlockCandidatesControl ({
       return offeringsSearched ? <span>No offerings</span> : null;
     }
     return rowOfferings.map((offering) => (
-      <CapacityBlockOfferingCard key={offering.offeringId} offering={offering} />
+      <CapacityBlockOfferingCard
+        key={offering.offeringId}
+        offering={offering}
+        interactive={multipleOfferings}
+        selected={multipleOfferings && offering.offeringId === selectedOfferingId}
+        disabled={disabled || readOnly}
+        onSelect={onSelectOffering}
+      />
     ));
   };
 
@@ -78,10 +87,10 @@ function CapacityBlockCandidatesControl ({
     const availableTypes = (instanceTypes || [])
       .filter(info => !usedTypes.includes((info.instanceType || '').toLowerCase()));
     const rowOfferings = getOfferingsForCandidate(offerings, row);
-    // The endpoint returns at most one offering per candidate; a row that somehow gets
-    // more still renders every one of them, but selecting the row picks the first.
     const hasOffering = rowOfferings.length > 0;
-    const canSelectRow = hasOffering && !disabled && !readOnly;
+    const multipleOfferings = rowOfferings.length > 1;
+    // A single offering keeps the row as the band; several make each card its own.
+    const canSelectRow = hasOffering && !multipleOfferings && !disabled && !readOnly;
     const rowSelected = hasOffering &&
       rowOfferings.some(offering => offering.offeringId === selectedOfferingId);
     const selectRow = () => {
@@ -89,14 +98,14 @@ function CapacityBlockCandidatesControl ({
         onSelectOffering(rowOfferings[0].offeringId);
       }
     };
-    const onRowKeyDown = (event) => {
+    const onOfferingAreaKeyDown = (event) => {
       if (canSelectRow && (event.key === 'Enter' || event.key === ' ')) {
         event.preventDefault();
         selectRow();
       }
     };
-    // The row owns the click; the inputs swallow their own so a click or key press
-    // there never also selects the row.
+    // The row owns the mouse click, with no role of its own - a Select/InputNumber
+    // nested inside a role="button" row is interactive-inside-interactive.
     const stopBubble = (event) => event.stopPropagation();
     return (
       <div
@@ -109,10 +118,7 @@ function CapacityBlockCandidatesControl ({
             'cp-outline-bordered': rowSelected
           }
         )}
-        role={canSelectRow ? 'button' : undefined}
-        tabIndex={canSelectRow ? 0 : undefined}
         onClick={canSelectRow ? selectRow : undefined}
-        onKeyDown={canSelectRow ? onRowKeyDown : undefined}
       >
         <div
           className={styles.capacityBlockCandidateInputs}
@@ -156,8 +162,13 @@ function CapacityBlockCandidatesControl ({
             )
           }
         </div>
-        <div className={styles.capacityBlockCandidateOfferings}>
-          {renderRowOfferings(row, rowOfferings)}
+        <div
+          className={styles.capacityBlockCandidateOfferings}
+          role={canSelectRow ? 'button' : undefined}
+          tabIndex={canSelectRow ? 0 : undefined}
+          onKeyDown={canSelectRow ? onOfferingAreaKeyDown : undefined}
+        >
+          {renderRowOfferings(row, rowOfferings, multipleOfferings)}
         </div>
       </div>
     );

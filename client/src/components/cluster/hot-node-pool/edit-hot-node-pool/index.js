@@ -568,8 +568,13 @@ class EditHotNodePool extends React.Component {
     }
     this.setState({
       mlBlockOfferingsPending: true,
-      mlBlockOfferingsSearched: false
-    });
+      mlBlockOfferingsSearched: false,
+      // Dropped now, not once this search's response lands at least a debounce later -
+      // closing the window where CREATE could still buy it for a row already changed.
+      mlBlockOfferingId: undefined,
+      instanceType: undefined,
+      count: undefined
+    }, this.onChange);
     this.mlBlockOfferingsTimer = setTimeout(() => {
       this.mlBlockOfferingsTimer = undefined;
       this.runMlBlockOfferingsSearch(sequence);
@@ -668,13 +673,9 @@ class EditHotNodePool extends React.Component {
                 // no longer offers it. Silently swapping it in would send a changed
                 // `priceType` on SAVE and the backend would reject it.
                 if (!isExistingReservation && !(new Set(priceTypes)).has(spot)) {
-                  // A future-dated pool is a capacity reservation and `NodePoolValidator`
-                  // rejects a SPOT price type for one, so the auto-picked default must
-                  // skip it too — otherwise a forced-future-dated create, or a
-                  // future-dated create before a region is chosen, would silently
-                  // default to a price type the form never offers and the backend would
-                  // reject on CREATE.
-                  spot = mode === MODE_FUTURE_DATED
+                  // `NodePoolValidator` rejects SPOT for either reservation mode, so
+                  // the auto-picked default must skip it there too.
+                  spot = (mode === MODE_FUTURE_DATED || mode === MODE_ML_BLOCK)
                     ? (priceTypes.find(p => !/^spot$/i.test(p)) || priceTypes[0])
                     : priceTypes[0];
                 }
@@ -885,13 +886,19 @@ class EditHotNodePool extends React.Component {
       });
       return;
     }
+    const completeBefore = getCompleteMlBlockCandidates(mlBlockCandidates);
     mlBlockCandidates.splice(index, 1, {
       ...mlBlockCandidates[index],
       [action.field]: action.value
     });
+    const completeAfter = getCompleteMlBlockCandidates(mlBlockCandidates);
     this.setState({mlBlockCandidates, touched}, () => {
       this.onChange();
-      this.scheduleMlBlockOfferingsSearch();
+      // An edit that leaves the complete candidates unchanged would only repeat the
+      // same request - a still-incomplete row staying incomplete, say.
+      if (JSON.stringify(completeBefore) !== JSON.stringify(completeAfter)) {
+        this.scheduleMlBlockOfferingsSearch();
+      }
     });
   };
 
