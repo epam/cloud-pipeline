@@ -31,8 +31,8 @@ function hasBlanketManageRights (user) {
 // capacity reservation (`#vo.capacityReservationRequest != null`) - never "every
 // authenticated user", which is what this used to assume. A user with none of the three
 // gets a 403 from the backend on create, so the "+ Create" button must not be shown to
-// them; the reservation conjunct is what `canCreateAnyMode` below honours, by forcing
-// that caller's Create into future dated mode.
+// them; the reservation conjunct is what `canCreateAnyMode` below honours, by offering that
+// caller only the two reservation modes on Create, future dated the default of the two.
 function canCreatePools (user) {
   return hasBlanketManageRights(user) || isNodePoolManager(user);
 }
@@ -67,7 +67,7 @@ export function getPoolPermissions (authenticatedUserInfo) {
   const create = canCreatePools(user);
   return {
     canManagePools: blanketManager, // open / edit / remove any pool outright
-    canCreateAnyMode: blanketManager, // choose between Default and future-dated on create
+    canCreateAnyMode: blanketManager, // choose among Default, future-dated and ML Block
     canCreate: create,
     readOnly: !blanketManager
   };

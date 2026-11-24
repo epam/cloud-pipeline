@@ -45,7 +45,8 @@ import {
   POOL_TYPE_STANDARD,
   POOL_TYPE_SHAREABLE,
   SECONDS_PER_DAY,
-  ML_BLOCK_OFFERINGS_FETCH_DELAY_MS
+  ML_BLOCK_OFFERINGS_FETCH_DELAY_MS,
+  RESERVATION_TYPE_CAPACITY_BLOCK
 } from './constants';
 import styles from '../edit-hot-node-pool.css';
 
@@ -260,9 +261,6 @@ class EditHotNodePool extends React.Component {
       const {
         scheduleEntries: schedule = []
       } = scheduleObj;
-      // `isCapacityReservation` is the backend entity's own flag and the only
-      // reliable signal that a loaded pool is a reservation pool.
-      const mode = isCapacityReservation ? MODE_FUTURE_DATED : MODE_DEFAULT;
       // `poolType` applies to every pool, not only a future-dated one, so it is read
       // straight off the pool regardless of mode: it is a validated passthrough
       // (the wire value and the client constant are the same literal).
@@ -277,6 +275,13 @@ class EditHotNodePool extends React.Component {
       const matchedReservation = isCapacityReservation && reservations
         ? reservations.find(r => r.nodePoolId === pool.id)
         : undefined;
+      const isCapacityBlockReservation = matchedReservation &&
+        matchedReservation.reservationType === RESERVATION_TYPE_CAPACITY_BLOCK;
+      // The matched record's own `reservationType` tells the two reservation modes apart;
+      // future-dated stays the fallback with no record matched.
+      const mode = isCapacityReservation
+        ? (isCapacityBlockReservation ? MODE_ML_BLOCK : MODE_FUTURE_DATED)
+        : MODE_DEFAULT;
       this.setState({
         mode,
         poolType,

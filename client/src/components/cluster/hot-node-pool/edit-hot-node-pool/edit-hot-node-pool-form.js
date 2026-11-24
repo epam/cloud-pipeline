@@ -201,7 +201,7 @@ function EditHotNodePoolForm ({
   mlBlockOfferingId,
   onChange
 }) {
-  const modes = allowedModes && allowedModes.length > 0
+  const providedModes = allowedModes && allowedModes.length > 0
     ? allowedModes
     : [MODE_DEFAULT, MODE_FUTURE_DATED];
   const {
@@ -229,11 +229,18 @@ function EditHotNodePoolForm ({
     commitmentDurationDays,
     mlBlockCandidates
   } = values;
-  const futureDated = (mode || MODE_DEFAULT) === MODE_FUTURE_DATED;
-  const mlBlock = mode === MODE_ML_BLOCK;
+  const normalizedMode = mode || MODE_DEFAULT;
+  const futureDated = normalizedMode === MODE_FUTURE_DATED;
+  const mlBlock = normalizedMode === MODE_ML_BLOCK;
   // Future dated and ML Block both reserve an absolute window rather than Default
   // mode's weekly schedule, so most of the section below keys off either.
   const reservation = futureDated || mlBlock;
+  // A loaded pool's own mode is not always one `allowedModes` offers (a DEFAULT pool a
+  // NODE_POOL_MANAGER owns, with only the two reservation modes to create with) - without it,
+  // the Select shows the raw value instead of its label.
+  const modes = providedModes.includes(normalizedMode)
+    ? providedModes
+    : [...providedModes, normalizedMode];
   return (
     <div>
       <StringInput
@@ -254,7 +261,7 @@ function EditHotNodePoolForm ({
         modes.length > 1 ? (
           <ModeControl
             modes={modes}
-            value={mode || MODE_DEFAULT}
+            value={normalizedMode}
             disabled={disabled || readOnly}
             hint={hints.modeHint}
             onChange={value => onChange('mode', value)}

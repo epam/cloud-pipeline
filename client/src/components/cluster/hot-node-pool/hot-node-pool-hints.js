@@ -64,7 +64,9 @@ const modeHint = (
   <div>
     <b>Default</b> pools keep a number of nodes up on a weekly recurring schedule.<br />
     <b>Future dated</b> pools reserve capacity for a single one-time window and cannot
-    be autoscaled.
+    be autoscaled.<br />
+    <b>ML Block</b> pools purchase a concrete AWS Capacity Block offering for a single
+    one-time window and cannot be autoscaled.
   </div>
 );
 

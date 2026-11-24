@@ -26,10 +26,8 @@ const MODE_NAMES = {
   [MODE_ML_BLOCK]: 'ML Block'
 };
 
-// `mode` is client-only: there is no backend field for it, so an existing pool
-// always loads as DEFAULT and this control is locked (via `disabled`) while editing.
-// `modes` narrows which options are offered — a non-admin's forced-future-dated Create
-// passes `['FUTURE_DATED']`, which the form then skips rendering this control for entirely.
+// `mode` is client-only and locked (`disabled`) while editing; `modes` narrows which options
+// are offered - the caller renders this row only once that leaves a real choice.
 function ModeControl ({value, disabled, hint, modes, onChange}) {
   return (
     <SelectInput

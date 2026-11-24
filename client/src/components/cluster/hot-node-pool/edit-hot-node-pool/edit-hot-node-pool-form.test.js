@@ -475,7 +475,9 @@ test('future-dated mode locks Price type to On-demand and disables the control',
 
 test('ML Block mode renders the ML Block section header instead of Schedule', () => {
   renderForm({values: baseValues({mode: 'ML_BLOCK'})});
-  expect(screen.getByText('ML Block')).toBeInTheDocument();
+  // A heading query, not a text one: the Mode row's own selected value now reads "ML
+  // Block" too (the loaded mode is always folded into the options it renders from).
+  expect(screen.getByRole('heading', {name: 'ML Block'})).toBeInTheDocument();
   expect(screen.queryByText('Schedule')).not.toBeInTheDocument();
 });
 

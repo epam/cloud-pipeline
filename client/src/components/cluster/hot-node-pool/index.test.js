@@ -95,9 +95,9 @@ const nonAdmin = {loaded: true, pending: false, value: {admin: false, roles: []}
 const nodePoolManager = {
   loaded: true,
   pending: false,
-  // `userName` matches the `users` store fixture below, so the Run owner criterion
-  // a forced-future-dated Create seeds (`buildRunOwnerFilter(currentUserName)`) has a
-  // matching option to render, same as `edit-hot-node-pool/index.test.js` does.
+  // `userName` matches the `users` store fixture below, so the Run owner criterion a
+  // reservation-mode Create seeds (`buildRunOwnerFilter(currentUserName)`) has a matching
+  // option to render, same as `edit-hot-node-pool/index.test.js` does.
   value: {admin: false, userName: 'USER1', roles: [{name: 'ROLE_NODE_POOL_MANAGER'}]}
 };
 const unloaded = {loaded: false, pending: false, value: undefined};
@@ -220,18 +220,40 @@ test('NODE_POOL_MANAGER: the edit button on an owned pool opens the pool form', 
 });
 
 test(
-  'NODE_POOL_MANAGER: Create opens the modal forced into future-dated mode end to end - ' +
-  'no Mode row, an enabled Pool type, the seeded Run owner criterion with Filters enabled, ' +
-  'and the search-window controls',
+  'NODE_POOL_MANAGER: editing an owned Default pool shows Mode: as Default, not the raw ' +
+  'DEFAULT value - allowedModes offers only the two reservation modes to this user, ' +
+  'neither of which is the loaded pool\'s own mode',
+  async () => {
+    await renderCluster(nodePoolManager, {}, {...myPool, owner: 'USER1'});
+
+    const card = screen.getByText('my-pool').closest('.cp-hot-node-pool');
+    await click(card.querySelector('.anticon-edit').closest('button'));
+
+    await waitFor(() => expect(screen.getByText('Mode:')).toBeInTheDocument());
+    expect(within(row('Mode:')).getByText('Default')).toBeInTheDocument();
+    expect(selectIsDisabled('Mode:')).toBe(true);
+  }
+);
+
+test(
+  'NODE_POOL_MANAGER: Create opens the modal in future-dated mode by default, with a ' +
+  'Mode row now offering a choice (Future dated and ML Block, never Default), an enabled ' +
+  'Pool type, the seeded Run owner criterion with Filters enabled, and the ' +
+  'search-window controls',
   async () => {
     await renderCluster(nodePoolManager);
 
     await click(screen.getByText('Create'));
 
     await waitFor(() => expect(screen.getByText('Pool type:')).toBeInTheDocument());
-    expect(screen.queryByText('Mode:')).not.toBeInTheDocument();
+    // Two modes to choose from now, rather than one forced mode, so the row renders -
+    // `ModeControl`'s own `modes.length > 1` guard.
+    expect(within(row('Mode:')).getByText('Future dated')).toBeInTheDocument();
+    await click(within(row('Mode:')).getByRole('combobox'));
+    expect(screen.queryByText('Default')).not.toBeInTheDocument();
+    expect(screen.getByText('ML Block')).toBeInTheDocument();
     // Pool type is not locked by a single-mode caller: a ROLE_NODE_POOL_MANAGER's
-    // forced-future-dated Create chooses it like anyone else.
+    // Create chooses it like anyone else.
     expect(selectIsDisabled('Pool type:')).toBe(false);
     // The creator's own run-owner criterion is seeded, editable, in an unlocked
     // Filters panel.
@@ -250,6 +272,27 @@ test(
     await click(screen.getByText('CANCEL'));
   });
 
+test(
+  'NODE_POOL_MANAGER: switching Create to ML Block mode keeps the Run owner criterion ' +
+  'seeded and Filters enabled, same as future-dated mode',
+  async () => {
+    await renderCluster(nodePoolManager);
+
+    await click(screen.getByText('Create'));
+    await waitFor(() => expect(screen.getByText('Pool type:')).toBeInTheDocument());
+
+    await click(within(row('Mode:')).getByRole('combobox'));
+    await click(screen.getByText('ML Block'));
+
+    expect(within(row('Mode:')).getByText('ML Block')).toBeInTheDocument();
+    expect(screen.getByText('Run owner')).toBeInTheDocument();
+    expect(screen.getByText('user1')).toBeInTheDocument();
+    expect(selectIsDisabled('Condition:')).toBe(false);
+    expect(screen.getByRole('button', {name: 'Add filter'})).not.toBeDisabled();
+
+    await click(screen.getByText('CANCEL'));
+  });
+
 test('admin: Create opens the modal in Default mode, with the Mode row shown', async () => {
   await renderCluster(admin);
 
@@ -263,6 +306,23 @@ test('admin: Create opens the modal in Default mode, with the Mode row shown', a
 
   await click(screen.getByText('CANCEL'));
 });
+
+test('admin: Create offers Default, Future dated and ML Block, the full allowedModes set',
+  async () => {
+    await renderCluster(admin);
+
+    await click(screen.getByText('Create'));
+    await waitFor(() => expect(screen.getByText('Pool type:')).toBeInTheDocument());
+
+    await click(within(row('Mode:')).getByRole('combobox'));
+    // Default is already the selected value, so it renders twice (the closed-box label
+    // and the open option) - `getAllByText` is what confirms it is still offered.
+    expect(screen.getAllByText('Default').length).toBeGreaterThan(0);
+    expect(screen.getByText('Future dated')).toBeInTheDocument();
+    expect(screen.getByText('ML Block')).toBeInTheDocument();
+
+    await click(screen.getByText('CANCEL'));
+  });
 
 test('a Default-mode pool shows no reservation badge', async () => {
   await renderCluster(admin);

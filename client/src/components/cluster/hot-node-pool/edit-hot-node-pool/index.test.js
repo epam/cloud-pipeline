@@ -537,6 +537,64 @@ test('a SHAREABLE_NODE reservation pool opens showing Shareable node, disabled',
   expect(selectIsDisabled('Pool type:')).toBe(true);
 });
 
+test(
+  'editing a reservation pool whose matched record is CAPACITY_BLOCK opens in ML Block ' +
+  'mode, disabled, with no candidates control',
+  async () => {
+    // `EditHotNodePool`'s own `allowedModes` default stays the pre-existing two modes - the
+    // caller is the authority on which modes exist, so a caller that offers ML Block (as
+    // `hot-node-pool/index.js` now does) is modelled explicitly here too. A decoy record for
+    // another pool id proves the match is by id, not merely "the only record given".
+    await renderPool({
+      pool: reservationPool({id: 54}),
+      allowedModes: ['DEFAULT', 'FUTURE_DATED', 'ML_BLOCK'],
+      reservations: [
+        {nodePoolId: 999, reservationType: 'FUTURE_DATED', instanceCount: 2, status: 'SCHEDULED'},
+        {nodePoolId: 54, reservationType: 'CAPACITY_BLOCK', instanceCount: 2, status: 'SCHEDULED'}
+      ]
+    });
+
+    expect(within(row('Mode:')).getByText('ML Block')).toBeInTheDocument();
+    expect(selectIsDisabled('Mode:')).toBe(true);
+    // Nothing about a purchased block is editable, so the granted window shows exactly
+    // as a future-dated pool's does, with no candidates control at all.
+    expect(screen.getByText('Reservation window:')).toBeInTheDocument();
+    expect(screen.queryByText('Instance types:')).not.toBeInTheDocument();
+  }
+);
+
+test(
+  'editing a reservation pool whose matched record is FUTURE_DATED stays in future-dated ' +
+  'mode, not ML Block',
+  async () => {
+    await renderPool({
+      pool: reservationPool({id: 55}),
+      reservations: [
+        {nodePoolId: 999, reservationType: 'CAPACITY_BLOCK', instanceCount: 2, status: 'SCHEDULED'},
+        {nodePoolId: 55, reservationType: 'FUTURE_DATED', instanceCount: 2, status: 'SCHEDULED'}
+      ]
+    });
+
+    expect(within(row('Mode:')).getByText('Future dated')).toBeInTheDocument();
+    expect(selectIsDisabled('Mode:')).toBe(true);
+  }
+);
+
+test(
+  'editing a reservation pool with a reservations list that matches no record keeps ' +
+  'future-dated as the fallback - there is nothing to read a reservationType from',
+  async () => {
+    await renderPool({
+      pool: reservationPool({id: 56}),
+      reservations: [
+        {nodePoolId: 999, reservationType: 'CAPACITY_BLOCK', instanceCount: 2, status: 'SCHEDULED'}
+      ]
+    });
+
+    expect(within(row('Mode:')).getByText('Future dated')).toBeInTheDocument();
+  }
+);
+
 test('editing a Default pool still opens in Default mode (regression)', async () => {
   await renderPool({pool: fullPool()});
 
