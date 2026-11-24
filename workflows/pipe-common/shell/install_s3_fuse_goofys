@@ -20,7 +20,7 @@ _FUSE_BIN=/usr/local/bin/goofys
 
 if [ ! -f ${_FUSE_BIN} ]; then
     echo "${_FUSE_BIN} not found. Installing..."
-    wget -q --no-check-certificate ${_FUSE_URL} -O ${_FUSE_BIN} 2>/dev/null || curl -s -k -o ${_FUSE_BIN} ${_FUSE_URL}
+    wget --no-verbose --no-check-certificate ${_FUSE_URL} -O ${_FUSE_BIN} 2>/dev/null || curl -s -k -o ${_FUSE_BIN} ${_FUSE_URL}
     if [ $? -ne 0 ]; then
         echo "Error downloading ${_FUSE_URL} to ${_FUSE_BIN}"
         exit 1
