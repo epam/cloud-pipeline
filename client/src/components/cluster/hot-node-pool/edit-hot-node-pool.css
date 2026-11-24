@@ -83,3 +83,28 @@
   font-size: 12px;
   line-height: 16px;
 }
+
+.capacity-block-candidate-row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.capacity-block-candidate-inputs {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 1;
+}
+
+.capacity-block-candidate-inputs > * {
+  margin-right: 5px;
+}
+
+.capacity-block-candidate-offerings {
+  flex: 2;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
