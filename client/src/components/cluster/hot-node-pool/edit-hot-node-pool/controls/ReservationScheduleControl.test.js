@@ -17,6 +17,7 @@
 import React from 'react';
 import {render, screen, within, change, hover, fn} from '@test';
 import ReservationScheduleControl from './ReservationScheduleControl';
+import {MODE_FUTURE_DATED, MODE_ML_BLOCK} from '../constants';
 
 // Mirrors the `row` helper in `../index.test.js`: the label span's closest `div` is the
 // `formRow` div holding both the label and its control.
@@ -143,6 +144,63 @@ test('changing Duration calls onChangeDuration', async () => {
   await change(durationInput, '30');
 
   expect(onChangeDuration).toHaveBeenCalledWith(30);
+});
+
+test('the duration minimum is 14 in future-dated mode and 1 in ML Block mode', () => {
+  const {rerender} = render(
+    <ReservationScheduleControl
+      mode={MODE_FUTURE_DATED}
+      start={undefined}
+      end={undefined}
+      durationDays={undefined}
+      onChangeStart={fn()}
+      onChangeEnd={fn()}
+      onChangeDuration={fn()}
+    />
+  );
+  expect(
+    within(row('Duration (days):')).getByRole('textbox')
+  ).toHaveAttribute('min', '14');
+
+  rerender(
+    <ReservationScheduleControl
+      mode={MODE_ML_BLOCK}
+      start={undefined}
+      end={undefined}
+      durationDays={undefined}
+      onChangeStart={fn()}
+      onChangeEnd={fn()}
+      onChangeDuration={fn()}
+    />
+  );
+  expect(
+    within(row('Duration (days):')).getByRole('textbox')
+  ).toHaveAttribute('min', '1');
+});
+
+test('children render between the Duration (days) row and the status notice', () => {
+  render(
+    <ReservationScheduleControl
+      start={undefined}
+      end={undefined}
+      durationDays={undefined}
+      reservationStatus="ACTIVE"
+      onChangeStart={fn()}
+      onChangeEnd={fn()}
+      onChangeDuration={fn()}
+    >
+      <div>Candidates placeholder</div>
+    </ReservationScheduleControl>
+  );
+  const durationLabel = screen.getByText('Duration (days):');
+  const child = screen.getByText('Candidates placeholder');
+  const notice = screen.getByText('This reservation is active.');
+  expect(
+    durationLabel.compareDocumentPosition(child) & Node.DOCUMENT_POSITION_FOLLOWING
+  ).toBeTruthy();
+  expect(
+    child.compareDocumentPosition(notice) & Node.DOCUMENT_POSITION_FOLLOWING
+  ).toBeTruthy();
 });
 
 // There is no test here driving the "Search until" picker through the UI, and that is

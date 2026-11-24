@@ -25,6 +25,9 @@ import {humanizeReservationStatus} from '../helpers';
 import {
   COMMITMENT_DATE_TIME_FORMAT,
   MIN_COMMITMENT_DURATION_DAYS,
+  MIN_ML_BLOCK_DURATION_DAYS,
+  MODE_FUTURE_DATED,
+  MODE_ML_BLOCK,
   RESERVATION_STATUS_PENDING,
   RESERVATION_STATUS_REQUIRED_APPROVE,
   RESERVATION_STATUS_APPROVED,
@@ -110,6 +113,7 @@ function getReservationStatusNotice (status) {
 // `buildCapacityReservationRequest`. "Search until" is independently editable and never
 // derived from `start` + `durationDays`.
 function ReservationScheduleControl ({
+  mode,
   start,
   end,
   durationDays,
@@ -124,9 +128,13 @@ function ReservationScheduleControl ({
   reservationStatus,
   onChangeStart,
   onChangeEnd,
-  onChangeDuration
+  onChangeDuration,
+  children
 }) {
   const notice = reservationStatus ? getReservationStatusNotice(reservationStatus) : undefined;
+  const durationMin = mode === MODE_ML_BLOCK
+    ? MIN_ML_BLOCK_DURATION_DAYS
+    : MIN_COMMITMENT_DURATION_DAYS;
   return (
     <div>
       <div className={styles.formRow}>
@@ -177,13 +185,14 @@ function ReservationScheduleControl ({
         type="number"
         label="Duration (days):"
         value={durationDays}
-        min={MIN_COMMITMENT_DURATION_DAYS}
+        min={durationMin}
         disabled={disabled}
         hint={durationHint}
         error={durationError}
         touched={touched}
         onChange={onChangeDuration}
       />
+      {children}
       {
         notice && (
           <div className={styles.formRow}>
@@ -196,6 +205,7 @@ function ReservationScheduleControl ({
 }
 
 ReservationScheduleControl.propTypes = {
+  mode: PropTypes.string,
   start: PropTypes.string,
   end: PropTypes.string,
   durationDays: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
@@ -210,7 +220,12 @@ ReservationScheduleControl.propTypes = {
   reservationStatus: PropTypes.string,
   onChangeStart: PropTypes.func,
   onChangeEnd: PropTypes.func,
-  onChangeDuration: PropTypes.func
+  onChangeDuration: PropTypes.func,
+  children: PropTypes.node
+};
+
+ReservationScheduleControl.defaultProps = {
+  mode: MODE_FUTURE_DATED
 };
 
 export default ReservationScheduleControl;
