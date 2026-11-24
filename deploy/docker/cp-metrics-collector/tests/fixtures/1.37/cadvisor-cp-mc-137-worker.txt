@@ -1,0 +1,265 @@
+cadvisor_version_info{cadvisorRevision="",cadvisorVersion="",dockerVersion="",kernelVersion="6.8.0-117-generic",osVersion="Debian GNU/Linux 13 (trixie)"} 1
+container_blkio_device_usage_total{container="",device="/dev/vda",id="/",image="",major="253",minor="0",name="",namespace="",operation="Read",pod=""} 286720 1795177879890
+container_blkio_device_usage_total{container="",device="/dev/vda",id="/",image="",major="253",minor="0",name="",namespace="",operation="Write",pod=""} 0 1795177879890
+container_blkio_device_usage_total{container="",device="/dev/vdb",id="/",image="",major="253",minor="16",name="",namespace="",operation="Read",pod=""} 675840 1795177879890
+container_blkio_device_usage_total{container="",device="/dev/vdb",id="/",image="",major="253",minor="16",name="",namespace="",operation="Write",pod=""} 2.63278592e+08 1795177879890
+container_blkio_device_usage_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice",image="",major="253",minor="16",name="",namespace="",operation="Read",pod=""} 0 1795177879895
+container_blkio_device_usage_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice",image="",major="253",minor="16",name="",namespace="",operation="Write",pod=""} 6.7145728e+07 1795177879895
+container_blkio_device_usage_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-besteffort.slice",image="",major="253",minor="16",name="",namespace="",operation="Read",pod=""} 0 1795177879339
+container_blkio_device_usage_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-besteffort.slice",image="",major="253",minor="16",name="",namespace="",operation="Write",pod=""} 8192 1795177879339
+container_blkio_device_usage_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-besteffort.slice/kubelet-kubepods-besteffort-pod97514114_46d7_4fc5_a961_074f5b08247a.slice",image="",major="253",minor="16",name="",namespace="kube-system",operation="Read",pod="kube-proxy-msptl"} 0 1795177874783
+container_blkio_device_usage_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-besteffort.slice/kubelet-kubepods-besteffort-pod97514114_46d7_4fc5_a961_074f5b08247a.slice",image="",major="253",minor="16",name="",namespace="kube-system",operation="Write",pod="kube-proxy-msptl"} 8192 1795177874783
+container_blkio_device_usage_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice",image="",major="253",minor="16",name="",namespace="",operation="Read",pod=""} 0 1795177881777
+container_blkio_device_usage_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice",image="",major="253",minor="16",name="",namespace="",operation="Write",pod=""} 6.7137536e+07 1795177881777
+container_blkio_device_usage_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-pod0896d8e0_8da2_4cf2_a198_711028ae42ca.slice",image="",major="253",minor="16",name="",namespace="default",operation="Read",pod="mc-load"} 0 1795177876497
+container_blkio_device_usage_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-pod0896d8e0_8da2_4cf2_a198_711028ae42ca.slice",image="",major="253",minor="16",name="",namespace="default",operation="Write",pod="mc-load"} 6.7125248e+07 1795177876497
+container_blkio_device_usage_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-podf42cab44_1b62_4d44_b77f_33efda185b87.slice",image="",major="253",minor="16",name="",namespace="kube-system",operation="Read",pod="kindnet-lxhh5"} 0 1795177876542
+container_blkio_device_usage_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-podf42cab44_1b62_4d44_b77f_33efda185b87.slice",image="",major="253",minor="16",name="",namespace="kube-system",operation="Write",pod="kindnet-lxhh5"} 12288 1795177876542
+container_blkio_device_usage_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet.service",image="",major="253",minor="16",name="",namespace="",operation="Read",pod=""} 143360 1795177870685
+container_blkio_device_usage_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet.service",image="",major="253",minor="16",name="",namespace="",operation="Write",pod=""} 90112 1795177870685
+container_blkio_device_usage_total{container="",device="/dev/vdb",id="/system.slice/containerd.service",image="",major="253",minor="16",name="",namespace="",operation="Read",pod=""} 532480 1795177869247
+container_blkio_device_usage_total{container="",device="/dev/vdb",id="/system.slice/containerd.service",image="",major="253",minor="16",name="",namespace="",operation="Write",pod=""} 1.95510272e+08 1795177869247
+container_blkio_device_usage_total{container="burn",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-pod0896d8e0_8da2_4cf2_a198_711028ae42ca.slice/cri-containerd-3b3101b21e19eaec50416b65083ec59e9cd60c50582d9682cf18d22e0b4dcb95.scope",image="docker.io/library/busybox:1.36",major="253",minor="16",name="3b3101b21e19eaec50416b65083ec59e9cd60c50582d9682cf18d22e0b4dcb95",namespace="default",operation="Read",pod="mc-load"} 0 1795177872718
+container_blkio_device_usage_total{container="burn",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-pod0896d8e0_8da2_4cf2_a198_711028ae42ca.slice/cri-containerd-3b3101b21e19eaec50416b65083ec59e9cd60c50582d9682cf18d22e0b4dcb95.scope",image="docker.io/library/busybox:1.36",major="253",minor="16",name="3b3101b21e19eaec50416b65083ec59e9cd60c50582d9682cf18d22e0b4dcb95",namespace="default",operation="Write",pod="mc-load"} 6.7117056e+07 1795177872718
+container_blkio_device_usage_total{container="chatty",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-pod0896d8e0_8da2_4cf2_a198_711028ae42ca.slice/cri-containerd-0322f251fcd32959893dcc898d783c26d665338fc91af1612b86c3091411bfff.scope",image="docker.io/library/busybox:1.36",major="253",minor="16",name="0322f251fcd32959893dcc898d783c26d665338fc91af1612b86c3091411bfff",namespace="default",operation="Read",pod="mc-load"} 0 1795177865742
+container_blkio_device_usage_total{container="chatty",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-pod0896d8e0_8da2_4cf2_a198_711028ae42ca.slice/cri-containerd-0322f251fcd32959893dcc898d783c26d665338fc91af1612b86c3091411bfff.scope",image="docker.io/library/busybox:1.36",major="253",minor="16",name="0322f251fcd32959893dcc898d783c26d665338fc91af1612b86c3091411bfff",namespace="default",operation="Write",pod="mc-load"} 8192 1795177865742
+container_blkio_device_usage_total{container="kindnet-cni",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-podf42cab44_1b62_4d44_b77f_33efda185b87.slice/cri-containerd-6e46a8315345ded44069bbbcd18ecde06e13ad23fb784360fd544904760e5206.scope",image="docker.io/kindest/kindnetd:v20260820-69b56db7",major="253",minor="16",name="6e46a8315345ded44069bbbcd18ecde06e13ad23fb784360fd544904760e5206",namespace="kube-system",operation="Read",pod="kindnet-lxhh5"} 0 1795177875722
+container_blkio_device_usage_total{container="kindnet-cni",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-podf42cab44_1b62_4d44_b77f_33efda185b87.slice/cri-containerd-6e46a8315345ded44069bbbcd18ecde06e13ad23fb784360fd544904760e5206.scope",image="docker.io/kindest/kindnetd:v20260820-69b56db7",major="253",minor="16",name="6e46a8315345ded44069bbbcd18ecde06e13ad23fb784360fd544904760e5206",namespace="kube-system",operation="Write",pod="kindnet-lxhh5"} 12288 1795177875722
+container_blkio_device_usage_total{container="kube-proxy",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-besteffort.slice/kubelet-kubepods-besteffort-pod97514114_46d7_4fc5_a961_074f5b08247a.slice/cri-containerd-153813b2437575a98dcedd58615ce226519103961d774e92f77991f599eb6c8e.scope",image="registry.k8s.io/kube-proxy-arm64:v1.37.0",major="253",minor="16",name="153813b2437575a98dcedd58615ce226519103961d774e92f77991f599eb6c8e",namespace="kube-system",operation="Read",pod="kube-proxy-msptl"} 0 1795177878638
+container_blkio_device_usage_total{container="kube-proxy",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-besteffort.slice/kubelet-kubepods-besteffort-pod97514114_46d7_4fc5_a961_074f5b08247a.slice/cri-containerd-153813b2437575a98dcedd58615ce226519103961d774e92f77991f599eb6c8e.scope",image="registry.k8s.io/kube-proxy-arm64:v1.37.0",major="253",minor="16",name="153813b2437575a98dcedd58615ce226519103961d774e92f77991f599eb6c8e",namespace="kube-system",operation="Write",pod="kube-proxy-msptl"} 8192 1795177878638
+container_cpu_cfs_burst_periods_total{container="burn",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-pod0896d8e0_8da2_4cf2_a198_711028ae42ca.slice/cri-containerd-3b3101b21e19eaec50416b65083ec59e9cd60c50582d9682cf18d22e0b4dcb95.scope",image="docker.io/library/busybox:1.36",name="3b3101b21e19eaec50416b65083ec59e9cd60c50582d9682cf18d22e0b4dcb95",namespace="default",pod="mc-load"} 0 1795177872718
+container_cpu_cfs_burst_seconds_total{container="burn",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-pod0896d8e0_8da2_4cf2_a198_711028ae42ca.slice/cri-containerd-3b3101b21e19eaec50416b65083ec59e9cd60c50582d9682cf18d22e0b4dcb95.scope",image="docker.io/library/busybox:1.36",name="3b3101b21e19eaec50416b65083ec59e9cd60c50582d9682cf18d22e0b4dcb95",namespace="default",pod="mc-load"} 0 1795177872718
+container_cpu_cfs_periods_total{container="burn",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-pod0896d8e0_8da2_4cf2_a198_711028ae42ca.slice/cri-containerd-3b3101b21e19eaec50416b65083ec59e9cd60c50582d9682cf18d22e0b4dcb95.scope",image="docker.io/library/busybox:1.36",name="3b3101b21e19eaec50416b65083ec59e9cd60c50582d9682cf18d22e0b4dcb95",namespace="default",pod="mc-load"} 96 1795177872718
+container_cpu_cfs_throttled_periods_total{container="burn",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-pod0896d8e0_8da2_4cf2_a198_711028ae42ca.slice/cri-containerd-3b3101b21e19eaec50416b65083ec59e9cd60c50582d9682cf18d22e0b4dcb95.scope",image="docker.io/library/busybox:1.36",name="3b3101b21e19eaec50416b65083ec59e9cd60c50582d9682cf18d22e0b4dcb95",namespace="default",pod="mc-load"} 69 1795177872718
+container_cpu_cfs_throttled_seconds_total{container="burn",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-pod0896d8e0_8da2_4cf2_a198_711028ae42ca.slice/cri-containerd-3b3101b21e19eaec50416b65083ec59e9cd60c50582d9682cf18d22e0b4dcb95.scope",image="docker.io/library/busybox:1.36",name="3b3101b21e19eaec50416b65083ec59e9cd60c50582d9682cf18d22e0b4dcb95",namespace="default",pod="mc-load"} 3.054572 1795177872718
+container_cpu_system_seconds_total{container="",id="/",image="",name="",namespace="",pod=""} 4.691429 1795177879890
+container_cpu_system_seconds_total{container="",id="/kubelet.slice/kubelet-kubepods.slice",image="",name="",namespace="",pod=""} 0.530702 1795177879895
+container_cpu_system_seconds_total{container="",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-besteffort.slice",image="",name="",namespace="",pod=""} 0.242125 1795177879339
+container_cpu_system_seconds_total{container="",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-besteffort.slice/kubelet-kubepods-besteffort-pod97514114_46d7_4fc5_a961_074f5b08247a.slice",image="",name="",namespace="kube-system",pod="kube-proxy-msptl"} 0.242033 1795177874783
+container_cpu_system_seconds_total{container="",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-besteffort.slice/kubelet-kubepods-besteffort-pod97514114_46d7_4fc5_a961_074f5b08247a.slice/cri-containerd-dbeef3f9494fb56a26995e52d161eabb7616c04a8216db6cd7b1dc16851f7dcd.scope",image="registry.k8s.io/pause:3.10",name="dbeef3f9494fb56a26995e52d161eabb7616c04a8216db6cd7b1dc16851f7dcd",namespace="kube-system",pod="kube-proxy-msptl"} 0.005465 1795177869454
+container_cpu_system_seconds_total{container="",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice",image="",name="",namespace="",pod=""} 0.300023 1795177881777
+# HELP container_fs_inodes_free Number of available Inodes
+# TYPE container_fs_inodes_free gauge
+container_fs_inodes_free{container="",device="/dev",id="/",image="",name="",namespace="",pod=""} 1.527324e+06 1795177879890
+container_fs_inodes_free{container="",device="/dev/root",id="/",image="",name="",namespace="",pod=""} 2.470048e+06 1795177879890
+container_fs_inodes_free{container="",device="/dev/shm",id="/",image="",name="",namespace="",pod=""} 1.527538e+06 1795177879890
+container_fs_inodes_free{container="",device="/dev/vdb1",id="/",image="",name="",namespace="",pod=""} 3.669924e+06 1795177879890
+container_fs_inodes_free{container="",device="/run",id="/",image="",name="",namespace="",pod=""} 1.52723e+06 1795177879890
+container_fs_inodes_free{container="",device="/run/credentials/systemd-journald.service",id="/",image="",name="",namespace="",pod=""} 1023 1795177879890
+container_fs_inodes_free{container="",device="/tmp",id="/",image="",name="",namespace="",pod=""} 1.527538e+06 1795177879890
+container_fs_inodes_free{container="",device="overlay",id="/",image="",name="",namespace="",pod=""} 3.669924e+06 1795177879890
+container_fs_inodes_free{container="",device="overlay_0-51",id="/",image="",name="",namespace="",pod=""} 3.669924e+06 1795177879890
+# HELP container_fs_inodes_total Number of Inodes
+# TYPE container_fs_inodes_total gauge
+container_fs_inodes_total{container="",device="/dev",id="/",image="",name="",namespace="",pod=""} 1.527539e+06 1795177879890
+container_fs_inodes_total{container="",device="/dev/root",id="/",image="",name="",namespace="",pod=""} 2.490368e+06 1795177879890
+container_fs_inodes_total{container="",device="/dev/shm",id="/",image="",name="",namespace="",pod=""} 1.527539e+06 1795177879890
+container_fs_inodes_total{container="",device="/dev/vdb1",id="/",image="",name="",namespace="",pod=""} 5.24288e+06 1795177879890
+container_fs_inodes_total{container="",device="/run",id="/",image="",name="",namespace="",pod=""} 1.527539e+06 1795177879890
+container_fs_inodes_total{container="",device="/run/credentials/systemd-journald.service",id="/",image="",name="",namespace="",pod=""} 1024 1795177879890
+container_fs_inodes_total{container="",device="/tmp",id="/",image="",name="",namespace="",pod=""} 1.527539e+06 1795177879890
+container_fs_inodes_total{container="",device="overlay",id="/",image="",name="",namespace="",pod=""} 5.24288e+06 1795177879890
+container_fs_inodes_total{container="",device="overlay_0-51",id="/",image="",name="",namespace="",pod=""} 5.24288e+06 1795177879890
+# HELP container_fs_io_current Number of I/Os currently in progress
+# TYPE container_fs_io_current gauge
+container_fs_io_current{container="",device="/dev",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_io_current{container="",device="/dev/root",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_io_current{container="",device="/dev/shm",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_io_current{container="",device="/dev/vdb1",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_io_current{container="",device="/run",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_io_current{container="",device="/run/credentials/systemd-journald.service",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_io_current{container="",device="/tmp",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_io_current{container="",device="overlay",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_io_current{container="",device="overlay_0-51",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+# HELP container_fs_io_time_seconds_total Cumulative count of seconds spent doing I/Os
+# TYPE container_fs_io_time_seconds_total counter
+container_fs_io_time_seconds_total{container="",device="/dev",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_io_time_seconds_total{container="",device="/dev/root",id="/",image="",name="",namespace="",pod=""} 0.001009963 1795177879890
+container_fs_io_time_seconds_total{container="",device="/dev/shm",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_io_time_seconds_total{container="",device="/dev/vdb1",id="/",image="",name="",namespace="",pod=""} 0.004327871 1795177879890
+container_fs_io_time_seconds_total{container="",device="/run",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_io_time_seconds_total{container="",device="/run/credentials/systemd-journald.service",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_io_time_seconds_total{container="",device="/tmp",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_io_time_seconds_total{container="",device="overlay",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_io_time_seconds_total{container="",device="overlay_0-51",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+# HELP container_fs_io_time_weighted_seconds_total Cumulative weighted I/O time in seconds
+# TYPE container_fs_io_time_weighted_seconds_total counter
+container_fs_io_time_weighted_seconds_total{container="",device="/dev",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_io_time_weighted_seconds_total{container="",device="/dev/root",id="/",image="",name="",namespace="",pod=""} 0.001060606 1795177879890
+container_fs_io_time_weighted_seconds_total{container="",device="/dev/shm",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_io_time_weighted_seconds_total{container="",device="/dev/vdb1",id="/",image="",name="",namespace="",pod=""} 0.017507013 1795177879890
+container_fs_io_time_weighted_seconds_total{container="",device="/run",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_io_time_weighted_seconds_total{container="",device="/run/credentials/systemd-journald.service",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_io_time_weighted_seconds_total{container="",device="/tmp",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_io_time_weighted_seconds_total{container="",device="overlay",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_io_time_weighted_seconds_total{container="",device="overlay_0-51",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+# HELP container_fs_limit_bytes Number of bytes that can be consumed by the container on this filesystem.
+# TYPE container_fs_limit_bytes gauge
+container_fs_limit_bytes{container="",device="/dev",id="/",image="",name="",namespace="",pod=""} 6.7108864e+07 1795177879890
+container_fs_limit_bytes{container="",device="/dev/root",id="/",image="",name="",namespace="",pod=""} 1.9682557952e+10 1795177879890
+container_fs_limit_bytes{container="",device="/dev/shm",id="/",image="",name="",namespace="",pod=""} 6.7108864e+07 1795177879890
+container_fs_limit_bytes{container="",device="/dev/vdb1",id="/",image="",name="",namespace="",pod=""} 8.3953606656e+10 1795177879890
+container_fs_limit_bytes{container="",device="/run",id="/",image="",name="",namespace="",pod=""} 6.256799744e+09 1795177879890
+container_fs_limit_bytes{container="",device="/run/credentials/systemd-journald.service",id="/",image="",name="",namespace="",pod=""} 1.048576e+06 1795177879890
+container_fs_limit_bytes{container="",device="/tmp",id="/",image="",name="",namespace="",pod=""} 6.256799744e+09 1795177879890
+container_fs_limit_bytes{container="",device="overlay",id="/",image="",name="",namespace="",pod=""} 8.3953606656e+10 1795177879890
+container_fs_limit_bytes{container="",device="overlay_0-51",id="/",image="",name="",namespace="",pod=""} 8.3953606656e+10 1795177879890
+# HELP container_fs_read_seconds_total Cumulative count of seconds spent reading
+# TYPE container_fs_read_seconds_total counter
+container_fs_read_seconds_total{container="",device="/dev",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_read_seconds_total{container="",device="/dev/root",id="/",image="",name="",namespace="",pod=""} 0.000102551 1795177879890
+container_fs_read_seconds_total{container="",device="/dev/shm",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_read_seconds_total{container="",device="/dev/vdb1",id="/",image="",name="",namespace="",pod=""} 0.00153855 1795177879890
+container_fs_read_seconds_total{container="",device="/run",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_read_seconds_total{container="",device="/run/credentials/systemd-journald.service",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_read_seconds_total{container="",device="/tmp",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_read_seconds_total{container="",device="overlay",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_read_seconds_total{container="",device="overlay_0-51",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+# HELP container_fs_reads_bytes_total Cumulative count of bytes read
+# TYPE container_fs_reads_bytes_total counter
+container_fs_reads_bytes_total{container="",device="/dev/vda",id="/",image="",name="",namespace="",pod=""} 286720 1795177879890
+container_fs_reads_bytes_total{container="",device="/dev/vdb",id="/",image="",name="",namespace="",pod=""} 675840 1795177879890
+container_fs_reads_bytes_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice",image="",name="",namespace="",pod=""} 0 1795177879895
+container_fs_reads_bytes_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-besteffort.slice",image="",name="",namespace="",pod=""} 0 1795177879339
+container_fs_reads_bytes_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-besteffort.slice/kubelet-kubepods-besteffort-pod97514114_46d7_4fc5_a961_074f5b08247a.slice",image="",name="",namespace="kube-system",pod="kube-proxy-msptl"} 0 1795177874783
+container_fs_reads_bytes_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice",image="",name="",namespace="",pod=""} 0 1795177881777
+container_fs_reads_bytes_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-pod0896d8e0_8da2_4cf2_a198_711028ae42ca.slice",image="",name="",namespace="default",pod="mc-load"} 0 1795177876497
+container_fs_reads_bytes_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-podf42cab44_1b62_4d44_b77f_33efda185b87.slice",image="",name="",namespace="kube-system",pod="kindnet-lxhh5"} 0 1795177876542
+container_fs_reads_bytes_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet.service",image="",name="",namespace="",pod=""} 143360 1795177870685
+container_fs_reads_bytes_total{container="",device="/dev/vdb",id="/system.slice/containerd.service",image="",name="",namespace="",pod=""} 532480 1795177869247
+container_fs_reads_bytes_total{container="burn",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-pod0896d8e0_8da2_4cf2_a198_711028ae42ca.slice/cri-containerd-3b3101b21e19eaec50416b65083ec59e9cd60c50582d9682cf18d22e0b4dcb95.scope",image="docker.io/library/busybox:1.36",name="3b3101b21e19eaec50416b65083ec59e9cd60c50582d9682cf18d22e0b4dcb95",namespace="default",pod="mc-load"} 0 1795177872718
+container_fs_reads_bytes_total{container="chatty",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-pod0896d8e0_8da2_4cf2_a198_711028ae42ca.slice/cri-containerd-0322f251fcd32959893dcc898d783c26d665338fc91af1612b86c3091411bfff.scope",image="docker.io/library/busybox:1.36",name="0322f251fcd32959893dcc898d783c26d665338fc91af1612b86c3091411bfff",namespace="default",pod="mc-load"} 0 1795177865742
+container_fs_reads_bytes_total{container="kindnet-cni",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-podf42cab44_1b62_4d44_b77f_33efda185b87.slice/cri-containerd-6e46a8315345ded44069bbbcd18ecde06e13ad23fb784360fd544904760e5206.scope",image="docker.io/kindest/kindnetd:v20260820-69b56db7",name="6e46a8315345ded44069bbbcd18ecde06e13ad23fb784360fd544904760e5206",namespace="kube-system",pod="kindnet-lxhh5"} 0 1795177875722
+container_fs_reads_bytes_total{container="kube-proxy",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-besteffort.slice/kubelet-kubepods-besteffort-pod97514114_46d7_4fc5_a961_074f5b08247a.slice/cri-containerd-153813b2437575a98dcedd58615ce226519103961d774e92f77991f599eb6c8e.scope",image="registry.k8s.io/kube-proxy-arm64:v1.37.0",name="153813b2437575a98dcedd58615ce226519103961d774e92f77991f599eb6c8e",namespace="kube-system",pod="kube-proxy-msptl"} 0 1795177878638
+# HELP container_fs_reads_merged_total Cumulative count of reads merged
+# TYPE container_fs_reads_merged_total counter
+container_fs_reads_merged_total{container="",device="/dev",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_reads_merged_total{container="",device="/dev/root",id="/",image="",name="",namespace="",pod=""} 33863 1795177879890
+container_fs_reads_merged_total{container="",device="/dev/shm",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_reads_merged_total{container="",device="/dev/vdb1",id="/",image="",name="",namespace="",pod=""} 1.246745e+06 1795177879890
+container_fs_reads_merged_total{container="",device="/run",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_reads_merged_total{container="",device="/run/credentials/systemd-journald.service",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_reads_merged_total{container="",device="/tmp",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_reads_merged_total{container="",device="overlay",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_reads_merged_total{container="",device="overlay_0-51",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+# HELP container_fs_reads_total Cumulative count of reads completed
+# TYPE container_fs_reads_total counter
+container_fs_reads_total{container="",device="/dev",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_reads_total{container="",device="/dev/root",id="/",image="",name="",namespace="",pod=""} 674678 1795177879890
+container_fs_reads_total{container="",device="/dev/shm",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_reads_total{container="",device="/dev/vda",id="/",image="",name="",namespace="",pod=""} 70 1795177879890
+container_fs_reads_total{container="",device="/dev/vdb",id="/",image="",name="",namespace="",pod=""} 134 1795177879890
+container_fs_reads_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice",image="",name="",namespace="",pod=""} 0 1795177879895
+container_fs_reads_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-besteffort.slice",image="",name="",namespace="",pod=""} 0 1795177879339
+container_fs_reads_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-besteffort.slice/kubelet-kubepods-besteffort-pod97514114_46d7_4fc5_a961_074f5b08247a.slice",image="",name="",namespace="kube-system",pod="kube-proxy-msptl"} 0 1795177874783
+container_fs_reads_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice",image="",name="",namespace="",pod=""} 0 1795177881777
+container_fs_reads_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-pod0896d8e0_8da2_4cf2_a198_711028ae42ca.slice",image="",name="",namespace="default",pod="mc-load"} 0 1795177876497
+container_fs_reads_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-podf42cab44_1b62_4d44_b77f_33efda185b87.slice",image="",name="",namespace="kube-system",pod="kindnet-lxhh5"} 0 1795177876542
+container_fs_reads_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet.service",image="",name="",namespace="",pod=""} 4 1795177870685
+container_fs_reads_total{container="",device="/dev/vdb",id="/system.slice/containerd.service",image="",name="",namespace="",pod=""} 130 1795177869247
+container_fs_reads_total{container="",device="/dev/vdb1",id="/",image="",name="",namespace="",pod=""} 9.188366e+06 1795177879890
+container_fs_reads_total{container="",device="/run",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_reads_total{container="",device="/run/credentials/systemd-journald.service",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_reads_total{container="",device="/tmp",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_reads_total{container="",device="overlay",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_reads_total{container="",device="overlay_0-51",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_reads_total{container="burn",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-pod0896d8e0_8da2_4cf2_a198_711028ae42ca.slice/cri-containerd-3b3101b21e19eaec50416b65083ec59e9cd60c50582d9682cf18d22e0b4dcb95.scope",image="docker.io/library/busybox:1.36",name="3b3101b21e19eaec50416b65083ec59e9cd60c50582d9682cf18d22e0b4dcb95",namespace="default",pod="mc-load"} 0 1795177872718
+container_fs_reads_total{container="chatty",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-pod0896d8e0_8da2_4cf2_a198_711028ae42ca.slice/cri-containerd-0322f251fcd32959893dcc898d783c26d665338fc91af1612b86c3091411bfff.scope",image="docker.io/library/busybox:1.36",name="0322f251fcd32959893dcc898d783c26d665338fc91af1612b86c3091411bfff",namespace="default",pod="mc-load"} 0 1795177865742
+container_fs_reads_total{container="kindnet-cni",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-podf42cab44_1b62_4d44_b77f_33efda185b87.slice/cri-containerd-6e46a8315345ded44069bbbcd18ecde06e13ad23fb784360fd544904760e5206.scope",image="docker.io/kindest/kindnetd:v20260820-69b56db7",name="6e46a8315345ded44069bbbcd18ecde06e13ad23fb784360fd544904760e5206",namespace="kube-system",pod="kindnet-lxhh5"} 0 1795177875722
+container_fs_reads_total{container="kube-proxy",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-besteffort.slice/kubelet-kubepods-besteffort-pod97514114_46d7_4fc5_a961_074f5b08247a.slice/cri-containerd-153813b2437575a98dcedd58615ce226519103961d774e92f77991f599eb6c8e.scope",image="registry.k8s.io/kube-proxy-arm64:v1.37.0",name="153813b2437575a98dcedd58615ce226519103961d774e92f77991f599eb6c8e",namespace="kube-system",pod="kube-proxy-msptl"} 0 1795177878638
+# HELP container_fs_sector_reads_total Cumulative count of sector reads completed
+# TYPE container_fs_sector_reads_total counter
+container_fs_sector_reads_total{container="",device="/dev",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_sector_reads_total{container="",device="/dev/root",id="/",image="",name="",namespace="",pod=""} 7.8414223e+07 1795177879890
+container_fs_sector_reads_total{container="",device="/dev/shm",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_sector_reads_total{container="",device="/dev/vdb1",id="/",image="",name="",namespace="",pod=""} 5.56468118e+08 1795177879890
+container_fs_sector_reads_total{container="",device="/run",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_sector_reads_total{container="",device="/run/credentials/systemd-journald.service",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_sector_reads_total{container="",device="/tmp",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_sector_reads_total{container="",device="overlay",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_sector_reads_total{container="",device="overlay_0-51",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+# HELP container_fs_sector_writes_total Cumulative count of sector writes completed
+# TYPE container_fs_sector_writes_total counter
+container_fs_sector_writes_total{container="",device="/dev",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_sector_writes_total{container="",device="/dev/root",id="/",image="",name="",namespace="",pod=""} 1.75566e+07 1795177879890
+container_fs_sector_writes_total{container="",device="/dev/shm",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_sector_writes_total{container="",device="/dev/vdb1",id="/",image="",name="",namespace="",pod=""} 3.014139824e+09 1795177879890
+container_fs_sector_writes_total{container="",device="/run",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_sector_writes_total{container="",device="/run/credentials/systemd-journald.service",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_sector_writes_total{container="",device="/tmp",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_sector_writes_total{container="",device="overlay",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_sector_writes_total{container="",device="overlay_0-51",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+# HELP container_fs_usage_bytes Number of bytes that are consumed by the container on this filesystem.
+# TYPE container_fs_usage_bytes gauge
+container_fs_usage_bytes{container="",device="/dev",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_usage_bytes{container="",device="/dev/root",id="/",image="",name="",namespace="",pod=""} 1.903374336e+09 1795177879890
+container_fs_usage_bytes{container="",device="/dev/shm",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_usage_bytes{container="",device="/dev/vdb1",id="/",image="",name="",namespace="",pod=""} 6.9856915456e+10 1795177879890
+container_fs_usage_bytes{container="",device="/run",id="/",image="",name="",namespace="",pod=""} 9.035776e+06 1795177879890
+container_fs_usage_bytes{container="",device="/run/credentials/systemd-journald.service",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_usage_bytes{container="",device="/tmp",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_usage_bytes{container="",device="overlay",id="/",image="",name="",namespace="",pod=""} 6.9856915456e+10 1795177879890
+container_fs_usage_bytes{container="",device="overlay_0-51",id="/",image="",name="",namespace="",pod=""} 6.9856915456e+10 1795177879890
+# HELP container_fs_write_seconds_total Cumulative count of seconds spent writing
+# TYPE container_fs_write_seconds_total counter
+container_fs_write_seconds_total{container="",device="/dev",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_write_seconds_total{container="",device="/dev/root",id="/",image="",name="",namespace="",pod=""} 0.000953854 1795177879890
+container_fs_write_seconds_total{container="",device="/dev/shm",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_write_seconds_total{container="",device="/dev/vdb1",id="/",image="",name="",namespace="",pod=""} 0.015967878 1795177879890
+container_fs_write_seconds_total{container="",device="/run",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_write_seconds_total{container="",device="/run/credentials/systemd-journald.service",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_write_seconds_total{container="",device="/tmp",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_write_seconds_total{container="",device="overlay",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_write_seconds_total{container="",device="overlay_0-51",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+# HELP container_fs_writes_bytes_total Cumulative count of bytes written
+# TYPE container_fs_writes_bytes_total counter
+container_fs_writes_bytes_total{container="",device="/dev/vda",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_writes_bytes_total{container="",device="/dev/vdb",id="/",image="",name="",namespace="",pod=""} 2.63278592e+08 1795177879890
+container_fs_writes_bytes_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice",image="",name="",namespace="",pod=""} 6.7145728e+07 1795177879895
+container_fs_writes_bytes_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-besteffort.slice",image="",name="",namespace="",pod=""} 8192 1795177879339
+container_fs_writes_bytes_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-besteffort.slice/kubelet-kubepods-besteffort-pod97514114_46d7_4fc5_a961_074f5b08247a.slice",image="",name="",namespace="kube-system",pod="kube-proxy-msptl"} 8192 1795177874783
+container_fs_writes_bytes_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice",image="",name="",namespace="",pod=""} 6.7137536e+07 1795177881777
+container_fs_writes_bytes_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-pod0896d8e0_8da2_4cf2_a198_711028ae42ca.slice",image="",name="",namespace="default",pod="mc-load"} 6.7125248e+07 1795177876497
+container_fs_writes_bytes_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-podf42cab44_1b62_4d44_b77f_33efda185b87.slice",image="",name="",namespace="kube-system",pod="kindnet-lxhh5"} 12288 1795177876542
+container_fs_writes_bytes_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet.service",image="",name="",namespace="",pod=""} 90112 1795177870685
+container_fs_writes_bytes_total{container="",device="/dev/vdb",id="/system.slice/containerd.service",image="",name="",namespace="",pod=""} 1.95510272e+08 1795177869247
+container_fs_writes_bytes_total{container="burn",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-pod0896d8e0_8da2_4cf2_a198_711028ae42ca.slice/cri-containerd-3b3101b21e19eaec50416b65083ec59e9cd60c50582d9682cf18d22e0b4dcb95.scope",image="docker.io/library/busybox:1.36",name="3b3101b21e19eaec50416b65083ec59e9cd60c50582d9682cf18d22e0b4dcb95",namespace="default",pod="mc-load"} 6.7117056e+07 1795177872718
+container_fs_writes_bytes_total{container="chatty",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-pod0896d8e0_8da2_4cf2_a198_711028ae42ca.slice/cri-containerd-0322f251fcd32959893dcc898d783c26d665338fc91af1612b86c3091411bfff.scope",image="docker.io/library/busybox:1.36",name="0322f251fcd32959893dcc898d783c26d665338fc91af1612b86c3091411bfff",namespace="default",pod="mc-load"} 8192 1795177865742
+container_fs_writes_bytes_total{container="kindnet-cni",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-podf42cab44_1b62_4d44_b77f_33efda185b87.slice/cri-containerd-6e46a8315345ded44069bbbcd18ecde06e13ad23fb784360fd544904760e5206.scope",image="docker.io/kindest/kindnetd:v20260820-69b56db7",name="6e46a8315345ded44069bbbcd18ecde06e13ad23fb784360fd544904760e5206",namespace="kube-system",pod="kindnet-lxhh5"} 12288 1795177875722
+container_fs_writes_bytes_total{container="kube-proxy",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-besteffort.slice/kubelet-kubepods-besteffort-pod97514114_46d7_4fc5_a961_074f5b08247a.slice/cri-containerd-153813b2437575a98dcedd58615ce226519103961d774e92f77991f599eb6c8e.scope",image="registry.k8s.io/kube-proxy-arm64:v1.37.0",name="153813b2437575a98dcedd58615ce226519103961d774e92f77991f599eb6c8e",namespace="kube-system",pod="kube-proxy-msptl"} 8192 1795177878638
+# HELP container_fs_writes_merged_total Cumulative count of writes merged
+# TYPE container_fs_writes_merged_total counter
+container_fs_writes_merged_total{container="",device="/dev",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_writes_merged_total{container="",device="/dev/root",id="/",image="",name="",namespace="",pod=""} 185218 1795177879890
+container_fs_writes_merged_total{container="",device="/dev/shm",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_writes_merged_total{container="",device="/dev/vdb1",id="/",image="",name="",namespace="",pod=""} 8.1506408e+07 1795177879890
+container_fs_writes_merged_total{container="",device="/run",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_writes_merged_total{container="",device="/run/credentials/systemd-journald.service",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_writes_merged_total{container="",device="/tmp",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_writes_merged_total{container="",device="overlay",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_writes_merged_total{container="",device="overlay_0-51",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+# HELP container_fs_writes_total Cumulative count of writes completed
+# TYPE container_fs_writes_total counter
+container_fs_writes_total{container="",device="/dev",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_writes_total{container="",device="/dev/root",id="/",image="",name="",namespace="",pod=""} 1.282311e+06 1795177879890
+container_fs_writes_total{container="",device="/dev/shm",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_writes_total{container="",device="/dev/vda",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_writes_total{container="",device="/dev/vdb",id="/",image="",name="",namespace="",pod=""} 3302 1795177879890
+container_fs_writes_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice",image="",name="",namespace="",pod=""} 101 1795177879895
+container_fs_writes_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-besteffort.slice",image="",name="",namespace="",pod=""} 2 1795177879339
+container_fs_writes_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-besteffort.slice/kubelet-kubepods-besteffort-pod97514114_46d7_4fc5_a961_074f5b08247a.slice",image="",name="",namespace="kube-system",pod="kube-proxy-msptl"} 2 1795177874783
+container_fs_writes_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice",image="",name="",namespace="",pod=""} 99 1795177881777
+container_fs_writes_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-pod0896d8e0_8da2_4cf2_a198_711028ae42ca.slice",image="",name="",namespace="default",pod="mc-load"} 96 1795177876497
+container_fs_writes_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-podf42cab44_1b62_4d44_b77f_33efda185b87.slice",image="",name="",namespace="kube-system",pod="kindnet-lxhh5"} 3 1795177876542
+container_fs_writes_total{container="",device="/dev/vdb",id="/kubelet.slice/kubelet.service",image="",name="",namespace="",pod=""} 22 1795177870685
+container_fs_writes_total{container="",device="/dev/vdb",id="/system.slice/containerd.service",image="",name="",namespace="",pod=""} 3156 1795177869247
+container_fs_writes_total{container="",device="/dev/vdb1",id="/",image="",name="",namespace="",pod=""} 6.5226865e+07 1795177879890
+container_fs_writes_total{container="",device="/run",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_writes_total{container="",device="/run/credentials/systemd-journald.service",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_writes_total{container="",device="/tmp",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_writes_total{container="",device="overlay",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_writes_total{container="",device="overlay_0-51",id="/",image="",name="",namespace="",pod=""} 0 1795177879890
+container_fs_writes_total{container="burn",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-pod0896d8e0_8da2_4cf2_a198_711028ae42ca.slice/cri-containerd-3b3101b21e19eaec50416b65083ec59e9cd60c50582d9682cf18d22e0b4dcb95.scope",image="docker.io/library/busybox:1.36",name="3b3101b21e19eaec50416b65083ec59e9cd60c50582d9682cf18d22e0b4dcb95",namespace="default",pod="mc-load"} 94 1795177872718
+container_fs_writes_total{container="chatty",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-pod0896d8e0_8da2_4cf2_a198_711028ae42ca.slice/cri-containerd-0322f251fcd32959893dcc898d783c26d665338fc91af1612b86c3091411bfff.scope",image="docker.io/library/busybox:1.36",name="0322f251fcd32959893dcc898d783c26d665338fc91af1612b86c3091411bfff",namespace="default",pod="mc-load"} 2 1795177865742
+container_fs_writes_total{container="kindnet-cni",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-burstable.slice/kubelet-kubepods-burstable-podf42cab44_1b62_4d44_b77f_33efda185b87.slice/cri-containerd-6e46a8315345ded44069bbbcd18ecde06e13ad23fb784360fd544904760e5206.scope",image="docker.io/kindest/kindnetd:v20260820-69b56db7",name="6e46a8315345ded44069bbbcd18ecde06e13ad23fb784360fd544904760e5206",namespace="kube-system",pod="kindnet-lxhh5"} 3 1795177875722
+container_fs_writes_total{container="kube-proxy",device="/dev/vdb",id="/kubelet.slice/kubelet-kubepods.slice/kubelet-kubepods-besteffort.slice/kubelet-kubepods-besteffort-pod97514114_46d7_4fc5_a961_074f5b08247a.slice/cri-containerd-153813b2437575a98dcedd58615ce226519103961d774e92f77991f599eb6c8e.scope",image="registry.k8s.io/kube-proxy-arm64:v1.37.0",name="153813b2437575a98dcedd58615ce226519103961d774e92f77991f599eb6c8e",namespace="kube-system",pod="kube-proxy-msptl"} 2 1795177878638

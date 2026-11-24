@@ -1,0 +1,83 @@
+{
+ "apiVersion": "v1",
+ "items": [
+  {
+   "metadata": {
+    "labels": {
+     "beta.kubernetes.io/arch": "amd64",
+     "beta.kubernetes.io/os": "linux",
+     "kubernetes.io/arch": "amd64",
+     "kubernetes.io/hostname": "ip-10-0-0-10.ec2.internal",
+     "kubernetes.io/os": "linux",
+     "node-role.kubernetes.io/master": ""
+    },
+    "name": "ip-10-0-0-10.ec2.internal",
+    "uid": "e6aa7ca5-b51b-4802-aa9c-0f309616cc1d"
+   },
+   "spec": {
+    "taints": [
+     {
+      "effect": "NoSchedule",
+      "key": "node-role.kubernetes.io/master"
+     }
+    ]
+   },
+   "status": {
+    "addresses": [
+     {
+      "address": "10.0.0.10",
+      "type": "InternalIP"
+     },
+     {
+      "address": "ip-10-0-0-10.ec2.internal",
+      "type": "Hostname"
+     }
+    ],
+    "allocatable": {
+     "cpu": "4",
+     "ephemeral-storage": "28919288170",
+     "hugepages-1Gi": "0",
+     "hugepages-2Mi": "0",
+     "memory": "15983788Ki",
+     "pods": "110"
+    },
+    "capacity": {
+     "cpu": "4",
+     "ephemeral-storage": "31379436Ki",
+     "hugepages-1Gi": "0",
+     "hugepages-2Mi": "0",
+     "memory": "16086188Ki",
+     "pods": "110"
+    },
+    "conditions": [
+     {
+      "status": "False",
+      "type": "NetworkUnavailable"
+     },
+     {
+      "status": "False",
+      "type": "MemoryPressure"
+     },
+     {
+      "status": "False",
+      "type": "DiskPressure"
+     },
+     {
+      "status": "False",
+      "type": "PIDPressure"
+     },
+     {
+      "status": "True",
+      "type": "Ready"
+     }
+    ],
+    "daemonEndpoints": {
+     "kubeletEndpoint": {
+      "Port": 10250
+     }
+    }
+   }
+  }
+ ],
+ "kind": "NodeList"
+}
