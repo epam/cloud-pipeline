@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.entity.metadata;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Value;
 
 import java.util.List;
@@ -25,4 +27,11 @@ public class CategoricalAttribute {
 
     private String key;
     private List<CategoricalAttributeValue> values;
+
+    @JsonCreator
+    public CategoricalAttribute(@JsonProperty("key") final String key,
+                                @JsonProperty("values") final List<CategoricalAttributeValue> values) {
+        this.key = key;
+        this.values = values;
+    }
 }
