@@ -22,7 +22,8 @@ import logging
 from pipefuse import fuseutils
 from pipefuse.api import CloudPipelineClient, DataStorage
 from pipefuse.chain import ChainingService
-from pipefuse.fsclient import FileSystemClientDecorator, File, ForbiddenOperationException
+from pipefuse.fsclient import FileSystemClientDecorator, File, ForbiddenOperationException, \
+    NotEmptyOperationException
 from pipefuse.lock import synchronized
 
 
@@ -229,10 +230,18 @@ class StoragePathPermissionsFileSystemClient(FileSystemClientDecorator):
         self._inner.mv(old, new)
 
     def rmdir(self, path):
-        path = fuseutils.append_delimiter(path)
-        logging.debug("[%s] rmdir permissions checking:" % path)
-        for item in self.ls(fuseutils.append_delimiter(path), depth=-1):
-            self.delete(item.name)
+        # The inner client deletes only what an empty folder still holds, such as the folder marker.
+        # A folder that is not empty is refused before any permission check, as it deletes nothing.
+        # Each deleted file needs the write permission, as on unlink.
+        folder_path = fuseutils.append_delimiter(path)
+        paths = fuseutils.get_empty_folder_paths(folder_path, self._inner.ls(folder_path, depth=1))
+        if paths is None:
+            raise NotEmptyOperationException()
+        for folder_item_path in paths:
+            if folder_item_path != folder_path:
+                self._can_write(folder_item_path)
+        logging.debug("[%s] Removing empty folder." % path)
+        self._inner.rmdir(path)
 
     def delete(self, path):
         self._can_write(path)

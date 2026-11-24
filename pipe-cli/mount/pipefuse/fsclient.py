@@ -45,6 +45,10 @@ class InvalidOperationException(FileSystemOperationException):
     pass
 
 
+class NotEmptyOperationException(FileSystemOperationException):
+    pass
+
+
 class FileSystemClient(ChainingService):
     __metaclass__ = ABCMeta
 

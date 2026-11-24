@@ -32,7 +32,8 @@ from pipefuse import fuseutils
 from pipefuse.chain import ChainingService
 from pipefuse.fsclient import FileSystemOperationException, \
     UnsupportedOperationException, ForbiddenOperationException, \
-    NotFoundOperationException, NoDataOperationException, InvalidOperationException
+    NotFoundOperationException, NoDataOperationException, InvalidOperationException, \
+    NotEmptyOperationException
 
 
 class FileHandleContainer(object):
@@ -106,10 +107,7 @@ class PipeFS(Operations, ChainingService):
         self._lock = lock
 
     def _is_skipped_mac_files(self, path):
-        if not self._is_mac:
-            return False
-        filename = os.path.basename(path)
-        return filename in ['.DS_Store', '.localized'] or filename.startswith('._')
+        return self._is_mac and fuseutils.is_hidden_file(os.path.basename(path), mac=True)
 
     # Filesystem methods
     # ==================
@@ -170,7 +168,7 @@ class PipeFS(Operations, ChainingService):
         prefix = fuseutils.append_delimiter(path, self._delimiter)
         for f in self._client.ls(prefix):
             f_name = f.name.rstrip(self._delimiter)
-            if self._is_skipped_mac_files(f_name) or f_name == '.DS_Store':
+            if fuseutils.is_hidden_file(f_name, mac=self._is_mac):
                 continue
             if f_name:
                 dirents.append(f_name)
@@ -366,6 +364,8 @@ class ResilientFS(ChainingService):
                 raise FuseOSError(errno.ENODATA)
             except InvalidOperationException:
                 raise FuseOSError(errno.EINVAL)
+            except NotEmptyOperationException:
+                raise FuseOSError(errno.ENOTEMPTY)
             except Exception as e:
                 err_msg = str(e)
                 if isinstance(e, ClientError) and err_msg and 'InvalidObjectState' in err_msg:
