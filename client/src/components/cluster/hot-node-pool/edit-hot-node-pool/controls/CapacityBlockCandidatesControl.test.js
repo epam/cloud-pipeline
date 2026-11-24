@@ -154,9 +154,9 @@ test('a row with matching offerings renders a card per offering', () => {
   expect(screen.getByText('us-east-1b')).toBeInTheDocument();
 });
 
-test('a row with none, in a settled search, renders "No offerings"', () => {
+test('a row with none, in a settled search, renders "No offerings" as a warning alert', () => {
   const offeringForAnotherType = {...offering1, instanceType: 'p4d.24xlarge'};
-  render(
+  const {container} = render(
     <CapacityBlockCandidatesControl
       candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
       instanceTypes={instanceTypes}
@@ -164,7 +164,12 @@ test('a row with none, in a settled search, renders "No offerings"', () => {
       offeringsSearched
     />
   );
-  expect(screen.getByText('No offerings')).toBeInTheDocument();
+  const noOfferings = screen.getByText('No offerings');
+  expect(noOfferings).toBeInTheDocument();
+  // antd 2.13.14's `Alert` only exposes its type through its own class.
+  const alert = container.querySelector('.ant-alert');
+  expect(alert).toHaveClass('ant-alert-warning');
+  expect(alert.querySelector('.ant-alert-icon')).toBeInTheDocument();
 });
 
 test('a pending search never shows "No offerings", even over a stale empty list', () => {
@@ -374,8 +379,17 @@ test('offeringsPending shows the search indicator on the label line, and only th
       offeringsPending
     />
   );
-  expect(screen.getByText('Search for offerings...')).toBeInTheDocument();
-  expect(screen.getByLabelText('Loading')).toBeInTheDocument();
+  const pending = screen.getByText('Search for offerings...');
+  const icon = screen.getByLabelText('Loading');
+  expect(pending).toBeInTheDocument();
+  expect(icon).toBeInTheDocument();
+  // React 15 wraps a text sibling in its own comment markers, so the text node itself -
+  // not `firstChild` - is what has to be found and compared against the icon's position.
+  const childNodes = Array.from(pending.childNodes);
+  const textNode = childNodes.find((node) => node.nodeType === Node.TEXT_NODE);
+  expect(textNode.textContent).toBe('Search for offerings...');
+  // The text comes first and the spinner follows it, not the other way round.
+  expect(childNodes.indexOf(textNode)).toBeLessThan(childNodes.indexOf(icon));
   expect(screen.queryByText('us-east-1a')).not.toBeInTheDocument();
 
   rerender(

@@ -65,20 +65,40 @@
 }
 
 .capacity-block-offering-card {
+  margin: 0 8px 4px 0;
+}
+
+/* Overrides `.ant-alert`'s own padding - the compound selector beats the single-class
+   antd rule whatever order the two stylesheets load in. */
+.capacity-block-offering-card:global(.ant-alert) {
   display: inline-flex;
-  flex-direction: row;
+  align-items: center;
+  padding: 2px 8px 2px 32px;
+}
+
+/* antd fixes the icon at `top: 10px`, which this card's own, shorter padding no longer
+   centres - re-centre it against the card's own height instead. */
+.capacity-block-offering-card:global(.ant-alert) :global(.ant-alert-icon) {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.capacity-block-offering-card-message {
+  display: inline-flex;
   align-items: baseline;
-  vertical-align: top;
-  padding: 8px 10px;
-  margin: 0 8px 8px 0;
-  border-radius: 4px;
+}
+
+/* `showIcon` stays true for the unselected card too, so the icon's padding never moves
+   the text between the two states - only the icon itself is hidden here. */
+.capacity-block-offering-card-icon-hidden :global(.ant-alert-icon) {
+  visibility: hidden;
 }
 
 .capacity-block-offering-card-clickable {
   cursor: pointer;
 }
 
-.capacity-block-offering-card.disabled {
+.capacity-block-offering-card-clickable.disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
@@ -97,9 +117,9 @@
 .capacity-block-candidate-row {
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
-  padding: 4px 8px;
-  margin: -4px 0 4px -8px;
+  align-items: center;
+  padding: 0 8px;
+  margin: 0 0 8px -8px;
   border-radius: 4px;
 }
 
@@ -143,5 +163,5 @@
 }
 
 .capacity-block-offerings-pending-icon {
-  margin-right: 5px;
+  margin-left: 5px;
 }

@@ -85,16 +85,37 @@ test('a missing zone or price leaves the rest of the card intact', () => {
   expect(screen.queryByText('undefined')).not.toBeInTheDocument();
 });
 
-test('not interactive by default: no role, no selected styling, no click handling', async () => {
+// antd 2.13.14's `Alert` only exposes its `type` through its own class, so these two
+// tests assert on `.ant-alert-success`/`.ant-alert-info` rather than by role or text.
+test('a selected card renders a success alert with a visible icon', () => {
+  const {container} = render(<CapacityBlockOfferingCard offering={offering} selected />);
+  const alert = container.querySelector('.ant-alert');
+
+  expect(alert).toHaveClass('ant-alert-success');
+  expect(alert.querySelector('.ant-alert-icon')).toBeInTheDocument();
+  expect(alert).not.toHaveClass('capacityBlockOfferingCardIconHidden');
+});
+
+test('an unselected card renders an info alert whose icon is present but hidden', () => {
+  const {container} = render(<CapacityBlockOfferingCard offering={offering} />);
+  const alert = container.querySelector('.ant-alert');
+
+  expect(alert).toHaveClass('ant-alert-info');
+  expect(alert.querySelector('.ant-alert-icon')).toBeInTheDocument();
+  // `showIcon` stays true in both states so the padding never moves the text; this is
+  // the class that hides the icon itself for the unselected card.
+  expect(alert).toHaveClass('capacityBlockOfferingCardIconHidden');
+});
+
+test('not interactive by default: no role and no click handling', async () => {
   const onSelect = fn();
   const {container} = render(
     <CapacityBlockOfferingCard offering={offering} selected onSelect={onSelect} />
   );
 
   expect(container.querySelector('[role="button"]')).toBeNull();
-  expect(container.firstChild).not.toHaveClass('cp-table-element-selected');
 
-  await click(container.firstChild);
+  await click(container.querySelector('.ant-alert'));
 
   expect(onSelect).not.toHaveBeenCalled();
 });
@@ -127,12 +148,16 @@ test('interactive: the Space key also selects the card', async () => {
   expect(onSelect).toHaveBeenCalledWith('offering-1');
 });
 
-test('interactive: selected adds the selected class and a plain card does not carry it', () => {
-  const {rerender} = render(<CapacityBlockOfferingCard offering={offering} interactive />);
-  expect(screen.getByRole('button')).not.toHaveClass('cp-table-element-selected');
+test('interactive: selected renders success and unselected renders info, both by role', () => {
+  const {container, rerender} = render(
+    <CapacityBlockOfferingCard offering={offering} interactive />
+  );
+  expect(screen.getByRole('button')).toBeInTheDocument();
+  expect(container.querySelector('.ant-alert')).toHaveClass('ant-alert-info');
 
   rerender(<CapacityBlockOfferingCard offering={offering} interactive selected />);
-  expect(screen.getByRole('button')).toHaveClass('cp-table-element-selected');
+  expect(screen.getByRole('button')).toBeInTheDocument();
+  expect(container.querySelector('.ant-alert')).toHaveClass('ant-alert-success');
 });
 
 test('interactive and disabled does not call back', async () => {

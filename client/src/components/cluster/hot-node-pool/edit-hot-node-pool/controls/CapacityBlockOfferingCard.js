@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import moment from 'moment-timezone';
+import {Alert} from 'antd';
 import {COMMITMENT_DATE_TIME_FORMAT} from '../constants';
 import styles from '../../edit-hot-node-pool.css';
 
@@ -51,12 +52,15 @@ function formatUpfrontFee (amount, currency) {
   return `${formatted} ${currency}`;
 }
 
-// One offering's own facts, as a single line: zone, instance type, window, price.
-// The nodes count is not here - the Configuration section's read-only `Nodes count`
-// is filled from it instead. `interactive` defaults to false: the candidates control's
-// row is the selectable unit and owns the highlight, so the card here is a plain
-// element with no role, no selected styling and no click handling of its own. A
-// caller that still wants a self-contained clickable card sets `interactive`.
+// The offering's own facts, as a single line: zone, instance type, window, price. The
+// nodes count is not here - the Configuration section's read-only `Nodes count` is
+// filled from it instead. The card is an antd `Alert`, whose type carries the
+// selection - `success` once selected, `info` otherwise - rather than a highlight of
+// its own; `showIcon` is passed in both states so the icon's padding never moves the
+// text, and the `info` state only hides the icon itself, in CSS. `interactive`
+// defaults to false: the candidates control's row is usually the selectable unit, so
+// the card has no role of its own unless a row with several offerings makes each card
+// its own click target.
 function CapacityBlockOfferingCard ({offering, selected, disabled, interactive, onSelect}) {
   const {
     offeringId,
@@ -78,13 +82,27 @@ function CapacityBlockOfferingCard ({offering, selected, disabled, interactive, 
     <div key="window" className={styles.capacityBlockOfferingCardCell}>{offeringWindow}</div>,
     <div key="price" className={styles.capacityBlockOfferingCardCell}>{price}</div>
   ];
+  const type = selected ? 'success' : 'info';
+  const alert = (
+    <Alert
+      type={type}
+      showIcon
+      className={classNames(
+        styles.capacityBlockOfferingCard,
+        {[styles.capacityBlockOfferingCardIconHidden]: type === 'info'}
+      )}
+      message={
+        <span className={styles.capacityBlockOfferingCardMessage}>
+          {content}
+        </span>
+      }
+    />
+  );
   if (!interactive) {
-    return (
-      <div className={styles.capacityBlockOfferingCard}>
-        {content}
-      </div>
-    );
+    return alert;
   }
+  // antd 2.13.14's `Alert` does not forward unknown props to its root element, so the
+  // role/click/keyboard handling lives on a wrapping element instead.
   const select = () => {
     if (!disabled) {
       onSelect(offeringId);
@@ -102,18 +120,13 @@ function CapacityBlockOfferingCard ({offering, selected, disabled, interactive, 
       tabIndex={disabled ? -1 : 0}
       aria-disabled={disabled}
       className={classNames(
-        styles.capacityBlockOfferingCard,
         styles.capacityBlockOfferingCardClickable,
-        'cp-table-element',
-        {
-          'cp-table-element-selected': selected,
-          [styles.disabled]: disabled
-        }
+        {[styles.disabled]: disabled}
       )}
       onClick={select}
       onKeyDown={onKeyDown}
     >
-      {content}
+      {alert}
     </div>
   );
 }

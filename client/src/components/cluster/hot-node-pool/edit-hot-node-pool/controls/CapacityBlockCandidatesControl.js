@@ -63,14 +63,23 @@ function CapacityBlockCandidatesControl ({
       return null;
     }
     if (rowOfferings.length === 0) {
-      return offeringsSearched ? <span>No offerings</span> : null;
+      // A settled empty search is a `warning`, carrying the same card padding and height
+      // as a found offering so all three right-hand states read as one kind of object.
+      return offeringsSearched ? (
+        <Alert
+          type="warning"
+          showIcon
+          message="No offerings"
+          className={styles.capacityBlockOfferingCard}
+        />
+      ) : null;
     }
     return rowOfferings.map((offering) => (
       <CapacityBlockOfferingCard
         key={offering.offeringId}
         offering={offering}
         interactive={multipleOfferings}
-        selected={multipleOfferings && offering.offeringId === selectedOfferingId}
+        selected={offering.offeringId === selectedOfferingId}
         disabled={disabled || readOnly}
         onSelect={onSelectOffering}
       />
@@ -167,7 +176,10 @@ function CapacityBlockCandidatesControl ({
           }
         </div>
         <div
-          className={styles.capacityBlockCandidateOfferings}
+          className={classNames(
+            styles.capacityBlockCandidateOfferings,
+            {[styles.capacityBlockOfferingCardClickable]: canSelectRow}
+          )}
           role={canSelectRow ? 'button' : undefined}
           tabIndex={canSelectRow ? 0 : undefined}
           onKeyDown={canSelectRow ? onOfferingAreaKeyDown : undefined}
@@ -187,12 +199,12 @@ function CapacityBlockCandidatesControl ({
         {
           offeringsPending && (
             <span className={styles.capacityBlockOfferingsPending}>
+              Search for offerings...
               <Icon
                 type="loading"
                 aria-label="Loading"
                 className={styles.capacityBlockOfferingsPendingIcon}
               />
-              Search for offerings...
             </span>
           )
         }
