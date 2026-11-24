@@ -65,7 +65,9 @@
 }
 
 .capacity-block-offering-card {
-  display: inline-block;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: baseline;
   vertical-align: top;
   padding: 8px 10px;
   margin: 0 8px 8px 0;
@@ -81,30 +83,15 @@
   opacity: 0.5;
 }
 
-.capacity-block-offering-card-row {
-  display: flex;
-  flex-direction: row;
-}
-
-.capacity-block-offering-card-row + .capacity-block-offering-card-row {
-  margin-top: 2px;
-}
-
 .capacity-block-offering-card-cell {
   box-sizing: border-box;
-  min-width: 0;
-  padding-right: 10px;
+  white-space: nowrap;
   font-size: 12px;
   line-height: 16px;
 }
 
-.capacity-block-offering-card-cell:first-child {
-  flex: 0 0 auto;
-  white-space: nowrap;
-}
-
-.capacity-block-offering-card-cell:last-child {
-  flex: 1 1 auto;
+.capacity-block-offering-card-cell + .capacity-block-offering-card-cell {
+  margin-left: 10px;
 }
 
 .capacity-block-candidate-row {

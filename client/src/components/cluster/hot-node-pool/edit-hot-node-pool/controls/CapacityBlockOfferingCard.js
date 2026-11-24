@@ -35,7 +35,8 @@ function formatOfferingWindow (startDate, endDate) {
   return start || end;
 }
 
-// Thousands-separated, two decimals.
+// Thousands-separated, two decimals. AWS prices a capacity block in USD in every
+// region, so a USD (or absent) currency gets a `$` prefix rather than a suffix.
 function formatUpfrontFee (amount, currency) {
   if (amount === undefined || amount === null || Number.isNaN(Number(amount))) {
     return undefined;
@@ -44,16 +45,18 @@ function formatUpfrontFee (amount, currency) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
-  return currency ? `${formatted} ${currency}` : formatted;
+  if (!currency || currency === 'USD') {
+    return `$${formatted}`;
+  }
+  return `${formatted} ${currency}`;
 }
 
-// One offering's own facts, laid out as a 2x2 table: instance type and window on the
-// first line, availability zone and price on the second. The nodes count is not here -
-// the Configuration section's read-only `Nodes count` is filled from it instead.
-// `interactive` defaults to false: the candidates control's row is the selectable unit
-// and owns the highlight, so the card here is a plain element with no role, no
-// selected styling and no click handling of its own. A caller that still wants a
-// self-contained clickable card sets `interactive`.
+// One offering's own facts, as a single line: zone, instance type, window, price.
+// The nodes count is not here - the Configuration section's read-only `Nodes count`
+// is filled from it instead. `interactive` defaults to false: the candidates control's
+// row is the selectable unit and owns the highlight, so the card here is a plain
+// element with no role, no selected styling and no click handling of its own. A
+// caller that still wants a self-contained clickable card sets `interactive`.
 function CapacityBlockOfferingCard ({offering, selected, disabled, interactive, onSelect}) {
   const {
     offeringId,
@@ -66,19 +69,14 @@ function CapacityBlockOfferingCard ({offering, selected, disabled, interactive, 
   } = offering || {};
   const offeringWindow = formatOfferingWindow(startDate, endDate);
   const price = formatUpfrontFee(upfrontFeeAmount, upfrontFeeCurrency);
-  // Two rows of two cells, always rendered, so a missing fact leaves its own cell
-  // empty rather than shifting the others out of their column.
+  // One cell per fact, so a missing fact simply leaves its own cell empty.
   const content = [
-    <div key="row1" className={styles.capacityBlockOfferingCardRow}>
-      <div className={styles.capacityBlockOfferingCardCell}>
-        {instanceType && <b>{instanceType}</b>}
-      </div>
-      <div className={styles.capacityBlockOfferingCardCell}>{offeringWindow}</div>
+    <div key="zone" className={styles.capacityBlockOfferingCardCell}>{availabilityZone}</div>,
+    <div key="type" className={styles.capacityBlockOfferingCardCell}>
+      {instanceType && <b>{instanceType}</b>}
     </div>,
-    <div key="row2" className={styles.capacityBlockOfferingCardRow}>
-      <div className={styles.capacityBlockOfferingCardCell}>{availabilityZone}</div>
-      <div className={styles.capacityBlockOfferingCardCell}>{price}</div>
-    </div>
+    <div key="window" className={styles.capacityBlockOfferingCardCell}>{offeringWindow}</div>,
+    <div key="price" className={styles.capacityBlockOfferingCardCell}>{price}</div>
   ];
   if (!interactive) {
     return (

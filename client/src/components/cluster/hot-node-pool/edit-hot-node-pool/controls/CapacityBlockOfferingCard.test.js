@@ -29,13 +29,38 @@ const offering = {
   upfrontFeeCurrency: 'USD'
 };
 
-test('renders the type, the window, the zone and the price, but not the nodes count', () => {
+test('renders the zone, the type, the window and the price in that order, but not the ' +
+  'nodes count', () => {
   render(<CapacityBlockOfferingCard offering={offering} />);
-  expect(screen.getByText('p5.48xlarge')).toBeInTheDocument();
-  expect(screen.getByText('2026-12-21 04:14 – 2026-12-31 04:14')).toBeInTheDocument();
-  expect(screen.getByText('us-east-1a')).toBeInTheDocument();
-  expect(screen.getByText('1,234.50 USD')).toBeInTheDocument();
+  const cells = screen.getAllByText(
+    /us-east-1a|p5\.48xlarge|2026-12-21 04:14 – 2026-12-31 04:14|\$1,234\.50/
+  );
+  expect(cells.map(cell => cell.textContent)).toEqual([
+    'us-east-1a',
+    'p5.48xlarge',
+    '2026-12-21 04:14 – 2026-12-31 04:14',
+    '$1,234.50'
+  ]);
   expect(screen.queryByText(/node/)).not.toBeInTheDocument();
+});
+
+test('a USD price renders with a `$` prefix and no currency suffix', () => {
+  render(<CapacityBlockOfferingCard offering={offering} />);
+  expect(screen.getByText('$1,234.50')).toBeInTheDocument();
+  expect(screen.queryByText(/USD/)).not.toBeInTheDocument();
+});
+
+test('a missing currency is treated as USD', () => {
+  const noCurrency = {...offering, upfrontFeeCurrency: undefined};
+  render(<CapacityBlockOfferingCard offering={noCurrency} />);
+  expect(screen.getByText('$1,234.50')).toBeInTheDocument();
+});
+
+test('a non-USD price keeps the amount-then-code form', () => {
+  const eur = {...offering, upfrontFeeCurrency: 'EUR'};
+  render(<CapacityBlockOfferingCard offering={eur} />);
+  expect(screen.getByText('1,234.50 EUR')).toBeInTheDocument();
+  expect(screen.queryByText(/^\$/)).not.toBeInTheDocument();
 });
 
 test('omits a missing optional field rather than rendering it as undefined', () => {
