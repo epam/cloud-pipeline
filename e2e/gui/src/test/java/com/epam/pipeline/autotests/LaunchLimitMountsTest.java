@@ -165,21 +165,57 @@ public class LaunchLimitMountsTest
         }
     }
 
+    /**
+     * Puts the testing tool's settings back first: the classes after this one launch it too, and while "Do not mount
+     * storages" stays unticked there, each of their runs mounts every storage of the platform before its SSH link
+     * shows. Each step runs even where one before it fails, and the first failure is reported. The pipeline exists
+     * only where TC-PARAMETERS-5 got as far as creating it.
+     */
     @AfterClass(alwaysRun = true)
     public void removeEntities() {
         open(C.ROOT_ADDRESS);
         logoutIfNeeded();
         loginAs(admin);
-        removeStorages(this, storage1, storage2, storageSensitive, storage3, storage4, storage5, storage6);
-        library().removePipeline(pipeline1);
-        tools()
-                .performWithin(registry, anotherGroup, testSensitiveTool, tool ->
-                        tool.settings()
-                                .disableAllowSensitiveStorage()
-                                .save()
-                );
-        ToolVersionSettings.restore(sensitiveToolSettings);
-        ToolVersionSettings.restore(toolSettings);
+        runAll(
+                () -> ToolVersionSettings.restore(toolSettings),
+                () -> tools()
+                        .performWithin(registry, anotherGroup, testSensitiveTool, tool ->
+                                tool.settings()
+                                        .disableAllowSensitiveStorage()
+                                        .save()
+                        ),
+                () -> ToolVersionSettings.restore(sensitiveToolSettings),
+                () -> removeStorages(this, storage1, storage2, storageSensitive, storage3, storage4, storage5,
+                        storage6),
+                () -> library().removePipelineIfExists(pipeline1));
+    }
+
+    private static void runAll(final Runnable... steps) {
+        RuntimeException exception = null;
+        Error error = null;
+        for (final Runnable step : steps) {
+            try {
+                step.run();
+            } catch (RuntimeException e) {
+                if (exception == null) {
+                    exception = e;
+                } else {
+                    exception.addSuppressed(e);
+                }
+            } catch (Error e) {
+                if (error == null) {
+                    error = e;
+                } else {
+                    error.addSuppressed(e);
+                }
+            }
+        }
+        if (error != null) {
+            throw error;
+        }
+        if (exception != null) {
+            throw exception;
+        }
     }
 
     @Test(priority = 1)
@@ -414,11 +450,12 @@ public class LaunchLimitMountsTest
             checkOOMwarningMessage("1", true, countObjectStorages+addStor.size(), minNodeType);
             checkOOMwarningMessage("100", false, countObjectStorages+addStor.size(), minNodeType);
         } finally {
-            if(countObjectStorages < minRAM) {
-                logoutIfNeeded();
-                loginAs(admin);
-                addStor.forEach(stor -> library().removeStorage(stor));
-            }
+            // as the admin again in any case: the cases after this one create storages and pipelines, which the test
+            // user may not do. In the impersonation mode only the logout ends the user's session (loginAs(admin)
+            // does nothing there).
+            logoutIfNeeded();
+            loginAs(admin);
+            addStor.forEach(stor -> library().removeStorage(stor));
         }
     }
 

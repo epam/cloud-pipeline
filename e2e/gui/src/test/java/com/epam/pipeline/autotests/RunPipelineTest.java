@@ -156,7 +156,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
             .launch(this);
         final String runId = getLastRunId();
         runs
-            .ensure(tabWithName("Active Runs"), visible, selectedTab)
+            .ensureActiveRunsTabSelected()
             .runShouldBeWaiting(runId)
             .runCellShouldHave(runId, RunsMenuAO.HeaderColumn.RUN, text(String.format("%s-%s", pipeline100, runId)))
             .runCellShouldHave(runId, RunsMenuAO.HeaderColumn.PIPELINE, text(pipeline100), matchText("draft-.{8}"))

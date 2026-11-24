@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.LogAO;
+import com.epam.pipeline.autotests.ao.SettingsPageAO.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
 import com.epam.pipeline.autotests.ao.SettingsPageAO.PreferencesAO.SystemTabAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -36,6 +37,7 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.epam.pipeline.autotests.ao.Primitive.AUTO_PAUSE;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.runWithId;
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
+import static com.epam.pipeline.autotests.utils.Utils.SPOT;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 
 public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements Tools, Authorization {
@@ -44,14 +46,17 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
     private final String instanceType = C.DEFAULT_INSTANCE;
-    private final String defaultPriceType = C.DEFAULT_INSTANCE_PRICE_TYPE;
     private final String diskSize = "15";
     private final String onDemand = ON_DEMAND;
+    // the launch form offers "Auto pause" to an admin or to a member of this role (LaunchPipelineForm.js
+    // renderDisableAutoPauseFormItem), and the cases launch as the test user
+    private static final String ROLE_ADVANCED_USER = "ROLE_ADVANCED_USER";
 
     private String maxIdleTimeout;
     private String idleActionTimeout;
     private String idleCpuThreshold;
     private String idleAction;
+    private boolean userIsAdvancedUser = true;
 
     @BeforeClass(alwaysRun = true)
     public void getDefaultPreferences() {
@@ -60,12 +65,35 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
             idleActionTimeout = getSystemValue(SystemTabAO::getIdleActionTimeout);
             idleCpuThreshold = getSystemValue(SystemTabAO::getIdleCpuThreshold);
             idleAction = getSystemValue(SystemTabAO::getIdleAction);
+            final EditUserPopup editUserPopup = navigationMenu()
+                    .settings()
+                    .switchToUserManagement()
+                    .switchToUsers()
+                    .searchUserEntry(user.login)
+                    .edit();
+            userIsAdvancedUser = editUserPopup.isUserHasRoleOrGroup(ROLE_ADVANCED_USER);
+            editUserPopup
+                    .addRoleOrGroupIfNonExist(ROLE_ADVANCED_USER)
+                    .ok();
         });
     }
 
     @AfterClass(alwaysRun = true)
     public void fallBackPreferences() {
-        setSystemPreferences(maxIdleTimeout, idleActionTimeout, idleCpuThreshold, idleAction);
+        try {
+            setSystemPreferences(maxIdleTimeout, idleActionTimeout, idleCpuThreshold, idleAction);
+        } finally {
+            if (!userIsAdvancedUser) {
+                loginAsAdminAndPerform(() -> navigationMenu()
+                        .settings()
+                        .switchToUserManagement()
+                        .switchToUsers()
+                        .searchUserEntry(user.login)
+                        .edit()
+                        .deleteRoleOrGroupIfExist(ROLE_ADVANCED_USER)
+                        .ok());
+            }
+        }
     }
 
     @Test
@@ -75,7 +103,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
         relogin();
 
         final String run1 = launchTool(onDemand, enabled);
-        final String run2 = launchTool(defaultPriceType, hidden);
+        final String run2 = launchTool(SPOT, hidden);
         runsMenu()
                 .activeRuns()
                 .ensure(runWithId(run2), visible)
@@ -94,7 +122,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
         relogin();
 
         final String run1 = launchTool(onDemand, enabled);
-        final String run2 = launchTool(defaultPriceType, hidden);
+        final String run2 = launchTool(SPOT, hidden);
         // each run is looked for on the tab that lists its status, once it has it: a deployment can list the PAUSED
         // runs on a tab of their own (ui.runs.filters), and by default "Active Runs" lists them
         runsMenu()

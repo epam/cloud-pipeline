@@ -134,7 +134,10 @@ public class DNSrecordForRunsTest extends AbstractSeveralPipelineRunningTest
                 .setValue(FRIENDLY_URL, friendlyURL)
                 .launch(this)
                 .showLog(runID2 = getLastRunId());
-        domainBasedToolFriendlyPathLink = domainBasedLink(format("%s-e2e-endpoint", friendlyURL));
+        // no endpoint name in the host: the run adds the capability's NoMachine endpoint to the tool's single one,
+        // which the edge then makes the default endpoint, and a pretty URL names a default endpoint by itself
+        // (cp-edge sync-routes.py, EDGE_DISABLE_NAME_SUFFIX_FOR_DEFAULT_ENDPOINT, true unless set otherwise)
+        domainBasedToolFriendlyPathLink = domainBasedLink(friendlyURL);
         suffixBasedNoMachineFriendlyPathLink = format("%s/%s-NoMachine", edgeAddress, friendlyURL);
         logAO.waitForSshLink()
                 .waitForEndpointLink()

@@ -21,7 +21,12 @@ import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
+import com.epam.pipeline.autotests.utils.PlatformApi;
 import com.epam.pipeline.autotests.utils.TestCase;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.stream.Stream;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -37,7 +42,6 @@ import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
 import static com.epam.pipeline.autotests.ao.Primitive.RUN_CAPABILITIES;
 import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
-import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -57,15 +61,20 @@ public class ToolsParametersTest
     private final String custCapability2 = "testCapability2";
     private final String capabilityParam = "CP_CAP_CUSTOM_%s";
     private final String logMessage = "Running '%s' commands:";
-    private String[] prefInitialValue;
+    // launch.capabilities as it was before the class, null where it could not be read; fallBackToDefaultToolSettings
+    // writes it back through the API: typed back into the code editor, a long value comes out spoilt, as the editor
+    // closes brackets and quotes by itself
+    private JsonNode launchCapabilitiesBefore;
 
     @BeforeClass
     public void getPreferencesValue() {
         fallbackToToolDefaultState(registry, group, tool);
-        prefInitialValue = navigationMenu()
-                .settings()
-                .switchToPreferences()
-                .getPreference(launchCapabilities);
+        try {
+            launchCapabilitiesBefore = PlatformApi.get("preferences/" + launchCapabilities);
+        } catch (AssertionError e) {
+            System.out.printf("[WARN] %s could not be read, and is not put back after the class: %s%n",
+                    launchCapabilities, e.getMessage());
+        }
     }
 
     @BeforeMethod
@@ -78,12 +87,19 @@ public class ToolsParametersTest
     public void fallBackToDefaultToolSettings() {
         logoutIfNeeded();
         loginAs(admin);
-        fallbackToToolDefaultState(registry, group, tool);
-        navigationMenu()
-                .settings()
-                .switchToPreferences()
-                .clearAndSetJsonToPreference(launchCapabilities, prefInitialValue[0], parseBoolean(prefInitialValue[1]))
-                .saveIfNeeded();
+        try {
+            fallbackToToolDefaultState(registry, group, tool);
+        } finally {
+            if (launchCapabilitiesBefore != null && launchCapabilitiesBefore.isObject()) {
+                final ObjectNode preference = JsonNodeFactory.instance.objectNode();
+                // only the fields the preference has: this Jackson writes a missing one with no value, which is not JSON
+                Stream.of("name", "value", "type", "preferenceGroup", "visible", "description")
+                        .filter(launchCapabilitiesBefore::has)
+                        .forEach(field -> preference.set(field, launchCapabilitiesBefore.get(field)));
+                PlatformApi.call("POST", "preferences",
+                        JsonNodeFactory.instance.arrayNode().add(preference).toString());
+            }
+        }
     }
 
     @Test(priority = 1)
@@ -182,6 +198,9 @@ public class ToolsParametersTest
                 .ensure(configurationParameter("MY_PARAM1", "MY_VALUE1"), exist)
                 .ensure(configurationParameter("MY_PARAM2", "MY_VALUE2"), exist)
                 .ensure(configurationParameter("MY_BOOLEAN_PARAM", "false"), exist)
-                .ensure(configurationParameter("MY_NUMBER_PARAM", "2"), exist);
+                // both capabilities set it: a value that is not a boolean gets the values of both, a list of 1 and 2
+                // (run-capabilities.js applyCustomCapabilitiesParameters, PipelineConfigurationLaunchCapabilitiesProcessor),
+                // whose items have no gap between them in the row's text, as develop's test reads it
+                .ensure(configurationParameter("MY_NUMBER_PARAM", "12"), exist);
     }
 }

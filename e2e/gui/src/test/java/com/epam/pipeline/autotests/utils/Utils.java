@@ -76,6 +76,7 @@ public class Utils {
     public static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
     public static final String DATE_PATTERN = "yyyy-MM-dd";
     public static final String ON_DEMAND = "On-demand";
+    public static final String SPOT = "Spot";
     public static final String PASTE_KEY = "v";
     public static final String COPY_KEY = "a";
     public static final String CHROME_BROWSER = "chrome";
@@ -125,9 +126,17 @@ public class Utils {
         sendKeysWithSlashes(text.replace("\u200b", ""));
     }
 
+    /**
+     * Empties a text input or a code editor: a click into it, Ctrl+A and Delete, then Backspace and Delete 1000 times
+     * each. The presses alone remove at most 1000 characters on each side of the click, and a value can be longer
+     * (a preference such as launch.capabilities can be a single line of some thousand characters): the rest would
+     * stay and spoil what is typed after it.
+     */
     public static void clearTextField(final SelenideElement field) {
         sleep(500, MILLISECONDS);
-        final Actions action = actions().moveToElement(field).click();
+        final Actions action = actions().moveToElement(field).click()
+                .keyDown(Keys.CONTROL).sendKeys("a").keyUp(Keys.CONTROL)
+                .sendKeys(Keys.DELETE);
         for (int i = 0; i < 1000; i++) {
             action.sendKeys("\b").sendKeys(Keys.DELETE);
         }
