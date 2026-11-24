@@ -473,6 +473,87 @@ test('future-dated mode locks Price type to On-demand and disables the control',
   expect(screen.queryByText('Spot')).not.toBeInTheDocument();
 });
 
+test('ML Block mode renders the ML Block section header instead of Schedule', () => {
+  renderForm({values: baseValues({mode: 'ML_BLOCK'})});
+  expect(screen.getByText('ML Block')).toBeInTheDocument();
+  expect(screen.queryByText('Schedule')).not.toBeInTheDocument();
+});
+
+test('ML Block mode shows the one-time commitment window, not the weekly schedule UI', () => {
+  renderForm({values: baseValues({mode: 'ML_BLOCK'})});
+  expect(screen.getByText('Search from:')).toBeInTheDocument();
+  expect(screen.getByText('Search until:')).toBeInTheDocument();
+  expect(screen.getByText('Duration (days):')).toBeInTheDocument();
+  expect(screen.queryByText('Add schedule')).not.toBeInTheDocument();
+});
+
+test('ML Block mode hides the Autoscaled checkbox but keeps Nodes count', () => {
+  renderForm({values: baseValues({mode: 'ML_BLOCK'})});
+  expect(screen.queryByText('Autoscaled:')).not.toBeInTheDocument();
+  expect(screen.getByText('Nodes count:')).toBeInTheDocument();
+});
+
+test('ML Block mode disables Instance Type and Nodes count, filled from the offering', () => {
+  renderForm({values: baseValues({mode: 'ML_BLOCK'})});
+  expect(selectIsDisabled('Instance Type:')).toBe(true);
+  expect(within(row('Nodes count:')).getByRole('textbox')).toBeDisabled();
+});
+
+test('ML Block mode renders the candidates control under Duration (days)', () => {
+  renderForm({values: baseValues({mode: 'ML_BLOCK'})});
+  const text = document.body.textContent;
+  expect(text.indexOf('Duration (days):')).toBeLessThan(text.indexOf('Instance types:'));
+  expect(screen.getByRole('button', {name: 'Add instance type'})).toBeInTheDocument();
+});
+
+test('ML Block mode locks Price type to On-demand and hides Spot', () => {
+  renderForm({values: baseValues({mode: 'ML_BLOCK', spot: 'ON_DEMAND'})});
+  expect(selectIsDisabled('Price type:')).toBe(true);
+  expect(screen.getByText('On-demand')).toBeInTheDocument();
+  expect(screen.queryByText('Spot')).not.toBeInTheDocument();
+});
+
+test('Add instance type calls onChange with an add action for mlBlockCandidates', async () => {
+  const onChange = fn();
+  renderForm({onChange, values: baseValues({mode: 'ML_BLOCK'})});
+
+  await click(screen.getByRole('button', {name: 'Add instance type'}));
+
+  expect(onChange).toHaveBeenLastCalledWith('mlBlockCandidates', {action: 'add'});
+});
+
+test('selecting an offering calls onChange with (\'mlBlockOffering\', offeringId)', async () => {
+  const onChange = fn();
+  renderForm({
+    onChange,
+    values: baseValues({
+      mode: 'ML_BLOCK',
+      mlBlockCandidates: [{id: 1, instanceType: 'p5.48xlarge', instanceCount: 4}]
+    }),
+    mlBlockOfferings: [{
+      offeringId: 'o-1',
+      instanceType: 'p5.48xlarge',
+      instanceCount: 4,
+      availabilityZone: 'eu-central-1a',
+      startDate: '2026-12-21 04:14:02.500',
+      endDate: '2026-12-31 04:14:02.500'
+    }]
+  });
+
+  await click(screen.getByRole('button', {name: /p5\.48xlarge/}));
+
+  expect(onChange).toHaveBeenLastCalledWith('mlBlockOffering', 'o-1');
+});
+
+test('ML Block mode shows the "Select one of the offerings" error once touched', () => {
+  renderForm({
+    values: baseValues({mode: 'ML_BLOCK'}),
+    validation: {mlBlockOffering: 'Select one of the offerings'},
+    touched: {mlBlockOffering: true}
+  });
+  expect(screen.getByText('Select one of the offerings')).toBeInTheDocument();
+});
+
 test('DEFAULT mode still offers both price types', async () => {
   renderForm({values: baseValues({mode: 'DEFAULT', spot: 'ON_DEMAND'})});
 
