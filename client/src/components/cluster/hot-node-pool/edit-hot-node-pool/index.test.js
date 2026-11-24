@@ -1226,8 +1226,10 @@ async function enterMlBlockMode () {
 
 // A region change fires the allowed-instance-types refetch, and in ML Block mode the
 // catalogue fetch too - `flushPromises` here keeps both from leaking past this test.
+// Every caller is already in ML Block mode, where `Search in region` is the only
+// editable region control - `Configuration`'s own `Region` is disabled there.
 async function selectRegion (name) {
-  await click(within(row('Region:')).getByRole('combobox'));
+  await click(within(row('Search in region:')).getByRole('combobox'));
   await click(screen.getByText(name));
   await flushPromises();
 }

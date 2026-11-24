@@ -508,6 +508,47 @@ test('ML Block mode renders the candidates control under Duration (days)', () =>
   expect(screen.getByRole('button', {name: 'Add instance type'})).toBeInTheDocument();
 });
 
+test(
+  'ML Block mode renders Search in region under Duration (days) and above the candidates',
+  () => {
+    renderForm({values: baseValues({mode: 'ML_BLOCK'})});
+    const text = document.body.textContent;
+    expect(text.indexOf('Duration (days):')).toBeLessThan(text.indexOf('Search in region:'));
+    expect(text.indexOf('Search in region:')).toBeLessThan(text.indexOf('Instance types:'));
+  }
+);
+
+test(
+  'ML Block mode disables Configuration\'s Region, editable only through Search in region',
+  () => {
+    renderForm({values: baseValues({mode: 'ML_BLOCK'})});
+    expect(selectIsDisabled('Region:')).toBe(true);
+    expect(selectIsDisabled('Search in region:')).toBe(false);
+  }
+);
+
+test('changing Search in region calls onChange with (\'region\', value)', async () => {
+  const onChange = fn();
+  renderForm({onChange, values: baseValues({mode: 'ML_BLOCK', region: 1})});
+
+  await click(within(row('Search in region:')).getByRole('combobox'));
+  await click(screen.getByText('westeurope'));
+
+  expect(onChange).toHaveBeenLastCalledWith('region', '2');
+});
+
+test('Default mode has no Search in region and Region stays editable', () => {
+  renderForm({values: baseValues({mode: MODE_DEFAULT})});
+  expect(screen.queryByText('Search in region:')).not.toBeInTheDocument();
+  expect(selectIsDisabled('Region:')).toBe(false);
+});
+
+test('Future dated mode has no Search in region and Region stays editable', () => {
+  renderForm({values: baseValues({mode: 'FUTURE_DATED'})});
+  expect(screen.queryByText('Search in region:')).not.toBeInTheDocument();
+  expect(selectIsDisabled('Region:')).toBe(false);
+});
+
 test('ML Block mode locks Price type to On-demand and hides Spot', () => {
   renderForm({values: baseValues({mode: 'ML_BLOCK', spot: 'ON_DEMAND'})});
   expect(selectIsDisabled('Price type:')).toBe(true);

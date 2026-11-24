@@ -46,7 +46,7 @@ import {
 } from './constants';
 import styles from '../edit-hot-node-pool.css';
 
-function RegionSelect ({regions, value, onChange, disabled, error, touched}) {
+function RegionSelect ({regions, value, onChange, disabled, error, touched, label}) {
   const providers = [...(new Set(regions.map(r => r.provider)))];
   const data = providers.map(provider => ({
     provider,
@@ -54,7 +54,7 @@ function RegionSelect ({regions, value, onChange, disabled, error, touched}) {
   }));
   return (
     <SelectInput
-      label="Region:"
+      label={label}
       showSearch
       value={value ? `${value}` : undefined}
       onChange={onChange}
@@ -87,6 +87,10 @@ function RegionSelect ({regions, value, onChange, disabled, error, touched}) {
     </SelectInput>
   );
 }
+
+RegionSelect.defaultProps = {
+  label: 'Region:'
+};
 
 function InstanceTypeSelect ({
   instanceTypes,
@@ -320,29 +324,42 @@ function EditHotNodePoolForm ({
             >
               {
                 mlBlock ? (
-                  <CapacityBlockCandidatesControl
-                    candidates={mlBlockCandidates}
-                    instanceTypes={mlBlockInstanceTypes}
-                    instanceTypesPending={mlBlockInstanceTypesPending}
-                    instanceTypesError={mlBlockInstanceTypesError}
-                    offerings={mlBlockOfferings}
-                    offeringsPending={mlBlockOfferingsPending}
-                    offeringsError={mlBlockOfferingsError}
-                    offeringsSearched={mlBlockOfferingsSearched}
-                    selectedOfferingId={mlBlockOfferingId}
-                    disabled={disabled}
-                    readOnly={readOnly}
-                    // The control has one error slot; a candidate problem takes
-                    // priority since it must be fixed before an offering can be picked.
-                    error={validation.mlBlockCandidates || validation.mlBlockOffering}
-                    touched={touched.mlBlockCandidates || touched.mlBlockOffering}
-                    onAdd={() => onChange('mlBlockCandidates', {action: 'add'})}
-                    onRemove={id => onChange('mlBlockCandidates', {action: 'remove', id})}
-                    onChange={(id, field, value) => onChange(
-                      'mlBlockCandidates', {action: 'update', id, field, value}
-                    )}
-                    onSelectOffering={offeringId => onChange('mlBlockOffering', offeringId)}
-                  />
+                  // One wrapping element, not two direct children: React 15 has no
+                  // `Fragment` to hold the region control and the candidates control.
+                  <div>
+                    <RegionSelect
+                      label="Search in region:"
+                      regions={regions}
+                      value={region}
+                      onChange={value => onChange('region', value)}
+                      disabled={disabled || readOnly}
+                      error={validation.region}
+                      touched={touched.region}
+                    />
+                    <CapacityBlockCandidatesControl
+                      candidates={mlBlockCandidates}
+                      instanceTypes={mlBlockInstanceTypes}
+                      instanceTypesPending={mlBlockInstanceTypesPending}
+                      instanceTypesError={mlBlockInstanceTypesError}
+                      offerings={mlBlockOfferings}
+                      offeringsPending={mlBlockOfferingsPending}
+                      offeringsError={mlBlockOfferingsError}
+                      offeringsSearched={mlBlockOfferingsSearched}
+                      selectedOfferingId={mlBlockOfferingId}
+                      disabled={disabled}
+                      readOnly={readOnly}
+                      // The control has one error slot; a candidate problem takes
+                      // priority since it must be fixed before an offering can be picked.
+                      error={validation.mlBlockCandidates || validation.mlBlockOffering}
+                      touched={touched.mlBlockCandidates || touched.mlBlockOffering}
+                      onAdd={() => onChange('mlBlockCandidates', {action: 'add'})}
+                      onRemove={id => onChange('mlBlockCandidates', {action: 'remove', id})}
+                      onChange={(id, field, value) => onChange(
+                        'mlBlockCandidates', {action: 'update', id, field, value}
+                      )}
+                      onSelectOffering={offeringId => onChange('mlBlockOffering', offeringId)}
+                    />
+                  </div>
                 ) : null
               }
             </ReservationScheduleControl>
@@ -491,7 +508,9 @@ function EditHotNodePoolForm ({
         regions={regions}
         value={region}
         onChange={value => onChange('region', value)}
-        disabled={disabled || readOnly}
+        // ML Block mode's own "Search in region" control, above, is where this value
+        // is decided; it is never user-editable here.
+        disabled={disabled || readOnly || mlBlock}
         error={validation.region}
         touched={touched.region}
       />
