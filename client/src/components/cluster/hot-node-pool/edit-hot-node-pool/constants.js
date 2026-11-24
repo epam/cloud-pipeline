@@ -64,3 +64,14 @@ export const RESERVATION_TERMINAL_STATUSES = [
   RESERVATION_STATUS_FAILED,
   RESERVATION_STATUS_CANCELLED
 ];
+
+export const MODE_ML_BLOCK = 'ML_BLOCK';
+// The backend `CapacityReservationType` enum value.
+export const RESERVATION_TYPE_CAPACITY_BLOCK = 'CAPACITY_BLOCK';
+// The only `CapacityBlockResourceType` the backend accepts today.
+export const CAPACITY_BLOCK_RESOURCE_TYPE_INSTANCE = 'INSTANCE';
+// AWS sells a block by the hour; the form asks for whole days, and one day is the floor.
+export const MIN_ML_BLOCK_DURATION_DAYS = 1;
+export const HOURS_PER_DAY = 24;
+// A nodes count is typed digit by digit, so the search waits for the typing to settle.
+export const ML_BLOCK_OFFERINGS_FETCH_DELAY_MS = 500;

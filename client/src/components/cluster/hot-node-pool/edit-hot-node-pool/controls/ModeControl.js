@@ -18,11 +18,12 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Select} from 'antd';
 import SelectInput from './SelectInput';
-import {MODE_DEFAULT, MODE_FUTURE_DATED} from '../constants';
+import {MODE_DEFAULT, MODE_FUTURE_DATED, MODE_ML_BLOCK} from '../constants';
 
 const MODE_NAMES = {
   [MODE_DEFAULT]: 'Default',
-  [MODE_FUTURE_DATED]: 'Future dated'
+  [MODE_FUTURE_DATED]: 'Future dated',
+  [MODE_ML_BLOCK]: 'ML Block'
 };
 
 // `mode` is client-only: there is no backend field for it, so an existing pool
