@@ -157,7 +157,8 @@ export function formatCapacityBlockInstanceType (info) {
     parts.push(`${vCPU} vCPU`);
   }
   if (memoryInMiB !== undefined && memoryInMiB !== null) {
-    parts.push(`${(memoryInMiB / 1024).toFixed(1)} GB`);
+    const memoryInGb = (memoryInMiB / 1024).toFixed(1).replace(/\.0$/, '');
+    parts.push(`${memoryInGb} GB`);
   }
   return parts.filter(Boolean).join(', ');
 }

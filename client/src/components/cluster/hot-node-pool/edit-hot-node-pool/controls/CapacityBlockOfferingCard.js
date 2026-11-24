@@ -47,17 +47,18 @@ function formatUpfrontFee (amount, currency) {
   return currency ? `${formatted} ${currency}` : formatted;
 }
 
-// One offering's own facts. `instanceCount` fills the Configuration section's read-only
-// `Nodes count` once this offering is picked. `interactive` defaults to false: the
-// candidates control's row is the selectable unit and owns the highlight, so the card
-// here is a plain, non-clickable element with no role, no selected styling of its own.
-// A caller that still wants a self-contained clickable card sets `interactive`.
+// One offering's own facts, laid out as a 2x2 table: instance type and window on the
+// first line, availability zone and price on the second. The nodes count is not here -
+// the Configuration section's read-only `Nodes count` is filled from it instead.
+// `interactive` defaults to false: the candidates control's row is the selectable unit
+// and owns the highlight, so the card here is a plain element with no role, no
+// selected styling and no click handling of its own. A caller that still wants a
+// self-contained clickable card sets `interactive`.
 function CapacityBlockOfferingCard ({offering, selected, disabled, interactive, onSelect}) {
   const {
     offeringId,
     instanceType,
     availabilityZone,
-    instanceCount,
     startDate,
     endDate,
     upfrontFeeAmount,
@@ -65,29 +66,19 @@ function CapacityBlockOfferingCard ({offering, selected, disabled, interactive, 
   } = offering || {};
   const offeringWindow = formatOfferingWindow(startDate, endDate);
   const price = formatUpfrontFee(upfrontFeeAmount, upfrontFeeCurrency);
-  const hasInstanceCount = instanceCount !== undefined && instanceCount !== null;
-  // React 15 has no Fragment, so the shared fields are a keyed array instead - plain
-  // children of whichever outer element the two branches below return.
+  // Two rows of two cells, always rendered, so a missing fact leaves its own cell
+  // empty rather than shifting the others out of their column.
   const content = [
-    instanceType && (
-      <div key="type" className={styles.capacityBlockOfferingCardRow}>
-        <b>{instanceType}</b>
+    <div key="row1" className={styles.capacityBlockOfferingCardRow}>
+      <div className={styles.capacityBlockOfferingCardCell}>
+        {instanceType && <b>{instanceType}</b>}
       </div>
-    ),
-    offeringWindow && (
-      <div key="window" className={styles.capacityBlockOfferingCardRow}>{offeringWindow}</div>
-    ),
-    availabilityZone && (
-      <div key="zone" className={styles.capacityBlockOfferingCardRow}>{availabilityZone}</div>
-    ),
-    hasInstanceCount && (
-      <div key="count" className={styles.capacityBlockOfferingCardRow}>
-        {instanceCount} node{Number(instanceCount) === 1 ? '' : 's'}
-      </div>
-    ),
-    price && (
-      <div key="price" className={styles.capacityBlockOfferingCardRow}>{price}</div>
-    )
+      <div className={styles.capacityBlockOfferingCardCell}>{offeringWindow}</div>
+    </div>,
+    <div key="row2" className={styles.capacityBlockOfferingCardRow}>
+      <div className={styles.capacityBlockOfferingCardCell}>{availabilityZone}</div>
+      <div className={styles.capacityBlockOfferingCardCell}>{price}</div>
+    </div>
   ];
   if (!interactive) {
     return (
@@ -114,6 +105,7 @@ function CapacityBlockOfferingCard ({offering, selected, disabled, interactive, 
       aria-disabled={disabled}
       className={classNames(
         styles.capacityBlockOfferingCard,
+        styles.capacityBlockOfferingCardClickable,
         'cp-table-element',
         {
           'cp-table-element-selected': selected,
@@ -133,7 +125,6 @@ CapacityBlockOfferingCard.propTypes = {
     offeringId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     instanceType: PropTypes.string,
     availabilityZone: PropTypes.string,
-    instanceCount: PropTypes.number,
     startDate: PropTypes.string,
     endDate: PropTypes.string,
     upfrontFeeAmount: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),

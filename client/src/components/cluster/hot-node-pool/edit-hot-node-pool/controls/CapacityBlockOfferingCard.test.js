@@ -29,13 +29,13 @@ const offering = {
   upfrontFeeCurrency: 'USD'
 };
 
-test('renders the instance type, the window, the zone, the nodes count and the price', () => {
+test('renders the type, the window, the zone and the price, but not the nodes count', () => {
   render(<CapacityBlockOfferingCard offering={offering} />);
   expect(screen.getByText('p5.48xlarge')).toBeInTheDocument();
   expect(screen.getByText('2026-12-21 04:14 – 2026-12-31 04:14')).toBeInTheDocument();
   expect(screen.getByText('us-east-1a')).toBeInTheDocument();
-  expect(screen.getByText('4 nodes')).toBeInTheDocument();
   expect(screen.getByText('1,234.50 USD')).toBeInTheDocument();
+  expect(screen.queryByText(/node/)).not.toBeInTheDocument();
 });
 
 test('omits a missing optional field rather than rendering it as undefined', () => {
@@ -43,7 +43,21 @@ test('omits a missing optional field rather than rendering it as undefined', () 
   render(<CapacityBlockOfferingCard offering={sparse} />);
   expect(screen.getByText('p5.48xlarge')).toBeInTheDocument();
   expect(screen.queryByText('undefined')).not.toBeInTheDocument();
-  expect(screen.queryByText(/node/)).not.toBeInTheDocument();
+});
+
+test('a missing zone or price leaves the rest of the card intact', () => {
+  const partial = {
+    ...offering,
+    availabilityZone: undefined,
+    upfrontFeeAmount: undefined,
+    upfrontFeeCurrency: undefined
+  };
+  render(<CapacityBlockOfferingCard offering={partial} />);
+  expect(screen.getByText('p5.48xlarge')).toBeInTheDocument();
+  expect(screen.getByText('2026-12-21 04:14 – 2026-12-31 04:14')).toBeInTheDocument();
+  expect(screen.queryByText('us-east-1a')).not.toBeInTheDocument();
+  expect(screen.queryByText(/USD/)).not.toBeInTheDocument();
+  expect(screen.queryByText('undefined')).not.toBeInTheDocument();
 });
 
 test('not interactive by default: no role, no selected styling, no click handling', async () => {

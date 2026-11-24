@@ -284,7 +284,14 @@ describe('formatCapacityBlockInstanceType', () => {
       memoryInMiB: 2097152,
       gpuCount: 8,
       gpuDeviceName: 'H100'
-    })).toBe('p5.48xlarge, 8 x H100, 192 vCPU, 2048.0 GB');
+    })).toBe('p5.48xlarge, 8 x H100, 192 vCPU, 2048 GB');
+  });
+
+  it('keeps a fractional memory value instead of rounding it off', () => {
+    expect(formatCapacityBlockInstanceType({
+      instanceType: 'p5.48xlarge',
+      memoryInMiB: 1180160
+    })).toBe('p5.48xlarge, 1152.5 GB');
   });
 
   it('omits the GPU device name but keeps the count when the name is missing', () => {

@@ -66,11 +66,13 @@
 
 .capacity-block-offering-card {
   display: inline-block;
-  min-width: 160px;
   vertical-align: top;
   padding: 8px 10px;
   margin: 0 8px 8px 0;
   border-radius: 4px;
+}
+
+.capacity-block-offering-card-clickable {
   cursor: pointer;
 }
 
@@ -80,6 +82,19 @@
 }
 
 .capacity-block-offering-card-row {
+  display: flex;
+  flex-direction: row;
+}
+
+.capacity-block-offering-card-row + .capacity-block-offering-card-row {
+  margin-top: 2px;
+}
+
+.capacity-block-offering-card-cell {
+  box-sizing: border-box;
+  flex: 0 0 50%;
+  min-width: 0;
+  padding-right: 10px;
   font-size: 12px;
   line-height: 16px;
 }
