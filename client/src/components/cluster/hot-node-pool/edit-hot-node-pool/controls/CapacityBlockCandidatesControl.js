@@ -84,8 +84,12 @@ function CapacityBlockCandidatesControl ({
       .filter(candidate => candidate.id !== row.id)
       .map(candidate => (candidate.instanceType || '').toLowerCase())
       .filter(Boolean);
+    // Sorted by name - AWS does not return the catalogue in a stable order, and an
+    // unsorted list would land the same click on a different instance type between opens.
     const availableTypes = (instanceTypes || [])
-      .filter(info => !usedTypes.includes((info.instanceType || '').toLowerCase()));
+      .filter(info => !usedTypes.includes((info.instanceType || '').toLowerCase()))
+      .slice()
+      .sort((a, b) => (a.instanceType || '').localeCompare(b.instanceType || ''));
     const rowOfferings = getOfferingsForCandidate(offerings, row);
     const hasOffering = rowOfferings.length > 0;
     const multipleOfferings = rowOfferings.length > 1;

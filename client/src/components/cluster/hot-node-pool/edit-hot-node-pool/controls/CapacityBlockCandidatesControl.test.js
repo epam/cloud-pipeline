@@ -125,6 +125,23 @@ test('a type held by one row is absent from another row\'s options', async () =>
   expect(screen.getByText(formatCapacityBlockInstanceType(p4d))).toBeInTheDocument();
 });
 
+test('the type options are sorted by name, whatever order the catalogue arrives in', async () => {
+  render(
+    <CapacityBlockCandidatesControl
+      candidates={[{id: 1, instanceType: undefined, instanceCount: undefined}]}
+      instanceTypes={instanceTypes}
+    />
+  );
+
+  await click(screen.getByRole('combobox'));
+
+  const options = screen.getAllByRole('menuitem').map(option => option.textContent);
+  expect(options).toEqual([
+    formatCapacityBlockInstanceType(p4d),
+    formatCapacityBlockInstanceType(p5)
+  ]);
+});
+
 test('a row with matching offerings renders a card per offering', () => {
   render(
     <CapacityBlockCandidatesControl

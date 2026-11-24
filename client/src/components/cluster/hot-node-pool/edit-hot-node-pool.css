@@ -92,11 +92,19 @@
 
 .capacity-block-offering-card-cell {
   box-sizing: border-box;
-  flex: 0 0 50%;
   min-width: 0;
   padding-right: 10px;
   font-size: 12px;
   line-height: 16px;
+}
+
+.capacity-block-offering-card-cell:first-child {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.capacity-block-offering-card-cell:last-child {
+  flex: 1 1 auto;
 }
 
 .capacity-block-candidate-row {
