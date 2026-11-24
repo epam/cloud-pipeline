@@ -601,7 +601,9 @@ EditHotNodePoolForm.propTypes = {
   currentProvider: PropTypes.string,
   roles: PropTypes.object,
   allowedModes: PropTypes.arrayOf(PropTypes.string),
-  mlBlockInstanceTypes: PropTypes.array,
+  // MobX wraps a Remote's resolved value in an ObservableArray, which fails a strict
+  // PropTypes.array (Array.isArray) check despite behaving as one.
+  mlBlockInstanceTypes: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   mlBlockInstanceTypesPending: PropTypes.bool,
   mlBlockInstanceTypesError: PropTypes.string,
   mlBlockOfferings: PropTypes.array,

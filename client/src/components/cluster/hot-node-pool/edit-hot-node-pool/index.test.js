@@ -25,9 +25,12 @@ import {
   waitFor,
   flushPromises,
   fn,
-  stubApi
+  stubApi,
+  act
 } from '@test';
 import EditHotNodePool from './index';
+import {buildCapacityBlockOfferingRequest, formatCapacityBlockInstanceType} from './helpers';
+import {ML_BLOCK_OFFERINGS_FETCH_DELAY_MS} from './constants';
 
 const loaded = (value) => observable({loaded: true, pending: false, value});
 
@@ -1074,3 +1077,423 @@ test('the Schedule section of a Default pool is editable when nothing is saving'
     expect(input).not.toBeDisabled();
   });
 });
+
+// ML Block mode: the container's own candidate state, catalogue fetch and offering
+// search. `allowedModes` is always passed explicitly here since `EditHotNodePool`'s own
+// default stays `[DEFAULT, FUTURE_DATED]` - the caller (phase 8, not this one) is the
+// one that offers ML Block to a real user.
+//
+// Real timers throughout: `useRealTimers` abandons antd 2's own pending `Modal` leave
+// animation rather than running it, which left a previous test's content stuck in the
+// document for the next one's `screen` queries to trip over.
+const mlBlockInstanceTypeInfo = {
+  instanceType: 'p5.48xlarge', vCPU: 192, memoryInMiB: 2097152, gpuCount: 8, gpuDeviceName: 'H100'
+};
+const ML_BLOCK_SEARCH_TIMEOUT = ML_BLOCK_OFFERINGS_FETCH_DELAY_MS * 4;
+
+function mlBlockOffering (overrides = {}) {
+  return {
+    offeringId: 'offering-1',
+    instanceType: 'p5.48xlarge',
+    instanceCount: 2,
+    availabilityZone: 'us-east-1a',
+    startDate: '2026-12-21 04:14:02.500',
+    endDate: '2026-12-31 04:14:02.500',
+    capacityDurationHours: 24,
+    upfrontFeeAmount: 100,
+    upfrontFeeCurrency: 'USD',
+    ...overrides
+  };
+}
+
+// Mirrors `renderPool`, including its own `flushPromises` wait for the mount-time
+// fetch to fully settle. Returns the `EditHotNodePool` instance itself, reached through
+// mobx-react's `inject` HOC the way `ref` exposes it (`wrappedInstance`) - the only
+// handle onto `commitmentStart`/`commitmentEnd`, which nothing in this codebase drives
+// through the antd DatePicker (see controls/ReservationScheduleControl.test.js).
+async function renderMlBlockPool (props = {}) {
+  const api = stubApi();
+  // Also carries `p5.48xlarge` on the general allowed-instance-types list, not only the
+  // capacity-block catalogue: the offering fills the read-only `Instance Type` select with
+  // it, and that select's options come from this list, not from the catalogue - with no
+  // matching Option, there would be nothing to assert its rendered text against.
+  api.handle(/\/cluster\/instance\/allowed/, () => ({
+    status: 'OK',
+    payload: {
+      'cluster.allowed.instance.types': [
+        {sku: 's1', name: 'm5.xlarge', instanceFamily: 'General purpose'},
+        {sku: 's2', name: 'p5.48xlarge', instanceFamily: 'GPU'}
+      ],
+      'cluster.allowed.price.types': ['SPOT', 'ON_DEMAND']
+    }
+  }));
+  let wrapper;
+  renderWithStores(
+    <EditHotNodePool
+      ref={(r) => { wrapper = r; }}
+      visible
+      disabled={false}
+      currentUserName="USER1"
+      allowedModes={['DEFAULT', 'ML_BLOCK']}
+      {...props}
+    />,
+    stores()
+  );
+  await waitFor(() => expect(api.calls.length).toBeGreaterThan(0));
+  await flushPromises();
+  return {api, instance: () => wrapper.wrappedInstance};
+}
+
+async function enterMlBlockMode () {
+  await click(within(row('Mode:')).getByRole('combobox'));
+  await click(screen.getByText('ML Block'));
+}
+
+// A region change fires the allowed-instance-types refetch, and in ML Block mode the
+// catalogue fetch too - `flushPromises` here keeps both from leaking past this test.
+async function selectRegion (name) {
+  await click(within(row('Region:')).getByRole('combobox'));
+  await click(screen.getByText(name));
+  await flushPromises();
+}
+
+function offeringsCalls (api) {
+  return api.calls.filter(c => c.path === '/cluster/capacity-reservation/offerings');
+}
+
+test('entering ML Block mode fetches the capacity block catalogue for the selected region',
+  async () => {
+    const {api} = await renderMlBlockPool();
+    api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+
+    await enterMlBlockMode();
+    await selectRegion('eu-central-1');
+
+    await waitFor(() => expect(api.calls.some(c =>
+      /capacity-reservation\/instance-types/.test(c.path) && /regionId=1/.test(c.path)
+    )).toBe(true));
+    // Settles the region change's own allowed-instance-types refetch too, for the same
+    // reason `renderMlBlockPool` settles the mount-time one.
+    await flushPromises();
+  });
+
+test(
+  'adding a candidate and setting its count issues one search after the debounce, ' +
+ 'with the body helpers.js builds',
+  async () => {
+    const {api, instance} = await renderMlBlockPool();
+    api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+    api.reply('/cluster/capacity-reservation/offerings', []);
+
+    await enterMlBlockMode();
+    await selectRegion('eu-central-1');
+    await waitFor(() => expect(
+      screen.getByRole('button', {name: 'Add instance type'})
+    ).not.toBeDisabled());
+
+    await click(screen.getByRole('button', {name: 'Add instance type'}));
+    await click(within(row('Instance types:')).getByRole('combobox'));
+    await click(screen.getByText(formatCapacityBlockInstanceType(mlBlockInstanceTypeInfo)));
+    await change(within(row('Instance types:')).getByRole('textbox'), '2');
+    await change(within(row('Duration (days):')).getByRole('textbox'), '1');
+    await act(() => instance().onChangeField('commitmentStart', '2026-12-25 04:14:02.500'));
+
+    await waitFor(() => expect(offeringsCalls(api)).toHaveLength(1), {
+      timeout: ML_BLOCK_SEARCH_TIMEOUT
+    });
+
+    const body = JSON.parse(offeringsCalls(api)[0].body);
+    const expectedBody = buildCapacityBlockOfferingRequest({
+      region: '1',
+      commitmentStart: '2026-12-25 04:14:02.500',
+      commitmentEnd: undefined,
+      commitmentDurationDays: '1',
+      mlBlockCandidates: [{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]
+    });
+    expect(body).toEqual(expectedBody);
+  }
+);
+
+test('a second edit shortly after the first still issues one search, for its latest value',
+  async () => {
+    const {api, instance} = await renderMlBlockPool();
+    api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+    api.reply('/cluster/capacity-reservation/offerings', []);
+
+    await enterMlBlockMode();
+    await selectRegion('eu-central-1');
+    await waitFor(() => expect(
+      screen.getByRole('button', {name: 'Add instance type'})
+    ).not.toBeDisabled());
+
+    await click(screen.getByRole('button', {name: 'Add instance type'}));
+    await click(within(row('Instance types:')).getByRole('combobox'));
+    await click(screen.getByText(formatCapacityBlockInstanceType(mlBlockInstanceTypeInfo)));
+    await change(within(row('Duration (days):')).getByRole('textbox'), '1');
+    await act(() => instance().onChangeField('commitmentStart', '2026-12-25 04:14:02.500'));
+
+    // Two edits back to back, well inside the debounce delay: each resets it, so only
+    // the second is ever still pending when it finally elapses.
+    await change(within(row('Instance types:')).getByRole('textbox'), '2');
+    await change(within(row('Instance types:')).getByRole('textbox'), '3');
+
+    await waitFor(() => expect(offeringsCalls(api)).toHaveLength(1), {
+      timeout: ML_BLOCK_SEARCH_TIMEOUT
+    });
+    const body = JSON.parse(offeringsCalls(api)[0].body);
+    expect(body.candidates).toEqual([{instanceType: 'p5.48xlarge', instanceCount: 3}]);
+  });
+
+// Builds an ML Block pool through to a settled, selected offering - the starting point
+// several tests below need. Candidate count is fixed at 2, matching `mlBlockOffering()`'s
+// own `instanceCount`, which the read-only Nodes count field is checked against.
+//
+// The route is `api.handle()`, reading a mutable closure variable, rather than
+// `api.reply()`: `stubApi` matches the first-registered handler for a pattern, so a test
+// that needs the *next* search to return something else cannot `reply()` the same path
+// again (see `renderPool`'s own comment on the same constraint) - it calls
+// `setOfferingsResponse` instead.
+async function renderMlBlockPoolWithOffering (props = {}) {
+  const offering = mlBlockOffering();
+  let offeringsResponse = [offering];
+  const {api, instance} = await renderMlBlockPool(props);
+  api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+  api.handle('/cluster/capacity-reservation/offerings', () => (
+    {status: 'OK', payload: offeringsResponse}
+  ));
+
+  await enterMlBlockMode();
+  await selectRegion('eu-central-1');
+  await waitFor(() => expect(
+    screen.getByRole('button', {name: 'Add instance type'})
+  ).not.toBeDisabled());
+
+  await click(screen.getByRole('button', {name: 'Add instance type'}));
+  await click(within(row('Instance types:')).getByRole('combobox'));
+  await click(screen.getByText(formatCapacityBlockInstanceType(mlBlockInstanceTypeInfo)));
+  await change(within(row('Instance types:')).getByRole('textbox'), '2');
+  await change(within(row('Duration (days):')).getByRole('textbox'), '1');
+  await act(() => instance().onChangeField('commitmentStart', '2026-12-25 04:14:02.500'));
+
+  await waitFor(() => expect(offeringsCalls(api)).toHaveLength(1), {
+    timeout: ML_BLOCK_SEARCH_TIMEOUT
+  });
+  await click(screen.getByRole('button', {name: new RegExp(offering.availabilityZone)}));
+
+  return {
+    api,
+    instance,
+    offering,
+    setOfferingsResponse: (value) => { offeringsResponse = value; }
+  };
+}
+
+test('selecting an offering fills the read-only Instance type and Nodes count, enables CREATE',
+  async () => {
+    const offering = mlBlockOffering();
+    const {api, instance} = await renderMlBlockPool();
+    api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+    api.reply('/cluster/capacity-reservation/offerings', [offering]);
+
+    await enterMlBlockMode();
+    await selectRegion('eu-central-1');
+    await waitFor(() => expect(
+      screen.getByRole('button', {name: 'Add instance type'})
+    ).not.toBeDisabled());
+    await click(screen.getByRole('button', {name: 'Add instance type'}));
+    await click(within(row('Instance types:')).getByRole('combobox'));
+    await click(screen.getByText(formatCapacityBlockInstanceType(mlBlockInstanceTypeInfo)));
+    await change(within(row('Instance types:')).getByRole('textbox'), '2');
+    await change(within(row('Duration (days):')).getByRole('textbox'), '1');
+    await act(() => instance().onChangeField('commitmentStart', '2026-12-25 04:14:02.500'));
+
+    expect(screen.getByRole('button', {name: 'CREATE'})).toBeDisabled();
+
+    await waitFor(() => expect(offeringsCalls(api)).toHaveLength(1), {
+      timeout: ML_BLOCK_SEARCH_TIMEOUT
+    });
+    await click(screen.getByRole('button', {name: new RegExp(offering.availabilityZone)}));
+
+    expect(within(row('Instance Type:')).getByText('p5.48xlarge')).toBeInTheDocument();
+    expect(within(row('Nodes count:')).getByRole('textbox')).toHaveValue('2');
+    expect(screen.getByRole('button', {name: 'CREATE'})).not.toBeDisabled();
+  });
+
+test('a region change clears the candidates, the offerings and the two read-only fields',
+  async () => {
+    const {api, instance} = await renderMlBlockPoolWithOffering();
+    const catalogueCallsBefore = api.calls
+      .filter(c => /capacity-reservation\/instance-types/.test(c.path)).length;
+
+    await selectRegion('westeurope');
+
+    // The region's own catalogue re-fetch (regionId=2) is a side effect of the mode
+    // staying ML Block, not of this reset - waited out here so it cannot resolve after
+    // the test has already moved on and unmounted the tree.
+    await waitFor(() => expect(
+      api.calls.filter(c => /capacity-reservation\/instance-types/.test(c.path)).length
+    ).toBeGreaterThan(catalogueCallsBefore));
+    await flushPromises();
+
+    expect(within(row('Instance types:')).queryAllByRole('combobox')).toHaveLength(0);
+    expect(within(row('Instance types:')).queryAllByRole('textbox')).toHaveLength(0);
+    expect(within(row('Instance Type:')).queryByText('p5.48xlarge')).not.toBeInTheDocument();
+    expect(within(row('Nodes count:')).getByRole('textbox')).toHaveValue('');
+    expect(screen.getByRole('button', {name: 'CREATE'})).toBeDisabled();
+    expect(instance().state.mlBlockOfferingId).toBeUndefined();
+  });
+
+test(
+  'a search that no longer contains the selected offering drops the selection and ' +
+ 'disables CREATE again',
+  async () => {
+    const {api, setOfferingsResponse} = await renderMlBlockPoolWithOffering();
+    expect(screen.getByRole('button', {name: 'CREATE'})).not.toBeDisabled();
+
+    // The next search (the count edit below) finds nothing matching the offering
+    // already picked.
+    setOfferingsResponse([]);
+    const callsBefore = offeringsCalls(api).length;
+    await change(within(row('Instance types:')).getByRole('textbox'), '3');
+
+    await waitFor(() => expect(offeringsCalls(api).length).toBeGreaterThan(callsBefore), {
+      timeout: ML_BLOCK_SEARCH_TIMEOUT
+    });
+
+    expect(within(row('Instance Type:')).queryByText('p5.48xlarge')).not.toBeInTheDocument();
+    expect(within(row('Nodes count:')).getByRole('textbox')).toHaveValue('');
+    expect(screen.getByRole('button', {name: 'CREATE'})).toBeDisabled();
+  }
+);
+
+test('a failed search shows its error and keeps the rest of the form usable', async () => {
+  const {api, instance} = await renderMlBlockPool();
+  api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+  api.fail('/cluster/capacity-reservation/offerings', 'The offering search failed');
+
+  await enterMlBlockMode();
+  await selectRegion('eu-central-1');
+  await waitFor(() => expect(
+    screen.getByRole('button', {name: 'Add instance type'})
+  ).not.toBeDisabled());
+  await click(screen.getByRole('button', {name: 'Add instance type'}));
+  await click(within(row('Instance types:')).getByRole('combobox'));
+  await click(screen.getByText(formatCapacityBlockInstanceType(mlBlockInstanceTypeInfo)));
+  await change(within(row('Instance types:')).getByRole('textbox'), '2');
+  await change(within(row('Duration (days):')).getByRole('textbox'), '1');
+  await act(() => instance().onChangeField('commitmentStart', '2026-12-25 04:14:02.500'));
+
+  await waitFor(() => expect(
+    screen.getByText('The offering search failed')
+  ).toBeInTheDocument(), {timeout: ML_BLOCK_SEARCH_TIMEOUT});
+
+  // The rest of the form stays usable: Pool name is still an ordinary, enabled input.
+  await change(within(row('Pool name:')).getByRole('textbox'), 'still-usable');
+  expect(within(row('Pool name:')).getByRole('textbox')).toHaveValue('still-usable');
+  expect(screen.getByRole('button', {name: 'CREATE'})).toBeDisabled();
+});
+
+test('CREATE on a complete ML Block pool sends the capacity-block payload helpers.js builds',
+  async () => {
+    const offering = mlBlockOffering();
+    const onSave = fn();
+    const {api, instance} = await renderMlBlockPool({onSave});
+    api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+    api.reply('/cluster/capacity-reservation/offerings', [offering]);
+
+    await enterMlBlockMode();
+    await selectRegion('eu-central-1');
+    await waitFor(() => expect(
+      screen.getByRole('button', {name: 'Add instance type'})
+    ).not.toBeDisabled());
+
+    await change(within(row('Pool name:')).getByRole('textbox'), 'ml-block-pool');
+    await change(within(row('Disk:')).getByRole('textbox'), '50');
+    await change(within(row('Duration (days):')).getByRole('textbox'), '1');
+    await act(() => instance().onChangeField('commitmentStart', '2026-12-25 04:14:02.500'));
+    await act(() => instance().onChangeField('commitmentEnd', '2026-12-31 04:14:02.500'));
+
+    await click(screen.getByRole('button', {name: 'Add instance type'}));
+    await click(within(row('Instance types:')).getByRole('combobox'));
+    await click(screen.getByText(formatCapacityBlockInstanceType(mlBlockInstanceTypeInfo)));
+    await change(within(row('Instance types:')).getByRole('textbox'), '2');
+
+    await waitFor(() => expect(offeringsCalls(api)).toHaveLength(1), {
+      timeout: ML_BLOCK_SEARCH_TIMEOUT
+    });
+    await click(screen.getByRole('button', {name: new RegExp(offering.availabilityZone)}));
+
+    await click(screen.getByRole('button', {name: 'CREATE'}));
+
+    expect(onSave).toHaveBeenCalledTimes(1);
+    const [payload] = onSave.mock.calls[0];
+    expect(payload.capacityReservationRequest).toEqual({
+      reservationType: 'CAPACITY_BLOCK',
+      capacityBlockOfferingId: offering.offeringId,
+      availabilityZone: offering.availabilityZone,
+      requestedStartDate: offering.startDate,
+      requestedEndDate: offering.endDate,
+      commitmentDuration: offering.capacityDurationHours * 3600
+    });
+    expect(payload.instanceType).toBe(offering.instanceType);
+    expect(payload.count).toBe(offering.instanceCount);
+  });
+
+test('switching ML Block back to Default leaves a working Default form', async () => {
+  const {instance} = await renderMlBlockPool();
+
+  await enterMlBlockMode();
+  await selectRegion('eu-central-1');
+  await click(within(row('Mode:')).getByRole('combobox'));
+  await click(screen.getByText('Default'));
+  await flushPromises();
+
+  expect(screen.queryByText('Instance types:')).not.toBeInTheDocument();
+  expect(screen.getByText('Autoscaled:')).toBeInTheDocument();
+  expect(instance().state.mlBlockCandidates).toEqual([]);
+  expect(instance().state.mlBlockOfferingId).toBeUndefined();
+});
+
+test(
+  'leaving ML Block mode while a search is still in flight does not let its late ' +
+ 'response overwrite what Default mode filled in afterwards',
+  async () => {
+    const {api, instance} = await renderMlBlockPool();
+    api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+    let resolveOfferings;
+    // Held open rather than answered immediately, so the mode switch below genuinely
+    // happens while the request is in flight, not already settled.
+    api.handle('/cluster/capacity-reservation/offerings', () => new Promise((resolve) => {
+      resolveOfferings = () => resolve({status: 'OK', payload: [mlBlockOffering()]});
+    }));
+
+    await enterMlBlockMode();
+    await selectRegion('eu-central-1');
+    await waitFor(() => expect(
+      screen.getByRole('button', {name: 'Add instance type'})
+    ).not.toBeDisabled());
+
+    await click(screen.getByRole('button', {name: 'Add instance type'}));
+    await click(within(row('Instance types:')).getByRole('combobox'));
+    await click(screen.getByText(formatCapacityBlockInstanceType(mlBlockInstanceTypeInfo)));
+    await change(within(row('Instance types:')).getByRole('textbox'), '2');
+    await change(within(row('Duration (days):')).getByRole('textbox'), '1');
+    await act(() => instance().onChangeField('commitmentStart', '2026-12-25 04:14:02.500'));
+
+    await waitFor(() => expect(offeringsCalls(api)).toHaveLength(1), {
+      timeout: ML_BLOCK_SEARCH_TIMEOUT
+    });
+
+    await click(within(row('Mode:')).getByRole('combobox'));
+    await click(screen.getByText('Default'));
+    await click(within(row('Instance Type:')).getByRole('combobox'));
+    await click(screen.getByText('m5.xlarge'));
+    await change(within(row('Nodes count:')).getByRole('textbox'), '3');
+
+    resolveOfferings();
+    await flushPromises();
+
+    expect(within(row('Instance Type:')).getByText('m5.xlarge')).toBeInTheDocument();
+    expect(within(row('Nodes count:')).getByRole('textbox')).toHaveValue('3');
+  }
+);

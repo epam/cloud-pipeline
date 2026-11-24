@@ -128,13 +128,14 @@ test('a row with matching offerings renders a card per offering', () => {
   expect(screen.getByRole('button', {name: /us-east-1b/})).toBeInTheDocument();
 });
 
-test('a row with none, after a search, renders "No offerings"', () => {
+test('a row with none, in a settled search, renders "No offerings"', () => {
   const offeringForAnotherType = {...offering1, instanceType: 'p4d.24xlarge'};
   render(
     <CapacityBlockCandidatesControl
       candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
       instanceTypes={instanceTypes}
       offerings={[offeringForAnotherType]}
+      offeringsSearched
     />
   );
   expect(screen.getByText('No offerings')).toBeInTheDocument();
@@ -147,12 +148,13 @@ test('a pending search never shows "No offerings", even over a stale empty list'
       instanceTypes={instanceTypes}
       offerings={[]}
       offeringsPending
+      offeringsSearched
     />
   );
   expect(screen.queryByText('No offerings')).not.toBeInTheDocument();
 });
 
-test('a complete row with an empty offerings list stays empty, not "No offerings"', () => {
+test('a complete row with an empty offerings list stays empty until the search settles', () => {
   render(
     <CapacityBlockCandidatesControl
       candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
@@ -163,12 +165,29 @@ test('a complete row with an empty offerings list stays empty, not "No offerings
   expect(screen.queryByText('No offerings')).not.toBeInTheDocument();
 });
 
-test('an incomplete row never shows "No offerings", even with no offerings loaded', () => {
+test('a settled empty search renders "No offerings" for every complete row', () => {
+  const twoRows = [
+    {id: 1, instanceType: 'p5.48xlarge', instanceCount: 2},
+    {id: 2, instanceType: 'p4d.24xlarge', instanceCount: 1}
+  ];
+  render(
+    <CapacityBlockCandidatesControl
+      candidates={twoRows}
+      instanceTypes={instanceTypes}
+      offerings={[]}
+      offeringsSearched
+    />
+  );
+  expect(screen.getAllByText('No offerings')).toHaveLength(2);
+});
+
+test('an incomplete row never shows "No offerings", even in a settled search', () => {
   render(
     <CapacityBlockCandidatesControl
       candidates={[{id: 1, instanceType: undefined, instanceCount: undefined}]}
       instanceTypes={instanceTypes}
       offerings={[]}
+      offeringsSearched
     />
   );
   expect(screen.queryByText('No offerings')).not.toBeInTheDocument();

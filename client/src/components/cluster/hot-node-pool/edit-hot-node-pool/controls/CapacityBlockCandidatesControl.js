@@ -27,10 +27,9 @@ import {
 import styles from '../../edit-hot-node-pool.css';
 
 // A candidate row is "complete" exactly when `getCompleteMlBlockCandidates` would keep
-// it - the same rule the search itself uses. "No offerings" also requires `offerings`
-// itself to be non-empty: an empty list is otherwise indistinguishable from no search
-// having run yet (the debounce window, or just after a region reset), and only a list
-// that holds at least one other candidate's results proves a search actually returned.
+// it - the same rule the search itself uses. "No offerings" is gated on `offeringsSearched`
+// rather than on `offerings` being non-empty: a settled search that matched nothing and a
+// search that has not run yet both leave the list empty, and only the flag tells them apart.
 function CapacityBlockCandidatesControl ({
   candidates,
   instanceTypes,
@@ -39,6 +38,7 @@ function CapacityBlockCandidatesControl ({
   offerings,
   offeringsPending,
   offeringsError,
+  offeringsSearched,
   selectedOfferingId,
   disabled,
   readOnly,
@@ -59,12 +59,9 @@ function CapacityBlockCandidatesControl ({
     if (!completeIds.includes(row.id) || offeringsPending || offeringsError) {
       return null;
     }
-    if ((offerings || []).length === 0) {
-      return null;
-    }
     const rowOfferings = getOfferingsForCandidate(offerings, row);
     if (rowOfferings.length === 0) {
-      return <span>No offerings</span>;
+      return offeringsSearched ? <span>No offerings</span> : null;
     }
     return rowOfferings.map((offering) => (
       <CapacityBlockOfferingCard
@@ -184,12 +181,15 @@ function CapacityBlockCandidatesControl ({
 
 CapacityBlockCandidatesControl.propTypes = {
   candidates: PropTypes.array,
-  instanceTypes: PropTypes.array,
+  // MobX wraps a Remote's resolved value in an ObservableArray, which fails a strict
+  // PropTypes.array (Array.isArray) check despite behaving as one.
+  instanceTypes: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   instanceTypesPending: PropTypes.bool,
   instanceTypesError: PropTypes.string,
   offerings: PropTypes.array,
   offeringsPending: PropTypes.bool,
   offeringsError: PropTypes.string,
+  offeringsSearched: PropTypes.bool,
   selectedOfferingId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   disabled: PropTypes.bool,
   readOnly: PropTypes.bool,
