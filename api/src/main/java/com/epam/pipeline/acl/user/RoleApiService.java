@@ -44,9 +44,17 @@ public class RoleApiService {
 
     public static final String ROLE_READ_ACCESS = ADMIN_ONLY + OR + USER_ADMIN_ONLY + OR_USER_READER + OR +
             "hasPermission(returnObject.id, 'com.epam.pipeline.entity.user.Role', 'READ')";
+    private static final String HAS_WRITE_PERMISSION =
+            "hasPermission(#roleId, 'com.epam.pipeline.entity.user.Role', 'WRITE')";
+    private static final String NON_ADMIN_ROLE = "@rolePermissionManager.isAdminRole(#roleId) != true";
+
     public static final String HAS_WRITE_PERMISSION_ON_NON_ADMIN_ROLE = "(" + USER_ADMIN_ONLY
-            + OR + "hasPermission(#roleId, 'com.epam.pipeline.entity.user.Role', 'WRITE') )"
-            + AND + "@rolePermissionManager.isAdminRole(#roleId) != true";
+            + OR + "(" + HAS_WRITE_PERMISSION + AND + "@rolePermissionManager.isPredefinedRole(#roleId) != true) )"
+            + AND + NON_ADMIN_ROLE;
+    public static final String ROLE_UPDATE = "(" + USER_ADMIN_ONLY
+            + OR + "(" + HAS_WRITE_PERMISSION
+            + AND + "@rolePermissionManager.isDelegatedUpdateAllowed(#roleId, #roleVO)) )"
+            + AND + NON_ADMIN_ROLE;
 
     @Autowired
     private RoleManager roleManager;
@@ -80,7 +88,7 @@ public class RoleApiService {
         return roleManager.create(name, false, userDefault, storageId);
     }
 
-    @PreAuthorize(ADMIN_ONLY + OR + HAS_WRITE_PERMISSION_ON_NON_ADMIN_ROLE)
+    @PreAuthorize(ADMIN_ONLY + OR + ROLE_UPDATE)
     @AclMask
     public Role updateRole(final Long roleId, final RoleVO roleVO) {
         return roleManager.update(roleId, roleVO);
