@@ -88,28 +88,35 @@
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  margin-bottom: 8px;
+  padding: 4px 8px;
+  margin: -4px 0 4px -8px;
+  border-radius: 4px;
 }
 
 .capacity-block-candidate-inputs {
   display: flex;
   flex-direction: row;
   align-items: center;
-  flex: 1;
+  flex: 0 0 380px;
+  margin-right: 8px;
 }
 
 .capacity-block-candidate-inputs > * {
   margin-right: 5px;
 }
 
-.capacity-block-candidate-inputs:global(.cp-table-element-selected) {
-  padding: 4px 8px;
-  margin: -4px 0 -4px -8px;
-  border-radius: 4px;
+.capacity-block-candidate-type {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.capacity-block-candidate-count {
+  flex: 0 0 90px;
 }
 
 .capacity-block-candidate-offerings {
-  flex: 2;
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;

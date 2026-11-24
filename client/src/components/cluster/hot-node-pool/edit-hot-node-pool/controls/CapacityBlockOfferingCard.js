@@ -47,9 +47,12 @@ function formatUpfrontFee (amount, currency) {
   return currency ? `${formatted} ${currency}` : formatted;
 }
 
-// One offering as a selectable card. `instanceCount` fills the Configuration section's
-// read-only `Nodes count` once this card is picked.
-function CapacityBlockOfferingCard ({offering, selected, disabled, onSelect}) {
+// One offering's own facts. `instanceCount` fills the Configuration section's read-only
+// `Nodes count` once this offering is picked. `interactive` defaults to false: the
+// candidates control's row is the selectable unit and owns the highlight, so the card
+// here is a plain, non-clickable element with no role, no selected styling of its own.
+// A caller that still wants a self-contained clickable card sets `interactive`.
+function CapacityBlockOfferingCard ({offering, selected, disabled, interactive, onSelect}) {
   const {
     offeringId,
     instanceType,
@@ -60,6 +63,39 @@ function CapacityBlockOfferingCard ({offering, selected, disabled, onSelect}) {
     upfrontFeeAmount,
     upfrontFeeCurrency
   } = offering || {};
+  const offeringWindow = formatOfferingWindow(startDate, endDate);
+  const price = formatUpfrontFee(upfrontFeeAmount, upfrontFeeCurrency);
+  const hasInstanceCount = instanceCount !== undefined && instanceCount !== null;
+  // React 15 has no Fragment, so the shared fields are a keyed array instead - plain
+  // children of whichever outer element the two branches below return.
+  const content = [
+    instanceType && (
+      <div key="type" className={styles.capacityBlockOfferingCardRow}>
+        <b>{instanceType}</b>
+      </div>
+    ),
+    offeringWindow && (
+      <div key="window" className={styles.capacityBlockOfferingCardRow}>{offeringWindow}</div>
+    ),
+    availabilityZone && (
+      <div key="zone" className={styles.capacityBlockOfferingCardRow}>{availabilityZone}</div>
+    ),
+    hasInstanceCount && (
+      <div key="count" className={styles.capacityBlockOfferingCardRow}>
+        {instanceCount} node{Number(instanceCount) === 1 ? '' : 's'}
+      </div>
+    ),
+    price && (
+      <div key="price" className={styles.capacityBlockOfferingCardRow}>{price}</div>
+    )
+  ];
+  if (!interactive) {
+    return (
+      <div className={styles.capacityBlockOfferingCard}>
+        {content}
+      </div>
+    );
+  }
   const select = () => {
     if (!disabled) {
       onSelect(offeringId);
@@ -71,9 +107,6 @@ function CapacityBlockOfferingCard ({offering, selected, disabled, onSelect}) {
       select();
     }
   };
-  const offeringWindow = formatOfferingWindow(startDate, endDate);
-  const price = formatUpfrontFee(upfrontFeeAmount, upfrontFeeCurrency);
-  const hasInstanceCount = instanceCount !== undefined && instanceCount !== null;
   return (
     <div
       role="button"
@@ -90,25 +123,7 @@ function CapacityBlockOfferingCard ({offering, selected, disabled, onSelect}) {
       onClick={select}
       onKeyDown={onKeyDown}
     >
-      {instanceType && (
-        <div className={styles.capacityBlockOfferingCardRow}>
-          <b>{instanceType}</b>
-        </div>
-      )}
-      {offeringWindow && (
-        <div className={styles.capacityBlockOfferingCardRow}>{offeringWindow}</div>
-      )}
-      {availabilityZone && (
-        <div className={styles.capacityBlockOfferingCardRow}>{availabilityZone}</div>
-      )}
-      {hasInstanceCount && (
-        <div className={styles.capacityBlockOfferingCardRow}>
-          {instanceCount} node{Number(instanceCount) === 1 ? '' : 's'}
-        </div>
-      )}
-      {price && (
-        <div className={styles.capacityBlockOfferingCardRow}>{price}</div>
-      )}
+      {content}
     </div>
   );
 }
@@ -126,12 +141,14 @@ CapacityBlockOfferingCard.propTypes = {
   }),
   selected: PropTypes.bool,
   disabled: PropTypes.bool,
+  interactive: PropTypes.bool,
   onSelect: PropTypes.func
 };
 
 CapacityBlockOfferingCard.defaultProps = {
   selected: false,
   disabled: false,
+  interactive: false,
   onSelect: () => {}
 };
 

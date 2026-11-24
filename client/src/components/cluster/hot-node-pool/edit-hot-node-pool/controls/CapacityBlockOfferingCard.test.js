@@ -46,9 +46,23 @@ test('omits a missing optional field rather than rendering it as undefined', () 
   expect(screen.queryByText(/node/)).not.toBeInTheDocument();
 });
 
-test('a click calls onSelect with the offering id', async () => {
+test('not interactive by default: no role, no selected styling, no click handling', async () => {
   const onSelect = fn();
-  render(<CapacityBlockOfferingCard offering={offering} onSelect={onSelect} />);
+  const {container} = render(
+    <CapacityBlockOfferingCard offering={offering} selected onSelect={onSelect} />
+  );
+
+  expect(container.querySelector('[role="button"]')).toBeNull();
+  expect(container.firstChild).not.toHaveClass('cp-table-element-selected');
+
+  await click(container.firstChild);
+
+  expect(onSelect).not.toHaveBeenCalled();
+});
+
+test('interactive: a click calls onSelect with the offering id', async () => {
+  const onSelect = fn();
+  render(<CapacityBlockOfferingCard offering={offering} interactive onSelect={onSelect} />);
 
   await click(screen.getByRole('button'));
 
@@ -56,35 +70,37 @@ test('a click calls onSelect with the offering id', async () => {
   expect(onSelect).toHaveBeenCalledWith('offering-1');
 });
 
-test('the Enter key also selects the card', async () => {
+test('interactive: the Enter key also selects the card', async () => {
   const onSelect = fn();
-  render(<CapacityBlockOfferingCard offering={offering} onSelect={onSelect} />);
+  render(<CapacityBlockOfferingCard offering={offering} interactive onSelect={onSelect} />);
 
   await keyDown(screen.getByRole('button'), {key: 'Enter'});
 
   expect(onSelect).toHaveBeenCalledWith('offering-1');
 });
 
-test('the Space key also selects the card', async () => {
+test('interactive: the Space key also selects the card', async () => {
   const onSelect = fn();
-  render(<CapacityBlockOfferingCard offering={offering} onSelect={onSelect} />);
+  render(<CapacityBlockOfferingCard offering={offering} interactive onSelect={onSelect} />);
 
   await keyDown(screen.getByRole('button'), {key: ' '});
 
   expect(onSelect).toHaveBeenCalledWith('offering-1');
 });
 
-test('selected adds the selected class and a plain card does not carry it', () => {
-  const {rerender} = render(<CapacityBlockOfferingCard offering={offering} />);
+test('interactive: selected adds the selected class and a plain card does not carry it', () => {
+  const {rerender} = render(<CapacityBlockOfferingCard offering={offering} interactive />);
   expect(screen.getByRole('button')).not.toHaveClass('cp-table-element-selected');
 
-  rerender(<CapacityBlockOfferingCard offering={offering} selected />);
+  rerender(<CapacityBlockOfferingCard offering={offering} interactive selected />);
   expect(screen.getByRole('button')).toHaveClass('cp-table-element-selected');
 });
 
-test('disabled does not call back', async () => {
+test('interactive and disabled does not call back', async () => {
   const onSelect = fn();
-  render(<CapacityBlockOfferingCard offering={offering} disabled onSelect={onSelect} />);
+  render(
+    <CapacityBlockOfferingCard offering={offering} interactive disabled onSelect={onSelect} />
+  );
 
   await click(screen.getByRole('button'));
 

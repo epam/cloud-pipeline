@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {render, screen, click, change, fn} from '@test';
+import {render, screen, click, change, keyDown, fn} from '@test';
 import CapacityBlockCandidatesControl from './CapacityBlockCandidatesControl';
 import {formatCapacityBlockInstanceType} from '../helpers';
 
@@ -124,8 +124,8 @@ test('a row with matching offerings renders a card per offering', () => {
       offerings={[offering1, offering2]}
     />
   );
-  expect(screen.getByRole('button', {name: /us-east-1a/})).toBeInTheDocument();
-  expect(screen.getByRole('button', {name: /us-east-1b/})).toBeInTheDocument();
+  expect(screen.getByText('us-east-1a')).toBeInTheDocument();
+  expect(screen.getByText('us-east-1b')).toBeInTheDocument();
 });
 
 test('a row with none, in a settled search, renders "No offerings"', () => {
@@ -193,7 +193,7 @@ test('an incomplete row never shows "No offerings", even in a settled search', (
   expect(screen.queryByText('No offerings')).not.toBeInTheDocument();
 });
 
-test('selecting a card calls onSelectOffering', async () => {
+test('clicking a row selects its offering', async () => {
   const onSelectOffering = fn();
   render(
     <CapacityBlockCandidatesControl
@@ -204,9 +204,89 @@ test('selecting a card calls onSelectOffering', async () => {
     />
   );
 
-  await click(screen.getByRole('button', {name: /us-east-1a/}));
+  await click(screen.getByText('us-east-1a'));
 
   expect(onSelectOffering).toHaveBeenCalledWith('o1');
+});
+
+test('clicking the instance-type select does not select the row', async () => {
+  const onSelectOffering = fn();
+  render(
+    <CapacityBlockCandidatesControl
+      candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
+      instanceTypes={instanceTypes}
+      offerings={[offering1]}
+      onSelectOffering={onSelectOffering}
+    />
+  );
+
+  await click(screen.getByRole('combobox'));
+
+  expect(onSelectOffering).not.toHaveBeenCalled();
+});
+
+test('clicking the nodes-count input does not select the row', async () => {
+  const onSelectOffering = fn();
+  render(
+    <CapacityBlockCandidatesControl
+      candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
+      instanceTypes={instanceTypes}
+      offerings={[offering1]}
+      onSelectOffering={onSelectOffering}
+    />
+  );
+
+  await click(screen.getByRole('textbox'));
+
+  expect(onSelectOffering).not.toHaveBeenCalled();
+});
+
+test('clicking the remove button does not select the row', async () => {
+  const onSelectOffering = fn();
+  render(
+    <CapacityBlockCandidatesControl
+      candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
+      instanceTypes={instanceTypes}
+      offerings={[offering1]}
+      onSelectOffering={onSelectOffering}
+    />
+  );
+
+  await click(screen.getByRole('button', {name: ''}));
+
+  expect(onSelectOffering).not.toHaveBeenCalled();
+});
+
+test('Enter and Space on a row select it', async () => {
+  const onSelectOffering = fn();
+  render(
+    <CapacityBlockCandidatesControl
+      candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
+      instanceTypes={instanceTypes}
+      offerings={[offering1]}
+      onSelectOffering={onSelectOffering}
+    />
+  );
+  const row = screen.getByText('us-east-1a').closest('[role="button"]');
+
+  await keyDown(row, {key: 'Enter'});
+  expect(onSelectOffering).toHaveBeenLastCalledWith('o1');
+
+  await keyDown(row, {key: ' '});
+  expect(onSelectOffering).toHaveBeenLastCalledWith('o1');
+});
+
+test('a row with no offering is not selectable and carries no selected class', () => {
+  render(
+    <CapacityBlockCandidatesControl
+      candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
+      instanceTypes={instanceTypes}
+      offerings={[]}
+    />
+  );
+  const combobox = screen.getByRole('combobox');
+  expect(combobox.closest('[role="button"]')).toBeNull();
+  expect(combobox.closest('.cp-table-element-selected')).toBeNull();
 });
 
 test('offeringsPending shows a searching message in place of the cards', () => {
@@ -219,7 +299,7 @@ test('offeringsPending shows a searching message in place of the cards', () => {
     />
   );
   expect(screen.getByText('Searching for offerings...')).toBeInTheDocument();
-  expect(screen.queryByRole('button', {name: /us-east-1a/})).not.toBeInTheDocument();
+  expect(screen.queryByText('us-east-1a')).not.toBeInTheDocument();
 });
 
 test('offeringsError renders as an alert', () => {
@@ -269,7 +349,7 @@ test('instanceTypesError renders above the rows and disables Add instance type',
   expect(screen.getByRole('button', {name: 'Add instance type'})).toBeDisabled();
 });
 
-test('the row holding the selected offering is highlighted, a row holding none is not', () => {
+test('the selected row carries both selected classes and an unselected row neither', () => {
   const twoRows = [
     {id: 1, instanceType: 'p5.48xlarge', instanceCount: 2},
     {id: 2, instanceType: 'p4d.24xlarge', instanceCount: 1}
@@ -283,13 +363,12 @@ test('the row holding the selected offering is highlighted, a row holding none i
     />
   );
   const [p5Combobox, p4dCombobox] = screen.getAllByRole('combobox');
-  expect(p5Combobox.closest('.cp-table-element-selected')).not.toBeNull();
-  expect(p4dCombobox.closest('.cp-table-element-selected')).toBeNull();
+  const selectedRow = p5Combobox.closest('[role="button"]');
+  expect(selectedRow).toHaveClass('cp-table-element-selected');
+  expect(selectedRow).toHaveClass('cp-outline-bordered');
 
-  // The row highlight does not spill onto the other, unselected card in the same row.
-  expect(screen.getByRole('button', {name: /us-east-1a/})).toHaveClass('cp-table-element-selected');
-  expect(screen.getByRole('button', {name: /us-east-1b/}))
-    .not.toHaveClass('cp-table-element-selected');
+  // p4d has no offering of its own, so its row is not selectable at all.
+  expect(p4dCombobox.closest('[role="button"]')).toBeNull();
 });
 
 test('the error row shows only when both error and touched are truthy', () => {

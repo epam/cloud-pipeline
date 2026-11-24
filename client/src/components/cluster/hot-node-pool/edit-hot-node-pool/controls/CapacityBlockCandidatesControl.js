@@ -54,7 +54,8 @@ function CapacityBlockCandidatesControl ({
   const addDisabled = disabled || instanceTypesPending || Boolean(instanceTypesError);
 
   // The search covers every complete row at once, so its pending/error state is shown
-  // once for the whole control rather than repeated in every row's own right half.
+  // once for the whole control rather than repeated in every row's own right half. Cards
+  // are plain (not `interactive`): the row below is the selectable unit now.
   const renderRowOfferings = (row, rowOfferings) => {
     if (!completeIds.includes(row.id) || offeringsPending || offeringsError) {
       return null;
@@ -63,13 +64,7 @@ function CapacityBlockCandidatesControl ({
       return offeringsSearched ? <span>No offerings</span> : null;
     }
     return rowOfferings.map((offering) => (
-      <CapacityBlockOfferingCard
-        key={offering.offeringId}
-        offering={offering}
-        selected={offering.offeringId === selectedOfferingId}
-        disabled={disabled || readOnly}
-        onSelect={onSelectOffering}
-      />
+      <CapacityBlockOfferingCard key={offering.offeringId} offering={offering} />
     ));
   };
 
@@ -83,23 +78,51 @@ function CapacityBlockCandidatesControl ({
     const availableTypes = (instanceTypes || [])
       .filter(info => !usedTypes.includes((info.instanceType || '').toLowerCase()));
     const rowOfferings = getOfferingsForCandidate(offerings, row);
-    // The row's own class, not the whole flex row: `cp-table-element-selected` sets a
-    // background, and the offerings column must stay out from under it so an unselected
-    // card there is not painted as if it were selected too.
-    const rowSelected = Boolean(selectedOfferingId) &&
+    // The endpoint returns at most one offering per candidate; a row that somehow gets
+    // more still renders every one of them, but selecting the row picks the first.
+    const hasOffering = rowOfferings.length > 0;
+    const canSelectRow = hasOffering && !disabled && !readOnly;
+    const rowSelected = hasOffering &&
       rowOfferings.some(offering => offering.offeringId === selectedOfferingId);
+    const selectRow = () => {
+      if (canSelectRow) {
+        onSelectOffering(rowOfferings[0].offeringId);
+      }
+    };
+    const onRowKeyDown = (event) => {
+      if (canSelectRow && (event.key === 'Enter' || event.key === ' ')) {
+        event.preventDefault();
+        selectRow();
+      }
+    };
+    // The row owns the click; the inputs swallow their own so a click or key press
+    // there never also selects the row.
+    const stopBubble = (event) => event.stopPropagation();
     return (
-      <div key={row.id} className={styles.capacityBlockCandidateRow}>
+      <div
+        key={row.id}
+        className={classNames(
+          styles.capacityBlockCandidateRow,
+          {
+            'cp-table-element': hasOffering,
+            'cp-table-element-selected': rowSelected,
+            'cp-outline-bordered': rowSelected
+          }
+        )}
+        role={canSelectRow ? 'button' : undefined}
+        tabIndex={canSelectRow ? 0 : undefined}
+        onClick={canSelectRow ? selectRow : undefined}
+        onKeyDown={canSelectRow ? onRowKeyDown : undefined}
+      >
         <div
-          className={classNames(
-            styles.capacityBlockCandidateInputs,
-            {'cp-table-element-selected': rowSelected}
-          )}
+          className={styles.capacityBlockCandidateInputs}
+          onClick={stopBubble}
+          onKeyDown={stopBubble}
         >
           <Select
             showSearch
             disabled={disabled || readOnly}
-            className={classNames(styles.formItem, styles.small)}
+            className={styles.capacityBlockCandidateType}
             placeholder="Instance type"
             value={row.instanceType || undefined}
             onChange={(value) => onChange(row.id, 'instanceType', value)}
@@ -115,6 +138,7 @@ function CapacityBlockCandidatesControl ({
           <InputNumber
             disabled={disabled || readOnly}
             min={1}
+            className={styles.capacityBlockCandidateCount}
             placeholder="Nodes count"
             value={row.instanceCount}
             onChange={(value) => onChange(row.id, 'instanceCount', value)}
@@ -141,43 +165,47 @@ function CapacityBlockCandidatesControl ({
 
   return (
     <div>
-      <div className={classNames(styles.formRow, styles.multiRow)}>
+      <div className={styles.formRow}>
         <span className={styles.label}>
           Instance types:
         </span>
-        <div className={styles.column}>
-          {
-            instanceTypesError && (
-              <Alert type="error" message={instanceTypesError} />
-            )
-          }
-          {
-            offeringsPending && (
-              <span>Searching for offerings...</span>
-            )
-          }
-          {
-            offeringsError && (
-              <Alert type="error" message={offeringsError} />
-            )
-          }
-          {rows.map(renderRow)}
-          {
-            !readOnly && (
-              <div>
-                <Button
-                  disabled={addDisabled}
-                  onClick={onAdd}
-                  type="dashed"
-                >
-                  <Icon type="plus" />
-                  Add instance type
-                </Button>
-              </div>
-            )
-          }
-        </div>
       </div>
+      {
+        instanceTypesError && (
+          <div className={styles.formRow}>
+            <Alert type="error" message={instanceTypesError} />
+          </div>
+        )
+      }
+      {
+        offeringsPending && (
+          <div className={styles.formRow}>
+            <span>Searching for offerings...</span>
+          </div>
+        )
+      }
+      {
+        offeringsError && (
+          <div className={styles.formRow}>
+            <Alert type="error" message={offeringsError} />
+          </div>
+        )
+      }
+      {rows.map(renderRow)}
+      {
+        !readOnly && (
+          <div className={styles.formRow}>
+            <Button
+              disabled={addDisabled}
+              onClick={onAdd}
+              type="dashed"
+            >
+              <Icon type="plus" />
+              Add instance type
+            </Button>
+          </div>
+        )
+      }
       {
         error && touched && (
           <div className={classNames(styles.formRow, styles.error, 'cp-error')}>
