@@ -180,22 +180,27 @@ function CapacityBlockCandidatesControl ({
 
   return (
     <div>
-      <div className={styles.formRow}>
+      <div className={classNames(styles.formRow, styles.capacityBlockInstanceTypesRow)}>
         <span className={styles.label}>
           Instance types:
         </span>
+        {
+          offeringsPending && (
+            <span className={styles.capacityBlockOfferingsPending}>
+              <Icon
+                type="loading"
+                aria-label="Loading"
+                className={styles.capacityBlockOfferingsPendingIcon}
+              />
+              Search for offerings...
+            </span>
+          )
+        }
       </div>
       {
         instanceTypesError && (
           <div className={styles.formRow}>
             <Alert type="error" message={instanceTypesError} />
-          </div>
-        )
-      }
-      {
-        offeringsPending && (
-          <div className={styles.formRow}>
-            <span>Searching for offerings...</span>
           </div>
         )
       }

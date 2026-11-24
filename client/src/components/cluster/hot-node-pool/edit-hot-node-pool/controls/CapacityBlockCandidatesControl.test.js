@@ -365,8 +365,8 @@ test('a row with no offering is not selectable and carries no selected class', (
   expect(combobox.closest('.cp-table-element-selected')).toBeNull();
 });
 
-test('offeringsPending shows a searching message in place of the cards', () => {
-  render(
+test('offeringsPending shows the search indicator on the label line, and only there', () => {
+  const {rerender} = render(
     <CapacityBlockCandidatesControl
       candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
       instanceTypes={instanceTypes}
@@ -374,8 +374,19 @@ test('offeringsPending shows a searching message in place of the cards', () => {
       offeringsPending
     />
   );
-  expect(screen.getByText('Searching for offerings...')).toBeInTheDocument();
+  expect(screen.getByText('Search for offerings...')).toBeInTheDocument();
+  expect(screen.getByLabelText('Loading')).toBeInTheDocument();
   expect(screen.queryByText('us-east-1a')).not.toBeInTheDocument();
+
+  rerender(
+    <CapacityBlockCandidatesControl
+      candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
+      instanceTypes={instanceTypes}
+      offerings={[offering1]}
+    />
+  );
+  expect(screen.queryByText('Search for offerings...')).not.toBeInTheDocument();
+  expect(screen.queryByLabelText('Loading')).not.toBeInTheDocument();
 });
 
 test('offeringsError renders as an alert', () => {
@@ -401,7 +412,7 @@ test('the search pending/error state is shown once, not once per row', () => {
       offeringsPending
     />
   );
-  expect(screen.getAllByText('Searching for offerings...')).toHaveLength(1);
+  expect(screen.getAllByText('Search for offerings...')).toHaveLength(1);
 
   rerender(
     <CapacityBlockCandidatesControl
