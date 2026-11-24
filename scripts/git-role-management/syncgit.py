@@ -29,7 +29,8 @@ def configure(argv):
         argv,
         "a:k:p:",
         ["api=", "key=", "proxy=", "email-attribute=", "name-attribute=", "ssh-pub-attribute=",
-         "ssh-prv-attribute=", "admins-group=", "git-group-prefix="]
+         "ssh-prv-attribute=", "admins-group=", "pipeline-admins-group=", "pipeline-readers-group=",
+         "git-group-prefix="]
     )
     api = None
     key = None
@@ -39,6 +40,8 @@ def configure(argv):
     ssh_pub = None
     ssh_prv = None
     admins_group = None
+    pipeline_admins_group = None
+    pipeline_readers_group = None
     git_group_prefix = None
     for opt, arg in opts:
         if opt in ("-a", "--api"):
@@ -57,9 +60,14 @@ def configure(argv):
             ssh_prv = arg
         elif opt == "--admins-group":
             admins_group = arg
+        elif opt == "--pipeline-admins-group":
+            pipeline_admins_group = arg
+        elif opt == "--pipeline-readers-group":
+            pipeline_readers_group = arg
         elif opt == "--git-group-prefix":
             git_group_prefix = arg
-    Config.store(key, api, proxy, email, name, ssh_pub, ssh_prv, admins_group, git_group_prefix)
+    Config.store(key, api, proxy, email, name, ssh_pub, ssh_prv, admins_group, git_group_prefix,
+                 pipeline_admins_group, pipeline_readers_group)
     print('syncgit configuration updated')
     exit(0)
 
@@ -74,6 +82,10 @@ def help():
           '--ssh-pub-attribute=<attribute name for \'ssh_pub\' field, case sensitive, default - \'ssh_pub\'> ' \
           '--ssh-prv-attribute=<attribute name for \'ssh_prv\' field, case sensitive, default - \'ssh_prv\'> ' \
           '--admins-group=<administrators group name, defualt - \'ROLE_ADMIN\'> ' \
+          '--pipeline-admins-group=<pipeline administrators group name, maintainer access to all ' \
+          'repositories, default - \'ROLE_PIPELINE_ADMIN\'> ' \
+          '--pipeline-readers-group=<pipeline readers group name, reporter access to all repositories, ' \
+          'default - \'ROLE_PIPELINE_READER\'> ' \
           '--git-group-prefix=<prefix for group names, default - \'PIPELINE-\'>')
     print('')
     print('Use \'sync\' command to synchronize git users, groups and project members.')
