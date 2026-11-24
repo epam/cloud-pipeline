@@ -102,6 +102,12 @@
   margin-right: 5px;
 }
 
+.capacity-block-candidate-inputs:global(.cp-table-element-selected) {
+  padding: 4px 8px;
+  margin: -4px 0 -4px -8px;
+  border-radius: 4px;
+}
+
 .capacity-block-candidate-offerings {
   flex: 2;
   display: flex;

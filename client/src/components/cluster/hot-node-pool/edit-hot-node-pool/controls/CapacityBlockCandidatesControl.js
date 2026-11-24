@@ -55,11 +55,10 @@ function CapacityBlockCandidatesControl ({
 
   // The search covers every complete row at once, so its pending/error state is shown
   // once for the whole control rather than repeated in every row's own right half.
-  const renderRowOfferings = (row) => {
+  const renderRowOfferings = (row, rowOfferings) => {
     if (!completeIds.includes(row.id) || offeringsPending || offeringsError) {
       return null;
     }
-    const rowOfferings = getOfferingsForCandidate(offerings, row);
     if (rowOfferings.length === 0) {
       return offeringsSearched ? <span>No offerings</span> : null;
     }
@@ -83,9 +82,20 @@ function CapacityBlockCandidatesControl ({
       .filter(Boolean);
     const availableTypes = (instanceTypes || [])
       .filter(info => !usedTypes.includes((info.instanceType || '').toLowerCase()));
+    const rowOfferings = getOfferingsForCandidate(offerings, row);
+    // The row's own class, not the whole flex row: `cp-table-element-selected` sets a
+    // background, and the offerings column must stay out from under it so an unselected
+    // card there is not painted as if it were selected too.
+    const rowSelected = Boolean(selectedOfferingId) &&
+      rowOfferings.some(offering => offering.offeringId === selectedOfferingId);
     return (
       <div key={row.id} className={styles.capacityBlockCandidateRow}>
-        <div className={styles.capacityBlockCandidateInputs}>
+        <div
+          className={classNames(
+            styles.capacityBlockCandidateInputs,
+            {'cp-table-element-selected': rowSelected}
+          )}
+        >
           <Select
             showSearch
             disabled={disabled || readOnly}
@@ -123,7 +133,7 @@ function CapacityBlockCandidatesControl ({
           }
         </div>
         <div className={styles.capacityBlockCandidateOfferings}>
-          {renderRowOfferings(row)}
+          {renderRowOfferings(row, rowOfferings)}
         </div>
       </div>
     );

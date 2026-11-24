@@ -269,6 +269,29 @@ test('instanceTypesError renders above the rows and disables Add instance type',
   expect(screen.getByRole('button', {name: 'Add instance type'})).toBeDisabled();
 });
 
+test('the row holding the selected offering is highlighted, a row holding none is not', () => {
+  const twoRows = [
+    {id: 1, instanceType: 'p5.48xlarge', instanceCount: 2},
+    {id: 2, instanceType: 'p4d.24xlarge', instanceCount: 1}
+  ];
+  render(
+    <CapacityBlockCandidatesControl
+      candidates={twoRows}
+      instanceTypes={instanceTypes}
+      offerings={[offering1, offering2]}
+      selectedOfferingId="o1"
+    />
+  );
+  const [p5Combobox, p4dCombobox] = screen.getAllByRole('combobox');
+  expect(p5Combobox.closest('.cp-table-element-selected')).not.toBeNull();
+  expect(p4dCombobox.closest('.cp-table-element-selected')).toBeNull();
+
+  // The row highlight does not spill onto the other, unselected card in the same row.
+  expect(screen.getByRole('button', {name: /us-east-1a/})).toHaveClass('cp-table-element-selected');
+  expect(screen.getByRole('button', {name: /us-east-1b/}))
+    .not.toHaveClass('cp-table-element-selected');
+});
+
 test('the error row shows only when both error and touched are truthy', () => {
   const {rerender} = render(
     <CapacityBlockCandidatesControl
