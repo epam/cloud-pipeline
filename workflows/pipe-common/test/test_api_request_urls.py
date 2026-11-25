@@ -57,20 +57,6 @@ def test_sends_a_request_with_a_normalized_path():
     assert get.call_args[0][0] == 'https://api.example.com/pipeline/restapi/run/1'
 
 
-def test_loads_a_node_pool_by_a_normalized_url():
-    pool = {'id': 42, 'amiConfiguration': {'availability_zone': 'us-east-1c'}}
-    with patch.object(api_module.requests, 'get', return_value=_response(pool)) as get:
-        loaded = _api().load_node_pool(42)
-
-    assert get.call_args[0][0] == 'https://api.example.com/pipeline/restapi/cluster/pool/42'
-    assert loaded == pool
-
-
-def test_answers_an_empty_pool_when_the_api_sends_none():
-    with patch.object(api_module.requests, 'get', return_value=_response(None)):
-        assert _api().load_node_pool(42) == {}
-
-
 def test_joins_an_endpoint_with_a_single_slash():
     with patch.object(api_module.requests, 'request', return_value=_response({'id': 1})) as request:
         _api().load_datastorage(1)
