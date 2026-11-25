@@ -92,23 +92,23 @@ test('a missing zone or price leaves the rest of the card intact', () => {
   expect(screen.queryByText('undefined')).not.toBeInTheDocument();
 });
 
-test('a selected card carries its own selected marker class, with a visible icon', () => {
+// `aria-pressed` on the button role is what lets a test - and a screen reader - tell
+// the two states apart without touching antd's own classes.
+test('a selected card is a pressed button, with a visible icon', () => {
   const {container} = render(<CapacityBlockOfferingCard offering={offering} selected />);
-  const alert = container.querySelector('.capacityBlockOfferingCard');
 
-  expect(alert).toHaveClass('capacityBlockOfferingCardSelected');
-  expect(alert).not.toHaveClass('capacityBlockOfferingCardUnselected');
+  expect(screen.getByRole('button', {pressed: true})).toBeInTheDocument();
+  const alert = container.querySelector('.capacityBlockOfferingCard');
   expect(alert).not.toHaveClass('capacityBlockOfferingCardIconHidden');
 });
 
-test('an unselected card carries its own unselected marker class, with a hidden icon', () => {
+test('an unselected card is an unpressed button, with a hidden icon', () => {
   const {container} = render(<CapacityBlockOfferingCard offering={offering} />);
-  const alert = container.querySelector('.capacityBlockOfferingCard');
 
-  expect(alert).toHaveClass('capacityBlockOfferingCardUnselected');
-  expect(alert).not.toHaveClass('capacityBlockOfferingCardSelected');
+  expect(screen.getByRole('button', {pressed: false})).toBeInTheDocument();
   // `showIcon` stays true in both states so the padding never moves the text; this is
   // the class that hides the icon itself for the unselected card.
+  const alert = container.querySelector('.capacityBlockOfferingCard');
   expect(alert).toHaveClass('capacityBlockOfferingCardIconHidden');
 });
 
@@ -142,8 +142,8 @@ test('the Space key also selects the card', async () => {
 });
 
 // The one assertion in this suite still tied to antd's own class: it is the only way
-// to prove the Alert's `type` itself is wired to `selected`, not just our own marker
-// class alongside it.
+// to prove the Alert's `type` itself is wired to `selected`, which `aria-pressed` alone
+// does not show.
 test('selected renders success and unselected renders info, both by role', () => {
   const {container, rerender} = render(<CapacityBlockOfferingCard offering={offering} />);
   expect(screen.getByRole('button')).toBeInTheDocument();
@@ -161,4 +161,16 @@ test('disabled does not call back', async () => {
   await click(screen.getByRole('button'));
 
   expect(onSelect).not.toHaveBeenCalled();
+});
+
+// `disabled` and `selected` are independent props - a disabled card still has to say
+// which it is, since it can be disabled precisely because it is the already-made choice.
+test('a disabled card still reports aria-pressed for both states', () => {
+  const {rerender} = render(
+    <CapacityBlockOfferingCard offering={offering} disabled />
+  );
+  expect(screen.getByRole('button', {pressed: false})).toBeInTheDocument();
+
+  rerender(<CapacityBlockOfferingCard offering={offering} disabled selected />);
+  expect(screen.getByRole('button', {pressed: true})).toBeInTheDocument();
 });

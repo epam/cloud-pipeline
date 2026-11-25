@@ -509,10 +509,12 @@ function EditHotNodePoolForm ({
         value={region}
         onChange={value => onChange('region', value)}
         // ML Block mode's own "Search in region" control, above, is where this value
-        // is decided; it is never user-editable here, so its error is not shown here either.
+        // is decided and shown instead - but only where that control itself renders,
+        // for a new pool. An existing one never fails this check, so the distinction
+        // is latent rather than observed.
         disabled={disabled || readOnly || mlBlock}
-        error={mlBlock ? undefined : validation.region}
-        touched={mlBlock ? undefined : touched.region}
+        error={mlBlock && !isExistingReservation ? undefined : validation.region}
+        touched={mlBlock && !isExistingReservation ? undefined : touched.region}
       />
       <PriceTypeSelect
         priceTypes={priceTypes}

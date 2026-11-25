@@ -69,8 +69,9 @@
 }
 
 /* Overrides `.ant-alert`'s own padding - the compound selector beats the single-class
-   antd rule whatever order the two stylesheets load in. `display: flex` plus `flex: 1`
-   (not the old `inline-flex`) makes the card fill the offerings column. */
+   antd rule whatever order the two stylesheets load in. `flex: 1` here only equalises
+   width for the unwrapped no-offering alert; a found offering's width instead comes
+   from `-card-clickable` below, which is its actual flex parent in that case. */
 .capacity-block-offering-card:global(.ant-alert) {
   display: flex;
   align-items: center;
@@ -98,22 +99,6 @@
    the text between the two states - only the icon itself is hidden here. */
 .capacity-block-offering-card-icon-hidden :global(.ant-alert-icon) {
   visibility: hidden;
-}
-
-/* No rules of their own - the Alert's `type` carries the look; these only name the
-   state for tests, independent of antd's own classes. */
-/* stylelint-disable-next-line block-no-empty */
-.capacity-block-offering-card-selected {
-}
-
-/* stylelint-disable-next-line block-no-empty */
-.capacity-block-offering-card-unselected {
-}
-
-/* The no-offering alert is not a control, so it keeps the default cursor instead of the
-   pointer the clickable wrapper sets on an actual offering card. */
-.capacity-block-offering-card-no-offering {
-  cursor: default;
 }
 
 /* `flex: 1` so this flex item, not just the alert inside it, claims its share of the

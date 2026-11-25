@@ -81,18 +81,12 @@ function CapacityBlockOfferingCard ({offering, selected, disabled, onSelect}) {
     <div key="price" className={styles.capacityBlockOfferingCardCell}>{price}</div>
   ];
   const type = selected ? 'success' : 'info';
-  // Driven by the same `selected` the `type` above comes from, so the two cannot drift -
-  // the class names let a test find the state without depending on antd's own classes.
-  const stateClassName = selected
-    ? styles.capacityBlockOfferingCardSelected
-    : styles.capacityBlockOfferingCardUnselected;
   const alert = (
     <Alert
       type={type}
       showIcon
       className={classNames(
         styles.capacityBlockOfferingCard,
-        stateClassName,
         {[styles.capacityBlockOfferingCardIconHidden]: type === 'info'}
       )}
       message={
@@ -120,6 +114,7 @@ function CapacityBlockOfferingCard ({offering, selected, disabled, onSelect}) {
       role="button"
       tabIndex={disabled ? -1 : 0}
       aria-disabled={disabled}
+      aria-pressed={selected}
       className={classNames(
         styles.capacityBlockOfferingCardClickable,
         {[styles.disabled]: disabled}

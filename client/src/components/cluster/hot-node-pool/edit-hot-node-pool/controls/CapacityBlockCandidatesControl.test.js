@@ -145,6 +145,9 @@ test('a row with matching offerings renders a card per offering', () => {
   expect(screen.getByText('us-east-1b')).toBeInTheDocument();
 });
 
+// The one assertion in this file tied to antd's own class, mirroring
+// CapacityBlockOfferingCard.test.js's own exception: it is the only way to prove the
+// alert actually renders as `warning`, not just that its text reads "No offerings".
 test('a row with none, in a settled search, renders "No offerings" as a warning alert', () => {
   const offeringForAnotherType = {...offering1, instanceType: 'p4d.24xlarge'};
   const {container} = render(
@@ -158,7 +161,7 @@ test('a row with none, in a settled search, renders "No offerings" as a warning 
   const noOfferings = screen.getByText('No offerings');
   expect(noOfferings).toBeInTheDocument();
   const alert = container.querySelector('.capacityBlockOfferingCard');
-  expect(alert).toHaveClass('capacityBlockOfferingCardNoOffering');
+  expect(alert).toHaveClass('ant-alert-warning');
 });
 
 test('a pending search never shows "No offerings", even over a stale empty list', () => {
@@ -365,7 +368,7 @@ test('the row carries no button role, click handler or selected class, in any st
 // criteria the user has since changed - it is off screen, and its purchase is not
 // refundable.
 test('a pending search offers nothing selectable, even over a stale offering from a ' +
-  'previous search', () => {
+  'previous search', async () => {
   const onSelectOffering = fn();
   render(
     <CapacityBlockCandidatesControl
@@ -381,6 +384,9 @@ test('a pending search offers nothing selectable, even over a stale offering fro
     .closest('.capacityBlockCandidateRow')
     .querySelector('.capacityBlockCandidateOfferings');
   expect(within(offeringsWrapper).queryByRole('button')).not.toBeInTheDocument();
+  // Nothing renders to click, but the attempt itself is the point: a click reaching the
+  // stale offering's card would be the actual hole, not just the card's absence.
+  await click(offeringsWrapper);
   expect(onSelectOffering).not.toHaveBeenCalled();
 });
 

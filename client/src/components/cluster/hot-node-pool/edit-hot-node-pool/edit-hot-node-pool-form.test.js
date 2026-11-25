@@ -581,6 +581,22 @@ test('Future dated mode has no Search in region and Region stays editable', () =
   expect(selectIsDisabled('Region:')).toBe(false);
 });
 
+// `validation.region` is never set for a loaded pool, so this is unaffected by the
+// `mlBlock && !isExistingReservation` condition rather than exercising it directly.
+test('an existing ML Block reservation pool has no Search in region and no region error',
+  () => {
+    renderForm({
+      values: baseValues({mode: 'ML_BLOCK'}),
+      readOnly: true,
+      isExistingReservation: true,
+      reservationStartDate: '2026-03-01 10:00:00.000',
+      reservationEndDate: '2026-04-01 10:00:00.000'
+    });
+    expect(screen.queryByText('Search in region:')).not.toBeInTheDocument();
+    expect(selectIsDisabled('Region:')).toBe(true);
+    expect(screen.queryByText('Region is required')).not.toBeInTheDocument();
+  });
+
 test('ML Block mode locks Price type to On-demand and hides Spot', () => {
   renderForm({values: baseValues({mode: 'ML_BLOCK', spot: 'ON_DEMAND'})});
   expect(selectIsDisabled('Price type:')).toBe(true);
