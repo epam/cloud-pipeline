@@ -52,9 +52,6 @@
 - [NICE DCV on Rocky Linux 10](#nice-dcv-on-rocky-linux-10)
 - [NoMachine on Rocky Linux 10](#nomachine-on-rocky-linux-10)
 - [Java 21 and Spring Boot 3 for the platform services](#java-21-and-spring-boot-3-for-the-platform-services)
-- [Future dated node pools backed by a capacity reservation](#future-dated-node-pools-backed-by-a-capacity-reservation)
-- [Reserved capacity blocks in the launch form](#reserved-capacity-blocks-in-the-launch-form)
-- [No estimated price for the runs on a node pool](#no-estimated-price-for-the-runs-on-a-node-pool)
 - [Download storage contents as an archive](#download-storage-contents-as-an-archive)
 - [Upload and extract archives](#upload-and-extract-archives)
 - [Data storage: bulk actions on the permitted items only](#data-storage-bulk-actions-on-the-permitted-items-only)
@@ -1048,39 +1045,6 @@ The Java services of the platform - the API (`cp-api-srv`), the billing service 
 - A new service, the storage task service (`cp-storage-async-task-service`), performs the archive downloads and the archive extractions of the data storages (see [Download storage contents as an archive](#download-storage-contents-as-an-archive)). The installer deploys it on the node that **`CP_STORAGE_ASYNC_TASK_SERVICE_KUBE_NODE_NAME`** names, the master node by default. Its pod is privileged, as it mounts the NFS shares itself, and it needs disk space on the node for the archives it prepares. It reaches a storage through a role of the storage's cloud region, so the node of this service must be able to assume the roles of the regions. The archive downloads also need a data storage for the finished archives: set its ID in `tasks.storageDownloadAsArchive.destinationStorageId` of the **`system.async.tasks.config`** preference. Until then, the archive downloads stay pending.
 
 ***
-
-## Future dated node pools backed by a capacity reservation
-
-Previously, a hot node pool started its nodes as any other node, so the cloud provider could have no capacity for them at that time.
-
-In the current version, a node pool can be backed by an AWS capacity reservation, so its nodes are guaranteed. The pool form of the **Hot Node Pools** tab has a new **Mode** field. **Default** is a pool with a weekly schedule, as before. **Future dated** reserves capacity for one window: a search window (**Search from**, **Search until**) and a **Duration (days)** of 14 days or more. Such a pool is on-demand only and cannot be autoscaled. It has no nodes before its reservation is active, and it stops taking new runs shortly before the reservation ends. The pool card shows the reservation status. For a pool whose reservation is still open, the delete confirmation now warns that the reservation is given up too, and asks to tick **Force deletion**.
-
-Other changes:
-
-- the new **ROLE\_NODE\_POOL\_MANAGER** role allows to create **Future dated** pools, and to edit and remove the pools that the user owns
-- the **Hot Node Pools** tab is now shown to the users with the **ROLE\_RUN\_ADMIN**, **ROLE\_CLUSTER\_READER** or **ROLE\_NODE\_POOL\_MANAGER** role as well, not only to admins
-- the pool form has a new **Pool type** field: **Standard**, or **Shareable node**, where several runs share one pool node
-- the **`cluster.capacity.reservation.policies`** preference sets which reservation requests are refused, which are approved at once, and which wait for an administrator's approval. The owner gets email notifications as the reservation status changes (the `CAPACITY_RESERVATION_*` notification types)
-- an AWS Capacity Block for ML can also back a pool, through the API: the API searches the offerings, buys a block and extends it
-- a run with the `CP_CAP_POOL_ID` parameter is bound to the named pool: it waits for a free node of that pool (**`cluster.occupied.node.pool.wait.sec`**, 24 hours by default) instead of taking another node
-
-The AWS role of the API needs the EC2 permissions to create, describe and cancel capacity reservations, and to search and purchase capacity blocks and their extensions (e.g. `ec2:CreateCapacityReservation`, `ec2:PurchaseCapacityBlock`).
-
-For more details see [here](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md).
-
-## Reserved capacity blocks in the launch form
-
-In the current version, the **Node type** list of the launch form starts with a **Reserved capacity blocks** group, when an active pool backed by a capacity reservation offers an allowed instance type in the selected **Cloud Region**. It has one entry per pool. Only an entry of this group launches the run on the reservation: the same instance type picked in its usual place launches the run without one. The launch form also lists the reserved capacity that is available right now for the selected **Cloud Region**, and a click on an entry selects it. The run confirmation pop-up offers the group as well, where it asks to select an instance type. Pipeline configurations and detached configurations do not offer capacity blocks.
-
-The CPU, RAM and GPU request fields of the launch form (the `CP_CAP_REQUESTS_*` parameters) now take their settings from the selected pool: they are shown when an entry of a **Shareable node** pool is selected in this group, as its run configuration allows. The GUI no longer reads the **`launch.reservation.parameters`** preference for them.
-
-For more details see [here](../../manual/06_Manage_Pipeline/6._Manage_Pipeline.md#configuration).
-
-## No estimated price for the runs on a node pool
-
-In the current version, the runs table, the run cards of the home page and the run page do not show an estimated price for a run on a node pool, or for a run with reservation requests (the `CP_CAP_REQUESTS_CPU`, `CP_CAP_REQUESTS_RAM` or `CP_CAP_REQUESTS_GPU` parameter). A pool node outlives a single run, and a run with reservation requests takes only a share of a node, so a price per run would mislead.
-
-For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md).
 
 ## Download storage contents as an archive
 
