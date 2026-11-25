@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {render, screen, click, change, keyDown, fn} from '@test';
+import {render, screen, within, click, change, keyDown, fn} from '@test';
 import CapacityBlockCandidatesControl from './CapacityBlockCandidatesControl';
 import {formatCapacityBlockInstanceType} from '../helpers';
 
@@ -157,10 +157,8 @@ test('a row with none, in a settled search, renders "No offerings" as a warning 
   );
   const noOfferings = screen.getByText('No offerings');
   expect(noOfferings).toBeInTheDocument();
-  // antd 2.13.14's `Alert` only exposes its type through its own class.
-  const alert = container.querySelector('.ant-alert');
-  expect(alert).toHaveClass('ant-alert-warning');
-  expect(alert.querySelector('.ant-alert-icon')).toBeInTheDocument();
+  const alert = container.querySelector('.capacityBlockOfferingCard');
+  expect(alert).toHaveClass('capacityBlockOfferingCardNoOffering');
 });
 
 test('a pending search never shows "No offerings", even over a stale empty list', () => {
@@ -362,6 +360,29 @@ test('the row carries no button role, click handler or selected class, in any st
     await click(getRow());
     expect(onSelectOffering).not.toHaveBeenCalled();
   });
+
+// A click during the debounce window must not be able to select an offering found for
+// criteria the user has since changed - it is off screen, and its purchase is not
+// refundable.
+test('a pending search offers nothing selectable, even over a stale offering from a ' +
+  'previous search', () => {
+  const onSelectOffering = fn();
+  render(
+    <CapacityBlockCandidatesControl
+      candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
+      instanceTypes={instanceTypes}
+      offerings={[offering1]}
+      offeringsPending
+      offeringsSearched
+      onSelectOffering={onSelectOffering}
+    />
+  );
+  const offeringsWrapper = screen.getByRole('combobox')
+    .closest('.capacityBlockCandidateRow')
+    .querySelector('.capacityBlockCandidateOfferings');
+  expect(within(offeringsWrapper).queryByRole('button')).not.toBeInTheDocument();
+  expect(onSelectOffering).not.toHaveBeenCalled();
+});
 
 test('offeringsPending shows the search indicator on the label line, and only there', () => {
   const {rerender} = render(

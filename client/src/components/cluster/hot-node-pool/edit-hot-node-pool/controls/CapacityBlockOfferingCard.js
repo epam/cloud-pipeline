@@ -46,7 +46,7 @@ function formatUpfrontFee (amount, currency) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
-  if (!currency || currency === 'USD') {
+  if (!currency || currency.toUpperCase() === 'USD') {
     return `$${formatted}`;
   }
   return `${formatted} ${currency}`;
@@ -81,12 +81,18 @@ function CapacityBlockOfferingCard ({offering, selected, disabled, onSelect}) {
     <div key="price" className={styles.capacityBlockOfferingCardCell}>{price}</div>
   ];
   const type = selected ? 'success' : 'info';
+  // Driven by the same `selected` the `type` above comes from, so the two cannot drift -
+  // the class names let a test find the state without depending on antd's own classes.
+  const stateClassName = selected
+    ? styles.capacityBlockOfferingCardSelected
+    : styles.capacityBlockOfferingCardUnselected;
   const alert = (
     <Alert
       type={type}
       showIcon
       className={classNames(
         styles.capacityBlockOfferingCard,
+        stateClassName,
         {[styles.capacityBlockOfferingCardIconHidden]: type === 'info'}
       )}
       message={

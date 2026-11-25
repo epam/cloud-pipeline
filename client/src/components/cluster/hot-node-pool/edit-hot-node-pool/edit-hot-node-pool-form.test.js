@@ -537,6 +537,38 @@ test('changing Search in region calls onChange with (\'region\', value)', async 
   expect(onChange).toHaveBeenLastCalledWith('region', '2');
 });
 
+// SelectInput renders its error line as a sibling of the formRow the label sits in,
+// both under the control's own outer wrapper div.
+function selectInputWrapper (labelText) {
+  return screen.getByText(labelText).closest('div').parentElement;
+}
+
+test(
+  'ML Block mode shows a region error once, under Search in region, not under the ' +
+  'disabled Configuration Region',
+  () => {
+    renderForm({
+      values: baseValues({mode: 'ML_BLOCK', region: undefined}),
+      validation: {region: 'Region is required'},
+      touched: {region: true}
+    });
+    expect(screen.getAllByText('Region is required')).toHaveLength(1);
+    expect(within(selectInputWrapper('Search in region:')).getByText('Region is required'))
+      .toBeInTheDocument();
+  }
+);
+
+test('Default mode shows a region error once, under Configuration\'s Region', () => {
+  renderForm({
+    values: baseValues({mode: MODE_DEFAULT, region: undefined}),
+    validation: {region: 'Region is required'},
+    touched: {region: true}
+  });
+  expect(screen.getAllByText('Region is required')).toHaveLength(1);
+  expect(within(selectInputWrapper('Region:')).getByText('Region is required'))
+    .toBeInTheDocument();
+});
+
 test('Default mode has no Search in region and Region stays editable', () => {
   renderForm({values: baseValues({mode: MODE_DEFAULT})});
   expect(screen.queryByText('Search in region:')).not.toBeInTheDocument();

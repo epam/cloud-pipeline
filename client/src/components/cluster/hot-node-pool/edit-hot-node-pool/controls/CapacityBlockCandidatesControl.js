@@ -70,7 +70,10 @@ function CapacityBlockCandidatesControl ({
           type="warning"
           showIcon
           message="No offerings"
-          className={styles.capacityBlockOfferingCard}
+          className={classNames(
+            styles.capacityBlockOfferingCard,
+            styles.capacityBlockOfferingCardNoOffering
+          )}
         />
       ) : null;
     }

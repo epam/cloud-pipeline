@@ -63,6 +63,13 @@ test('a non-USD price keeps the amount-then-code form', () => {
   expect(screen.queryByText(/^\$/)).not.toBeInTheDocument();
 });
 
+test('a lower-case currency code is still matched against USD', () => {
+  const lowerCaseUsd = {...offering, upfrontFeeCurrency: 'usd'};
+  render(<CapacityBlockOfferingCard offering={lowerCaseUsd} />);
+  expect(screen.getByText('$1,234.50')).toBeInTheDocument();
+  expect(screen.queryByText(/usd/i)).not.toBeInTheDocument();
+});
+
 test('omits a missing optional field rather than rendering it as undefined', () => {
   const sparse = {offeringId: 'offering-2', instanceType: 'p5.48xlarge'};
   render(<CapacityBlockOfferingCard offering={sparse} />);
@@ -85,23 +92,21 @@ test('a missing zone or price leaves the rest of the card intact', () => {
   expect(screen.queryByText('undefined')).not.toBeInTheDocument();
 });
 
-// antd 2.13.14's `Alert` only exposes its `type` through its own class, so these two
-// tests assert on `.ant-alert-success`/`.ant-alert-info` rather than by role or text.
-test('a selected card renders a success alert with a visible icon', () => {
+test('a selected card carries its own selected marker class, with a visible icon', () => {
   const {container} = render(<CapacityBlockOfferingCard offering={offering} selected />);
-  const alert = container.querySelector('.ant-alert');
+  const alert = container.querySelector('.capacityBlockOfferingCard');
 
-  expect(alert).toHaveClass('ant-alert-success');
-  expect(alert.querySelector('.ant-alert-icon')).toBeInTheDocument();
+  expect(alert).toHaveClass('capacityBlockOfferingCardSelected');
+  expect(alert).not.toHaveClass('capacityBlockOfferingCardUnselected');
   expect(alert).not.toHaveClass('capacityBlockOfferingCardIconHidden');
 });
 
-test('an unselected card renders an info alert whose icon is present but hidden', () => {
+test('an unselected card carries its own unselected marker class, with a hidden icon', () => {
   const {container} = render(<CapacityBlockOfferingCard offering={offering} />);
-  const alert = container.querySelector('.ant-alert');
+  const alert = container.querySelector('.capacityBlockOfferingCard');
 
-  expect(alert).toHaveClass('ant-alert-info');
-  expect(alert.querySelector('.ant-alert-icon')).toBeInTheDocument();
+  expect(alert).toHaveClass('capacityBlockOfferingCardUnselected');
+  expect(alert).not.toHaveClass('capacityBlockOfferingCardSelected');
   // `showIcon` stays true in both states so the padding never moves the text; this is
   // the class that hides the icon itself for the unselected card.
   expect(alert).toHaveClass('capacityBlockOfferingCardIconHidden');
@@ -136,14 +141,17 @@ test('the Space key also selects the card', async () => {
   expect(onSelect).toHaveBeenCalledWith('offering-1');
 });
 
+// The one assertion in this suite still tied to antd's own class: it is the only way
+// to prove the Alert's `type` itself is wired to `selected`, not just our own marker
+// class alongside it.
 test('selected renders success and unselected renders info, both by role', () => {
   const {container, rerender} = render(<CapacityBlockOfferingCard offering={offering} />);
   expect(screen.getByRole('button')).toBeInTheDocument();
-  expect(container.querySelector('.ant-alert')).toHaveClass('ant-alert-info');
+  expect(container.querySelector('.capacityBlockOfferingCard')).toHaveClass('ant-alert-info');
 
   rerender(<CapacityBlockOfferingCard offering={offering} selected />);
   expect(screen.getByRole('button')).toBeInTheDocument();
-  expect(container.querySelector('.ant-alert')).toHaveClass('ant-alert-success');
+  expect(container.querySelector('.capacityBlockOfferingCard')).toHaveClass('ant-alert-success');
 });
 
 test('disabled does not call back', async () => {

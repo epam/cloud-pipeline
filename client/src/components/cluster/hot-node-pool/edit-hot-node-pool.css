@@ -96,6 +96,22 @@
   visibility: hidden;
 }
 
+/* No rules of their own - the Alert's `type` carries the look; these only name the
+   state for tests, independent of antd's own classes. */
+/* stylelint-disable-next-line block-no-empty */
+.capacity-block-offering-card-selected {
+}
+
+/* stylelint-disable-next-line block-no-empty */
+.capacity-block-offering-card-unselected {
+}
+
+/* The no-offering alert is not a control, so it keeps the default cursor instead of the
+   pointer the clickable wrapper sets on an actual offering card. */
+.capacity-block-offering-card-no-offering {
+  cursor: default;
+}
+
 .capacity-block-offering-card-clickable {
   cursor: pointer;
 }
