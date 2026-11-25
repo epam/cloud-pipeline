@@ -241,6 +241,8 @@ class FailingSourceClient(SourceClient):
     def __init__(self, stopped):
         super(FailingSourceClient, self).__init__()
         self.pieces = []
+        # Whether each range that went on saw the stop. An assert in a worker would only fail that worker.
+        self.saw_stop = []
         self._piece_written = threading.Event()
         self._stopped = stopped
 
@@ -254,7 +256,9 @@ class FailingSourceClient(SourceClient):
         with self._lock:
             self.pieces.append(offset)
         self._piece_written.set()
-        assert self._stopped.wait(timeout=10)
+        saw_stop = self._stopped.wait(timeout=10)
+        with self._lock:
+            self.saw_stop.append(saw_stop)
         buf.write(self.content[offset + 10:offset + length])
         with self._lock:
             self.pieces.append(offset + 10)
@@ -268,6 +272,7 @@ def test_failed_range_stops_the_running_ranges(tmpdir, stopped):
         _read(client, 0, 10)
 
     # The other range wrote its first piece only: the next one came after the stop
+    assert source.saw_stop == [True]
     assert source.pieces == [500]
     assert _buffer_files(tmpdir) == []
 
@@ -282,6 +287,7 @@ def test_failed_range_stops_the_queued_ranges(tmpdir, stopped):
     # The worker of the failed range may take the next range before the stop, but no range after that starts
     started = sorted(offset for offset, _ in source.ranges)
     assert started in ([0, 100], [0, 100, 200])
+    assert source.saw_stop and all(source.saw_stop)
     assert set(source.pieces) <= {100, 200}
     assert _buffer_files(tmpdir) == []
 
