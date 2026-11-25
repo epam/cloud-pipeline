@@ -65,10 +65,12 @@ import java.util.stream.Collectors;
  * {@link CapacityReservationApprovalService} decides the status it starts in. From then on the reservation drives
  * the pool, which is what the pool methods are for:
  * <ul>
- *   <li>{@link #schedulePool} - gives the pool the window it is usable in and the reservation's target, zone and
- *       subnet, and leaves its size alone, which at that point is still no nodes.</li>
- *   <li>{@link #activatePool} - sizes the pool to the reserved instance count and type, once the capacity is
- *       live - whichever candidate actually landed, for a {@code FUTURE_DATED} reservation with fallbacks.</li>
+ *   <li>{@link #schedulePool} - gives the pool the window it is usable in, the reservation's target, zone and
+ *       subnet, and the instance type the provider has scheduled - whichever candidate that turned out to be for
+ *       a {@code FUTURE_DATED} reservation with fallbacks - while leaving its size alone, still no nodes at that
+ *       point.</li>
+ *   <li>{@link #activatePool} - sizes the pool to the reserved instance count once the capacity is live; the
+ *       instance type is already there from {@link #schedulePool}.</li>
  *   <li>{@link #extendPoolEndDate} - moves the pool's own end date out to match a capacity block extension,
  *       without touching anything else {@link #schedulePool} sets, since an extension changes nothing else.</li>
  *   <li>{@link #deactivatePool} - takes all of that back off the pool, leaving a pool of no nodes, which
@@ -159,8 +161,9 @@ public class CapacityReservationService {
     }
 
     /**
-     * Prepares the pool behind a scheduled reservation: the window it is usable in, and the reservation's target,
-     * zone and subnet in its launch configuration. The pool's count stays 0.
+     * Prepares the pool behind a scheduled reservation: the window it is usable in, the reservation's target,
+     * zone and subnet in its launch configuration, and the instance type the provider has committed to deliver -
+     * whichever candidate that turned out to be. The pool's count stays 0 until the capacity is actually live.
      */
     @Transactional
     public void schedulePool(final CapacityReservation reservation) {
@@ -169,6 +172,7 @@ public class CapacityReservationService {
         final String subnet = allowedNetworks(regionCodeOf(reservation)).get(zone);
         final LocalDateTime poolEndDate = getPoolEndDate(reservation);
         poolManager.applyReservationState(reservation.getNodePoolId(), pool -> {
+            pool.setInstanceType(reservation.getInstanceType());
             pool.setStartDate(reservation.getStartDate());
             pool.setEndDate(poolEndDate);
             pool.setAmiConfiguration(withReservation(pool.getAmiConfiguration(), launchSpecification, zone, subnet));
@@ -197,8 +201,10 @@ public class CapacityReservationService {
     }
 
     /**
-     * Sizes the pool to the reserved instance count once the capacity is live, and points it at
-     * whichever candidate actually landed - a no-op write when that's still the main instance type.
+     * Sizes the pool to the reserved instance count once the capacity is live. The instance type is
+     * already there - {@link #schedulePool} always runs before this, whether at an earlier SCHEDULED
+     * transition or right before this call - so repeating that write here is a no-op; it stays so a
+     * caller never depends on {@code schedulePool} having run first.
      *
      * @param reservation the reservation whose granted instance type/count the pool should now match
      */

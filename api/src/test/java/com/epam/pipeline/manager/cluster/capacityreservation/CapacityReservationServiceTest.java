@@ -343,6 +343,27 @@ public class CapacityReservationServiceTest {
     }
 
     @Test
+    public void shouldPointTheScheduledPoolAtWhicheverCandidateTheProviderAccepted() {
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_CAPACITY_RESERVATION_MONITOR_SETTINGS))
+                .thenReturn(new CapacityReservationMonitorSettings(0));
+        final CapacityReservation reservation = CapacityReservationCreatorUtils.getScheduledReservation(NODE_POOL_ID);
+        reservation.setInstanceType("c5.4xlarge");
+        reservation.setInstanceCount(4);
+        final NodePool pool = new NodePool();
+        pool.setInstanceType(INSTANCE_TYPE);
+        pool.setCount(0);
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Consumer> poolChange = ArgumentCaptor.forClass(Consumer.class);
+        when(poolManager.applyReservationState(eq(NODE_POOL_ID), poolChange.capture())).thenReturn(pool);
+
+        service.schedulePool(reservation);
+
+        poolChange.getValue().accept(pool);
+        assertThat(pool.getInstanceType()).isEqualTo("c5.4xlarge");
+        assertThat(pool.getCount()).isEqualTo(0);
+    }
+
+    @Test
     public void shouldRefuseToCancelAPurchasedCapacityBlock() {
         final Long id = 1L;
         final CapacityReservation reservation = CapacityReservationCreatorUtils.getCapacityBlockReservation(2L);
