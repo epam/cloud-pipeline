@@ -69,7 +69,7 @@ function CapacityBlockCandidatesControl ({
         <Alert
           type="warning"
           showIcon
-          message="No offerings"
+          message={<span className={styles.capacityBlockOfferingCardMessage}>No offerings</span>}
           className={classNames(
             styles.capacityBlockOfferingCard,
             styles.capacityBlockOfferingCardNoOffering

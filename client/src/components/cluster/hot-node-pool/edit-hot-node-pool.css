@@ -65,15 +65,16 @@
 }
 
 .capacity-block-offering-card {
-  margin: 0 8px 4px 0;
+  margin: 0 8px 0 0;
 }
 
 /* Overrides `.ant-alert`'s own padding - the compound selector beats the single-class
-   antd rule whatever order the two stylesheets load in. `min-height` keeps the alert
-   close to the height of the inputs beside it in the row. */
+   antd rule whatever order the two stylesheets load in. `display: flex` plus `flex: 1`
+   (not the old `inline-flex`) makes the card fill the offerings column. */
 .capacity-block-offering-card:global(.ant-alert) {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  flex: 1;
   padding: 2px 8px 2px 32px;
   min-height: 28px;
 }
@@ -85,9 +86,12 @@
   transform: translateY(-50%);
 }
 
+/* The icon's space is reserved even when hidden (`-icon-hidden`), so this margin keeps
+   the text off the icon in every state without the text shifting between them. */
 .capacity-block-offering-card-message {
   display: inline-flex;
   align-items: baseline;
+  margin-left: 5px;
 }
 
 /* `showIcon` stays true for the unselected card too, so the icon's padding never moves
@@ -112,7 +116,10 @@
   cursor: default;
 }
 
+/* `flex: 1` so this flex item, not just the alert inside it, claims its share of the
+   offerings column - the alert then fills the full width this wrapper resolves to. */
 .capacity-block-offering-card-clickable {
+  flex: 1;
   cursor: pointer;
 }
 
@@ -136,7 +143,7 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .capacity-block-candidate-inputs {
