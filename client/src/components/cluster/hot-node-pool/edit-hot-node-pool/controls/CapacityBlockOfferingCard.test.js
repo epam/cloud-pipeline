@@ -107,22 +107,10 @@ test('an unselected card renders an info alert whose icon is present but hidden'
   expect(alert).toHaveClass('capacityBlockOfferingCardIconHidden');
 });
 
-test('not interactive by default: no role and no click handling', async () => {
+// The card is always the control - one per offering, whether a row holds one or several.
+test('the card is a button, and a click calls onSelect with the offering id', async () => {
   const onSelect = fn();
-  const {container} = render(
-    <CapacityBlockOfferingCard offering={offering} selected onSelect={onSelect} />
-  );
-
-  expect(container.querySelector('[role="button"]')).toBeNull();
-
-  await click(container.querySelector('.ant-alert'));
-
-  expect(onSelect).not.toHaveBeenCalled();
-});
-
-test('interactive: a click calls onSelect with the offering id', async () => {
-  const onSelect = fn();
-  render(<CapacityBlockOfferingCard offering={offering} interactive onSelect={onSelect} />);
+  render(<CapacityBlockOfferingCard offering={offering} onSelect={onSelect} />);
 
   await click(screen.getByRole('button'));
 
@@ -130,41 +118,37 @@ test('interactive: a click calls onSelect with the offering id', async () => {
   expect(onSelect).toHaveBeenCalledWith('offering-1');
 });
 
-test('interactive: the Enter key also selects the card', async () => {
+test('the Enter key also selects the card', async () => {
   const onSelect = fn();
-  render(<CapacityBlockOfferingCard offering={offering} interactive onSelect={onSelect} />);
+  render(<CapacityBlockOfferingCard offering={offering} onSelect={onSelect} />);
 
   await keyDown(screen.getByRole('button'), {key: 'Enter'});
 
   expect(onSelect).toHaveBeenCalledWith('offering-1');
 });
 
-test('interactive: the Space key also selects the card', async () => {
+test('the Space key also selects the card', async () => {
   const onSelect = fn();
-  render(<CapacityBlockOfferingCard offering={offering} interactive onSelect={onSelect} />);
+  render(<CapacityBlockOfferingCard offering={offering} onSelect={onSelect} />);
 
   await keyDown(screen.getByRole('button'), {key: ' '});
 
   expect(onSelect).toHaveBeenCalledWith('offering-1');
 });
 
-test('interactive: selected renders success and unselected renders info, both by role', () => {
-  const {container, rerender} = render(
-    <CapacityBlockOfferingCard offering={offering} interactive />
-  );
+test('selected renders success and unselected renders info, both by role', () => {
+  const {container, rerender} = render(<CapacityBlockOfferingCard offering={offering} />);
   expect(screen.getByRole('button')).toBeInTheDocument();
   expect(container.querySelector('.ant-alert')).toHaveClass('ant-alert-info');
 
-  rerender(<CapacityBlockOfferingCard offering={offering} interactive selected />);
+  rerender(<CapacityBlockOfferingCard offering={offering} selected />);
   expect(screen.getByRole('button')).toBeInTheDocument();
   expect(container.querySelector('.ant-alert')).toHaveClass('ant-alert-success');
 });
 
-test('interactive and disabled does not call back', async () => {
+test('disabled does not call back', async () => {
   const onSelect = fn();
-  render(
-    <CapacityBlockOfferingCard offering={offering} interactive disabled onSelect={onSelect} />
-  );
+  render(<CapacityBlockOfferingCard offering={offering} disabled onSelect={onSelect} />);
 
   await click(screen.getByRole('button'));
 

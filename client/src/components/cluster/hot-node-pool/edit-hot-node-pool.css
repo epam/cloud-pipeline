@@ -69,11 +69,13 @@
 }
 
 /* Overrides `.ant-alert`'s own padding - the compound selector beats the single-class
-   antd rule whatever order the two stylesheets load in. */
+   antd rule whatever order the two stylesheets load in. `min-height` keeps the alert
+   close to the height of the inputs beside it in the row. */
 .capacity-block-offering-card:global(.ant-alert) {
   display: inline-flex;
   align-items: center;
   padding: 2px 8px 2px 32px;
+  min-height: 28px;
 }
 
 /* antd fixes the icon at `top: 10px`, which this card's own, shorter padding no longer
@@ -118,9 +120,7 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 0 8px;
-  margin: 0 0 8px -8px;
-  border-radius: 4px;
+  margin-bottom: 8px;
 }
 
 .capacity-block-candidate-inputs {

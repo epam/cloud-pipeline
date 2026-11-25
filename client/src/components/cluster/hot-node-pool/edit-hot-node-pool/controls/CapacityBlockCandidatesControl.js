@@ -32,7 +32,7 @@ import styles from '../../edit-hot-node-pool.css';
 // search that has not run yet both leave the list empty, and only the flag tells them apart.
 //
 // The endpoint can return more than one offering per candidate (every AWS match, not just
-// the nearest), so one offering keeps the row as the band; several make each card its own.
+// the nearest); each is rendered as its own card, which is the only click target.
 function CapacityBlockCandidatesControl ({
   candidates,
   instanceTypes,
@@ -58,7 +58,7 @@ function CapacityBlockCandidatesControl ({
 
   // The search covers every complete row at once, so its pending/error state is shown
   // once for the whole control rather than repeated in every row's own right half.
-  const renderRowOfferings = (row, rowOfferings, multipleOfferings) => {
+  const renderRowOfferings = (row, rowOfferings) => {
     if (!completeIds.includes(row.id) || offeringsPending || offeringsError) {
       return null;
     }
@@ -78,7 +78,6 @@ function CapacityBlockCandidatesControl ({
       <CapacityBlockOfferingCard
         key={offering.offeringId}
         offering={offering}
-        interactive={multipleOfferings}
         selected={offering.offeringId === selectedOfferingId}
         disabled={disabled || readOnly}
         onSelect={onSelectOffering}
@@ -100,44 +99,9 @@ function CapacityBlockCandidatesControl ({
       .slice()
       .sort((a, b) => (a.instanceType || '').localeCompare(b.instanceType || ''));
     const rowOfferings = getOfferingsForCandidate(offerings, row);
-    const hasOffering = rowOfferings.length > 0;
-    const multipleOfferings = rowOfferings.length > 1;
-    // A single offering keeps the row as the band; several make each card its own.
-    const canSelectRow = hasOffering && !multipleOfferings && !disabled && !readOnly;
-    const rowSelected = hasOffering &&
-      rowOfferings.some(offering => offering.offeringId === selectedOfferingId);
-    const selectRow = () => {
-      if (canSelectRow) {
-        onSelectOffering(rowOfferings[0].offeringId);
-      }
-    };
-    const onOfferingAreaKeyDown = (event) => {
-      if (canSelectRow && (event.key === 'Enter' || event.key === ' ')) {
-        event.preventDefault();
-        selectRow();
-      }
-    };
-    // The row owns the mouse click, with no role of its own - a Select/InputNumber
-    // nested inside a role="button" row is interactive-inside-interactive.
-    const stopBubble = (event) => event.stopPropagation();
     return (
-      <div
-        key={row.id}
-        className={classNames(
-          styles.capacityBlockCandidateRow,
-          {
-            'cp-table-element': hasOffering,
-            'cp-table-element-selected': rowSelected,
-            'cp-outline-bordered': rowSelected
-          }
-        )}
-        onClick={canSelectRow ? selectRow : undefined}
-      >
-        <div
-          className={styles.capacityBlockCandidateInputs}
-          onClick={stopBubble}
-          onKeyDown={stopBubble}
-        >
+      <div key={row.id} className={styles.capacityBlockCandidateRow}>
+        <div className={styles.capacityBlockCandidateInputs}>
           <Select
             showSearch
             disabled={disabled || readOnly}
@@ -175,16 +139,8 @@ function CapacityBlockCandidatesControl ({
             )
           }
         </div>
-        <div
-          className={classNames(
-            styles.capacityBlockCandidateOfferings,
-            {[styles.capacityBlockOfferingCardClickable]: canSelectRow}
-          )}
-          role={canSelectRow ? 'button' : undefined}
-          tabIndex={canSelectRow ? 0 : undefined}
-          onKeyDown={canSelectRow ? onOfferingAreaKeyDown : undefined}
-        >
-          {renderRowOfferings(row, rowOfferings, multipleOfferings)}
+        <div className={styles.capacityBlockCandidateOfferings}>
+          {renderRowOfferings(row, rowOfferings)}
         </div>
       </div>
     );

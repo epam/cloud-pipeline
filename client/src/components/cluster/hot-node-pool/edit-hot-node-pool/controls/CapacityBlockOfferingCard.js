@@ -57,11 +57,9 @@ function formatUpfrontFee (amount, currency) {
 // filled from it instead. The card is an antd `Alert`, whose type carries the
 // selection - `success` once selected, `info` otherwise - rather than a highlight of
 // its own; `showIcon` is passed in both states so the icon's padding never moves the
-// text, and the `info` state only hides the icon itself, in CSS. `interactive`
-// defaults to false: the candidates control's row is usually the selectable unit, so
-// the card has no role of its own unless a row with several offerings makes each card
-// its own click target.
-function CapacityBlockOfferingCard ({offering, selected, disabled, interactive, onSelect}) {
+// text, and the `info` state only hides the icon itself, in CSS. The card is always
+// the click target, one per offering - the candidate row carries no handler of its own.
+function CapacityBlockOfferingCard ({offering, selected, disabled, onSelect}) {
   const {
     offeringId,
     instanceType,
@@ -98,9 +96,6 @@ function CapacityBlockOfferingCard ({offering, selected, disabled, interactive, 
       }
     />
   );
-  if (!interactive) {
-    return alert;
-  }
   // antd 2.13.14's `Alert` does not forward unknown props to its root element, so the
   // role/click/keyboard handling lives on a wrapping element instead.
   const select = () => {
@@ -143,14 +138,12 @@ CapacityBlockOfferingCard.propTypes = {
   }),
   selected: PropTypes.bool,
   disabled: PropTypes.bool,
-  interactive: PropTypes.bool,
   onSelect: PropTypes.func
 };
 
 CapacityBlockOfferingCard.defaultProps = {
   selected: false,
   disabled: false,
-  interactive: false,
   onSelect: () => {}
 };
 
