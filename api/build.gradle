@@ -185,7 +185,6 @@ dependencies {
     implementation 'com.amazonaws:aws-java-sdk-route53:1.11.880'
     implementation 'com.amazonaws:aws-java-sdk-omics:1.12.717'
     implementation 'com.amazonaws:aws-java-sdk-pricing:1.12.780'
-    implementation 'software.amazon.awssdk:ec2:2.55.6'
 
     // Azure
     implementation 'com.microsoft.azure:azure-mgmt-resources:1.19.0'

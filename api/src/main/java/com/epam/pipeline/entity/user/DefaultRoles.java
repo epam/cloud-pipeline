@@ -53,8 +53,7 @@ public enum DefaultRoles {
     ROLE_PIPELINE_ADMIN(new Role(null, "ROLE_PIPELINE_ADMIN", true, false, null, null, null, null)),
     ROLE_PIPELINE_READER(new Role(null, "ROLE_PIPELINE_READER", true, false, null, null, null, null)),
     ROLE_PIPELINE_EXECUTOR(new Role(null, "ROLE_PIPELINE_EXECUTOR", true, false, null, null, null, null)),
-    ROLE_RUN_ADMIN(new Role(null, "ROLE_RUN_ADMIN", true, false, null, null, null, null)),
-    ROLE_NODE_POOL_MANAGER(new Role(null, "ROLE_NODE_POOL_MANAGER", true, false, null, null, null, null));
+    ROLE_RUN_ADMIN(new Role(null, "ROLE_RUN_ADMIN", true, false, null, null, null, null));
 
     private Role role;
 

@@ -30,9 +30,6 @@ import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.NatGatewayManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
-import com.epam.pipeline.manager.cluster.capacityreservation.CapacityBlockExtensionService;
-import com.epam.pipeline.manager.cluster.capacityreservation.CapacityBlockOfferingService;
-import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationService;
 import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
 import com.epam.pipeline.manager.cluster.pool.NodeScheduleManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
@@ -227,15 +224,6 @@ public class AclTestConfiguration {
 
     @MockBean
     protected AsyncTaskManager asyncTaskManager;
-
-    @MockBean
-    protected CapacityReservationService capacityReservationService;
-
-    @MockBean
-    protected CapacityBlockOfferingService capacityBlockOfferingService;
-
-    @MockBean
-    protected CapacityBlockExtensionService capacityBlockExtensionService;
 
     @MockBean
     protected JdbcIndexedSessionRepository jdbcIndexedSessionRepository;

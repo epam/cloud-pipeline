@@ -42,7 +42,6 @@ import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
-import com.epam.pipeline.utils.InstanceTypePatternMatcher;
 import com.epam.pipeline.utils.RunDurationUtils;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
@@ -548,7 +547,11 @@ public class InstanceOfferManager {
     }
 
     private boolean isInstanceTypeAllowed(final String instanceType, final String pattern) {
-        return InstanceTypePatternMatcher.matches(instanceType, pattern);
+        if (StringUtils.isBlank(pattern)) {
+            return true;
+        }
+        List<String> allowedInstancePatterns = Arrays.asList(pattern.split(","));
+        return allowedInstancePatterns.stream().anyMatch(type -> matcher.match(type, instanceType));
     }
 
     /**

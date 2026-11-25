@@ -24,7 +24,6 @@ import com.amazonaws.services.kms.AWSKMS;
 import com.amazonaws.services.kms.AWSKMSClientBuilder;
 import com.amazonaws.services.kms.model.KeyListEntry;
 import com.epam.pipeline.config.JsonMapper;
-import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationMonitorSettings;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
@@ -42,7 +41,6 @@ import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.util.AntPathMatcher;
-import org.springframework.util.Assert;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -334,19 +332,6 @@ public final class PreferenceValidators {
         }
         return true;
     };
-
-    public static final BiPredicate<String, Map<String, Preference>> isValidCapacityReservationMonitorSettings =
-        isNullOrValidJson(new TypeReference<CapacityReservationMonitorSettings>() {})
-            .and((pref, dependencies) -> {
-                Assert.state(StringUtils.isNotBlank(pref), "Capacity reservation monitor settings are required.");
-                final CapacityReservationMonitorSettings settings =
-                    JsonMapper.parseData(pref, new TypeReference<CapacityReservationMonitorSettings>() {});
-                Assert.state(settings != null && settings.getFinalizingLeadHours() != null,
-                        "Capacity reservation monitor settings require 'finalizingLeadHours'.");
-                Assert.state(settings.getFinalizingLeadHours() >= 0,
-                        "Capacity reservation monitor setting 'finalizingLeadHours' cannot be negative.");
-                return true;
-            });
 
     private PreferenceValidators() {
         // No-op

@@ -15,15 +15,10 @@
 
 package com.epam.pipeline.entity.cluster.pool;
 
-import com.epam.pipeline.entity.AbstractSecuredEntity;
-import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.filter.PoolFilter;
 import com.epam.pipeline.entity.pipeline.RunInstance;
-import com.epam.pipeline.entity.security.acl.AclClass;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -31,21 +26,16 @@ import java.util.Optional;
 import java.util.Set;
 
 @Data
-@EqualsAndHashCode(callSuper = true, exclude = "usage")
-public class NodePool extends AbstractSecuredEntity {
+public class NodePool implements NodePoolInfo {
 
-    private static final String IS_CAPACITY_RESERVATION = "isCapacityReservation";
-
-    private final AclClass aclClass = AclClass.NODE_POOL;
-    private final AbstractSecuredEntity parent = null;
-
+    private Long id;
+    private String name;
     private LocalDateTime created;
     private Long regionId;
     private String instanceType;
     private int instanceDisk;
     private PriceType priceType;
     private Set<String> dockerImages;
-    @Deprecated
     private String instanceImage;
     private int count;
     private NodeSchedule schedule;
@@ -58,39 +48,8 @@ public class NodePool extends AbstractSecuredEntity {
     private Integer scaleStep;
     private Map<String, PoolLabel> kubeLabels;
 
-    private NodePoolType poolType = NodePoolType.STANDARD;
-
-    private LocalDateTime startDate;
-    private LocalDateTime endDate;
-
-    private NodePoolLaunchConfig launchConfig;
-
-    @JsonProperty(IS_CAPACITY_RESERVATION)
-    @SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
-    private boolean isCapacityReservation;
-
-    private AMIConfiguration amiConfiguration;
-
-    private Long usage;
-
-    @JsonProperty(IS_CAPACITY_RESERVATION)
-    public boolean isCapacityReservation() {
-        return isCapacityReservation;
-    }
-
-    @JsonProperty(IS_CAPACITY_RESERVATION)
-    public void setCapacityReservation(final boolean isCapacityReservation) {
-        this.isCapacityReservation = isCapacityReservation;
-    }
-
     public boolean isActive(final LocalDateTime timestamp) {
         if (count == 0) {
-            return false;
-        }
-        if (startDate != null && timestamp.isBefore(startDate)) {
-            return false;
-        }
-        if (endDate != null && timestamp.isAfter(endDate)) {
             return false;
         }
         return Optional.ofNullable(schedule)
@@ -101,8 +60,8 @@ public class NodePool extends AbstractSecuredEntity {
     @Override
     public String toString() {
         return "NodePool{" +
-                "id=" + getId() +
-                ", name='" + getName() + '\'' +
+                "id=" + id +
+                ", name='" + name + '\'' +
                 ", regionId=" + regionId +
                 ", instanceType='" + instanceType + '\'' +
                 ", instanceDisk=" + instanceDisk +
@@ -123,14 +82,6 @@ public class NodePool extends AbstractSecuredEntity {
         return runningInstance;
     }
 
-    @SuppressWarnings("deprecation")
-    public String resolveInstanceImage() {
-        return Optional.ofNullable(amiConfiguration)
-                .map(AMIConfiguration::getAmi)
-                .filter(ami -> !ami.trim().isEmpty())
-                .orElse(instanceImage);
-    }
-
     public RunInstance toRunInstance() {
         final RunInstance runInstance = new RunInstance();
         runInstance.setNodeType(instanceType);
@@ -138,7 +89,7 @@ public class NodePool extends AbstractSecuredEntity {
         runInstance.setNodeDisk(instanceDisk);
         runInstance.setEffectiveNodeDisk(instanceDisk);
         runInstance.setSpot(PriceType.SPOT.equals(priceType));
-        runInstance.setNodeImage(resolveInstanceImage());
+        runInstance.setNodeImage(instanceImage);
         runInstance.setPrePulledDockerImages(dockerImages);
         return runInstance;
     }

@@ -731,92 +731,9 @@ public final class MessageConstants {
 
     //Persistent Nodes
     public static final String ERROR_NODE_POOL_NOT_FOUND = "error.node.pool.not.found";
-
-    public static final String ERROR_CAPACITY_RESERVATION_NOT_FOUND = "error.capacity.reservation.not.found";
-    public static final String ERROR_CAPACITY_RESERVATION_POOL_IMMUTABLE =
-            "error.capacity.reservation.pool.immutable";
-    public static final String ERROR_CAPACITY_RESERVATION_PROVIDER_NOT_SUPPORTED =
-            "error.capacity.reservation.provider.not.supported";
-    public static final String ERROR_CAPACITY_RESERVATION_AUTOSCALING_NOT_SUPPORTED =
-            "error.capacity.reservation.autoscaling.not.supported";
-    public static final String ERROR_CAPACITY_RESERVATION_SCHEDULE_NOT_SUPPORTED =
-            "error.capacity.reservation.schedule.not.supported";
-    public static final String INFO_CAPACITY_RESERVATION_APPROVAL_INHERITED =
-            "info.capacity.reservation.approval.inherited";
-    public static final String INFO_CAPACITY_RESERVATION_APPROVED_AS_ADMIN =
-            "info.capacity.reservation.approved.as.admin";
-    public static final String INFO_CAPACITY_RESERVATION_APPROVED_BY_POLICY =
-            "info.capacity.reservation.approved.by.policy";
-    public static final String INFO_CAPACITY_RESERVATION_APPROVED_BY_USER =
-            "info.capacity.reservation.approved.by.user";
-    public static final String ERROR_CAPACITY_RESERVATION_DENIED_BY_POLICY =
-            "error.capacity.reservation.denied.by.policy";
-    public static final String ERROR_CAPACITY_RESERVATION_NOT_TERMINAL =
-            "error.capacity.reservation.not.terminal";
-    public static final String ERROR_CAPACITY_RESERVATION_ILLEGAL_TRANSITION =
-            "error.capacity.reservation.illegal.transition";
-    public static final String ERROR_CAPACITY_RESERVATION_BLOCK_NOT_CANCELLABLE =
-            "error.capacity.reservation.block.not.cancellable";
-    public static final String ERROR_CAPACITY_RESERVATION_SPOT_NOT_SUPPORTED =
-            "error.capacity.reservation.spot.not.supported";
-    public static final String ERROR_CAPACITY_RESERVATION_TYPE_REQUIRED =
-            "error.capacity.reservation.type.required";
-    public static final String ERROR_CAPACITY_RESERVATION_TYPE_NOT_SUPPORTED =
-            "error.capacity.reservation.type.not.supported";
-    public static final String ERROR_CAPACITY_RESERVATION_OFFERING_ID_REQUIRED =
-            "error.capacity.reservation.offering.id.required";
-    public static final String ERROR_CAPACITY_RESERVATION_DATES_REQUIRED =
-            "error.capacity.reservation.dates.required";
-    public static final String ERROR_CAPACITY_RESERVATION_START_DATE_IN_PAST =
-            "error.capacity.reservation.start.date.in.past";
-    public static final String ERROR_CAPACITY_RESERVATION_WINDOW_INVALID =
-            "error.capacity.reservation.window.invalid";
-    public static final String ERROR_CAPACITY_RESERVATION_DURATION_INVALID =
-            "error.capacity.reservation.duration.invalid";
-    public static final String ERROR_CAPACITY_RESERVATION_WINDOW_TOO_NARROW =
-            "error.capacity.reservation.window.too.narrow";
-    public static final String ERROR_CAPACITY_RESERVATION_INSTANCE_COUNT_INVALID =
-            "error.capacity.reservation.instance.count.invalid";
-    public static final String ERROR_CAPACITY_RESERVATION_LEAD_TIME_INVALID =
-            "error.capacity.reservation.lead.time.invalid";
-    public static final String ERROR_CAPACITY_RESERVATION_TOO_FEW_VCPUS =
-            "error.capacity.reservation.too.few.vcpus";
-    public static final String ERROR_CAPACITY_RESERVATION_COMMITMENT_TOO_SHORT =
-            "error.capacity.reservation.commitment.too.short";
-    public static final String ERROR_CAPACITY_RESERVATION_PLATFORM_NOT_SUPPORTED =
-            "error.capacity.reservation.platform.not.supported";
-    public static final String ERROR_CAPACITY_RESERVATION_FAMILY_NOT_SUPPORTED =
-            "error.capacity.reservation.family.not.supported";
-    public static final String ERROR_CAPACITY_BLOCK_OFFERING_REGION_REQUIRED =
-            "error.capacity.block.offering.region.required";
-    public static final String ERROR_CAPACITY_BLOCK_OFFERING_INSTANCE_TYPE_REQUIRED =
-            "error.capacity.block.offering.instance.type.required";
-    public static final String ERROR_CAPACITY_BLOCK_OFFERING_INSTANCE_COUNT_REQUIRED =
-            "error.capacity.block.offering.instance.count.required";
-    public static final String ERROR_CAPACITY_BLOCK_OFFERING_DURATION_REQUIRED =
-            "error.capacity.block.offering.duration.required";
-    public static final String ERROR_CAPACITY_BLOCK_OFFERING_START_DATE_REQUIRED =
-            "error.capacity.block.offering.start.date.required";
-    public static final String ERROR_CAPACITY_BLOCK_RESOURCE_TYPE_NOT_SUPPORTED =
-            "error.capacity.block.resource.type.not.supported";
-    public static final String ERROR_CAPACITY_BLOCK_EXTENSION_NOT_FOUND =
-            "error.capacity.block.extension.not.found";
-    public static final String ERROR_CAPACITY_BLOCK_EXTENSION_TYPE_NOT_SUPPORTED =
-            "error.capacity.block.extension.type.not.supported";
-    public static final String ERROR_CAPACITY_BLOCK_EXTENSION_NOT_ACTIVE =
-            "error.capacity.block.extension.not.active";
-    public static final String ERROR_CAPACITY_BLOCK_EXTENSION_DURATION_INVALID =
-            "error.capacity.block.extension.duration.invalid";
-    public static final String ERROR_CAPACITY_BLOCK_EXTENSION_ILLEGAL_TRANSITION =
-            "error.capacity.block.extension.illegal.transition";
-    public static final String ERROR_CAPACITY_BLOCK_EXTENSION_DURATION_REQUIRED =
-            "error.capacity.block.extension.duration.required";
-    public static final String ERROR_CAPACITY_BLOCK_EXTENSION_OFFERING_ID_REQUIRED =
-            "error.capacity.block.extension.offering.id.required";
     public static final String ERROR_NODE_POOL_MISSING_PRICE_TYPE = "error.node.pool.missing.price.type";
     public static final String ERROR_NODE_POOL_MISSING_REGION = "error.node.pool.missing.region";
     public static final String ERROR_NODE_POOL_MISSING_INSTANCE_TYPE = "error.node.pool.missing.instance.type";
-    public static final String ERROR_NODE_POOL_MISSING_POOL_TYPE = "error.node.pool.missing.pool.type";
     public static final String ERROR_NODE_POOL_PRICE_TYPE_NOT_ALLOWED = "error.node.pool.price.type.not.allowed";
     public static final String ERROR_NODE_POOL_INSTANCE_TYPE_NOT_ALLOWED = "error.node.pool.instance.type.not.allowed";
     public static final String ERROR_NODE_POOL_INVALID_DISK_SIZE = "error.node.pool.invalid.disk.size";
@@ -824,18 +741,6 @@ public final class MessageConstants {
     public static final String ERROR_NODE_POOL_POSITIVE_INT_REQUIRED = "error.node.pool.positive.int.required";
     public static final String ERROR_NODE_POOL_FIELDS_COMPARE = "error.node.pool.fields.compare";
     public static final String ERROR_NODE_POOL_INVALID_PERCENT = "error.node.pool.invalid.percent";
-    public static final String ERROR_NODE_POOL_ZONE_NOT_CONFIGURED = "error.node.pool.zone.not.configured";
-    public static final String ERROR_NODE_POOL_SUBNET_NOT_CONFIGURED = "error.node.pool.subnet.not.configured";
-    public static final String ERROR_NODE_POOL_SUBNET_NOT_IN_NETWORKS = "error.node.pool.subnet.not.in.networks";
-    public static final String ERROR_NODE_POOL_INSTANCE_MISMATCH = "error.node.pool.instance.mismatch";
-    public static final String ERROR_NODE_POOL_REGION_MISMATCH = "error.node.pool.region.mismatch";
-    public static final String ERROR_CAPACITY_POOL_ID_INVALID = "error.capacity.pool.id.invalid";
-    public static final String ERROR_NODE_POOL_RESERVED_NODE_MISMATCH = "error.node.pool.reserved.node.mismatch";
-    public static final String ERROR_NODE_POOL_RESERVATION_EXPIRED = "error.node.pool.reservation.expired";
-    public static final String ERROR_NODE_POOL_FILTER_MISMATCH = "error.node.pool.filter.mismatch";
-    public static final String ERROR_NODE_POOL_ID_NO_LONGER_ACTIVE = "error.node.pool.id.no.longer.active";
-    public static final String INFO_NODE_POOL_ID_WAITING = "info.node.pool.id.waiting";
-    public static final String ERROR_NODE_POOL_ID_BUSY_WAIT_TIMEOUT = "error.node.pool.id.busy.wait.timeout";
 
     // Users import events
     public static final String EVENT_USER_CREATED = "user.import.event.user.created";

@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.manager.cluster.autoscale;
 
-import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.entity.cluster.pool.InstanceRequest;
@@ -102,7 +101,7 @@ public class ScaleDownHandlerTest {
     private final IAMProfileVerifier iamProfileVerifier = mock(IAMProfileVerifier.class);
     private final ReassignHandler reassignHandler = new ReassignHandler(autoscalerService, cloudFacade,
             pipelineRunManager, Collections.emptyList(), mock(MetadataManager.class), iamProfileVerifier,
-            mock(RunStatusManager.class), mock(MessageHelper.class));
+            mock(RunStatusManager.class));
 
     private final ScaleDownHandler scaleDownHandler = new ScaleDownHandler(autoscalerService, cloudFacade,
             pipelineRunManager, runLogManager, kubernetesManager, runCRUDService, preferenceManager,
