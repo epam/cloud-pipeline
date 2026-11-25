@@ -154,7 +154,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Data_storages</b> (162 tests, 86 automated)</summary>
+<summary><b>Data_storages</b> (175 tests, 86 automated)</summary>
 
 | Case ID                                                                 | Description/name | Automated |
 |-------------------------------------------------------------------------| --- | :---: |
@@ -330,6 +330,9 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**4571_8**](Data_storages/4571/4571_8.md)                              | [MANUAL] The archive-task allowance governs Upload and extract, and frees up on its own |  |
 | [**4571_9**](Data_storages/4571/4571_9.md)                              |  Extract archive is dimmed at the archive-task limit, and explains why |  |
 | [**4571_10**](Data_storages/4571/4571_10.md)                            | [MANUAL] A finished extraction raises its own notification, with no download link |  |
+| [**4571_11**](Data_storages/4571/4571_11.md)                            | An archive extraction fails before it is fetched once the archive itself exceeds `maxArchiveSizeBytes` configured in `system.async.tasks.config` |  |
+| [**4571_12**](Data_storages/4571/4571_12.md)                            | An archive extraction fails once its uncompressed content exceeds `maxSizeBytes` configured in `system.async.tasks.config` |  |
+| [**4571_13**](Data_storages/4571/4571_13.md)                            | An archive extraction fails once its entries exceed `maxFilesCount` configured in `system.async.tasks.config` |  |
 
 </details>
 
