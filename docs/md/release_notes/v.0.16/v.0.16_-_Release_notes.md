@@ -51,6 +51,7 @@
 - [OIDC token exchange](#oidc-token-exchange)
 - [NICE DCV on Rocky Linux 10](#nice-dcv-on-rocky-linux-10)
 - [NoMachine on Rocky Linux 10](#nomachine-on-rocky-linux-10)
+- [Parallel download into the disk buffer of a storage mount](#parallel-download-into-the-disk-buffer-of-a-storage-mount)
 
 ***
 
@@ -1025,6 +1026,17 @@ The GUI keeps NICE DCV as well, on any OS, where NICE DCV can run. Previously, w
 Also, on any distribution, a run whose image has NoMachine already, e.g. an image committed from a NoMachine run, no longer installs the same version again at each start. Previously, a version set as in the package file name (e.g. `CP_CAP_DESKTOP_NM_VERSION=8.4.2_1`) never matched the installed one (`8.4.2-1`), so the run downloaded and installed it again.
 
 For more details see [here](../../manual/10_Manage_Tools/10.3._Add_a_Tool.md#supported-os-families).
+
+## Parallel download into the disk buffer of a storage mount
+
+A storage mounted with a disk buffer (the `read-disk-buffer-path` option of `pipe-fuse`, e.g. `-c read-disk-buffer-path=/pipe-storage-buffer/<id>` in `CP_PIPE_FUSE_OPTIONS` or `CP_CAP_MOUNT_OPTIONS_<storage id>`) downloads each file it reads into that buffer once, and then serves the reads from the local disk. Previously, it downloaded a file in 512 MB ranges, one after another, so the first read of a large file waited for the whole sequential download. Also, a mount that had the `read-disk-buffer-download-workers` option, as in the later versions, failed at once: "pipe-fuse: error: unrecognized arguments: --read-disk-buffer-download-workers".
+
+In the current version, the disk buffer downloads the ranges of a file in parallel:
+
+- `read-disk-buffer-download-workers` (`CP_PIPE_FUSE_READ_DISK_BUFFER_DOWNLOAD_WORKERS`) is the number of ranges downloaded at the same time. The default is `8`. `1` downloads them one after another, as before
+- `read-disk-buffer-read-ahead-size` (`CP_PIPE_FUSE_READ_DISK_BUFFER_READ_AHEAD_SIZE`) is the size of a range, in bytes. It no longer has a default: when it is not set, a file is split into as many equal ranges as there are workers. With one worker and no size, the ranges are 512 MB, as before
+
+Each range is written straight to the local disk, into a partial file next to the buffer, so a download needs no more memory than before, whatever the size of the file. The partial file becomes the buffer only once the whole file is there. Previously, a mount that was killed during a download left a part of the file as its buffer, and the next mount with the same buffer path served that part as the whole file, until the buffer expired (`read-disk-buffer-ttl`). When a range fails, the other ranges of the file stop too, and the read fails. Also, an S3 storage mount now keeps up to 50 connections to S3 instead of 10, so the parallel ranges do not wait for each other.
 
 ***
 
