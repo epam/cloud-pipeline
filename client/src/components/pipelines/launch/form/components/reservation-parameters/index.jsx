@@ -69,8 +69,7 @@ class ReservationParameters extends React.PureComponent {
       name: currInstanceTypeName
     } = currInstanceType;
     if (
-      prevInstanceTypeName !== currInstanceTypeName ||
-      prevProps.poolId !== this.props.poolId
+      prevInstanceTypeName !== currInstanceTypeName
     ) {
       this.updateConfig();
     }
@@ -83,8 +82,7 @@ class ReservationParameters extends React.PureComponent {
 
   updateConfig = () => {
     const {
-      instanceType: instanceTypeObj = {},
-      poolId
+      instanceType: instanceTypeObj = {}
     } = this.props;
     const {
       name: instanceType
@@ -101,9 +99,7 @@ class ReservationParameters extends React.PureComponent {
           resourcesError: undefined,
           resourcesDetailsVisible: false
         });
-        // `poolId` names the pool the user explicitly chose. With none
-        // chosen there is no config, so no reservation requests to show.
-        const config = await getReservationParametersConfig(poolId);
+        const config = await getReservationParametersConfig(instanceType);
         if (this.token === token) {
           const {
             parameters = {}
@@ -223,7 +219,7 @@ class ReservationParameters extends React.PureComponent {
       return null;
     }
     const {
-      enabledKey = `${key}RequestsEnabled`,
+      enabledKey = `${key}_requests_enabled`,
       step = 1,
       formatter = o => String(o),
       title = `${key.toUpperCase()} request`,
@@ -355,12 +351,10 @@ class ReservationParameters extends React.PureComponent {
       return null;
     }
     const {
-      ramRequestsUnit = DEFAULT_RAM_REQUESTS_UNIT
+      ram_requests_unit: ramRequestsUnit = DEFAULT_RAM_REQUESTS_UNIT,
+      ram_requests_step: ramRequestsStep = DEFAULT_RAM_REQUESTS_STEP
     } = config;
-    // The pool's `launchConfig` carries no step - only the enabled/reserved/unit
-    // fields the backend's `NodePoolLaunchConfig` defines - so this always uses
-    // the default rather than reading a field that no longer exists.
-    const step = parseRAMRequest(DEFAULT_RAM_REQUESTS_STEP, ramRequestsUnit);
+    const step = parseRAMRequest(ramRequestsStep, ramRequestsUnit);
     const decimal = !ramRequestsUnit.includes('i');
     return this.renderRequestsSelector(
       'ram',
@@ -468,10 +462,10 @@ class ReservationParameters extends React.PureComponent {
       best
     } = getInstanceResourcesAvailability(resources, parameters, config);
     const {
-      cpuRequestsEnabled = false,
-      gpuRequestsEnabled = false,
-      ramRequestsEnabled = false,
-      ramRequestsUnit = DEFAULT_RAM_REQUESTS_UNIT
+      cpu_requests_enabled: cpuRequestsEnabled = false,
+      gpu_requests_enabled: gpuRequestsEnabled = false,
+      ram_requests_enabled: ramRequestsEnabled = false,
+      ram_requests_unit: ramRequestsUnit = DEFAULT_RAM_REQUESTS_UNIT
     } = config || {};
     const fit = nodes.length > 0 ? nodes[0].best : undefined;
     const onSelectNode = (node) => {
@@ -637,7 +631,6 @@ ReservationParameters.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   instanceType: PropTypes.object,
-  poolId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   parameters: PropTypes.object,
   onChange: PropTypes.func
 };

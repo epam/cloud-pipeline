@@ -353,7 +353,9 @@ function ConfirmResumeModal (props) {
                   instanceTypesList,
                   {
                     hyperThreadingDisabled,
-                    displayRegion: allowedInstanceTypes && allowedInstanceTypes.regionsMerged
+                    displayRegion: allowedInstanceTypes && allowedInstanceTypes.regionsMerged,
+                    preferences: prefs,
+                    showReservationTag: true
                   }
                 )
               }
@@ -370,6 +372,7 @@ function ConfirmResumeModal (props) {
                   instanceTypes={instanceTypesList}
                   displayRegion={allowedInstanceTypes && allowedInstanceTypes.regionsMerged}
                   hyperThreadingDisabled={hyperThreadingDisabled}
+                  showReservationTag
                 />
               </div>
             )

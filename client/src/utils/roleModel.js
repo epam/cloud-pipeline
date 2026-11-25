@@ -383,8 +383,7 @@ const ROLES = {
   ROLE_USER_ADMIN: 'ROLE_USER_ADMIN',
   ROLE_PIPELINE_ADMIN: 'ROLE_PIPELINE_ADMIN',
   ROLE_USER_READER: 'ROLE_USER_READER',
-  ROLE_RUN_ADMIN: 'ROLE_RUN_ADMIN',
-  ROLE_NODE_POOL_MANAGER: 'ROLE_NODE_POOL_MANAGER'
+  ROLE_RUN_ADMIN: 'ROLE_RUN_ADMIN'
 };
 
 const userIs = {
@@ -404,8 +403,7 @@ const userIs = {
   toolAdmin: wrapUserIs(ROLES.ROLE_TOOL_ADMIN),
   userAdmin: wrapUserIs(ROLES.ROLE_USER_ADMIN),
   pipelineAdmin: wrapUserIs(ROLES.ROLE_PIPELINE_ADMIN),
-  runAdmin: wrapUserIs(ROLES.ROLE_RUN_ADMIN),
-  nodePoolManager: wrapUserIs(ROLES.ROLE_NODE_POOL_MANAGER)
+  runAdmin: wrapUserIs(ROLES.ROLE_RUN_ADMIN)
 };
 
 const manager = {
@@ -425,8 +423,7 @@ const manager = {
   toolAdmin: management(ROLES.ROLE_TOOL_ADMIN),
   userAdmin: management(ROLES.ROLE_USER_ADMIN),
   pipelineAdmin: management(ROLES.ROLE_PIPELINE_ADMIN),
-  runAdmin: management(ROLES.ROLE_RUN_ADMIN),
-  nodePoolManager: management(ROLES.ROLE_NODE_POOL_MANAGER)
+  runAdmin: management(ROLES.ROLE_RUN_ADMIN)
 };
 
 const isManager = {
@@ -446,8 +443,7 @@ const isManager = {
   toolAdmin: hasRole(ROLES.ROLE_TOOL_ADMIN),
   userAdmin: hasRole(ROLES.ROLE_USER_ADMIN),
   pipelineAdmin: hasRole(ROLES.ROLE_PIPELINE_ADMIN),
-  runAdmin: hasRole(ROLES.ROLE_RUN_ADMIN),
-  nodePoolManager: hasRole(ROLES.ROLE_NODE_POOL_MANAGER)
+  runAdmin: hasRole(ROLES.ROLE_RUN_ADMIN)
 };
 
 export default {

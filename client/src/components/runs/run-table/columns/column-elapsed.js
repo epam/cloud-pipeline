@@ -21,15 +21,11 @@ import evaluateRunPrice from '../../../../utils/evaluate-run-price';
 import JobEstimatedPriceInfo from '../../../special/job-estimated-price-info';
 import RunLoadingPlaceholder from './run-loading-placeholder';
 import styles from './run-table-columns.css';
-import {isCapacityBlockRun} from '../../../../models/cluster/capacity-blocks';
 
 const getColumnFilter = () => {};
 
 const renderEstimatedPrice = (item) => {
   if (!item.pricePerHour) {
-    return null;
-  }
-  if (isCapacityBlockRun(item)) {
     return null;
   }
   const info = evaluateRunPrice(item);

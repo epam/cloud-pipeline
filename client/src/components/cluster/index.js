@@ -22,7 +22,6 @@ import AdaptedLink from '../special/AdaptedLink';
 import styles from './Cluster.css';
 import roleModel from '../../utils/roleModel';
 import 'highlight.js/styles/github.css';
-import {canReadNodePools} from './utilities/access-permissions';
 
 const Tabs = [
   {
@@ -47,7 +46,7 @@ const Tabs = [
     key: 'hot',
     path: '/cluster/hot',
     title: 'Hot Node Pools',
-    available: canReadNodePools
+    available: (user) => user ? user.admin : false
   },
   {
     key: 'usage',

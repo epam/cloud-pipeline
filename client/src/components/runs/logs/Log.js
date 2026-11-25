@@ -102,7 +102,6 @@ import RestartedRunsInfo from './misc/restarted-runs-info';
 import NestedRunsModal from './forms/NestedRunsModal';
 import RunStatuses, {isRunStatusNodePending} from '../../special/run-status-icon/run-statuses';
 import getRunInvestigationUrl from '../../../utils/run-investigation-url';
-import {isCapacityBlockRun} from '../../../models/cluster/capacity-blocks';
 import runNodeIsUnavailable from '../actions/node-availability';
 
 const DTS_ENVIRONMENT = 'DTS';
@@ -1595,7 +1594,6 @@ class Logs extends localization.LocalizedReactComponent {
       platform,
       sshPassword
     } = run || {};
-    const isReservationParameterInstance = isCapacityBlockRun(run);
 
     if (pending || !run) {
       Title = <h1>Run </h1>;
@@ -1894,7 +1892,7 @@ class Logs extends localization.LocalizedReactComponent {
       }
 
       let price;
-      if (pricePerHour && !isReservationParameterInstance) {
+      if (pricePerHour) {
         const adjustPrice = (value) => {
           if (value === 0) {
             return 0;
