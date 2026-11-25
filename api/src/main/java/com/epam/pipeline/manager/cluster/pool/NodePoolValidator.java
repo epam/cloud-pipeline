@@ -202,12 +202,23 @@ public class NodePoolValidator {
     }
 
     private void validateReservationSize(final NodePoolVO vo) {
-        validateReservationSize(vo.getInstanceType(), vo.getCount(), vo.getRegionId());
+        validateReservationSize(instanceOfferManager.findOffer(vo.getInstanceType(), vo.getRegionId()),
+                vo.getInstanceType(), vo.getCount(), vo.getRegionId(), false);
     }
 
-    private void validateReservationSize(final String instanceType, final int count, final Long regionId) {
-        instanceOfferManager.findOffer(instanceType, regionId)
-                .map(InstanceOffer::getVCPU)
+    /**
+     * The main instance type tolerates a missing catalogue entry - {@code findOffer} filters to Linux,
+     * on-demand, shared tenancy, so a RHEL or SUSE reservation's own entry would never match it even
+     * though the instance type is genuinely offered - and simply skips the vCPU floor in that case. A
+     * fallback candidate has no such excuse: {@code requireOffer} fails it outright instead, since
+     * nothing can size or compare a candidate the catalogue cannot describe at all.
+     */
+    private void validateReservationSize(final Optional<InstanceOffer> offer, final String instanceType,
+                                         final int count, final Long regionId, final boolean requireOffer) {
+        Assert.isTrue(!requireOffer || offer.isPresent(),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_INSTANCE_TYPE_NOT_FOUND,
+                        instanceType, regionId));
+        offer.map(InstanceOffer::getVCPU)
                 .filter(vcpus -> vcpus > 0)
                 .ifPresent(vcpus -> Assert.isTrue((long) vcpus * count >= MIN_RESERVATION_VCPUS,
                         messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_TOO_FEW_VCPUS,
@@ -239,6 +250,11 @@ public class NodePoolValidator {
      * Validates each fallback candidate the same way the main one is - family pattern, vCPU floor - and
      * caps the list length. Duplicates are not rejected here; {@code CapacityReservationService#build}
      * merges them silently instead.
+     *
+     * <p>Unlike the main instance type, a fallback candidate must already have a price catalogue entry:
+     * {@link #validateReservationSize} silently skips the vCPU floor when none exists, and
+     * {@code CapacityReservationService#buildFallbackCandidates} sorts an uncatalogued candidate last
+     * rather than failing - both too lenient for a candidate nobody can size or compare.
      */
     private void validateFallbackCandidates(final NodePoolVO vo, final CapacityReservationRequest request) {
         final List<CapacitySpecification> fallbacks = request.getFallbackCandidates();
@@ -257,7 +273,10 @@ public class NodePoolValidator {
             Assert.isTrue(candidate.getInstanceCount() != null && candidate.getInstanceCount() >= 1,
                     messageHelper.getMessage(
                             MessageConstants.ERROR_CAPACITY_RESERVATION_FALLBACK_INSTANCE_COUNT_REQUIRED));
-            validateReservationSize(candidate.getInstanceType(), candidate.getInstanceCount(), vo.getRegionId());
+            final Optional<InstanceOffer> offer =
+                    instanceOfferManager.findOffer(candidate.getInstanceType(), vo.getRegionId());
+            validateReservationSize(offer, candidate.getInstanceType(), candidate.getInstanceCount(),
+                    vo.getRegionId(), true);
             validateInstanceFamily(candidate.getInstanceType(), request.getReservationType());
         });
     }

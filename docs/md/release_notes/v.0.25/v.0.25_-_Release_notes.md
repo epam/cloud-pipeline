@@ -34,6 +34,8 @@ A future-dated reservation's request can now also carry `fallbackCandidates` - o
 
 How many fallback candidates one request may carry is bounded by the `cluster.capacity.reservation.fallback.candidates.max.count` preference - **5** by default, `-1` to disable the limit.
 
+A fallback candidate whose instance type has no price catalogue entry in the pool's region is now rejected at creation, rather than silently accepted and sorted last among the candidates.
+
 ***
 
 ## Notable Bug fixes

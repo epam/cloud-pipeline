@@ -834,6 +834,8 @@ public final class MessageConstants {
             "error.capacity.reservation.fallback.instance.count.required";
     public static final String ERROR_CAPACITY_RESERVATION_FALLBACK_CANDIDATES_EXCEEDS_LIMIT =
             "error.capacity.reservation.fallback.candidates.exceeds.limit";
+    public static final String ERROR_CAPACITY_RESERVATION_INSTANCE_TYPE_NOT_FOUND =
+            "error.capacity.reservation.instance.type.not.found";
     public static final String ERROR_CAPACITY_BLOCK_OFFERING_REGION_REQUIRED =
             "error.capacity.block.offering.region.required";
     public static final String ERROR_CAPACITY_BLOCK_OFFERING_INSTANCE_TYPE_REQUIRED =

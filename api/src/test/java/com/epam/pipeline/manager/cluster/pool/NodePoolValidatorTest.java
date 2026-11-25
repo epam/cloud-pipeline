@@ -74,7 +74,9 @@ public class NodePoolValidatorTest {
     private static final int INSTANCE_DISK = 100;
     private static final int INSTANCE_COUNT = 2;
     private static final int LOW_VCPU = 2;
+    private static final int SUFFICIENT_VCPU = 48;
     private static final int FALLBACK_INSTANCE_COUNT = 1;
+    private static final String UNCATALOGUED_FALLBACK_TYPE = "m5.unknown";
 
     @Mock
     private MessageHelper messageHelper;
@@ -112,6 +114,10 @@ public class NodePoolValidatorTest {
         when(instanceOfferManager.isPriceTypeAllowed(anyString())).thenReturn(true);
         when(instanceOfferManager.isToolInstanceAllowed(anyString(), anyLong(), anyBoolean())).thenReturn(true);
         when(instanceOfferManager.findOffer(anyString(), anyLong())).thenReturn(Optional.empty());
+        when(instanceOfferManager.findOffer(FALLBACK_TYPE, REGION_ID))
+                .thenReturn(Optional.of(InstanceOffer.builder().vCPU(SUFFICIENT_VCPU).build()));
+        when(instanceOfferManager.findOffer(OUT_OF_FAMILY_TYPE, REGION_ID))
+                .thenReturn(Optional.of(InstanceOffer.builder().vCPU(SUFFICIENT_VCPU).build()));
         final Map<CapacityReservationType, String> families = new HashMap<>();
         families.put(CapacityReservationType.FUTURE_DATED, FAMILY_PATTERN);
         families.put(CapacityReservationType.CAPACITY_BLOCK, FAMILY_PATTERN);
@@ -185,6 +191,13 @@ public class NodePoolValidatorTest {
         when(instanceOfferManager.findOffer(FALLBACK_TYPE, REGION_ID))
                 .thenReturn(Optional.of(InstanceOffer.builder().vCPU(LOW_VCPU).build()));
         final NodePoolVO vo = futureDatedVO(singleFallback(FALLBACK_TYPE));
+
+        assertThatThrownBy(() -> validator.validate(vo)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    public void shouldRejectAFallbackInstanceTypeWithNoCatalogueEntry() {
+        final NodePoolVO vo = futureDatedVO(singleFallback(UNCATALOGUED_FALLBACK_TYPE));
 
         assertThatThrownBy(() -> validator.validate(vo)).isInstanceOf(IllegalArgumentException.class);
     }
