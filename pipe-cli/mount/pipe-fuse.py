@@ -114,13 +114,12 @@ def start(mountpoint, webdav, bucket,
     read_ahead_size_multiplier = int(os.getenv('CP_PIPE_FUSE_READ_AHEAD_SIZE_MULTIPLIER',
                                                read_ahead_size_multiplier))
     read_disk_buffer_path = os.getenv('CP_PIPE_FUSE_READ_DISK_BUFFER_PATH', read_disk_buffer_path)
-    _env_read_ahead = os.getenv('CP_PIPE_FUSE_READ_DISK_BUFFER_READ_AHEAD_SIZE')
-    if _env_read_ahead not in (None, ''):
-        read_disk_buffer_read_ahead_size = int(_env_read_ahead)
+    read_disk_buffer_read_ahead_size = get_int_env('CP_PIPE_FUSE_READ_DISK_BUFFER_READ_AHEAD_SIZE',
+                                                   read_disk_buffer_read_ahead_size)
     read_disk_buffer_ttl = int(os.getenv('CP_PIPE_FUSE_READ_DISK_BUFFER_TTL', read_disk_buffer_ttl))
     read_disk_buffer_ttl_delay = int(os.getenv('CP_PIPE_FUSE_READ_DISK_BUFFER_TTL_DELAY', read_disk_buffer_ttl_delay))
-    read_disk_buffer_download_workers = int(os.getenv('CP_PIPE_FUSE_READ_DISK_BUFFER_DOWNLOAD_WORKERS',
-                                                       read_disk_buffer_download_workers))
+    read_disk_buffer_download_workers = get_int_env('CP_PIPE_FUSE_READ_DISK_BUFFER_DOWNLOAD_WORKERS',
+                                                    read_disk_buffer_download_workers)
     audit_buffer_ttl = int(os.getenv('CP_PIPE_FUSE_AUDIT_BUFFER_TTL', audit_buffer_ttl))
     audit_buffer_size = int(os.getenv('CP_PIPE_FUSE_AUDIT_BUFFER_SIZE', audit_buffer_size))
     path_permissions_disabled = os.getenv('CP_PIPE_FUSE_PATH_PERMISSIONS_DISABLED', 'false').lower() == 'true'
@@ -195,18 +194,10 @@ def start(mountpoint, webdav, bucket,
         else:
             logging.info('Extended attributes caching is disabled.')
     if read_disk_buffer_path:
-        # Auto chunk size when not set and workers > 1: split each file into download_workers equal chunks
-        if read_disk_buffer_read_ahead_size is None and read_disk_buffer_download_workers > 1:
-            _effective_read_ahead = 0  # auto
-        elif read_disk_buffer_read_ahead_size is not None:
-            _effective_read_ahead = read_disk_buffer_read_ahead_size
-        else:
-            _effective_read_ahead = 512 * MB  # default when workers == 1 and not set
         logging.info('Disk buffering read is enabled.')
-        client = DiskBufferingReadAllFileSystemClient(client,
-                                                      read_ahead_size=_effective_read_ahead,
-                                                      path=read_disk_buffer_path,
-                                                      download_workers=read_disk_buffer_download_workers)
+        client = create_disk_buffering_client(client, path=read_disk_buffer_path,
+                                              read_ahead_size=read_disk_buffer_read_ahead_size,
+                                              download_workers=read_disk_buffer_download_workers)
         if read_disk_buffer_ttl > 0:
             logging.info('Disk buffering read ttl is enabled.')
             daemons.append(DiskBufferTTLDaemon(path=read_disk_buffer_path,
@@ -282,6 +273,36 @@ def start(mountpoint, webdav, bucket,
     ro = client.is_read_only() or mount_options.get('ro', False)
     mount_options.pop('ro', None)
     FUSE(fs, mountpoint, nothreads=not threads, foreground=True, ro=ro, fsname=fs_name, **mount_options)
+
+
+def get_int_env(name, default):
+    """Returns the integer value of the environment variable, or the default when it is not set or empty."""
+    value = os.getenv(name)
+    if value is None or value == '':
+        return default
+    return int(value)
+
+
+def create_disk_buffering_client(client, path, read_ahead_size, download_workers):
+    return DiskBufferingReadAllFileSystemClient(client,
+                                                read_ahead_size=get_disk_buffer_read_ahead_size(read_ahead_size,
+                                                                                                download_workers),
+                                                path=path,
+                                                download_workers=download_workers)
+
+
+def get_disk_buffer_read_ahead_size(read_ahead_size, download_workers):
+    """
+    Returns the disk buffer chunk size for the given settings.
+
+    0 means auto: each file is split into download_workers equal chunks.
+    An unset size with a single worker keeps the 512 MB chunks of the sequential download.
+    """
+    if read_ahead_size is not None:
+        return read_ahead_size
+    if download_workers > 1:
+        return 0
+    return 512 * MB
 
 
 def need_to_load_path_permissions(user, storage, path_permissions_disabled):
