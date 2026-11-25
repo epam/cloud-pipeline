@@ -1273,7 +1273,7 @@ test(
     await click(screen.getByText(formatCapacityBlockInstanceType(mlBlockInstanceTypeInfo)));
     await change(within(mlBlockCandidateRow()).getByRole('textbox'), '2');
     await change(within(row('Duration (days):')).getByRole('textbox'), '1');
-    await act(() => instance().onChangeField('commitmentStart', '2026-12-25 04:14:02.500'));
+    await act(() => instance().onChangeField('commitmentStart', '2026-12-25'));
 
     await waitFor(() => expect(offeringsCalls(api)).toHaveLength(1), {
       timeout: ML_BLOCK_SEARCH_TIMEOUT
@@ -1282,7 +1282,7 @@ test(
     const body = JSON.parse(offeringsCalls(api)[0].body);
     const expectedBody = buildCapacityBlockOfferingRequest({
       region: '1',
-      commitmentStart: '2026-12-25 04:14:02.500',
+      commitmentStart: '2026-12-25',
       commitmentEnd: undefined,
       commitmentDurationDays: '1',
       mlBlockCandidates: [{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]
@@ -1307,7 +1307,7 @@ test('a second edit shortly after the first still issues one search, for its lat
     await click(within(mlBlockCandidateRow()).getByRole('combobox'));
     await click(screen.getByText(formatCapacityBlockInstanceType(mlBlockInstanceTypeInfo)));
     await change(within(row('Duration (days):')).getByRole('textbox'), '1');
-    await act(() => instance().onChangeField('commitmentStart', '2026-12-25 04:14:02.500'));
+    await act(() => instance().onChangeField('commitmentStart', '2026-12-25'));
 
     // Two edits back to back, well inside the debounce delay: each resets it, so only
     // the second is ever still pending when it finally elapses.
@@ -1350,7 +1350,7 @@ async function renderMlBlockPoolWithOffering (props = {}) {
   await click(screen.getByText(formatCapacityBlockInstanceType(mlBlockInstanceTypeInfo)));
   await change(within(mlBlockCandidateRow()).getByRole('textbox'), '2');
   await change(within(row('Duration (days):')).getByRole('textbox'), '1');
-  await act(() => instance().onChangeField('commitmentStart', '2026-12-25 04:14:02.500'));
+  await act(() => instance().onChangeField('commitmentStart', '2026-12-25'));
 
   await waitFor(() => expect(offeringsCalls(api)).toHaveLength(1), {
     timeout: ML_BLOCK_SEARCH_TIMEOUT
@@ -1382,7 +1382,7 @@ test('selecting an offering fills the read-only Instance type and Nodes count, e
     await click(screen.getByText(formatCapacityBlockInstanceType(mlBlockInstanceTypeInfo)));
     await change(within(mlBlockCandidateRow()).getByRole('textbox'), '2');
     await change(within(row('Duration (days):')).getByRole('textbox'), '1');
-    await act(() => instance().onChangeField('commitmentStart', '2026-12-25 04:14:02.500'));
+    await act(() => instance().onChangeField('commitmentStart', '2026-12-25'));
 
     expect(screen.getByRole('button', {name: 'CREATE'})).toBeDisabled();
 
@@ -1457,7 +1457,7 @@ test('a failed search shows its error and keeps the rest of the form usable', as
   await click(screen.getByText(formatCapacityBlockInstanceType(mlBlockInstanceTypeInfo)));
   await change(within(mlBlockCandidateRow()).getByRole('textbox'), '2');
   await change(within(row('Duration (days):')).getByRole('textbox'), '1');
-  await act(() => instance().onChangeField('commitmentStart', '2026-12-25 04:14:02.500'));
+  await act(() => instance().onChangeField('commitmentStart', '2026-12-25'));
 
   await waitFor(() => expect(
     screen.getByText('The offering search failed')
@@ -1486,8 +1486,8 @@ test('CREATE on a complete ML Block pool sends the capacity-block payload helper
     await change(within(row('Pool name:')).getByRole('textbox'), 'ml-block-pool');
     await change(within(row('Disk:')).getByRole('textbox'), '50');
     await change(within(row('Duration (days):')).getByRole('textbox'), '1');
-    await act(() => instance().onChangeField('commitmentStart', '2026-12-25 04:14:02.500'));
-    await act(() => instance().onChangeField('commitmentEnd', '2026-12-31 04:14:02.500'));
+    await act(() => instance().onChangeField('commitmentStart', '2026-12-25'));
+    await act(() => instance().onChangeField('commitmentEnd', '2026-12-31'));
 
     await click(screen.getByRole('button', {name: 'Add instance type'}));
     await click(within(mlBlockCandidateRow()).getByRole('combobox'));
@@ -1649,7 +1649,7 @@ test(
     await click(screen.getByText(formatCapacityBlockInstanceType(mlBlockInstanceTypeInfo)));
     await change(within(mlBlockCandidateRow()).getByRole('textbox'), '2');
     await change(within(row('Duration (days):')).getByRole('textbox'), '1');
-    await act(() => instance().onChangeField('commitmentStart', '2026-12-25 04:14:02.500'));
+    await act(() => instance().onChangeField('commitmentStart', '2026-12-25'));
 
     await waitFor(() => expect(offeringsCalls(api)).toHaveLength(1), {
       timeout: ML_BLOCK_SEARCH_TIMEOUT

@@ -30,10 +30,11 @@ import {
 } from '@test';
 import EditHotNodePool from './index';
 import {getValidationErrors, buildPoolPayload, buildSchedulePayload} from './helpers';
-import {COMMITMENT_DATE_TIME_FORMAT} from './constants';
+import {COMMITMENT_DATE_ONLY_FORMAT} from './constants';
 
 // Now-relative fixtures: see helpers.test.js for why a fixed past date no longer works.
-const inDays = (days) => moment().add(days, 'days').format(COMMITMENT_DATE_TIME_FORMAT);
+// `commitmentStart`/`commitmentEnd` hold a day only.
+const inDays = (days) => moment().add(days, 'days').format(COMMITMENT_DATE_ONLY_FORMAT);
 
 const loaded = (value) => observable({loaded: true, pending: false, value});
 

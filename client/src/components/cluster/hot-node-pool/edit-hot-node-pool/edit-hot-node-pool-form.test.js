@@ -256,8 +256,8 @@ test('future-dated mode renders Search from, Search until and Duration as three 
     renderForm({
       values: baseValues({
         mode: 'FUTURE_DATED',
-        commitmentStart: '2026-01-01 10:00:00.000',
-        commitmentEnd: '2026-02-01 10:00:00.000',
+        commitmentStart: '2026-01-01',
+        commitmentEnd: '2026-02-01',
         commitmentDurationDays: 14
       })
     });
@@ -266,7 +266,7 @@ test('future-dated mode renders Search from, Search until and Duration as three 
     expect(screen.getByText('Duration (days):')).toBeInTheDocument();
     expect(
       within(row('Search until:')).getByRole('textbox').value
-    ).toBe('2026-02-01 10:00:00.000');
+    ).toBe('2026-02-01');
   });
 
 test('future-dated mode shows the commitment start error once touched', () => {

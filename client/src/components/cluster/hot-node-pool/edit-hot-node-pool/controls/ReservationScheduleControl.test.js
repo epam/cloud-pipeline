@@ -41,11 +41,11 @@ test('renders the three date/duration labels', () => {
   expect(screen.getByText('Duration (days):')).toBeInTheDocument();
 });
 
-test('Search from and Search until show their own values independently', () => {
+test('Search from and Search until show their own values independently, as a day', () => {
   render(
     <ReservationScheduleControl
-      start="2026-01-01 10:00:00.000"
-      end="2026-02-01 10:00:00.000"
+      start="2026-01-01"
+      end="2026-02-01"
       durationDays={undefined}
       onChangeStart={fn()}
       onChangeEnd={fn()}
@@ -54,10 +54,30 @@ test('Search from and Search until show their own values independently', () => {
   );
   expect(
     within(row('Search from:')).getByRole('textbox').value
-  ).toBe('2026-01-01 10:00:00.000');
+  ).toBe('2026-01-01');
   expect(
     within(row('Search until:')).getByRole('textbox').value
-  ).toBe('2026-02-01 10:00:00.000');
+  ).toBe('2026-02-01');
+});
+
+test('a value carrying a time (an existing reservation\'s granted window) still ' +
+  'renders as a day only, and offers no time to pick', () => {
+  render(
+    <ReservationScheduleControl
+      start="2026-01-01 10:00:00.000"
+      end="2026-02-01 18:30:00.000"
+      durationDays={undefined}
+      onChangeStart={fn()}
+      onChangeEnd={fn()}
+      onChangeDuration={fn()}
+    />
+  );
+  expect(
+    within(row('Search from:')).getByRole('textbox').value
+  ).toBe('2026-01-01');
+  expect(
+    within(row('Search until:')).getByRole('textbox').value
+  ).toBe('2026-02-01');
 });
 
 test('disabled disables all three inputs', () => {
@@ -144,6 +164,26 @@ test('changing Duration calls onChangeDuration', async () => {
   await change(durationInput, '30');
 
   expect(onChangeDuration).toHaveBeenCalledWith(30);
+});
+
+test('the pickers show a day only in ML Block mode too', () => {
+  render(
+    <ReservationScheduleControl
+      mode={MODE_ML_BLOCK}
+      start="2026-01-01"
+      end="2026-02-01"
+      durationDays={undefined}
+      onChangeStart={fn()}
+      onChangeEnd={fn()}
+      onChangeDuration={fn()}
+    />
+  );
+  expect(
+    within(row('Search from:')).getByRole('textbox').value
+  ).toBe('2026-01-01');
+  expect(
+    within(row('Search until:')).getByRole('textbox').value
+  ).toBe('2026-02-01');
 });
 
 test('the duration minimum is 14 in future-dated mode and 1 in ML Block mode', () => {

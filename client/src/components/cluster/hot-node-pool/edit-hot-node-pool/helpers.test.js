@@ -36,6 +36,7 @@ import {
 } from './helpers';
 import {
   COMMITMENT_DATE_TIME_FORMAT,
+  COMMITMENT_DATE_ONLY_FORMAT,
   RESERVATION_STATUS_PENDING,
   RESERVATION_STATUS_APPROVED
 } from './constants';
@@ -67,11 +68,12 @@ function baseValues (overrides = {}) {
 
 // Now-relative fixtures: the backend's lead-time/duration rules are relative to "now",
 // so a fixed past date (like the old `'2026-01-01 10:00:00.000'`) would fail them. `fmt`
-// formats a moment through the backend's own wire format; `inDays` is "N days from now,
-// in that format"; `futureDatedValues` is a fully valid future-dated values object a
-// single field can be overridden from.
+// formats a moment through the backend's own wire format, used for an offering's own
+// `startDate`/`endDate` (AWS-origin, always a full datetime); `inDays` is "N days from
+// now" as the day-only string `commitmentStart`/`commitmentEnd` hold; `futureDatedValues`
+// is a fully valid future-dated values object a single field can be overridden from.
 const fmt = (m) => m.format(COMMITMENT_DATE_TIME_FORMAT);
-const inDays = (days) => fmt(moment().add(days, 'days'));
+const inDays = (days) => moment().add(days, 'days').format(COMMITMENT_DATE_ONLY_FORMAT);
 const futureDatedValues = (overrides = {}) => baseValues({
   mode: 'FUTURE_DATED',
   poolType: 'STANDARD',
@@ -175,16 +177,15 @@ describe('buildCapacityBlockOfferingRequest', () => {
     expect(request.capacityDurationHours).toBe(72);
   });
 
-  it('normalizes startDateRange/endDateRange through the backend wire format', () => {
-    const start = inDays(1);
-    const end = inDays(10);
-    const request = buildCapacityBlockOfferingRequest(values({
-      commitmentStart: start,
-      commitmentEnd: end
-    }));
-    expect(request.startDateRange).toBe(start);
-    expect(request.endDateRange).toBe(end);
-  });
+  it('sends the chosen start day at its start of day and the end day at its end of day',
+    () => {
+      const request = buildCapacityBlockOfferingRequest(values({
+        commitmentStart: '2026-11-26',
+        commitmentEnd: '2026-11-30'
+      }));
+      expect(request.startDateRange).toBe('2026-11-26 00:00:00.000');
+      expect(request.endDateRange).toBe('2026-11-30 23:59:59.999');
+    });
 
   it('omits endDateRange when commitmentEnd is empty', () => {
     const request = buildCapacityBlockOfferingRequest(values({commitmentEnd: undefined}));
@@ -484,7 +485,7 @@ describe('getValidationErrors', () => {
     it.each([
       ['missing', undefined],
       ['unparseable', 'tomorrow'],
-      ['missing milliseconds', '2026-01-01 10:00:00']
+      ['a full datetime, not a day', '2026-01-01 10:00:00.000']
     ])('requires a valid, strictly-formatted start date (%s)', (name, commitmentStart) => {
       const {errors} = getValidationErrors(futureDatedValues({commitmentStart}));
       expect(errors.commitmentStart).toBe('Search from date is required');
@@ -627,6 +628,13 @@ describe('getValidationErrors', () => {
 
     it('rejects a start date in the past', () => {
       const {errors} = getValidationErrors(mlBlockValues({commitmentStart: inDays(-1)}));
+      expect(errors.commitmentStart).toBe('Search from date should be in the future');
+    });
+
+    // The payload sends 00:00 of the picked day, so today's own start is already past -
+    // a direct consequence of picking by day, with no lead-time rule to mask it here.
+    it('rejects today as a start date: its start of day is already past', () => {
+      const {errors} = getValidationErrors(mlBlockValues({commitmentStart: inDays(0)}));
       expect(errors.commitmentStart).toBe('Search from date should be in the future');
     });
 
@@ -942,6 +950,17 @@ describe('buildCapacityReservationRequest', () => {
     expect(request.requestedEndDate).not.toContain('T');
     expect(request.requestedEndDate).not.toContain('Z');
   });
+
+  it('sends the chosen start day at its start of day and the end day at its end of day',
+    () => {
+      const request = buildCapacityReservationRequest({
+        commitmentStart: '2026-11-26',
+        commitmentEnd: '2026-11-30',
+        commitmentDurationDays: 14
+      });
+      expect(request.requestedStartDate).toBe('2026-11-26 00:00:00.000');
+      expect(request.requestedEndDate).toBe('2026-11-30 23:59:59.999');
+    });
 
   describe('ML Block mode', () => {
     it('returns the CAPACITY_BLOCK shape, from the selected offering', () => {

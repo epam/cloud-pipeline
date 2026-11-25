@@ -27,6 +27,9 @@ export const POOL_TYPE_SHAREABLE = 'SHAREABLE_NODE';
 // The backend's `LocalDateTime` pattern (`JsonMapper`/`Constants`): milliseconds required,
 // no `T`, no timezone.
 export const COMMITMENT_DATE_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
+// The reservation search window is picked by day. This is what the control shows and the
+// state holds; `COMMITMENT_DATE_TIME_FORMAT` stays the wire format the day is converted to.
+export const COMMITMENT_DATE_ONLY_FORMAT = 'YYYY-MM-DD';
 
 export const RESERVATION_COUNT_MIN_SIZE = 1; // reservation pools cannot be "disabled"
 export const SECONDS_PER_DAY = 24 * 60 * 60;

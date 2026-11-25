@@ -23,6 +23,7 @@ import StringInput from './StringInput';
 import HintControl from './HintControl';
 import {humanizeReservationStatus} from '../helpers';
 import {
+  COMMITMENT_DATE_ONLY_FORMAT,
   COMMITMENT_DATE_TIME_FORMAT,
   MIN_COMMITMENT_DURATION_DAYS,
   MIN_ML_BLOCK_DURATION_DAYS,
@@ -105,13 +106,13 @@ function getReservationStatusNotice (status) {
 
 // A future-dated pool reserves capacity for a single one-time absolute window, unlike Default
 // mode's weekly recurring schedule (see `ScheduleControl`/`ScheduleControls`, which this
-// control does not reuse and must not touch). `start`/`end` are carried as plain strings
-// in `COMMITMENT_DATE_TIME_FORMAT`, parsed/formatted with `moment` in the local zone so
-// they round-trip; `[start, end]` is the window the platform *searches* in for matching
-// capacity, and `durationDays` the committed length, in days, that must fit somewhere
-// inside it - converted to the backend's seconds only in
-// `buildCapacityReservationRequest`. "Search until" is independently editable and never
-// derived from `start` + `durationDays`.
+// control does not reuse and must not touch). `start`/`end` hold a day only - a value
+// already carrying a time (an existing reservation's granted window, read from the API) is
+// still accepted and rendered as its day. `[start, end]` is the window the platform
+// *searches* in for matching capacity; the caller converts each day to the backend's
+// zone-less instant (`startOf('day')`/`endOf('day')`) and to seconds only in
+// `buildCapacityReservationRequest`/`buildCapacityBlockOfferingRequest`. "Search until" is
+// independently editable and never derived from `start` + `durationDays`.
 function ReservationScheduleControl ({
   mode,
   start,
@@ -140,14 +141,17 @@ function ReservationScheduleControl ({
       <div className={styles.formRow}>
         <span className={styles.label}>Search from:</span>
         <DatePicker
-          showTime
-          format={COMMITMENT_DATE_TIME_FORMAT}
-          placeholder="Start date and time"
+          format={COMMITMENT_DATE_ONLY_FORMAT}
+          placeholder="Start date"
           className={classNames(styles.formItem, styles.small)}
           disabled={disabled}
-          value={start ? moment(start, COMMITMENT_DATE_TIME_FORMAT) : undefined}
+          value={
+            start
+              ? moment(start, [COMMITMENT_DATE_ONLY_FORMAT, COMMITMENT_DATE_TIME_FORMAT], true)
+              : undefined
+          }
           onChange={date => onChangeStart(
-            date ? date.format(COMMITMENT_DATE_TIME_FORMAT) : undefined
+            date ? date.format(COMMITMENT_DATE_ONLY_FORMAT) : undefined
           )}
         />
         <HintControl hint={startHint} />
@@ -162,14 +166,17 @@ function ReservationScheduleControl ({
       <div className={styles.formRow}>
         <span className={styles.label}>Search until:</span>
         <DatePicker
-          showTime
-          format={COMMITMENT_DATE_TIME_FORMAT}
-          placeholder="End date and time"
+          format={COMMITMENT_DATE_ONLY_FORMAT}
+          placeholder="End date"
           className={classNames(styles.formItem, styles.small)}
           disabled={disabled}
-          value={end ? moment(end, COMMITMENT_DATE_TIME_FORMAT) : undefined}
+          value={
+            end
+              ? moment(end, [COMMITMENT_DATE_ONLY_FORMAT, COMMITMENT_DATE_TIME_FORMAT], true)
+              : undefined
+          }
           onChange={date => onChangeEnd(
-            date ? date.format(COMMITMENT_DATE_TIME_FORMAT) : undefined
+            date ? date.format(COMMITMENT_DATE_ONLY_FORMAT) : undefined
           )}
         />
         <HintControl hint={endHint} />

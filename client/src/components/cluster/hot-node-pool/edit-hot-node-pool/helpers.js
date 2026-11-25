@@ -25,6 +25,7 @@ import {
   MODE_FUTURE_DATED,
   MODE_ML_BLOCK,
   COMMITMENT_DATE_TIME_FORMAT,
+  COMMITMENT_DATE_ONLY_FORMAT,
   RESERVATION_COUNT_MIN_SIZE,
   SECONDS_PER_DAY,
   MIN_COMMITMENT_DURATION_DAYS,
@@ -73,6 +74,19 @@ export function arraysAreEqual (a, b) {
   return true;
 }
 
+// `commitmentStart`/`commitmentEnd` hold a day only; these are the only two places that
+// turn a day into the instant the backend actually receives, so the search, the purchase
+// and the validation below all agree with each other and with the wire format.
+function getCommitmentDayStart (day) {
+  const parsed = moment(day, COMMITMENT_DATE_ONLY_FORMAT, true);
+  return parsed.isValid() ? parsed.startOf('day') : parsed;
+}
+
+function getCommitmentDayEnd (day) {
+  const parsed = moment(day, COMMITMENT_DATE_ONLY_FORMAT, true);
+  return parsed.isValid() ? parsed.endOf('day') : parsed;
+}
+
 // The two fields the offering search sends per candidate.
 function isCompleteMlBlockCandidate (candidate) {
   const {instanceType, instanceCount} = candidate || {};
@@ -103,11 +117,10 @@ export function buildCapacityBlockOfferingRequest (values) {
         instanceType,
         instanceCount: Number(instanceCount)
       })),
-    startDateRange: moment(commitmentStart, COMMITMENT_DATE_TIME_FORMAT, true)
-      .format(COMMITMENT_DATE_TIME_FORMAT),
+    startDateRange: getCommitmentDayStart(commitmentStart).format(COMMITMENT_DATE_TIME_FORMAT),
     capacityDurationHours: Number(commitmentDurationDays) * HOURS_PER_DAY
   };
-  const end = moment(commitmentEnd, COMMITMENT_DATE_TIME_FORMAT, true);
+  const end = getCommitmentDayEnd(commitmentEnd);
   if (commitmentEnd && end.isValid()) {
     request.endDateRange = end.format(COMMITMENT_DATE_TIME_FORMAT);
   }
@@ -119,7 +132,7 @@ export function canSearchCapacityBlockOfferings (values) {
   if (!region) {
     return false;
   }
-  const start = moment(commitmentStart, COMMITMENT_DATE_TIME_FORMAT, true);
+  const start = moment(commitmentStart, COMMITMENT_DATE_ONLY_FORMAT, true);
   if (!commitmentStart || !start.isValid()) {
     return false;
   }
@@ -167,8 +180,11 @@ export function formatCapacityBlockInstanceType (info) {
 // duration, the lead-time window, and whether an end of window is required at all.
 function getCommitmentWindowErrors (values, minDurationDays, leadTime, endRequired = true) {
   const {commitmentStart, commitmentEnd, commitmentDurationDays} = values;
-  const start = moment(commitmentStart, COMMITMENT_DATE_TIME_FORMAT, true);
-  const end = moment(commitmentEnd, COMMITMENT_DATE_TIME_FORMAT, true);
+  // Validated on the instants the payload will actually carry - the start of the chosen
+  // start day and the end of the chosen end day - not on the days themselves, so this
+  // mirrors exactly what the backend re-checks.
+  const start = getCommitmentDayStart(commitmentStart);
+  const end = getCommitmentDayEnd(commitmentEnd);
   const now = moment();
   let commitmentStartError, commitmentEndError, commitmentDurationError;
   if (!commitmentStart || !start.isValid()) {
@@ -530,14 +546,11 @@ export function buildCapacityReservationRequest (values) {
   const {commitmentStart, commitmentEnd, commitmentDurationDays} = values;
   return {
     reservationType: RESERVATION_TYPE_FUTURE_DATED,
-    // Re-formatting through `moment` (rather than passing the string straight through)
-    // normalizes whatever the picker produced into the backend's exact pattern,
-    // including the mandatory `.SSS`. Never append a `Z` and never call `.utc()` — the
-    // backend field is a zone-less local datetime.
-    requestedStartDate: moment(commitmentStart, COMMITMENT_DATE_TIME_FORMAT, true)
-      .format(COMMITMENT_DATE_TIME_FORMAT),
-    requestedEndDate: moment(commitmentEnd, COMMITMENT_DATE_TIME_FORMAT, true)
-      .format(COMMITMENT_DATE_TIME_FORMAT),
+    // `commitmentStart`/`commitmentEnd` hold a day; the backend's field is a zone-less
+    // local datetime, so the day is converted to its start/end instant here - never a `Z`,
+    // never `.utc()`.
+    requestedStartDate: getCommitmentDayStart(commitmentStart).format(COMMITMENT_DATE_TIME_FORMAT),
+    requestedEndDate: getCommitmentDayEnd(commitmentEnd).format(COMMITMENT_DATE_TIME_FORMAT),
     commitmentDuration: Number(commitmentDurationDays) * SECONDS_PER_DAY
   };
 }
