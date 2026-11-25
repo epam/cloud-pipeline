@@ -2,6 +2,7 @@
 
 - [Migration to Java 21](#migration-to-java-21)
 - [Capacity block offering search over several instance types](#capacity-block-offering-search-over-several-instance-types)
+- [Parallel download into the disk buffer of a storage mount](#parallel-download-into-the-disk-buffer-of-a-storage-mount)
 
 ***
 
@@ -25,6 +26,19 @@ Additionally, Spring Boot moved from **1.5**/**2** to Spring Boot **3.3**.
 Searching for a capacity block offering can now ask about several candidate instance types - each with its own count - in a single request, rather than one search per type, so a user can compare a primary instance type against whatever fallback types they would also accept before deciding which offering to buy. The response merges every candidate's offerings into one list, sorted by start date, nearest first. See [Browsing capacity block offerings](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#browsing-capacity-block-offerings).
 
 How many candidates one request may carry is bounded by the `cluster.capacity.block.offering.candidates.max.count` preference - **5** by default, `-1` to disable the limit.
+
+***
+
+## Parallel download into the disk buffer of a storage mount
+
+A storage mounted with a disk buffer (the `read-disk-buffer-path` option of `pipe-fuse`, e.g. `-c read-disk-buffer-path=/pipe-storage-buffer/<id>` in `CP_PIPE_FUSE_OPTIONS` or `CP_CAP_MOUNT_OPTIONS_<storage id>`) downloads each file it reads into that buffer once, and then serves the reads from the local disk. Previously, it downloaded a file in 512 MB ranges, one after another, so the first read of a large file waited for the whole sequential download.
+
+In the current version, the disk buffer downloads the ranges of a file in parallel:
+
+- `read-disk-buffer-download-workers` (`CP_PIPE_FUSE_READ_DISK_BUFFER_DOWNLOAD_WORKERS`) is the number of ranges downloaded at the same time. The default is `8`. `1` downloads them one after another, as before
+- `read-disk-buffer-read-ahead-size` (`CP_PIPE_FUSE_READ_DISK_BUFFER_READ_AHEAD_SIZE`) is the size of a range, in bytes. It no longer has a default: when it is not set, a file is split into as many equal ranges as there are workers. With one worker and no size, the ranges are 512 MB, as before
+
+Each range is written straight to the local disk, into a partial file next to the buffer, so a download needs no more memory than before, whatever the size of the file. The partial file becomes the buffer only once the whole file is there. Previously, a mount that was killed during a download left a part of the file as its buffer, and the next mount with the same buffer path served that part as the whole file, until the buffer expired (`read-disk-buffer-ttl`). When a range fails, the other ranges of the file stop too, and the read fails. Also, an S3 storage mount now keeps up to 50 connections to S3 instead of 10, so the parallel ranges do not wait for each other.
 
 ***
 
