@@ -76,14 +76,18 @@ export function arraysAreEqual (a, b) {
 
 // `commitmentStart`/`commitmentEnd` hold a day only; these are the only two places that
 // turn a day into the instant the backend actually receives, so the search, the purchase
-// and the validation below all agree with each other and with the wire format.
+// and the validation below all agree with each other and with the wire format. Parsed in
+// UTC rather than the browser's own zone: the backend reads the formatted, zone-less
+// string as UTC (`AwsCapacityReservationService`'s `LocalDateTime.toInstant(ZoneOffset.UTC)`,
+// `DateUtils.nowUTC()` in `NodePoolValidator`), and `.format()` of a UTC-mode moment prints
+// the same literal day/time either way - so the wire string this produces is unchanged.
 function getCommitmentDayStart (day) {
-  const parsed = moment(day, COMMITMENT_DATE_ONLY_FORMAT, true);
+  const parsed = moment.utc(day, COMMITMENT_DATE_ONLY_FORMAT, true);
   return parsed.isValid() ? parsed.startOf('day') : parsed;
 }
 
 function getCommitmentDayEnd (day) {
-  const parsed = moment(day, COMMITMENT_DATE_ONLY_FORMAT, true);
+  const parsed = moment.utc(day, COMMITMENT_DATE_ONLY_FORMAT, true);
   return parsed.isValid() ? parsed.endOf('day') : parsed;
 }
 
@@ -180,12 +184,13 @@ export function formatCapacityBlockInstanceType (info) {
 // duration, the lead-time window, and whether an end of window is required at all.
 function getCommitmentWindowErrors (values, minDurationDays, leadTime, endRequired = true) {
   const {commitmentStart, commitmentEnd, commitmentDurationDays} = values;
-  // Validated on the instants the payload will actually carry - the start of the chosen
-  // start day and the end of the chosen end day - not on the days themselves, so this
-  // mirrors exactly what the backend re-checks.
+  // Validated on the UTC instants the payload will actually carry - the start of the
+  // chosen start day and the end of the chosen end day - not on the days themselves, and
+  // against `moment.utc()`, so this mirrors exactly what the backend re-checks
+  // (`DateUtils.nowUTC()`), not what the browser's own zone would compute.
   const start = getCommitmentDayStart(commitmentStart);
   const end = getCommitmentDayEnd(commitmentEnd);
-  const now = moment();
+  const now = moment.utc();
   let commitmentStartError, commitmentEndError, commitmentDurationError;
   if (!commitmentStart || !start.isValid()) {
     commitmentStartError = 'Search from date is required';
@@ -197,8 +202,11 @@ function getCommitmentWindowErrors (values, minDurationDays, leadTime, endRequir
     // toward zero and happens to agree here, but is not the same operation).
     const leadDays = Math.floor(start.diff(now, 'days', true));
     if (leadDays < leadTime.min || leadDays > leadTime.max) {
+      // `leadDays` floors a fractional diff against a start pinned to 00:00, so the
+      // calendar-day boundary a user actually hits is one day later than `leadTime`'s
+      // own min/max on both ends - say that, not the raw backend constants.
       commitmentStartError = 'Search from date should be between ' +
-        `${leadTime.min} and ${leadTime.max} days from now`;
+        `${leadTime.min + 1} and ${leadTime.max + 1} days from now`;
     }
   }
   if (!commitmentEnd) {

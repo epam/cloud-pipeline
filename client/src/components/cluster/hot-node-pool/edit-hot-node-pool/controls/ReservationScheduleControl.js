@@ -108,7 +108,9 @@ function getReservationStatusNotice (status) {
 // mode's weekly recurring schedule (see `ScheduleControl`/`ScheduleControls`, which this
 // control does not reuse and must not touch). `start`/`end` hold a day only - a value
 // already carrying a time (an existing reservation's granted window, read from the API) is
-// still accepted and rendered as its day. `[start, end]` is the window the platform
+// still accepted and rendered as its day - display only: validation and the payload
+// builders parse date-only and would call a datetime value missing. `[start, end]` is the
+// window the platform
 // *searches* in for matching capacity; the caller converts each day to the backend's
 // zone-less instant (`startOf('day')`/`endOf('day')`) and to seconds only in
 // `buildCapacityReservationRequest`/`buildCapacityBlockOfferingRequest`. "Search until" is

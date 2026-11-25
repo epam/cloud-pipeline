@@ -15,6 +15,7 @@
  */
 
 import moment from 'moment-timezone';
+import {useFakeTimers, useRealTimers, setSystemTime} from '@test';
 import {
   arraysAreEqual,
   getValidationErrors,
@@ -117,6 +118,14 @@ const mlBlockValues = (overrides = {}) => {
     ...overrides
   });
 };
+
+// The boundaries below are pinned to this fixed instant rather than to whenever the
+// suite happens to run, so a day offset lands exactly on the fencepost every time,
+// independent of the harness's own pinned zone (`moment.utc` is explicit either way).
+const FIXED_NOW = '2026-11-20T15:00:00.000Z';
+const dayAt = (offsetDays) => moment.utc(FIXED_NOW)
+  .add(offsetDays, 'days')
+  .format(COMMITMENT_DATE_ONLY_FORMAT);
 
 describe('getCompleteMlBlockCandidates', () => {
   it('keeps a row with a type and a whole count of at least 1', () => {
@@ -504,7 +513,7 @@ describe('getValidationErrors', () => {
     it('rejects a start date with too little lead time', () => {
       const {errors} = getValidationErrors(futureDatedValues({commitmentStart: inDays(3)}));
       expect(errors.commitmentStart)
-        .toBe('Search from date should be between 5 and 120 days from now');
+        .toBe('Search from date should be between 6 and 121 days from now');
     });
 
     it('rejects a start date with too much lead time', () => {
@@ -513,7 +522,83 @@ describe('getValidationErrors', () => {
         commitmentEnd: inDays(200)
       }));
       expect(errors.commitmentStart)
-        .toBe('Search from date should be between 5 and 120 days from now');
+        .toBe('Search from date should be between 6 and 121 days from now');
+    });
+
+    // `now` is fixed rather than relative, so a day offset lands exactly on the
+    // fencepost every run - `leadDays` floors a fractional diff against a start pinned
+    // to 00:00, so the boundary a user hits is one calendar day later than the backend's
+    // own 5/120 on both ends (`NodePoolValidator.MINIMUM_LEAD_DAYS`/120).
+    describe('the lead-time boundary, pinned to a fixed "now"', () => {
+      afterEach(() => {
+        useRealTimers();
+      });
+
+      it('refuses the day exactly 5 calendar days out and accepts the day 6 days out', () => {
+        useFakeTimers();
+        setSystemTime(new Date(FIXED_NOW));
+        const refused = getValidationErrors(futureDatedValues({
+          commitmentStart: dayAt(5),
+          commitmentEnd: dayAt(40),
+          commitmentDurationDays: 14
+        }));
+        expect(refused.errors.commitmentStart)
+          .toBe('Search from date should be between 6 and 121 days from now');
+
+        const accepted = getValidationErrors(futureDatedValues({
+          commitmentStart: dayAt(6),
+          commitmentEnd: dayAt(40),
+          commitmentDurationDays: 14
+        }));
+        expect(accepted.errors.commitmentStart).toBeUndefined();
+      });
+
+      it('accepts the day 121 calendar days out and refuses the day 122 days out', () => {
+        useFakeTimers();
+        setSystemTime(new Date(FIXED_NOW));
+        const accepted = getValidationErrors(futureDatedValues({
+          commitmentStart: dayAt(121),
+          commitmentEnd: dayAt(140),
+          commitmentDurationDays: 14
+        }));
+        expect(accepted.errors.commitmentStart).toBeUndefined();
+
+        const refused = getValidationErrors(futureDatedValues({
+          commitmentStart: dayAt(122),
+          commitmentEnd: dayAt(140),
+          commitmentDurationDays: 14
+        }));
+        expect(refused.errors.commitmentStart)
+          .toBe('Search from date should be between 6 and 121 days from now');
+      });
+    });
+
+    // `commitmentEnd` is sent at 23:59:59.999 of its day, so an N-day duration needs a
+    // span of N calendar days *plus one* - `endOf('day')` is deliberate (the plan this
+    // phase closes), so this pins the fencepost rather than changing it.
+    describe('the exact-fit duration boundary', () => {
+      afterEach(() => {
+        useRealTimers();
+      });
+
+      it('refuses a duration that exactly spans the window, and accepts one day more', () => {
+        useFakeTimers();
+        setSystemTime(new Date(FIXED_NOW));
+        const exact = getValidationErrors(futureDatedValues({
+          commitmentStart: dayAt(30),
+          commitmentEnd: dayAt(43),
+          commitmentDurationDays: 14
+        }));
+        expect(exact.errors.commitmentDurationDays)
+          .toBe('Duration should fit between "Search from" and "Search until"');
+
+        const fits = getValidationErrors(futureDatedValues({
+          commitmentStart: dayAt(30),
+          commitmentEnd: dayAt(44),
+          commitmentDurationDays: 14
+        }));
+        expect(fits.errors.commitmentDurationDays).toBeUndefined();
+      });
     });
 
     it('rejects an end date that is not after the start date', () => {
@@ -636,6 +721,29 @@ describe('getValidationErrors', () => {
     it('rejects today as a start date: its start of day is already past', () => {
       const {errors} = getValidationErrors(mlBlockValues({commitmentStart: inDays(0)}));
       expect(errors.commitmentStart).toBe('Search from date should be in the future');
+    });
+
+    // The wire string is read by the backend as UTC (`AwsCapacityReservationService`
+    // reads a zone-less `LocalDateTime` with `ZoneOffset.UTC`), so the same picked day
+    // must flip from valid to refused at its own UTC midnight - not at local midnight,
+    // which is the regression this phase closes (picking "tomorrow" west of UTC could
+    // already be past by the time the backend reads it).
+    describe('a chosen day flips from valid to refused at its own UTC midnight', () => {
+      afterEach(() => {
+        useRealTimers();
+      });
+
+      it('is valid a minute before that midnight and refused a second after it', () => {
+        useFakeTimers();
+        setSystemTime(new Date('2026-11-25T23:59:00.000Z'));
+        const beforeMidnight = getValidationErrors(mlBlockValues({commitmentStart: '2026-11-26'}));
+        expect(beforeMidnight.errors.commitmentStart).toBeUndefined();
+
+        setSystemTime(new Date('2026-11-26T00:00:01.000Z'));
+        const afterMidnight = getValidationErrors(mlBlockValues({commitmentStart: '2026-11-26'}));
+        expect(afterMidnight.errors.commitmentStart)
+          .toBe('Search from date should be in the future');
+      });
     });
 
     // The search never needs an end of window, and the purchase carries the offering's
