@@ -48,10 +48,8 @@ dependencies {
 
     // Jackson
 
-    // Do NOT pin versions: everything is managed by the Spring Boot 3.5 BOM (2.18.x).
-    // The old '2.8.7' pins were removed — they were incompatible with Spring Boot 3.
-    // jackson-annotations and jackson-databind come in transitively via
-    // spring-boot-starter-data-jpa, no need to declare them explicitly.
+    // The Spring Boot BOM manages the Jackson versions; jackson-annotations and jackson-databind
+    // come in transitively via spring-boot-starter-data-jpa.
 
     // Java 8+ date/time support (Instant, LocalDate, ...)
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'

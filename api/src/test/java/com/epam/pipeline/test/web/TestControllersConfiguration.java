@@ -19,11 +19,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Loads API controllers for tests.
- *
- * Historically tests relied on {@code RestConfiguration} scanning controllers.
- * After migration to a single DispatcherServlet, {@code RestConfiguration} no longer does that,
- * so we provide a dedicated test configuration to keep controller tests working.
+ * Loads the API controllers for the controller tests: {@code RestConfiguration} does not scan them.
  */
 @Configuration
 @ComponentScan(basePackages = "com.epam.pipeline.controller")
