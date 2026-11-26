@@ -154,7 +154,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Data_storages</b> (175 tests, 86 automated)</summary>
+<summary><b>Data_storages</b> (177 tests, 86 automated)</summary>
 
 | Case ID                                                                 | Description/name | Automated |
 |-------------------------------------------------------------------------| --- | :---: |
@@ -333,6 +333,8 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**4571_11**](Data_storages/4571/4571_11.md)                            | An archive extraction fails before it is fetched once the archive itself exceeds `maxArchiveSizeBytes` configured in `system.async.tasks.config` |  |
 | [**4571_12**](Data_storages/4571/4571_12.md)                            | An archive extraction fails once its uncompressed content exceeds `maxSizeBytes` configured in `system.async.tasks.config` |  |
 | [**4571_13**](Data_storages/4571/4571_13.md)                            | An archive extraction fails once its entries exceed `maxFilesCount` configured in `system.async.tasks.config` |  |
+| [**4571_14**](Data_storages/4571/4571_14.md)                            | Files can be removed from the upload confirmation pop-up before anything is uploaded |  |
+| [**4571_15**](Data_storages/4571/4571_15.md)                            | Removing an archive brings the batch back under the archive-task allowance |  |
 
 </details>
 
