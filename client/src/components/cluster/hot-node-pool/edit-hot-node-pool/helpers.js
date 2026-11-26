@@ -91,6 +91,23 @@ function getCommitmentDayEnd (day) {
   return parsed.isValid() ? parsed.endOf('day') : parsed;
 }
 
+// Offering and reservation windows arrive as a UTC wall time in a zone-less string
+// (`AwsCapacityReservationService.toLocalDateTime`); parse as UTC, render in the viewer's zone.
+export function formatCloudCommitmentDate (value, format) {
+  if (!value) {
+    return undefined;
+  }
+  // Non-strict: the backend may hand back a value whose formatting differs slightly
+  // from the wire format this client sends.
+  const parsed = moment.utc(value, COMMITMENT_DATE_TIME_FORMAT);
+  if (!parsed.isValid()) {
+    return undefined;
+  }
+  // `.local()` reads the OS zone, not `moment.tz.setDefault`; `displayDate.js` works
+  // around the same quirk by converting through a plain `Date` first.
+  return moment(parsed.toDate()).format(format);
+}
+
 // The two fields the offering search sends per candidate.
 function isCompleteMlBlockCandidate (candidate) {
   const {instanceType, instanceCount} = candidate || {};
@@ -540,6 +557,8 @@ export function buildCapacityReservationRequest (values) {
   if (mode === MODE_ML_BLOCK) {
     // The offering has already fixed the window, so its own dates go out verbatim -
     // `CapacityReservationService.build()` copies them straight into the reservation.
+    // Raw on purpose: the backend reads this string back as UTC (`toInstant(ZoneOffset.UTC)`);
+    // converting it to the viewer's zone here, as the card display does, would corrupt the buy.
     const offering = getSelectedOffering(values) || {};
     const {offeringId, availabilityZone, startDate, endDate, capacityDurationHours} = offering;
     return {

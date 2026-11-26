@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import moment from 'moment-timezone';
 import {render, screen, click, keyDown, fn} from '@test';
 import CapacityBlockOfferingCard from './CapacityBlockOfferingCard';
 
@@ -42,6 +43,23 @@ test('renders the zone, the type, the window and the price in that order, but no
     '$1,234.50'
   ]);
   expect(screen.queryByText(/node/)).not.toBeInTheDocument();
+});
+
+// UTC is the one zone where parsing this value as local instead of UTC is invisible,
+// so this sets a real offset around the assertion and restores UTC afterwards.
+test('a UTC wall time renders in the viewer\'s local zone, not read as local', () => {
+  moment.tz.setDefault('Asia/Tokyo');
+  try {
+    const block = {
+      ...offering,
+      startDate: '2026-12-25 11:30:00.000',
+      endDate: '2026-12-27 11:30:00.000'
+    };
+    render(<CapacityBlockOfferingCard offering={block} />);
+    expect(screen.getByText('2026-12-25 20:30 – 2026-12-27 20:30')).toBeInTheDocument();
+  } finally {
+    moment.tz.setDefault('UTC');
+  }
 });
 
 test('a USD price renders with a `$` prefix and no currency suffix', () => {

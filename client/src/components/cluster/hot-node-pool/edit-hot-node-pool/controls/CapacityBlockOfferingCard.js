@@ -17,19 +17,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import moment from 'moment-timezone';
 import {Alert} from 'antd';
-import {COMMITMENT_DATE_TIME_FORMAT} from '../constants';
+import {formatCloudCommitmentDate} from '../helpers';
 import styles from '../../edit-hot-node-pool.css';
 
-function formatOfferingDate (value) {
-  const parsed = moment(value, COMMITMENT_DATE_TIME_FORMAT);
-  return parsed.isValid() ? parsed.format('YYYY-MM-DD HH:mm') : undefined;
-}
-
 function formatOfferingWindow (startDate, endDate) {
-  const start = formatOfferingDate(startDate);
-  const end = formatOfferingDate(endDate);
+  const start = formatCloudCommitmentDate(startDate, 'YYYY-MM-DD HH:mm');
+  const end = formatCloudCommitmentDate(endDate, 'YYYY-MM-DD HH:mm');
   if (start && end) {
     return `${start} – ${end}`;
   }

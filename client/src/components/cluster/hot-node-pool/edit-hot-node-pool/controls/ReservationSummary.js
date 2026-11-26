@@ -16,19 +16,12 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import moment from 'moment-timezone';
-import {COMMITMENT_DATE_TIME_FORMAT} from '../constants';
+import {formatCloudCommitmentDate} from '../helpers';
 import styles from '../../edit-hot-node-pool.css';
 
 // Exported for its own unit tests.
 export function formatReservationDate (value) {
-  if (!value) {
-    return undefined;
-  }
-  // Non-strict: the backend may hand back a value whose formatting differs
-  // slightly from the wire format this client sends.
-  const parsed = moment(value, COMMITMENT_DATE_TIME_FORMAT);
-  return parsed.isValid() ? parsed.format('YYYY-MM-DD HH:mm:ss') : undefined;
+  return formatCloudCommitmentDate(value, 'YYYY-MM-DD HH:mm:ss');
 }
 
 // Shared with `getCapacityReservationStatus` in `../helpers`, so the pool-card badge and

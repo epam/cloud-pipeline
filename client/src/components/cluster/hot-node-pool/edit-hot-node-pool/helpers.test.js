@@ -33,7 +33,8 @@ import {
   canSearchCapacityBlockOfferings,
   getOfferingsForCandidate,
   getSelectedOffering,
-  formatCapacityBlockInstanceType
+  formatCapacityBlockInstanceType,
+  formatCloudCommitmentDate
 } from './helpers';
 import {
   COMMITMENT_DATE_TIME_FORMAT,
@@ -150,6 +151,33 @@ describe('getCompleteMlBlockCandidates', () => {
   it('is an empty array for undefined or empty input', () => {
     expect(getCompleteMlBlockCandidates(undefined)).toEqual([]);
     expect(getCompleteMlBlockCandidates([])).toEqual([]);
+  });
+});
+
+describe('formatCloudCommitmentDate', () => {
+  afterEach(() => {
+    // The harness pins moment-timezone's default to UTC; restore it so this suite's
+    // other tests, which rely on that pin, are unaffected by this one.
+    moment.tz.setDefault('UTC');
+  });
+
+  test('formats a UTC wall time unchanged while the viewer\'s zone is UTC', () => {
+    expect(formatCloudCommitmentDate('2026-12-25 11:30:00.000', 'YYYY-MM-DD HH:mm'))
+      .toBe('2026-12-25 11:30');
+  });
+
+  test('converts a UTC wall time to the viewer\'s local zone, not the UTC one', () => {
+    moment.tz.setDefault('Asia/Tokyo');
+    expect(formatCloudCommitmentDate('2026-12-25 11:30:00.000', 'YYYY-MM-DD HH:mm'))
+      .toBe('2026-12-25 20:30');
+  });
+
+  test.each([undefined, null, ''])('is undefined for %p', (value) => {
+    expect(formatCloudCommitmentDate(value, 'YYYY-MM-DD HH:mm')).toBeUndefined();
+  });
+
+  test('is undefined for an unparseable value', () => {
+    expect(formatCloudCommitmentDate('not-a-date', 'YYYY-MM-DD HH:mm')).toBeUndefined();
   });
 });
 

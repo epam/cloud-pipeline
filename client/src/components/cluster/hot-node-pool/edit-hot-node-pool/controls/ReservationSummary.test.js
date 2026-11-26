@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import moment from 'moment-timezone';
 import {render, screen} from '@test';
 import ReservationSummary, {
   formatReservationDate,
@@ -33,6 +34,17 @@ describe('formatReservationDate', () => {
   test('is undefined for an unparseable value', () => {
     expect(formatReservationDate('not-a-date')).toBeUndefined();
   });
+
+  // UTC is the one zone where reading this value as local instead of UTC is invisible,
+  // so this sets a real offset around the assertion and restores UTC afterwards.
+  test('converts a UTC wall time to the viewer\'s local zone, not read as local', () => {
+    moment.tz.setDefault('Asia/Tokyo');
+    try {
+      expect(formatReservationDate('2026-12-25 11:30:00.000')).toBe('2026-12-25 20:30:00');
+    } finally {
+      moment.tz.setDefault('UTC');
+    }
+  });
 });
 
 test('renders the label and the dash-joined window when both dates are given', () => {
@@ -44,6 +56,23 @@ test('renders the label and the dash-joined window when both dates are given', (
   );
   expect(screen.getByText('Reservation window:')).toBeInTheDocument();
   expect(screen.getByText('2026-03-01 10:00:00 – 2026-04-01 10:00:00')).toBeInTheDocument();
+});
+
+// AWS terminates the instances at `end`, so a viewer-zone mismatch here is operationally
+// misleading, not cosmetic.
+test('renders a granted window in the viewer\'s local zone, not the UTC wall time', () => {
+  moment.tz.setDefault('Asia/Tokyo');
+  try {
+    render(
+      <ReservationSummary
+        start="2026-12-25 11:30:00.000"
+        end="2026-12-27 11:30:00.000"
+      />
+    );
+    expect(screen.getByText('2026-12-25 20:30:00 – 2026-12-27 20:30:00')).toBeInTheDocument();
+  } finally {
+    moment.tz.setDefault('UTC');
+  }
 });
 
 test('renders the pending message when end is missing', () => {
