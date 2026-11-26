@@ -1277,7 +1277,7 @@ public class SystemPreferences {
                 .build(),
             new TypeReference<AsyncTasksConfig>() {},
             SYSTEM_GROUP,
-            isNullOrValidJson(new TypeReference<AsyncTasksConfig>() {}));
+            isNullOrValidJson(new TypeReference<AsyncTasksConfig>() {}), true);
     /**
      * A list of endpoint IDs of external services. Those are services, that need to get Pipeline's JWT token
      */

@@ -3,10 +3,12 @@
 - [Migration to Java 21](#migration-to-java-21)
 - [Capacity block offering search over several instance types](#capacity-block-offering-search-over-several-instance-types)
 - [Fallback instance types for a future-dated capacity reservation](#fallback-instance-types-for-a-future-dated-capacity-reservation)
+- [Parallel download into the disk buffer of a storage mount](#parallel-download-into-the-disk-buffer-of-a-storage-mount)
 
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [Unavailable cluster nodes are not detected](#unavailable-cluster-nodes-are-not-detected)
 
 ***
 
@@ -38,4 +40,26 @@ A fallback candidate whose instance type has no price catalogue entry in the poo
 
 ***
 
+## Parallel download into the disk buffer of a storage mount
+
+A storage mounted with a disk buffer (the `read-disk-buffer-path` option of `pipe-fuse`, e.g. `-c read-disk-buffer-path=/pipe-storage-buffer/<id>` in `CP_PIPE_FUSE_OPTIONS` or `CP_CAP_MOUNT_OPTIONS_<storage id>`) downloads each file it reads into that buffer once, and then serves the reads from the local disk. Previously, it downloaded a file in 512 MB ranges, one after another, so the first read of a large file waited for the whole sequential download.
+
+In the current version, the disk buffer downloads the ranges of a file in parallel:
+
+- `read-disk-buffer-download-workers` (`CP_PIPE_FUSE_READ_DISK_BUFFER_DOWNLOAD_WORKERS`) is the number of ranges downloaded at the same time. The default is `8`. `1` downloads them one after another, as before
+- `read-disk-buffer-read-ahead-size` (`CP_PIPE_FUSE_READ_DISK_BUFFER_READ_AHEAD_SIZE`) is the size of a range, in bytes. It no longer has a default: when it is not set, a file is split into as many equal ranges as there are workers. With one worker and no size, the ranges are 512 MB, as before
+
+Each range is written straight to the local disk, into a partial file next to the buffer, so a download needs no more memory than before, whatever the size of the file. The partial file becomes the buffer only once the whole file is there. Previously, a mount that was killed during a download left a part of the file as its buffer, and the next mount with the same buffer path served that part as the whole file, until the buffer expired (`read-disk-buffer-ttl`). When a range fails, the other ranges of the file stop too, and the read fails. Also, an S3 storage mount now keeps up to 50 connections to S3 instead of 10, so the parallel ranges do not wait for each other.
+
+***
+
 ## Notable Bug fixes
+
+### Unavailable cluster nodes are not detected
+
+[#4647](https://github.com/epam/cloud-pipeline/issues/4647)
+
+Previously, the platform checked only the first Kubernetes condition of a node to find out whether the node is unavailable. On clusters with `Flannel`, the first condition is `NetworkUnavailable`, which does not change when a node stops reporting its status. So such nodes were never detected as unavailable: their runs did not get the `NODE_UNAVAILABLE` tag, and the nodes were not terminated after the grace period.
+Now, a node is unavailable when its `Ready` condition is `Unknown`, and the grace period (**`cluster.node.unavailable.grace.period.minutes`**) is counted from the moment Kubernetes marked the node unavailable.
+Also, a free node is reused for a new run only if its `Ready` condition is `True`. Before, a node that was not ready, or not reachable at all, could be reused, and the new run could get stuck on it.
+Please note: after the update, nodes that have already been unavailable for longer than the grace period are terminated during the first autoscaler cycle, and their runs fail.

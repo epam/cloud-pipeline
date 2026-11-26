@@ -79,6 +79,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
@@ -357,11 +358,9 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
                     createNodeForRun(tasks, runId, requiredInstance);
                     return;
                 }
-                List<String> freeNodes = disableReassign ? Collections.emptyList() : nodes.stream()
-                        .filter(nodeId -> !allPods.contains(nodeId)
-                                && !reassignedNodes.contains(nodeId) &&
-                                kubernetesManager.isNodeAvailable(client, nodeId))
-                        .collect(Collectors.toList());
+                List<String> freeNodes = disableReassign ? Collections.emptyList()
+                        : getFreeNodes(nodes, allPods, reassignedNodes,
+                            nodeId -> kubernetesManager.isNodeReady(client, nodeId));
 
                 if (!disableReassign) {
                     log.debug("Found {} free nodes.", freeNodes.size());
@@ -385,10 +384,11 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
                     log.debug("Current cluster size {} has reached limit {}. Checking free nodes.",
                             currentClusterSize, maxClusterSize);
 
-                    List<String> nonMatchingFreeNodes =
-                            freeNodes.stream().filter(id -> !reassignedNodes.contains(id))
-                                    .filter(this::isRunNode)
-                                    .collect(Collectors.toList());
+                    // a free node whose Ready condition is False can't take the run either,
+                    // so it can be scaled down as well
+                    List<String> nonMatchingFreeNodes = disableReassign ? Collections.emptyList()
+                            : getFreeNodes(nodes, allPods, reassignedNodes,
+                                nodeId -> isRunNode(nodeId) && kubernetesManager.isNodeAvailable(client, nodeId));
 
                     if (!CollectionUtils.isEmpty(nonMatchingFreeNodes)) {
                         String nodeId = nonMatchingFreeNodes.get(0);
@@ -418,6 +418,14 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
                 log.error("Failed to create node for run {}.", runId);
                 log.error("An error during pod processing: {}" + e.getMessage(), e);
             }
+        }
+
+        private List<String> getFreeNodes(final Set<String> nodes, final Set<String> allPods,
+                                          final Set<String> reassignedNodes, final Predicate<String> nodeFilter) {
+            return nodes.stream()
+                    .filter(nodeId -> !allPods.contains(nodeId) && !reassignedNodes.contains(nodeId))
+                    .filter(nodeFilter)
+                    .collect(Collectors.toList());
         }
 
         /**

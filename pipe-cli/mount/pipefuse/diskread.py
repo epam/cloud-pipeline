@@ -12,11 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import io
 import logging
 import os
+import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from threading import Thread
+from threading import Event, Thread
 
 import errno
 import time
@@ -34,6 +34,34 @@ def mkdir(path):
             pass
         else:
             raise
+
+
+class _DownloadStoppedException(Exception):
+    pass
+
+
+class _StoppableWriter(object):
+
+    def __init__(self, inner, stop):
+        """
+        File writer that fails as soon as the download of the file is stopped.
+
+        Storage clients write a range in small pieces, so a failed range stops the other ones
+        after their next piece instead of after their whole range.
+
+        :param inner: Writable file.
+        :param stop: Event that is set once the download of the file is stopped.
+        """
+        self._inner = inner
+        self._stop = stop
+
+    def write(self, data):
+        if self._stop.is_set():
+            raise _DownloadStoppedException()
+        return self._inner.write(data)
+
+    def __getattr__(self, name):
+        return getattr(self._inner, name)
 
 
 class DiskBufferingReadAllFileSystemClient(FileSystemClientDecorator):
@@ -59,13 +87,91 @@ class DiskBufferingReadAllFileSystemClient(FileSystemClientDecorator):
         self._download_workers = max(1, int(download_workers))
         self._auto_chunk = read_ahead_size is None or read_ahead_size == 0
 
-    def _download_one_range(self, fh, path, range_offset, range_length):
-        """Download a single range from the inner client. Returns (range_offset, bytes)."""
-        with io.BytesIO() as current_buf:
-            logging.info('Downloading buffer range %d-%d for %d:%s'
-                         % (range_offset, range_offset + range_length, fh, path))
-            self._inner.download_range(fh, current_buf, path, range_offset, length=range_length)
-            return (range_offset, current_buf.getvalue())
+    def _download_one_range(self, fh, path, part_path, range_offset, range_length, stop):
+        """
+        Downloads a single range from the inner client straight into the partial buffer file.
+
+        Each call opens its own handle, so parallel workers do not share a file position,
+        and no range is held in memory.
+        """
+        if stop.is_set():
+            raise _DownloadStoppedException()
+        logging.info('Downloading buffer range %d-%d for %d:%s'
+                     % (range_offset, range_offset + range_length, fh, path))
+        with open(part_path, 'r+b') as f:
+            f.seek(range_offset)
+            self._inner.download_range(fh, _StoppableWriter(f, stop), path, range_offset, length=range_length)
+            downloaded_length = f.tell() - range_offset
+        if downloaded_length != range_length:
+            raise IOError('Buffer range %d-%d for %d:%s has %d bytes instead of %d'
+                          % (range_offset, range_offset + range_length, fh, path,
+                             downloaded_length, range_length))
+        logging.info('Persisted buffer range %d-%d for %d:%s'
+                     % (range_offset, range_offset + range_length, fh, path))
+
+    def _get_chunks(self, file_size):
+        """Returns the list of (offset, length) chunks the whole file is downloaded in."""
+        if self._auto_chunk and self._download_workers > 1:
+            # Auto: split file into equal chunks according to download_workers
+            desired_chunks = max(1, min(self._download_workers, file_size))
+            chunks = []
+            for i in range(desired_chunks):
+                chunk_start = (i * file_size) // desired_chunks
+                chunk_end = ((i + 1) * file_size) // desired_chunks
+                chunk_len = chunk_end - chunk_start
+                if chunk_len > 0:
+                    chunks.append((chunk_start, chunk_len))
+            return chunks
+        if self._auto_chunk:
+            # Auto with one worker: single chunk (whole file)
+            return [(0, file_size)]
+        # User-defined read_ahead_size: fixed-size chunks
+        chunks = []
+        current_offset = 0
+        remaining_size = file_size
+        while remaining_size:
+            chunk_length = min(remaining_size, self._read_ahead_size)
+            chunks.append((current_offset, chunk_length))
+            remaining_size -= chunk_length
+            current_offset += chunk_length
+        return chunks
+
+    def _download_file(self, fh, path, file_buf_path, file_size):
+        """
+        Downloads the whole file into its buffer.
+
+        The ranges are written into a partial file next to the buffer, which becomes the buffer
+        only once every range is there. So a download that fails, or a mount that is killed during one,
+        never leaves a part of the file behind as its buffer.
+
+        The partial file has a short name of its own, as the name of the file may already be
+        as long as the local file system allows.
+        """
+        chunks = self._get_chunks(file_size)
+        part_path = os.path.join(os.path.dirname(file_buf_path), '.%s.part' % uuid.uuid4().hex)
+        stop = Event()
+        try:
+            open(part_path, 'wb').close()
+            workers = min(self._download_workers, len(chunks))
+            if workers <= 1:
+                for range_offset, range_length in chunks:
+                    self._download_one_range(fh, path, part_path, range_offset, range_length, stop)
+            else:
+                with ThreadPoolExecutor(max_workers=workers) as executor:
+                    futures = [executor.submit(self._download_one_range, fh, path, part_path,
+                                               range_offset, range_length, stop)
+                               for range_offset, range_length in chunks]
+                    try:
+                        for future in as_completed(futures):
+                            future.result()
+                    except Exception:
+                        # The other ranges stop after their next piece, and the executor waits for them
+                        stop.set()
+                        raise
+            os.rename(part_path, file_buf_path)
+        finally:
+            if os.path.exists(part_path):
+                os.remove(part_path)
 
     def download_range(self, fh, buf, path, offset=0, length=0):
         try:
@@ -75,60 +181,7 @@ class DiskBufferingReadAllFileSystemClient(FileSystemClientDecorator):
                 if not file_size or offset >= file_size:
                     return
                 mkdir(os.path.dirname(file_buf_path))
-
-                # Build list of (offset, length) chunks for the whole file
-                if self._auto_chunk and self._download_workers > 1:
-                    # Auto: split file into equal chunks according to download_workers
-                    desired_chunks = max(1, min(self._download_workers, file_size))
-                    chunks = []
-                    for i in range(desired_chunks):
-                        chunk_start = (i * file_size) // desired_chunks
-                        chunk_end = ((i + 1) * file_size) // desired_chunks
-                        chunk_len = chunk_end - chunk_start
-                        if chunk_len > 0:
-                            chunks.append((chunk_start, chunk_len))
-                elif self._auto_chunk and self._download_workers == 1:
-                    # Auto with one worker: single chunk (whole file)
-                    chunks = [(0, file_size)]
-                else:
-                    # User-defined read_ahead_size: fixed-size chunks
-                    chunks = []
-                    current_offset = 0
-                    remaining_size = file_size
-                    while remaining_size:
-                        chunk_length = min(remaining_size, self._read_ahead_size)
-                        chunks.append((current_offset, chunk_length))
-                        remaining_size -= chunk_length
-                        current_offset += chunk_length
-
-                with open(file_buf_path, 'wb') as f:
-                    if self._download_workers <= 1 or len(chunks) <= 1:
-                        # Sequential download
-                        for range_offset, range_length in chunks:
-                            _, data = self._download_one_range(fh, path, range_offset, range_length)
-                            logging.info('Persisting buffer range %d-%d for %d:%s'
-                                         % (range_offset, range_offset + len(data), fh, path))
-                            f.write(data)
-                    else:
-                        # Parallel download: submit all ranges, then write in offset order
-                        workers = min(self._download_workers, len(chunks))
-                        with ThreadPoolExecutor(max_workers=workers) as executor:
-                            future_to_chunk = {
-                                executor.submit(self._download_one_range, fh, path, co, cl): (co, cl)
-                                for co, cl in chunks
-                            }
-                            # Collect results in offset order for sequential write
-                            results_by_offset = {}
-                            for future in as_completed(future_to_chunk):
-                                range_offset, data = future.result()
-                                results_by_offset[range_offset] = data
-                            for range_offset, range_length in chunks:
-                                data = results_by_offset[range_offset]
-                                logging.info('Persisting buffer range %d-%d for %d:%s'
-                                             % (range_offset, range_offset + len(data), fh, path))
-                                f.seek(range_offset)
-                                f.write(data)
-
+                self._download_file(fh, path, file_buf_path, file_size)
             file_size = os.path.getsize(file_buf_path)
             if not file_size or offset >= file_size:
                 return
