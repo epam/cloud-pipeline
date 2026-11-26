@@ -36,10 +36,10 @@ import com.epam.pipeline.manager.git.PipelineRepositoryService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.python.GraphReader;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.util.TextUtils;
 import org.slf4j.Logger;
@@ -93,8 +93,8 @@ public class PipelineVersionManager implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() {
-        mapper.setSerializationInclusion(Include.NON_EMPTY)
-                .configure(SerializationFeature.WRITE_NULL_MAP_VALUES, true)
+        // config.json keeps every Map entry, null and empty values included
+        mapper.setDefaultPropertyInclusion(JsonInclude.Value.construct(Include.NON_EMPTY, Include.ALWAYS))
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
