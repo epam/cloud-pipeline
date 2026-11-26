@@ -170,9 +170,8 @@ function PriceTypeSelect ({priceTypes, currentProvider, value, onChange, disable
   );
 }
 
-// `values` is built as a fresh inline literal by index.js on every render, which is
-// what keeps mobx-react's shallow-prop shouldComponentUpdate from ever skipping a
-// re-render here, even though index.js mutates arrays in state in place.
+// `values` is a fresh inline literal from index.js on every render - that is what keeps
+// mobx-react's shallow-prop shouldComponentUpdate from skipping a re-render here.
 function EditHotNodePoolForm ({
   values,
   validation,
@@ -237,9 +236,8 @@ function EditHotNodePoolForm ({
   // Future dated and ML Block both reserve an absolute window rather than Default
   // mode's weekly schedule, so most of the section below keys off either.
   const reservation = futureDated || mlBlock;
-  // A loaded pool's own mode is not always one `allowedModes` offers (a DEFAULT pool a
-  // NODE_POOL_MANAGER owns, with only the two reservation modes to create with) - without it,
-  // the Select shows the raw value instead of its label.
+  // A loaded pool's mode may not be one `allowedModes` offers (a DEFAULT pool a
+  // NODE_POOL_MANAGER owns) - without it, the Select shows the raw value, not its label.
   const modes = providedModes.includes(normalizedMode)
     ? providedModes
     : [...providedModes, normalizedMode];
@@ -283,9 +281,8 @@ function EditHotNodePoolForm ({
                 end={reservationEndDate}
               />
             ) : (
-              // Not yet scheduled: show the originally-requested window read-only so the
-              // user can see what was requested; the control itself carries the notice
-              // for the reservation's current status.
+              // Not yet scheduled: show the originally-requested window read-only; the
+              // control itself carries the notice for the reservation's current status.
               <ReservationScheduleControl
                 mode={mode}
                 start={reservationRequestedStartDate}
@@ -389,11 +386,8 @@ function EditHotNodePoolForm ({
       {
         autoscaled ? null : (
           isExistingReservation && !count && reservationInstanceCount != null ? (
-            // The pool's own `count` stays 0 until the reservation is activated, so
-            // the reserved amount - what the user actually asked for - comes from
-            // the matched reservation record instead. Once the pool reports nodes of
-            // its own, that count is the real one again, the same way the pool card
-            // stops substituting the reserved number.
+            // `count` stays 0 until the reservation is activated, so the reserved amount
+            // comes from the matched record instead - same substitution the pool card uses.
             <div className={styles.formRow}>
               <span className={styles.label}>Nodes count:</span>
               <span>{`${count || 0} out of ${reservationInstanceCount}`}</span>
@@ -404,11 +398,8 @@ function EditHotNodePoolForm ({
               label="Nodes count:"
               value={count}
               onChange={value => onChange('count', value)}
-              // `validateReservationPoolUpdate` rejects an update that changes `count`
-              // on a reservation pool, so the form does not offer the change. This is
-              // narrower than `readOnly={!isNew}` (which already disables other fields
-              // on every edit) and must not be folded into it. ML Block mode fills this
-              // from the selected offering, so it is never user-editable there either.
+              // `validateReservationPoolUpdate` rejects a `count` change on a reservation
+              // pool - narrower than `readOnly={!isNew}` and must not be folded into it.
               disabled={disabled || isExistingReservation || mlBlock}
               min={COUNT_MIN_SIZE}
               error={validation.count}
@@ -504,10 +495,8 @@ function EditHotNodePoolForm ({
         regions={regions}
         value={region}
         onChange={value => onChange('region', value)}
-        // ML Block mode's own "Search in region" control, above, is where this value
-        // is decided and shown instead - but only where that control itself renders,
-        // for a new pool. An existing one never fails this check, so the distinction
-        // is latent rather than observed.
+        // ML Block mode's own "Search in region" control, above, decides this value
+        // instead - but only for a new pool, where that control actually renders.
         disabled={disabled || readOnly || mlBlock}
         error={mlBlock && !isExistingReservation ? undefined : validation.region}
         touched={mlBlock && !isExistingReservation ? undefined : touched.region}
@@ -517,12 +506,11 @@ function EditHotNodePoolForm ({
         currentProvider={currentProvider}
         value={spot}
         onChange={value => onChange('spot', value)}
-        // `validateReservationPoolUpdate` rejects an update that changes `priceType`
-        // on a reservation pool, so the form does not offer the change. This is
-        // narrower than `readOnly={!isNew}` (already included below) and must not be
-        // folded into it. `reservation` is included too: `NodePoolValidator` rejects SPOT
-        // for either reservation type outright, so On-demand is the only legal value and
-        // the control has nothing to offer a user to choose between.
+        // `validateReservationPoolUpdate` rejects a `priceType` change on a reservation
+        // pool - narrower than `readOnly={!isNew}` below and must not be folded into it.
+        //
+        // `reservation` is included too: `NodePoolValidator` rejects SPOT outright for
+        // either type, so On-demand is the only legal value to offer.
         disabled={
           disabled || allowedInstanceTypesPending || readOnly ||
           isExistingReservation || reservation

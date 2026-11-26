@@ -43,10 +43,8 @@ import {
 } from '../constants';
 import styles from '../../edit-hot-node-pool.css';
 
-// Keyed by `getCapacityReservationStatus`'s return value, exactly as `pool-card.js` keys
-// its own presentation map - the reservation record is the source of truth for its own
-// lifecycle, so the notice tells the user what is actually happening instead of always
-// assuming a brand new pool still waiting on the capacity reservation service.
+// Keyed by `getCapacityReservationStatus`'s return value, as `pool-card.js` keys its own
+// map - the notice follows the reservation record rather than assuming it's still pending.
 const RESERVATION_STATUS_NOTICE = {
   [RESERVATION_STATUS_REQUIRED_APPROVE]: {
     type: 'info',
@@ -94,9 +92,8 @@ const RESERVATION_STATUS_NOTICE = {
   }
 };
 
-// A status this map does not know (an older client against a newer backend release) must
-// not blank the section or throw: fall back to a neutral notice with a label humanised
-// from the raw value.
+// A status this map does not know (older client, newer backend) must not blank the
+// section or throw - falls back to a neutral notice humanised from the raw value.
 function getReservationStatusNotice (status) {
   return RESERVATION_STATUS_NOTICE[status] || {
     type: 'info',
@@ -104,12 +101,10 @@ function getReservationStatusNotice (status) {
   };
 }
 
-// A future-dated pool reserves capacity for a single one-time absolute window, unlike Default
-// mode's weekly recurring schedule (see `ScheduleControl`/`ScheduleControls`, which this
-// control does not reuse and must not touch). `start`/`end` hold a day, except the read-only
-// echo of an unscheduled reservation's requested window, which the API returns as a true
-// UTC instant - `toDisplayDay` converts only that case. "Search until" is independently
-// editable, never derived from `start` + `durationDays`.
+// A future-dated pool reserves one absolute window, unlike Default mode's weekly
+// schedule - this control does not reuse `ScheduleControl` and must not touch it.
+
+// "Search until" is independently editable, never derived from `start` + `durationDays`.
 
 // An echoed value from the API is a true UTC instant; a day typed into the picker never
 // carries a time and needs no conversion.

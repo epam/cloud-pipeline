@@ -40,9 +40,8 @@ export const MIN_RESERVATION_LEAD_DAYS = 5; // NodePoolValidator.MINIMUM_LEAD_DA
 export const MAX_RESERVATION_LEAD_DAYS = 120; // NodePoolValidator.MAX_RESERVATION_LEAD_DAYS
 export const RESERVATION_TYPE_FUTURE_DATED = 'FUTURE_DATED'; // the only type the backend accepts
 
-// Client-only label for a future-dated reservation pool's approval state before any
-// reservation record exists (there is no backend enum for this — it is derived from
-// whether `startDate`/`endDate` have been granted yet).
+// Client-only label - there is no backend enum for this - derived from whether
+// `startDate`/`endDate` have been granted yet.
 export const RESERVATION_STATUS_PENDING = 'PENDING';
 
 // These mirror the backend's `CapacityReservationStatus` enum verbatim, so a reservation
@@ -58,9 +57,8 @@ export const RESERVATION_STATUS_PURCHASE_FAILED = 'PURCHASE_FAILED';
 export const RESERVATION_STATUS_FAILED = 'FAILED';
 export const RESERVATION_STATUS_CANCELLED = 'CANCELLED';
 
-// Mirrors the backend's `CapacityReservationStatus.terminalStatuses()`: once a reservation
-// reaches one of these it will never again hold capacity, so a count sourced from it must
-// not be presented as currently reserved.
+// Mirrors the backend's `CapacityReservationStatus.terminalStatuses()` - once reached,
+// a count sourced from the reservation must not be presented as currently reserved.
 export const RESERVATION_TERMINAL_STATUSES = [
   RESERVATION_STATUS_PURCHASE_FAILED,
   RESERVATION_STATUS_FINISHED,

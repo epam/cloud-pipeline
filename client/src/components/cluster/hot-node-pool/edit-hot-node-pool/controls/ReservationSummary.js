@@ -25,16 +25,13 @@ export function formatReservationDate (value) {
 }
 
 // Shared with `getCapacityReservationStatus` in `../helpers`, so the pool-card badge and
-// this summary text never disagree about the same pool: a window only counts as granted
-// once both dates parse.
+// this summary text never disagree: a window counts as granted once both dates parse.
 export function isReservationScheduled (start, end) {
   return Boolean(formatReservationDate(start) && formatReservationDate(end));
 }
 
-// A reservation's window is granted by the backend's scheduler and is not editable
-// through `/cluster/pool`, so an existing reservation pool shows it as read-only text
-// instead of rendering `ReservationScheduleControl`; `startDate`/`endDate` are null until the
-// reservation is actually scheduled.
+// Granted by the backend's scheduler, not editable through `/cluster/pool`, so an existing
+// reservation pool shows it as read-only text; `startDate`/`endDate` are null until scheduled.
 function ReservationSummary ({start, end}) {
   const formattedStart = formatReservationDate(start);
   const formattedEnd = formatReservationDate(end);

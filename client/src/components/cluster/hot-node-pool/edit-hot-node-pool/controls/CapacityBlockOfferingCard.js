@@ -46,13 +46,8 @@ function formatUpfrontFee (amount, currency) {
   return `${formatted} ${currency}`;
 }
 
-// The offering's own facts, as a single line: zone, instance type, window, price. The
-// nodes count is not here - the Configuration section's read-only `Nodes count` is
-// filled from it instead. The card is an antd `Alert`, whose type carries the
-// selection - `success` once selected, `info` otherwise - rather than a highlight of
-// its own; `showIcon` is passed in both states so the icon's padding never moves the
-// text, and the `info` state only hides the icon itself, in CSS. The card is always
-// the click target, one per offering - the candidate row carries no handler of its own.
+// One line per offering: zone, instance type, window, price. The nodes count isn't here -
+// the read-only Configuration section shows it instead, filled from the selection.
 function CapacityBlockOfferingCard ({offering, selected, disabled, onSelect}) {
   const {
     offeringId,
@@ -74,6 +69,8 @@ function CapacityBlockOfferingCard ({offering, selected, disabled, onSelect}) {
     <div key="window" className={styles.capacityBlockOfferingCardCell}>{offeringWindow}</div>,
     <div key="price" className={styles.capacityBlockOfferingCardCell}>{price}</div>
   ];
+  // `type` carries the selection (`success`/`info`) rather than a separate highlight;
+  // `showIcon` stays true in both so the icon's padding never shifts the text.
   const type = selected ? 'success' : 'info';
   const alert = (
     <Alert

@@ -23,9 +23,8 @@ import {getCompleteMlBlockCandidates, formatCapacityBlockInstanceType} from '../
 import {ML_BLOCK_OFFERINGS_ERROR_MESSAGE} from '../constants';
 import styles from '../../edit-hot-node-pool.css';
 
-// A candidate row is "complete" exactly when `getCompleteMlBlockCandidates` would keep
-// it. Each row renders from its own `offeringsByCandidate[row.id]` entry only, so one
-// row's own pending/error search never hides another, already-settled row's cards.
+// A candidate row is "complete" exactly when `getCompleteMlBlockCandidates` would keep it.
+// Each row renders from its own entry only, so one row's search never hides another's cards.
 //
 // The endpoint can return more than one offering per candidate (every AWS match, not just
 // the nearest); each is rendered as its own card, which is the only click target.
@@ -56,9 +55,8 @@ function CapacityBlockCandidatesControl ({
     }
     const entry = offeringsByCandidate[row.id] || {};
     if (entry.pending) {
-      // The spinner alone, not a stale card: a visible card is always clickable, and
-      // one found for criteria the user has since changed must not be. The wrapper's
-      // own min-height matches the alert's, so the row does not shrink meanwhile.
+      // The spinner alone, not a stale card - a visible card is always clickable, and one
+      // found under changed criteria must not be. Min-height matches the alert's.
       return (
         <span className={styles.capacityBlockOfferingPending}>
           <Icon type="loading" aria-label="Loading" />
@@ -172,9 +170,8 @@ function CapacityBlockCandidatesControl ({
           Instance types:
         </span>
         {
-          // No candidate can be complete before the catalogue itself has arrived, so the
-          // two searches cannot meaningfully overlap - instanceTypesPending wins if they
-          // somehow do.
+          // No candidate can be complete before the catalogue arrives, so the two indicators
+          // cannot meaningfully overlap - this one wins if they somehow do.
           instanceTypesPending ? (
             <span className={styles.capacityBlockPendingIndicator}>
               Fetching instance types...

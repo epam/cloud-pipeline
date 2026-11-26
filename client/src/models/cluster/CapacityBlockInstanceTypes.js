@@ -16,11 +16,8 @@
 
 import Remote from '../basic/Remote';
 
-// One instance per region, held for the page session: the capacity-block catalogue a
-// region sells changes on AWS's own timescale, not a user's, so refetching it on every
-// dialog reopen or region revisit buys nothing. Keyed by `regionId`, not exported - a
-// failed fetch is evicted in `forRegion` below so the next call retries it instead of
-// replaying the same error for the rest of the session.
+// Held for the page session - the capacity-block catalogue a region sells changes on
+// AWS's timescale, not a user's. A failed fetch is evicted so the next call retries it.
 const cache = new Map();
 
 class CapacityBlockInstanceTypes extends Remote {
@@ -34,11 +31,7 @@ class CapacityBlockInstanceTypes extends Remote {
   }
 
   /**
-   * The cached instance for `regionId`, fetching it the first time this page session
-   * asks and reusing the resolved one after. A request already in flight is shared
-   * the same way `fetchIfNeededOrWait` shares one on a single instance; a failed one
-   * is dropped from the cache so the very next call starts a fresh fetch rather than
-   * being stuck with the error for the rest of the session.
+   * The cached, page-session instance for `regionId`.
    * @param {number|string} regionId
    * @returns {Promise<CapacityBlockInstanceTypes>}
    */
@@ -59,9 +52,8 @@ class CapacityBlockInstanceTypes extends Remote {
       });
   }
 
-  // For a unit test's own `beforeEach`, where the module-level cache would otherwise
-  // outlive any one test and make `forRegion`'s call count depend on run order - the
-  // real page session this class is cached for has no equivalent need to clear it.
+  // For a test's own `beforeEach` - the module-level cache would otherwise outlive one
+  // test and make `forRegion`'s call count depend on run order.
   static clearCache () {
     cache.clear();
   }

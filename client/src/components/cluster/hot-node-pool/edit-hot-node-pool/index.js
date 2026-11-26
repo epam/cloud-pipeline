@@ -272,15 +272,13 @@ class EditHotNodePool extends React.Component {
       const {
         scheduleEntries: schedule = []
       } = scheduleObj;
-      // `poolType` applies to every pool, not only a future-dated one, so it is read
-      // straight off the pool regardless of mode: it is a validated passthrough
-      // (the wire value and the client constant are the same literal).
+      // `poolType` applies to every pool, not only a future-dated one - read straight off
+      // regardless of mode, a validated passthrough (wire value and client constant agree).
       const poolType = [POOL_TYPE_STANDARD, POOL_TYPE_SHAREABLE].includes(poolPoolTypeRaw)
         ? poolPoolTypeRaw
         : POOL_TYPE_STANDARD;
-      // On an existing pool the persisted filter is used as loaded: rebuilding it from
-      // `this.props.currentUserName` would rewrite another user's pool to whoever opened
-      // it.
+      // The persisted filter is used as loaded - rebuilding it from `currentUserName`
+      // would rewrite another user's pool to whoever opened it.
       const mappedFilters = mapFilters(filters);
       const {reservations} = this.props;
       const matchedReservation = isCapacityReservation && reservations
@@ -313,10 +311,8 @@ class EditHotNodePool extends React.Component {
           ? Math.round(matchedReservation.commitmentDuration / SECONDS_PER_DAY)
           : undefined,
         reservationInstanceCount: getReservationDisplayInstanceCount(matchedReservation),
-        // The reservation record is the source of truth for its own lifecycle, so the
-        // control's notice is driven by this rather than assuming the pool is still
-        // waiting - the record may equally be cancelled, failed, finished or already
-        // scheduled.
+        // The reservation record is the source of truth for its own lifecycle - the
+        // notice follows it rather than assuming the pool is still just waiting.
         reservationStatus: getCapacityReservationStatus(pool, matchedReservation),
         mlBlockCandidates: [],
         mlBlockInstanceTypes: [],
@@ -389,24 +385,14 @@ class EditHotNodePool extends React.Component {
         }
       }, this.onChange);
     } else {
-      // `pool` is always falsy here (this is the Create path), so `mode` resolves to
-      // `this.defaultMode` — the first entry of `allowedModes`, i.e. future-dated for a
-      // non-admin's forced-future-dated Create. The mode a caller forces must apply
-      // before any `onChange` reaches the user, so that Create opens with its filters
-      // already seeded rather than waiting on a Mode interaction a non-admin never gets
-      // a chance to make.
+      // Create (`pool` falsy) resolves `mode` to `this.defaultMode`, `allowedModes`'s first
+      // entry - applied before any `onChange`, so a non-admin's forced mode opens pre-seeded.
       const mode = pool ? MODE_DEFAULT : this.defaultMode;
-      // A reopen (`componentDidUpdate`'s visible-transition branch calls this again) resets
-      // `mlBlockCandidates` to `[]` without bumping `mlBlockOfferingsGeneration` or flooring
-      // the old ids - it survives only because `mode` here can never resolve to ML Block
-      // (`hot-node-pool/index.js` never lists `MODE_ML_BLOCK` first in `allowedModes`), so a
-      // stale response is already dropped by `runMlBlockOfferingsSearch`'s own mode check.
-      // Two accidents, not one invariant: if that ordering ever changes, this must also
-      // floor every stale candidate id the way `onPoolKindChange`'s mode switch does.
-      // A new future-dated pool opens with the creator pre-filled as the run owner. The
-      // caller can force the mode (a NODE_POOL_MANAGER's Create), so the seed cannot wait
-      // for an onChange that user never gets to make. Seeded only when the login is known -
-      // an empty criterion would fail validation with nothing to show for it.
+      // A reopen resets `mlBlockCandidates` without flooring old ids - safe only because
+      // `allowedModes` never lists ML Block first; if that changes, this must floor them too.
+      //
+      // Pre-fills a new future-dated/ML-Block pool's run-owner filter immediately, since a
+      // forced mode's caller never gets an `onChange` to seed it through. Needs a known login.
       const seededFilters = (mode === MODE_FUTURE_DATED || mode === MODE_ML_BLOCK) &&
         currentUserName
         ? buildRunOwnerFilter(currentUserName)
@@ -568,11 +554,8 @@ class EditHotNodePool extends React.Component {
     this.mlBlockOfferingsGeneration += 1;
   };
 
-  // Floors `id`'s bookkeeping so a response already in flight for it can never apply
-  // to a different candidate that later reuses the same numeric id after removal.
-  // Called at *schedule* time, never at *dispatch* time (where `mlBlockOfferingsRequestId`
-  // is actually minted) - that asymmetry is what makes out-of-order responses for one row
-  // airtight; moving this call to the dispatch site would quietly break it.
+  // Floors `id` at *schedule* time, not *dispatch* time where the id is minted - that
+  // asymmetry is what makes an out-of-order response safe even if `id` is later reused.
   reserveMlBlockOfferingsId = (id) => {
     this.mlBlockOfferingsAppliedRequestId[id] = Math.max(
       this.mlBlockOfferingsAppliedRequestId[id] || 0,
@@ -675,10 +658,8 @@ class EditHotNodePool extends React.Component {
   // complete row's, stamped with a fresh requestId and the generation scheduled under.
   runMlBlockOfferingsSearch = (candidateIds, generation, isFullRefetch) => {
     const {region, mlBlockCandidates} = this.state;
-    // Re-filtered against the row's *current* data, not just looked up by id: a row
-    // dispatched as complete (at schedule time) may have gone incomplete since, inside
-    // the same debounce - included here it would either send an empty `candidates` array
-    // (the only row) or be wrongly settled by a response its own data was never part of.
+    // Re-filtered against the row's *current* data, not just looked up by id - a row
+    // complete at schedule time may have gone incomplete inside the same debounce window.
     const candidates = getCompleteMlBlockCandidates(
       candidateIds
         .map(id => (mlBlockCandidates || []).find(c => c.id === id))
@@ -732,12 +713,8 @@ class EditHotNodePool extends React.Component {
       });
   };
 
-  // Applies per candidate only where `requestId` beats that row's own last applied one,
-  // using each row's type as of dispatch (`dispatchedCandidates`), not its current one.
-  // A full refetch's own `mlBlockOfferingsFullRefetchPending` is settled in this same
-  // `setState` rather than a separate one before it - React 15 does not batch a
-  // `setState` made from a promise callback, so two calls would commit a frame where the
-  // flag already reads false while every row still shows `pending: true`.
+  // Applies per candidate only where `requestId` beats its own last applied one, using
+  // each row's type as of dispatch (`dispatchedCandidates`), not its current one.
   applyMlBlockOfferingsResponse = (
     dispatchedCandidates, offeringsFlat, error, requestId, generation, isFullRefetch
   ) => {
@@ -773,6 +750,8 @@ class EditHotNodePool extends React.Component {
     }
     this.setState({
       ...(changed ? {mlBlockOfferingsByCandidate: nextByCandidate} : {}),
+      // Settled in this same `setState`, not separately - React 15 does not batch a
+      // `setState` from a promise callback, so a split call would show `pending: true` rows.
       ...(isFullRefetch ? {mlBlockOfferingsFullRefetchPending: false} : {}),
       ...(clearSelection
         ? {mlBlockOfferingId: undefined, instanceType: undefined, count: undefined}
@@ -805,26 +784,17 @@ class EditHotNodePool extends React.Component {
                   .map(o => o.toUpperCase());
                 let {instanceType, spot} = this.state;
                 const {mode, isExistingReservation} = this.state;
-                // ML Block's `instanceType` is filled from the picked offering, not typed
-                // in by the user, and a capacity-block type need not appear on this
-                // general allowed list at all - so this correction must leave it alone
-                // there, or a slow response landing after a card is clicked would blank it.
+                // ML Block's `instanceType` comes from the picked offering, not the user, and
+                // need not be on this allowed list - a late response here must leave it alone.
                 if (mode !== MODE_ML_BLOCK && !typeNames.has(instanceType)) {
                   instanceType = undefined;
                 }
                 // An existing reservation's `priceType` must round-trip unchanged
-                // (`validateReservationPoolUpdate`), and its control is locked for the
-                // same reason — so this auto-correction, which otherwise substitutes a
-                // price type the fetched allowed-list no longer offers, must leave it
-                // alone here even if the pool's own region/instance-type combination
-                // no longer offers it. Silently swapping it in would send a changed
-                // `priceType` on SAVE and the backend would reject it.
+                // (`validateReservationPoolUpdate`) - left alone even if the allowed list drops it.
                 if (!isExistingReservation && !(new Set(priceTypes)).has(spot)) {
                   if (mode === MODE_FUTURE_DATED || mode === MODE_ML_BLOCK) {
-                    // `NodePoolValidator` rejects SPOT for either reservation mode. Where
-                    // the region offers nothing else, there is no price type left to
-                    // auto-pick - leave it unset rather than falling back to the one
-                    // value the validator rejects outright.
+                    // `NodePoolValidator` rejects SPOT for either reservation mode - where the
+                    // region offers nothing else, leave it unset rather than falling back to it.
                     spot = priceTypes.find(p => !/^spot$/i.test(p));
                   } else {
                     spot = priceTypes[0];
@@ -904,10 +874,8 @@ class EditHotNodePool extends React.Component {
     }
   };
 
-  // The single entry point every control's `onChange` is wired to: a plain
-  // scalar field sets itself and its own `touched` flag; the four compound
-  // fields (array items, or autoscaled's seeded siblings) dispatch to their
-  // own helper below, keyed by `value.action`.
+  // The single entry point every control's `onChange` is wired to - a plain scalar field
+  // sets itself; the compound fields dispatch to their own helper below instead.
   onChangeField = (key, value) => {
     switch (key) {
       case 'autoscaled':
@@ -950,9 +918,8 @@ class EditHotNodePool extends React.Component {
     }
   };
 
-  // A mode switch into either reservation mode seeds the Filters section with the
-  // creator's run-owner criterion (see the `filters` block below); a `poolType` switch
-  // never touches filters.
+  // A mode switch into either reservation mode seeds Filters with the creator's run-owner
+  // criterion; a `poolType` switch never touches filters.
   onPoolKindChange = (key, value) => {
     const {currentUserName} = this.props;
     const {mode, spot, touched, initialFilters} = this.state;
@@ -972,17 +939,15 @@ class EditHotNodePool extends React.Component {
       }
     }
     if (key === 'mode' && value !== mode) {
-      // Only a real mode switch touches the filters: entering a reservation mode seeds
-      // the creator's run-owner criterion, leaving both restores what the form started
-      // with. A Pool type switch must not discard filters the user has already edited.
+      // Only a real mode switch touches filters: entering a reservation mode seeds the
+      // run-owner criterion, leaving it restores what the form started with.
       if ((value === MODE_FUTURE_DATED || value === MODE_ML_BLOCK) && currentUserName) {
         newState.filters = buildRunOwnerFilter(currentUserName);
       } else if (mode === MODE_FUTURE_DATED || mode === MODE_ML_BLOCK) {
         newState.filters = initialFilters;
       }
-      // Entering ML Block mode clears a type/count carried in from Default mode before
-      // either is ever shown as read-only; leaving it gives the offering back too - in
-      // both directions there is no longer a selected offering to hold either field.
+      // Entering or leaving ML Block clears type/count either way - there is no longer a
+      // selected offering to hold either field.
       if (value === MODE_ML_BLOCK || mode === MODE_ML_BLOCK) {
         this.clearAllMlBlockOfferingsTimers();
         // Floors every existing id against reuse - a mode round-trip reaches ML Block
@@ -999,9 +964,8 @@ class EditHotNodePool extends React.Component {
           mlBlockOfferingId: undefined,
           instanceType: undefined,
           count: undefined,
-          // Cleared alongside the values themselves - otherwise the now-empty, now
-          // read-only fields this mode switch just emptied would show a stale required
-          // error from whichever mode typed into them first.
+          // Cleared alongside the values - otherwise these now-empty, read-only fields
+          // would show a stale required error from whichever mode typed into them.
           touched: {...newState.touched, instanceType: false, count: false}
         });
       }
@@ -1017,9 +981,8 @@ class EditHotNodePool extends React.Component {
     if (action.action === 'add') {
       const id = Math.max(...mlBlockCandidates.map(o => o.id), 0) + 1;
       mlBlockCandidates.push({id, instanceType: undefined, instanceCount: 1});
-      // A freshly added row still carries no instance type, so it is one field short of
-      // complete - there is nothing yet for it to change in what the search is already
-      // searching for.
+      // A freshly added row carries no instance type yet, so it is one field short of
+      // complete - nothing for a search to pick up yet.
       this.setState({mlBlockCandidates, touched}, this.onChange);
       return;
     }
@@ -1188,9 +1151,8 @@ class EditHotNodePool extends React.Component {
     this.setState({schedule, touched}, this.onChange);
   };
 
-  // `action` is `{action: 'add'}`, `{action: 'remove', key}` or
-  // `{action: 'update', key, field, value}`, `field` one of
-  // `name`/`value`/`monitored`.
+  // `action` is `{action: 'add'}`, `{action: 'remove', key}` or `{action: 'update', key,
+  // field, value}`, `field` one of `name`/`value`/`monitored`.
   onLabelsChange = (action) => {
     const {labels} = this.state;
     if (action.action === 'add') {

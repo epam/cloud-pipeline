@@ -68,13 +68,14 @@
   margin: 0 8px 0 0;
 }
 
-/* Overrides `.ant-alert`'s own padding - the compound selector beats the single-class
-   antd rule whatever order the two stylesheets load in. `flex: 1` here only equalises
-   width for the unwrapped no-offering alert; a found offering's width instead comes
-   from `-card-clickable` below, which is its actual flex parent in that case. */
+/* The compound selector beats antd's single-class rule regardless of stylesheet order,
+   overriding `.ant-alert`'s own padding. */
 .capacity-block-offering-card:global(.ant-alert) {
   display: flex;
   align-items: center;
+
+  /* Only equalises width for the unwrapped no-offering alert; a found offering's width
+     comes from `-card-clickable` below instead. */
   flex: 1;
   padding: 2px 8px 2px 32px;
   min-height: 28px;
