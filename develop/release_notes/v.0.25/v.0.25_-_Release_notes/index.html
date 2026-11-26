@@ -62,6 +62,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#capacity-block-offering-search-over-several-instance-types">Capacity block offering search over several instance types</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#parallel-download-into-the-disk-buffer-of-a-storage-mount">Parallel download into the disk buffer of a storage mount</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#notable-bug-fixes">Notable Bug fixes</a>
         <ul>
     <li class="toctree-l3"><a class="reference internal" href="#unavailable-cluster-nodes-are-not-detected">Unavailable cluster nodes are not detected</a>
@@ -428,6 +430,7 @@
 <ul>
 <li><a href="#migration-to-java-21">Migration to Java 21</a></li>
 <li><a href="#capacity-block-offering-search-over-several-instance-types">Capacity block offering search over several instance types</a></li>
+<li><a href="#parallel-download-into-the-disk-buffer-of-a-storage-mount">Parallel download into the disk buffer of a storage mount</a></li>
 </ul>
 <hr />
 <ul>
@@ -445,6 +448,15 @@
 <h2 id="capacity-block-offering-search-over-several-instance-types">Capacity block offering search over several instance types</h2>
 <p>Searching for a capacity block offering can now ask about several candidate instance types - each with its own count - in a single request, rather than one search per type, so a user can compare a primary instance type against whatever fallback types they would also accept before deciding which offering to buy. The response merges every candidate's offerings into one list, sorted by start date, nearest first. See <a href="../../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools/#browsing-capacity-block-offerings">Browsing capacity block offerings</a>.</p>
 <p>How many candidates one request may carry is bounded by the <code>cluster.capacity.block.offering.candidates.max.count</code> preference - <strong>5</strong> by default, <code>-1</code> to disable the limit.</p>
+<hr />
+<h2 id="parallel-download-into-the-disk-buffer-of-a-storage-mount">Parallel download into the disk buffer of a storage mount</h2>
+<p>A storage mounted with a disk buffer (the <code>read-disk-buffer-path</code> option of <code>pipe-fuse</code>, e.g. <code>-c read-disk-buffer-path=/pipe-storage-buffer/&lt;id&gt;</code> in <code>CP_PIPE_FUSE_OPTIONS</code> or <code>CP_CAP_MOUNT_OPTIONS_&lt;storage id&gt;</code>) downloads each file it reads into that buffer once, and then serves the reads from the local disk. Previously, it downloaded a file in 512 MB ranges, one after another, so the first read of a large file waited for the whole sequential download.</p>
+<p>In the current version, the disk buffer downloads the ranges of a file in parallel:</p>
+<ul>
+<li><code>read-disk-buffer-download-workers</code> (<code>CP_PIPE_FUSE_READ_DISK_BUFFER_DOWNLOAD_WORKERS</code>) is the number of ranges downloaded at the same time. The default is <code>8</code>. <code>1</code> downloads them one after another, as before</li>
+<li><code>read-disk-buffer-read-ahead-size</code> (<code>CP_PIPE_FUSE_READ_DISK_BUFFER_READ_AHEAD_SIZE</code>) is the size of a range, in bytes. It no longer has a default: when it is not set, a file is split into as many equal ranges as there are workers. With one worker and no size, the ranges are 512 MB, as before</li>
+</ul>
+<p>Each range is written straight to the local disk, into a partial file next to the buffer, so a download needs no more memory than before, whatever the size of the file. The partial file becomes the buffer only once the whole file is there. Previously, a mount that was killed during a download left a part of the file as its buffer, and the next mount with the same buffer path served that part as the whole file, until the buffer expired (<code>read-disk-buffer-ttl</code>). When a range fails, the other ranges of the file stop too, and the read fails. Also, an S3 storage mount now keeps up to 50 connections to S3 instead of 10, so the parallel ranges do not wait for each other.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
 <h3 id="unavailable-cluster-nodes-are-not-detected">Unavailable cluster nodes are not detected</h3>
