@@ -49,15 +49,15 @@ public class MessageToDlqConverter {
         }
 
         StringBuilder reasonBuilder = new StringBuilder();
-        reasonBuilder.append(exception.getClass().getSimpleName());
-        reasonBuilder.append(": ");
+        reasonBuilder.append(exception.getClass().getSimpleName())
+                .append(": ");
 
         String message = exception.getMessage();
         if (message != null) {
             // Truncate if too long
             if (message.length() > MAX_ERROR_MESSAGE_SIZE) {
-                reasonBuilder.append(message, 0, MAX_ERROR_MESSAGE_SIZE);
-                reasonBuilder.append("... (truncated)");
+                reasonBuilder.append(message, 0, MAX_ERROR_MESSAGE_SIZE)
+                        .append("... (truncated)");
             } else {
                 reasonBuilder.append(message);
             }
@@ -68,14 +68,14 @@ public class MessageToDlqConverter {
         // Add cause if present
         Throwable cause = exception.getCause();
         if (cause != null && cause != exception) {
-            reasonBuilder.append("\nCaused by: ");
-            reasonBuilder.append(cause.getClass().getSimpleName());
+            reasonBuilder.append("\nCaused by: ")
+                    .append(cause.getClass().getSimpleName());
             if (cause.getMessage() != null) {
                 reasonBuilder.append(": ");
                 String causeMessage = cause.getMessage();
                 if (causeMessage.length() > MAX_ERROR_CAUSE_SIZE) {
-                    reasonBuilder.append(causeMessage, 0, MAX_ERROR_CAUSE_SIZE);
-                    reasonBuilder.append("...");
+                    reasonBuilder.append(causeMessage, 0, MAX_ERROR_CAUSE_SIZE)
+                            .append("...");
                 } else {
                     reasonBuilder.append(causeMessage);
                 }
