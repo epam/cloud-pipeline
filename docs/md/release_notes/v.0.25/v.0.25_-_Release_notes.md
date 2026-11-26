@@ -8,6 +8,7 @@
 
 - [Notable Bug fixes](#notable-bug-fixes)
     - [Unavailable cluster nodes are not detected](#unavailable-cluster-nodes-are-not-detected)
+    - [A capacity block reservation request could carry an availability zone that was never used](#a-capacity-block-reservation-request-could-carry-an-availability-zone-that-was-never-used)
 
 ***
 
@@ -52,3 +53,9 @@ Previously, the platform checked only the first Kubernetes condition of a node t
 Now, a node is unavailable when its `Ready` condition is `Unknown`, and the grace period (**`cluster.node.unavailable.grace.period.minutes`**) is counted from the moment Kubernetes marked the node unavailable.
 Also, a free node is reused for a new run only if its `Ready` condition is `True`. Before, a node that was not ready, or not reachable at all, could be reused, and the new run could get stuck on it.
 Please note: after the update, nodes that have already been unavailable for longer than the grace period are terminated during the first autoscaler cycle, and their runs fail.
+
+### A capacity block reservation request could carry an availability zone that was never used
+
+[#4590](https://github.com/epam/cloud-pipeline/issues/4590)
+
+`capacityReservationRequest.availabilityZone` has been removed from the request that creates a pool backed by a capacity block. The zone was copied onto the reservation at creation time, but the purchase call to the cloud provider never sent it - it is fixed by the chosen offering alone - and the reservation's own zone was always overwritten by what the provider reported once the block was actually bought. The submitted value was therefore never the one that ended up in use.

@@ -318,7 +318,6 @@ public class CapacityReservationService {
         if (CapacityReservationType.CAPACITY_BLOCK == request.getReservationType()) {
             // the offering is an exact slot, not a window to search, so the requested dates are already final
             reservation.capacityBlockOfferingId(request.getCapacityBlockOfferingId())
-                    .availabilityZone(request.getAvailabilityZone())
                     .startDate(request.getRequestedStartDate())
                     .endDate(request.getRequestedEndDate());
         }

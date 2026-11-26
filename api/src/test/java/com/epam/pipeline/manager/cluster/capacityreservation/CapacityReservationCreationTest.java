@@ -197,7 +197,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         final CapacityReservation reservation = reservationDao.findByNodePoolId(created.getId())
                 .orElseThrow(AssertionError::new);
         assertThat(reservation.getCapacityBlockOfferingId()).isEqualTo(OFFERING_ID);
-        assertThat(reservation.getAvailabilityZone()).isEqualTo(ZONE);
+        assertThat(reservation.getAvailabilityZone()).isNull();
         assertThat(reservation.getStartDate()).isEqualTo(reservation.getRequestedStartDate());
         assertThat(reservation.getEndDate()).isEqualTo(reservation.getRequestedEndDate());
     }
@@ -1150,7 +1150,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         request.setRequestedEndDate(start.plusSeconds(COMMITMENT_DURATION));
         request.setCommitmentDuration(COMMITMENT_DURATION);
         request.setCapacityBlockOfferingId(OFFERING_ID);
-        request.setAvailabilityZone(ZONE);
         vo.setCapacityReservationRequest(request);
         return vo;
     }
