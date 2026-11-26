@@ -128,6 +128,15 @@ test('filteredValue is empty for every filterable column when no filter is activ
   expect(columnBy(columns, 'owner').filteredValue).toEqual([]);
 });
 
+test('the Status and Owner columns keep their cells on one line', () => {
+  const columns = buildColumns(baseOptions({isAdmin: true}));
+
+  expect(columnBy(columns, 'status').className).toBe('noWrapCell');
+  expect(columnBy(columns, 'owner').className).toBe('noWrapCell');
+  // Not every column - an archive name is long enough to need wrapping.
+  expect(columnBy(columns, 'archive').className).toBeUndefined();
+});
+
 test('wires the Type column\'s filter props through verbatim', () => {
   const onTypeFilterVisibleChange = () => {};
   const columns = buildColumns(baseOptions({
@@ -223,6 +232,11 @@ describe('rendering a task of each type', () => {
 
     expect(sourceCell(task).props.title).toBe('my-storage/data/reports/');
     expect(sourceCell(task).props.children.props.to).toBe('/storage/7?path=data%2Freports');
+  });
+
+  // The wrapping rule has to reach the overlay, not the cell.
+  test('the Source column\'s tooltip carries the wrapping overlay class', () => {
+    expect(sourceCell(EXTRACTION_TASK).props.overlayClassName).toBe('sourceTooltip');
   });
 
   test('the Source column falls back to the raw id for an unknown storage', () => {

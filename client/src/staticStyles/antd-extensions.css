@@ -34,3 +34,10 @@
 .ant-popover.popover-overlay-content-no-padding .ant-popover-inner-content {
   padding: 0;
 }
+
+/* antd 2.13.14 gives a toast neither a width cap nor a wrapping rule, so a
+ * long unbroken path in one makes it wider than the window. */
+.ant-message-notice .ant-message-notice-content {
+  max-width: 80vw;
+  overflow-wrap: break-word;
+}

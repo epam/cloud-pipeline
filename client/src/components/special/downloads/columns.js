@@ -192,6 +192,7 @@ export default function buildColumns ({
   const ownerColumn = isAdmin ? {
     title: 'Owner',
     key: 'owner',
+    className: styles.noWrapCell,
     render: (task) => task.owner,
     filterDropdown: ownerFilterDropdown,
     filterDropdownVisible: ownerFilterVisible,
@@ -282,7 +283,11 @@ export default function buildColumns ({
           ? `/storage/${storageId}?path=${encodeURIComponent(query)}`
           : `/storage/${storageId}`;
         return (
-          <Tooltip title={text} mouseEnterDelay={0.5}>
+          <Tooltip
+            title={text}
+            mouseEnterDelay={0.5}
+            overlayClassName={styles.sourceTooltip}
+          >
             <Link
               className={styles.sourceLink}
               to={url}
@@ -305,6 +310,7 @@ export default function buildColumns ({
     {
       title: 'Status',
       key: 'status',
+      className: styles.noWrapCell,
       // A custom column filter, the same shape
       // client/src/components/runs/run-table/columns/column-run.js uses:
       // `filterDropdown` is our own JSX, `filterDropdownVisible` and
