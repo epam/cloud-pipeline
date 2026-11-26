@@ -21,7 +21,7 @@ import classNames from 'classnames';
 import moment from 'moment-timezone';
 import StringInput from './StringInput';
 import HintControl from './HintControl';
-import {humanizeReservationStatus} from '../helpers';
+import {humanizeReservationStatus, formatCloudCommitmentDate} from '../helpers';
 import {
   COMMITMENT_DATE_ONLY_FORMAT,
   COMMITMENT_DATE_TIME_FORMAT,
@@ -106,15 +106,21 @@ function getReservationStatusNotice (status) {
 
 // A future-dated pool reserves capacity for a single one-time absolute window, unlike Default
 // mode's weekly recurring schedule (see `ScheduleControl`/`ScheduleControls`, which this
-// control does not reuse and must not touch). `start`/`end` hold a day only - a value
-// already carrying a time (an existing reservation's granted window, read from the API) is
-// still accepted and rendered as its day - display only: validation and the payload
-// builders parse date-only and would call a datetime value missing. `[start, end]` is the
-// window the platform
-// *searches* in for matching capacity; the caller converts each day to the backend's
-// zone-less instant (`startOf('day')`/`endOf('day')`) and to seconds only in
-// `buildCapacityReservationRequest`/`buildCapacityBlockOfferingRequest`. "Search until" is
-// independently editable and never derived from `start` + `durationDays`.
+// control does not reuse and must not touch). `start`/`end` hold a day, except the read-only
+// echo of an unscheduled reservation's requested window, which the API returns as a true
+// UTC instant - `toDisplayDay` converts only that case. "Search until" is independently
+// editable, never derived from `start` + `durationDays`.
+
+// An echoed value from the API is a true UTC instant; a day typed into the picker never
+// carries a time and needs no conversion.
+function toDisplayDay (value) {
+  if (!value) {
+    return value;
+  }
+  const isInstant = moment.utc(value, COMMITMENT_DATE_TIME_FORMAT, true).isValid();
+  return isInstant ? formatCloudCommitmentDate(value, COMMITMENT_DATE_ONLY_FORMAT) : value;
+}
+
 function ReservationScheduleControl ({
   mode,
   start,
@@ -149,7 +155,7 @@ function ReservationScheduleControl ({
           disabled={disabled}
           value={
             start
-              ? moment(start, [COMMITMENT_DATE_ONLY_FORMAT, COMMITMENT_DATE_TIME_FORMAT], true)
+              ? moment(toDisplayDay(start), COMMITMENT_DATE_ONLY_FORMAT, true)
               : undefined
           }
           onChange={date => onChangeStart(
@@ -174,7 +180,7 @@ function ReservationScheduleControl ({
           disabled={disabled}
           value={
             end
-              ? moment(end, [COMMITMENT_DATE_ONLY_FORMAT, COMMITMENT_DATE_TIME_FORMAT], true)
+              ? moment(toDisplayDay(end), COMMITMENT_DATE_ONLY_FORMAT, true)
               : undefined
           }
           onChange={date => onChangeEnd(

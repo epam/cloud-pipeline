@@ -76,19 +76,21 @@ export function arraysAreEqual (a, b) {
 
 // `commitmentStart`/`commitmentEnd` hold a day only; these are the only two places that
 // turn a day into the instant the backend actually receives, so the search, the purchase
-// and the validation below all agree with each other and with the wire format. Parsed in
-// UTC rather than the browser's own zone: the backend reads the formatted, zone-less
-// string as UTC (`AwsCapacityReservationService`'s `LocalDateTime.toInstant(ZoneOffset.UTC)`,
-// `DateUtils.nowUTC()` in `NodePoolValidator`), and `.format()` of a UTC-mode moment prints
-// the same literal day/time either way - so the wire string this produces is unchanged.
+// and the validation below all agree with each other and with the wire format. The day is
+// the viewer's own calendar day, so its boundary is taken in the viewer's zone, then
+// converted to the true UTC instant that boundary denotes - the wire string carries that
+// instant's wall-clock numbers, which the backend reads back as UTC
+// (`AwsCapacityReservationService`'s `LocalDateTime.toInstant(ZoneOffset.UTC)`,
+// `DateUtils.nowUTC()` in `NodePoolValidator`). Parsed with the plain `moment()` constructor,
+// not `.local()`, which ignores `moment.tz.setDefault` and reads the machine's real zone.
 function getCommitmentDayStart (day) {
-  const parsed = moment.utc(day, COMMITMENT_DATE_ONLY_FORMAT, true);
-  return parsed.isValid() ? parsed.startOf('day') : parsed;
+  const parsed = moment(day, COMMITMENT_DATE_ONLY_FORMAT, true);
+  return parsed.isValid() ? parsed.startOf('day').utc() : parsed;
 }
 
 function getCommitmentDayEnd (day) {
-  const parsed = moment.utc(day, COMMITMENT_DATE_ONLY_FORMAT, true);
-  return parsed.isValid() ? parsed.endOf('day') : parsed;
+  const parsed = moment(day, COMMITMENT_DATE_ONLY_FORMAT, true);
+  return parsed.isValid() ? parsed.endOf('day').utc() : parsed;
 }
 
 // Offering and reservation windows arrive as a UTC wall time in a zone-less string
@@ -201,10 +203,9 @@ export function formatCapacityBlockInstanceType (info) {
 // duration, the lead-time window, and whether an end of window is required at all.
 function getCommitmentWindowErrors (values, minDurationDays, leadTime, endRequired = true) {
   const {commitmentStart, commitmentEnd, commitmentDurationDays} = values;
-  // Validated on the UTC instants the payload will actually carry - the start of the
-  // chosen start day and the end of the chosen end day - not on the days themselves, and
-  // against `moment.utc()`, so this mirrors exactly what the backend re-checks
-  // (`DateUtils.nowUTC()`), not what the browser's own zone would compute.
+  // Validated on the true instants the payload actually carries - the viewer's chosen
+  // start/end day boundaries, converted to UTC - compared against `moment.utc()`, so this
+  // mirrors exactly what the backend re-checks (`DateUtils.nowUTC()`).
   const start = getCommitmentDayStart(commitmentStart);
   const end = getCommitmentDayEnd(commitmentEnd);
   const now = moment.utc();
@@ -573,9 +574,9 @@ export function buildCapacityReservationRequest (values) {
   const {commitmentStart, commitmentEnd, commitmentDurationDays} = values;
   return {
     reservationType: RESERVATION_TYPE_FUTURE_DATED,
-    // `commitmentStart`/`commitmentEnd` hold a day; the backend's field is a zone-less
-    // local datetime, so the day is converted to its start/end instant here - never a `Z`,
-    // never `.utc()`.
+    // `commitmentStart`/`commitmentEnd` hold the viewer's day; `getCommitmentDayStart`/
+    // `…End` convert it to the true UTC instant it denotes, formatted with no `Z` - the
+    // backend reads this zone-less wire format as UTC.
     requestedStartDate: getCommitmentDayStart(commitmentStart).format(COMMITMENT_DATE_TIME_FORMAT),
     requestedEndDate: getCommitmentDayEnd(commitmentEnd).format(COMMITMENT_DATE_TIME_FORMAT),
     commitmentDuration: Number(commitmentDurationDays) * SECONDS_PER_DAY

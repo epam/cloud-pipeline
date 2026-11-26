@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import moment from 'moment-timezone';
 import {render, screen, within, change, hover, fn} from '@test';
 import ReservationScheduleControl from './ReservationScheduleControl';
 import {MODE_FUTURE_DATED, MODE_ML_BLOCK} from '../constants';
@@ -78,6 +79,34 @@ test('a value carrying a time (an existing reservation\'s granted window) still 
   expect(
     within(row('Search until:')).getByRole('textbox').value
   ).toBe('2026-02-01');
+});
+
+// The harness pins moment-timezone's default to UTC, where this is invisible - a true
+// UTC instant and the viewer's own day coincide - so this sets a real offset.
+describe('a true-instant echo (an unscheduled reservation\'s requested window)', () => {
+  afterEach(() => {
+    moment.tz.setDefault('UTC');
+  });
+
+  test('renders the viewer\'s own local day, not the UTC literal one', () => {
+    moment.tz.setDefault('Asia/Tokyo');
+    render(
+      <ReservationScheduleControl
+        start="2026-12-25 20:00:00.000"
+        end="2026-12-26 20:00:00.000"
+        durationDays={undefined}
+        onChangeStart={fn()}
+        onChangeEnd={fn()}
+        onChangeDuration={fn()}
+      />
+    );
+    expect(
+      within(row('Search from:')).getByRole('textbox').value
+    ).toBe('2026-12-26');
+    expect(
+      within(row('Search until:')).getByRole('textbox').value
+    ).toBe('2026-12-27');
+  });
 });
 
 test('disabled disables all three inputs', () => {

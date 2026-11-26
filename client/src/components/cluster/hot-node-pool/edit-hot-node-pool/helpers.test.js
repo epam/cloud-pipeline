@@ -233,7 +233,52 @@ describe('buildCapacityBlockOfferingRequest', () => {
     const request = buildCapacityBlockOfferingRequest(values({commitmentEnd: 'not-a-date'}));
     expect(Object.keys(request)).not.toContain('endDateRange');
   });
+
+  // The harness pins moment-timezone's default to UTC, where the viewer's day and its UTC
+  // instant coincide and this conversion is invisible - so these set a real offset.
+  describe('the picked day converts to its true UTC instant, not a literal UTC reading', () => {
+    afterEach(() => {
+      moment.tz.setDefault('UTC');
+    });
+
+    it('sends a viewer-at-UTC+3 day as that day\'s own UTC-shifted start and end', () => {
+      moment.tz.setDefault('Etc/GMT-3');
+      const request = buildCapacityBlockOfferingRequest(values({
+        commitmentStart: '2026-12-21',
+        commitmentEnd: '2026-12-21'
+      }));
+      expect(request.startDateRange).toBe('2026-12-20 21:00:00.000');
+      expect(request.endDateRange).toBe('2026-12-21 20:59:59.999');
+    });
+
+    it('sends a viewer-at-UTC-8 day as that day\'s own UTC-shifted start and end', () => {
+      moment.tz.setDefault('Etc/GMT+8');
+      const request = buildCapacityBlockOfferingRequest(values({
+        commitmentStart: '2026-12-21',
+        commitmentEnd: '2026-12-21'
+      }));
+      expect(request.startDateRange).toBe('2026-12-21 08:00:00.000');
+      expect(request.endDateRange).toBe('2026-12-22 07:59:59.999');
+    });
+  });
 });
+
+describe('buildCapacityReservationRequest sends the future-dated window as a true instant too',
+  () => {
+    afterEach(() => {
+      moment.tz.setDefault('UTC');
+    });
+
+    it('converts a viewer-at-UTC+3 day the same way the offering search does', () => {
+      moment.tz.setDefault('Etc/GMT-3');
+      const request = buildCapacityReservationRequest(futureDatedValues({
+        commitmentStart: '2026-12-21',
+        commitmentEnd: '2026-12-21'
+      }));
+      expect(request.requestedStartDate).toBe('2026-12-20 21:00:00.000');
+      expect(request.requestedEndDate).toBe('2026-12-21 20:59:59.999');
+    });
+  });
 
 describe('canSearchCapacityBlockOfferings', () => {
   function values (overrides = {}) {
@@ -773,6 +818,28 @@ describe('getValidationErrors', () => {
           .toBe('Search from date should be in the future');
       });
     });
+
+    // Picking "tomorrow" could still send a start already past in UTC when the picked
+    // day was only ever read as a literal UTC reading - a viewer west of UTC, near their
+    // own midnight, is exactly where that bit. Converting the picked day to its true UTC
+    // instant (this phase) closes that structurally: the guard above stays, but this case
+    // can no longer reach it.
+    describe('a local "tomorrow" is always a future start, even west of UTC near midnight',
+      () => {
+        afterEach(() => {
+          useRealTimers();
+          moment.tz.setDefault('UTC');
+        });
+
+        it('is valid where a literal-as-UTC reading of the same picked day would not be', () => {
+          moment.tz.setDefault('Etc/GMT+11');
+          useFakeTimers();
+          setSystemTime(new Date('2026-11-26T09:00:00.000Z'));
+          const tomorrow = moment().add(1, 'day').format(COMMITMENT_DATE_ONLY_FORMAT);
+          const {errors} = getValidationErrors(mlBlockValues({commitmentStart: tomorrow}));
+          expect(errors.commitmentStart).toBeUndefined();
+        });
+      });
 
     // The search never needs an end of window, and the purchase carries the offering's
     // own - requiring it here only blocked CREATE on a field nothing downstream reads.
