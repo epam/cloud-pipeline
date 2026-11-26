@@ -423,6 +423,38 @@ test('offeringsPending shows the search indicator on the label line, and only th
   expect(screen.queryByLabelText('Loading')).not.toBeInTheDocument();
 });
 
+test('instanceTypesPending shows the fetching indicator on the label line, and only there',
+  () => {
+    const {rerender} = render(
+      <CapacityBlockCandidatesControl candidates={[]} instanceTypes={[]} instanceTypesPending />
+    );
+    const pending = screen.getByText('Fetching instance types...');
+    const icon = screen.getByLabelText('Loading');
+    expect(pending).toBeInTheDocument();
+    expect(icon).toBeInTheDocument();
+
+    rerender(
+      <CapacityBlockCandidatesControl candidates={[]} instanceTypes={[]} />
+    );
+    expect(screen.queryByText('Fetching instance types...')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Loading')).not.toBeInTheDocument();
+  });
+
+// No candidate can be complete before the catalogue has arrived, so the two indicators
+// cannot meaningfully coexist - but if both flags are somehow set, the catalogue one wins.
+test('instanceTypesPending wins over offeringsPending when both are set', () => {
+  render(
+    <CapacityBlockCandidatesControl
+      candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
+      instanceTypes={instanceTypes}
+      instanceTypesPending
+      offeringsPending
+    />
+  );
+  expect(screen.getByText('Fetching instance types...')).toBeInTheDocument();
+  expect(screen.queryByText('Search for offerings...')).not.toBeInTheDocument();
+});
+
 test('offeringsError renders as an alert', () => {
   render(
     <CapacityBlockCandidatesControl

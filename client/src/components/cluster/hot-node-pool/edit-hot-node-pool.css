@@ -165,11 +165,13 @@
   min-height: 24px;
 }
 
-.capacity-block-offerings-pending {
+/* Shared by both label-line indicators - the catalogue fetch and the offering search -
+   so the two read as the same kind of thing whichever is showing. */
+.capacity-block-pending-indicator {
   display: inline-flex;
   align-items: center;
 }
 
-.capacity-block-offerings-pending-icon {
+.capacity-block-pending-indicator-icon {
   margin-left: 5px;
 }

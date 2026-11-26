@@ -498,9 +498,8 @@ class EditHotNodePool extends React.Component {
       mlBlockInstanceTypesPending: true,
       mlBlockInstanceTypesError: undefined
     }, () => {
-      const request = new CapacityBlockInstanceTypes(region);
-      request.fetchIfNeededOrWait()
-        .then(() => {
+      CapacityBlockInstanceTypes.forRegion(region)
+        .then((request) => {
           if (this.state.region !== region || this.state.mode !== MODE_ML_BLOCK) {
             return;
           }
@@ -864,9 +863,10 @@ class EditHotNodePool extends React.Component {
     touched.mlBlockCandidates = true;
     if (action.action === 'add') {
       const id = Math.max(...mlBlockCandidates.map(o => o.id), 0) + 1;
-      mlBlockCandidates.push({id, instanceType: undefined, instanceCount: undefined});
-      // A freshly added row is never complete, so there is nothing for it to change in
-      // what the search is already searching for.
+      mlBlockCandidates.push({id, instanceType: undefined, instanceCount: 1});
+      // A freshly added row still carries no instance type, so it is one field short of
+      // complete - there is nothing yet for it to change in what the search is already
+      // searching for.
       this.setState({mlBlockCandidates, touched}, this.onChange);
       return;
     }

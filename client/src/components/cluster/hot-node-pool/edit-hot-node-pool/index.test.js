@@ -31,6 +31,15 @@ import {
 import EditHotNodePool from './index';
 import {buildCapacityBlockOfferingRequest, formatCapacityBlockInstanceType} from './helpers';
 import {ML_BLOCK_OFFERINGS_FETCH_DELAY_MS} from './constants';
+import CapacityBlockInstanceTypes from '../../../../models/cluster/CapacityBlockInstanceTypes';
+
+// The catalogue cache (models/cluster/CapacityBlockInstanceTypes.js) is a module-level
+// singleton, held across this whole test file's run - without clearing it, a later
+// test's region 1 fetch would silently be served from an earlier test's cache and make
+// the call count depend on run order.
+beforeEach(() => {
+  CapacityBlockInstanceTypes.clearCache();
+});
 
 const loaded = (value) => observable({loaded: true, pending: false, value});
 
@@ -1200,7 +1209,7 @@ async function renderMlBlockPool (props = {}) {
     }
   }));
   let wrapper;
-  renderWithStores(
+  const {rerender} = renderWithStores(
     <EditHotNodePool
       ref={(r) => { wrapper = r; }}
       visible
@@ -1216,7 +1225,33 @@ async function renderMlBlockPool (props = {}) {
   // Antd's Modal can still be clearing a previous test's portal node on its own real
   // timer - settle on one "Mode:" before a caller queries by text.
   await waitFor(() => expect(screen.getAllByText('Mode:')).toHaveLength(1));
-  return {api, instance: () => wrapper.wrappedInstance};
+  return {api, instance: () => wrapper.wrappedInstance, rerender};
+}
+
+// Toggling `visible` false then true, with no `pool`, is a dialog reopening for a new
+// pool: `componentDidUpdate`'s own visible-transition branch calls `updateFromProps`,
+// which is exactly what resets the mode and the region on a real reopen.
+async function reopenMlBlockDialog (rerender) {
+  const closed = (
+    <EditHotNodePool
+      visible={false}
+      disabled={false}
+      currentUserName="USER1"
+      allowedModes={['DEFAULT', 'ML_BLOCK']}
+    />
+  );
+  const reopened = (
+    <EditHotNodePool
+      visible
+      disabled={false}
+      currentUserName="USER1"
+      allowedModes={['DEFAULT', 'ML_BLOCK']}
+    />
+  );
+  rerender(closed);
+  rerender(reopened);
+  await flushPromises();
+  await waitFor(() => expect(screen.getAllByText('Mode:')).toHaveLength(1));
 }
 
 async function enterMlBlockMode () {
@@ -1252,6 +1287,87 @@ test('entering ML Block mode fetches the capacity block catalogue for the select
     // Settles the region change's own allowed-instance-types refetch too, for the same
     // reason `renderMlBlockPool` settles the mount-time one.
     await flushPromises();
+  });
+
+test('the catalogue is requested once across two opens of the dialog, for the same region',
+  async () => {
+    const {api, rerender} = await renderMlBlockPool();
+    api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+    api.reply('/role/loadAll', []);
+
+    await enterMlBlockMode();
+    await selectRegion('eu-central-1');
+    const catalogueCalls = () => api.calls.filter(c =>
+      /capacity-reservation\/instance-types/.test(c.path) && /regionId=1/.test(c.path));
+    await waitFor(() => expect(catalogueCalls()).toHaveLength(1));
+
+    await reopenMlBlockDialog(rerender);
+    await enterMlBlockMode();
+    await selectRegion('eu-central-1');
+    await flushPromises();
+
+    expect(catalogueCalls()).toHaveLength(1);
+  });
+
+test('a failed catalogue fetch is retried on the next open, unlike a settled one',
+  async () => {
+    const {api, rerender} = await renderMlBlockPool();
+    api.fail(/\/cluster\/capacity-reservation\/instance-types/, 'Region not supported');
+    api.reply('/role/loadAll', []);
+
+    await enterMlBlockMode();
+    await selectRegion('eu-central-1');
+    await waitFor(() => expect(screen.getByText('Region not supported')).toBeInTheDocument());
+    const catalogueCalls = () => api.calls.filter(c =>
+      /capacity-reservation\/instance-types/.test(c.path) && /regionId=1/.test(c.path));
+    expect(catalogueCalls()).toHaveLength(1);
+
+    await reopenMlBlockDialog(rerender);
+    await enterMlBlockMode();
+    await selectRegion('eu-central-1');
+    await waitFor(() => expect(catalogueCalls()).toHaveLength(2));
+  });
+
+test('a freshly added candidate row defaults its nodes count to 1', async () => {
+  const {api} = await renderMlBlockPool();
+  api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+
+  await enterMlBlockMode();
+  await selectRegion('eu-central-1');
+  await waitFor(() => expect(
+    screen.getByRole('button', {name: 'Add instance type'})
+  ).not.toBeDisabled());
+
+  await click(screen.getByRole('button', {name: 'Add instance type'}));
+
+  expect(within(mlBlockCandidateRow()).getByRole('textbox')).toHaveValue('1');
+});
+
+// The knock-on of the default above: a freshly added row is then one field - the
+// instance type - short of complete, so picking a type alone is enough to search.
+test('picking a type for a freshly added row searches with its default count of 1',
+  async () => {
+    const {api, instance} = await renderMlBlockPool();
+    api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+    api.reply('/cluster/capacity-reservation/offerings', []);
+
+    await enterMlBlockMode();
+    await selectRegion('eu-central-1');
+    await waitFor(() => expect(
+      screen.getByRole('button', {name: 'Add instance type'})
+    ).not.toBeDisabled());
+
+    await click(screen.getByRole('button', {name: 'Add instance type'}));
+    await click(within(mlBlockCandidateRow()).getByRole('combobox'));
+    await click(screen.getByText(formatCapacityBlockInstanceType(mlBlockInstanceTypeInfo)));
+    await change(within(row('Duration (days):')).getByRole('textbox'), '1');
+    await act(() => instance().onChangeField('commitmentStart', '2026-12-25'));
+
+    await waitFor(() => expect(offeringsCalls(api)).toHaveLength(1), {
+      timeout: ML_BLOCK_SEARCH_TIMEOUT
+    });
+    const body = JSON.parse(offeringsCalls(api)[0].body);
+    expect(body.candidates).toEqual([{instanceType: 'p5.48xlarge', instanceCount: 1}]);
   });
 
 test(
@@ -1611,7 +1727,8 @@ test(
 );
 
 test('switching ML Block back to Default leaves a working Default form', async () => {
-  const {instance} = await renderMlBlockPool();
+  const {api, instance} = await renderMlBlockPool();
+  api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
 
   await enterMlBlockMode();
   await selectRegion('eu-central-1');

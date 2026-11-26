@@ -153,13 +153,25 @@ function CapacityBlockCandidatesControl ({
           Instance types:
         </span>
         {
-          offeringsPending && (
-            <span className={styles.capacityBlockOfferingsPending}>
+          // No candidate can be complete before the catalogue itself has arrived, so the
+          // two searches cannot meaningfully overlap - instanceTypesPending wins if they
+          // somehow do.
+          instanceTypesPending ? (
+            <span className={styles.capacityBlockPendingIndicator}>
+              Fetching instance types...
+              <Icon
+                type="loading"
+                aria-label="Loading"
+                className={styles.capacityBlockPendingIndicatorIcon}
+              />
+            </span>
+          ) : offeringsPending && (
+            <span className={styles.capacityBlockPendingIndicator}>
               Search for offerings...
               <Icon
                 type="loading"
                 aria-label="Loading"
-                className={styles.capacityBlockOfferingsPendingIcon}
+                className={styles.capacityBlockPendingIndicatorIcon}
               />
             </span>
           )
