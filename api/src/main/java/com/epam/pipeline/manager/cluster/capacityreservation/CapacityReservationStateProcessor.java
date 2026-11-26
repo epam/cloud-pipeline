@@ -300,7 +300,7 @@ public class CapacityReservationStateProcessor {
             if (zones.isEmpty()) {
                 throw new CapacityReservationNoCandidateException(String.format("No availability zone can take a "
                         + "reservation for %s: none of the region's zones that offer it is one its networks "
-                        + "configure", reservation.getInstanceType()));
+                        + "configure", reservation.getCandidate().getInstanceType()));
             }
             reservation.setAvailabilityZone(zones.get(0));
         }
@@ -398,7 +398,7 @@ public class CapacityReservationStateProcessor {
     }
 
     /**
-     * {@code instanceType}'s window is exhausted everywhere. Moves to the next fallback candidate and
+     * {@code candidate}'s window is exhausted everywhere. Moves to the next fallback candidate and
      * restarts its search from {@code requestedStartDate} - instance type is the priority, not the
      * nearest date, so a fallback never resumes partway through a window another candidate already
      * covered. No approval check: every candidate was already evaluated together at creation
@@ -416,14 +416,13 @@ public class CapacityReservationStateProcessor {
                     "No available start date between %s and %s for a commitment of %ds for any of this "
                             + "reservation's %d candidate instance type(s), last tried as %s%s",
                     reservation.getRequestedStartDate(), reservation.getRequestedEndDate(),
-                    reservation.getCommitmentDuration(), totalCandidates, reservation.getInstanceType(),
+                    reservation.getCommitmentDuration(), totalCandidates, reservation.getCandidate().getInstanceType(),
                     reason == null ? "" : ". Last provider response: " + reason));
             return;
         }
         log.debug("Capacity reservation {} found no window for instance type {}; trying fallback {}",
-                reservation.getId(), reservation.getInstanceType(), next.get().getInstanceType());
-        reservation.setInstanceType(next.get().getInstanceType());
-        reservation.setInstanceCount(next.get().getInstanceCount());
+                reservation.getId(), reservation.getCandidate().getInstanceType(), next.get().getInstanceType());
+        reservation.setCandidate(next.get());
         reservation.setStartDate(null);
         reservation.setEndDate(null);
         reservation.setAvailabilityZone(null);
@@ -441,11 +440,7 @@ public class CapacityReservationStateProcessor {
         if (fallbacks.isEmpty()) {
             return Optional.empty();
         }
-        final CapacitySpecification current = CapacitySpecification.builder()
-                .instanceType(reservation.getInstanceType())
-                .instanceCount(reservation.getInstanceCount())
-                .build();
-        final int i = fallbacks.indexOf(current);
+        final int i = fallbacks.indexOf(reservation.getCandidate());
         if (i < 0) {
             return Optional.of(fallbacks.get(0));
         }

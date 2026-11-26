@@ -211,7 +211,7 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
                                         .locationType(LocationType.AVAILABILITY_ZONE)
                                         .filters(Filter.builder()
                                                 .name("instance-type")
-                                                .values(reservation.getInstanceType())
+                                                .values(reservation.getCandidate().getInstanceType())
                                                 .build())
                                         .build())
                                 .instanceTypeOfferings()).stream()
@@ -230,9 +230,9 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
     public CloudCapacityReservation createFutureDated(final CapacityReservation reservation) {
         final AwsRegion region = region(reservation);
         final CreateCapacityReservationRequest.Builder request = CreateCapacityReservationRequest.builder()
-                .instanceType(reservation.getInstanceType())
+                .instanceType(reservation.getCandidate().getInstanceType())
                 .instancePlatform(reservation.getInstancePlatform())
-                .instanceCount(reservation.getInstanceCount())
+                .instanceCount(reservation.getCandidate().getInstanceCount())
                 .instanceMatchCriteria(InstanceMatchCriteria.TARGETED)
                 .deliveryPreference(CapacityReservationDeliveryPreference.INCREMENTAL)
                 .startDate(toInstant(reservation.getStartDate()))
@@ -245,7 +245,7 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
                 .ifPresent(request::availabilityZone);
 
         log.debug("Submitting future-dated capacity reservation {} to AWS in region {} for {} from {}",
-                reservation.getId(), region.getRegionCode(), reservation.getInstanceType(),
+                reservation.getId(), region.getRegionCode(), reservation.getCandidate().getInstanceType(),
                 reservation.getStartDate());
 
         return uncertainOnTransientFailure(reservation, () -> {

@@ -838,8 +838,8 @@ public class CapacityReservationStateProcessorTest {
 
         processor.poll(RESERVATION_ID, CapacityReservationStatus.SCHEDULED);
 
-        assertThat(reservation.getInstanceType()).isEqualTo(FALLBACK_TYPE);
-        assertThat(reservation.getInstanceCount()).isEqualTo(FALLBACK_COUNT);
+        assertThat(reservation.getCandidate().getInstanceType()).isEqualTo(FALLBACK_TYPE);
+        assertThat(reservation.getCandidate().getInstanceCount()).isEqualTo(FALLBACK_COUNT);
         assertThat(reservation.getStartDate()).isNull();
         assertThat(reservation.getEndDate()).isNull();
         assertThat(reservation.getAvailabilityZone()).isNull();
@@ -854,8 +854,7 @@ public class CapacityReservationStateProcessorTest {
         final CapacitySpecification first = fallback(FALLBACK_TYPE, FALLBACK_COUNT);
         final CapacitySpecification second = fallback(SECOND_FALLBACK_TYPE, SECOND_FALLBACK_COUNT);
         reservation.setFallbackCandidates(Arrays.asList(first, second));
-        reservation.setInstanceType(first.getInstanceType());
-        reservation.setInstanceCount(first.getInstanceCount());
+        reservation.setCandidate(first);
         givenStatus(CapacityReservationStatus.SCHEDULED, reservation);
         when(cloudFacade.describe(reservation)).thenReturn(CloudCapacityReservation.builder()
                 .state(CloudCapacityReservationState.UNSUPPORTED)
@@ -863,8 +862,8 @@ public class CapacityReservationStateProcessorTest {
 
         processor.poll(RESERVATION_ID, CapacityReservationStatus.SCHEDULED);
 
-        assertThat(reservation.getInstanceType()).isEqualTo(second.getInstanceType());
-        assertThat(reservation.getInstanceCount()).isEqualTo(second.getInstanceCount());
+        assertThat(reservation.getCandidate().getInstanceType()).isEqualTo(second.getInstanceType());
+        assertThat(reservation.getCandidate().getInstanceCount()).isEqualTo(second.getInstanceCount());
     }
 
     @Test
@@ -873,8 +872,7 @@ public class CapacityReservationStateProcessorTest {
         reservation.setStartDate(reservation.getRequestedEndDate().minusSeconds(COMMITMENT_DURATION));
         final CapacitySpecification onlyFallback = fallback(FALLBACK_TYPE, FALLBACK_COUNT);
         reservation.setFallbackCandidates(Collections.singletonList(onlyFallback));
-        reservation.setInstanceType(onlyFallback.getInstanceType());
-        reservation.setInstanceCount(onlyFallback.getInstanceCount());
+        reservation.setCandidate(onlyFallback);
         givenStatus(CapacityReservationStatus.SCHEDULED, reservation);
         when(cloudFacade.describe(reservation)).thenReturn(CloudCapacityReservation.builder()
                 .state(CloudCapacityReservationState.UNSUPPORTED)
@@ -897,7 +895,7 @@ public class CapacityReservationStateProcessorTest {
         reservation.setAvailabilityZone(ZONE);
         reservation.setFallbackCandidates(Collections.singletonList(fallback(FALLBACK_TYPE, FALLBACK_COUNT)));
         final LocalDateTime date = reservation.getStartDate();
-        final String instanceTypeBefore = reservation.getInstanceType();
+        final String instanceTypeBefore = reservation.getCandidate().getInstanceType();
         givenStatus(CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, reservation);
         when(cloudFacade.candidateZones(reservation)).thenReturn(Arrays.asList(ZONE, OTHER_ZONE));
         when(cloudFacade.describe(reservation)).thenReturn(CloudCapacityReservation.builder()
@@ -908,7 +906,7 @@ public class CapacityReservationStateProcessorTest {
 
         assertThat(reservation.getAvailabilityZone()).isEqualTo(OTHER_ZONE);
         assertThat(reservation.getStartDate()).isEqualTo(date);
-        assertThat(reservation.getInstanceType()).isEqualTo(instanceTypeBefore);
+        assertThat(reservation.getCandidate().getInstanceType()).isEqualTo(instanceTypeBefore);
     }
 
     private static CapacitySpecification fallback(final String instanceType, final int count) {

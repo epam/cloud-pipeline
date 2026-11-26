@@ -858,7 +858,7 @@ describe('getReservationDisplayInstanceCount', () => {
     'ACTIVE',
     'FINALIZING'
   ])('returns the instance count while the reservation is still live (%s)', (status) => {
-    expect(getReservationDisplayInstanceCount({status, instanceCount: 4})).toBe(4);
+    expect(getReservationDisplayInstanceCount({status, candidate: {instanceCount: 4}})).toBe(4);
   });
 
   it.each([
@@ -867,7 +867,8 @@ describe('getReservationDisplayInstanceCount', () => {
     'FAILED',
     'CANCELLED'
   ])('is undefined once the reservation reaches a terminal status (%s)', (status) => {
-    expect(getReservationDisplayInstanceCount({status, instanceCount: 4})).toBeUndefined();
+    expect(getReservationDisplayInstanceCount({status, candidate: {instanceCount: 4}}))
+      .toBeUndefined();
   });
 
   it('is undefined when there is no reservation record', () => {
@@ -877,7 +878,7 @@ describe('getReservationDisplayInstanceCount', () => {
   it.each([null, undefined])(
     'is undefined when the record has no usable instanceCount (%s)',
     (instanceCount) => {
-      expect(getReservationDisplayInstanceCount({status: 'ACTIVE', instanceCount}))
+      expect(getReservationDisplayInstanceCount({status: 'ACTIVE', candidate: {instanceCount}}))
         .toBeUndefined();
     }
   );

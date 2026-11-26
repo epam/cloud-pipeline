@@ -85,7 +85,5 @@ public class CapacityReservationRequest {
     @JsonIgnore
     private String owner;
     @JsonIgnore
-    private String instanceType;
-    @JsonIgnore
-    private Integer instanceCount;
+    private CapacitySpecification candidate;
 }

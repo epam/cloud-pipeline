@@ -198,8 +198,8 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
             params.addValue(OWNER.name(), reservation.getOwner());
             params.addValue(CREATED.name(), timestamp(reservation.getCreated()));
             params.addValue(UPDATED.name(), timestamp(reservation.getUpdated()));
-            params.addValue(INSTANCE_TYPE.name(), reservation.getInstanceType());
-            params.addValue(INSTANCE_COUNT.name(), reservation.getInstanceCount());
+            params.addValue(INSTANCE_TYPE.name(), reservation.getCandidate().getInstanceType());
+            params.addValue(INSTANCE_COUNT.name(), reservation.getCandidate().getInstanceCount());
             params.addValue(REQUESTED_START_DATE.name(), timestamp(reservation.getRequestedStartDate()));
             params.addValue(REQUESTED_END_DATE.name(), timestamp(reservation.getRequestedEndDate()));
             params.addValue(START_DATE.name(), timestamp(reservation.getStartDate()));
@@ -236,8 +236,10 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
                 reservation.setOwner(rs.getString(OWNER.name()));
                 reservation.setCreated(dateTime(rs, CREATED.name()));
                 reservation.setUpdated(dateTime(rs, UPDATED.name()));
-                reservation.setInstanceType(rs.getString(INSTANCE_TYPE.name()));
-                reservation.setInstanceCount(rs.getInt(INSTANCE_COUNT.name()));
+                reservation.setCandidate(CapacitySpecification.builder()
+                        .instanceType(rs.getString(INSTANCE_TYPE.name()))
+                        .instanceCount(rs.getInt(INSTANCE_COUNT.name()))
+                        .build());
                 reservation.setRequestedStartDate(dateTime(rs, REQUESTED_START_DATE.name()));
                 reservation.setRequestedEndDate(dateTime(rs, REQUESTED_END_DATE.name()));
                 reservation.setStartDate(dateTime(rs, START_DATE.name()));

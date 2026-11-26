@@ -172,7 +172,7 @@ public class CapacityReservationService {
         final String subnet = allowedNetworks(regionCodeOf(reservation)).get(zone);
         final LocalDateTime poolEndDate = getPoolEndDate(reservation);
         poolManager.applyReservationState(reservation.getNodePoolId(), pool -> {
-            pool.setInstanceType(reservation.getInstanceType());
+            pool.setInstanceType(reservation.getCandidate().getInstanceType());
             pool.setStartDate(reservation.getStartDate());
             pool.setEndDate(poolEndDate);
             pool.setAmiConfiguration(withReservation(pool.getAmiConfiguration(), launchSpecification, zone, subnet));
@@ -211,12 +211,12 @@ public class CapacityReservationService {
     @Transactional
     public void activatePool(final CapacityReservation reservation) {
         poolManager.applyReservationState(reservation.getNodePoolId(), pool -> {
-            pool.setInstanceType(reservation.getInstanceType());
-            pool.setCount(reservation.getInstanceCount());
+            pool.setInstanceType(reservation.getCandidate().getInstanceType());
+            pool.setCount(reservation.getCandidate().getInstanceCount());
         });
         log.debug("Activated node pool {} with {} {} nodes for capacity reservation {}",
-                reservation.getNodePoolId(), reservation.getInstanceCount(), reservation.getInstanceType(),
-                reservation.getId());
+                reservation.getNodePoolId(), reservation.getCandidate().getInstanceCount(),
+                reservation.getCandidate().getInstanceType(), reservation.getId());
     }
 
     /**
@@ -338,8 +338,7 @@ public class CapacityReservationService {
                 .owner(request.getOwner())
                 .created(DateUtils.nowUTC())
                 .updated(DateUtils.nowUTC())
-                .instanceType(request.getInstanceType())
-                .instanceCount(request.getInstanceCount())
+                .candidate(request.getCandidate())
                 .requestedStartDate(request.getRequestedStartDate())
                 .requestedEndDate(request.getRequestedEndDate())
                 .commitmentDuration(request.getCommitmentDuration())
@@ -363,10 +362,7 @@ public class CapacityReservationService {
      * An unpriced type sorts last, as if it had none of either.
      */
     private List<CapacitySpecification> buildFallbackCandidates(final CapacityReservationRequest request) {
-        final CapacitySpecification main = CapacitySpecification.builder()
-                .instanceType(request.getInstanceType())
-                .instanceCount(request.getInstanceCount())
-                .build();
+        final CapacitySpecification main = request.getCandidate();
         final List<CapacitySpecification> deduped = ListUtils.emptyIfNull(request.getFallbackCandidates()).stream()
                 .filter(candidate -> !candidate.equals(main))
                 .distinct()

@@ -130,8 +130,10 @@ public class CapacityReservationServiceTest {
                 .nodePoolId(NODE_POOL_ID)
                 .regionId(REGION_ID)
                 .reservationType(CapacityReservationType.CAPACITY_BLOCK)
-                .instanceType(INSTANCE_TYPE)
-                .instanceCount(INSTANCE_COUNT)
+                .candidate(CapacitySpecification.builder()
+                        .instanceType(INSTANCE_TYPE)
+                        .instanceCount(INSTANCE_COUNT)
+                        .build())
                 .requestedStartDate(start)
                 .requestedEndDate(end)
                 .commitmentDuration(CAPACITY_DURATION_SECONDS)
@@ -158,8 +160,10 @@ public class CapacityReservationServiceTest {
                 .nodePoolId(NODE_POOL_ID)
                 .regionId(REGION_ID)
                 .reservationType(CapacityReservationType.FUTURE_DATED)
-                .instanceType(INSTANCE_TYPE)
-                .instanceCount(INSTANCE_COUNT)
+                .candidate(CapacitySpecification.builder()
+                        .instanceType(INSTANCE_TYPE)
+                        .instanceCount(INSTANCE_COUNT)
+                        .build())
                 .requestedStartDate(start)
                 .requestedEndDate(end)
                 .commitmentDuration(CAPACITY_DURATION_SECONDS)
@@ -239,8 +243,10 @@ public class CapacityReservationServiceTest {
                 .nodePoolId(NODE_POOL_ID)
                 .regionId(REGION_ID)
                 .reservationType(CapacityReservationType.CAPACITY_BLOCK)
-                .instanceType(INSTANCE_TYPE)
-                .instanceCount(INSTANCE_COUNT)
+                .candidate(CapacitySpecification.builder()
+                        .instanceType(INSTANCE_TYPE)
+                        .instanceCount(INSTANCE_COUNT)
+                        .build())
                 .capacityBlockOfferingId(OFFERING_ID)
                 .fallbackCandidates(Arrays.asList(fallback("c5.4xlarge", 1)))
                 .build();
@@ -259,8 +265,10 @@ public class CapacityReservationServiceTest {
                 .nodePoolId(NODE_POOL_ID)
                 .regionId(REGION_ID)
                 .reservationType(CapacityReservationType.FUTURE_DATED)
-                .instanceType(INSTANCE_TYPE)
-                .instanceCount(INSTANCE_COUNT)
+                .candidate(CapacitySpecification.builder()
+                        .instanceType(INSTANCE_TYPE)
+                        .instanceCount(INSTANCE_COUNT)
+                        .build())
                 .fallbackCandidates(fallbacks)
                 .build();
     }
@@ -271,8 +279,10 @@ public class CapacityReservationServiceTest {
                 .nodePoolId(NODE_POOL_ID)
                 .regionId(REGION_ID)
                 .reservationType(CapacityReservationType.FUTURE_DATED)
-                .instanceType(INSTANCE_TYPE)
-                .instanceCount(INSTANCE_COUNT)
+                .candidate(CapacitySpecification.builder()
+                        .instanceType(INSTANCE_TYPE)
+                        .instanceCount(INSTANCE_COUNT)
+                        .build())
                 .build();
 
         final CapacityReservation created = service.create(request);
@@ -308,8 +318,10 @@ public class CapacityReservationServiceTest {
     public void shouldUpdateThePoolsInstanceTypeWhenActivatingAFallbackCandidate() {
         final CapacityReservation reservation =
                 CapacityReservationCreatorUtils.getScheduledReservation(NODE_POOL_ID);
-        reservation.setInstanceType("c5.4xlarge");
-        reservation.setInstanceCount(4);
+        reservation.setCandidate(CapacitySpecification.builder()
+                .instanceType("c5.4xlarge")
+                .instanceCount(4)
+                .build());
         final NodePool pool = new NodePool();
         pool.setInstanceType(INSTANCE_TYPE);
         pool.setCount(0);
@@ -329,7 +341,7 @@ public class CapacityReservationServiceTest {
         final CapacityReservation reservation =
                 CapacityReservationCreatorUtils.getScheduledReservation(NODE_POOL_ID);
         final NodePool pool = new NodePool();
-        pool.setInstanceType(reservation.getInstanceType());
+        pool.setInstanceType(reservation.getCandidate().getInstanceType());
         pool.setCount(0);
         @SuppressWarnings("unchecked")
         final ArgumentCaptor<Consumer> poolChange = ArgumentCaptor.forClass(Consumer.class);
@@ -338,8 +350,8 @@ public class CapacityReservationServiceTest {
         service.activatePool(reservation);
 
         poolChange.getValue().accept(pool);
-        assertThat(pool.getInstanceType()).isEqualTo(reservation.getInstanceType());
-        assertThat(pool.getCount()).isEqualTo(reservation.getInstanceCount());
+        assertThat(pool.getInstanceType()).isEqualTo(reservation.getCandidate().getInstanceType());
+        assertThat(pool.getCount()).isEqualTo(reservation.getCandidate().getInstanceCount());
     }
 
     @Test
@@ -347,8 +359,10 @@ public class CapacityReservationServiceTest {
         when(preferenceManager.getPreference(SystemPreferences.CLUSTER_CAPACITY_RESERVATION_MONITOR_SETTINGS))
                 .thenReturn(new CapacityReservationMonitorSettings(0));
         final CapacityReservation reservation = CapacityReservationCreatorUtils.getScheduledReservation(NODE_POOL_ID);
-        reservation.setInstanceType("c5.4xlarge");
-        reservation.setInstanceCount(4);
+        reservation.setCandidate(CapacitySpecification.builder()
+                .instanceType("c5.4xlarge")
+                .instanceCount(4)
+                .build());
         final NodePool pool = new NodePool();
         pool.setInstanceType(INSTANCE_TYPE);
         pool.setCount(0);

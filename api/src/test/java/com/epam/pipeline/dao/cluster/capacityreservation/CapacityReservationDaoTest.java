@@ -122,8 +122,10 @@ public class CapacityReservationDaoTest extends AbstractJdbcTest {
         created.setStatus(CapacityReservationStatus.APPROVED);
         created.setStatusReason(CapacityReservationCreatorUtils.STATUS_REASON);
         created.setUpdated(created.getUpdated().plusMinutes(1));
-        created.setInstanceType("p5.4xlarge");
-        created.setInstanceCount(created.getInstanceCount() + 1);
+        created.setCandidate(CapacitySpecification.builder()
+                .instanceType("p5.4xlarge")
+                .instanceCount(created.getCandidate().getInstanceCount() + 1)
+                .build());
         created.setStartDate(created.getRequestedStartDate());
         created.setEndDate(created.getRequestedEndDate());
         created.setCommitmentDuration(created.getCommitmentDuration() + 1);

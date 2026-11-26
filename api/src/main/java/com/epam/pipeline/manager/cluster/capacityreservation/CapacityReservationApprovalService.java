@@ -156,7 +156,7 @@ public class CapacityReservationApprovalService {
         if (denied.isPresent()) {
             throw new IllegalArgumentException(messageHelper.getMessage(
                     MessageConstants.ERROR_CAPACITY_RESERVATION_DENIED_BY_POLICY,
-                    denied.get().getInstanceCount(), denied.get().getInstanceType()));
+                    denied.get().getCandidate().getInstanceCount(), denied.get().getCandidate().getInstanceType()));
         }
 
         final boolean everyCandidateAutoApproved = candidates.stream()
@@ -170,9 +170,8 @@ public class CapacityReservationApprovalService {
     }
 
     /**
-     * The reservation itself plus one throwaway copy per fallback, with {@code instanceType}/
-     * {@code instanceCount} swapped to that candidate's pair - all a policy ever reads, so no policy
-     * needs to change to keep applying to every candidate.
+     * The reservation itself plus one throwaway copy per fallback, with {@code candidate} swapped to that
+     * fallback - all a policy ever reads, so no policy needs to change to keep applying to every candidate.
      *
      * @param reservation the request being decided
      * @return the reservation, followed by one copy per fallback candidate
@@ -182,8 +181,7 @@ public class CapacityReservationApprovalService {
         candidates.add(reservation);
         ListUtils.emptyIfNull(reservation.getFallbackCandidates()).forEach(fallback ->
                 candidates.add(reservation.toBuilder()
-                        .instanceType(fallback.getInstanceType())
-                        .instanceCount(fallback.getInstanceCount())
+                        .candidate(fallback)
                         .build()));
         return candidates;
     }
@@ -201,8 +199,7 @@ public class CapacityReservationApprovalService {
     }
 
     private boolean sameEssentials(final CapacityReservation origin, final CapacityReservation retry) {
-        return Objects.equals(origin.getInstanceType(), retry.getInstanceType())
-                && origin.getInstanceCount() == retry.getInstanceCount()
+        return Objects.equals(origin.getCandidate(), retry.getCandidate())
                 && Objects.equals(origin.getFallbackCandidates(), retry.getFallbackCandidates())
                 && isNoLongerThanOrigin(origin.getCommitmentDuration(), retry.getCommitmentDuration())
                 && Objects.equals(origin.getReservationType(), retry.getReservationType())

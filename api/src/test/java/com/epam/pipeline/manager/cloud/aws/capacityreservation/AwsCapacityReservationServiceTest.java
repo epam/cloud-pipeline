@@ -180,7 +180,7 @@ public class AwsCapacityReservationServiceTest {
                 .isEqualTo(reservation.getStartDate().toInstant(ZoneOffset.UTC));
         assertThat(client.createRequest.instanceCount()).isEqualTo(INSTANCE_COUNT);
         assertThat(client.createRequest.clientToken()).isEqualTo(TOKEN);
-        assertThat(client.createRequest.instanceType()).isEqualTo(reservation.getInstanceType());
+        assertThat(client.createRequest.instanceType()).isEqualTo(reservation.getCandidate().getInstanceType());
     }
 
     @Test
@@ -606,7 +606,8 @@ public class AwsCapacityReservationServiceTest {
 
         assertThat(service.candidateZones(reservation())).containsExactly("eu-central-1a", ZONE);
         assertThat(client.offeringsRequest.locationTypeAsString()).isEqualTo("availability-zone");
-        assertThat(client.offeringsRequest.filters().get(0).values()).containsExactly(reservation().getInstanceType());
+        assertThat(client.offeringsRequest.filters().get(0).values())
+                .containsExactly(reservation().getCandidate().getInstanceType());
     }
 
     @Test
@@ -999,7 +1000,7 @@ public class AwsCapacityReservationServiceTest {
         assertThat(offerings).hasSize(1);
         final CapacityBlockOffering offering = offerings.get(0);
         assertThat(offering.getOfferingId()).isEqualTo(EXTENSION_OFFERING_ID);
-        assertThat(offering.getInstanceType()).isEqualTo(reservation.getInstanceType());
+        assertThat(offering.getInstanceType()).isEqualTo(reservation.getCandidate().getInstanceType());
         assertThat(offering.getAvailabilityZone()).isEqualTo(ZONE);
         assertThat(offering.getInstanceCount()).isEqualTo(INSTANCE_COUNT);
         assertThat(offering.getCapacityDurationHours()).isEqualTo(durationHours);
@@ -1235,7 +1236,10 @@ public class AwsCapacityReservationServiceTest {
         final CapacityReservation reservation = CapacityReservationCreatorUtils.getReservation(1L);
         reservation.setId(RESERVATION_ID);
         reservation.setRegionId(REGION_ID);
-        reservation.setInstanceCount(INSTANCE_COUNT);
+        reservation.setCandidate(CapacitySpecification.builder()
+                .instanceType(reservation.getCandidate().getInstanceType())
+                .instanceCount(INSTANCE_COUNT)
+                .build());
         reservation.setCommitmentDuration(COMMITMENT_DURATION);
         reservation.setClientToken(TOKEN);
         reservation.setStartDate(DateUtils.nowUTC().plusDays(LEAD_DAYS).withNano(0));
@@ -1248,7 +1252,10 @@ public class AwsCapacityReservationServiceTest {
         final CapacityReservation reservation = CapacityReservationCreatorUtils.getCapacityBlockReservation(1L);
         reservation.setId(RESERVATION_ID);
         reservation.setRegionId(REGION_ID);
-        reservation.setInstanceCount(INSTANCE_COUNT);
+        reservation.setCandidate(CapacitySpecification.builder()
+                .instanceType(reservation.getCandidate().getInstanceType())
+                .instanceCount(INSTANCE_COUNT)
+                .build());
         reservation.setClientToken(TOKEN);
         reservation.setCapacityBlockOfferingId(OFFERING_ID);
         return reservation;

@@ -143,7 +143,7 @@ describe('InstanceTypeSuggestion', () => {
       reservations: [{
         nodePoolId: 7,
         status: 'ACTIVE',
-        instanceCount: 5,
+        candidate: {instanceCount: 5},
         endDate: '2024-07-15 00:00:00.000'
       }],
       instanceTypes: [instanceType('m5.large')]

@@ -33,11 +33,11 @@ import java.util.List;
  *
  * <p>One reservation belongs to exactly one node pool, and its fields fall into three groups:
  * <ul>
- *   <li><b>what was asked for</b> - {@code instanceType}, {@code instanceCount} and {@code instancePlatform}, the
- *       window ({@code requestedStartDate}, {@code requestedEndDate}) and the {@code commitmentDuration}, in
+ *   <li><b>what was asked for</b> - {@code candidate} (the instance type and count) and {@code instancePlatform},
+ *       the window ({@code requestedStartDate}, {@code requestedEndDate}) and the {@code commitmentDuration}, in
  *       seconds, the capacity is to be held for. A {@link CapacityReservationType#CAPACITY_BLOCK} also has
  *       {@code capacityBlockOfferingId}, the offering it buys. A {@link CapacityReservationType#FUTURE_DATED}
- *       may also have {@code fallbackCandidates}, other instance types to try once {@code instanceType} has no
+ *       may also have {@code fallbackCandidates}, other instance types to try once {@code candidate} has no
  *       window left;</li>
  *   <li><b>what the platform decided</b> - {@code status} with the {@code statusReason} behind it, the
  *       {@code attempt} the request is on, and the {@code originId} of the reservation this one replaces;</li>
@@ -84,18 +84,20 @@ public class CapacityReservation {
     private LocalDateTime created;
     private LocalDateTime updated;
 
-    private String instanceType;
-    private int instanceCount;
+    /**
+     * What this attempt is currently asking for - the instance type and count.
+     */
+    private CapacitySpecification candidate;
 
     /**
-     * Other instance types to try, in the order to try them, once {@link #instanceType} has no window left
+     * Other instance types to try, in the order to try them, once {@link #candidate} has no window left
      * anywhere in {@code requestedStartDate}..{@code requestedEndDate}. Merged and sorted once, biggest
      * instance first, when the reservation is created - never rewritten after that.
      * {@link CapacityReservationType#FUTURE_DATED} only.
      *
      * <p>There is no separate field for "how far into this list the request has moved." The current
-     * candidate is {@link #instanceType}/{@link #instanceCount} themselves; the next one is found by
-     * locating that pair inside this list and taking the entry after it.
+     * candidate is {@link #candidate} itself; the next one is found by locating it inside this list and
+     * taking the entry after it.
      *
      * <p>Defaults to empty, never {@code null} - the persisted column round-trips a {@code CAPACITY_BLOCK}
      * reservation's never-set list as an empty JSON array, not a SQL {@code NULL}, so a freshly built

@@ -373,7 +373,7 @@ test(
       endDate: undefined
     };
     await renderClusterWithPool(pool, [
-      {nodePoolId: 6, instanceCount: 4, status: 'PENDING'}
+      {nodePoolId: 6, candidate: {instanceCount: 4}, status: 'PENDING'}
     ]);
 
     const card = screen.getByText('reservation-pool-count').closest('.cp-hot-node-pool');
@@ -395,7 +395,7 @@ test(
       endDate: undefined
     };
     await renderClusterWithPool(pool, [
-      {nodePoolId: 12, instanceCount: 4, status: 'FINISHED'}
+      {nodePoolId: 12, candidate: {instanceCount: 4}, status: 'FINISHED'}
     ]);
 
     const card = screen.getByText('reservation-pool-finished').closest('.cp-hot-node-pool');
@@ -424,7 +424,7 @@ function statusPool (id, name) {
 test('badge status comes from reservation.status: SCHEDULED shows Scheduled', async () => {
   const pool = statusPool(7, 'status-scheduled');
   await renderClusterWithPool(pool, [
-    {nodePoolId: 7, instanceCount: 2, status: 'SCHEDULED'}
+    {nodePoolId: 7, candidate: {instanceCount: 2}, status: 'SCHEDULED'}
   ]);
 
   expect(screen.getByText('Scheduled')).toBeInTheDocument();
@@ -435,7 +435,7 @@ test('badge status comes from reservation.status: SCHEDULED shows Scheduled', as
 test('badge status comes from reservation.status: ACTIVE shows Active', async () => {
   const pool = statusPool(8, 'status-active');
   await renderClusterWithPool(pool, [
-    {nodePoolId: 8, instanceCount: 2, status: 'ACTIVE'}
+    {nodePoolId: 8, candidate: {instanceCount: 2}, status: 'ACTIVE'}
   ]);
 
   expect(screen.getByText('Active')).toBeInTheDocument();
@@ -444,7 +444,7 @@ test('badge status comes from reservation.status: ACTIVE shows Active', async ()
 test('badge status comes from reservation.status: FAILED shows Failed', async () => {
   const pool = statusPool(9, 'status-failed');
   await renderClusterWithPool(pool, [
-    {nodePoolId: 9, instanceCount: 2, status: 'FAILED'}
+    {nodePoolId: 9, candidate: {instanceCount: 2}, status: 'FAILED'}
   ]);
 
   expect(screen.getByText('Failed')).toBeInTheDocument();
@@ -455,7 +455,7 @@ test(
   async () => {
     const pool = statusPool(10, 'status-required-approve');
     await renderClusterWithPool(pool, [
-      {nodePoolId: 10, instanceCount: 2, status: 'REQUIRED_APPROVE'}
+      {nodePoolId: 10, candidate: {instanceCount: 2}, status: 'REQUIRED_APPROVE'}
     ]);
 
     expect(screen.getByText('Requires approval')).toBeInTheDocument();
@@ -467,7 +467,7 @@ test(
   async () => {
     const pool = statusPool(11, 'status-unknown');
     await renderClusterWithPool(pool, [
-      {nodePoolId: 11, instanceCount: 2, status: 'SOME_NEW_STATUS'}
+      {nodePoolId: 11, candidate: {instanceCount: 2}, status: 'SOME_NEW_STATUS'}
     ]);
 
     expect(screen.getByText('Some new status')).toBeInTheDocument();
@@ -511,7 +511,7 @@ test(
       endDate: undefined
     };
     const {api} = await renderClusterWithPool(pool, [
-      {nodePoolId: 21, instanceCount: 2, status: 'ACTIVE'}
+      {nodePoolId: 21, candidate: {instanceCount: 2}, status: 'ACTIVE'}
     ]);
     api.reply(/^\/cluster\/pool\/\d+\?force=/, pool);
 
@@ -544,7 +544,7 @@ test(
       endDate: undefined
     };
     const {api} = await renderClusterWithPool(pool, [
-      {nodePoolId: 22, instanceCount: 2, status: 'REQUIRED_APPROVE'}
+      {nodePoolId: 22, candidate: {instanceCount: 2}, status: 'REQUIRED_APPROVE'}
     ]);
     api.reply(/^\/cluster\/pool\/\d+\?force=/, pool);
 
@@ -576,7 +576,7 @@ test(
     };
     await renderClusterWithPool(
       pool,
-      [{nodePoolId: 23, instanceCount: 2, status: 'ACTIVE'}],
+      [{nodePoolId: 23, candidate: {instanceCount: 2}, status: 'ACTIVE'}],
       nodePoolManager
     );
 

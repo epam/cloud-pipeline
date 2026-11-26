@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.vo.CapacitySpecification;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -57,8 +58,10 @@ public final class CapacityReservationCreatorUtils {
                 .owner(OWNER)
                 .created(now)
                 .updated(now)
-                .instanceType(INSTANCE_TYPE)
-                .instanceCount(INSTANCE_COUNT)
+                .candidate(CapacitySpecification.builder()
+                        .instanceType(INSTANCE_TYPE)
+                        .instanceCount(INSTANCE_COUNT)
+                        .build())
                 .requestedStartDate(now.plusDays(REQUEST_LEAD_DAYS))
                 .requestedEndDate(now.plusDays(REQUEST_WINDOW_DAYS))
                 .commitmentDuration(COMMITMENT_DURATION)
