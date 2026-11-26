@@ -37,6 +37,7 @@
 - [Access to the pipeline repositories for the pipeline roles](#access-to-the-pipeline-repositories-for-the-pipeline-roles)
 - [GitLab 19 support](#gitlab-19-support)
 - [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
+- [Launch capabilities: restrict a capability to certain users or roles](#launch-capabilities-restrict-a-capability-to-certain-users-or-roles)
 
 ***
 
@@ -693,6 +694,31 @@ Other fixes keep the platform working with the new GitLab versions:
 On connect to a run, the Cloud Pipeline Remote extension for VS Code and Cursor opens the home folder of the user it connects as.  
 In the current version, a run can ask for another folder, e.g. a project folder in the image. For that, set the new system parameter **`CP_VSCODE_WORKSPACE_DIR`** to the absolute path of the folder - at launch, or as a default parameter of a tool. The extension opens this folder for any user who connects to the run, if the user can open it. Otherwise, the extension shows a warning with the reason, and opens the home folder, as before.  
 On a deployment that is updated, not installed anew, the parameter is offered in the list of system parameters only after an admin adds it to the **`launch.system.parameters`** preference. Until then, it can be set as a regular parameter of a run.
+
+## Launch capabilities: restrict a capability to certain users or roles
+
+[#4955](https://github.com/epam/cloud-pipeline/issues/4955)
+
+A custom capability in the **`launch.capabilities`** preference can now be shown only to some users: add an optional `permissions` list to its entry, with `"principal": true` for a user name and `"principal": false` for a role or group name. A capability with no `permissions`, or an empty list, is still shown to everyone, as before. This restricts the **Run capabilities** field of the launch form only - a run started via `pipe` or the API is not checked against it.
+
+```json
+{
+  "cap1": {
+    "name": "Capability 1",
+    "cloud": "AWS:1",
+    "permissions": [
+      { "name": "ROLE_ADMIN", "principal": false },
+      { "name": "USER1", "principal": true }
+    ]
+  },
+  "cap2": {
+    "name": "Capability 2",
+    "cloud": "AWS:1"
+  }
+}
+```
+
+Here `cap1` is shown only to the members of `ROLE_ADMIN` and to `USER1`, while `cap2` stays visible to everyone.
 
 ***
 
