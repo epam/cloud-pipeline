@@ -341,20 +341,12 @@ class UploadButton extends React.Component {
     );
   }
 
-  // The last case has no alert of its own: a list with no archive left in it
-  // is the whole explanation.
   get extractionUnavailable () {
     return this.state.extractionCheckPending ||
       !!this.extractionDisabledReason ||
       countArchives(this.state.synchronousUploadingFiles) === 0;
   }
 
-  /**
-   * Drops one file from the paused batch, re-checking the allowance: the batch
-   * now costs a different number of tasks. Removing the last file is a Cancel.
-   *
-   * @param {string} uid
-   */
   removeSelectedFile = (uid) => {
     const {synchronousUploadingFiles = []} = this.state;
     const files = synchronousUploadingFiles.filter(file => file.uid !== uid);
