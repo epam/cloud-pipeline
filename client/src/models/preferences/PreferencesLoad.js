@@ -17,7 +17,9 @@
 import Remote from '../basic/Remote';
 import {computed, isObservableArray} from 'mobx';
 import escapeRegExp, {ESCAPE_CHARACTERS} from '../../utils/escape-reg-exp';
+import whoAmI from '../user/WhoAmI';
 import {parsePermissionsRestrictionsConfig} from './utilities/parse-permissions-restrictions';
+import {userMatchesCapabilityPermissions} from './utilities/match-capability-permissions';
 import {parseRunActionCriteria} from '../../components/runs/actions/actions-availability/utilities';
 import {
   systemCapabilitiesParameters,
@@ -454,6 +456,7 @@ class PreferencesLoad extends Remote {
             .map(o => o.trim().toLowerCase())
             .filter(o => o.length);
         };
+        const currentUser = whoAmI.loaded ? whoAmI.value : undefined;
         const mapCapability = ([key, entry]) => {
           if (typeof entry === 'boolean' || entry.visible === false) {
             return undefined;
@@ -488,9 +491,19 @@ class PreferencesLoad extends Remote {
                 : {})
             };
           }
+          if (!userMatchesCapabilityPermissions(entry?.permissions, currentUser)) {
+            return undefined;
+          }
           const {
             capabilities: childCapabilities = {}
           } = entry;
+          const children = Object.entries(childCapabilities)
+            .map(mapCapability)
+            .filter(Boolean);
+          // a group without any child left would turn into a selectable leaf
+          if (Object.keys(childCapabilities).length > 0 && children.length === 0) {
+            return undefined;
+          }
           return {
             value: `CP_CAP_CUSTOM_${key}`,
             name: entry?.name || key,
@@ -501,8 +514,7 @@ class PreferencesLoad extends Remote {
             custom: true,
             params: entry?.params || {},
             disclaimer: entry?.disclaimer || '',
-            capabilities: Object.entries(childCapabilities)
-              .map(mapCapability),
+            capabilities: children,
             multiple: Boolean(entry?.multiple),
             privileged: entry?.privileged
           };
