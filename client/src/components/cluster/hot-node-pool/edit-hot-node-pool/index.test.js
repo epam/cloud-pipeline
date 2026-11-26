@@ -1875,6 +1875,116 @@ test(
   }
 );
 
+// A complete candidate is not enough to search on - the window/duration criteria
+// must be searchable too, or the request body carries a literal "Invalid date".
+test(
+  'clearing Search from with a complete candidate searches for nothing and leaves the ' +
+  'row unsearched',
+  async () => {
+    const {api, instance} = await renderMlBlockPool();
+    api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+    api.reply('/cluster/capacity-reservation/offerings', []);
+
+    await enterMlBlockMode();
+    await selectRegion('eu-central-1');
+    await waitFor(() => expect(
+      screen.getByRole('button', {name: 'Add instance type'})
+    ).not.toBeDisabled());
+
+    await click(screen.getByRole('button', {name: 'Add instance type'}));
+    await click(within(mlBlockCandidateRow()).getByRole('combobox'));
+    await click(screen.getByText(formatCapacityBlockInstanceType(mlBlockInstanceTypeInfo)));
+    await change(within(row('Duration (days):')).getByRole('textbox'), '1');
+    await act(() => instance().onChangeField('commitmentStart', '2026-12-25'));
+
+    await waitFor(() => expect(offeringsCalls(api)).toHaveLength(1), {
+      timeout: ML_BLOCK_SEARCH_TIMEOUT
+    });
+
+    const {id} = instance().state.mlBlockCandidates[0];
+    const callsBefore = offeringsCalls(api).length;
+    await act(() => instance().onChangeField('commitmentStart', undefined));
+
+    await new Promise((resolve) => setTimeout(resolve, ML_BLOCK_SEARCH_TIMEOUT));
+
+    expect(offeringsCalls(api).length).toBe(callsBefore);
+    // Cleared to the unsearched state (no entry), not left errored or stuck pending.
+    expect(instance().state.mlBlockOfferingsByCandidate[id]).toBeUndefined();
+  }
+);
+
+test(
+  'emptying Duration (days) with a complete candidate searches for nothing and leaves the ' +
+  'row unsearched',
+  async () => {
+    const {api, instance} = await renderMlBlockPool();
+    api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+    api.reply('/cluster/capacity-reservation/offerings', []);
+
+    await enterMlBlockMode();
+    await selectRegion('eu-central-1');
+    await waitFor(() => expect(
+      screen.getByRole('button', {name: 'Add instance type'})
+    ).not.toBeDisabled());
+
+    await click(screen.getByRole('button', {name: 'Add instance type'}));
+    await click(within(mlBlockCandidateRow()).getByRole('combobox'));
+    await click(screen.getByText(formatCapacityBlockInstanceType(mlBlockInstanceTypeInfo)));
+    await change(within(row('Duration (days):')).getByRole('textbox'), '1');
+    await act(() => instance().onChangeField('commitmentStart', '2026-12-25'));
+
+    await waitFor(() => expect(offeringsCalls(api)).toHaveLength(1), {
+      timeout: ML_BLOCK_SEARCH_TIMEOUT
+    });
+
+    const {id} = instance().state.mlBlockCandidates[0];
+    const callsBefore = offeringsCalls(api).length;
+    await change(within(row('Duration (days):')).getByRole('textbox'), '');
+
+    await new Promise((resolve) => setTimeout(resolve, ML_BLOCK_SEARCH_TIMEOUT));
+
+    expect(offeringsCalls(api).length).toBe(callsBefore);
+    expect(instance().state.mlBlockOfferingsByCandidate[id]).toBeUndefined();
+  }
+);
+
+test(
+  'a window field cleared then given a valid value again searches once more',
+  async () => {
+    const {api, instance} = await renderMlBlockPool();
+    api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+    api.reply('/cluster/capacity-reservation/offerings', []);
+
+    await enterMlBlockMode();
+    await selectRegion('eu-central-1');
+    await waitFor(() => expect(
+      screen.getByRole('button', {name: 'Add instance type'})
+    ).not.toBeDisabled());
+
+    await click(screen.getByRole('button', {name: 'Add instance type'}));
+    await click(within(mlBlockCandidateRow()).getByRole('combobox'));
+    await click(screen.getByText(formatCapacityBlockInstanceType(mlBlockInstanceTypeInfo)));
+    await change(within(row('Duration (days):')).getByRole('textbox'), '1');
+    await act(() => instance().onChangeField('commitmentStart', '2026-12-25'));
+
+    await waitFor(() => expect(offeringsCalls(api)).toHaveLength(1), {
+      timeout: ML_BLOCK_SEARCH_TIMEOUT
+    });
+
+    await act(() => instance().onChangeField('commitmentStart', undefined));
+    await new Promise((resolve) => setTimeout(resolve, ML_BLOCK_SEARCH_TIMEOUT));
+    expect(offeringsCalls(api)).toHaveLength(1);
+
+    await act(() => instance().onChangeField('commitmentStart', '2026-12-26'));
+    await waitFor(() => expect(offeringsCalls(api)).toHaveLength(2), {
+      timeout: ML_BLOCK_SEARCH_TIMEOUT
+    });
+
+    const {id} = instance().state.mlBlockCandidates[0];
+    expect(instance().state.mlBlockOfferingsByCandidate[id].searched).toBe(true);
+  }
+);
+
 // The selection stayed in state until the next search's response, at least a debounce
 // later - long enough for CREATE to still buy it after its own row was deleted.
 test(

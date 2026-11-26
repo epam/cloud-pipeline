@@ -644,7 +644,9 @@ class EditHotNodePool extends React.Component {
       ? {mlBlockOfferingId: undefined, instanceType: undefined, count: undefined}
       : {};
     const complete = getCompleteMlBlockCandidates(mlBlockCandidates);
-    if (complete.length === 0) {
+    // A complete candidate alone is not enough - the window/duration criteria must be
+    // searchable too, or the request body carries a literal "Invalid date".
+    if (!canSearchCapacityBlockOfferings(this.state)) {
       this.setState({
         ...clearSelection,
         mlBlockOfferingsByCandidate: {},
