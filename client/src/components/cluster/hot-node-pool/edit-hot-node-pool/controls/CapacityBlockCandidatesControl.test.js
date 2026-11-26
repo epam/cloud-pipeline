@@ -44,6 +44,12 @@ const offering2 = {
   endDate: '2026-12-31 04:14:02.500'
 };
 
+// `offeringsByCandidate` is keyed by the candidate row's own id, mirroring `index.js`'s
+// own state shape: {offerings, pending, error, searched}.
+function entry (overrides = {}) {
+  return {offerings: [], pending: false, error: undefined, searched: false, ...overrides};
+}
+
 test('Add instance type calls onAdd', async () => {
   const onAdd = fn();
   render(
@@ -138,7 +144,7 @@ test('a row with matching offerings renders a card per offering', () => {
     <CapacityBlockCandidatesControl
       candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
       instanceTypes={instanceTypes}
-      offerings={[offering1, offering2]}
+      offeringsByCandidate={{1: entry({offerings: [offering1, offering2], searched: true})}}
     />
   );
   expect(screen.getByText('us-east-1a')).toBeInTheDocument();
@@ -149,13 +155,11 @@ test('a row with matching offerings renders a card per offering', () => {
 // CapacityBlockOfferingCard.test.js's own exception: it is the only way to prove the
 // alert actually renders as `warning`, not just that its text reads "No offerings".
 test('a row with none, in a settled search, renders "No offerings" as a warning alert', () => {
-  const offeringForAnotherType = {...offering1, instanceType: 'p4d.24xlarge'};
   const {container} = render(
     <CapacityBlockCandidatesControl
       candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
       instanceTypes={instanceTypes}
-      offerings={[offeringForAnotherType]}
-      offeringsSearched
+      offeringsByCandidate={{1: entry({searched: true})}}
     />
   );
   const noOfferings = screen.getByText('No offerings');
@@ -169,9 +173,7 @@ test('a pending search never shows "No offerings", even over a stale empty list'
     <CapacityBlockCandidatesControl
       candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
       instanceTypes={instanceTypes}
-      offerings={[]}
-      offeringsPending
-      offeringsSearched
+      offeringsByCandidate={{1: entry({pending: true, searched: true})}}
     />
   );
   expect(screen.queryByText('No offerings')).not.toBeInTheDocument();
@@ -182,7 +184,7 @@ test('a complete row with an empty offerings list stays empty until the search s
     <CapacityBlockCandidatesControl
       candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
       instanceTypes={instanceTypes}
-      offerings={[]}
+      offeringsByCandidate={{1: entry()}}
     />
   );
   expect(screen.queryByText('No offerings')).not.toBeInTheDocument();
@@ -197,8 +199,7 @@ test('a settled empty search renders "No offerings" for every complete row', () 
     <CapacityBlockCandidatesControl
       candidates={twoRows}
       instanceTypes={instanceTypes}
-      offerings={[]}
-      offeringsSearched
+      offeringsByCandidate={{1: entry({searched: true}), 2: entry({searched: true})}}
     />
   );
   expect(screen.getAllByText('No offerings')).toHaveLength(2);
@@ -209,10 +210,71 @@ test('an incomplete row never shows "No offerings", even in a settled search', (
     <CapacityBlockCandidatesControl
       candidates={[{id: 1, instanceType: undefined, instanceCount: undefined}]}
       instanceTypes={instanceTypes}
-      offerings={[]}
-      offeringsSearched
+      offeringsByCandidate={{1: entry({searched: true})}}
     />
   );
+  expect(screen.queryByText('No offerings')).not.toBeInTheDocument();
+});
+
+// The core of the per-candidate fetch: one row's own pending or failed search must
+// never hide a sibling row's already-settled offerings.
+test('one row\'s own pending search does not hide another, already-settled row\'s cards',
+  () => {
+    const twoRows = [
+      {id: 1, instanceType: 'p5.48xlarge', instanceCount: 2},
+      {id: 2, instanceType: 'p4d.24xlarge', instanceCount: 1}
+    ];
+    render(
+      <CapacityBlockCandidatesControl
+        candidates={twoRows}
+        instanceTypes={instanceTypes}
+        offeringsByCandidate={{
+          1: entry({pending: true, searched: true}),
+          2: entry({offerings: [offering1], searched: true})
+        }}
+      />
+    );
+    expect(screen.getByText('us-east-1a')).toBeInTheDocument();
+    expect(screen.queryByText('No offerings')).not.toBeInTheDocument();
+  });
+
+test('one row\'s own failed search does not hide another, already-settled row\'s cards',
+  () => {
+    const twoRows = [
+      {id: 1, instanceType: 'p5.48xlarge', instanceCount: 2},
+      {id: 2, instanceType: 'p4d.24xlarge', instanceCount: 1}
+    ];
+    render(
+      <CapacityBlockCandidatesControl
+        candidates={twoRows}
+        instanceTypes={instanceTypes}
+        offeringsByCandidate={{
+          1: entry({error: 'The offering search failed', searched: true}),
+          2: entry({offerings: [offering1], searched: true})
+        }}
+      />
+    );
+    expect(screen.getByText('us-east-1a')).toBeInTheDocument();
+  });
+
+test('fullRefetchPending hides every row\'s cards, settled or not', () => {
+  const twoRows = [
+    {id: 1, instanceType: 'p5.48xlarge', instanceCount: 2},
+    {id: 2, instanceType: 'p4d.24xlarge', instanceCount: 1}
+  ];
+  render(
+    <CapacityBlockCandidatesControl
+      candidates={twoRows}
+      instanceTypes={instanceTypes}
+      offeringsByCandidate={{
+        1: entry({offerings: [offering1], searched: true}),
+        2: entry({offerings: [offering2], searched: true})
+      }}
+      fullRefetchPending
+    />
+  );
+  expect(screen.queryByText('us-east-1a')).not.toBeInTheDocument();
+  expect(screen.queryByText('us-east-1b')).not.toBeInTheDocument();
   expect(screen.queryByText('No offerings')).not.toBeInTheDocument();
 });
 
@@ -222,7 +284,7 @@ test('clicking a card selects its offering', async () => {
     <CapacityBlockCandidatesControl
       candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
       instanceTypes={instanceTypes}
-      offerings={[offering1]}
+      offeringsByCandidate={{1: entry({offerings: [offering1], searched: true})}}
       onSelectOffering={onSelectOffering}
     />
   );
@@ -238,7 +300,7 @@ test('clicking the instance-type select selects nothing', async () => {
     <CapacityBlockCandidatesControl
       candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
       instanceTypes={instanceTypes}
-      offerings={[offering1]}
+      offeringsByCandidate={{1: entry({offerings: [offering1], searched: true})}}
       onSelectOffering={onSelectOffering}
     />
   );
@@ -254,7 +316,7 @@ test('clicking the nodes-count input selects nothing', async () => {
     <CapacityBlockCandidatesControl
       candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
       instanceTypes={instanceTypes}
-      offerings={[offering1]}
+      offeringsByCandidate={{1: entry({offerings: [offering1], searched: true})}}
       onSelectOffering={onSelectOffering}
     />
   );
@@ -270,7 +332,7 @@ test('clicking the remove button selects nothing', async () => {
     <CapacityBlockCandidatesControl
       candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
       instanceTypes={instanceTypes}
-      offerings={[offering1]}
+      offeringsByCandidate={{1: entry({offerings: [offering1], searched: true})}}
       onSelectOffering={onSelectOffering}
     />
   );
@@ -288,7 +350,7 @@ test('several offerings in one row: each card is its own click target', async ()
     <CapacityBlockCandidatesControl
       candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
       instanceTypes={instanceTypes}
-      offerings={[offering1, offering2]}
+      offeringsByCandidate={{1: entry({offerings: [offering1, offering2], searched: true})}}
       onSelectOffering={onSelectOffering}
     />
   );
@@ -314,7 +376,7 @@ test('the card is the control: Enter and Space select it, the row and inputs sta
       <CapacityBlockCandidatesControl
         candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
         instanceTypes={instanceTypes}
-        offerings={[offering1]}
+        offeringsByCandidate={{1: entry({offerings: [offering1], searched: true})}}
         onSelectOffering={onSelectOffering}
       />
     );
@@ -338,7 +400,6 @@ test('the row carries no button role, click handler or selected class, in any st
       <CapacityBlockCandidatesControl
         candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
         instanceTypes={instanceTypes}
-        offerings={[]}
         onSelectOffering={onSelectOffering}
       />
     );
@@ -350,7 +411,7 @@ test('the row carries no button role, click handler or selected class, in any st
       <CapacityBlockCandidatesControl
         candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
         instanceTypes={instanceTypes}
-        offerings={[offering1]}
+        offeringsByCandidate={{1: entry({offerings: [offering1], searched: true})}}
         selectedOfferingId="o1"
         onSelectOffering={onSelectOffering}
       />
@@ -374,9 +435,7 @@ test('a pending search offers nothing selectable, even over a stale offering fro
     <CapacityBlockCandidatesControl
       candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
       instanceTypes={instanceTypes}
-      offerings={[offering1]}
-      offeringsPending
-      offeringsSearched
+      offeringsByCandidate={{1: entry({offerings: [offering1], pending: true, searched: true})}}
       onSelectOffering={onSelectOffering}
     />
   );
@@ -390,13 +449,13 @@ test('a pending search offers nothing selectable, even over a stale offering fro
   expect(onSelectOffering).not.toHaveBeenCalled();
 });
 
-test('offeringsPending shows the search indicator on the label line, and only there', () => {
+test('fullRefetchPending shows the search indicator on the label line, and only there', () => {
   const {rerender} = render(
     <CapacityBlockCandidatesControl
       candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
       instanceTypes={instanceTypes}
-      offerings={[offering1]}
-      offeringsPending
+      offeringsByCandidate={{1: entry({offerings: [offering1], searched: true})}}
+      fullRefetchPending
     />
   );
   const pending = screen.getByText('Search for offerings...');
@@ -416,7 +475,7 @@ test('offeringsPending shows the search indicator on the label line, and only th
     <CapacityBlockCandidatesControl
       candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
       instanceTypes={instanceTypes}
-      offerings={[offering1]}
+      offeringsByCandidate={{1: entry({offerings: [offering1], searched: true})}}
     />
   );
   expect(screen.queryByText('Search for offerings...')).not.toBeInTheDocument();
@@ -442,13 +501,13 @@ test('instanceTypesPending shows the fetching indicator on the label line, and o
 
 // No candidate can be complete before the catalogue has arrived, so the two indicators
 // cannot meaningfully coexist - but if both flags are somehow set, the catalogue one wins.
-test('instanceTypesPending wins over offeringsPending when both are set', () => {
+test('instanceTypesPending wins over fullRefetchPending when both are set', () => {
   render(
     <CapacityBlockCandidatesControl
       candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
       instanceTypes={instanceTypes}
       instanceTypesPending
-      offeringsPending
+      fullRefetchPending
     />
   );
   expect(screen.getByText('Fetching instance types...')).toBeInTheDocument();
@@ -466,21 +525,12 @@ test('offeringsError renders as an alert', () => {
   expect(screen.getByText('The offering search failed')).toBeInTheDocument();
 });
 
-test('the search pending/error state is shown once, not once per row', () => {
+test('offeringsError is shown once across multiple rows, not once per row', () => {
   const twoRows = [
     {id: 1, instanceType: 'p5.48xlarge', instanceCount: 2},
     {id: 2, instanceType: 'p4d.24xlarge', instanceCount: 1}
   ];
-  const {rerender} = render(
-    <CapacityBlockCandidatesControl
-      candidates={twoRows}
-      instanceTypes={instanceTypes}
-      offeringsPending
-    />
-  );
-  expect(screen.getAllByText('Search for offerings...')).toHaveLength(1);
-
-  rerender(
+  render(
     <CapacityBlockCandidatesControl
       candidates={twoRows}
       instanceTypes={instanceTypes}
@@ -488,6 +538,21 @@ test('the search pending/error state is shown once, not once per row', () => {
     />
   );
   expect(screen.getAllByText('The offering search failed')).toHaveLength(1);
+});
+
+test('the full-refetch indicator is shown once, not once per row', () => {
+  const twoRows = [
+    {id: 1, instanceType: 'p5.48xlarge', instanceCount: 2},
+    {id: 2, instanceType: 'p4d.24xlarge', instanceCount: 1}
+  ];
+  render(
+    <CapacityBlockCandidatesControl
+      candidates={twoRows}
+      instanceTypes={instanceTypes}
+      fullRefetchPending
+    />
+  );
+  expect(screen.getAllByText('Search for offerings...')).toHaveLength(1);
 });
 
 test('instanceTypesError renders above the rows and disables Add instance type', () => {

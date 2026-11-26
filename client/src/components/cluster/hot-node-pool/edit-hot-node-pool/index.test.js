@@ -1785,3 +1785,440 @@ test(
     expect(within(row('Nodes count:')).getByRole('textbox')).toHaveValue('3');
   }
 );
+
+// Per-candidate fetching: the state reshape (`mlBlockOfferingsByCandidate`), the two
+// staleness dimensions and the selection's per-candidate safety rules. Candidates below
+// are built through `onChangeField` directly, as the existing deletion/duplicate-search
+// tests above do - the catalogue's own options are not under test here.
+describe('per-candidate offering search', () => {
+  // Appends a candidate with the given type/count and returns its id, waiting on nothing -
+  // callers wait for the request count they expect afterwards.
+  async function addMlBlockCandidate (instance, instanceType, instanceCount) {
+    const before = instance().state.mlBlockCandidates.map(c => c.id);
+    await act(() => instance().onChangeField('mlBlockCandidates', {action: 'add'}));
+    const {id} = instance().state.mlBlockCandidates.find(c => !before.includes(c.id));
+    await act(() => instance().onChangeField(
+      'mlBlockCandidates', {action: 'update', id, field: 'instanceType', value: instanceType}
+    ));
+    await act(() => instance().onChangeField(
+      'mlBlockCandidates', {action: 'update', id, field: 'instanceCount', value: instanceCount}
+    ));
+    return id;
+  }
+
+  test(
+    'a candidate that becomes incomplete does not hide "No offerings" for another, ' +
+    'already-settled one',
+    async () => {
+      const {api, instance} = await renderMlBlockPool();
+      api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+      api.reply('/cluster/capacity-reservation/offerings', []);
+
+      await enterMlBlockMode();
+      await selectRegion('eu-central-1');
+      await waitFor(() => expect(
+        screen.getByRole('button', {name: 'Add instance type'})
+      ).not.toBeDisabled());
+      await change(within(row('Duration (days):')).getByRole('textbox'), '1');
+      await act(() => instance().onChangeField('commitmentStart', '2026-12-25'));
+
+      await addMlBlockCandidate(instance, 'p5.48xlarge', 2);
+      await waitFor(() => expect(offeringsCalls(api)).toHaveLength(1), {
+        timeout: ML_BLOCK_SEARCH_TIMEOUT
+      });
+      await waitFor(() => expect(screen.getByText('No offerings')).toBeInTheDocument());
+
+      // A second candidate, completed - its own search settles too - and then emptied
+      // back out, so its entry reads `searched: false` with no new search ever run.
+      const secondId = await addMlBlockCandidate(instance, 'p4d.24xlarge', 1);
+      await waitFor(() => expect(offeringsCalls(api)).toHaveLength(2), {
+        timeout: ML_BLOCK_SEARCH_TIMEOUT
+      });
+      await act(() => instance().onChangeField(
+        'mlBlockCandidates',
+        {action: 'update', id: secondId, field: 'instanceType', value: undefined}
+      ));
+
+      expect(screen.getByText('No offerings')).toBeInTheDocument();
+    }
+  );
+
+  test('editing one candidate searches only that candidate, carrying just its own type',
+    async () => {
+      const {api, instance} = await renderMlBlockPool();
+      api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+      api.reply('/cluster/capacity-reservation/offerings', []);
+
+      await enterMlBlockMode();
+      await selectRegion('eu-central-1');
+      await waitFor(() => expect(
+        screen.getByRole('button', {name: 'Add instance type'})
+      ).not.toBeDisabled());
+      await change(within(row('Duration (days):')).getByRole('textbox'), '1');
+      await act(() => instance().onChangeField('commitmentStart', '2026-12-25'));
+
+      const firstId = await addMlBlockCandidate(instance, 'p5.48xlarge', 2);
+      await waitFor(() => expect(offeringsCalls(api)).toHaveLength(1), {
+        timeout: ML_BLOCK_SEARCH_TIMEOUT
+      });
+      await addMlBlockCandidate(instance, 'p4d.24xlarge', 1);
+      await waitFor(() => expect(offeringsCalls(api)).toHaveLength(2), {
+        timeout: ML_BLOCK_SEARCH_TIMEOUT
+      });
+
+      await act(() => instance().onChangeField(
+        'mlBlockCandidates', {action: 'update', id: firstId, field: 'instanceCount', value: 5}
+      ));
+
+      await waitFor(() => expect(offeringsCalls(api)).toHaveLength(3), {
+        timeout: ML_BLOCK_SEARCH_TIMEOUT
+      });
+      const body = JSON.parse(offeringsCalls(api)[2].body);
+      expect(body.candidates).toEqual([{instanceType: 'p5.48xlarge', instanceCount: 5}]);
+    });
+
+  test('removing a candidate drops its entry without firing a new search', async () => {
+    const {api, instance} = await renderMlBlockPoolWithOffering();
+    const callsBefore = offeringsCalls(api).length;
+    const [candidate] = instance().state.mlBlockCandidates;
+
+    await act(() => instance().onChangeField(
+      'mlBlockCandidates', {action: 'remove', id: candidate.id}
+    ));
+
+    await new Promise((resolve) => setTimeout(resolve, ML_BLOCK_SEARCH_TIMEOUT));
+
+    expect(offeringsCalls(api).length).toBe(callsBefore);
+    expect(instance().state.mlBlockCandidates).toEqual([]);
+  });
+
+  // Candidate ids are assigned `Math.max(...ids, 0) + 1`, so removing the only row and
+  // adding a new one hands it back the same numeric id - a response still in flight for
+  // the removed row must not be mistaken for one belonging to its replacement.
+  test(
+    'a stale response for a removed candidate cannot apply to a new one that reuses its id',
+    async () => {
+      const {api, instance} = await renderMlBlockPool();
+      api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+      const resolvers = [];
+      api.handle('/cluster/capacity-reservation/offerings', () => new Promise((resolve) => {
+        resolvers.push(resolve);
+      }));
+
+      await enterMlBlockMode();
+      await selectRegion('eu-central-1');
+      await waitFor(() => expect(
+        screen.getByRole('button', {name: 'Add instance type'})
+      ).not.toBeDisabled());
+      await change(within(row('Duration (days):')).getByRole('textbox'), '1');
+      await act(() => instance().onChangeField('commitmentStart', '2026-12-25'));
+
+      const oldId = await addMlBlockCandidate(instance, 'p5.48xlarge', 2);
+      await waitFor(() => expect(offeringsCalls(api)).toHaveLength(1), {
+        timeout: ML_BLOCK_SEARCH_TIMEOUT
+      });
+
+      // Removed before its own request resolves.
+      await act(() => instance().onChangeField(
+        'mlBlockCandidates', {action: 'remove', id: oldId}
+      ));
+
+      // A freshly added candidate reuses the same numeric id and, deliberately, the
+      // same instance type - so attribution by `instanceType` cannot be what keeps the
+      // removed row's response out; only the id-reuse guard can. Its own request is
+      // dispatched too, but the removed row's stale response lands first.
+      const newId = await addMlBlockCandidate(instance, 'p5.48xlarge', 1);
+      expect(newId).toBe(oldId);
+      await waitFor(() => expect(offeringsCalls(api)).toHaveLength(2), {
+        timeout: ML_BLOCK_SEARCH_TIMEOUT
+      });
+      resolvers[0]({
+        status: 'OK',
+        payload: [mlBlockOffering({offeringId: 'stale', instanceType: 'p5.48xlarge'})]
+      });
+      await flushPromises();
+      const entryFor = (id) => instance().state.mlBlockOfferingsByCandidate[id] || {};
+      // Rejected: the new row's entry is untouched by it - still its own pending
+      // search's placeholder, not settled by a response that was never really for it.
+      expect(entryFor(newId).searched).toBe(false);
+      expect(entryFor(newId).pending).toBe(true);
+      expect((entryFor(newId).offerings || []).map(o => o.offeringId)).toEqual([]);
+
+      // The new row's own response then lands and applies normally.
+      resolvers[1]({
+        status: 'OK',
+        payload: [mlBlockOffering({offeringId: 'real', instanceType: 'p5.48xlarge'})]
+      });
+      await flushPromises();
+
+      expect(entryFor(newId).offerings.map(o => o.offeringId)).toEqual(['real']);
+    }
+  );
+
+  test('a window or duration change refetches every complete candidate in one request',
+    async () => {
+      const {api, instance} = await renderMlBlockPool();
+      api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+      api.reply('/cluster/capacity-reservation/offerings', []);
+
+      await enterMlBlockMode();
+      await selectRegion('eu-central-1');
+      await waitFor(() => expect(
+        screen.getByRole('button', {name: 'Add instance type'})
+      ).not.toBeDisabled());
+      await change(within(row('Duration (days):')).getByRole('textbox'), '1');
+      await act(() => instance().onChangeField('commitmentStart', '2026-12-25'));
+
+      await addMlBlockCandidate(instance, 'p5.48xlarge', 2);
+      await waitFor(() => expect(offeringsCalls(api)).toHaveLength(1), {
+        timeout: ML_BLOCK_SEARCH_TIMEOUT
+      });
+      await addMlBlockCandidate(instance, 'p4d.24xlarge', 1);
+      await waitFor(() => expect(offeringsCalls(api)).toHaveLength(2), {
+        timeout: ML_BLOCK_SEARCH_TIMEOUT
+      });
+
+      await act(() => instance().onChangeField('commitmentDurationDays', '2'));
+
+      await waitFor(() => expect(offeringsCalls(api)).toHaveLength(3), {
+        timeout: ML_BLOCK_SEARCH_TIMEOUT
+      });
+      const refetchBody = JSON.parse(offeringsCalls(api)[2].body);
+      expect(refetchBody.candidates.map(c => c.instanceType).sort())
+        .toEqual(['p4d.24xlarge', 'p5.48xlarge']);
+    });
+
+  test(
+    'a response stamped with a since-superseded generation is dropped once the window moves on',
+    async () => {
+      const {api, instance} = await renderMlBlockPool();
+      api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+      let resolveFirst;
+      let requestCount = 0;
+      // The first request is held open; every later one (the window-move's own refetch)
+      // settles immediately, so it can resolve before the held-open first one does.
+      api.handle('/cluster/capacity-reservation/offerings', () => {
+        requestCount += 1;
+        if (requestCount === 1) {
+          return new Promise((resolve) => { resolveFirst = resolve; });
+        }
+        return {status: 'OK', payload: [mlBlockOffering({offeringId: 'after-window-move'})]};
+      });
+
+      await enterMlBlockMode();
+      await selectRegion('eu-central-1');
+      await waitFor(() => expect(
+        screen.getByRole('button', {name: 'Add instance type'})
+      ).not.toBeDisabled());
+      await addMlBlockCandidate(instance, 'p5.48xlarge', 2);
+      await change(within(row('Duration (days):')).getByRole('textbox'), '1');
+      await act(() => instance().onChangeField('commitmentStart', '2026-12-25'));
+
+      // The first search's request goes out and is held open.
+      await waitFor(() => expect(offeringsCalls(api)).toHaveLength(1), {
+        timeout: ML_BLOCK_SEARCH_TIMEOUT
+      });
+      const generationBefore = instance().mlBlockOfferingsGeneration;
+
+      // The window moves on before that request resolves - a later search for the same
+      // candidate is dispatched under the new generation, and it settles first.
+      await act(() => instance().onChangeField('commitmentStart', '2026-12-26'));
+      await waitFor(() => expect(offeringsCalls(api)).toHaveLength(2), {
+        timeout: ML_BLOCK_SEARCH_TIMEOUT
+      });
+      expect(instance().mlBlockOfferingsGeneration).toBeGreaterThan(generationBefore);
+
+      const candidateId = instance().state.mlBlockCandidates[0].id;
+      await waitFor(() => expect(
+        instance().state.mlBlockOfferingsByCandidate[candidateId].offerings.map(o => o.offeringId)
+      ).toEqual(['after-window-move']));
+
+      // The stale first response, stamped with the generation from before the window
+      // moved, lands last and must not overwrite what the later one already applied.
+      resolveFirst({status: 'OK', payload: [mlBlockOffering({offeringId: 'before-window-move'})]});
+      await flushPromises();
+
+      expect(
+        instance().state.mlBlockOfferingsByCandidate[candidateId].offerings.map(o => o.offeringId)
+      ).toEqual(['after-window-move']);
+    }
+  );
+
+  test(
+    'a selection on one candidate survives a search on another, but not one on its own',
+    async () => {
+      const offeringA = mlBlockOffering({offeringId: 'offering-a', instanceType: 'p5.48xlarge'});
+      const offeringB = mlBlockOffering({offeringId: 'offering-b', instanceType: 'p4d.24xlarge'});
+      let offeringsResponse = [offeringA];
+      const {api, instance} = await renderMlBlockPool();
+      api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+      api.handle('/cluster/capacity-reservation/offerings', () => (
+        {status: 'OK', payload: offeringsResponse}
+      ));
+
+      await enterMlBlockMode();
+      await selectRegion('eu-central-1');
+      await waitFor(() => expect(
+        screen.getByRole('button', {name: 'Add instance type'})
+      ).not.toBeDisabled());
+      await change(within(row('Duration (days):')).getByRole('textbox'), '1');
+      await act(() => instance().onChangeField('commitmentStart', '2026-12-25'));
+
+      const candidateAId = await addMlBlockCandidate(instance, 'p5.48xlarge', 2);
+      await waitFor(() => expect(offeringsCalls(api)).toHaveLength(1), {
+        timeout: ML_BLOCK_SEARCH_TIMEOUT
+      });
+      await act(() => instance().onChangeField('mlBlockOffering', offeringA.offeringId));
+      expect(instance().state.mlBlockOfferingId).toBe(offeringA.offeringId);
+
+      // A second, independent candidate - its own search must not touch A's selection.
+      offeringsResponse = [offeringB];
+      await addMlBlockCandidate(instance, 'p4d.24xlarge', 1);
+      await waitFor(() => expect(offeringsCalls(api)).toHaveLength(2), {
+        timeout: ML_BLOCK_SEARCH_TIMEOUT
+      });
+      expect(instance().state.mlBlockOfferingId).toBe(offeringA.offeringId);
+
+      // A new search for the candidate that owns the selection clears it immediately,
+      // not once that search's own response lands.
+      await act(() => instance().onChangeField(
+        'mlBlockCandidates', {action: 'update', id: candidateAId, field: 'instanceCount', value: 5}
+      ));
+      expect(instance().state.mlBlockOfferingId).toBeUndefined();
+    }
+  );
+
+  test(
+    'an individual edit to a row already covered by an in-flight full refetch wins ' +
+    'over that refetch\'s own, now-stale data for the row - the full refetch still ' +
+    'resolves normally for every other row',
+    async () => {
+      const {api, instance} = await renderMlBlockPool();
+      api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+      const resolvers = [];
+      api.handle('/cluster/capacity-reservation/offerings', () => new Promise((resolve) => {
+        resolvers.push(resolve);
+      }));
+
+      await enterMlBlockMode();
+      await selectRegion('eu-central-1');
+      await waitFor(() => expect(
+        screen.getByRole('button', {name: 'Add instance type'})
+      ).not.toBeDisabled());
+      await change(within(row('Duration (days):')).getByRole('textbox'), '1');
+      await act(() => instance().onChangeField('commitmentStart', '2026-12-25'));
+
+      // Two candidates, each already settled.
+      const firstId = await addMlBlockCandidate(instance, 'p5.48xlarge', 2);
+      await waitFor(() => expect(offeringsCalls(api)).toHaveLength(1), {
+        timeout: ML_BLOCK_SEARCH_TIMEOUT
+      });
+      resolvers[0]({status: 'OK', payload: []});
+      await flushPromises();
+      const secondId = await addMlBlockCandidate(instance, 'p4d.24xlarge', 1);
+      await waitFor(() => expect(offeringsCalls(api)).toHaveLength(2), {
+        timeout: ML_BLOCK_SEARCH_TIMEOUT
+      });
+      resolvers[1]({status: 'OK', payload: []});
+      await flushPromises();
+
+      // A duration change starts a full refetch of both, in one request, held open.
+      await act(() => instance().onChangeField('commitmentDurationDays', '2'));
+      await waitFor(() => expect(offeringsCalls(api)).toHaveLength(3), {
+        timeout: ML_BLOCK_SEARCH_TIMEOUT
+      });
+      expect(instance().state.mlBlockOfferingsFullRefetchPending).toBe(true);
+
+      // The first candidate is edited again before that refetch's response lands -
+      // its own, later request is dispatched and resolves first.
+      await act(() => instance().onChangeField(
+        'mlBlockCandidates', {action: 'update', id: firstId, field: 'instanceCount', value: 9}
+      ));
+      await waitFor(() => expect(offeringsCalls(api)).toHaveLength(4), {
+        timeout: ML_BLOCK_SEARCH_TIMEOUT
+      });
+      resolvers[3]({status: 'OK', payload: [mlBlockOffering({offeringId: 'fresh'})]});
+      await flushPromises();
+      const offeringIdsFor = (id) => instance().state.mlBlockOfferingsByCandidate[id]
+        .offerings.map(o => o.offeringId);
+      expect(offeringIdsFor(firstId)).toEqual(['fresh']);
+
+      // The full refetch's own response lands last, carrying the first candidate's
+      // now-superseded, stale data and the second's own, still-current data.
+      resolvers[2]({
+        status: 'OK',
+        payload: [
+          mlBlockOffering({offeringId: 'stale-for-first', instanceType: 'p5.48xlarge'}),
+          mlBlockOffering({offeringId: 'still-current-for-second', instanceType: 'p4d.24xlarge'})
+        ]
+      });
+      await flushPromises();
+
+      // The first candidate keeps its own, more recent response - the full refetch's
+      // stale one for it is dropped, not merged.
+      expect(offeringIdsFor(firstId)).toEqual(['fresh']);
+      // The second candidate was never superseded, so the full refetch's own data for
+      // it applies normally.
+      expect(offeringIdsFor(secondId)).toEqual(['still-current-for-second']);
+      expect(instance().state.mlBlockOfferingsFullRefetchPending).toBe(false);
+    }
+  );
+
+  // Changing a row's own type while its previous search is still in flight must not let
+  // that now-irrelevant response settle the row under the new type - neither by
+  // mis-attributing stale data to it nor by merely clearing its pending flag early.
+  test(
+    'changing a row\'s type while its own previous search is still in flight drops that ' +
+    'search entirely, rather than settling the row under the new type',
+    async () => {
+      const {api, instance} = await renderMlBlockPool();
+      api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+      const resolvers = [];
+      api.handle('/cluster/capacity-reservation/offerings', () => new Promise((resolve) => {
+        resolvers.push(resolve);
+      }));
+
+      await enterMlBlockMode();
+      await selectRegion('eu-central-1');
+      await waitFor(() => expect(
+        screen.getByRole('button', {name: 'Add instance type'})
+      ).not.toBeDisabled());
+      await change(within(row('Duration (days):')).getByRole('textbox'), '1');
+      await act(() => instance().onChangeField('commitmentStart', '2026-12-25'));
+
+      const id = await addMlBlockCandidate(instance, 'p5.48xlarge', 2);
+      await waitFor(() => expect(offeringsCalls(api)).toHaveLength(1), {
+        timeout: ML_BLOCK_SEARCH_TIMEOUT
+      });
+
+      // The type changes before that first search (for p5.48xlarge) resolves.
+      await act(() => instance().onChangeField(
+        'mlBlockCandidates', {action: 'update', id, field: 'instanceType', value: 'p4d.24xlarge'}
+      ));
+      await waitFor(() => expect(offeringsCalls(api)).toHaveLength(2), {
+        timeout: ML_BLOCK_SEARCH_TIMEOUT
+      });
+      const secondBody = JSON.parse(offeringsCalls(api)[1].body);
+      expect(secondBody.candidates).toEqual([{instanceType: 'p4d.24xlarge', instanceCount: 2}]);
+
+      // The first search's response, for the type this row no longer holds, lands.
+      resolvers[0]({
+        status: 'OK',
+        payload: [mlBlockOffering({offeringId: 'stale', instanceType: 'p5.48xlarge'})]
+      });
+      await flushPromises();
+      const entry = () => instance().state.mlBlockOfferingsByCandidate[id];
+      expect(entry().searched).toBe(false);
+      expect(entry().pending).toBe(true);
+      expect(entry().offerings).toEqual([]);
+
+      // The second search's own response, for the type the row now holds, settles it.
+      resolvers[1]({
+        status: 'OK',
+        payload: [mlBlockOffering({offeringId: 'real', instanceType: 'p4d.24xlarge'})]
+      });
+      await flushPromises();
+      expect(entry().offerings.map(o => o.offeringId)).toEqual(['real']);
+    }
+  );
+});

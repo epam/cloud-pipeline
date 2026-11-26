@@ -198,10 +198,9 @@ function EditHotNodePoolForm ({
   mlBlockInstanceTypes,
   mlBlockInstanceTypesPending,
   mlBlockInstanceTypesError,
-  mlBlockOfferings,
-  mlBlockOfferingsPending,
+  mlBlockOfferingsByCandidate,
+  mlBlockOfferingsFullRefetchPending,
   mlBlockOfferingsError,
-  mlBlockOfferingsSearched,
   mlBlockOfferingId,
   onChange
 }) {
@@ -341,10 +340,9 @@ function EditHotNodePoolForm ({
                       instanceTypes={mlBlockInstanceTypes}
                       instanceTypesPending={mlBlockInstanceTypesPending}
                       instanceTypesError={mlBlockInstanceTypesError}
-                      offerings={mlBlockOfferings}
-                      offeringsPending={mlBlockOfferingsPending}
+                      offeringsByCandidate={mlBlockOfferingsByCandidate}
+                      fullRefetchPending={mlBlockOfferingsFullRefetchPending}
                       offeringsError={mlBlockOfferingsError}
-                      offeringsSearched={mlBlockOfferingsSearched}
                       selectedOfferingId={mlBlockOfferingId}
                       disabled={disabled}
                       readOnly={readOnly}
@@ -634,10 +632,9 @@ EditHotNodePoolForm.propTypes = {
   mlBlockInstanceTypes: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   mlBlockInstanceTypesPending: PropTypes.bool,
   mlBlockInstanceTypesError: PropTypes.string,
-  mlBlockOfferings: PropTypes.array,
-  mlBlockOfferingsPending: PropTypes.bool,
+  mlBlockOfferingsByCandidate: PropTypes.object,
+  mlBlockOfferingsFullRefetchPending: PropTypes.bool,
   mlBlockOfferingsError: PropTypes.string,
-  mlBlockOfferingsSearched: PropTypes.bool,
   mlBlockOfferingId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   onChange: PropTypes.func
 };

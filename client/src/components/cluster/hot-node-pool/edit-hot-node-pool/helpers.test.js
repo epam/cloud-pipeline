@@ -32,6 +32,8 @@ import {
   buildCapacityBlockOfferingRequest,
   canSearchCapacityBlockOfferings,
   getOfferingsForCandidate,
+  getAllMlBlockOfferings,
+  offeringBelongsToCandidate,
   getSelectedOffering,
   formatCapacityBlockInstanceType,
   formatCloudCommitmentDate
@@ -101,6 +103,12 @@ const sampleOffering = (overrides = {}) => ({
   ...overrides
 });
 
+// The per-candidate map `getSelectedOffering`/`buildCapacityReservationRequest` read -
+// keyed by the candidate id `mlBlockCandidates` carries, mirroring `index.js`'s own shape.
+const offeringsByCandidate = (id, offerings) => ({
+  [id]: {offerings, pending: false, error: undefined, searched: true}
+});
+
 // A fully valid ML Block values object has a selected offering, and the instanceType/
 // count it filled onto the form.
 const mlBlockValues = (overrides = {}) => {
@@ -114,7 +122,7 @@ const mlBlockValues = (overrides = {}) => {
     commitmentEnd: inDays(10),
     commitmentDurationDays: 1,
     mlBlockCandidates: [{id: 1, instanceType: offering.instanceType, instanceCount: 4}],
-    mlBlockOfferings: [offering],
+    mlBlockOfferingsByCandidate: offeringsByCandidate(1, [offering]),
     mlBlockOfferingId: offering.offeringId,
     ...overrides
   });
@@ -338,22 +346,74 @@ describe('getOfferingsForCandidate', () => {
   });
 });
 
+describe('getAllMlBlockOfferings', () => {
+  it('flattens every candidate\'s own offerings into one list', () => {
+    const a = sampleOffering({offeringId: 'a'});
+    const b = sampleOffering({offeringId: 'b'});
+    const map = {
+      ...offeringsByCandidate(1, [a]),
+      ...offeringsByCandidate(2, [b])
+    };
+    expect(getAllMlBlockOfferings(map).map(o => o.offeringId).sort()).toEqual(['a', 'b']);
+  });
+
+  it('is an empty array for an empty or missing map', () => {
+    expect(getAllMlBlockOfferings({})).toEqual([]);
+    expect(getAllMlBlockOfferings(undefined)).toEqual([]);
+  });
+});
+
+describe('offeringBelongsToCandidate', () => {
+  const offering = sampleOffering();
+  const map = offeringsByCandidate(1, [offering]);
+
+  it('is true when the offering id is among that candidate\'s own offerings', () => {
+    expect(offeringBelongsToCandidate(map, 1, offering.offeringId)).toBe(true);
+  });
+
+  it('is false for a different candidate\'s id', () => {
+    expect(offeringBelongsToCandidate(map, 2, offering.offeringId)).toBe(false);
+  });
+
+  it('is false with no offering id', () => {
+    expect(offeringBelongsToCandidate(map, 1, undefined)).toBe(false);
+  });
+
+  it('is false for a candidate with no entry', () => {
+    expect(offeringBelongsToCandidate({}, 1, offering.offeringId)).toBe(false);
+  });
+});
+
 describe('getSelectedOffering', () => {
   const offering = sampleOffering();
 
   it('is undefined when nothing is selected', () => {
-    expect(getSelectedOffering({mlBlockOfferings: [offering], mlBlockOfferingId: undefined}))
-      .toBeUndefined();
+    expect(getSelectedOffering({
+      mlBlockOfferingsByCandidate: offeringsByCandidate(1, [offering]),
+      mlBlockOfferingId: undefined
+    })).toBeUndefined();
   });
 
   it('is undefined when the selected id is no longer in the list', () => {
-    expect(getSelectedOffering({mlBlockOfferings: [], mlBlockOfferingId: offering.offeringId}))
-      .toBeUndefined();
+    expect(getSelectedOffering({
+      mlBlockOfferingsByCandidate: offeringsByCandidate(1, []),
+      mlBlockOfferingId: offering.offeringId
+    })).toBeUndefined();
   });
 
   it('returns the offering matching the selected id', () => {
     expect(getSelectedOffering({
-      mlBlockOfferings: [offering],
+      mlBlockOfferingsByCandidate: offeringsByCandidate(1, [offering]),
+      mlBlockOfferingId: offering.offeringId
+    })).toEqual(offering);
+  });
+
+  it('finds the offering across every candidate\'s own entry, not only the first', () => {
+    expect(getSelectedOffering({
+      mlBlockOfferingsByCandidate: {
+        ...offeringsByCandidate(1, []),
+        ...offeringsByCandidate(2, [offering])
+      },
       mlBlockOfferingId: offering.offeringId
     })).toEqual(offering);
   });
@@ -911,7 +971,9 @@ describe('getValidationErrors', () => {
     });
 
     it('is invalid when the selected offering id is no longer in the list', () => {
-      const {errors, valid} = getValidationErrors(mlBlockValues({mlBlockOfferings: []}));
+      const {errors, valid} = getValidationErrors(
+        mlBlockValues({mlBlockOfferingsByCandidate: offeringsByCandidate(1, [])})
+      );
       expect(errors.mlBlockOffering).toBe('Select one of the offerings');
       expect(valid).toBe(false);
     });
@@ -925,7 +987,7 @@ describe('getValidationErrors', () => {
         commitmentEnd: undefined,
         commitmentDurationDays: undefined,
         mlBlockCandidates: [],
-        mlBlockOfferings: [],
+        mlBlockOfferingsByCandidate: {},
         mlBlockOfferingId: undefined,
         instanceType: 'p5.48xlarge',
         count: 0
@@ -1170,7 +1232,7 @@ describe('buildCapacityReservationRequest', () => {
       const offering = sampleOffering();
       const request = buildCapacityReservationRequest({
         mode: 'ML_BLOCK',
-        mlBlockOfferings: [offering],
+        mlBlockOfferingsByCandidate: offeringsByCandidate(1, [offering]),
         mlBlockOfferingId: offering.offeringId
       });
       expect(request).toEqual({
@@ -1193,7 +1255,7 @@ describe('buildCapacityReservationRequest', () => {
         // A search window far from the offering's own granted window.
         commitmentStart: inDays(1),
         commitmentEnd: inDays(10),
-        mlBlockOfferings: [offering],
+        mlBlockOfferingsByCandidate: offeringsByCandidate(1, [offering]),
         mlBlockOfferingId: offering.offeringId
       });
       expect(request.requestedStartDate).toBe(offering.startDate);
@@ -1327,7 +1389,7 @@ describe('buildPoolPayload', () => {
         poolType: 'STANDARD',
         instanceType: offering.instanceType,
         count: offering.instanceCount,
-        mlBlockOfferings: [offering],
+        mlBlockOfferingsByCandidate: offeringsByCandidate(1, [offering]),
         mlBlockOfferingId: offering.offeringId,
         ...overrides
       });
@@ -1336,7 +1398,7 @@ describe('buildPoolPayload', () => {
     it('sends the CAPACITY_BLOCK capacityReservationRequest shape built from the offering', () => {
       const offering = sampleOffering();
       const payload = buildPoolPayload(mlBlockPayloadValues({
-        mlBlockOfferings: [offering],
+        mlBlockOfferingsByCandidate: offeringsByCandidate(1, [offering]),
         mlBlockOfferingId: offering.offeringId
       }));
       expect(payload.capacityReservationRequest).toEqual({
@@ -1358,7 +1420,7 @@ describe('buildPoolPayload', () => {
         const payload = buildPoolPayload(mlBlockPayloadValues({
           commitmentStart: inDays(1),
           commitmentEnd: inDays(10),
-          mlBlockOfferings: [offering],
+          mlBlockOfferingsByCandidate: offeringsByCandidate(1, [offering]),
           mlBlockOfferingId: offering.offeringId
         }));
         expect(payload.capacityReservationRequest.requestedStartDate).toBe(offering.startDate);

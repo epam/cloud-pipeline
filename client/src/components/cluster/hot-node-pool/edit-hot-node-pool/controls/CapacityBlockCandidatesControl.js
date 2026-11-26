@@ -19,17 +19,12 @@ import PropTypes from 'prop-types';
 import {Alert, Button, Icon, InputNumber, Select} from 'antd';
 import classNames from 'classnames';
 import CapacityBlockOfferingCard from './CapacityBlockOfferingCard';
-import {
-  getCompleteMlBlockCandidates,
-  getOfferingsForCandidate,
-  formatCapacityBlockInstanceType
-} from '../helpers';
+import {getCompleteMlBlockCandidates, formatCapacityBlockInstanceType} from '../helpers';
 import styles from '../../edit-hot-node-pool.css';
 
 // A candidate row is "complete" exactly when `getCompleteMlBlockCandidates` would keep
-// it - the same rule the search itself uses. "No offerings" is gated on `offeringsSearched`
-// rather than on `offerings` being non-empty: a settled search that matched nothing and a
-// search that has not run yet both leave the list empty, and only the flag tells them apart.
+// it. Each row renders from its own `offeringsByCandidate[row.id]` entry only, so one
+// row's own pending/error search never hides another, already-settled row's cards.
 //
 // The endpoint can return more than one offering per candidate (every AWS match, not just
 // the nearest); each is rendered as its own card, which is the only click target.
@@ -38,10 +33,9 @@ function CapacityBlockCandidatesControl ({
   instanceTypes,
   instanceTypesPending,
   instanceTypesError,
-  offerings,
-  offeringsPending,
+  offeringsByCandidate,
+  fullRefetchPending,
   offeringsError,
-  offeringsSearched,
   selectedOfferingId,
   disabled,
   readOnly,
@@ -56,16 +50,24 @@ function CapacityBlockCandidatesControl ({
   const completeIds = getCompleteMlBlockCandidates(rows).map(row => row.id);
   const addDisabled = disabled || instanceTypesPending || Boolean(instanceTypesError);
 
-  // The search covers every complete row at once, so its pending/error state is shown
-  // once for the whole control rather than repeated in every row's own right half.
-  const renderRowOfferings = (row, rowOfferings) => {
-    if (!completeIds.includes(row.id) || offeringsPending || offeringsError) {
+  const renderRowOfferings = (row) => {
+    if (!completeIds.includes(row.id) || fullRefetchPending) {
       return null;
     }
+    const entry = offeringsByCandidate[row.id] || {};
+    if (entry.pending) {
+      return <Icon type="loading" aria-label="Loading" />;
+    }
+    // This row's own error: the global banner above already reports it, and the
+    // error-card state is a later addition - nothing of this row's own renders here.
+    if (entry.error) {
+      return null;
+    }
+    const rowOfferings = entry.offerings || [];
     if (rowOfferings.length === 0) {
       // A settled empty search is a `warning`, carrying the same card padding and height
       // as a found offering so all three right-hand states read as one kind of object.
-      return offeringsSearched ? (
+      return entry.searched ? (
         <Alert
           type="warning"
           showIcon
@@ -98,7 +100,6 @@ function CapacityBlockCandidatesControl ({
       .filter(info => !usedTypes.includes((info.instanceType || '').toLowerCase()))
       .slice()
       .sort((a, b) => (a.instanceType || '').localeCompare(b.instanceType || ''));
-    const rowOfferings = getOfferingsForCandidate(offerings, row);
     return (
       <div key={row.id} className={styles.capacityBlockCandidateRow}>
         <div className={styles.capacityBlockCandidateInputs}>
@@ -140,7 +141,7 @@ function CapacityBlockCandidatesControl ({
           }
         </div>
         <div className={styles.capacityBlockCandidateOfferings}>
-          {renderRowOfferings(row, rowOfferings)}
+          {renderRowOfferings(row)}
         </div>
       </div>
     );
@@ -165,7 +166,7 @@ function CapacityBlockCandidatesControl ({
                 className={styles.capacityBlockPendingIndicatorIcon}
               />
             </span>
-          ) : offeringsPending && (
+          ) : fullRefetchPending && (
             <span className={styles.capacityBlockPendingIndicator}>
               Search for offerings...
               <Icon
@@ -224,10 +225,9 @@ CapacityBlockCandidatesControl.propTypes = {
   instanceTypes: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   instanceTypesPending: PropTypes.bool,
   instanceTypesError: PropTypes.string,
-  offerings: PropTypes.array,
-  offeringsPending: PropTypes.bool,
+  offeringsByCandidate: PropTypes.object,
+  fullRefetchPending: PropTypes.bool,
   offeringsError: PropTypes.string,
-  offeringsSearched: PropTypes.bool,
   selectedOfferingId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   disabled: PropTypes.bool,
   readOnly: PropTypes.bool,
@@ -242,7 +242,7 @@ CapacityBlockCandidatesControl.propTypes = {
 CapacityBlockCandidatesControl.defaultProps = {
   candidates: [],
   instanceTypes: [],
-  offerings: [],
+  offeringsByCandidate: {},
   onAdd: () => {},
   onRemove: () => {},
   onChange: () => {},

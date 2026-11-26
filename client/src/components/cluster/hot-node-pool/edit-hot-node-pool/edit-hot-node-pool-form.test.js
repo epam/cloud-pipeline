@@ -621,14 +621,21 @@ test('selecting an offering calls onChange with (\'mlBlockOffering\', offeringId
       mode: 'ML_BLOCK',
       mlBlockCandidates: [{id: 1, instanceType: 'p5.48xlarge', instanceCount: 4}]
     }),
-    mlBlockOfferings: [{
-      offeringId: 'o-1',
-      instanceType: 'p5.48xlarge',
-      instanceCount: 4,
-      availabilityZone: 'eu-central-1a',
-      startDate: '2026-12-21 04:14:02.500',
-      endDate: '2026-12-31 04:14:02.500'
-    }]
+    mlBlockOfferingsByCandidate: {
+      1: {
+        offerings: [{
+          offeringId: 'o-1',
+          instanceType: 'p5.48xlarge',
+          instanceCount: 4,
+          availabilityZone: 'eu-central-1a',
+          startDate: '2026-12-21 04:14:02.500',
+          endDate: '2026-12-31 04:14:02.500'
+        }],
+        pending: false,
+        error: undefined,
+        searched: true
+      }
+    }
   });
 
   await click(screen.getByRole('button', {name: /p5\.48xlarge/}));

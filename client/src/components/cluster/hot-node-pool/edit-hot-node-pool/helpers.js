@@ -174,12 +174,30 @@ export function getOfferingsForCandidate (offerings, candidate) {
   return (offerings || []).filter(o => (o.instanceType || '').toLowerCase() === type);
 }
 
+// Every candidate's own offerings, flattened - the selection is one value shared by the
+// whole form, so finding it means looking across every row rather than just one.
+export function getAllMlBlockOfferings (offeringsByCandidate) {
+  return Object.values(offeringsByCandidate || {})
+    .reduce((all, entry) => all.concat((entry || {}).offerings || []), []);
+}
+
+// Whether `offeringId` is among candidate `id`'s own offerings - the ownership check
+// the selection's safety rules key off (dropped when its owner is searched again).
+export function offeringBelongsToCandidate (offeringsByCandidate, id, offeringId) {
+  if (!offeringId) {
+    return false;
+  }
+  const entry = (offeringsByCandidate || {})[id];
+  return Boolean(entry && (entry.offerings || []).some(o => o.offeringId === offeringId));
+}
+
 export function getSelectedOffering (values) {
-  const {mlBlockOfferings, mlBlockOfferingId} = values;
+  const {mlBlockOfferingsByCandidate, mlBlockOfferingId} = values;
   if (!mlBlockOfferingId) {
     return undefined;
   }
-  return (mlBlockOfferings || []).find(o => o.offeringId === mlBlockOfferingId);
+  return getAllMlBlockOfferings(mlBlockOfferingsByCandidate)
+    .find(o => o.offeringId === mlBlockOfferingId);
 }
 
 // The catalogue reports memory in MiB; this line shows it in GB.
