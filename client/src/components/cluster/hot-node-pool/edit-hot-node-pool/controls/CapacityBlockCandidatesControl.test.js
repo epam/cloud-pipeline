@@ -151,9 +151,8 @@ test('a row with matching offerings renders a card per offering', () => {
   expect(screen.getByText('us-east-1b')).toBeInTheDocument();
 });
 
-// The one assertion in this file tied to antd's own class, mirroring
-// CapacityBlockOfferingCard.test.js's own exception: it is the only way to prove the
-// alert actually renders as `warning`, not just that its text reads "No offerings".
+// The one antd-class assertion in this file, mirroring CapacityBlockOfferingCard.test.js:
+// only this proves the alert is really type="warning", not just its text.
 test('a row with none, in a settled search, renders "No offerings" as a warning alert', () => {
   const {container} = render(
     <CapacityBlockCandidatesControl
@@ -216,8 +215,6 @@ test('an incomplete row never shows "No offerings", even in a settled search', (
   expect(screen.queryByText('No offerings')).not.toBeInTheDocument();
 });
 
-// The core of the per-candidate fetch: one row's own pending or failed search must
-// never hide a sibling row's already-settled offerings.
 test('one row\'s own pending search does not hide another, already-settled row\'s cards',
   () => {
     const twoRows = [
@@ -257,10 +254,8 @@ test('one row\'s own failed search does not hide another, already-settled row\'s
     expect(screen.getByText('us-east-1a')).toBeInTheDocument();
   });
 
-// A failed search is the fourth card state, in the row whose own search failed - not
-// a banner above every row, which would read as if every candidate had failed. Like
-// the "No offerings" case above, asserting the alert is really `type="error"` (and not
-// just that its text reads right) means touching antd's own class once, deliberately.
+// A failed search is its own row's card, not a banner for every row; asserting
+// type="error" (not just the text) means touching antd's class again, deliberately.
 test('a row\'s own failed search renders the server message as an error alert, there only',
   () => {
     render(
@@ -281,8 +276,6 @@ test('a row\'s own failed search renders the server message as an error alert, t
     // own warning alert carries the same class - this must be row 1's own alert.
     const alert = message.closest('.capacityBlockOfferingCard');
     expect(alert).toHaveClass('ant-alert-error');
-    // The second row's own settled-empty state renders independently of the first
-    // row's error.
     expect(screen.getByText('No offerings')).toBeInTheDocument();
   });
 
@@ -410,8 +403,6 @@ test('several offerings in one row: each card is its own click target', async ()
   expect(onSelectOffering).toHaveBeenLastCalledWith('o2');
 });
 
-// The card is the only control; the row and its inputs carry no role or handler of
-// their own, and Enter/Space on the card still reach `onSelectOffering`.
 test('the card is the control: Enter and Space select it, the row and inputs stay plain',
   async () => {
     const onSelectOffering = fn();
@@ -468,9 +459,8 @@ test('the row carries no button role, click handler or selected class, in any st
     expect(onSelectOffering).not.toHaveBeenCalled();
   });
 
-// A click during the debounce window must not be able to select an offering found for
-// criteria the user has since changed - it is off screen, and its purchase is not
-// refundable.
+// A stale offering found before a criteria change must stay unselectable - it is
+// off screen, and the purchase it would trigger is not refundable.
 test('a pending search offers nothing selectable, even over a stale offering from a ' +
   'previous search', async () => {
   const onSelectOffering = fn();
@@ -510,7 +500,6 @@ test('fullRefetchPending shows the search indicator on the label line, and only 
   const childNodes = Array.from(pending.childNodes);
   const textNode = childNodes.find((node) => node.nodeType === Node.TEXT_NODE);
   expect(textNode.textContent).toBe('Search for offerings...');
-  // The text comes first and the spinner follows it, not the other way round.
   expect(childNodes.indexOf(textNode)).toBeLessThan(childNodes.indexOf(icon));
   expect(screen.queryByText('us-east-1a')).not.toBeInTheDocument();
 
@@ -557,8 +546,6 @@ test('instanceTypesPending wins over fullRefetchPending when both are set', () =
   expect(screen.queryByText('Search for offerings...')).not.toBeInTheDocument();
 });
 
-// A failed search is each row's own state now, not a control-wide banner - two rows
-// that both failed each carry the message, independently of one another.
 test('each row whose own search failed carries the message - not one banner for all', () => {
   render(
     <CapacityBlockCandidatesControl
@@ -576,10 +563,8 @@ test('each row whose own search failed carries the message - not one banner for 
   expect(screen.getAllByText('The offering search failed')).toHaveLength(2);
 });
 
-// A candidate's own search shows a spinner in its own row; a full refetch shows the
-// single label-line indicator instead and no row carries a spinner of its own - even
-// one whose own entry is still (independently) pending, since `fullRefetchPending`
-// wins over a row's own state.
+// fullRefetchPending wins over a row's own pending state - a row that is itself
+// still pending shows no spinner once a full refetch is in progress.
 test('a per-candidate fetch shows that row\'s own spinner, a full refetch shows none', () => {
   const {container, rerender} = render(
     <CapacityBlockCandidatesControl

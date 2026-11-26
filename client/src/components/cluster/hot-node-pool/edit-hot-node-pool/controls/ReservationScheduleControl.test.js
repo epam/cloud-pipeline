@@ -272,14 +272,8 @@ test('children render between the Duration (days) row and the status notice', ()
   ).toBeTruthy();
 });
 
-// There is no test here driving the "Search until" picker through the UI, and that is
-// deliberate: a `change` on its textbox, with or without a trailing `Enter`/blur to make
-// rc-calendar commit the value, never reaches `onChangeEnd` under antd 2.13.14 and React
-// 15 — both forms were tried. Nothing anywhere in this codebase drives an antd DatePicker
-// from a unit test. The tests above ("Search from and Search until show their own values
-// independently", "disabled disables all three inputs", "startError and endError each
-// show only when touched, independently") carry the proof instead: the end date is a real
-// input of its own, not a value derived from the other two fields.
+// No test here drives "Search until" through the UI: a `change` on its textbox, with
+// or without a trailing blur, never reaches `onChangeEnd` under antd 2.13.14 and React 15.
 
 describe('the reservation status notice', () => {
   test('no reservationStatus renders no alert at all', () => {

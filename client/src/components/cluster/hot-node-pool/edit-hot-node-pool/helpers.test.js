@@ -70,12 +70,8 @@ function baseValues (overrides = {}) {
   };
 }
 
-// Now-relative fixtures: the backend's lead-time/duration rules are relative to "now",
-// so a fixed past date (like the old `'2026-01-01 10:00:00.000'`) would fail them. `fmt`
-// formats a moment through the backend's own wire format, used for an offering's own
-// `startDate`/`endDate` (AWS-origin, always a full datetime); `inDays` is "N days from
-// now" as the day-only string `commitmentStart`/`commitmentEnd` hold; `futureDatedValues`
-// is a fully valid future-dated values object a single field can be overridden from.
+// Backend lead-time/duration rules are relative to "now", so fixtures use day offsets
+// rather than a fixed past date.
 const fmt = (m) => m.format(COMMITMENT_DATE_TIME_FORMAT);
 const inDays = (days) => moment().add(days, 'days').format(COMMITMENT_DATE_ONLY_FORMAT);
 const futureDatedValues = (overrides = {}) => baseValues({
@@ -128,9 +124,8 @@ const mlBlockValues = (overrides = {}) => {
   });
 };
 
-// The boundaries below are pinned to this fixed instant rather than to whenever the
-// suite happens to run, so a day offset lands exactly on the fencepost every time,
-// independent of the harness's own pinned zone (`moment.utc` is explicit either way).
+// Pinned to a fixed instant so a day offset always lands exactly on the fencepost,
+// independent of the harness's own zone pin (`moment.utc` here is explicit either way).
 const FIXED_NOW = '2026-11-20T15:00:00.000Z';
 const dayAt = (offsetDays) => moment.utc(FIXED_NOW)
   .add(offsetDays, 'days')
@@ -658,10 +653,8 @@ describe('getValidationErrors', () => {
         .toBe('Search from date should be between 6 and 121 days from now');
     });
 
-    // `now` is fixed rather than relative, so a day offset lands exactly on the
-    // fencepost every run - `leadDays` floors a fractional diff against a start pinned
-    // to 00:00, so the boundary a user hits is one calendar day later than the backend's
-    // own 5/120 on both ends (`NodePoolValidator.MINIMUM_LEAD_DAYS`/120).
+    // `leadDays` floors a fractional diff against a start pinned to 00:00, so the
+    // boundary a user hits is one calendar day later than the backend's own 5/120.
     describe('the lead-time boundary, pinned to a fixed "now"', () => {
       afterEach(() => {
         useRealTimers();
@@ -707,8 +700,7 @@ describe('getValidationErrors', () => {
     });
 
     // `commitmentEnd` is sent at 23:59:59.999 of its day, so an N-day duration needs a
-    // span of N calendar days *plus one* - `endOf('day')` is deliberate (the plan this
-    // phase closes), so this pins the fencepost rather than changing it.
+    // span of N calendar days plus one - `endOf('day')` is deliberate; this pins that fencepost.
     describe('the exact-fit duration boundary', () => {
       afterEach(() => {
         useRealTimers();
@@ -787,9 +779,8 @@ describe('getValidationErrors', () => {
     it(
       'does not block an existing future-dated pool whose count legitimately loads as 0',
       () => {
-        // `NodePoolManager.create` stores a reservation pool with count 0 until the
-        // reservation is activated, so SAVE must not be blocked by it on an existing
-        // pool - the Count input is disabled and round-trips the value unchanged.
+        // `NodePoolManager.create` stores a reservation pool with count 0 until activated,
+        // so SAVE must not be blocked by it on an existing pool.
         const {valid, errors} = getValidationErrors(
           futureDatedValues({count: 0, isExistingReservation: true})
         );
@@ -856,11 +847,8 @@ describe('getValidationErrors', () => {
       expect(errors.commitmentStart).toBe('Search from date should be in the future');
     });
 
-    // The wire string is read by the backend as UTC (`AwsCapacityReservationService`
-    // reads a zone-less `LocalDateTime` with `ZoneOffset.UTC`), so the same picked day
-    // must flip from valid to refused at its own UTC midnight - not at local midnight,
-    // which is the regression this phase closes (picking "tomorrow" west of UTC could
-    // already be past by the time the backend reads it).
+    // The backend reads the wire string as UTC (a zone-less `LocalDateTime` via
+    // `ZoneOffset.UTC`), so a picked day flips valid/refused at its own UTC midnight.
     describe('a chosen day flips from valid to refused at its own UTC midnight', () => {
       afterEach(() => {
         useRealTimers();
@@ -879,11 +867,8 @@ describe('getValidationErrors', () => {
       });
     });
 
-    // Picking "tomorrow" could still send a start already past in UTC when the picked
-    // day was only ever read as a literal UTC reading - a viewer west of UTC, near their
-    // own midnight, is exactly where that bit. Converting the picked day to its true UTC
-    // instant (this phase) closes that structurally: the guard above stays, but this case
-    // can no longer reach it.
+    // A viewer west of UTC, near their own midnight, is where a literal-as-UTC reading
+    // of "tomorrow" could still land in the past; converting to the true UTC instant fixes it.
     describe('a local "tomorrow" is always a future start, even west of UTC near midnight',
       () => {
         afterEach(() => {
@@ -1475,10 +1460,8 @@ describe('buildSchedulePayload', () => {
     expect(payload.scheduleEntries.every(e => !('id' in e))).toBe(true);
   });
 
-  // Pins the future-dated-mode regression at the helper level, since driving the real
-  // DatePickers through the UI to reach a savable future-dated state is impractical
-  // under antd 2.13.14 (see index.test.js's "no schedule request" test for the matching
-  // UI-level, weaker check).
+  // At the helper level: antd 2.13.14's DatePickers can't be driven through the UI to a
+  // savable future-dated state (see index.test.js's "no schedule request" for the weaker UI check).
   it('is undefined for a future-dated pool: nothing in the future-dated UI can add a schedule' +
     ' entry', () => {
     expect(buildSchedulePayload(futureDatedValues())).toBeUndefined();

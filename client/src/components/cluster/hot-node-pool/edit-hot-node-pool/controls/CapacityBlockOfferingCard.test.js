@@ -130,7 +130,6 @@ test('an unselected card is an unpressed button, with a hidden icon', () => {
   expect(alert).toHaveClass('capacityBlockOfferingCardIconHidden');
 });
 
-// The card is always the control - one per offering, whether a row holds one or several.
 test('the card is a button, and a click calls onSelect with the offering id', async () => {
   const onSelect = fn();
   render(<CapacityBlockOfferingCard offering={offering} onSelect={onSelect} />);
@@ -159,9 +158,8 @@ test('the Space key also selects the card', async () => {
   expect(onSelect).toHaveBeenCalledWith('offering-1');
 });
 
-// The one assertion in this suite still tied to antd's own class: it is the only way
-// to prove the Alert's `type` itself is wired to `selected`, which `aria-pressed` alone
-// does not show.
+// The one assertion still tied to antd's own class: `aria-pressed` alone can't show
+// the Alert's `type` is wired to `selected`.
 test('selected renders success and unselected renders info, both by role', () => {
   const {container, rerender} = render(<CapacityBlockOfferingCard offering={offering} />);
   expect(screen.getByRole('button')).toBeInTheDocument();

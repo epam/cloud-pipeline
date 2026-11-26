@@ -35,10 +35,8 @@ import {buildCapacityBlockOfferingRequest, formatCapacityBlockInstanceType} from
 import {ML_BLOCK_OFFERINGS_FETCH_DELAY_MS} from './constants';
 import CapacityBlockInstanceTypes from '../../../../models/cluster/CapacityBlockInstanceTypes';
 
-// The catalogue cache (models/cluster/CapacityBlockInstanceTypes.js) is a module-level
-// singleton, held across this whole test file's run - without clearing it, a later
-// test's region 1 fetch would silently be served from an earlier test's cache and make
-// the call count depend on run order.
+// The catalogue cache (CapacityBlockInstanceTypes.js) is a module-level singleton; without
+// clearing it, a later test's fetch could be served from an earlier test's cache.
 beforeEach(() => {
   CapacityBlockInstanceTypes.clearCache();
 });
@@ -78,9 +76,8 @@ function stores () {
     }),
     roles: loaded([]),
     users: loaded([{userName: 'USER1'}]),
-    // The forced criterion's value Select renders its matching Option's children
-    // (<UserName userName="USER1" />), which injects `usersInfo` on its own —
-    // separately from the `users` list the Select itself reads to build its options.
+    // The forced criterion's Select renders its Option's children (<UserName/>), which
+    // injects `usersInfo` separately from the `users` list it reads to build options.
     usersInfo: loaded([]),
     pipelines: loaded([]),
     allConfigurations: loaded([])
@@ -116,10 +113,8 @@ function fullPool (overrides = {}) {
   };
 }
 
-// `isCapacityReservation` is the backend entity's own flag — the only reliable signal
-// that a loaded pool is a reservation pool. `startDate`/`endDate` are the realized
-// window (null while pending/unscheduled); `schedule: undefined` because a future-dated
-// pool's weekly schedule is always empty.
+// `isCapacityReservation` is the backend's own, and only reliable, signal that a loaded
+// pool is a reservation pool; `schedule` stays undefined since a future-dated pool has none.
 function reservationPool (overrides = {}) {
   return fullPool({
     isCapacityReservation: true,
@@ -132,16 +127,10 @@ function reservationPool (overrides = {}) {
   });
 }
 
-// Mounting always fires an AllowedInstanceTypes request (prevRegion starts at
-// -1), including in create mode with no region yet — this waits for it to
-// settle before the test's assertions and cleanup run, so the pending
-// `.then()` cannot resolve after `stubApi()` has been torn down and leak a
-// "Network access in a unit test" rejection into a later test.
-// A single `handle()` for the whole test, rather than `reply()` per case:
-// `stubApi` matches the first-registered handler for a pattern, so a second
-// `reply()` for the same regex would be shadowed and never reached.
 async function renderPool (props = {}, instanceTypesForCall = () => instanceAllowedPayload) {
   const api = stubApi();
+  // One `handle()` for the whole test: `stubApi` matches only the first-registered
+  // handler for a pattern, so a second `reply()` here would be shadowed.
   api.handle(/\/cluster\/instance\/allowed/, (call) => ({
     status: 'OK',
     payload: instanceTypesForCall(call)
@@ -150,6 +139,8 @@ async function renderPool (props = {}, instanceTypesForCall = () => instanceAllo
     <EditHotNodePool visible disabled={false} currentUserName="USER1" {...props} />,
     stores()
   );
+  // Mounting always fires this request, even with no region yet; awaiting it here keeps
+  // its `.then()` from rejecting after `stubApi` tears down, once the test exits.
   await waitFor(() => expect(api.calls.length).toBeGreaterThan(0));
   await flushPromises();
   return {...result, api};
@@ -159,10 +150,8 @@ function row (labelText) {
   return screen.getByText(labelText).closest('div');
 }
 
-// The candidate row is a sibling of the "Instance types:" label, not its descendant
-// (phase 9c made the row span the form's full width), so it is found relative to the
-// one other sibling with a stable name instead - the row just added sits right before
-// the "Add instance type" button's own row.
+// The candidate row is a sibling of the "Instance types:" label, not its descendant, so
+// it's found via the stable "Add instance type" button's own row instead.
 function mlBlockCandidateRow () {
   return screen.getByRole('button', {name: 'Add instance type'})
     .closest('div').previousElementSibling;
@@ -342,11 +331,8 @@ test('Default-mode regression: Price type stays Spot and stays enabled', async (
   expect(within(row('Price type:')).getByText('Spot')).toBeInTheDocument();
 });
 
-// Regression for a gap `onPoolKindChange`'s reset alone does not cover: a
-// forced-future-dated create never fires `onPoolKindChange` for mode (the Mode row is
-// hidden, mode is future-dated from the first render), so the auto-pick in
-// `updateInstanceTypes` is the only thing that ever sets `spot` here, and it must skip
-// SPOT too.
+// A forced-future-dated create never fires `onPoolKindChange` for mode (the Mode row is
+// hidden), so the auto-pick in `updateInstanceTypes` is the only thing that must skip SPOT here.
 test('a forced-future-dated create never auto-selects the Spot price type', async () => {
   await renderPool({allowedModes: ['FUTURE_DATED']});
 
@@ -479,13 +465,8 @@ test('Default-mode edit: payload carries poolType but never mode/commitment*/' +
   ]);
 });
 
-// Driving antd 2.13.14's two commitment-window DatePickers through the UI proved
-// impractical (the same limitation ReservationScheduleControl.test.js documents),
-// so this pins the regression at two levels instead:
-// `buildSchedulePayload(futureDatedValues())` is `undefined` at the helper level (in
-// helpers.test.js), and here — the weaker but still meaningful UI-level check — no
-// `/cluster/nodeSchedule` call is ever made while the form is in future-dated mode,
-// however far CREATE got blocked by the (undriveable) date fields.
+// antd 2.13.14's commitment DatePickers can't be driven through the UI, so this is only
+// the weaker UI-level check; helpers.test.js pins the regression directly.
 test('no schedule request is made while the form is in future-dated mode', async () => {
   const onSave = fn();
   const {api} = await renderPool({onSave});
@@ -503,9 +484,8 @@ test('no schedule request is made while the form is in future-dated mode', async
   await click(screen.getByText('CREATE'));
   await flushPromises();
 
-  // CREATE is blocked by the (unfilled, undriveable in this harness) commitment
-  // fields, which is fine — the point of this test is only that nothing ever
-  // reaches /cluster/nodeSchedule from future-dated mode.
+  // CREATE being blocked by the undriveable commitment fields is fine - the point is
+  // only that nothing reaches /cluster/nodeSchedule from future-dated mode.
   expect(onSave).not.toHaveBeenCalled();
   expect(api.calls.every(c => !/nodeSchedule/.test(c.path))).toBe(true);
 });
@@ -561,10 +541,8 @@ test(
   'editing a reservation pool whose matched record is CAPACITY_BLOCK opens in ML Block ' +
   'mode, disabled, with no candidates control',
   async () => {
-    // `EditHotNodePool`'s own `allowedModes` default stays the pre-existing two modes - the
-    // caller is the authority on which modes exist, so a caller that offers ML Block (as
-    // `hot-node-pool/index.js` now does) is modelled explicitly here too. A decoy record for
-    // another pool id proves the match is by id, not merely "the only record given".
+    // The caller is the authority on which modes exist, so ML Block is modelled explicitly
+    // here; the decoy record for another pool id proves the match is by id, not just given.
     const {api} = await renderPool({
       pool: reservationPool({id: 54}),
       allowedModes: ['DEFAULT', 'FUTURE_DATED', 'ML_BLOCK'],
@@ -703,9 +681,8 @@ test(
   }
 );
 
-// The reservation record is the source of truth for its own status, so a record that is
-// not simply "not yet scheduled" must show its own sentence rather than the generic
-// "waiting to be scheduled" one.
+// The reservation record is the source of truth for its own status, so an unscheduled
+// record that isn't "not yet scheduled" shows its own sentence instead.
 test(
   'an unscheduled reservation whose record is CANCELLED shows the cancelled sentence, ' +
   'not the "waiting to be scheduled" one',
@@ -780,9 +757,8 @@ test(
   }
 );
 
-// A terminal reservation (e.g. finished or cancelled) never again holds capacity, so its
-// instanceCount must not be presented as currently reserved - the form falls back to its
-// ordinary disabled Nodes count input instead.
+// A terminal reservation never again holds capacity, so its instanceCount must not be
+// presented as currently reserved - the form falls back to the ordinary disabled input.
 test(
   'a reservation pool whose record is FINISHED shows the disabled input, not "out of"',
   async () => {
@@ -800,9 +776,8 @@ test(
   }
 );
 
-// Once the reservation is activated the pool reports its own nodes, and that count is
-// the real one - so the reserved number stops being substituted here, the same way the
-// pool card stops substituting it.
+// Once activated, the pool reports its own real count, so the reserved number stops
+// being substituted here, same as the pool card.
 test(
   'an activated reservation pool shows its own count, not "out of"',
   async () => {
@@ -822,9 +797,8 @@ test(
   }
 );
 
-// Regression guard: with no matching reservation record (e.g. the reservations list
-// hasn't loaded yet, or carries no record for this pool), the field falls back to the
-// disabled number input exactly as before this change.
+// With no matching reservation record (not loaded yet, or none for this pool), the
+// field falls back to the disabled number input.
 test(
   'a reservation pool with no matching reservation record still shows the disabled input',
   async () => {
@@ -835,9 +809,8 @@ test(
   }
 );
 
-// A Default-mode pool never matches a reservation record (`updateFromProps` only
-// looks one up when `isCapacityReservation` is set), so it must keep the ordinary
-// editable Nodes count input even when a `reservations` prop is passed in.
+// A Default-mode pool never matches a reservation record (`updateFromProps` looks one
+// up only when `isCapacityReservation` is set), so Nodes count stays editable regardless.
 test('a Default-mode pool keeps the editable Nodes count input regardless of reservations',
   async () => {
     await renderPool({
@@ -872,8 +845,7 @@ test(
 test(
   'SAVE on a reservation pool with no nodes yet sends count 0, with no count error shown',
   async () => {
-    // `NodePoolManager.create` stores a reservation pool with count 0 until the
-    // reservation is activated, so an existing pool legitimately loads with it -
+    // `NodePoolManager.create` stores a reservation pool with count 0 until activated, so
     // SAVE must not be blocked by the Future-dated "count >= 1" rule.
     const onSave = fn();
     await renderPool({pool: reservationPool({count: 0}), onSave});
@@ -908,15 +880,8 @@ test('editing a Standard reservation pool keeps the persisted filter owner', asy
   expect(JSON.stringify(payload.filter)).not.toContain('USER1');
 });
 
-// Regression for a gap the mode-inference fix opened: before this phase, editing a pool
-// always resolved to MODE_DEFAULT, so `updateInstanceTypes`'s future-dated auto-pick
-// branch never ran during an edit. Now that an existing reservation pool correctly opens
-// in future-dated mode, that branch is reachable on every edit too — and `priceType` must
-// round-trip unchanged
-// for a reservation pool (`validateReservationPoolUpdate`), the same reason its control is
-// disabled. If the region's fetched allowed price types no longer include the pool's own
-// (e.g. a narrowed preference), the auto-pick must still leave it alone rather than
-// silently substituting a different one that SAVE would then send and the backend reject.
+// `updateInstanceTypes`'s future-dated auto-pick branch now also runs on an edit, so it
+// must leave `priceType` alone even if the region's allowed types no longer include it.
 test(
   'a reservation pool keeps its priceType unchanged even when the region no longer offers it',
   async () => {
@@ -1106,10 +1071,8 @@ test('a visible false->true transition re-reads the pool prop and fetches roles'
   await flushPromises();
 });
 
-// While the parent operation is in flight the modal is blocked: the submit button
-// carries antd's own loading state, and nothing in the form can be changed - which for
-// a Default pool includes the weekly Schedule section, the one part of the form that
-// used to stay editable mid-save.
+// While the parent operation is in flight, the whole form is blocked - for a Default
+// pool that includes the weekly Schedule section too.
 test('while saving, the submit button is disabled and shows its loading state', async () => {
   await renderPool({pool: fullPool(), disabled: true});
 
@@ -1161,14 +1124,11 @@ test('the Schedule section of a Default pool is editable when nothing is saving'
   });
 });
 
-// ML Block mode: the container's own candidate state, catalogue fetch and offering
-// search. `allowedModes` is always passed explicitly here since `EditHotNodePool`'s own
-// default stays `[DEFAULT, FUTURE_DATED]` - the caller (phase 8, not this one) is the
-// one that offers ML Block to a real user.
-//
-// Real timers throughout: `useRealTimers` abandons antd 2's own pending `Modal` leave
-// animation rather than running it, which left a previous test's content stuck in the
-// document for the next one's `screen` queries to trip over.
+// `allowedModes` is passed explicitly since `EditHotNodePool`'s own default stays
+// `[DEFAULT, FUTURE_DATED]` - a real caller is what offers ML Block.
+
+// Real timers throughout this section: antd 2's `Modal` leave animation leaks across a
+// fake-timer teardown, so this section never calls `useFakeTimers`.
 const mlBlockInstanceTypeInfo = {
   instanceType: 'p5.48xlarge', vCPU: 192, memoryInMiB: 2097152, gpuCount: 8, gpuDeviceName: 'H100'
 };
@@ -1189,21 +1149,12 @@ function mlBlockOffering (overrides = {}) {
   };
 }
 
-// Mirrors `renderPool`, including its own `flushPromises` wait for the mount-time
-// fetch to fully settle. Returns the `EditHotNodePool` instance itself, reached through
-// mobx-react's `inject` HOC the way `ref` exposes it (`wrappedInstance`) - the only
-// handle onto `commitmentStart`/`commitmentEnd`, which nothing in this codebase drives
-// through the antd DatePicker (see controls/ReservationScheduleControl.test.js).
-// `instanceTypesForCall`, where given, replaces the default handler entirely - `stubApi`
-// matches the first-registered handler for a pattern, so a caller that needs its own
-// per-call behaviour (e.g. holding one region's response open) cannot `handle()` the
-// same path again after this function already has.
+// Mirrors `renderPool`. Returns the `EditHotNodePool` instance via `wrappedInstance`,
+// the only handle onto `commitmentStart`/`commitmentEnd` (no test drives the antd DatePicker).
 async function renderMlBlockPool (props = {}, instanceTypesForCall) {
   const api = stubApi();
-  // Also carries `p5.48xlarge` on the general allowed-instance-types list, not only the
-  // capacity-block catalogue: the offering fills the read-only `Instance Type` select with
-  // it, and that select's options come from this list, not from the catalogue - with no
-  // matching Option, there would be nothing to assert its rendered text against.
+  // Also lists `p5.48xlarge` on the allowed-instance-types payload: the read-only
+  // Instance Type select renders from that list, not the capacity-block catalogue.
   const defaultInstanceTypesForCall = () => ({
     status: 'OK',
     payload: {
@@ -1214,6 +1165,8 @@ async function renderMlBlockPool (props = {}, instanceTypesForCall) {
       'cluster.allowed.price.types': ['SPOT', 'ON_DEMAND']
     }
   });
+  // `instanceTypesForCall`, where given, replaces the default handler entirely - `stubApi`
+  // matches only the first-registered handler for a pattern.
   api.handle(/\/cluster\/instance\/allowed/, instanceTypesForCall || defaultInstanceTypesForCall);
   let wrapper;
   const {rerender} = renderWithStores(
@@ -1236,8 +1189,7 @@ async function renderMlBlockPool (props = {}, instanceTypesForCall) {
 }
 
 // Toggling `visible` false then true, with no `pool`, is a dialog reopening for a new
-// pool: `componentDidUpdate`'s own visible-transition branch calls `updateFromProps`,
-// which is exactly what resets the mode and the region on a real reopen.
+// pool - `componentDidUpdate`'s visible-transition branch resets mode and region on reopen.
 async function reopenMlBlockDialog (rerender) {
   const closed = (
     <EditHotNodePool
@@ -1266,10 +1218,8 @@ async function enterMlBlockMode () {
   await click(screen.getByText('ML Block'));
 }
 
-// A region change fires the allowed-instance-types refetch, and in ML Block mode the
-// catalogue fetch too - `flushPromises` here keeps both from leaking past this test.
-// Every caller is already in ML Block mode, where `Search in region` is the only
-// editable region control - `Configuration`'s own `Region` is disabled there.
+// Queries "Search in region", the only editable region control in ML Block mode;
+// `flushPromises` keeps the resulting allowed-instance-types/catalogue refetch from leaking.
 async function selectRegion (name) {
   await click(within(row('Search in region:')).getByRole('combobox'));
   await click(screen.getByText(name));
@@ -1445,14 +1395,10 @@ test('a second edit shortly after the first still issues one search, for its lat
   });
 
 // Builds an ML Block pool through to a settled, selected offering - the starting point
-// several tests below need. Candidate count is fixed at 2, matching `mlBlockOffering()`'s
-// own `instanceCount`, which the read-only Nodes count field is checked against.
-//
-// The route is `api.handle()`, reading a mutable closure variable, rather than
-// `api.reply()`: `stubApi` matches the first-registered handler for a pattern, so a test
-// that needs the *next* search to return something else cannot `reply()` the same path
-// again (see `renderPool`'s own comment on the same constraint) - it calls
-// `setOfferingsResponse` instead.
+// several tests below need.
+
+// `api.handle()` with a mutable closure, not `api.reply()`, lets a later test swap in a
+// different response via `setOfferingsResponse` (`stubApi` only matches the first handler).
 async function renderMlBlockPoolWithOffering (props = {}) {
   const offering = mlBlockOffering();
   let offeringsResponse = [offering];
@@ -1527,9 +1473,8 @@ test('a region change clears the candidates, the offerings and the two read-only
 
     await selectRegion('westeurope');
 
-    // The region's own catalogue re-fetch (regionId=2) is a side effect of the mode
-    // staying ML Block, not of this reset - waited out here so it cannot resolve after
-    // the test has already moved on and unmounted the tree.
+    // The region's own catalogue re-fetch (regionId=2) is a side effect of staying in ML
+    // Block mode, not of this reset - waited out so it can't resolve after the test unmounts.
     await waitFor(() => expect(
       api.calls.filter(c => /capacity-reservation\/instance-types/.test(c.path)).length
     ).toBeGreaterThan(catalogueCallsBefore));
@@ -1674,9 +1619,8 @@ test(
   }
 );
 
-// The "undefined" case above was already fixed; this is the "only SPOT offered" case the
-// same auto-correction still gets wrong - with no non-spot type to fall back to, it fell
-// back to `priceTypes[0]`, which here is SPOT itself.
+// With no non-spot type to fall back to, the auto-correction falls back to
+// `priceTypes[0]`, which here is SPOT itself.
 test(
   'ML Block mode never auto-selects Spot even when the region offers nothing else',
   async () => {
@@ -1717,10 +1661,8 @@ test(
   }
 );
 
-// A slow allowed-types request for the picked region can land after a candidate's
-// offering has already filled `instanceType` - that field is not user-chosen in ML Block
-// mode, so the general allowed list (which need not carry a capacity-block type at all)
-// must not blank it.
+// A slow allowed-types request can land after a selected offering already filled
+// `instanceType`; the general allowed list must not blank that field.
 test(
   'a late allowed-types response does not blank the instance type a selected offering filled',
   async () => {
@@ -1783,11 +1725,8 @@ test(
   }
 );
 
-// Scheduling a per-candidate search does not disarm an already-armed full-refetch timer,
-// so a row that goes incomplete inside that timer's debounce used to still be dispatched:
-// its data was filtered out of the request body (an empty `candidates` array, the only
-// row), and the response that came back for the request still settled the row as
-// `searched: true` with no offerings - a settled empty search for a row that never asked.
+// Scheduling a per-candidate search doesn't disarm an already-armed full-refetch timer,
+// so a row going incomplete inside that timer's debounce could still get dispatched.
 test(
   'clearing the only candidate inside a full refetch\'s debounce sends no empty search and ' +
   'does not settle that now-incomplete row',
@@ -1827,11 +1766,8 @@ test(
   }
 );
 
-// `finishFullRefetch` used to `setState` the flag on its own, a separate call ahead of
-// `applyMlBlockOfferingsResponse`'s own - React 15 does not batch a `setState` made from a
-// promise callback, so the DOM passed through a frame where the flag already read false
-// while every row still carried `pending: true`, drawing the per-row spinners phase 4
-// says must not appear during a full refetch.
+// React 15 doesn't batch a `setState` made from a promise callback, so two separate calls
+// could land a frame apart, drawing per-row spinners during a full refetch.
 test(
   'a full refetch settles its pending flag and the row data in the same update, not a ' +
   'frame apart',
@@ -2104,10 +2040,8 @@ test(
   }
 );
 
-// Per-candidate fetching: the state reshape (`mlBlockOfferingsByCandidate`), the two
-// staleness dimensions and the selection's per-candidate safety rules. Candidates below
-// are built through `onChangeField` directly, as the existing deletion/duplicate-search
-// tests above do - the catalogue's own options are not under test here.
+// Per-candidate fetching: the state reshape, the two staleness dimensions, and the
+// selection's per-candidate safety rules - candidates built via `onChangeField` directly.
 describe('per-candidate offering search', () => {
   // Appends a candidate with the given type/count and returns its id, waiting on nothing -
   // callers wait for the request count they expect afterwards.
@@ -2211,8 +2145,7 @@ describe('per-candidate offering search', () => {
   });
 
   // Candidate ids are assigned `Math.max(...ids, 0) + 1`, so removing the only row and
-  // adding a new one hands it back the same numeric id - a response still in flight for
-  // the removed row must not be mistaken for one belonging to its replacement.
+  // adding a new one hands it back the same numeric id.
   test(
     'a stale response for a removed candidate cannot apply to a new one that reuses its id',
     async () => {
@@ -2241,10 +2174,8 @@ describe('per-candidate offering search', () => {
         'mlBlockCandidates', {action: 'remove', id: oldId}
       ));
 
-      // A freshly added candidate reuses the same numeric id and, deliberately, the
-      // same instance type - so attribution by `instanceType` cannot be what keeps the
-      // removed row's response out; only the id-reuse guard can. Its own request is
-      // dispatched too, but the removed row's stale response lands first.
+      // The new candidate reuses the same id and, deliberately, the same instance type -
+      // only the id-reuse guard, not instanceType attribution, can keep the stale response out.
       const newId = await addMlBlockCandidate(instance, 'p5.48xlarge', 1);
       expect(newId).toBe(oldId);
       await waitFor(() => expect(offeringsCalls(api)).toHaveLength(2), {
@@ -2482,9 +2413,8 @@ describe('per-candidate offering search', () => {
     }
   );
 
-  // Changing a row's own type while its previous search is still in flight must not let
-  // that now-irrelevant response settle the row under the new type - neither by
-  // mis-attributing stale data to it nor by merely clearing its pending flag early.
+  // Changing a row's type while its previous search is in flight must drop that response
+  // entirely, not mis-attribute it to the new type or merely clear the pending flag early.
   test(
     'changing a row\'s type while its own previous search is still in flight drops that ' +
     'search entirely, rather than settling the row under the new type',

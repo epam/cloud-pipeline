@@ -134,8 +134,6 @@ function selectIsDisabled (labelText) {
   return combobox.closest('.ant-select').classList.contains('ant-select-disabled');
 }
 
-// The form renders Pool name, then Pool type, then Mode. This assertion used to pin the
-// opposite order, which an earlier reorder of the two rows had already made wrong.
 test('the Mode row renders and follows Pool name', () => {
   renderForm();
   const text = document.body.textContent;
@@ -162,8 +160,7 @@ test(
     });
     expect(screen.queryByText('Mode:')).not.toBeInTheDocument();
     expect(screen.getByText('Pool type:')).toBeInTheDocument();
-    // A single-mode caller (a ROLE_NODE_POOL_MANAGER's Create) chooses its Pool type
-    // like anyone else - the dropped `modes.length <= 1` lock no longer applies.
+    // A single-mode caller (a ROLE_NODE_POOL_MANAGER's Create) still chooses its own Pool type.
     expect(selectIsDisabled('Pool type:')).toBe(false);
     expect(screen.getByText('Duration (days):')).toBeInTheDocument();
   }
@@ -467,8 +464,7 @@ test('future-dated mode locks Price type to On-demand and disables the control',
 
   expect(selectIsDisabled('Price type:')).toBe(true);
   // On-demand is the only legal value for a capacity reservation (`NodePoolValidator`
-  // rejects SPOT outright), so there is nothing to pick between - the control is
-  // disabled rather than merely filtered, and Spot never appears at all.
+  // rejects SPOT outright), so the control is disabled rather than merely filtered.
   expect(screen.getByText('On-demand')).toBeInTheDocument();
   expect(screen.queryByText('Spot')).not.toBeInTheDocument();
 });
