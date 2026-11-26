@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -e
+
 ###
 # Setup Pyinstaller
 ###
@@ -28,7 +30,13 @@ python -m pip install macholib==1.16.2
 export LDFLAGS="-L$(brew --prefix openssl@1.1)/lib"
 export CFLAGS="-I$(brew --prefix openssl@1.1)/include"
 export PKG_CONFIG_PATH="$(brew --prefix openssl@1.1)/lib/pkgconfig"
+# Universal2 python.org interpreter would otherwise compile extensions for both arches.
+export ARCHFLAGS="-arch arm64"
 export TMP_MOUNT_BIN=$(pwd)/tmp/mount/dist
+# The old pins have no arm64 wheels and build from source; cryptography 2.9.2's setup.py imports pkg_resources,
+# removed in setuptools 82. PIP_CONSTRAINT also reaches pip's isolated build envs.
+export PIP_CONSTRAINT="$(mktemp)"
+echo "setuptools<82" > "$PIP_CONSTRAINT"
 python -m pip install -r ${PIPE_CLI_SOURCES_DIR}/requirements.txt
 
 
@@ -59,6 +67,7 @@ pyinstaller \
                                 --hidden-import=_sysconfigdata \
                                 --additional-hooks-dir="${PIPE_MOUNT_SOURCES_DIR}/hooks" \
                                 --additional-hooks-dir="${PIPE_MOUNT_SOURCES_DIR}/hooks-py39" \
+                                --target-arch arm64 \
                                 -y \
                                 --clean \
                                 --distpath $TMP_MOUNT_BIN \
@@ -108,6 +117,7 @@ function build_pipe {
                                     --hidden-import=_sysconfigdata \
                                     --additional-hooks-dir="${PIPE_MOUNT_SOURCES_DIR}/hooks" \
                                     --additional-hooks-dir="${PIPE_MOUNT_SOURCES_DIR}/hooks-py39" \
+                                    --target-arch arm64 \
                                     -y \
                                     --clean \
                                     --distpath $distpath \
