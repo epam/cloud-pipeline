@@ -20,23 +20,30 @@ import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
+import com.epam.pipeline.autotests.utils.PlatformApi;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import com.epam.pipeline.autotests.utils.listener.Cloud;
 import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
 import com.epam.pipeline.autotests.utils.listener.ConditionalTestAnalyzer;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
+import java.util.stream.StreamSupport;
+
 import static com.codeborne.selenide.Condition.appears;
 import static com.codeborne.selenide.Condition.empty;
+import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byClassName;
+import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.Configuration.confirmConfigurationChange;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
@@ -97,6 +104,9 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     private final String clusterAllowedPriceTypes = "cluster.allowed.price.types";
     private final String clusterAllowedInstanceTypesDocker = "cluster.allowed.instance.types.docker";
     private int instanceTypesCount = 0;
+    // The family the pipeline instance types are restricted to: an allowed one other than the family of
+    // default.instance.type, which the configurations of the class store, so that the restriction drops that type
+    private String restrictedFamily;
 
     @BeforeClass
     public void initialLogout() {
@@ -171,6 +181,9 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                 .sleep(1, SECONDS)
                                 .click(SAVE)
                                 .sleep(3, SECONDS)
+                                // the save has to be done before the next click, or "You have unsaved changes"
+                                // comes over the page (develop's test, ec614de3b2)
+                                .ensureDisable(SAVE)
                                 .expandTab(EXEC_ENVIRONMENT)
                                 .ensure(INSTANCE_TYPE, text(defaultInstanceType))
                                 .dropDownCount(INSTANCE_TYPE));
@@ -181,6 +194,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                         configuration
                                 .expandTabs(execEnvironmentTab)
                                 .setValue(DISK, customDisk)
+                                .sleep(1, SECONDS)
                                 .selectValue(INSTANCE_TYPE, defaultInstanceType)
                                 .selectDockerImage(dockerImage ->
                                         dockerImage
@@ -190,6 +204,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                                 .click(OK)
                                 )
                                 .click(SAVE)
+                                .ensureDisable(SAVE)
                                 .ensure(INSTANCE_TYPE, text(defaultInstanceType)));
     }
 
@@ -198,7 +213,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     public void validationOfInstanceTypesRestrictionsExistingObjects() {
         try {
             loginAs(admin);
-            setMaskForUser(user.login, instanceTypesMask, format("%s.*", instanceFamilyName));
+            setMaskForUser(user.login, instanceTypesMask, format("%s.*", restrictedFamily()));
             logout();
             validationOfInstanceTypesRestrictions();
         } finally {
@@ -213,7 +228,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     public void validationOfInstanceTypesRestrictionsCreatingObjects() {
         try {
             loginAs(admin);
-            setMaskForUser(user.login, instanceTypesMask, format("%s.*", instanceFamilyName));
+            setMaskForUser(user.login, instanceTypesMask, format("%s.*", restrictedFamily()));
             logout();
             loginAs(user);
             library()
@@ -224,7 +239,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                     .editConfiguration("default", profile ->
                             profile
                                     .expandTab(EXEC_ENVIRONMENT)
-                                    .checkValueIsInDropDown(INSTANCE_TYPE, instanceFamilyName)
+                                    .checkValueIsInDropDown(INSTANCE_TYPE, restrictedFamily())
                     )
                     .click(CODE_TAB)
                     .exitFromConfigurationWithoutSaved();
@@ -235,7 +250,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                             configuration
                                     .sleep(2, SECONDS)
                                     .expandTabs(execEnvironmentTab)
-                                    .checkValueIsInDropDown(INSTANCE_TYPE, instanceFamilyName)
+                                    .checkValueIsInDropDown(INSTANCE_TYPE, restrictedFamily())
                     );
         } finally {
             logout();
@@ -249,7 +264,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
     public void validationOfInstanceTypesRestrictionsForUserGroup() {
         try {
             loginAs(admin);
-            setMaskForGroup(testGroup, instanceTypesMask, format("%s.*", instanceFamilyName));
+            setMaskForGroup(testGroup, instanceTypesMask, format("%s.*", restrictedFamily()));
             logout();
             validationOfInstanceTypesRestrictions();
         } finally {
@@ -347,11 +362,17 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                                     .ok()
                                                     .also(confirmConfigurationChange())
                                     )
+                                    // the configuration loads the pipeline's settings after "Yes", and they can
+                                    // overwrite a disk typed earlier (develop's test, ec614de3b2)
+                                    // antd renders a dialog under the body, not in the configuration's page
+                                    .ensure($$(byClassName("ant-modal-body")).filterBy(visible).first(), not(exist))
+                                    .sleep(2, SECONDS)
                                     .setValue(DISK, customDisk)
                                     .sleep(3, SECONDS)
-                                    .click(SAVE))
+                                    .click(SAVE)
+                                    .ensureDisable(SAVE))
                     .sleep(2, SECONDS);
-            setClusterAllowedStringPreference(clusterAllowedInstanceTypes, format("%s.*", instanceFamilyName));
+            setClusterAllowedStringPreference(clusterAllowedInstanceTypes, format("%s.*", restrictedFamily()));
             logout();
             loginAs(user);
             library()
@@ -363,7 +384,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                     .expandTab(EXEC_ENVIRONMENT)
                                     .ensure(INSTANCE_TYPE, empty)
                                     .ensure(DISK, not(empty))
-                                    .checkValueIsInDropDown(INSTANCE_TYPE, instanceFamilyName)
+                                    .checkValueIsInDropDown(INSTANCE_TYPE, restrictedFamily())
                     )
                     .click(CODE_TAB)
                     .exitFromConfigurationWithoutSaved();
@@ -386,7 +407,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                     .sleep(4, SECONDS)
                                     .ensure(DISK, value(customDisk))
                                     .ensure(INSTANCE_TYPE, empty)
-                                    .checkValueIsInDropDown(INSTANCE_TYPE, instanceFamilyName)
+                                    .checkValueIsInDropDown(INSTANCE_TYPE, restrictedFamily())
                     )
                     .sleep(5, SECONDS)
                     .exitFromConfigurationWithoutSaved();
@@ -689,6 +710,38 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                 .saveIfNeeded();
     }
 
+    /**
+     * The family the pipeline instance types are restricted to, read once, as the admin and before that case sets its
+     * restriction (each case resets its own): a failure fails only the cases that use it.
+     */
+    private String restrictedFamily() {
+        if (restrictedFamily == null) {
+            restrictedFamily = allowedFamilyOtherThan(PlatformApi.get("cluster/instance/allowed"),
+                    familyOf(defaultInstanceType));
+        }
+        return restrictedFamily;
+    }
+
+    /**
+     * The first family, by name, of the pipeline instance types allowed for the admin (cluster/instance/allowed) other
+     * than the given one: the platform offers and allows its types, so the drop-down lists them once the instance types
+     * are restricted to it.
+     */
+    private static String allowedFamilyOtherThan(final JsonNode allowed, final String family) {
+        return StreamSupport.stream(allowed.path("cluster.allowed.instance.types").spliterator(), false)
+                .map(type -> familyOf(type.path("name").asText("")))
+                .filter(name -> !name.isEmpty() && !name.equals(family))
+                .sorted()
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(format(
+                        "The platform allows no pipeline instance type of a family other than %s", family)));
+    }
+
+    private static String familyOf(final String instanceType) {
+        final int dot = instanceType.indexOf('.');
+        return dot > 0 ? instanceType.substring(0, dot) : "";
+    }
+
     private void validationOfInstanceTypesRestrictions() {
         loginAs(user);
         library()
@@ -699,7 +752,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                         profile
                                 .expandTab(EXEC_ENVIRONMENT)
                                 .ensure(INSTANCE_TYPE, empty)
-                                .checkValueIsInDropDown(INSTANCE_TYPE, instanceFamilyName)
+                                .checkValueIsInDropDown(INSTANCE_TYPE, restrictedFamily())
                 )
                 .click(CODE_TAB)
                 .exitFromConfigurationWithoutSaved();
@@ -712,7 +765,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                 .ensure(DISK, value(customDisk))
                                 .ensure(DOCKER_IMAGE, value(defaultGroup), value(testingTool))
                                 .ensure(INSTANCE_TYPE, empty)
-                                .checkValueIsInDropDown(INSTANCE_TYPE, instanceFamilyName)
+                                .checkValueIsInDropDown(INSTANCE_TYPE, restrictedFamily())
                 )
                 .exitFromConfigurationWithoutSaved();
     }

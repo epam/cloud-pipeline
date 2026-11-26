@@ -156,7 +156,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
             .launch(this);
         final String runId = getLastRunId();
         runs
-            .ensure(tabWithName("Active Runs"), visible, selectedTab)
+            .ensureActiveRunsTabSelected()
             .runShouldBeWaiting(runId)
             .runCellShouldHave(runId, RunsMenuAO.HeaderColumn.RUN, text(String.format("%s-%s", pipeline100, runId)))
             .runCellShouldHave(runId, RunsMenuAO.HeaderColumn.PIPELINE, text(pipeline100), matchText("draft-.{8}"))
@@ -320,9 +320,11 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
     @Test(priority = 2, dependsOnMethods = "runShouldNotAppearInActiveRuns")
     @TestCase({"EPMCMBIBPC-300", "EPMCMBIBPC-267"})
     public void clusterNodePageShouldBeValid() {
+        // the count is a span of its own with a margin (client/.../cluster/Cluster.js), so the text has no space
+        // before the bracket
         clusterMenu()
             .ensure(className("cluster__node-main-info"), visible, have(text("Cluster nodes")),
-                    have(matchText("Cluster nodes \\(\\d+ nodes?(, \\d+ nodes? with associated RunId)?\\)")))
+                    have(matchText("Cluster nodes ?\\(\\d+ nodes?(, \\d+ nodes? with associated RunId)?\\)")))
             .ensure(button("Refresh"), visible, enabled);
         $$(node()).shouldHave(sizeGreaterThan(0));
         int nodesWithTerminateButton = checkNodes();

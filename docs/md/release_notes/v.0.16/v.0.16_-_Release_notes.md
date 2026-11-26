@@ -51,6 +51,7 @@
 - [OIDC token exchange](#oidc-token-exchange)
 - [NICE DCV on Rocky Linux 10](#nice-dcv-on-rocky-linux-10)
 - [NoMachine on Rocky Linux 10](#nomachine-on-rocky-linux-10)
+- [Parallel download into the disk buffer of a storage mount](#parallel-download-into-the-disk-buffer-of-a-storage-mount)
 - [Java 21 and Spring Boot 3 for the platform services](#java-21-and-spring-boot-3-for-the-platform-services)
 - [Download storage contents as an archive](#download-storage-contents-as-an-archive)
 - [Upload and extract archives](#upload-and-extract-archives)
@@ -128,6 +129,11 @@
     - [Rocky Linux 9 and 10 runs: the default repos stay next to the repos mirror](#rocky-linux-9-and-10-runs-the-default-repos-stay-next-to-the-repos-mirror)
     - [Enabling a tool does not register its versions: its custom launch form has no Docker image](#enabling-a-tool-does-not-register-its-versions-its-custom-launch-form-has-no-docker-image)
     - [Data storage: "Select page" is enabled when no item on the page can be selected](#data-storage-select-page-is-enabled-when-no-item-on-the-page-can-be-selected)
+    - [Rocky Linux runs without a repos mirror URL: the warning names the Ubuntu parameter](#rocky-linux-runs-without-a-repos-mirror-url-the-warning-names-the-ubuntu-parameter)
+    - [Preferences cannot be saved while `system.notifications.exp.period` has no value](#preferences-cannot-be-saved-while-systemnotificationsexpperiod-has-no-value)
+    - [The cleanup of the in-app notifications runs every 86.4 seconds](#the-cleanup-of-the-in-app-notifications-runs-every-864-seconds)
+    - [A user who can see a cluster run does not see its auto-scaled workers](#a-user-who-can-see-a-cluster-run-does-not-see-its-auto-scaled-workers)
+    - [`cluster.keep.alive.minutes` of 60 or more stops every free node at once](#clusterkeepaliveminutes-of-60-or-more-stops-every-free-node-at-once)
 
 ***
 
@@ -1030,6 +1036,17 @@ Also, on any distribution, a run whose image has NoMachine already, e.g. an imag
 
 For more details see [here](../../manual/10_Manage_Tools/10.3._Add_a_Tool.md#supported-os-families).
 
+## Parallel download into the disk buffer of a storage mount
+
+A storage mounted with a disk buffer (the `read-disk-buffer-path` option of `pipe-fuse`, e.g. `-c read-disk-buffer-path=/pipe-storage-buffer/<id>` in `CP_PIPE_FUSE_OPTIONS` or `CP_CAP_MOUNT_OPTIONS_<storage id>`) downloads each file it reads into that buffer once, and then serves the reads from the local disk. Previously, it downloaded a file in 512 MB ranges, one after another, so the first read of a large file waited for the whole sequential download. Also, a mount that had the `read-disk-buffer-download-workers` option, as in the later versions, failed at once: "pipe-fuse: error: unrecognized arguments: --read-disk-buffer-download-workers".
+
+In the current version, the disk buffer downloads the ranges of a file in parallel:
+
+- `read-disk-buffer-download-workers` (`CP_PIPE_FUSE_READ_DISK_BUFFER_DOWNLOAD_WORKERS`) is the number of ranges downloaded at the same time. The default is `8`. `1` downloads them one after another, as before
+- `read-disk-buffer-read-ahead-size` (`CP_PIPE_FUSE_READ_DISK_BUFFER_READ_AHEAD_SIZE`) is the size of a range, in bytes. It no longer has a default: when it is not set, a file is split into as many equal ranges as there are workers. With one worker and no size, the ranges are 512 MB, as before
+
+Each range is written straight to the local disk, into a partial file next to the buffer, so a download needs no more memory than before, whatever the size of the file. The partial file becomes the buffer only once the whole file is there. Previously, a mount that was killed during a download left a part of the file as its buffer, and the next mount with the same buffer path served that part as the whole file, until the buffer expired (`read-disk-buffer-ttl`). When a range fails, the other ranges of the file stop too, and the read fails. Also, an S3 storage mount now keeps up to 50 connections to S3 instead of 10, so the parallel ranges do not wait for each other.
+
 ***
 
 ## Java 21 and Spring Boot 3 for the platform services
@@ -1606,3 +1623,38 @@ Now, enabling a tool registers a version for each tag of its image in the regist
 Previously, the **Select page** control of a data storage was enabled whenever the current page listed any item that was not selected yet, also when no item there had a checkbox. Clicking the control then selected nothing, with no message.
 Now, **Select page** is disabled unless the page has an item that can be selected and is not selected yet.
 See details in [8. Manage Data Storage](../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage.md#select-page).
+
+### Rocky Linux runs without a repos mirror URL: the warning names the Ubuntu parameter
+
+[#4912](https://github.com/epam/cloud-pipeline/issues/4912)
+
+Previously, a Rocky Linux run with the extra repositories mirror (`CP_REPO_EXTRA_ENABLED`) and no mirror URL logged "Extra repositories mirrors are requested for rocky, but no URL is provided via `CP_REPO_BASE_EXTRA_URL_UBUNTU` or `CP_REPO_BASE_EXTRA_URL_DEFAULT`". `CP_REPO_BASE_EXTRA_URL_UBUNTU` is the mirror URL of the Ubuntu runs, so it does not help a Rocky Linux run.
+Now, the warning names `CP_REPO_BASE_EXTRA_URL_ROCKY` or `CP_REPO_BASE_EXTRA_URL_DEFAULT`. As before, such a run uses no mirror and keeps the default repos of the image. See [10.3. Add a Tool](../../manual/10_Manage_Tools/10.3._Add_a_Tool.md#supported-os-families).
+
+### Preferences cannot be saved while `system.notifications.exp.period` has no value
+
+[#4914](https://github.com/epam/cloud-pipeline/issues/4914)
+
+Previously, the system preference `system.notifications.exp.period` - the number of days the in-app notifications are kept - had no default value. On a deployment that never set it, the **System** tab of **Settings** → **Preferences** could not be saved: the empty field of this preference showed "Please enter a valid number". The cleanup of old in-app notifications failed with an error each time it ran, so no notification was removed.
+Now, the preference has a default of `3` days, as on version 0.24 and later, and the cleanup no longer fails. **On a deployment that never set this preference, the in-app notifications older than 3 days are removed as soon as the updated API starts.** To keep them longer, set `system.notifications.exp.period` to the number of days before the update (for example, find it with the search of the **Preferences** page, which checks only the rows it shows).
+
+### The cleanup of the in-app notifications runs every 86.4 seconds
+
+[#4918](https://github.com/epam/cloud-pipeline/issues/4918)
+
+Previously, the API ran the cleanup of the old in-app notifications every 86.4 seconds: its period, the API property `scheduled.notifications.cleanup.sec`, was read in milliseconds.
+Now, it is read in seconds, as its name says: with the default `86400`, the cleanup runs when the API starts and then once a day. A deployment that set this property in milliseconds has to set it in seconds.
+
+### A user who can see a cluster run does not see its auto-scaled workers
+
+[#4915](https://github.com/epam/cloud-pipeline/issues/4915)
+
+Previously, a user who could see a cluster run - e.g. a reader of its pipeline - did not see the workers of an auto-scaled cluster when expanding the run in the runs table, and could not open them. A worker is a tool run of the cluster's owner with no pipeline, and each child run was checked on its own.
+Now, a child run with no pipeline that belongs to the owner of its parent run - such as a worker of an auto-scaled cluster - can be viewed, with its logs and its node, by every user who can view the parent run by its own permissions. A child run of a pipeline keeps the rules of its pipeline, and stopping a child run or changing it still requires the permissions on the child run itself. See [13. Permissions](../../manual/13_Permissions/13._Permissions.md).
+
+### `cluster.keep.alive.minutes` of 60 or more stops every free node at once
+
+[#4919](https://github.com/epam/cloud-pipeline/issues/4919)
+
+Previously, `cluster.keep.alive.minutes` accepted any value greater than 0. With the default keep-alive policy, `MINUTES_TILL_HOUR`, a free node is shut down when 2 to this many minutes are left until the next whole hour since it started, so a value of 60 or more shut every free node down at once: free nodes were not kept for the next runs.
+Now, with `MINUTES_TILL_HOUR`, `cluster.keep.alive.minutes` must be from 1 to 59, and `cluster.keep.alive.policy` cannot be set to `MINUTES_TILL_HOUR` - nor deleted back to it - while `cluster.keep.alive.minutes` is 60 or more; the error says why. With `IDLE_MINUTES` any value greater than 0 is accepted, as before. A value already set is not changed: check it on a deployment that uses `MINUTES_TILL_HOUR`. See [12.10. Manage system-level settings](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#cluster).

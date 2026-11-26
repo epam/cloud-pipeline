@@ -80,7 +80,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
     private final String sleepCommand = "sleep";
     private final String childNodesField = "Child nodes:";
     private final String autoScaledUpToField = "Auto-scaled up to:";
-    private final String defaultChildNodesField = "Default child nodes:";
+    private static final String CP_CAP_AUTOSCALE_PRICE_TYPE = "CP_CAP_AUTOSCALE_PRICE_TYPE";
 
     @AfterMethod(alwaysRun = true)
     @Override
@@ -213,15 +213,15 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .setWorkingNodesCount("asdf")
                 .fieldMessageShouldBe(autoScaledUpToField, "Enter positive number")
                 .setDefaultChildNodes("3")
-                .fieldMessageShouldBe(defaultChildNodesField,
+                .defaultChildNodesMessageShouldBe(
                         "Max child nodes count should be greater than child nodes count")
                 .setDefaultChildNodesCount("0")
-                .fieldMessageShouldBe(defaultChildNodesField, "Value should be greater than 0")
+                .defaultChildNodesMessageShouldBe("Value should be greater than 0")
                 .setDefaultChildNodesCount("-1")
                 .ensure(DEFAULT_CHILD_NODES, attribute("value", "-1"))
-                .fieldMessageShouldBe(defaultChildNodesField, "Value should be greater than 0")
+                .defaultChildNodesMessageShouldBe("Value should be greater than 0")
                 .setDefaultChildNodesCount("asdf")
-                .fieldMessageShouldBe(defaultChildNodesField, "Enter positive number");
+                .defaultChildNodesMessageShouldBe("Enter positive number");
     }
 
     @Test
@@ -383,7 +383,8 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .ensure(configurationParameter("CP_CAP_SLURM", "true"), exist)
                 .waitForSshLink()
                 .click(taskWithName("SLURMMasterSetup"))
-                .ensure(log(), containsMessages("Master ENV is ready"))
+                // the last message of the master's setup (workflows/pipe-common/shell/slurm_setup_master)
+                .ensure(log(), containsMessages("SLURM master node has been successfully configured"))
                 .click(taskWithName("SLURMMasterSetupWorkers"))
                 .ensure(log(), containsMessages("All SLURM hosts are connected"))
                 .ssh(shell -> shell
@@ -495,8 +496,13 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .waitForTask(gridEngineAutoscalingTask)
                 .click(taskWithName(gridEngineAutoscalingTask))
-                .ensure(log(), containsMessages("The following jobs cannot be satisfied with the " +
-                        "requested resources and therefore they will be rejected: 1 (150 cpu)"))
+                // the autoscaler of this line names the job's cpu against the biggest instance's (whose size depends
+                // on the deployment), and kills the job (pipe-common hpc engine/sge.py, autoscaler.py)
+                .ensure(log(), containsMessages(
+                        "Invalid job #1 sleep by root requires resources which cannot be satisfied by the biggest "
+                                + "instance in cluster: 150/",
+                        "The following jobs cannot be satisfied with the requested resources and therefore will be "
+                                + "killed: #1"))
                 .ssh(shell -> shell
                         .execute("qsub -b y -pe local 50 sleep 5m")
                         .sleep(20, SECONDS)
@@ -617,8 +623,13 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .waitForTask(gridEngineAutoscalingTask)
                 .click(taskWithName(gridEngineAutoscalingTask))
-                .ensure(log(), containsMessages("The following jobs cannot be satisfied with the " +
-                        "requested resources and therefore they will be rejected: 1 (50 cpu)"));
+                // the autoscaler of this line names the job's cpu against the biggest instance's (whose size depends
+                // on the deployment), and kills the job (pipe-common hpc engine/sge.py, autoscaler.py)
+                .ensure(log(), containsMessages(
+                        "Invalid job #1 sleep by root requires resources which cannot be satisfied by the biggest "
+                                + "instance in cluster: 50/",
+                        "The following jobs cannot be satisfied with the requested resources and therefore will be "
+                                + "killed: #1"));
     }
 
     @Test
@@ -651,61 +662,43 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
     }
 
     @Test
-    @TestCase({"EPMCMBIBPC-3160"})
-    public void autoScaledClusterWorkersPriceTypeOnDemand() {
-        library()
-                .createPipeline(Template.SHELL, getPipelineName())
-                .clickOnPipeline(getPipelineName())
-                .firstVersion()
-                .runPipeline()
-                .setDefaultLaunchOptions()
-                .enableClusterLaunch()
-                .clusterSettingsForm(autoScaledSettingForm)
-                .setWorkingNodesCount("1")
-                .setWorkersPriceType(onDemandPrice)
-                .ok()
-                .setPriceType(spotPrice)
-                .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 1d && sleep infinity")
-                .withoutMounts()
-                .launch(this)
-                .shouldContainRun(getPipelineName(), getRunId())
-                .showLog(getRunId())
-                .instanceParameters(instance ->
-                        instance.ensure(PRICE_TYPE, text(spotPrice)))
-                .waitForSshLink()
-                .waitForNestedRunsLink()
-                .clickOnNestedRunLink()
-                .instanceParameters(instance ->
-                        instance.ensure(PRICE_TYPE, text(onDemandPrice)));
-    }
-
-    @Test
     @TestCase({"EPMCMBIBPC-3161"})
     public void autoScaledClusterWorkersPriceTypeMastersConfig() {
-        library()
-                .createPipeline(Template.SHELL, getPipelineName())
-                .clickOnPipeline(getPipelineName())
-                .firstVersion()
-                .runPipeline()
-                .setDefaultLaunchOptions()
-                .enableClusterLaunch()
-                .clusterSettingsForm(autoScaledSettingForm)
-                .setWorkingNodesCount("1")
-                .setWorkersPriceType(mastersConfigPrice)
-                .ok()
-                .setPriceType(spotPrice)
-                .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 1d && sleep infinity")
-                .withoutMounts()
-                .launch(this)
-                .shouldContainRun(getPipelineName(), getRunId())
-                .showLog(getRunId())
-                .instanceParameters(instance ->
-                        instance.ensure(PRICE_TYPE, text(spotPrice)))
-                .waitForSshLink()
-                .waitForNestedRunsLink()
-                .clickOnNestedRunLink()
-                .instanceParameters(instance ->
-                        instance.ensure(PRICE_TYPE, text(spotPrice)));
+        String childRunId = null;
+        try {
+            final LogAO parentRun = library()
+                    .createPipeline(Template.SHELL, getPipelineName())
+                    .clickOnPipeline(getPipelineName())
+                    .firstVersion()
+                    .runPipeline()
+                    .setDefaultLaunchOptions()
+                    .enableClusterLaunch()
+                    .clusterSettingsForm(autoScaledSettingForm)
+                    .setWorkingNodesCount("1")
+                    .setWorkersPriceType(mastersConfigPrice)
+                    .ok()
+                    .setPriceType(onDemandPrice)
+                    .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 1d && sleep infinity")
+                    .withoutMounts()
+                    .launch(this)
+                    .shouldContainRun(getPipelineName(), getRunId())
+                    .showLog(getRunId())
+                    .instanceParameters(instance ->
+                            instance.ensure(PRICE_TYPE, text(onDemandPrice)))
+                    // Master's config sends no workers price type: the workers get the master run's own price type
+                    .expandTab(PARAMETERS)
+                    .ensure(configurationParameter("CP_CAP_AUTOSCALE", "true"), exist)
+                    .ensure(configurationParameter(CP_CAP_AUTOSCALE_PRICE_TYPE), not(exist))
+                    .waitForSshLink()
+                    .waitForNestedRunsLink();
+            childRunId = parentRun.getNestedRunID(1);
+            parentRun
+                    .clickOnNestedRunLink()
+                    .instanceParameters(instance ->
+                            instance.ensure(PRICE_TYPE, text(onDemandPrice)));
+        } finally {
+            stopClusterRuns(getRunId(), childRunId);
+        }
     }
 
     private static PipelineRunFormAO onLaunchPage() {

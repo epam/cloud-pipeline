@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -39,6 +40,7 @@ public class DNSrecordForRunsTest extends AbstractSeveralPipelineRunningTest
     private static final String SUB_DOMAIN = "Use sub-domain";
     private static final String testToolEndpoint = "E2E-Endpoint";
     private static final String otherEndpoint = "Test-Endpoint";
+    private static final String JOB_NAME = "{job_name}";
     private final String defaultRegistry = C.DEFAULT_REGISTRY;
     private final String defaultGroup = C.DEFAULT_GROUP;
     private final String testingTool = C.TESTING_TOOL_NAME;
@@ -53,9 +55,16 @@ public class DNSrecordForRunsTest extends AbstractSeveralPipelineRunningTest
     private String suffixBasedNoMachineEndpointLink = "";
     private String suffixBasedNoMachineFriendlyPathLink = "";
 
+    /**
+     * The DNS zone of the sub-domain endpoints: the one of the cloud region of the edge whose link the GUI shows
+     * (e2e.ui.dns.hosted.zone.base, as run-e2e.sh writes it), else the instance.dns.hosted.zone.base preference,
+     * which the API takes for a region without a zone of its own.
+     */
     @BeforeClass
     public void instanceDnsHostedZoneBase() {
-        edgeExternalAddress = navigationMenu()
+        edgeExternalAddress = StringUtils.isNotBlank(C.DNS_HOSTED_ZONE_BASE)
+                ? C.DNS_HOSTED_ZONE_BASE
+                : navigationMenu()
                     .settings()
                     .switchToPreferences()
                     .getLinePreference("instance.dns.hosted.zone.base")[0];
@@ -99,8 +108,7 @@ public class DNSrecordForRunsTest extends AbstractSeveralPipelineRunningTest
                 .doNotMountStoragesSelect(true)
                 .launchTool(this, Utils.nameWithoutGroup(testingTool))
                 .showLog(runID1 = getLastRunId());
-        domainBasedToolEndpointLink = format("https://pipeline-%s-%s-0.%s/",
-                runID1, VALID_ENDPOINT, edgeExternalAddress);
+        domainBasedToolEndpointLink = domainBasedLink(format("pipeline-%s-%s-0", runID1, VALID_ENDPOINT));
         suffixBasedNoMachineEndpointLink = format("%s/pipeline-%s-8089-0",
                 edgeAddress, runID1);
         logAO.waitForSshLink()
@@ -126,7 +134,10 @@ public class DNSrecordForRunsTest extends AbstractSeveralPipelineRunningTest
                 .setValue(FRIENDLY_URL, friendlyURL)
                 .launch(this)
                 .showLog(runID2 = getLastRunId());
-        domainBasedToolFriendlyPathLink = format("https://%s-e2e-endpoint.%s/", friendlyURL, edgeExternalAddress);
+        // no endpoint name in the host: the run adds the capability's NoMachine endpoint to the tool's single one,
+        // which the edge then makes the default endpoint, and a pretty URL names a default endpoint by itself
+        // (cp-edge sync-routes.py, EDGE_DISABLE_NAME_SUFFIX_FOR_DEFAULT_ENDPOINT, true unless set otherwise)
+        domainBasedToolFriendlyPathLink = domainBasedLink(friendlyURL);
         suffixBasedNoMachineFriendlyPathLink = format("%s/%s-NoMachine", edgeAddress, friendlyURL);
         logAO.waitForSshLink()
                 .waitForEndpointLink()
@@ -139,5 +150,16 @@ public class DNSrecordForRunsTest extends AbstractSeveralPipelineRunningTest
                 .validateEndpointPage(LOGIN)
                 .closeTab();
     }
-}
 
+    /**
+     * The link of a sub-domain endpoint: the edge names its DNS record with CP_EDGE_DNS_RECORD_FORMAT, the endpoint
+     * location for {job_name} (e2e.ui.edge.dns.record.format, with {region_name} filled in by run-e2e.sh for the edge
+     * of the default.edge.region preference; "{job_name}" if not set), and the API appends the DNS zone.
+     */
+    private String domainBasedLink(final String jobName) {
+        final String recordFormat = StringUtils.isNotBlank(C.EDGE_DNS_RECORD_FORMAT)
+                ? C.EDGE_DNS_RECORD_FORMAT
+                : JOB_NAME;
+        return format("https://%s.%s/", recordFormat.replace(JOB_NAME, jobName), edgeExternalAddress);
+    }
+}

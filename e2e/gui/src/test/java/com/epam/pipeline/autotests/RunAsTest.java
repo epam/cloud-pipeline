@@ -72,8 +72,9 @@ public class RunAsTest extends AbstractSeveralPipelineRunningTest implements Nav
                     .switchToUsers()
                     .searchUserEntry(admin.login.toUpperCase())
                     .edit()
-                    .resetConfigureRunAs(user.login.toLowerCase())
-                    .resetConfigureRunAs(userWithoutCompletedRuns.login.toLowerCase())
+                    // in upper case, as the cases add them (the row is matched by a case-sensitive contains())
+                    .resetConfigureRunAs(user.login.toUpperCase())
+                    .resetConfigureRunAs(userWithoutCompletedRuns.login.toUpperCase())
                     .ok();
             tools()
                     .performWithin(registry, group, tool, tool ->

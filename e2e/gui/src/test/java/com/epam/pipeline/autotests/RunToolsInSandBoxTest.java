@@ -83,6 +83,8 @@ public class RunToolsInSandBoxTest
     private final String endpoint = C.VALID_ENDPOINT;
     // a Docker Hub image as repository[:tag], pulled inside the runs of the DinD and Singularity cases
     private final String dindImage = C.DIND_DOCKER_IMAGE;
+    // how long the DinD case waits for the pull of that image to end
+    private static final long DIND_PULL_TIMEOUT = MINUTES.toMillis(10);
     private final String priceType = C.DEFAULT_INSTANCE_PRICE_TYPE;
     private String nodeName;
 
@@ -290,7 +292,9 @@ public class RunToolsInSandBoxTest
                 .ssh(shell -> shell
                         .execute("docker --version")
                         .assertOutputContains("Docker version", ", build ")
-                        .execute(format("docker pull %s", dindImage()))
+                        // the commands after the pull need its image: it can take minutes, from a public registry
+                        .executeAndWaitForPrompt(format("docker pull %s", dindImage()),
+                                format("pipeline-%s", getLastRunId()), DIND_PULL_TIMEOUT)
                         .execute(format("docker create %s", dindImage()))
                         .execute("docker image ls")
                         .assertOutputContains("REPOSITORY", "TAG", "IMAGE ID", "CREATED", "SIZE")

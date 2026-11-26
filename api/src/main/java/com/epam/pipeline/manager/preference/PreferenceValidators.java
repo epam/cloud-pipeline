@@ -24,6 +24,7 @@ import com.amazonaws.services.kms.AWSKMS;
 import com.amazonaws.services.kms.AWSKMSClientBuilder;
 import com.amazonaws.services.kms.model.KeyListEntry;
 import com.epam.pipeline.config.JsonMapper;
+import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
@@ -63,6 +64,7 @@ import static com.epam.pipeline.manager.preference.SystemPreferences.DOCKER_SECU
  */
 public final class PreferenceValidators {
     private static final String NOT_ALLOWED_INSTANCE_TAG = "NAME";
+    private static final long MINUTES_IN_HOUR = 60;
     // CHECKSTYLE:OFF
     /**
      * Checks that a preference is a valid URL and it is accessible
@@ -202,6 +204,43 @@ public final class PreferenceValidators {
 
     public static BiPredicate<String, Map<String, Preference>> isLessThan(float x) {
         return (pref, dependencies) -> NumberUtils.isNumber(pref) && Float.parseFloat(pref) < x;
+    }
+
+    /**
+     * Checks {@code cluster.keep.alive.minutes} against the keep-alive policy in {@code policyKey}. Under
+     * {@link ClusterKeepAlivePolicy#MINUTES_TILL_HOUR} they are the minutes left until a node's next hour within
+     * which its free node is stopped, so they have to be less than an hour: 60 or more would stop every free node at
+     * once. Under {@link ClusterKeepAlivePolicy#IDLE_MINUTES} they are any duration.
+     */
+    public static BiPredicate<String, Map<String, Preference>> isValidKeepAliveMinutesForPolicy(
+            final String policyKey) {
+        return (minutes, dependencies) -> isValidKeepAlive(getDependencyValue(dependencies, policyKey), minutes);
+    }
+
+    /**
+     * Checks {@code cluster.keep.alive.policy} against the keep-alive minutes in {@code minutesKey}, as
+     * {@link #isValidKeepAliveMinutesForPolicy} does: switching to MINUTES_TILL_HOUR needs minutes less than an hour.
+     */
+    public static BiPredicate<String, Map<String, Preference>> isValidKeepAlivePolicyForMinutes(
+            final String minutesKey) {
+        return (policy, dependencies) -> isValidKeepAlive(policy, getDependencyValue(dependencies, minutesKey));
+    }
+
+    private static boolean isValidKeepAlive(final String policy, final String minutes) {
+        if (ClusterKeepAlivePolicy.MINUTES_TILL_HOUR.name().equals(policy) && StringUtils.isNumeric(minutes)
+                && NumberUtils.toLong(minutes, Long.MAX_VALUE) >= MINUTES_IN_HOUR) {
+            throw new IllegalArgumentException(String.format("With the cluster.keep.alive.policy %s, "
+                    + "cluster.keep.alive.minutes must be from 1 to %d, not %s.",
+                    ClusterKeepAlivePolicy.MINUTES_TILL_HOUR.name(), MINUTES_IN_HOUR - 1, minutes));
+        }
+        return true;
+    }
+
+    private static String getDependencyValue(final Map<String, Preference> dependencies, final String key) {
+        return Optional.ofNullable(dependencies)
+                .map(preferences -> preferences.get(key))
+                .map(Preference::getValue)
+                .orElse(null);
     }
 
     public static BiPredicate<String, Map<String, Preference>> isValidEnum(final Class<? extends Enum> enumClass) {

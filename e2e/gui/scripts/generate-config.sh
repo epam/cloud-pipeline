@@ -155,12 +155,58 @@ _edge="$(cp_config CP_EDGE_EXTERNAL_HOST)"
 _expected_edge="$(sed -E 's/^([^.]+)\./\1-edge./' <<< "$CP_API_HOST")"
 [ -z "$_edge" ] || [ "$_edge" == "$_expected_edge" ] || \
     _warn "Edge host $_edge is not $_expected_edge: DNSrecordForRunsTest derives the edge address from the root address"
-# DNSrecordForRunsTest (1615_1, 1615_2) expects the DNS records of the run endpoints as pipeline-<run>-<port>-0.<zone>,
-# which the edge creates with CP_EDGE_DNS_RECORD_FORMAT={job_name} (its default is {job_name}.{region_name})
-_dns_format="$(cp_config CP_EDGE_DNS_RECORD_FORMAT)"
+# DNSrecordForRunsTest (1615_1, 1615_2) checks the links of sub-domain endpoints. Every edge creates a DNS record for a
+# run's endpoint: named with CP_EDGE_DNS_RECORD_FORMAT (default {job_name}.{region_name}; {job_name} is the endpoint
+# location, pipeline-<run>-<port>-0 or <friendly URL>-<endpoint name>, {region_name} the CP_EDGE_REGION of the edge, else
+# the default.edge.region preference), in the DNS zone of the edge's region (CP_EDGE_REGION_ID, else the
+# default.edge.region.id preference, else the default region): the region's own zone, else instance.dns.hosted.zone.*.
+# The GUI shows the link of the edge with the lowest latency from the browser, the default.edge.region one on a tie: the
+# expected link is that edge's. {region_name} is filled in here, {job_name} by the test.
 _dns_default='{job_name}.{region_name}'
-[ "$_dns_format" == "{job_name}" ] || \
-    _warn "CP_EDGE_DNS_RECORD_FORMAT is '${_dns_format:-$_dns_default}', not '{job_name}': DNSrecordForRunsTest fails"
+_dns_format="$(cp_config CP_EDGE_DNS_RECORD_FORMAT)"
+_dns_format="${_dns_format:-$_dns_default}"
+# The preference is never empty (GET preferences gives its default, eu-central, when it is not set)
+_edge_region="$(_pref default.edge.region)"
+_edge_region_id=""
+_edge_matched=""
+_main_edge_name=""
+_main_edge_id=""
+# The edge of default.edge.region, else the main one (cp-edge); only its CP_EDGE_REGION and CP_EDGE_REGION_ID are read
+for _edge_deploy in $(kubectl get deploy -n "$CP_KUBE_NAMESPACE" -o name 2> /dev/null | grep '^deployment[^/]*/cp-edge'); do
+    _edge_name="$(kubectl get -n "$CP_KUBE_NAMESPACE" "$_edge_deploy" \
+        -o jsonpath='{.spec.template.spec.containers[*].env[?(@.name=="CP_EDGE_REGION")].value}')"
+    _edge_id="$(kubectl get -n "$CP_KUBE_NAMESPACE" "$_edge_deploy" \
+        -o jsonpath='{.spec.template.spec.containers[*].env[?(@.name=="CP_EDGE_REGION_ID")].value}')"
+    if [ "$_edge_region" ] && [ "$_edge_name" == "$_edge_region" ]; then
+        _edge_region_id="$_edge_id"
+        _edge_matched=1
+        break
+    fi
+    if [ "${_edge_deploy##*/}" == "cp-edge" ]; then
+        _main_edge_name="$_edge_name"
+        _main_edge_id="$_edge_id"
+    fi
+done
+# No edge of that region name: the main edge, which names its records by its CP_EDGE_REGION (else by the preference)
+if [ -z "$_edge_matched" ]; then
+    _edge_region="${_main_edge_name:-$_edge_region}"
+    _edge_region_id="$_main_edge_id"
+fi
+_edge_region_id="${_edge_region_id:-$(_pref default.edge.region.id)}"
+[ "$_edge_region" ] || [[ "$_dns_format" != *"{region_name}"* ]] || \
+    _warn "No edge region name (CP_EDGE_REGION, preference default.edge.region) for '$_dns_format': DNSrecordForRunsTest fails"
+_set e2e.ui.edge.dns.record.format "${_dns_format//\{region_name\}/$_edge_region}" \
+    "CP_EDGE_DNS_RECORD_FORMAT (config map), {region_name}: ${_edge_region:-<none>} (the default.edge.region edge)"
+[[ "${_VALUES[e2e.ui.edge.dns.record.format]}" == *"{job_name}"* ]] || \
+    _warn "CP_EDGE_DNS_RECORD_FORMAT ('$_dns_format') has no {job_name}: DNSrecordForRunsTest fails"
+_edge_cloud_region="$(cp_api_payload GET cloud/region | jq -c --arg id "$_edge_region_id" \
+    '[.[] | select(if $id == "" then .default == true else (.id | tostring) == $id end)][0] // empty')"
+_dns_zone="$(jq -r '.dnsHostedZoneBase // empty' <<< "$_edge_cloud_region")"
+_dns_zone_id="$(jq -r '.dnsHostedZoneId // empty' <<< "$_edge_cloud_region")"
+_set e2e.ui.dns.hosted.zone.base "${_dns_zone:-$(_pref instance.dns.hosted.zone.base)}" \
+    "dnsHostedZoneBase of cloud region ${_edge_region_id:-<default>} (the edge's), else preference instance.dns.hosted.zone.base"
+[ "${_VALUES[e2e.ui.dns.hosted.zone.base]}" ] && [ "${_dns_zone_id:-$(_pref instance.dns.hosted.zone.id)}" ] || \
+    _warn "Cloud region ${_edge_region_id:-<default>} has no DNS hosted zone (base and id), nor instance.dns.hosted.zone.*: DNSrecordForRunsTest fails"
 _set e2e.ui.auth.token true "impersonation mode"
 _set e2e.ui.impersonate.auth true "impersonation mode"
 # The admin's session (SESSION cookie of an SSO login, ordinarily). A session created by a JWT request is trusted

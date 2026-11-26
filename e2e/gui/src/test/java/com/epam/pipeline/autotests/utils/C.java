@@ -95,6 +95,9 @@ public class C {
         DEFAULT_CLUSTER_ALLOWED_PRICE_TYPES = conf.getProperty("e2e.ui.default.cluster.allowed.price.types");
         TEST_DOCKER_IMAGE = conf.getProperty("e2e.ui.test.docker.image");
         DIND_DOCKER_IMAGE = conf.getProperty("e2e.ui.dind.docker.image");
+        // the DNS record name of a sub-domain endpoint, with {job_name} for its location, and the zone the API appends
+        EDGE_DNS_RECORD_FORMAT = conf.getProperty("e2e.ui.edge.dns.record.format", "");
+        DNS_HOSTED_ZONE_BASE = conf.getProperty("e2e.ui.dns.hosted.zone.base", "");
         ANOTHER_CLOUD_REGION = conf.getProperty("e2e.ui.another.cloud.region");
         SYNC_STORAGE_NAME = conf.getProperty("e2e.ui.sync.storage.name");
         SYNC_STORAGE_TIMEOUT = Integer.parseInt(conf.getProperty("e2e.ui.sync.storage.timeout.in.seconds"));
@@ -185,6 +188,8 @@ public class C {
     public static final String NFS_PREFIX;
     public static final String TEST_DOCKER_IMAGE;
     public static final String DIND_DOCKER_IMAGE;
+    public static final String EDGE_DNS_RECORD_FORMAT;
+    public static final String DNS_HOSTED_ZONE_BASE;
 
     public static final String DEFAULT_INSTANCE;
     public static final String DEFAULT_INSTANCE_PRICE_TYPE;

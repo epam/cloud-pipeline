@@ -24,12 +24,19 @@ import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ex.ElementNotFound;
 import com.codeborne.selenide.impl.Alias;
 import com.epam.pipeline.autotests.utils.C;
+import com.epam.pipeline.autotests.utils.PlatformApi;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
+import static com.epam.pipeline.autotests.utils.Conditions.selectedTab;
+import static com.codeborne.selenide.ClickOptions.usingJavaScript;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 
+import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -71,6 +78,11 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     // table is redrawn, so a link is clicked again if its confirmation isn't shown after CONFIRMATION_WAIT.
     private static final Duration CONFIRMATION_WAIT = Duration.ofSeconds(5);
     private static final int CONFIRMATION_CLICKS = 3;
+    private static final String RUNS_FILTERS = "ui.runs.filters";
+    private static final ObjectMapper RUNS_FILTERS_JSON = new ObjectMapper();
+    private static final List<String> DEFAULT_ACTIVE_STATUSES =
+            Arrays.asList("RUNNING", "PAUSED", "PAUSING", "RESUMING");
+    private static final List<String> DEFAULT_COMPLETED_STATUSES = Arrays.asList("SUCCESS", "FAILURE", "STOPPED");
 
     private final Condition tableIsEmpty = new Condition("table is empty") {
         @Override
@@ -92,15 +104,117 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO activeRuns() {
-        $(byId("active-runs-button")).shouldBe(visible).click();
+        openRunsTab("active");
         tableShouldAppear();
         return new RunsMenuAO();
     }
 
     public RunsMenuAO completedRuns() {
-        $(byId("completed-runs-button")).shouldBe(visible).click();
+        openRunsTab("completed");
         tableShouldAppear();
         return new RunsMenuAO();
+    }
+
+    /**
+     * Checks that "Active Runs" is the selected runs tab, under whatever name ui.runs.filters gives it, e.g. "ACTIVE
+     * RUNS (2)" with a count: the GUI opens it after a launch (LaunchPipeline.js navigateToActiveRuns). A tab's id is
+     * its key (AllRuns.js: the link's id, inside the menu item that is selected).
+     */
+    public RunsMenuAO ensureActiveRunsTabSelected() {
+        $(byId("active-runs-button")).shouldBe(visible).closest(".ant-menu-item").shouldBe(selectedTab);
+        return this;
+    }
+
+    /**
+     * Opens the runs tab of the key with a click by script. A runs tab shows the description of its filter in a
+     * popover while the mouse is on it (AllRuns.js), and a real click leaves the mouse there: the popover then lies
+     * over the table's header and takes the clicks meant for the column filters (filterBy).
+     */
+    private void openRunsTab(final String key) {
+        $(byId(key + "-runs-button")).shouldBe(visible).click(usingJavaScript());
+    }
+
+    /**
+     * Waits until the run has the status, then opens the first runs tab that lists the runs of that status. A
+     * deployment configures the tabs with the ui.runs.filters preference, e.g. with the PAUSED runs on a tab of their
+     * own, so a run can leave "Active Runs" when its status changes. The tab is opened once the run has the status
+     * (the API's status of the run), so it loads with the run in it: a tab whose filter has no autoUpdate does not
+     * reload by itself.
+     */
+    public RunsMenuAO runsTabWithStatus(final String runId, final String status) {
+        final long deadline = System.currentTimeMillis() + COMPLETION_TIMEOUT;
+        String current = runStatus(runId);
+        while (!status.equals(current) && System.currentTimeMillis() < deadline) {
+            sleep(2, SECONDS);
+            current = runStatus(runId);
+        }
+        if (!status.equals(current)) {
+            throw new AssertionError(format("Run %s is %s, not %s, after %d ms", runId, current, status,
+                    COMPLETION_TIMEOUT));
+        }
+        openRunsTab(runsTabKey(runsFilters(), status));
+        tableShouldAppear();
+        return new RunsMenuAO();
+    }
+
+    /**
+     * The value of ui.runs.filters, or none where the user may not read it (a preference made invisible): the GUI
+     * then shows the default tabs too, as it loads the preferences visible to the user. PlatformApi reports a
+     * refused request as an assertion.
+     */
+    private static String runsFilters() {
+        try {
+            return PlatformApi.get("preferences/" + RUNS_FILTERS).path("value").asText("");
+        } catch (AssertionError e) {
+            return "";
+        }
+    }
+
+    private static String runStatus(final String runId) {
+        return PlatformApi.get("run/" + runId).path("status").asText();
+    }
+
+    /**
+     * The key of the first runs tab that lists the status, with the tabs in the order the GUI shows them
+     * (AllRuns.js uiRunsFilters): the filters of ui.runs.filters, after the default "Active Runs" (RUNNING, PAUSED,
+     * PAUSING, RESUMING) and before the default "Completed Runs" (SUCCESS, FAILURE, STOPPED) where the preference has
+     * no filter with the key "active" or "completed". A filter without statuses lists every status, as in the GUI
+     * (run-table AllStatuses); the other criteria of a filter (e.g. owners) are not looked at. A value that is not
+     * valid JSON counts as none, as in the GUI; so does one that is not a list.
+     */
+    private static String runsTabKey(final String filtersPreference, final String status) {
+        final List<JsonNode> filters = new ArrayList<>();
+        try {
+            final JsonNode value = RUNS_FILTERS_JSON.readTree(
+                    filtersPreference == null || filtersPreference.trim().isEmpty() ? "[]" : filtersPreference);
+            if (value != null && value.isArray()) {
+                value.forEach(filters::add);
+            }
+        } catch (IOException e) {
+            filters.clear();
+        }
+        final boolean configuredActive = filters.stream().anyMatch(f -> "active".equals(f.path("key").asText()));
+        final boolean configuredCompleted = filters.stream()
+                .anyMatch(f -> "completed".equals(f.path("key").asText()));
+        if (!configuredActive && DEFAULT_ACTIVE_STATUSES.contains(status)) {
+            return "active";
+        }
+        for (final JsonNode filter : filters) {
+            final JsonNode statuses = filter.path("filters").path("statuses");
+            if (!statuses.isArray() || statuses.size() == 0) {
+                return filter.path("key").asText();
+            }
+            for (final JsonNode listed : statuses) {
+                if (status.equals(listed.asText())) {
+                    return filter.path("key").asText();
+                }
+            }
+        }
+        if (!configuredCompleted && DEFAULT_COMPLETED_STATUSES.contains(status)) {
+            return "completed";
+        }
+        throw new IllegalStateException(format("No runs tab lists the %s runs (%s: %s)", status, RUNS_FILTERS,
+                filtersPreference));
     }
 
     public RunsMenuAO nextPageCompletedRuns() {

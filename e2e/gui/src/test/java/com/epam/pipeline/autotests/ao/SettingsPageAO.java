@@ -872,6 +872,27 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                         return this;
                     }
 
+                    /**
+                     * Whether the user has the role or group, by the class of its row (EditUserRolesDialog:
+                     * rowClassName role-<name>), once the roles are listed: every user has ROLE_USER.
+                     */
+                    public boolean isUserHasRoleOrGroup(final String value) {
+                        $(byClassName("role-ROLE_USER")).shouldBe(exist);
+                        return $(byClassName(roleRowClass(value))).exists();
+                    }
+
+                    public EditUserPopup addRoleOrGroupIfNonExist(final String value) {
+                        return isUserHasRoleOrGroup(value) ? this : addRoleOrGroup(value);
+                    }
+
+                    public EditUserPopup deleteRoleOrGroupIfExist(final String value) {
+                        return isUserHasRoleOrGroup(value) ? deleteRoleOrGroup(value) : this;
+                    }
+
+                    private String roleRowClass(final String value) {
+                        return value.startsWith("ROLE_") ? format("role-%s", value) : format("role-ROLE_%s", value);
+                    }
+
                     public EditUserPopup blockUser(final String user) {
                         clickAndConfirm(BLOCK, format("Are you sure you want to block user %s?", user));
                         return this;
@@ -1136,6 +1157,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 private final GroupsTabAO parentAO;
                 public final Map<Primitive, SelenideElement> elements = initialiseElements(
                         entry(OK, context().find(By.id("close-edit-user-form"))),
+                        entry(CANCEL, context().find(byXpath(".//button[normalize-space(.) = 'CANCEL']"))),
                         entry(PRICE_TYPE, context().find(byXpath(
                                 format(".//div/b[text()='%s']/following::div/input", "Allowed price types"))))
                 );
@@ -1150,9 +1172,19 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     return elements;
                 }
 
+                /**
+                 * Closes the dialog. OK saves the changes and is disabled while there is none
+                 * (client/.../settings/forms/EditRoleDialog.js), e.g. when a cleared field was already empty:
+                 * CANCEL closes the dialog then, as {@link EditUserPopup#ok()} does.
+                 */
                 @Override
                 public GroupsTabAO ok() {
-                    click(OK);
+                    if (get(OK).isEnabled()) {
+                        click(OK);
+                    } else {
+                        click(CANCEL);
+                    }
+                    get(OK).shouldNotBe(visible);
                     return parentAO;
                 }
 

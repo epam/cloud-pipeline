@@ -16,10 +16,12 @@
 
 package com.epam.pipeline.manager.preference;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
 import com.epam.pipeline.AbstractSpringTest;
+import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.preference.PreferenceType;
 import io.reactivex.Observable;
@@ -46,6 +48,34 @@ public class PreferenceManagerTest extends AbstractSpringTest {
 
     @Autowired
     private PreferenceManager preferenceManager;
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
+    public void shouldNotDeleteKeepAlivePolicyWhenItsDefaultDoesNotFitTheMinutes() {
+        preferenceManager.update(Arrays.asList(
+                keepAlivePreference(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY,
+                        ClusterKeepAlivePolicy.IDLE_MINUTES.name()),
+                keepAlivePreference(SystemPreferences.CLUSTER_KEEP_ALIVE_MINUTES, "120")));
+
+        assertThrows(IllegalArgumentException.class,
+            () -> preferenceManager.delete(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY.getKey()));
+        Assert.assertEquals(ClusterKeepAlivePolicy.IDLE_MINUTES.name(),
+                preferenceManager.getPreference(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
+    public void shouldDeleteKeepAlivePolicyWhenItsDefaultFitsTheMinutes() {
+        preferenceManager.update(Arrays.asList(
+                keepAlivePreference(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY,
+                        ClusterKeepAlivePolicy.IDLE_MINUTES.name()),
+                keepAlivePreference(SystemPreferences.CLUSTER_KEEP_ALIVE_MINUTES, "30")));
+
+        preferenceManager.delete(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY.getKey());
+
+        Assert.assertEquals(ClusterKeepAlivePolicy.MINUTES_TILL_HOUR.name(),
+                preferenceManager.getPreference(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY));
+    }
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
@@ -169,5 +199,11 @@ public class PreferenceManagerTest extends AbstractSpringTest {
         preferenceManager.delete(commitTimeout.getName());
         test1.assertValueCount(2);
         test2.assertValueCount(2);
+    }
+
+    private Preference keepAlivePreference(final AbstractSystemPreference<?> systemPreference, final String value) {
+        final Preference preference = systemPreference.toPreference();
+        preference.setValue(value);
+        return preference;
     }
 }

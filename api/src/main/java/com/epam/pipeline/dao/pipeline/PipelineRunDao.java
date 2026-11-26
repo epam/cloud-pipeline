@@ -928,19 +928,37 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         //ownership filter indicates that acl filtering is applied
         if (StringUtils.isNotBlank(filter.getOwnershipFilter())) {
             appendAnd(whereBuilder, clausesCount);
-            buildAclFiltersClause(filter, params, whereBuilder);
+            buildAclFiltersClause(filter, params, whereBuilder, filter.getAllowedParentRunId());
         }
     }
 
     private void buildAclFiltersClause(final AclSecuredRunFilter filter, final MapSqlParameterSource params,
                                        final StringBuilder whereBuilder) {
+        buildAclFiltersClause(filter, params, whereBuilder, null);
+    }
+
+    /**
+     * @param allowedParentRunId a run that the user can read: its child runs with no pipeline and of the same owner
+     *                           are allowed too, as {@code RunPermissionManager} lets the user read them
+     */
+    private void buildAclFiltersClause(final AclSecuredRunFilter filter, final MapSqlParameterSource params,
+                                       final StringBuilder whereBuilder, final Long allowedParentRunId) {
         params.addValue(PipelineRunParameters.OWNERSHIP.name(), filter.getOwnershipFilter().toLowerCase());
+        final String childRunsOfAllowedParent = allowedParentRunId == null ? ""
+                : String.format(" OR (r.parent_id = :%1$s AND (r.pipeline_id IS NULL OR r.pipeline_id = 0)"
+                        + " AND lower(r.owner) = (SELECT lower(parent_run.owner) FROM pipeline.pipeline_run parent_run"
+                        + " WHERE parent_run.run_id = :%1$s))",
+                        PipelineRunParameters.PARENT_RUN_ALLOWED.name());
+        if (allowedParentRunId != null) {
+            params.addValue(PipelineRunParameters.PARENT_RUN_ALLOWED.name(), allowedParentRunId);
+        }
         if (CollectionUtils.isNotEmpty(filter.getAllowedPipelines())) {
             whereBuilder
                     .append(" (")
                     .append("r.pipeline_id in (:").append(PipelineRunParameters.PIPELINE_ALLOWED.name()).append(')')
                     .append(" OR lower(r.owner) = :").append(PipelineRunParameters.OWNERSHIP.name())
                     .append(" OR lower(r.original_owner) = :").append(PipelineRunParameters.OWNERSHIP.name())
+                    .append(childRunsOfAllowedParent)
                     .append(')');
             params.addValue(PipelineRunParameters.PIPELINE_ALLOWED.name(), filter.getAllowedPipelines());
         } else {
@@ -948,6 +966,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
                     .append(" (")
                     .append(" lower(r.owner) = :").append(PipelineRunParameters.OWNERSHIP.name())
                     .append(" OR lower(r.original_owner) = :").append(PipelineRunParameters.OWNERSHIP.name())
+                    .append(childRunsOfAllowedParent)
                     .append(')');
 
         }
@@ -1074,6 +1093,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         ORIGINAL_OWNER,
         ROLE,
         PIPELINE_ALLOWED,
+        PARENT_RUN_ALLOWED,
         OWNERSHIP,
         POD_IP,
         SSH_PASSWORD,

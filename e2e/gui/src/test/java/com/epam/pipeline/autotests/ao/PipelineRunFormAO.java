@@ -151,6 +151,24 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return this;
     }
 
+    /**
+     * Checks the price shown after "Estimated price per hour:": an em dash when the price cannot be estimated
+     * (client/.../launch/form/LaunchPipelineForm.js, renderEstimatedPriceInfo).
+     */
+    public PipelineRunFormAO checkEstimatedPriceValue(final String expectedValue) {
+        ensure(className("launch-pipeline-form__price"), text(expectedValue));
+        return this;
+    }
+
+    /**
+     * Checks the text of the popover that the information icon next to the estimated price shows on hover.
+     */
+    public PipelineRunFormAO checkEstimatedPriceTooltip(final String message) {
+        get(INFORMATION_ICON).hover();
+        $(byText(message)).shouldBe(exist);
+        return this;
+    }
+
     public PipelineRunFormAO setDisk(String disk) {
         return setValue(DISK, disk);
     }
@@ -180,7 +198,9 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
     /**
      * Selects a run capability as {@link AccessObject#selectValue(Primitive, By)} selects an option of a combobox:
-     * the run capabilities are a menu of an rc-dropdown, not of an ant-select-dropdown.
+     * the run capabilities are a menu of an rc-dropdown, not of an ant-select-dropdown. The menu stays open after
+     * a pick, over the fields below it, so it is closed by a click on the label, as {@link #selectRunCapability}
+     * does.
      */
     @Override
     public PipelineRunFormAO selectValue(final Primitive combobox, final By optionQualifier) {
@@ -188,7 +208,10 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             return AccessObject.super.selectValue(combobox, optionQualifier);
         }
         get(RUN_CAPABILITIES).shouldBe(visible).click();
-        $(visible(byClassName("rc-dropdown"))).find(optionQualifier).shouldBe(visible).click();
+        final SelenideElement menu = $(visible(byClassName("rc-dropdown")));
+        menu.find(optionQualifier).shouldBe(visible).click();
+        $(byText("Run capabilities")).click();
+        $$(byClassName("rc-dropdown")).filterBy(visible).shouldHave(size(0));
         return this;
     }
 
@@ -682,13 +705,33 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         }
 
         /**
-         * Checks the validation message shown in the row right below the field with the given label,
-         * e.g. "Child nodes:", "Auto-scaled up to:" or "Default child nodes:".
+         * Checks the validation message shown in the row right below the field with the given label, e.g.
+         * "Child nodes:" or "Auto-scaled up to:"; for "Default child nodes:" see
+         * {@link #defaultChildNodesMessageShouldBe}. A field can have a row for a warning about the allowed count
+         * of instances between them, empty while there is no warning
+         * (client/.../launch/form/utilities/launch-cluster.js), so empty rows are skipped.
          */
         public ConfigureClusterPopupAO fieldMessageShouldBe(final String fieldLabel, final String message) {
             context().find(byXpath(format(
                     ".//span[normalize-space(text()) = '%s']/ancestor::div[contains(@class, 'ant-row-flex')][1]" +
-                            "/following-sibling::div[1][contains(@class, 'cp-error')]", fieldLabel)))
+                            "/following-sibling::div[normalize-space(.) != ''][1][contains(@class, 'cp-error')]",
+                    fieldLabel)))
+                    .shouldBe(visible)
+                    .shouldHave(exactText(message));
+            return this;
+        }
+
+        /**
+         * Checks the validation message of the "Default child nodes:" field of an auto-scaled cluster. The client
+         * shows it at the end of the auto-scaled block, after the GridEngine, Slurm, Kubernetes and hybrid rows
+         * (the nodesCount validation row, client/.../launch/form/utilities/launch-cluster.js), not below the field:
+         * it is the first error row after the field's row.
+         */
+        public ConfigureClusterPopupAO defaultChildNodesMessageShouldBe(final String message) {
+            context().find(byXpath(
+                    ".//span[normalize-space(text()) = 'Default child nodes:']" +
+                            "/ancestor::div[contains(@class, 'ant-row-flex')][1]" +
+                            "/following-sibling::div[contains(@class, 'cp-error')][1]"))
                     .shouldBe(visible)
                     .shouldHave(exactText(message));
             return this;

@@ -123,7 +123,7 @@ public class LogAO implements AccessObject<LogAO> {
         get(SSH_LINK).shouldBe(visible).click();
         switchTo().window(1);
         switchTo().frame(0);
-        return new ShellAO();
+        return new ShellAO().waitForFirstPrompt();
     }
 
     /**
@@ -524,6 +524,13 @@ public class LogAO implements AccessObject<LogAO> {
      */
     public static By configurationParameter(final String name, final String value) {
         return byXpath(format(".//*/*[normalize-space(translate(., ' \t\n', '   ')) = '%s:%s']", name, value));
+    }
+
+    /**
+     * A run parameter with the name, whatever its value: the run page writes every parameter as "name:value".
+     */
+    public static By configurationParameter(final String name) {
+        return byXpath(format(".//*/*[starts-with(normalize-space(translate(., ' \t\n', '   ')), '%s:')]", name));
     }
 
     public LogAO validateRunTitle(String title) {
