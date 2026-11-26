@@ -58,8 +58,9 @@ public class JsonMapper extends ObjectMapper {
         // the used format is 'yyyy-MM-dd'
         super.setDateFormat(new SimpleDateFormat(FMT_ISO_LOCAL_DATE));
 
-        // enforces to skip null and empty property values in the serialized JSON output, and of a Map only
-        // the entries whose value is null: setSerializationInclusion would skip those with an empty value too
+        // Skips a property whose value is null or empty ("", [] or {}).
+        // In a Map, skips only an entry whose value is null: an entry whose value is "", [] or {} is kept.
+        // setSerializationInclusion(NON_EMPTY) is not used, as it skips such Map entries too.
         super.setDefaultPropertyInclusion(
                 JsonInclude.Value.construct(JsonInclude.Include.NON_EMPTY, JsonInclude.Include.NON_NULL));
 
