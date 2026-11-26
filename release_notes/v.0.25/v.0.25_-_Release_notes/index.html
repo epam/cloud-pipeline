@@ -68,6 +68,8 @@
         <ul>
     <li class="toctree-l3"><a class="reference internal" href="#unavailable-cluster-nodes-are-not-detected">Unavailable cluster nodes are not detected</a>
     </li>
+    <li class="toctree-l3"><a class="reference internal" href="#pipe-cli-for-macos-arm-needs-rosetta">pipe CLI for macOS ARM needs Rosetta</a>
+    </li>
         </ul>
     </li>
     </ul>
@@ -436,6 +438,7 @@
 <ul>
 <li><a href="#notable-bug-fixes">Notable Bug fixes</a><ul>
 <li><a href="#unavailable-cluster-nodes-are-not-detected">Unavailable cluster nodes are not detected</a></li>
+<li><a href="#pipe-cli-for-macos-arm-needs-rosetta"><code>pipe</code> CLI for macOS ARM needs Rosetta</a></li>
 </ul>
 </li>
 </ul>
@@ -465,6 +468,10 @@
 Now, a node is unavailable when its <code>Ready</code> condition is <code>Unknown</code>, and the grace period (<strong><code>cluster.node.unavailable.grace.period.minutes</code></strong>) is counted from the moment Kubernetes marked the node unavailable.
 Also, a free node is reused for a new run only if its <code>Ready</code> condition is <code>True</code>. Before, a node that was not ready, or not reachable at all, could be reused, and the new run could get stuck on it.
 Please note: after the update, nodes that have already been unavailable for longer than the grace period are terminated during the first autoscaler cycle, and their runs fail.</p>
+<h3 id="pipe-cli-for-macos-arm-needs-rosetta"><code>pipe</code> CLI for macOS ARM needs Rosetta</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/4953">#4953</a></p>
+<p>Previously, the <code>pipe</code> CLI distribution for Mac devices with ARM-based chips (Apple Silicon, the <strong>MacOS-ARM</strong> installation option, <code>pipe-osx-arm.tar.gz</code>) was built for Intel (<code>x86_64</code>) processors, both <code>pipe</code> and the bundled <code>pipe-fuse</code>. So it could run only through Rosetta.
+Now, it is a native <code>arm64</code> build, and it runs without Rosetta.</p>
               
             </div>
           </div><footer>
