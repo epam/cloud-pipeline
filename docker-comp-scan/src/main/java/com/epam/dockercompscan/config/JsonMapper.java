@@ -61,11 +61,10 @@ public class JsonMapper extends ObjectMapper implements InitializingBean {
         // the used format is 'yyyy-MM-dd'
         super.setDateFormat(new SimpleDateFormat(FMT_ISO_LOCAL_DATE));
 
-        // enforces to skip null and empty values in the serialized JSON output
-        super.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-
-        // enforces to skip null references in the serialized output of Map
-        super.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
+        // enforces to skip null and empty property values in the serialized JSON output, and of a Map only
+        // the entries whose value is null: setSerializationInclusion would skip those with an empty value too
+        super.setDefaultPropertyInclusion(
+                JsonInclude.Value.construct(JsonInclude.Include.NON_EMPTY, JsonInclude.Include.NON_NULL));
 
         // enables serialization failures, when mapper encounters unknown properties names
         super.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);

@@ -20,8 +20,12 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
+import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.Tool;
@@ -33,6 +37,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -55,6 +60,8 @@ public class PipelineVersionManagerTest extends AbstractManagerTest {
     private static final String IMAGE_FROM_PROPERTIES = "imageFromProperties";
     private static final String IMAGE_FROM_CONFIG = "imageFromConfig";
     private static final String DOCKER_IMAGE = "dockerImage";
+    private static final String EMPTY_LABEL = "empty-label";
+    private static final String NULL_LABEL = "null-label";
 
     @Mock
     private PipelineManager pipelineManagerMock;
@@ -108,6 +115,32 @@ public class PipelineVersionManagerTest extends AbstractManagerTest {
                 pipelineVersionManager.loadParametersFromScript(1L, TEST_REVISION_1);
         assertNotNull(configuration);
         assertEquals(EXPECTED_DEFAULT_PARAMS, configuration.getParameters().size());
+    }
+
+    @Test
+    public void addConfigurationShouldKeepNullAndEmptyMapValuesInConfigFile() throws GitClientException {
+        pipelineVersionManager.afterPropertiesSet();
+        final Pipeline mockPipeline = new Pipeline();
+        mockPipeline.setId(1L);
+        mockPipeline.setRepository(TEST_HTTP_REPOSITORY);
+        Mockito.when(pipelineManagerMock.load(Mockito.eq(mockPipeline.getId()), Mockito.anyBoolean()))
+                .thenReturn(mockPipeline);
+        final Map<String, String> kubeLabels = new LinkedHashMap<>();
+        kubeLabels.put(EMPTY_LABEL, "");
+        kubeLabels.put(NULL_LABEL, null);
+        final PipelineConfiguration configuration = new PipelineConfiguration();
+        configuration.setCmdTemplate("sleep 1");
+        configuration.setKubeLabels(kubeLabels);
+        final ConfigurationEntry entry = new ConfigurationEntry(configuration);
+        entry.setName("default");
+
+        pipelineVersionManager.addConfiguration(mockPipeline.getId(), entry);
+
+        final ArgumentCaptor<PipelineSourceItemVO> commit = ArgumentCaptor.forClass(PipelineSourceItemVO.class);
+        Mockito.verify(gitManager).modifyFile(Mockito.eq(mockPipeline), commit.capture());
+        final String content = commit.getValue().getContents();
+        assertTrue(content.contains("\"" + EMPTY_LABEL + "\" : \"\""), content);
+        assertTrue(content.contains("\"" + NULL_LABEL + "\" : null"), content);
     }
 
     @Test
