@@ -37,6 +37,8 @@ In this mode, the **Search from** / **Search until** / **Duration (days)** field
 
 An offering's window, and a purchased block's own granted window, are now shown converted to the viewer's own local time - an earlier release rendered the backend's UTC wall-clock values as if they were already local, understating a window's start and end by the viewer's own offset from UTC.
 
+Picking a day for **Search from** / **Search until** - in either a **Future dated** or an **ML Block** reservation - now sends that day's true start and end instant, computed in the viewer's own zone, rather than the day's wall-clock boundary sent as if the viewer were already in UTC; a viewer elsewhere could otherwise search, or request, a window off by their own offset from the day they actually picked.
+
 The up-front fee is non-refundable, and a purchased block cannot be cancelled - it simply ends at its fixed time. See [ML Block node pools](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#ml-block-node-pools).
 
 ***

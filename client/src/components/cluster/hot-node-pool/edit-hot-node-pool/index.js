@@ -396,6 +396,13 @@ class EditHotNodePool extends React.Component {
       // already seeded rather than waiting on a Mode interaction a non-admin never gets
       // a chance to make.
       const mode = pool ? MODE_DEFAULT : this.defaultMode;
+      // A reopen (`componentDidUpdate`'s visible-transition branch calls this again) resets
+      // `mlBlockCandidates` to `[]` without bumping `mlBlockOfferingsGeneration` or flooring
+      // the old ids - it survives only because `mode` here can never resolve to ML Block
+      // (`hot-node-pool/index.js` never lists `MODE_ML_BLOCK` first in `allowedModes`), so a
+      // stale response is already dropped by `runMlBlockOfferingsSearch`'s own mode check.
+      // Two accidents, not one invariant: if that ordering ever changes, this must also
+      // floor every stale candidate id the way `onPoolKindChange`'s mode switch does.
       // A new future-dated pool opens with the creator pre-filled as the run owner. The
       // caller can force the mode (a NODE_POOL_MANAGER's Create), so the seed cannot wait
       // for an onChange that user never gets to make. Seeded only when the login is known -
@@ -563,6 +570,9 @@ class EditHotNodePool extends React.Component {
 
   // Floors `id`'s bookkeeping so a response already in flight for it can never apply
   // to a different candidate that later reuses the same numeric id after removal.
+  // Called at *schedule* time, never at *dispatch* time (where `mlBlockOfferingsRequestId`
+  // is actually minted) - that asymmetry is what makes out-of-order responses for one row
+  // airtight; moving this call to the dispatch site would quietly break it.
   reserveMlBlockOfferingsId = (id) => {
     this.mlBlockOfferingsAppliedRequestId[id] = Math.max(
       this.mlBlockOfferingsAppliedRequestId[id] || 0,
@@ -663,29 +673,34 @@ class EditHotNodePool extends React.Component {
   // complete row's, stamped with a fresh requestId and the generation scheduled under.
   runMlBlockOfferingsSearch = (candidateIds, generation, isFullRefetch) => {
     const {region, mlBlockCandidates} = this.state;
-    const candidates = candidateIds
-      .map(id => (mlBlockCandidates || []).find(c => c.id === id))
-      .filter(Boolean);
+    // Re-filtered against the row's *current* data, not just looked up by id: a row
+    // dispatched as complete (at schedule time) may have gone incomplete since, inside
+    // the same debounce - included here it would either send an empty `candidates` array
+    // (the only row) or be wrongly settled by a response its own data was never part of.
+    const candidates = getCompleteMlBlockCandidates(
+      candidateIds
+        .map(id => (mlBlockCandidates || []).find(c => c.id === id))
+        .filter(Boolean)
+    );
+    if (candidates.length === 0) {
+      if (isFullRefetch && generation === this.mlBlockOfferingsGeneration) {
+        this.setState({mlBlockOfferingsFullRefetchPending: false});
+      }
+      return;
+    }
     this.mlBlockOfferingsRequestId += 1;
     const requestId = this.mlBlockOfferingsRequestId;
     const request = new CapacityBlockOfferings();
     const body = buildCapacityBlockOfferingRequest({...this.state, mlBlockCandidates: candidates});
     const stale = () => this.state.region !== region || this.state.mode !== MODE_ML_BLOCK;
-    // Only for the "a full refetch is in flight" indicator - never gates applying data.
-    const finishFullRefetch = () => {
-      if (isFullRefetch && generation === this.mlBlockOfferingsGeneration) {
-        this.setState({mlBlockOfferingsFullRefetchPending: false});
-      }
-    };
     request.send(body)
       .then(() => {
-        finishFullRefetch();
         if (stale()) {
           return;
         }
         if (request.loaded) {
           this.applyMlBlockOfferingsResponse(
-            candidates, request.value || [], undefined, requestId, generation
+            candidates, request.value || [], undefined, requestId, generation, isFullRefetch
           );
         } else {
           console.error(request.error || ML_BLOCK_OFFERINGS_ERROR_MESSAGE);
@@ -694,13 +709,13 @@ class EditHotNodePool extends React.Component {
             [],
             request.error || ML_BLOCK_OFFERINGS_ERROR_MESSAGE,
             requestId,
-            generation
+            generation,
+            isFullRefetch
           );
         }
       })
       .catch((e) => {
         console.error(e);
-        finishFullRefetch();
         if (stale()) {
           return;
         }
@@ -709,15 +724,20 @@ class EditHotNodePool extends React.Component {
           [],
           e.message || ML_BLOCK_OFFERINGS_ERROR_MESSAGE,
           requestId,
-          generation
+          generation,
+          isFullRefetch
         );
       });
   };
 
   // Applies per candidate only where `requestId` beats that row's own last applied one,
   // using each row's type as of dispatch (`dispatchedCandidates`), not its current one.
+  // A full refetch's own `mlBlockOfferingsFullRefetchPending` is settled in this same
+  // `setState` rather than a separate one before it - React 15 does not batch a
+  // `setState` made from a promise callback, so two calls would commit a frame where the
+  // flag already reads false while every row still shows `pending: true`.
   applyMlBlockOfferingsResponse = (
-    dispatchedCandidates, offeringsFlat, error, requestId, generation
+    dispatchedCandidates, offeringsFlat, error, requestId, generation, isFullRefetch
   ) => {
     if (generation !== this.mlBlockOfferingsGeneration) {
       return;
@@ -746,11 +766,12 @@ class EditHotNodePool extends React.Component {
         clearSelection = true;
       }
     });
-    if (!changed) {
+    if (!changed && !isFullRefetch) {
       return;
     }
     this.setState({
-      mlBlockOfferingsByCandidate: nextByCandidate,
+      ...(changed ? {mlBlockOfferingsByCandidate: nextByCandidate} : {}),
+      ...(isFullRefetch ? {mlBlockOfferingsFullRefetchPending: false} : {}),
       ...(clearSelection
         ? {mlBlockOfferingId: undefined, instanceType: undefined, count: undefined}
         : {})
@@ -782,7 +803,11 @@ class EditHotNodePool extends React.Component {
                   .map(o => o.toUpperCase());
                 let {instanceType, spot} = this.state;
                 const {mode, isExistingReservation} = this.state;
-                if (!typeNames.has(instanceType)) {
+                // ML Block's `instanceType` is filled from the picked offering, not typed
+                // in by the user, and a capacity-block type need not appear on this
+                // general allowed list at all - so this correction must leave it alone
+                // there, or a slow response landing after a card is clicked would blank it.
+                if (mode !== MODE_ML_BLOCK && !typeNames.has(instanceType)) {
                   instanceType = undefined;
                 }
                 // An existing reservation's `priceType` must round-trip unchanged
@@ -793,11 +818,15 @@ class EditHotNodePool extends React.Component {
                 // no longer offers it. Silently swapping it in would send a changed
                 // `priceType` on SAVE and the backend would reject it.
                 if (!isExistingReservation && !(new Set(priceTypes)).has(spot)) {
-                  // `NodePoolValidator` rejects SPOT for either reservation mode, so
-                  // the auto-picked default must skip it there too.
-                  spot = (mode === MODE_FUTURE_DATED || mode === MODE_ML_BLOCK)
-                    ? (priceTypes.find(p => !/^spot$/i.test(p)) || priceTypes[0])
-                    : priceTypes[0];
+                  if (mode === MODE_FUTURE_DATED || mode === MODE_ML_BLOCK) {
+                    // `NodePoolValidator` rejects SPOT for either reservation mode. Where
+                    // the region offers nothing else, there is no price type left to
+                    // auto-pick - leave it unset rather than falling back to the one
+                    // value the validator rejects outright.
+                    spot = priceTypes.find(p => !/^spot$/i.test(p));
+                  } else {
+                    spot = priceTypes[0];
+                  }
                 }
                 this.setState({
                   allowedInstanceTypes: types,

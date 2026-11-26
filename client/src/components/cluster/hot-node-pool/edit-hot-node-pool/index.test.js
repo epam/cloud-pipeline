@@ -26,7 +26,9 @@ import {
   flushPromises,
   fn,
   stubApi,
-  act
+  act,
+  spyOn,
+  restoreMocks
 } from '@test';
 import EditHotNodePool from './index';
 import {buildCapacityBlockOfferingRequest, formatCapacityBlockInstanceType} from './helpers';
@@ -1192,13 +1194,17 @@ function mlBlockOffering (overrides = {}) {
 // mobx-react's `inject` HOC the way `ref` exposes it (`wrappedInstance`) - the only
 // handle onto `commitmentStart`/`commitmentEnd`, which nothing in this codebase drives
 // through the antd DatePicker (see controls/ReservationScheduleControl.test.js).
-async function renderMlBlockPool (props = {}) {
+// `instanceTypesForCall`, where given, replaces the default handler entirely - `stubApi`
+// matches the first-registered handler for a pattern, so a caller that needs its own
+// per-call behaviour (e.g. holding one region's response open) cannot `handle()` the
+// same path again after this function already has.
+async function renderMlBlockPool (props = {}, instanceTypesForCall) {
   const api = stubApi();
   // Also carries `p5.48xlarge` on the general allowed-instance-types list, not only the
   // capacity-block catalogue: the offering fills the read-only `Instance Type` select with
   // it, and that select's options come from this list, not from the catalogue - with no
   // matching Option, there would be nothing to assert its rendered text against.
-  api.handle(/\/cluster\/instance\/allowed/, () => ({
+  const defaultInstanceTypesForCall = () => ({
     status: 'OK',
     payload: {
       'cluster.allowed.instance.types': [
@@ -1207,7 +1213,8 @@ async function renderMlBlockPool (props = {}) {
       ],
       'cluster.allowed.price.types': ['SPOT', 'ON_DEMAND']
     }
-  }));
+  });
+  api.handle(/\/cluster\/instance\/allowed/, instanceTypesForCall || defaultInstanceTypesForCall);
   let wrapper;
   const {rerender} = renderWithStores(
     <EditHotNodePool
@@ -1664,6 +1671,207 @@ test(
     await flushPromises();
 
     expect(wrapper.wrappedInstance.state.spot).not.toBe('SPOT');
+  }
+);
+
+// The "undefined" case above was already fixed; this is the "only SPOT offered" case the
+// same auto-correction still gets wrong - with no non-spot type to fall back to, it fell
+// back to `priceTypes[0]`, which here is SPOT itself.
+test(
+  'ML Block mode never auto-selects Spot even when the region offers nothing else',
+  async () => {
+    const api = stubApi();
+    let resolveAllowed;
+    api.handle(/\/cluster\/instance\/allowed/, () => new Promise((resolve) => {
+      resolveAllowed = () => resolve({
+        status: 'OK',
+        payload: {
+          'cluster.allowed.instance.types': [
+            {sku: 's1', name: 'm5.xlarge', instanceFamily: 'General purpose'}
+          ],
+          'cluster.allowed.price.types': ['SPOT']
+        }
+      });
+    }));
+    let wrapper;
+    renderWithStores(
+      <EditHotNodePool
+        ref={(r) => { wrapper = r; }}
+        visible
+        disabled={false}
+        currentUserName="USER1"
+        allowedModes={['DEFAULT', 'ML_BLOCK']}
+      />,
+      stores()
+    );
+    await waitFor(() => expect(api.calls.length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.getAllByText('Mode:')).toHaveLength(1));
+
+    await click(within(row('Mode:')).getByRole('combobox'));
+    await click(screen.getByText('ML Block'));
+
+    resolveAllowed();
+    await flushPromises();
+
+    expect(wrapper.wrappedInstance.state.spot).not.toBe('SPOT');
+  }
+);
+
+// A slow allowed-types request for the picked region can land after a candidate's
+// offering has already filled `instanceType` - that field is not user-chosen in ML Block
+// mode, so the general allowed list (which need not carry a capacity-block type at all)
+// must not blank it.
+test(
+  'a late allowed-types response does not blank the instance type a selected offering filled',
+  async () => {
+    let resolveAllowedForRegion1;
+    const limitedAllowedPayload = {
+      status: 'OK',
+      payload: {
+        'cluster.allowed.instance.types': [
+          {sku: 's1', name: 'm5.xlarge', instanceFamily: 'General purpose'}
+        ],
+        'cluster.allowed.price.types': ['SPOT', 'ON_DEMAND']
+      }
+    };
+    const {api, instance} = await renderMlBlockPool({}, (call) => {
+      if (/regionId=1/.test(call.path)) {
+        return new Promise((resolve) => {
+          resolveAllowedForRegion1 = () => resolve(limitedAllowedPayload);
+        });
+      }
+      return limitedAllowedPayload;
+    });
+    api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+    const offering = mlBlockOffering();
+    api.reply('/cluster/capacity-reservation/offerings', [offering]);
+
+    await enterMlBlockMode();
+    await selectRegion('eu-central-1');
+    await waitFor(() => expect(resolveAllowedForRegion1).toBeDefined());
+    await waitFor(() => expect(
+      screen.getByRole('button', {name: 'Add instance type'})
+    ).not.toBeDisabled());
+
+    // The rest of the form, so `valid` below is answered by this field alone, not by an
+    // unrelated "Name is required"/"Disk ..." error.
+    await change(within(row('Pool name:')).getByRole('textbox'), 'ml-block-pool');
+    await change(within(row('Disk:')).getByRole('textbox'), '50');
+
+    await click(screen.getByRole('button', {name: 'Add instance type'}));
+    await click(within(mlBlockCandidateRow()).getByRole('combobox'));
+    await click(screen.getByText(formatCapacityBlockInstanceType(mlBlockInstanceTypeInfo)));
+    await change(within(mlBlockCandidateRow()).getByRole('textbox'), '2');
+    await change(within(row('Duration (days):')).getByRole('textbox'), '1');
+    await act(() => instance().onChangeField('commitmentStart', '2026-12-25'));
+
+    await waitFor(() => expect(offeringsCalls(api)).toHaveLength(1), {
+      timeout: ML_BLOCK_SEARCH_TIMEOUT
+    });
+    await click(screen.getByText(new RegExp(offering.availabilityZone)));
+    expect(instance().state.instanceType).toBe('p5.48xlarge');
+
+    // The held allowed-types response for this region lands only now, after the card was
+    // already clicked.
+    resolveAllowedForRegion1();
+    await flushPromises();
+
+    expect(instance().state.mlBlockOfferingId).toBe(offering.offeringId);
+    expect(instance().state.instanceType).toBe('p5.48xlarge');
+    expect(instance().state.count).toBe(2);
+    expect(instance().state.valid).toBe(true);
+  }
+);
+
+// Scheduling a per-candidate search does not disarm an already-armed full-refetch timer,
+// so a row that goes incomplete inside that timer's debounce used to still be dispatched:
+// its data was filtered out of the request body (an empty `candidates` array, the only
+// row), and the response that came back for the request still settled the row as
+// `searched: true` with no offerings - a settled empty search for a row that never asked.
+test(
+  'clearing the only candidate inside a full refetch\'s debounce sends no empty search and ' +
+  'does not settle that now-incomplete row',
+  async () => {
+    const {api, instance} = await renderMlBlockPool();
+    api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+    api.reply('/cluster/capacity-reservation/offerings', []);
+
+    await enterMlBlockMode();
+    await selectRegion('eu-central-1');
+    await waitFor(() => expect(
+      screen.getByRole('button', {name: 'Add instance type'})
+    ).not.toBeDisabled());
+
+    await click(screen.getByRole('button', {name: 'Add instance type'}));
+    await click(within(mlBlockCandidateRow()).getByRole('combobox'));
+    await click(screen.getByText(formatCapacityBlockInstanceType(mlBlockInstanceTypeInfo)));
+    await change(within(row('Duration (days):')).getByRole('textbox'), '1');
+    await act(() => instance().onChangeField('commitmentStart', '2026-12-25'));
+
+    await waitFor(() => expect(offeringsCalls(api)).toHaveLength(1), {
+      timeout: ML_BLOCK_SEARCH_TIMEOUT
+    });
+
+    const {id} = instance().state.mlBlockCandidates[0];
+    // Both land inside the same 500ms debounce: the duration change arms a full refetch
+    // of this (still complete) row, then the very next edit clears its type.
+    await act(() => instance().onChangeField('commitmentDurationDays', '2'));
+    await act(() => instance().onChangeField(
+      'mlBlockCandidates', {action: 'update', id, field: 'instanceType', value: undefined}
+    ));
+
+    await new Promise((resolve) => setTimeout(resolve, ML_BLOCK_OFFERINGS_FETCH_DELAY_MS * 4));
+
+    expect(instance().state.mlBlockOfferingsByCandidate[id].searched).toBe(false);
+    expect(offeringsCalls(api).every(c => JSON.parse(c.body).candidates.length > 0)).toBe(true);
+  }
+);
+
+// `finishFullRefetch` used to `setState` the flag on its own, a separate call ahead of
+// `applyMlBlockOfferingsResponse`'s own - React 15 does not batch a `setState` made from a
+// promise callback, so the DOM passed through a frame where the flag already read false
+// while every row still carried `pending: true`, drawing the per-row spinners phase 4
+// says must not appear during a full refetch.
+test(
+  'a full refetch settles its pending flag and the row data in the same update, not a ' +
+  'frame apart',
+  async () => {
+    const {api, instance} = await renderMlBlockPool();
+    api.reply(/\/cluster\/capacity-reservation\/instance-types/, [mlBlockInstanceTypeInfo]);
+    api.reply('/cluster/capacity-reservation/offerings', []);
+
+    await enterMlBlockMode();
+    await selectRegion('eu-central-1');
+    await waitFor(() => expect(
+      screen.getByRole('button', {name: 'Add instance type'})
+    ).not.toBeDisabled());
+
+    await click(screen.getByRole('button', {name: 'Add instance type'}));
+    await click(within(mlBlockCandidateRow()).getByRole('combobox'));
+    await click(screen.getByText(formatCapacityBlockInstanceType(mlBlockInstanceTypeInfo)));
+    await change(within(row('Duration (days):')).getByRole('textbox'), '1');
+    await act(() => instance().onChangeField('commitmentStart', '2026-12-25'));
+
+    await waitFor(() => expect(offeringsCalls(api)).toHaveLength(1), {
+      timeout: ML_BLOCK_SEARCH_TIMEOUT
+    });
+
+    const setStateSpy = spyOn(instance(), 'setState');
+    // The duration change re-arms a full refetch of the one existing candidate.
+    await act(() => instance().onChangeField('commitmentDurationDays', '2'));
+    await waitFor(() => expect(offeringsCalls(api)).toHaveLength(2), {
+      timeout: ML_BLOCK_SEARCH_TIMEOUT
+    });
+    await flushPromises();
+
+    // A call that clears the flag but carries no row data is exactly the extra frame the
+    // fix removes.
+    const flagOnlyUpdate = setStateSpy.mock.calls
+      .map(([update]) => update)
+      .find(update => update && update.mlBlockOfferingsFullRefetchPending === false &&
+        !('mlBlockOfferingsByCandidate' in update));
+    expect(flagOnlyUpdate).toBeUndefined();
+    restoreMocks();
   }
 );
 
