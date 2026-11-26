@@ -52,6 +52,7 @@
 - [NICE DCV on Rocky Linux 10](#nice-dcv-on-rocky-linux-10)
 - [NoMachine on Rocky Linux 10](#nomachine-on-rocky-linux-10)
 - [Parallel download into the disk buffer of a storage mount](#parallel-download-into-the-disk-buffer-of-a-storage-mount)
+- [Launch capabilities: restrict a capability to certain users or roles](#launch-capabilities-restrict-a-capability-to-certain-users-or-roles)
 
 ***
 
@@ -1037,6 +1038,31 @@ In the current version, the disk buffer downloads the ranges of a file in parall
 - `read-disk-buffer-read-ahead-size` (`CP_PIPE_FUSE_READ_DISK_BUFFER_READ_AHEAD_SIZE`) is the size of a range, in bytes. It no longer has a default: when it is not set, a file is split into as many equal ranges as there are workers. With one worker and no size, the ranges are 512 MB, as before
 
 Each range is written straight to the local disk, into a partial file next to the buffer, so a download needs no more memory than before, whatever the size of the file. The partial file becomes the buffer only once the whole file is there. Previously, a mount that was killed during a download left a part of the file as its buffer, and the next mount with the same buffer path served that part as the whole file, until the buffer expired (`read-disk-buffer-ttl`). When a range fails, the other ranges of the file stop too, and the read fails. Also, an S3 storage mount now keeps up to 50 connections to S3 instead of 10, so the parallel ranges do not wait for each other.
+
+## Launch capabilities: restrict a capability to certain users or roles
+
+[#4955](https://github.com/epam/cloud-pipeline/issues/4955)
+
+A custom capability in the **`launch.capabilities`** preference can now be shown only to some users: add an optional `permissions` list to its entry, with `"principal": true` for a user name and `"principal": false` for a role or group name. A capability with no `permissions`, or an empty list, is still shown to everyone, as before. This restricts the **Run capabilities** field of the launch form only - a run started via `pipe` or the API is not checked against it.
+
+```json
+{
+  "cap1": {
+    "name": "Capability 1",
+    "cloud": "AWS:1",
+    "permissions": [
+      { "name": "ROLE_ADMIN", "principal": false },
+      { "name": "USER1", "principal": true }
+    ]
+  },
+  "cap2": {
+    "name": "Capability 2",
+    "cloud": "AWS:1"
+  }
+}
+```
+
+Here `cap1` is shown only to the members of `ROLE_ADMIN` and to `USER1`, while `cap2` stays visible to everyone.
 
 ***
 
