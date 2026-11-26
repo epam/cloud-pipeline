@@ -34,6 +34,9 @@ EXCLUDED_USER_GROUPS_LOWER: FrozenSet[str] = frozenset(
     )
     if s
 )
+INSUFFICIENT_CAPACITY_REASON_SUBSTR_LOWER = os.getenv(
+    "CP_USAGE_METRICS_INSUFFICIENT_CAPACITY_REASON", "Insufficient instance capacity"
+).strip().lower()
 INTERACTIVE_CMD = "sleep infinity"
 CAP_BLOCK_TAG = "Capacity Block"
 GIB = 1073741824
@@ -86,7 +89,7 @@ class ReportSchema:
             "jobs_interactive\tjobs_batch\t"
             "wc_gpu_heavy\twc_cpu_heavy\twc_memory_heavy\twc_general_purpose\t"
             "dur_gpu_heavy_hours\tdur_cpu_heavy_hours\tdur_memory_heavy_hours\tdur_general_purpose_hours\t"
-            "failures\tstopped"
+            "failures_capacity\tfailures_other_platform\tfailures_other_user\tstopped"
         )
 
 
@@ -352,6 +355,32 @@ class RunFields:
         return status if isinstance(status, str) else str(status)
 
     @staticmethod
+    def is_initialized(run: dict) -> bool:
+        """Whether the InitializeEnvironment task succeeded (API-computed "initialized" flag)."""
+        return bool(run.get("initialized"))
+
+    @staticmethod
+    def is_insufficient_capacity_failure(run: dict) -> bool:
+        """Whether any FAILURE runStatuses entry's reason reports insufficient instance capacity."""
+        for status_record in run.get("runStatuses") or []:
+            if not isinstance(status_record, dict):
+                continue
+            status_raw = status_record.get("status")
+            if status_raw is None:
+                continue
+            status_label = status_raw if isinstance(status_raw, str) else str(status_raw)
+            if status_label != "FAILURE":
+                continue
+            reason = status_record.get("reason")
+            if reason is not None and INSUFFICIENT_CAPACITY_REASON_SUBSTR_LOWER in str(reason).strip().lower():
+                return True
+        return False
+
+    @staticmethod
+    def parent_run_id(run: dict) -> Optional[object]:
+        return run.get("parentRunId")
+
+    @staticmethod
     def short_image(docker_image: str) -> str:
         if not docker_image:
             return "unknown"
@@ -595,22 +624,50 @@ class TsvOutput:
 
 
 class DayFailureCounts:
-    """Per day FAILURE and STOPPED counts from the filtered /run/filter run list by end day."""
+    """Per day capacity-FAILURE, platform/user other-FAILURE, and STOPPED counts from the filtered
+    /run/filter run list by end day."""
 
-    def __init__(self, by_day: Dict[date, Tuple[int, int]]) -> None:
+    def __init__(
+        self,
+        by_day: Dict[date, Tuple[int, int, int, int]],
+        platform_failure_run_ids: Dict[date, List[object]],
+    ) -> None:
         self.by_day = by_day
+        self.platform_failure_run_ids = platform_failure_run_ids
 
     @classmethod
     def from_filtered_runs(
         cls, runs: List[dict], report_start_day: date, report_end_day: date
     ) -> "DayFailureCounts":
-        """Count FAILURE/STOPPED runs by endDate calendar day in the report range"""
-        failures: DefaultDict[date, int] = defaultdict(int)
+        """Count FAILURE (split by insufficient-capacity reason, then by whether InitializeEnvironment
+        succeeded) / STOPPED runs by endDate calendar day in the report range.
+
+        Worker runs torn down as a cascade of their cluster master's insufficient-capacity FAILURE
+        are attributed to the capacity bucket too, even when their own reason/runStatuses do not
+        mention capacity (they inherit of the master's failure, not of their own).
+        """
+        capacity_master_run_ids: Set[object] = {
+            run.get("id")
+            for run in runs
+            if RunFields.run_status_str(run) == "FAILURE" and RunFields.is_insufficient_capacity_failure(run)
+        }
+        capacity_failures: DefaultDict[date, int] = defaultdict(int)
+        platform_failures: DefaultDict[date, int] = defaultdict(int)
+        user_failures: DefaultDict[date, int] = defaultdict(int)
         stopped: DefaultDict[date, int] = defaultdict(int)
+        platform_failure_run_ids: DefaultDict[date, List[object]] = defaultdict(list)
         for run in runs:
             status = RunFields.run_status_str(run)
             if status == "FAILURE":
-                target = failures
+                if (
+                    RunFields.is_insufficient_capacity_failure(run)
+                    or RunFields.parent_run_id(run) in capacity_master_run_ids
+                ):
+                    target = capacity_failures
+                elif RunFields.is_initialized(run):
+                    target = user_failures
+                else:
+                    target = platform_failures
             elif status == "STOPPED":
                 target = stopped
             else:
@@ -622,12 +679,19 @@ class DayFailureCounts:
             end_calendar_day = end.date()
             if report_start_day <= end_calendar_day <= report_end_day:
                 target[end_calendar_day] += 1
-        by_day: Dict[date, Tuple[int, int]] = {}
+                if target is platform_failures:
+                    platform_failure_run_ids[end_calendar_day].append(run.get("id"))
+        by_day: Dict[date, Tuple[int, int, int, int]] = {}
         report_day = report_start_day
         while report_day <= report_end_day:
-            by_day[report_day] = (failures[report_day], stopped[report_day])
+            by_day[report_day] = (
+                capacity_failures[report_day],
+                platform_failures[report_day],
+                user_failures[report_day],
+                stopped[report_day],
+            )
             report_day += timedelta(days=1)
-        return cls(by_day)
+        return cls(by_day, dict(platform_failure_run_ids))
 
 
 class _DayAccumulators:
@@ -874,7 +938,9 @@ class DailyMetricsBuilder:
         top_pipeline_cells = self._top_three_runs(day_data.top_pipeline[report_day], decimal_format)
         top_docker_cells = self._top_three_runs(day_data.top_docker[report_day], decimal_format)
 
-        failure_count, stopped_count = failures.by_day.get(report_day, (0, 0))
+        capacity_failure_count, platform_failure_count, user_failure_count, stopped_count = failures.by_day.get(
+            report_day, (0, 0, 0, 0)
+        )
         total_jobs = day_data.starts_by_day[report_day]
 
         row = [
@@ -910,7 +976,9 @@ class DailyMetricsBuilder:
             decimal_format.format(day_data.duration_hours[report_day].get("cpu-heavy", 0.0)),
             decimal_format.format(day_data.duration_hours[report_day].get("memory-heavy", 0.0)),
             decimal_format.format(day_data.duration_hours[report_day].get("general-purpose", 0.0)),
-            str(failure_count),
+            str(capacity_failure_count),
+            str(platform_failure_count),
+            str(user_failure_count),
             str(stopped_count),
         ]
         return "\t".join(row)
@@ -1043,6 +1111,13 @@ def main() -> None:
         runs_excluded, report_start_day, report_end_day
     )
     failures_all = DayFailureCounts.from_filtered_runs(runs_all, report_start_day, report_end_day)
+
+    for failure_day, run_ids in sorted(failures_all.platform_failure_run_ids.items()):
+        if run_ids:
+            print(
+                f"[failures_other_platform] {failure_day}: run_id(s)={run_ids}",
+                file=sys.stderr,
+            )
 
     users_active_by_day = client.load_users_usage_by_day(report_start_day, report_end_day)
 
