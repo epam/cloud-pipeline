@@ -15,7 +15,10 @@ allprojects {
     apply plugin: "checkstyle"
     apply plugin: "pmd"
 
+    // Pinned, not inherited: the ruleset names individual rules, and which of them exist depends on
+    // the PMD major version.
     pmd {
+        toolVersion = "7.29.0"
         ruleSetFiles = files("$rootDir/config/pmd/pmd-ruleset.xml")
     }
 

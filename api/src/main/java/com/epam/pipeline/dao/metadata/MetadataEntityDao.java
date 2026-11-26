@@ -348,8 +348,8 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         }
         externalIdQueries.forEach(query -> {
             String formattedQuery = daoHelper.replaceUnderscoreWithParam(query.toLowerCase());
-            clause.append(AND);
-            clause.append(searchPattern.matcher(externalIdClauseQuery).replaceFirst(formattedQuery));
+            clause.append(AND)
+                    .append(searchPattern.matcher(externalIdClauseQuery).replaceFirst(formattedQuery));
         });
     }
 
@@ -404,12 +404,14 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
             return;
         }
         if (metadataFilter.getStartDateFrom() != null) {
-            clause.append(AND);
-            clause.append(format("%s >= '%s'", field.getDbName(), metadataFilter.getStartDateFrom().format(FORMATTER)));
+            clause.append(AND)
+                    .append(format("%s >= '%s'", field.getDbName(),
+                            metadataFilter.getStartDateFrom().format(FORMATTER)));
         }
         if (metadataFilter.getEndDateTo() != null) {
-            clause.append(AND);
-            clause.append(format("%s <= '%s'", field.getDbName(), metadataFilter.getEndDateTo().format(FORMATTER)));
+            clause.append(AND)
+                    .append(format("%s <= '%s'", field.getDbName(),
+                            metadataFilter.getEndDateTo().format(FORMATTER)));
         }
     }
 

@@ -54,10 +54,9 @@ public final class RestApiUtils {
             final ResponseBody body = filesRawContent.execute().body();
             if (body != null) {
                 try(InputStream inputStream = body.byteStream()) {
-                    final int bufferSize = calculateBufferSize(byteLimit, body);
-                    final byte[] receivedContent = new byte[bufferSize];
-                    inputStream.read(receivedContent);
-                    return receivedContent;
+                    // readNBytes, not read: a single read returns what is available so far, which
+                    // on a network stream leaves the rest of the buffer zero filled.
+                    return inputStream.readNBytes(calculateBufferSize(byteLimit, body));
                 }
             } else {
                 return new byte[0];

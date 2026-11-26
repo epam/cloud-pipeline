@@ -60,7 +60,6 @@ public final class ObjectCreatorUtils {
     private static final String TEST_SERVICE_URL = "service_url";
     private static final String TEST_REGION = "region";
     public static final int TEST_DISK_SIZE = 100;
-    private static final String TEST_PLATFORM = "linux";
     private static final String FAKE_IP = "127.0.0.1";
 
     private ObjectCreatorUtils() {
