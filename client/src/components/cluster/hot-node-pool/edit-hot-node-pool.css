@@ -160,6 +160,14 @@
   flex-wrap: wrap;
 }
 
+/* Matches `-offering-card`'s own min-height, so a row showing the spinner alone is no
+   shorter than one showing a card - nothing below it jumps. */
+.capacity-block-offering-pending {
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+}
+
 /* Fixed height so the rows below never jump when the indicator appears or disappears. */
 .capacity-block-instance-types-row {
   min-height: 24px;

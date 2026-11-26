@@ -240,13 +240,12 @@ test('one row\'s own pending search does not hide another, already-settled row\'
 
 test('one row\'s own failed search does not hide another, already-settled row\'s cards',
   () => {
-    const twoRows = [
-      {id: 1, instanceType: 'p5.48xlarge', instanceCount: 2},
-      {id: 2, instanceType: 'p4d.24xlarge', instanceCount: 1}
-    ];
     render(
       <CapacityBlockCandidatesControl
-        candidates={twoRows}
+        candidates={[
+          {id: 1, instanceType: 'p5.48xlarge', instanceCount: 2},
+          {id: 2, instanceType: 'p4d.24xlarge', instanceCount: 1}
+        ]}
         instanceTypes={instanceTypes}
         offeringsByCandidate={{
           1: entry({error: 'The offering search failed', searched: true}),
@@ -254,7 +253,51 @@ test('one row\'s own failed search does not hide another, already-settled row\'s
         }}
       />
     );
+    expect(screen.getByText('The offering search failed')).toBeInTheDocument();
     expect(screen.getByText('us-east-1a')).toBeInTheDocument();
+  });
+
+// A failed search is the fourth card state, in the row whose own search failed - not
+// a banner above every row, which would read as if every candidate had failed. Like
+// the "No offerings" case above, asserting the alert is really `type="error"` (and not
+// just that its text reads right) means touching antd's own class once, deliberately.
+test('a row\'s own failed search renders the server message as an error alert, there only',
+  () => {
+    render(
+      <CapacityBlockCandidatesControl
+        candidates={[
+          {id: 1, instanceType: 'p5.48xlarge', instanceCount: 2},
+          {id: 2, instanceType: 'p4d.24xlarge', instanceCount: 1}
+        ]}
+        instanceTypes={instanceTypes}
+        offeringsByCandidate={{
+          1: entry({error: 'AWS rejected the search', searched: true}),
+          2: entry({searched: true})
+        }}
+      />
+    );
+    const message = screen.getByText('AWS rejected the search');
+    // `.closest` rather than the container's first match of the class, since row 2's
+    // own warning alert carries the same class - this must be row 1's own alert.
+    const alert = message.closest('.capacityBlockOfferingCard');
+    expect(alert).toHaveClass('ant-alert-error');
+    // The second row's own settled-empty state renders independently of the first
+    // row's error.
+    expect(screen.getByText('No offerings')).toBeInTheDocument();
+  });
+
+test('a row\'s own failed search falls back to our own message when the server gives none',
+  () => {
+    render(
+      <CapacityBlockCandidatesControl
+        candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
+        instanceTypes={instanceTypes}
+        offeringsByCandidate={{1: entry({error: '', searched: true})}}
+      />
+    );
+    expect(
+      screen.getByText('Error searching for capacity block offerings')
+    ).toBeInTheDocument();
   });
 
 test('fullRefetchPending hides every row\'s cards, settled or not', () => {
@@ -514,30 +557,51 @@ test('instanceTypesPending wins over fullRefetchPending when both are set', () =
   expect(screen.queryByText('Search for offerings...')).not.toBeInTheDocument();
 });
 
-test('offeringsError renders as an alert', () => {
+// A failed search is each row's own state now, not a control-wide banner - two rows
+// that both failed each carry the message, independently of one another.
+test('each row whose own search failed carries the message - not one banner for all', () => {
   render(
+    <CapacityBlockCandidatesControl
+      candidates={[
+        {id: 1, instanceType: 'p5.48xlarge', instanceCount: 2},
+        {id: 2, instanceType: 'p4d.24xlarge', instanceCount: 1}
+      ]}
+      instanceTypes={instanceTypes}
+      offeringsByCandidate={{
+        1: entry({error: 'The offering search failed', searched: true}),
+        2: entry({error: 'The offering search failed', searched: true})
+      }}
+    />
+  );
+  expect(screen.getAllByText('The offering search failed')).toHaveLength(2);
+});
+
+// A candidate's own search shows a spinner in its own row; a full refetch shows the
+// single label-line indicator instead and no row carries a spinner of its own - even
+// one whose own entry is still (independently) pending, since `fullRefetchPending`
+// wins over a row's own state.
+test('a per-candidate fetch shows that row\'s own spinner, a full refetch shows none', () => {
+  const {container, rerender} = render(
     <CapacityBlockCandidatesControl
       candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
       instanceTypes={instanceTypes}
-      offeringsError="The offering search failed"
+      offeringsByCandidate={{1: entry({pending: true, searched: false})}}
     />
   );
-  expect(screen.getByText('The offering search failed')).toBeInTheDocument();
-});
+  const getRow = () => screen.getByRole('combobox').closest('.capacityBlockCandidateRow');
+  expect(within(getRow()).getByLabelText('Loading')).toBeInTheDocument();
+  expect(container.querySelector('.capacityBlockOfferingPending')).toBeInTheDocument();
 
-test('offeringsError is shown once across multiple rows, not once per row', () => {
-  const twoRows = [
-    {id: 1, instanceType: 'p5.48xlarge', instanceCount: 2},
-    {id: 2, instanceType: 'p4d.24xlarge', instanceCount: 1}
-  ];
-  render(
+  rerender(
     <CapacityBlockCandidatesControl
-      candidates={twoRows}
+      candidates={[{id: 1, instanceType: 'p5.48xlarge', instanceCount: 2}]}
       instanceTypes={instanceTypes}
-      offeringsError="The offering search failed"
+      offeringsByCandidate={{1: entry({pending: true, searched: false})}}
+      fullRefetchPending
     />
   );
-  expect(screen.getAllByText('The offering search failed')).toHaveLength(1);
+  expect(within(getRow()).queryByLabelText('Loading')).not.toBeInTheDocument();
+  expect(container.querySelector('.capacityBlockOfferingPending')).not.toBeInTheDocument();
 });
 
 test('the full-refetch indicator is shown once, not once per row', () => {

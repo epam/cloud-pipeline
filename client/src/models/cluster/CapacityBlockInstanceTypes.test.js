@@ -95,6 +95,19 @@ test('clearCache makes the next forRegion call fetch again', async () => {
   expect(request.value.slice()).toEqual([{instanceType: 'b'}]);
 });
 
+test('forRegion shares one cache entry for a numeric and a string form of one region',
+  async () => {
+    const api = stubApi({
+      '/cluster/capacity-reservation/instance-types?regionId=9': [{instanceType: 'a'}]
+    });
+
+    const numeric = await CapacityBlockInstanceTypes.forRegion(9);
+    const string = await CapacityBlockInstanceTypes.forRegion('9');
+
+    expect(api.calls).toHaveLength(1);
+    expect(numeric).toBe(string);
+  });
+
 test('forRegion caches independently per regionId', async () => {
   const api = stubApi({
     '/cluster/capacity-reservation/instance-types?regionId=5': [{instanceType: 'a'}],

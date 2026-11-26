@@ -20,6 +20,7 @@ import {Alert, Button, Icon, InputNumber, Select} from 'antd';
 import classNames from 'classnames';
 import CapacityBlockOfferingCard from './CapacityBlockOfferingCard';
 import {getCompleteMlBlockCandidates, formatCapacityBlockInstanceType} from '../helpers';
+import {ML_BLOCK_OFFERINGS_ERROR_MESSAGE} from '../constants';
 import styles from '../../edit-hot-node-pool.css';
 
 // A candidate row is "complete" exactly when `getCompleteMlBlockCandidates` would keep
@@ -35,7 +36,6 @@ function CapacityBlockCandidatesControl ({
   instanceTypesError,
   offeringsByCandidate,
   fullRefetchPending,
-  offeringsError,
   selectedOfferingId,
   disabled,
   readOnly,
@@ -56,12 +56,30 @@ function CapacityBlockCandidatesControl ({
     }
     const entry = offeringsByCandidate[row.id] || {};
     if (entry.pending) {
-      return <Icon type="loading" aria-label="Loading" />;
+      // The spinner alone, not a stale card: a visible card is always clickable, and
+      // one found for criteria the user has since changed must not be. The wrapper's
+      // own min-height matches the alert's, so the row does not shrink meanwhile.
+      return (
+        <span className={styles.capacityBlockOfferingPending}>
+          <Icon type="loading" aria-label="Loading" />
+        </span>
+      );
     }
-    // This row's own error: the global banner above already reports it, and the
-    // error-card state is a later addition - nothing of this row's own renders here.
-    if (entry.error) {
-      return null;
+    if (entry.error !== undefined && entry.error !== null) {
+      // Same geometry as the other three states (min-height, reserved icon space, the
+      // re-centred antd icon) so a failed search reads as the same kind of object.
+      return (
+        <Alert
+          type="error"
+          showIcon
+          message={
+            <span className={styles.capacityBlockOfferingCardMessage}>
+              {entry.error || ML_BLOCK_OFFERINGS_ERROR_MESSAGE}
+            </span>
+          }
+          className={styles.capacityBlockOfferingCard}
+        />
+      );
     }
     const rowOfferings = entry.offerings || [];
     if (rowOfferings.length === 0) {
@@ -185,13 +203,6 @@ function CapacityBlockCandidatesControl ({
           </div>
         )
       }
-      {
-        offeringsError && (
-          <div className={styles.formRow}>
-            <Alert type="error" message={offeringsError} />
-          </div>
-        )
-      }
       {rows.map(renderRow)}
       {
         !readOnly && (
@@ -227,7 +238,6 @@ CapacityBlockCandidatesControl.propTypes = {
   instanceTypesError: PropTypes.string,
   offeringsByCandidate: PropTypes.object,
   fullRefetchPending: PropTypes.bool,
-  offeringsError: PropTypes.string,
   selectedOfferingId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   disabled: PropTypes.bool,
   readOnly: PropTypes.bool,

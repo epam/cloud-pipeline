@@ -43,14 +43,17 @@ class CapacityBlockInstanceTypes extends Remote {
    * @returns {Promise<CapacityBlockInstanceTypes>}
    */
   static forRegion (regionId) {
-    if (!cache.has(regionId)) {
-      cache.set(regionId, new CapacityBlockInstanceTypes(regionId));
+    // A loaded pool supplies a numeric regionId while RegionSelect's option value is a
+    // string, so the key is normalised here rather than trusting callers to agree.
+    const key = String(regionId);
+    if (!cache.has(key)) {
+      cache.set(key, new CapacityBlockInstanceTypes(regionId));
     }
-    const request = cache.get(regionId);
+    const request = cache.get(key);
     return request.fetchIfNeededOrWait()
       .then(() => {
         if (!request.loaded) {
-          cache.delete(regionId);
+          cache.delete(key);
         }
         return request;
       });

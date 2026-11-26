@@ -79,3 +79,6 @@ export const HOURS_PER_DAY = 24;
 export const SECONDS_PER_HOUR = 60 * 60;
 // A nodes count is typed digit by digit, so the search waits for the typing to settle.
 export const ML_BLOCK_OFFERINGS_FETCH_DELAY_MS = 500;
+// Shared by index.js's own fallback and the candidates control's defensive one, so the
+// two can never read differently for the same failure.
+export const ML_BLOCK_OFFERINGS_ERROR_MESSAGE = 'Error searching for capacity block offerings';

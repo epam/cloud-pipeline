@@ -48,6 +48,7 @@ import {
   POOL_TYPE_SHAREABLE,
   SECONDS_PER_DAY,
   ML_BLOCK_OFFERINGS_FETCH_DELAY_MS,
+  ML_BLOCK_OFFERINGS_ERROR_MESSAGE,
   RESERVATION_TYPE_CAPACITY_BLOCK
 } from './constants';
 import styles from '../edit-hot-node-pool.css';
@@ -687,11 +688,11 @@ class EditHotNodePool extends React.Component {
             candidates, request.value || [], undefined, requestId, generation
           );
         } else {
-          console.error(request.error || 'Error searching for capacity block offerings');
+          console.error(request.error || ML_BLOCK_OFFERINGS_ERROR_MESSAGE);
           this.applyMlBlockOfferingsResponse(
             candidates,
             [],
-            request.error || 'Error searching for capacity block offerings',
+            request.error || ML_BLOCK_OFFERINGS_ERROR_MESSAGE,
             requestId,
             generation
           );
@@ -706,7 +707,7 @@ class EditHotNodePool extends React.Component {
         this.applyMlBlockOfferingsResponse(
           candidates,
           [],
-          e.message || 'Error searching for capacity block offerings',
+          e.message || ML_BLOCK_OFFERINGS_ERROR_MESSAGE,
           requestId,
           generation
         );
@@ -1247,11 +1248,6 @@ class EditHotNodePool extends React.Component {
     // ML Block mode has no concrete instance type/count until an offering is picked, so
     // CREATE must wait on that rather than let `onSave` reject a click after the fact.
     const createBlockedByOffering = isNew && mode === MODE_ML_BLOCK && !mlBlockOfferingId;
-    // One informational banner, fed by whichever row's own entry has an error - each
-    // row's own cards render straight from its own entry, so this never hides another.
-    const mlBlockOfferingsError = Object.values(mlBlockOfferingsByCandidate)
-      .map(entry => (entry || {}).error)
-      .find(Boolean);
     return (
       <Modal
         title={`${isNew ? 'Create' : 'Edit'} hot node pool`}
@@ -1331,7 +1327,6 @@ class EditHotNodePool extends React.Component {
           mlBlockInstanceTypesError={mlBlockInstanceTypesError}
           mlBlockOfferingsByCandidate={mlBlockOfferingsByCandidate}
           mlBlockOfferingsFullRefetchPending={mlBlockOfferingsFullRefetchPending}
-          mlBlockOfferingsError={mlBlockOfferingsError}
           mlBlockOfferingId={mlBlockOfferingId}
           onChange={this.onChangeField}
         />

@@ -200,7 +200,6 @@ function EditHotNodePoolForm ({
   mlBlockInstanceTypesError,
   mlBlockOfferingsByCandidate,
   mlBlockOfferingsFullRefetchPending,
-  mlBlockOfferingsError,
   mlBlockOfferingId,
   onChange
 }) {
@@ -342,7 +341,6 @@ function EditHotNodePoolForm ({
                       instanceTypesError={mlBlockInstanceTypesError}
                       offeringsByCandidate={mlBlockOfferingsByCandidate}
                       fullRefetchPending={mlBlockOfferingsFullRefetchPending}
-                      offeringsError={mlBlockOfferingsError}
                       selectedOfferingId={mlBlockOfferingId}
                       disabled={disabled}
                       readOnly={readOnly}
@@ -634,7 +632,6 @@ EditHotNodePoolForm.propTypes = {
   mlBlockInstanceTypesError: PropTypes.string,
   mlBlockOfferingsByCandidate: PropTypes.object,
   mlBlockOfferingsFullRefetchPending: PropTypes.bool,
-  mlBlockOfferingsError: PropTypes.string,
   mlBlockOfferingId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   onChange: PropTypes.func
 };
