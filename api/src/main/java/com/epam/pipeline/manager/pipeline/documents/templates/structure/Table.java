@@ -71,10 +71,10 @@ public class Table {
 
     public void setData(String rowName, String columnName, Object data) {
         Optional<TableRow> tableRow = this.rows.stream()
-                .filter(r -> r.getName().toLowerCase().equals(rowName.toLowerCase()))
+                .filter(r -> r.getName().equalsIgnoreCase(rowName))
                 .findFirst();
         Optional<TableColumn> tableColumn = this.columns.stream()
-                .filter(r -> r.getName().toLowerCase().equals(columnName.toLowerCase()))
+                .filter(r -> r.getName().equalsIgnoreCase(columnName))
                 .findFirst();
         if (tableRow.isPresent() && tableColumn.isPresent()) {
             this.data.put(this.getKey(tableRow.get().getIndex(), tableColumn.get().getIndex()), data);

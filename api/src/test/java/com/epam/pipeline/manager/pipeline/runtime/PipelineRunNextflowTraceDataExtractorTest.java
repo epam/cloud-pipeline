@@ -52,7 +52,7 @@ public class PipelineRunNextflowTraceDataExtractorTest {
     public static final int NF_TRACE_FILE_N_TASKS = 1;
     public static final String NF_TASK_HASH = "bd/2fc28f";
 
-    private final JsonMapper jsonMapper = new JsonMapper();;
+    private final JsonMapper jsonMapper = new JsonMapper();
 
     @BeforeEach    public void setUp() {
         jsonMapper.afterPropertiesSet();
