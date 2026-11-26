@@ -42,12 +42,14 @@ import java.util.stream.Collectors;
  * exists.
  *
  * <p>{@link #listOfferings} takes a concrete search - a list of candidate instance types, each with its own
- * count, a duration and the date to start looking from. Each candidate is one AWS search; if AWS fails for any
- * one of them, the whole search fails, rather than answering with a partial result. The offerings of every
- * candidate that did come back are merged into a single list, sorted by {@link CapacityBlockOffering#getStartDate()}
- * ascending - the nearest offering first, regardless of which candidate it came from. {@link #listInstanceTypes}
- * answers the first question such a search needs: which instance types a region sells as capacity blocks at all.
- * Most instance types never are.
+ * count, a duration and the date to start looking from. Candidates equal in instance type and count are merged
+ * into one before anything else happens, so the max-candidates preference and the AWS calls that follow both see
+ * the distinct list rather than whatever duplicates the caller sent. Each distinct candidate is one AWS search;
+ * if AWS fails for any one of them, the whole search fails, rather than answering with a partial result. The
+ * offerings of every candidate that did come back are merged into a single list, sorted by
+ * {@link CapacityBlockOffering#getStartDate()} ascending - the nearest offering first, regardless of which
+ * candidate it came from. {@link #listInstanceTypes} answers the first question such a search needs: which
+ * instance types a region sells as capacity blocks at all. Most instance types never are.
  *
  * <p>Only {@link CapacityBlockResourceType#INSTANCE} is accepted. {@link CapacityBlockResourceType#ULTRASERVER} is
  * rejected here, before the request reaches a provider.
@@ -62,12 +64,17 @@ public class CapacityBlockOfferingService {
     private final PreferenceManager preferenceManager;
 
     public List<CapacityBlockOffering> listOfferings(final CapacityBlockOfferingRequest request) {
-        validate(request);
+        final List<CapacitySpecification> candidates = distinctCandidates(request.getCandidates());
+        validate(request, candidates);
         final AbstractCloudRegion region = regionManager.load(request.getRegionId());
-        return request.getCandidates().stream()
+        return candidates.stream()
                 .flatMap(candidate -> cloudFacade.listCapacityBlockOfferings(region, request, candidate).stream())
                 .sorted(Comparator.comparing(CapacityBlockOffering::getStartDate))
                 .collect(Collectors.toList());
+    }
+
+    private static List<CapacitySpecification> distinctCandidates(final List<CapacitySpecification> candidates) {
+        return candidates == null ? null : candidates.stream().distinct().collect(Collectors.toList());
     }
 
     public List<CapacityBlockInstanceTypeInfo> listInstanceTypes(final Long regionId) {
@@ -77,17 +84,17 @@ public class CapacityBlockOfferingService {
         return cloudFacade.listCapacityBlockInstanceTypes(region);
     }
 
-    private void validate(final CapacityBlockOfferingRequest request) {
+    private void validate(final CapacityBlockOfferingRequest request, final List<CapacitySpecification> candidates) {
         Assert.notNull(request.getRegionId(),
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_BLOCK_OFFERING_REGION_REQUIRED));
-        Assert.isTrue(CollectionUtils.isNotEmpty(request.getCandidates()),
+        Assert.isTrue(CollectionUtils.isNotEmpty(candidates),
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_BLOCK_OFFERING_CANDIDATES_REQUIRED));
         final int maxCandidates = preferenceManager.getPreference(
                 SystemPreferences.CLUSTER_CAPACITY_BLOCK_OFFERING_CANDIDATES_MAX_COUNT);
-        Assert.isTrue(maxCandidates == -1 || request.getCandidates().size() <= maxCandidates,
+        Assert.isTrue(maxCandidates == -1 || candidates.size() <= maxCandidates,
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_BLOCK_OFFERING_CANDIDATES_EXCEEDS_LIMIT,
-                        request.getCandidates().size(), maxCandidates));
-        request.getCandidates().forEach(this::validateCandidate);
+                        candidates.size(), maxCandidates));
+        candidates.forEach(this::validateCandidate);
         Assert.notNull(request.getCapacityDurationHours(),
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_BLOCK_OFFERING_DURATION_REQUIRED));
         Assert.notNull(request.getStartDateRange(),
