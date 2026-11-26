@@ -93,7 +93,8 @@ public class PipelineVersionManager implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() {
-        // config.json keeps every Map entry, null and empty values included
+        // Skips a property whose value is null or empty, but writes every Map entry, also one whose value
+        // is null, "", [] or {}, so that config.json keeps it.
         mapper.setDefaultPropertyInclusion(JsonInclude.Value.construct(Include.NON_EMPTY, Include.ALWAYS))
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
