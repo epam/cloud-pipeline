@@ -35,6 +35,8 @@ Creating a hot node pool now offers a third **Mode**, **ML Block**, beside **Def
 
 In this mode, the **Search from** / **Search until** / **Duration (days)** fields (the last with a 1-day minimum, rather than 14, and **Search until** optional, unlike a **Future dated** reservation's) are joined by a **Search in region** field and one or more candidate instance types, each with a nodes count - the region moves into this section because it is itself a search criterion, and the pool's own **Region** field becomes read-only. As the candidates, the window, the duration or the region change, the platform searches AWS for offerings matching each candidate and shows them as cards, each listing the offering's availability zone, instance type, window and up-front price, in that order - or **No offerings** once a search has settled and found none. Each offering is its own card to pick, whether a row shows one or several. Picking one fills the pool's **Instance type** and **Nodes count** read-only from that exact offering, and **CREATE** is refused until one is picked. Changing **Search in region** clears the candidates, the search results and the pick.
 
+An offering's window, and a purchased block's own granted window, are now shown converted to the viewer's own local time - an earlier release rendered the backend's UTC wall-clock values as if they were already local, understating a window's start and end by the viewer's own offset from UTC.
+
 The up-front fee is non-refundable, and a purchased block cannot be cancelled - it simply ends at its fixed time. See [ML Block node pools](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#ml-block-node-pools).
 
 ***
