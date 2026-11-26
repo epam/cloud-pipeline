@@ -59,7 +59,7 @@ public class PreferenceManagerTest extends AbstractSpringTest {
 
         assertThrows(IllegalArgumentException.class,
             () -> preferenceManager.delete(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY.getKey()));
-        Assert.assertEquals(ClusterKeepAlivePolicy.IDLE_MINUTES.name(),
+        assertEquals(ClusterKeepAlivePolicy.IDLE_MINUTES.name(),
                 preferenceManager.getPreference(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY));
     }
 
@@ -73,7 +73,7 @@ public class PreferenceManagerTest extends AbstractSpringTest {
 
         preferenceManager.delete(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY.getKey());
 
-        Assert.assertEquals(ClusterKeepAlivePolicy.MINUTES_TILL_HOUR.name(),
+        assertEquals(ClusterKeepAlivePolicy.MINUTES_TILL_HOUR.name(),
                 preferenceManager.getPreference(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY));
     }
 
