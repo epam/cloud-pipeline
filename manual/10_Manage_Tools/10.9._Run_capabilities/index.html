@@ -489,7 +489,7 @@ But for some cases, users want to disable Hyper-Treading technology for specific
 </ol>
 <h2 id="custom-capabilities">Custom capabilities</h2>
 <p>Except of the selection a predefined set of capabilities in the GUI for a job or a tool, <strong>Cloud Pipeline</strong> allows to create own non-complex scripts and use them via the <strong>Run capabilities</strong> menu.</p>
-<p><strong><em>Note</em></strong>: only admins can create and edit custom run capabilities. But use them for a job/tool run all users can.</p>
+<p><strong><em>Note</em></strong>: only admins can create and edit custom run capabilities. All users can use them for a job/tool run, unless a capability lists <code>permissions</code> (see below).</p>
 <h3 id="createedit-capability">Create/edit capability</h3>
 <p>Managing of the custom capabilities is being performed via the <strong><code>launch.capabilities</code></strong> system preference.<br />
 This preference contains an array of capability descriptions in <code>JSON</code>-format and has the following structure:</p>
@@ -506,7 +506,12 @@ This preference contains an array of capability descriptions in <code>JSON</code
         &quot;&lt;parameter_2&gt;&quot;: &quot;&lt;value_2&gt;&quot;,
         ...
     },
-    &quot;os&quot;: &quot;all&quot;
+    &quot;os&quot;: &quot;all&quot;,
+    &quot;permissions&quot;: [
+        { &quot;name&quot;: &quot;&lt;role_or_group_name&gt;&quot;, &quot;principal&quot;: false },
+        { &quot;name&quot;: &quot;&lt;user_name&gt;&quot;, &quot;principal&quot;: true },
+        ...
+    ]
   },
   &quot;&lt;capability_name_2&quot;: {
       ...
@@ -530,6 +535,14 @@ Examples: <code>"os": "centos 7*, ubuntu 16.04"</code> - capability with such pa
 </ul>
 </li>
 <li>if <code>os</code> is not specified at all (skipped) - capability is allowed for all docker images without restrictions (same behavior as <code>"os": "all"</code>)</li>
+</ul>
+</li>
+<li><code>permissions</code> - optional list of the users and roles/groups who see the capability in the <strong>Run capabilities</strong> dropdown list. Each item has a <code>name</code> and a <code>principal</code> flag:<ul>
+<li><code>"principal": true</code> - <code>name</code> is a user name</li>
+<li><code>"principal": false</code> - <code>name</code> is a role or a group name<br />
+A user sees the capability only if they are listed directly, or through one of their roles or groups. Admins are not an exception: list <code>ROLE_ADMIN</code> to show the capability to them. If <code>permissions</code> is not specified, or is an empty list, the capability is shown to all users.<br />
+If all nested capabilities of a capability are hidden from a user, the capability itself is hidden too.<br />
+<strong><em>Note</em></strong>: this restricts the GUI only. A run started via the <code>pipe</code> CLI or the API can still enable the capability.</li>
 </ul>
 </li>
 </ul>

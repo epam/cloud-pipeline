@@ -64,6 +64,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#parallel-download-into-the-disk-buffer-of-a-storage-mount">Parallel download into the disk buffer of a storage mount</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#launch-capabilities-restrict-a-capability-to-certain-users-or-roles">Launch capabilities: restrict a capability to certain users or roles</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#notable-bug-fixes">Notable Bug fixes</a>
         <ul>
     <li class="toctree-l3"><a class="reference internal" href="#unavailable-cluster-nodes-are-not-detected">Unavailable cluster nodes are not detected</a>
@@ -433,6 +435,7 @@
 <li><a href="#migration-to-java-21">Migration to Java 21</a></li>
 <li><a href="#capacity-block-offering-search-over-several-instance-types">Capacity block offering search over several instance types</a></li>
 <li><a href="#parallel-download-into-the-disk-buffer-of-a-storage-mount">Parallel download into the disk buffer of a storage mount</a></li>
+<li><a href="#launch-capabilities-restrict-a-capability-to-certain-users-or-roles">Launch capabilities: restrict a capability to certain users or roles</a></li>
 </ul>
 <hr />
 <ul>
@@ -460,6 +463,26 @@
 <li><code>read-disk-buffer-read-ahead-size</code> (<code>CP_PIPE_FUSE_READ_DISK_BUFFER_READ_AHEAD_SIZE</code>) is the size of a range, in bytes. It no longer has a default: when it is not set, a file is split into as many equal ranges as there are workers. With one worker and no size, the ranges are 512 MB, as before</li>
 </ul>
 <p>Each range is written straight to the local disk, into a partial file next to the buffer, so a download needs no more memory than before, whatever the size of the file. The partial file becomes the buffer only once the whole file is there. Previously, a mount that was killed during a download left a part of the file as its buffer, and the next mount with the same buffer path served that part as the whole file, until the buffer expired (<code>read-disk-buffer-ttl</code>). When a range fails, the other ranges of the file stop too, and the read fails. Also, an S3 storage mount now keeps up to 50 connections to S3 instead of 10, so the parallel ranges do not wait for each other.</p>
+<h2 id="launch-capabilities-restrict-a-capability-to-certain-users-or-roles">Launch capabilities: restrict a capability to certain users or roles</h2>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/4955">#4955</a></p>
+<p>A custom capability in the <strong><code>launch.capabilities</code></strong> preference can now be shown only to some users: add an optional <code>permissions</code> list to its entry, with <code>"principal": true</code> for a user name and <code>"principal": false</code> for a role or group name. A capability with no <code>permissions</code>, or an empty list, is still shown to everyone, as before. This restricts the <strong>Run capabilities</strong> field of the launch form only - a run started via <code>pipe</code> or the API is not checked against it.</p>
+<pre><code class="language-json">{
+  &quot;cap1&quot;: {
+    &quot;name&quot;: &quot;Capability 1&quot;,
+    &quot;cloud&quot;: &quot;AWS:1&quot;,
+    &quot;permissions&quot;: [
+      { &quot;name&quot;: &quot;ROLE_ADMIN&quot;, &quot;principal&quot;: false },
+      { &quot;name&quot;: &quot;USER1&quot;, &quot;principal&quot;: true }
+    ]
+  },
+  &quot;cap2&quot;: {
+    &quot;name&quot;: &quot;Capability 2&quot;,
+    &quot;cloud&quot;: &quot;AWS:1&quot;
+  }
+}
+</code></pre>
+<p>Here <code>cap1</code> is shown only to the members of <code>ROLE_ADMIN</code> and to <code>USER1</code>, while <code>cap2</code> stays visible to everyone.
+See details in <a href="../../../manual/10_Manage_Tools/10.9._Run_capabilities/#custom-capabilities">10.9. Run capabilities</a>.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
 <h3 id="unavailable-cluster-nodes-are-not-detected">Unavailable cluster nodes are not detected</h3>
