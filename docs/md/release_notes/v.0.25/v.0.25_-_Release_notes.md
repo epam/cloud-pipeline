@@ -4,6 +4,7 @@
 - [Capacity block offering search over several instance types](#capacity-block-offering-search-over-several-instance-types)
 - [Parallel download into the disk buffer of a storage mount](#parallel-download-into-the-disk-buffer-of-a-storage-mount)
 - [Launch capabilities: restrict a capability to certain users or roles](#launch-capabilities-restrict-a-capability-to-certain-users-or-roles)
+- [Launch form: run on any active node pool](#launch-form-run-on-any-active-node-pool)
 
 ***
 
@@ -67,6 +68,14 @@ A custom capability in the **`launch.capabilities`** preference can now be shown
 
 Here `cap1` is shown only to the members of `ROLE_ADMIN` and to `USER1`, while `cap2` stays visible to everyone.
 See details in [10.9. Run capabilities](../../manual/10_Manage_Tools/10.9._Run_capabilities.md#custom-capabilities).
+
+***
+
+## Launch form: run on any active node pool
+
+[#4960](https://github.com/epam/cloud-pipeline/issues/4960)
+
+The **Node type** list of the launch form offers every active node pool of the region. A run launched on a pool gets the `CP_CAP_POOL_ID` parameter. See [6. Manage Pipeline](../../manual/06_Manage_Pipeline/6._Manage_Pipeline.md#configuration).
 
 ***
 
