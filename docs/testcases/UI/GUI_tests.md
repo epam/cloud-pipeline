@@ -95,7 +95,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Cluster_nodes</b> (27 tests, 15 automated)</summary>
+<summary><b>Cluster_nodes</b> (34 tests, 15 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -119,6 +119,13 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**2414_1**](Cluster_nodes/Hot_node_pools/2414/2414_1.md) | [Manual] Notify administrators if node pool reached its max size | |
 | [**2414_2**](Cluster_nodes/Hot_node_pools/2414/2414_2.md) | [Manual] Notify administrators if several node pools reached its max size | |
 | [**2414_3**](Cluster_nodes/Hot_node_pools/2414/2414_3.md) | [Manual] Notify administrators if node pool reached its max size - autoscaling | |
+| [**4960_1**](Cluster_nodes/Hot_node_pools/4960_pools_on_launch_form/4960_1.md) | "Pools" group in the Node type list of the launch form | |
+| [**4960_2**](Cluster_nodes/Hot_node_pools/4960_pools_on_launch_form/4960_2.md) | A run on a standard pool gets CP_CAP_POOL_ID, a run on a plain instance type does not | |
+| [**4960_3**](Cluster_nodes/Hot_node_pools/4960_pools_on_launch_form/4960_3.md) | A run on a shareable pool gets the CPU/RAM/GPU requests set on the launch form | |
+| [**4960_4**](Cluster_nodes/Hot_node_pools/4960_pools_on_launch_form/4960_4.md) | Notice with the available node pools on the launch form | |
+| [**4960_5**](Cluster_nodes/Hot_node_pools/4960_pools_on_launch_form/4960_5.md) | Node pools in the launch confirmation dialog | |
+| [**4960_6**](Cluster_nodes/Hot_node_pools/4960_pools_on_launch_form/4960_6.md) | [Negative] CP_CAP_POOL_ID is not offered as a parameter on the launch form | |
+| [**4960_7**](Cluster_nodes/Hot_node_pools/4960_pools_on_launch_form/4960_7.md) | [MANUAL] Layout of the Node type field with a pool selected | |
 | [**841_1_pool_creation**](Cluster_nodes/Hot_node_pools/841_persistent_cluster_nodes/841_1_pool_creation.md) | Hot node pool creation | |
 | [**841_2_pool_usage**](Cluster_nodes/Hot_node_pools/841_persistent_cluster_nodes/841_2_pool_usage.md) | Checking hot node pool usage | |
 | [**841_3_pool_disk_delta**](Cluster_nodes/Hot_node_pools/841_persistent_cluster_nodes/841_3_pool_disk_delta.md) | Checking disk delta for a node from the pool | |

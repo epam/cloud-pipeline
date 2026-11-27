@@ -14,7 +14,7 @@ Perform [_841\_1_](841_1_pool_creation.md) case
 | 4 | Click **v** button near the **Run** button | |
 | 5 | Click **Custom settings** in the list | |
 | 6 | Expand the **Exec environment** section | |
-| 7 | Set the _Node type_ the same as at step 11 of [_841\_1_](841_1_pool_creation.md) case | |
+| 7 | Set the _Node type_ the same as at step 11 of [_841\_1_](841_1_pool_creation.md) case: select it from its family group (with no tag), not from the **Pools** group | |
 | 8 | Set the _Cloud Region_ the same as at step 9 of [_841\_1_](841_1_pool_creation.md) case | |
 | 9 | Set the _Disk_ size equals the value set at step 12 of [_841\_1_](841_1_pool_creation.md) case minus `80` | |
 | 10 | Expand the **Advanced** section | |
