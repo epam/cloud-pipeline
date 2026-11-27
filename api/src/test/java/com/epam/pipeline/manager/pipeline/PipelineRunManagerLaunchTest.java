@@ -20,6 +20,7 @@ import com.epam.pipeline.acl.folder.FolderApiService;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.BaseEntity;
+import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
@@ -57,6 +58,7 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
+import org.apache.commons.collections4.ListUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -149,6 +151,10 @@ public class PipelineRunManagerLaunchTest {
             TEST_PERIOD.plusHours(HOURS_18));
     private static final long PIPELINE_ID = 1L;
     private static final long FOLDER_ID = 1L;
+    private static final String POOL_PARAMETER = "CP_CAP_POOL_PARAMETER";
+    private static final String EMPTY_POOL_PARAMETER = "CP_CAP_POOL_PARAMETER_EMPTY";
+    private static final String POOL_PARAMETER_VALUE = "pool-value";
+    private static final String CALLER_PARAMETER_VALUE = "caller-value";
 
     @InjectMocks
     private final PipelineRunManager pipelineRunManager = new PipelineRunManager();
@@ -674,6 +680,123 @@ public class PipelineRunManagerLaunchTest {
         assertTrue(configuration.getPodAssignPolicy().isMatch(KubernetesConstants.RUN_ID_LABEL));
     }
 
+    @Test
+    public void launchPipelineAppliesThePoolsAdditionalParameters() {
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        doReturn(Optional.of(poolWithAdditionalParameters(
+                Collections.singletonMap(POOL_PARAMETER, POOL_PARAMETER_VALUE))))
+                .when(nodePoolManager).find(ID_2);
+
+        final PipelineRun run = launchPipeline(configuration, INSTANCE_TYPE);
+
+        assertThat(configuration.getParameters().get(POOL_PARAMETER).getValue(), is(POOL_PARAMETER_VALUE));
+        assertThat(configuration.getParameters().get(PipelineRunManager.CP_CAP_POOL_ID).getValue(),
+                is(String.valueOf(ID_2)));
+        assertThat(runParameterValue(run, POOL_PARAMETER), is(POOL_PARAMETER_VALUE));
+    }
+
+    @Test
+    public void launchPipelineAppliesBothThePoolsSelectorAndItsAdditionalParameters() {
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        doReturn(Optional.of(poolWithLaunchConfig(poolIdSelectorPolicy(ID_2),
+                Collections.singletonMap(POOL_PARAMETER, POOL_PARAMETER_VALUE))))
+                .when(nodePoolManager).find(ID_2);
+
+        assertNotNull(launchPipeline(configuration, INSTANCE_TYPE));
+
+        assertTrue(configuration.getPodAssignPolicy()
+                .isMatch(KubernetesConstants.NODE_POOL_ID_LABEL, String.valueOf(ID_2)));
+        assertThat(configuration.getParameters().get(POOL_PARAMETER).getValue(), is(POOL_PARAMETER_VALUE));
+    }
+
+    @Test
+    public void launchPipelineKeepsACallerParameterThePoolAlsoDeclares() {
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        configuration.getParameters().put(POOL_PARAMETER, new PipeConfValueVO(CALLER_PARAMETER_VALUE));
+        doReturn(Optional.of(poolWithAdditionalParameters(
+                Collections.singletonMap(POOL_PARAMETER, POOL_PARAMETER_VALUE))))
+                .when(nodePoolManager).find(ID_2);
+
+        assertNotNull(launchPipeline(configuration, INSTANCE_TYPE));
+
+        assertThat(configuration.getParameters().get(POOL_PARAMETER).getValue(), is(CALLER_PARAMETER_VALUE));
+    }
+
+    @Test
+    public void launchPipelineValidatesACapacityRequestThePoolSuppliesAgainstTheInstanceOffer() {
+        final InstanceOffer offer = new InstanceOffer();
+        offer.setInstanceType(INSTANCE_TYPE);
+        offer.setVCPU(2);
+        doReturn(Optional.of(offer)).when(instanceOfferManager).findOffer(anyString(), anyLong());
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        doReturn(Optional.of(poolWithAdditionalParameters(
+                Collections.singletonMap(PipelineRunManager.CP_CAP_REQUESTS_CPU, "1000"))))
+                .when(nodePoolManager).find(ID_2);
+
+        assertThrows(IllegalArgumentException.class, () -> launchPipeline(configuration, INSTANCE_TYPE));
+    }
+
+    @Test
+    public void launchPipelineDoesNotMutateTheParameterMapItWasGiven() {
+        configuration.setParameters(Collections.singletonMap(
+                PipelineRunManager.CP_CAP_POOL_ID, new PipeConfValueVO(String.valueOf(ID_2))));
+        doReturn(Optional.of(poolWithAdditionalParameters(
+                Collections.singletonMap(POOL_PARAMETER, POOL_PARAMETER_VALUE))))
+                .when(nodePoolManager).find(ID_2);
+
+        assertNotNull(launchPipeline(configuration, INSTANCE_TYPE));
+
+        assertThat(configuration.getParameters().get(POOL_PARAMETER).getValue(), is(POOL_PARAMETER_VALUE));
+    }
+
+    @Test
+    public void launchPipelineSkipsAPoolParameterThatCarriesNoValue() {
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        final Map<String, String> additionalParameters = new HashMap<>();
+        additionalParameters.put(POOL_PARAMETER, null);
+        additionalParameters.put(EMPTY_POOL_PARAMETER, "");
+        doReturn(Optional.of(poolWithAdditionalParameters(additionalParameters)))
+                .when(nodePoolManager).find(ID_2);
+
+        assertNotNull(launchPipeline(configuration, INSTANCE_TYPE));
+
+        assertFalse(configuration.getParameters().containsKey(POOL_PARAMETER));
+        assertFalse(configuration.getParameters().containsKey(EMPTY_POOL_PARAMETER));
+    }
+
+    @Test
+    public void launchPipelineKeepsTheRequestsParametersWhenThePoolDeclaresNoneOfItsOwn() {
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        doReturn(Optional.of(poolWithAdditionalParameters(Collections.emptyMap())))
+                .when(nodePoolManager).find(ID_2);
+
+        assertNotNull(launchPipeline(configuration, INSTANCE_TYPE));
+
+        assertThat(configuration.getParameters().keySet(),
+                is(Collections.singleton(PipelineRunManager.CP_CAP_POOL_ID)));
+    }
+
+    @Test
+    public void launchPipelineAppliesNoAdditionalParametersWhenThePoolHasNoLaunchConfig() {
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        configuration.getParameters().put(POOL_PARAMETER, new PipeConfValueVO(CALLER_PARAMETER_VALUE));
+        doReturn(Optional.of(poolWithInstanceType(null))).when(nodePoolManager).find(ID_2);
+
+        assertNotNull(launchPipeline(configuration, INSTANCE_TYPE));
+
+        assertThat(configuration.getParameters().keySet(),
+                is(new HashSet<>(asList(PipelineRunManager.CP_CAP_POOL_ID, POOL_PARAMETER))));
+        assertThat(configuration.getParameters().get(POOL_PARAMETER).getValue(), is(CALLER_PARAMETER_VALUE));
+    }
+
+    private String runParameterValue(final PipelineRun run, final String name) {
+        return ListUtils.emptyIfNull(run.getPipelineRunParameters()).stream()
+                .filter(parameter -> name.equals(parameter.getName()))
+                .map(PipelineRunParameter::getValue)
+                .findFirst()
+                .orElse(null);
+    }
+
     private void setPoolIdParameter(final PipelineConfiguration configuration, final String value) {
         final Map<String, PipeConfValueVO> parameters = new HashMap<>();
         parameters.put(PipelineRunManager.CP_CAP_POOL_ID, new PipeConfValueVO(value));
@@ -697,11 +820,21 @@ public class PipelineRunManagerLaunchTest {
     }
 
     private NodePool poolWithAssignPolicy(final RunContainerSpec policy) {
+        return poolWithLaunchConfig(policy, null);
+    }
+
+    private NodePool poolWithAdditionalParameters(final Map<String, String> additionalParameters) {
+        return poolWithLaunchConfig(null, additionalParameters);
+    }
+
+    private NodePool poolWithLaunchConfig(final RunContainerSpec policy,
+                                          final Map<String, String> additionalParameters) {
         final NodePool pool = new NodePool();
         pool.setId(ID_2);
         pool.setName("pool");
         final NodePoolLaunchConfig launchConfig = new NodePoolLaunchConfig();
         launchConfig.setKubeAssignPolicy(policy);
+        launchConfig.setAdditionalParameters(additionalParameters);
         pool.setLaunchConfig(launchConfig);
         return pool;
     }
