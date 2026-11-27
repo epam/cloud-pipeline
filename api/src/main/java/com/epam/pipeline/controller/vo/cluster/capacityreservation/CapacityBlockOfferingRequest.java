@@ -47,9 +47,10 @@ public class CapacityBlockOfferingRequest {
     private CapacityBlockResourceType resourceType;
 
     /**
-     * The instance types to search, each with its own count - one AWS call per entry. At least one is
-     * required. The response is a single list sorted by {@link CapacityBlockOffering#getStartDate()}
-     * ascending, regardless of which entry an offering came from.
+     * The instance types to search, each with its own count - one AWS call per distinct entry; entries equal
+     * in instance type and count are merged into one before any AWS call is made. At least one is required.
+     * The response is a single list sorted by {@link CapacityBlockOffering#getStartDate()} ascending,
+     * regardless of which entry an offering came from.
      */
     private List<CapacitySpecification> candidates;
 

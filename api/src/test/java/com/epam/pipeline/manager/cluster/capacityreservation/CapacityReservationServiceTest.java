@@ -70,7 +70,6 @@ public class CapacityReservationServiceTest {
     private static final Long REGION_ID = 1L;
     private static final Long NODE_POOL_ID = 2L;
     private static final String OFFERING_ID = "cbr-0123456789abcdef0";
-    private static final String AVAILABILITY_ZONE = "us-east-1c";
     private static final String INSTANCE_TYPE = "p5.48xlarge";
     private static final int INSTANCE_COUNT = 8;
     private static final long CAPACITY_DURATION_SECONDS = 14 * 24 * 3600L;
@@ -138,14 +137,13 @@ public class CapacityReservationServiceTest {
                 .requestedEndDate(end)
                 .commitmentDuration(CAPACITY_DURATION_SECONDS)
                 .capacityBlockOfferingId(OFFERING_ID)
-                .availabilityZone(AVAILABILITY_ZONE)
                 .build();
 
         service.create(request);
 
         final CapacityReservation built = reservationCaptor.getValue();
         assertThat(built.getCapacityBlockOfferingId()).isEqualTo(OFFERING_ID);
-        assertThat(built.getAvailabilityZone()).isEqualTo(AVAILABILITY_ZONE);
+        assertThat(built.getAvailabilityZone()).isNull();
         assertThat(built.getStartDate()).isEqualTo(start);
         assertThat(built.getEndDate()).isEqualTo(end);
         assertThat(built.getRequestedStartDate()).isEqualTo(start);

@@ -16,10 +16,12 @@
 
 package com.epam.pipeline.manager.cluster.capacityreservation;
 
+import com.epam.pipeline.controller.vo.cluster.capacityreservation.CapacityBlockOfferingRequest;
 import com.epam.pipeline.controller.vo.cluster.pool.CapacityReservationRequest;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.dao.cluster.capacityreservation.CapacityReservationDao;
 import com.epam.pipeline.dao.cluster.pool.NodePoolDao;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockOffering;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
@@ -82,6 +84,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     private static final int LEAD_DAYS = 7;
     private static final int WINDOW_DAYS = 30;
     private static final long ONE_DAY_SECONDS = 24 * 3600L;
+    private static final long ONE_HOUR_SECONDS = 3600L;
     private static final String APPROVER = "APPROVER";
     private static final String OWNER = "requester";
     private static final String ADMIN = "ADMIN";
@@ -154,6 +157,29 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         givenVcpusPerInstance(INSTANCE_VCPUS);
         setPolicies("[]");
         resetInstanceTypePatterns();
+        givenAMatchingCapacityBlockOffering();
+    }
+
+    /**
+     * The default answer to a capacity-block re-search: an offering with {@link #OFFERING_ID} and exactly the
+     * window the search itself asked for. A test that wants the submitted offering to look bogus re-stubs this
+     * with its own answer.
+     */
+    private void givenAMatchingCapacityBlockOffering() {
+        when(cloudFacade.listCapacityBlockOfferings(any(), any(), any())).thenAnswer(invocation -> {
+            final CapacityBlockOfferingRequest search = invocation.getArgument(1);
+            // re-stubbing this same mock elsewhere replays this answer once, with matcher placeholders
+            // (nulls) as the arguments, before the new stub takes over - tolerate that rather than NPE
+            if (search == null) {
+                return Collections.emptyList();
+            }
+            return Collections.singletonList(CapacityBlockOffering.builder()
+                    .offeringId(OFFERING_ID)
+                    .startDate(search.getStartDateRange())
+                    .endDate(search.getEndDateRange())
+                    .capacityDurationHours(search.getCapacityDurationHours())
+                    .build());
+        });
     }
 
     @Test
@@ -198,9 +224,18 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         final CapacityReservation reservation = reservationDao.findByNodePoolId(created.getId())
                 .orElseThrow(AssertionError::new);
         assertThat(reservation.getCapacityBlockOfferingId()).isEqualTo(OFFERING_ID);
-        assertThat(reservation.getAvailabilityZone()).isEqualTo(ZONE);
+        assertThat(reservation.getAvailabilityZone()).isNull();
         assertThat(reservation.getStartDate()).isEqualTo(reservation.getRequestedStartDate());
         assertThat(reservation.getEndDate()).isEqualTo(reservation.getRequestedEndDate());
+    }
+
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldVerifyTheOfferingAgainstAFreshSearchBeforeCreatingACapacityBlockReservation() {
+        final NodePool created = poolManager.create(capacityBlockPoolVO());
+
+        assertThat(created.getId()).isNotNull();
+        verify(cloudFacade).listCapacityBlockOfferings(any(), any(), any());
     }
 
     @Test
@@ -212,6 +247,89 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThatThrownBy(() -> poolManager.create(vo))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("offering");
+    }
+
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldRejectACapacityBlockReservationWithoutRequestedDates() {
+        final NodePoolVO vo = capacityBlockPoolVO();
+        vo.getCapacityReservationRequest().setRequestedStartDate(null);
+
+        assertThatThrownBy(() -> poolManager.create(vo))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("date");
+    }
+
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldRejectACapacityBlockReservationWhoseDatesDoNotMatchAnyOffering() {
+        when(cloudFacade.listCapacityBlockOfferings(any(), any(), any())).thenReturn(Collections.emptyList());
+
+        assertThatThrownBy(() -> poolManager.create(capacityBlockPoolVO()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(OFFERING_ID);
+    }
+
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldOverwriteTheRequestedWindowWithWhatTheRealOfferingReports() {
+        final NodePoolVO vo = capacityBlockPoolVO();
+        final LocalDateTime claimedStart = vo.getCapacityReservationRequest().getRequestedStartDate();
+        final LocalDateTime realStart = claimedStart.plusDays(1);
+        final LocalDateTime realEnd = realStart.plusSeconds(COMMITMENT_DURATION);
+        when(cloudFacade.listCapacityBlockOfferings(any(), any(), any())).thenReturn(Collections.singletonList(
+                CapacityBlockOffering.builder()
+                        .offeringId(OFFERING_ID)
+                        .startDate(realStart)
+                        .endDate(realEnd)
+                        .capacityDurationHours((int) (COMMITMENT_DURATION / ONE_HOUR_SECONDS))
+                        .build()));
+
+        final NodePool created = poolManager.create(vo);
+
+        final CapacityReservation reservation = reservationDao.findByNodePoolId(created.getId())
+                .orElseThrow(AssertionError::new);
+        assertThat(reservation.getRequestedStartDate()).isNotEqualTo(claimedStart).isEqualTo(realStart);
+        assertThat(reservation.getRequestedEndDate()).isEqualTo(realEnd);
+        assertThat(reservation.getStartDate()).isEqualTo(realStart);
+        assertThat(reservation.getEndDate()).isEqualTo(realEnd);
+    }
+
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldOverwriteTheRequestedCommitmentDurationWithWhatTheRealOfferingReports() {
+        final NodePoolVO vo = capacityBlockPoolVO();
+        final CapacityReservationRequest request = vo.getCapacityReservationRequest();
+        final LocalDateTime start = request.getRequestedStartDate();
+        final LocalDateTime end = request.getRequestedEndDate();
+        final long realDurationSeconds = COMMITMENT_DURATION * 2;
+        when(cloudFacade.listCapacityBlockOfferings(any(), any(), any())).thenReturn(Collections.singletonList(
+                CapacityBlockOffering.builder()
+                        .offeringId(OFFERING_ID)
+                        .startDate(start)
+                        .endDate(end)
+                        .capacityDurationHours((int) (realDurationSeconds / ONE_HOUR_SECONDS))
+                        .build()));
+
+        final NodePool created = poolManager.create(vo);
+
+        final CapacityReservation reservation = reservationDao.findByNodePoolId(created.getId())
+                .orElseThrow(AssertionError::new);
+        assertThat(reservation.getCommitmentDuration())
+                .isNotEqualTo(COMMITMENT_DURATION)
+                .isEqualTo(realDurationSeconds);
+    }
+
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldRejectACapacityBlockReservationWithoutACommitmentDuration() {
+        final NodePoolVO vo = capacityBlockPoolVO();
+        vo.getCapacityReservationRequest().setCommitmentDuration(null);
+
+        assertThatThrownBy(() -> poolManager.create(vo))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("duration");
+        verify(cloudFacade, never()).listCapacityBlockOfferings(any(), any(), any());
     }
 
     @Test
@@ -1153,7 +1271,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         request.setRequestedEndDate(start.plusSeconds(COMMITMENT_DURATION));
         request.setCommitmentDuration(COMMITMENT_DURATION);
         request.setCapacityBlockOfferingId(OFFERING_ID);
-        request.setAvailabilityZone(ZONE);
         vo.setCapacityReservationRequest(request);
         return vo;
     }

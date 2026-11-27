@@ -13,6 +13,8 @@
 - [Notable Bug fixes](#notable-bug-fixes)
     - [Unavailable cluster nodes are not detected](#unavailable-cluster-nodes-are-not-detected)
     - [`pipe` CLI for macOS ARM needs Rosetta](#pipe-cli-for-macos-arm-needs-rosetta)
+    - [A capacity block reservation request could carry an availability zone that was never used](#a-capacity-block-reservation-request-could-carry-an-availability-zone-that-was-never-used)
+    - [A capacity block reservation's requested window was never checked against the offering it named](#a-capacity-block-reservations-requested-window-was-never-checked-against-the-offering-it-named)
 
 ***
 
@@ -28,7 +30,7 @@ Additionally, Spring Boot moved from **1.5**/**2** to Spring Boot **3.3**.
 
 ## Capacity block offering search over several instance types
 
-Searching for a capacity block offering can now ask about several candidate instance types - each with its own count - in a single request, rather than one search per type, so a user can compare a primary instance type against whatever fallback types they would also accept before deciding which offering to buy. The response merges every candidate's offerings into one list, sorted by start date, nearest first. See [Browsing capacity block offerings](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#browsing-capacity-block-offerings).
+Searching for a capacity block offering can now ask about several candidate instance types - each with its own count - in a single request, rather than one search per type, so a user can compare a primary instance type against whatever fallback types they would also accept before deciding which offering to buy. The response merges every candidate's offerings into one list, sorted by start date, nearest first. Candidates equal in instance type and count are merged into one before anything is searched, so sending the same one twice costs one AWS call and one place against the limit below, not two. See [Browsing capacity block offerings](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#browsing-capacity-block-offerings).
 
 How many candidates one request may carry is bounded by the `cluster.capacity.block.offering.candidates.max.count` preference - **5** by default, `-1` to disable the limit.
 
@@ -116,3 +118,17 @@ Please note: after the update, nodes that have already been unavailable for long
 
 Previously, the `pipe` CLI distribution for Mac devices with ARM-based chips (Apple Silicon, the **MacOS-ARM** installation option, `pipe-osx-arm.tar.gz`) was built for Intel (`x86_64`) processors, both `pipe` and the bundled `pipe-fuse`. So it could run only through Rosetta.
 Now, it is a native `arm64` build, and it runs without Rosetta.
+
+### A capacity block reservation request could carry an availability zone that was never used
+
+[#4590](https://github.com/epam/cloud-pipeline/issues/4590)
+
+`capacityReservationRequest.availabilityZone` has been removed from the request that creates a pool backed by a capacity block. The zone was copied onto the reservation at creation time, but the purchase call to the cloud provider never sent it - it is fixed by the chosen offering alone - and the reservation's own zone was always overwritten by what the provider reported once the block was actually bought. The submitted value was therefore never the one that ended up in use.
+
+### A capacity block reservation's requested window was never checked against the offering it named
+
+[#4590](https://github.com/epam/cloud-pipeline/issues/4590)
+
+Creating a pool backed by a capacity block carried the offering's id, start date, end date and commitment duration as separate fields, and nothing checked that they actually described the same offering - they were not even required. Since the purchase itself asks the provider for nothing but the offering id, a request naming a real offering together with fabricated dates would be approved (or denied, or auto-approved) based on a window that had nothing to do with what was actually bought.
+
+Requesting a capacity block now requires `requestedStartDate`, `requestedEndDate` and `commitmentDuration`, and the platform re-searches the provider for offerings of the pool's own instance type and count over that window before the request is accepted, loading the named offering from the answer. The request is rejected if that offering does not come back at all; if it does, its own start date, end date and duration overwrite whatever was submitted, the same correction already made once a block is actually bought.

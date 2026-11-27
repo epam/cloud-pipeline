@@ -17,10 +17,12 @@
 package com.epam.pipeline.manager.cluster.pool;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.cluster.capacityreservation.CapacityBlockOfferingRequest;
 import com.epam.pipeline.controller.vo.cluster.pool.CapacityReservationRequest;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.PriceType;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockOffering;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
 import com.epam.pipeline.entity.cluster.pool.NodePoolType;
 import com.epam.pipeline.entity.region.AwsRegion;
@@ -43,6 +45,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -51,7 +54,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -77,6 +82,7 @@ public class NodePoolValidatorTest {
     private static final int SUFFICIENT_VCPU = 48;
     private static final int FALLBACK_INSTANCE_COUNT = 1;
     private static final String UNCATALOGUED_FALLBACK_TYPE = "m5.unknown";
+    private static final String OFFERING_ID = "cbr-0123456789abcdef0";
 
     @Mock
     private MessageHelper messageHelper;
@@ -126,6 +132,18 @@ public class NodePoolValidatorTest {
         when(preferenceManager.getPreference(
                 SystemPreferences.CLUSTER_CAPACITY_RESERVATION_FALLBACK_CANDIDATES_MAX_COUNT))
                 .thenReturn(MAX_FALLBACKS);
+        when(reservationCloudFacade.listCapacityBlockOfferings(any(), any(), any())).thenAnswer(invocation -> {
+            final CapacityBlockOfferingRequest search = invocation.getArgument(1);
+            if (search == null) {
+                return Collections.emptyList();
+            }
+            return Collections.singletonList(CapacityBlockOffering.builder()
+                    .offeringId(OFFERING_ID)
+                    .startDate(search.getStartDateRange())
+                    .endDate(search.getEndDateRange())
+                    .capacityDurationHours(search.getCapacityDurationHours())
+                    .build());
+        });
         validator = new NodePoolValidator(messageHelper, regionManager, instanceOfferManager, scheduleManager,
                 toolManager, cloudFacade, preferenceManager, reservationCloudFacade);
     }
@@ -242,6 +260,63 @@ public class NodePoolValidatorTest {
         assertThatThrownBy(() -> validator.validate(vo)).isInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    public void shouldRejectACapacityBlockRequestWithoutRequestedDates() {
+        final NodePoolVO vo = capacityBlockVO(null);
+        vo.getCapacityReservationRequest().setRequestedStartDate(null);
+
+        assertThatThrownBy(() -> validator.validate(vo)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    public void shouldRejectACapacityBlockRequestWithoutACommitmentDuration() {
+        final NodePoolVO vo = capacityBlockVO(null);
+        vo.getCapacityReservationRequest().setCommitmentDuration(null);
+
+        assertThatThrownBy(() -> validator.validate(vo)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    public void shouldRejectACapacityBlockRequestWhoseOfferingIsNotFound() {
+        when(reservationCloudFacade.listCapacityBlockOfferings(any(), any(), any()))
+                .thenReturn(Collections.emptyList());
+        final NodePoolVO vo = capacityBlockVO(null);
+
+        assertThatThrownBy(() -> validator.validate(vo)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    public void shouldOverwriteTheCapacityBlockWindowAndDurationFromTheRealOffering() {
+        final NodePoolVO vo = capacityBlockVO(null);
+        final CapacityReservationRequest request = vo.getCapacityReservationRequest();
+        final LocalDateTime claimedStart = request.getRequestedStartDate();
+        final long claimedDuration = request.getCommitmentDuration();
+        final LocalDateTime realStart = claimedStart.plusDays(1);
+        final LocalDateTime realEnd = realStart.plusSeconds(claimedDuration * 2);
+        when(reservationCloudFacade.listCapacityBlockOfferings(any(), any(), any())).thenReturn(
+                Collections.singletonList(CapacityBlockOffering.builder()
+                        .offeringId(OFFERING_ID)
+                        .startDate(realStart)
+                        .endDate(realEnd)
+                        .capacityDurationHours((int) Duration.between(realStart, realEnd).toHours())
+                        .build()));
+
+        validator.validate(vo);
+
+        assertThat(request.getRequestedStartDate()).isNotEqualTo(claimedStart).isEqualTo(realStart);
+        assertThat(request.getRequestedEndDate()).isEqualTo(realEnd);
+        assertThat(request.getCommitmentDuration()).isNotEqualTo(claimedDuration)
+                .isEqualTo(Duration.between(realStart, realEnd).getSeconds());
+    }
+
+    @Test
+    public void shouldRejectACapacityBlockFamilyThePatternDoesNotAllow() {
+        final NodePoolVO vo = capacityBlockVO(null);
+        vo.setInstanceType(OUT_OF_FAMILY_TYPE);
+
+        assertThatThrownBy(() -> validator.validate(vo)).isInstanceOf(IllegalArgumentException.class);
+    }
+
     private List<CapacitySpecification> singleFallback(final String instanceType) {
         return Collections.singletonList(candidate(instanceType, FALLBACK_INSTANCE_COUNT));
     }
@@ -270,9 +345,13 @@ public class NodePoolValidatorTest {
 
     private NodePoolVO capacityBlockVO(final List<CapacitySpecification> fallbacks) {
         final NodePoolVO vo = baseVO();
+        final LocalDateTime start = DateUtils.nowUTC().plusDays(START_LEAD_DAYS);
         vo.setCapacityReservationRequest(CapacityReservationRequest.builder()
                 .reservationType(CapacityReservationType.CAPACITY_BLOCK)
-                .capacityBlockOfferingId("cbr-0123456789abcdef0")
+                .capacityBlockOfferingId(OFFERING_ID)
+                .requestedStartDate(start)
+                .requestedEndDate(start.plusSeconds(COMMITMENT_DURATION))
+                .commitmentDuration(COMMITMENT_DURATION)
                 .fallbackCandidates(fallbacks)
                 .build());
         return vo;

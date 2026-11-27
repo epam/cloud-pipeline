@@ -42,6 +42,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -160,7 +161,12 @@ public class CapacityBlockOfferingServiceTest {
     @Test
     public void shouldRejectMoreCandidatesThanThePreferenceAllows() {
         final List<CapacitySpecification> tooMany = Arrays.asList(
-                candidate(), candidate(), candidate(), candidate(), candidate(), candidate());
+                CapacitySpecification.builder().instanceType(INSTANCE_TYPE).instanceCount(1).build(),
+                CapacitySpecification.builder().instanceType(INSTANCE_TYPE).instanceCount(2).build(),
+                CapacitySpecification.builder().instanceType(INSTANCE_TYPE).instanceCount(3).build(),
+                CapacitySpecification.builder().instanceType(INSTANCE_TYPE).instanceCount(4).build(),
+                CapacitySpecification.builder().instanceType(INSTANCE_TYPE).instanceCount(5).build(),
+                CapacitySpecification.builder().instanceType(INSTANCE_TYPE).instanceCount(6).build());
         final CapacityBlockOfferingRequest request = validRequest().toBuilder().candidates(tooMany).build();
 
         assertThatThrownBy(() -> service.listOfferings(request)).isInstanceOf(IllegalArgumentException.class);
@@ -168,16 +174,64 @@ public class CapacityBlockOfferingServiceTest {
     }
 
     @Test
+    public void shouldMergeCandidatesEqualInInstanceTypeAndCount() {
+        final CapacitySpecification first = CapacitySpecification.builder()
+                .instanceType(INSTANCE_TYPE).instanceCount(INSTANCE_COUNT).build();
+        final CapacitySpecification duplicate = CapacitySpecification.builder()
+                .instanceType(INSTANCE_TYPE).instanceCount(INSTANCE_COUNT).build();
+        final CapacityBlockOfferingRequest request = validRequest().toBuilder()
+                .candidates(Arrays.asList(first, duplicate))
+                .build();
+        final CapacityBlockOffering offering = CapacityBlockOffering.builder()
+                .offeringId("cbr-1").startDate(DateUtils.nowUTC()).build();
+        when(cloudFacade.listCapacityBlockOfferings(region, request, first))
+                .thenReturn(Collections.singletonList(offering));
+
+        assertThat(service.listOfferings(request)).containsExactly(offering);
+        verify(cloudFacade, times(1)).listCapacityBlockOfferings(region, request, first);
+    }
+
+    @Test
+    public void shouldTreatCandidatesOfTheSameTypeButDifferentCountAsDistinct() {
+        final CapacitySpecification fewer = CapacitySpecification.builder()
+                .instanceType(INSTANCE_TYPE).instanceCount(INSTANCE_COUNT).build();
+        final CapacitySpecification more = CapacitySpecification.builder()
+                .instanceType(INSTANCE_TYPE).instanceCount(INSTANCE_COUNT + 1).build();
+        final CapacityBlockOfferingRequest request = validRequest().toBuilder()
+                .candidates(Arrays.asList(fewer, more))
+                .build();
+        final CapacityBlockOffering fewerOffering = CapacityBlockOffering.builder()
+                .offeringId("cbr-fewer").startDate(DateUtils.nowUTC()).build();
+        final CapacityBlockOffering moreOffering = CapacityBlockOffering.builder()
+                .offeringId("cbr-more").startDate(DateUtils.nowUTC().plusDays(1)).build();
+        when(cloudFacade.listCapacityBlockOfferings(region, request, fewer))
+                .thenReturn(Collections.singletonList(fewerOffering));
+        when(cloudFacade.listCapacityBlockOfferings(region, request, more))
+                .thenReturn(Collections.singletonList(moreOffering));
+
+        assertThat(service.listOfferings(request)).containsExactly(fewerOffering, moreOffering);
+        verify(cloudFacade, times(1)).listCapacityBlockOfferings(region, request, fewer);
+        verify(cloudFacade, times(1)).listCapacityBlockOfferings(region, request, more);
+    }
+
+    @Test
     public void shouldNotLimitCandidatesWhenThePreferenceIsDisabled() {
         when(preferenceManager.getPreference(SystemPreferences.CLUSTER_CAPACITY_BLOCK_OFFERING_CANDIDATES_MAX_COUNT))
                 .thenReturn(-1);
         final List<CapacitySpecification> many = Arrays.asList(
-                candidate(), candidate(), candidate(), candidate(), candidate(), candidate());
+                CapacitySpecification.builder().instanceType(INSTANCE_TYPE).instanceCount(1).build(),
+                CapacitySpecification.builder().instanceType(INSTANCE_TYPE).instanceCount(2).build(),
+                CapacitySpecification.builder().instanceType(INSTANCE_TYPE).instanceCount(3).build(),
+                CapacitySpecification.builder().instanceType(INSTANCE_TYPE).instanceCount(4).build(),
+                CapacitySpecification.builder().instanceType(INSTANCE_TYPE).instanceCount(5).build(),
+                CapacitySpecification.builder().instanceType(INSTANCE_TYPE).instanceCount(6).build());
         final CapacityBlockOfferingRequest request = validRequest().toBuilder().candidates(many).build();
-        when(cloudFacade.listCapacityBlockOfferings(region, request, candidate()))
-                .thenReturn(Collections.emptyList());
+        many.forEach(candidate -> when(cloudFacade.listCapacityBlockOfferings(region, request, candidate))
+                .thenReturn(Collections.emptyList()));
 
         assertThat(service.listOfferings(request)).isEmpty();
+        many.forEach(candidate -> verify(cloudFacade, times(1))
+                .listCapacityBlockOfferings(region, request, candidate));
     }
 
     @Test

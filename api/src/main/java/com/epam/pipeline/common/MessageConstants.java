@@ -804,6 +804,8 @@ public final class MessageConstants {
             "error.capacity.reservation.type.not.supported";
     public static final String ERROR_CAPACITY_RESERVATION_OFFERING_ID_REQUIRED =
             "error.capacity.reservation.offering.id.required";
+    public static final String ERROR_CAPACITY_RESERVATION_OFFERING_MISMATCH =
+            "error.capacity.reservation.offering.mismatch";
     public static final String ERROR_CAPACITY_RESERVATION_DATES_REQUIRED =
             "error.capacity.reservation.dates.required";
     public static final String ERROR_CAPACITY_RESERVATION_START_DATE_IN_PAST =

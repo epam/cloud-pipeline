@@ -64,12 +64,6 @@ public class CapacityReservationRequest {
     private String capacityBlockOfferingId;
 
     /**
-     * The zone of a {@link CapacityReservationType#CAPACITY_BLOCK} offering. The offering already fixes it, so it
-     * is known up front. For {@link CapacityReservationType#FUTURE_DATED} the platform picks the zone itself.
-     */
-    private String availabilityZone;
-
-    /**
      * Other instance types the platform may fall back to, in the order the caller sends them - the
      * platform merges duplicates and sorts the rest itself (biggest instance first) before trying any.
      * {@link CapacityReservationType#FUTURE_DATED} only.
