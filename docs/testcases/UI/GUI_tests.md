@@ -95,7 +95,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Cluster_nodes</b> (27 tests, 15 automated)</summary>
+<summary><b>Cluster_nodes</b> (32 tests, 15 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -125,6 +125,11 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**841_4_pool_filters**](Cluster_nodes/Hot_node_pools/841_persistent_cluster_nodes/841_4_pool_filters.md) | Checking filters for hot node pool | |
 | [**841_5_pool_usage_non_admin**](Cluster_nodes/Hot_node_pools/841_persistent_cluster_nodes/841_5_pool_usage_non_admin.md) | Checking hot node pool usage by non-admin user | |
 | [**841_6_pool_autoscaled**](Cluster_nodes/Hot_node_pools/841_persistent_cluster_nodes/841_6_pool_autoscaled.md) | Checking the autoscaling of the hot node pool | |
+| [**4723_1_ml_block_offering_search**](Cluster_nodes/Hot_node_pools/4723_ml_block/4723_1_ml_block_offering_search.md) | [MANUAL] ML Block pool offering search and selection | |
+| [**4723_2_ml_block_candidates**](Cluster_nodes/Hot_node_pools/4723_ml_block/4723_2_ml_block_candidates.md) | [MANUAL] Instance type candidates for an ML Block pool | |
+| [**4723_3_ml_block_region_reset**](Cluster_nodes/Hot_node_pools/4723_ml_block/4723_3_ml_block_region_reset.md) | [MANUAL] Changing the search region resets an ML Block pool's candidates | |
+| [**4723_4_ml_block_create_refused**](Cluster_nodes/Hot_node_pools/4723_ml_block/4723_4_ml_block_create_refused.md) | [MANUAL] [Negative] ML Block pool cannot be created without a chosen offering | |
+| [**4723_5_ml_block_non_admin**](Cluster_nodes/Hot_node_pools/4723_ml_block/4723_5_ml_block_non_admin.md) | [MANUAL] ML Block mode available to a node pool manager | |
 | [**1489**](Cluster_nodes/Lustre_mount/1489.md) | Check the Lustre FS mount options | :white_check_mark: |
 
 </details>
