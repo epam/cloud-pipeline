@@ -16,18 +16,12 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {formatCloudCommitmentDate} from '../helpers';
+import {formatCloudCommitmentDate, isReservationScheduled} from '../helpers';
 import styles from '../../edit-hot-node-pool.css';
 
 // Exported for its own unit tests.
 export function formatReservationDate (value) {
   return formatCloudCommitmentDate(value, 'YYYY-MM-DD HH:mm:ss');
-}
-
-// Shared with `getCapacityReservationStatus` in `../helpers`, so the pool-card badge and
-// this summary text never disagree: a window counts as granted once both dates parse.
-export function isReservationScheduled (start, end) {
-  return Boolean(formatReservationDate(start) && formatReservationDate(end));
 }
 
 // Granted by the backend's scheduler, not editable through `/cluster/pool`, so an existing

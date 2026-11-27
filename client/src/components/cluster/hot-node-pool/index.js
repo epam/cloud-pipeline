@@ -345,6 +345,8 @@ class HotCluster extends React.Component {
           visible={!!editablePool || createNewPool}
           pool={editablePool}
           currentUserName={this.currentUserName}
+          // Never put MODE_ML_BLOCK first: `edit-hot-node-pool/index.js` relies on a
+          // reopened dialog not defaulting to it.
           allowedModes={canCreateAnyMode
             ? [MODE_DEFAULT, MODE_FUTURE_DATED, MODE_ML_BLOCK]
             : [MODE_FUTURE_DATED, MODE_ML_BLOCK]}

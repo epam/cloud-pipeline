@@ -17,10 +17,8 @@
 import React from 'react';
 import moment from 'moment-timezone';
 import {render, screen} from '@test';
-import ReservationSummary, {
-  formatReservationDate,
-  isReservationScheduled
-} from './ReservationSummary';
+import ReservationSummary, {formatReservationDate} from './ReservationSummary';
+import {isReservationScheduled} from '../helpers';
 
 describe('formatReservationDate', () => {
   test('drops milliseconds from a valid wire-format value', () => {

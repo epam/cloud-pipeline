@@ -101,11 +101,6 @@ function getReservationStatusNotice (status) {
   };
 }
 
-// A future-dated pool reserves one absolute window, unlike Default mode's weekly
-// schedule - this control does not reuse `ScheduleControl` and must not touch it.
-
-// "Search until" is independently editable, never derived from `start` + `durationDays`.
-
 // An echoed value from the API is a true UTC instant; a day typed into the picker never
 // carries a time and needs no conversion.
 function toDisplayDay (value) {
@@ -116,6 +111,10 @@ function toDisplayDay (value) {
   return isInstant ? formatCloudCommitmentDate(value, COMMITMENT_DATE_ONLY_FORMAT) : value;
 }
 
+// A future-dated pool reserves one absolute window, unlike Default mode's weekly
+// schedule - this control does not reuse `ScheduleControl` and must not touch it.
+
+// "Search until" is independently editable, never derived from `start` + `durationDays`.
 function ReservationScheduleControl ({
   mode,
   start,

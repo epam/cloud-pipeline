@@ -25,7 +25,7 @@ import CheckboxControl from './controls/CheckboxControl';
 import ModeControl from './controls/ModeControl';
 import PoolTypeControl from './controls/PoolTypeControl';
 import ReservationScheduleControl from './controls/ReservationScheduleControl';
-import ReservationSummary, {isReservationScheduled} from './controls/ReservationSummary';
+import ReservationSummary from './controls/ReservationSummary';
 import ScheduleControls from './controls/ScheduleControls';
 import DockerImagesControl from './controls/DockerImagesControl';
 import LabelsControl from './controls/LabelsControl';
@@ -35,6 +35,7 @@ import InstanceDetails from '../instance-details';
 import * as hints from '../hot-node-pool-hints';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import {getSpotTypeName} from '../../../special/spot-instance-names';
+import {isReservationScheduled} from './helpers';
 import {
   DISK_MIN_SIZE,
   DISK_MAX_SIZE,

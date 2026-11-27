@@ -17,7 +17,6 @@
 import moment from 'moment-timezone';
 import {getFiltersError, filtersAreEqual} from '../filters-control';
 import {compareSchedulesArray, scheduleIsValid} from './controls/ScheduleControl';
-import {isReservationScheduled} from './controls/ReservationSummary';
 import {
   DISK_MIN_SIZE,
   DISK_MAX_SIZE,
@@ -219,6 +218,8 @@ function getCommitmentWindowErrors (values, minDurationDays, leadTime, endRequir
   const end = getCommitmentDayEnd(commitmentEnd);
   const now = moment.utc();
   let commitmentStartError, commitmentEndError, commitmentDurationError;
+  // A value carrying a time fails this day-only strict parse too, so it counts as
+  // missing rather than as a day.
   if (!commitmentStart || !start.isValid()) {
     commitmentStartError = 'Search from date is required';
   } else if (!start.isAfter(now)) {
@@ -644,6 +645,15 @@ export function buildPoolPayload (values) {
     }
   }
   return payload;
+}
+
+// Shared with `ReservationSummary`'s own display text, so the pool-card badge and that
+// summary never disagree: a window counts as granted once both dates parse.
+export function isReservationScheduled (start, end) {
+  return Boolean(
+    formatCloudCommitmentDate(start, 'YYYY-MM-DD HH:mm:ss') &&
+    formatCloudCommitmentDate(end, 'YYYY-MM-DD HH:mm:ss')
+  );
 }
 
 // The reservation record is the source of truth for its own lifecycle - once available,
