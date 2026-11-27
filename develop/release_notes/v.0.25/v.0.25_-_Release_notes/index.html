@@ -64,6 +64,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#fallback-instance-types-for-a-future-dated-capacity-reservation">Fallback instance types for a future-dated capacity reservation</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#a-node-pools-own-run-parameters-for-a-run-bound-to-it">A node pool's own run parameters for a run bound to it</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#parallel-download-into-the-disk-buffer-of-a-storage-mount">Parallel download into the disk buffer of a storage mount</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#launch-capabilities-restrict-a-capability-to-certain-users-or-roles">Launch capabilities: restrict a capability to certain users or roles</a>
@@ -439,6 +441,7 @@
 <li><a href="#migration-to-java-21">Migration to Java 21</a></li>
 <li><a href="#capacity-block-offering-search-over-several-instance-types">Capacity block offering search over several instance types</a></li>
 <li><a href="#fallback-instance-types-for-a-future-dated-capacity-reservation">Fallback instance types for a future-dated capacity reservation</a></li>
+<li><a href="#a-node-pools-own-run-parameters-for-a-run-bound-to-it">A node pool's own run parameters for a run bound to it</a></li>
 <li><a href="#parallel-download-into-the-disk-buffer-of-a-storage-mount">Parallel download into the disk buffer of a storage mount</a></li>
 <li><a href="#launch-capabilities-restrict-a-capability-to-certain-users-or-roles">Launch capabilities: restrict a capability to certain users or roles</a></li>
 <li><a href="#launch-form-run-on-any-active-node-pool">Launch form: run on any active node pool</a></li>
@@ -465,6 +468,10 @@
 <p>A future-dated reservation's request can now also carry <code>fallbackCandidates</code> - other instance types the platform tries, biggest first, once the main instance type's own window is exhausted everywhere. Duplicates are merged away rather than rejected, and the list is sorted once, at creation, by GPU count, then vCPU count, then memory, all descending. All of them are approved together, once, at creation, so a candidate switch never asks an administrator again. See <a href="../../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools/#pools-backed-by-a-capacity-reservation">Pools backed by a capacity reservation</a>.</p>
 <p>How many fallback candidates one request may carry is bounded by the <code>cluster.capacity.reservation.fallback.candidates.max.count</code> preference - <strong>5</strong> by default, <code>-1</code> to disable the limit.</p>
 <p>A fallback candidate whose instance type has no price catalogue entry in the pool's region is now rejected at creation, rather than silently accepted and sorted last among the candidates.</p>
+<hr />
+<h2 id="a-node-pools-own-run-parameters-for-a-run-bound-to-it">A node pool's own run parameters for a run bound to it</h2>
+<p>A shareable node pool's <code>launchConfig</code> may carry <code>additionalParameters</code> - run parameters for a run that names that pool. Previously they were applied only to a run that picked the pool in the launch form and reserved CPU, GPU or RAM from it. A run that names the pool through the <code>CP_CAP_POOL_ID</code> parameter instead - from the CLI, from an API call, or from a pipeline's own <code>config.json</code> - now receives them as well.</p>
+<p>They arrive as defaults on this path: a parameter the launch request already sets keeps the value the request gave it, and an entry with no value is skipped. One limit: a <code>CP_CAP_CUSTOM_*</code> flag applied this way does not pull in that custom capability's own declared parameters, as capabilities are expanded before the pool is consulted - the capability's commands still run, and every other <code>CP_CAP_*</code> parameter is unaffected. See <a href="../../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools/#guaranteeing-a-runs-capacity">Guaranteeing a run's capacity</a>.</p>
 <hr />
 <h2 id="parallel-download-into-the-disk-buffer-of-a-storage-mount">Parallel download into the disk buffer of a storage mount</h2>
 <p>A storage mounted with a disk buffer (the <code>read-disk-buffer-path</code> option of <code>pipe-fuse</code>, e.g. <code>-c read-disk-buffer-path=/pipe-storage-buffer/&lt;id&gt;</code> in <code>CP_PIPE_FUSE_OPTIONS</code> or <code>CP_CAP_MOUNT_OPTIONS_&lt;storage id&gt;</code>) downloads each file it reads into that buffer once, and then serves the reads from the local disk. Previously, it downloaded a file in 512 MB ranges, one after another, so the first read of a large file waited for the whole sequential download.</p>

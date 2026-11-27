@@ -751,6 +751,7 @@ checkbox: the <strong>DELETE</strong> button is enabled right away.</p>
 </ul>
 <p>An update request may also change the pool's <code>poolType</code> itself: switching it to <code>SHAREABLE_NODE</code> builds a default <code>launchConfig</code> exactly as a create request with none would, and switching it away from <code>SHAREABLE_NODE</code> drops the <code>launchConfig</code> entirely, since other pool types don't use one.</p>
 <p>The runs are assigned to the pool's own nodes by the <code>pool_id</code> label, which every node of a pool carries, with the pool's ID as its value - unless the <code>launchConfig</code> specifies a selector of its own. Naming the pool's ID via the <code>CP_CAP_POOL_ID</code> parameter (see <a href="#guaranteeing-a-runs-capacity">Guaranteeing a run's capacity</a>) reaches a shareable pool's nodes the same way: the run's own launch picks up this stored selector automatically.</p>
+<p>The <code>launchConfig</code> may also carry <code>additionalParameters</code> - a map of run parameter names to values. A run does not get them merely by landing on one of the pool's nodes; it gets them by naming the pool - either by picking it in the launch form, which applies them for the pools it offers there and only when the run reserves CPU, GPU or RAM from one, or through the <code>CP_CAP_POOL_ID</code> parameter (see <a href="#guaranteeing-a-runs-capacity">Guaranteeing a run's capacity</a>). An entry with no value is skipped either way.</p>
 <p>The <code>launchConfig</code> of other pool types is not used, and is ignored in a request.</p>
 <h3 id="guaranteeing-a-runs-capacity">Guaranteeing a run's capacity</h3>
 <p>The <a href="#example-of-using">example below</a> is a soft match: a run eligible for a pool is only ever assigned
@@ -794,6 +795,14 @@ picks up that pool's own <code>launchConfig</code> node selector automatically, 
 selector every other pool uses - overriding anything the launch request itself supplied, exactly the
 way the launch form's own node-type selector already does when a user picks a pool directly. Any other
 pool type has no selector of its own, so this changes nothing for them.</p>
+<p>That same <code>launchConfig</code> may also list <code>additionalParameters</code>, and the run's launch applies those too -
+as defaults rather than as an override: a parameter the launch request already sets keeps the value the
+request gave it, so a caller can still ask for something other than what the pool suggests. A pool with
+no <code>additionalParameters</code>, and any pool type without a <code>launchConfig</code> at all, adds no parameters to the
+run. One limit is worth knowing: a <code>CP_CAP_CUSTOM_*</code> flag applied this way does not pull in that custom
+capability's own declared parameters, because capabilities are expanded before the pool is consulted.
+The capability's commands still run - the job container reads the <code>launch.capabilities</code> preference
+itself - and every other <code>CP_CAP_*</code> parameter, handled inside the container, is unaffected.</p>
 <h2 id="example-of-using">Example of using</h2>
 <ol>
 <li>For example, there is the nodes pool that was created as described <a href="#pool-creation">above</a>:<br />
