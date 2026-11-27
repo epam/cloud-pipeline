@@ -154,128 +154,128 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Data_storages</b> (162 tests, 86 automated)</summary>
+<summary><b>Data_storages</b> (177 tests, 86 automated)</summary>
 
-| Case ID | Description/name | Automated |
-| --- | --- | :---: |
-| [**1469**](Data_storages/1469.md) | Check transfer between regions | :white_check_mark: |
-| [**EPMCMBIBPC-1017**](Data_storages/EPMCMBIBPC-1017.md) | Cross button validation if user delete bucket | :white_check_mark: |
-| [**EPMCMBIBPC-1035**](Data_storages/EPMCMBIBPC-1035.md) | Validation of navigation buttons in storage | :white_check_mark: |
-| [**EPMCMBIBPC-1178**](Data_storages/EPMCMBIBPC-1178.md) | [MANUAL] Validation of upload several files |  |
-| [**EPMCMBIBPC-1186**](Data_storages/EPMCMBIBPC-1186.md) | [MANUAL] "Generate URL" button validation |  |
-| [**EPMCMBIBPC-1467**](Data_storages/EPMCMBIBPC-1467.md) | [MANUAL] File/Folder creation pop-up focus validation |  |
-| [**EPMCMBIBPC-1468**](Data_storages/EPMCMBIBPC-1468.md) | [MANUAL] Edit file/folder pop-up focus validation |  |
-| [**EPMCMBIBPC-1469**](Data_storages/EPMCMBIBPC-1469.md) | [MANUAL] Edit storage pop-up focus validation |  |
-| [**EPMCMBIBPC-1470**](Data_storages/EPMCMBIBPC-1470.md) | [MANUAL] Create storage pop-up focus validation |  |
-| [**EPMCMBIBPC-1542**](Data_storages/EPMCMBIBPC-1542.md) | [MANUAL] Validate of file content editing |  |
-| [**EPMCMBIBPC-1549**](Data_storages/EPMCMBIBPC-1549.md) | [MANUAL] Create nameless folder |  |
-| [**EPMCMBIBPC-3232**](Data_storages/EPMCMBIBPC-3232.md) | [MANUAL] Storage synchronization from the DynamoDB | :white_check_mark: |
-| [**EPMCMBIBPC-448**](Data_storages/EPMCMBIBPC-448.md) | Validate bucket creating | :white_check_mark: |
-| [**EPMCMBIBPC-454**](Data_storages/EPMCMBIBPC-454.md) | Create subfolder in bucket | :white_check_mark: |
-| [**EPMCMBIBPC-455**](Data_storages/EPMCMBIBPC-455.md) | Folder navigation in bucket | :white_check_mark: |
-| [**EPMCMBIBPC-456**](Data_storages/EPMCMBIBPC-456.md) | File upload validation | :white_check_mark: |
-| [**EPMCMBIBPC-457**](Data_storages/EPMCMBIBPC-457.md) | File download validation | :white_check_mark: |
-| [**EPMCMBIBPC-458**](Data_storages/EPMCMBIBPC-458.md) | Folder editing | :white_check_mark: |
-| [**EPMCMBIBPC-459**](Data_storages/EPMCMBIBPC-459.md) | Validation of delete folder | :white_check_mark: |
-| [**EPMCMBIBPC-460**](Data_storages/EPMCMBIBPC-460.md) | Validation of delete folder with content | :white_check_mark: |
-| [**EPMCMBIBPC-461**](Data_storages/EPMCMBIBPC-461.md) | Delete several folders | :white_check_mark: |
-| [**EPMCMBIBPC-462**](Data_storages/EPMCMBIBPC-462.md) | Delete several files | :white_check_mark: |
-| [**EPMCMBIBPC-464**](Data_storages/EPMCMBIBPC-464.md) | Validation of "Clear selection" button | :white_check_mark: |
-| [**EPMCMBIBPC-467**](Data_storages/EPMCMBIBPC-467.md) | Validation of "Select page" button | :white_check_mark: |
-| [**EPMCMBIBPC-468**](Data_storages/EPMCMBIBPC-468.md) | File editing | :white_check_mark: |
-| [**EPMCMBIBPC-469**](Data_storages/EPMCMBIBPC-469.md) | Folder navigation in the address row | :white_check_mark: |
-| [**EPMCMBIBPC-470**](Data_storages/EPMCMBIBPC-470.md) | Bucket editing form | :white_check_mark: |
-| [**EPMCMBIBPC-471**](Data_storages/EPMCMBIBPC-471.md) | Edit bucket name | :white_check_mark: |
-| [**EPMCMBIBPC-472**](Data_storages/EPMCMBIBPC-472.md) | Edit bucket description | :white_check_mark: |
-| [**EPMCMBIBPC-473**](Data_storages/EPMCMBIBPC-473.md) | Edit bucket STS duration | :white_check_mark: |
-| [**EPMCMBIBPC-474**](Data_storages/EPMCMBIBPC-474.md) | Edit bucket LTS duration | :white_check_mark: |
-| [**EPMCMBIBPC-475**](Data_storages/EPMCMBIBPC-475.md) | Validation of "Refresh" button | :white_check_mark: |
-| [**EPMCMBIBPC-476**](Data_storages/EPMCMBIBPC-476.md) | Validate of bucket unregistering | :white_check_mark: |
-| [**EPMCMBIBPC-477**](Data_storages/EPMCMBIBPC-477.md) | Validate of existing bucket adding | :white_check_mark: |
-| [**EPMCMBIBPC-478**](Data_storages/EPMCMBIBPC-478.md) | Validate of bucket deleting | :white_check_mark: |
-| [**EPMCMBIBPC-481**](Data_storages/EPMCMBIBPC-481.md) | Validate of cancel button for edit bucket menu | :white_check_mark: |
-| [**EPMCMBIBPC-482**](Data_storages/EPMCMBIBPC-482.md) | Validate of cancel button for edit file menu | :white_check_mark: |
-| [**EPMCMBIBPC-483**](Data_storages/EPMCMBIBPC-483.md) | Validate of cancel button for edit folder menu | :white_check_mark: |
-| [**EPMCMBIBPC-484**](Data_storages/EPMCMBIBPC-484.md) | Validate of cancel button for delete folder menu | :white_check_mark: |
-| [**EPMCMBIBPC-485**](Data_storages/EPMCMBIBPC-485.md) | Validate of cancel button for delete file menu | :white_check_mark: |
-| [**EPMCMBIBPC-486**](Data_storages/EPMCMBIBPC-486.md) | Cancel of create folder in bucket | :white_check_mark: |
-| [**EPMCMBIBPC-487**](Data_storages/EPMCMBIBPC-487.md) | Validate of cancel bucket creating | :white_check_mark: |
-| [**EPMCMBIBPC-488**](Data_storages/EPMCMBIBPC-488.md) | Validate of cancel existing bucket adding | :white_check_mark: |
-| [**EPMCMBIBPC-489**](Data_storages/EPMCMBIBPC-489.md) | Validate of cancel bucket deleting | :white_check_mark: |
-| [**EPMCMBIBPC-490**](Data_storages/EPMCMBIBPC-490.md) | Validate of cancel deleting several folders | :white_check_mark: |
-| [**EPMCMBIBPC-491**](Data_storages/EPMCMBIBPC-491.md) | Create existing bucket (negative) | :white_check_mark: |
-| [**EPMCMBIBPC-492**](Data_storages/EPMCMBIBPC-492.md) | Create folder that have name of existing folder in bucket | :white_check_mark: |
-| [**EPMCMBIBPC-843**](Data_storages/EPMCMBIBPC-843.md) | [MANUAL] Bucket that haven't versioning creation |  |
-| [**TC-DATASTORAGES-1**](Data_storages/TC-DATASTORAGES-1.md) | Deactivate Download File Option |  |
-| [**TC-DATASTORAGES-2**](Data_storages/TC-DATASTORAGES-2.md) | Check API backups storages | :white_check_mark: |
-| [**1339_1**](Data_storages/1339_pipe_storage_ls_paging/1339_1.md) | Check `pipe storage ls` paging | :white_check_mark: |
-| [**1339_2**](Data_storages/1339_pipe_storage_ls_paging/1339_2.md) | Check `pipe storage ls` paging of versions | :white_check_mark: |
-| [**2182_1**](Data_storages/2182_2398/2182_1.md) | Validate FS Mount configure notifications Form | :white_check_mark: |
-| [**2182_2**](Data_storages/2182_2398/2182_2.md) | Validate FS Mount configure notifications Form for general User | :white_check_mark: |
-| [**2182_3**](Data_storages/2182_2398/2182_3.md) | MOUNT DISABLED Quota verification | :white_check_mark: |
-| [**2182_4**](Data_storages/2182_2398/2182_4.md) | READ ONLY Quota verification | :white_check_mark: |
-| [**2182_5**](Data_storages/2182_2398/2182_5.md) | Quota verification at back process | :white_check_mark: |
-| [**2182_6**](Data_storages/2182_2398/2182_6.md) | Validate quotas and storage size via UI | :white_check_mark: |
-| [**2398_1**](Data_storages/2182_2398/2398_1.md) | [Manual] Grace period for the FS quotas and Effective storage size |  |
-| [**2398_2**](Data_storages/2182_2398/2398_2.md) | [Manual] Grace period at double threshold case (2nd period exceeds earlier than 1st) |  |
-| [**2398_3**](Data_storages/2182_2398/2398_3.md) | [Manual] Grace period at double threshold case (2nd period exceeds later than 1st) |  |
-| [**2233_1**](Data_storages/2233/2233_1.md) | Check webdav access duration preference | :white_check_mark: |
-| [**2233_2**](Data_storages/2233/2233_2.md) | Check max number of storages with webdav access | :white_check_mark: |
-| [**2233_3**](Data_storages/2233/2233_3.md) | Check Disable link | :white_check_mark: |
-| [**2233_4**](Data_storages/2233/2233_4.md) | Check "Remove all" button | :white_check_mark: |
-| [**2233_5**](Data_storages/2233/2233_5.md) | Check help tooltip | :white_check_mark: |
-| [**4570_1**](Data_storages/4570/4570_1.md) | "Download"/"Download archive" selection items depend on what is selected | |
-| [**4570_2**](Data_storages/4570/4570_2.md) | "Download archive" name pop-up: defaults and validation | |
-| [**4570_3**](Data_storages/4570/4570_3.md) | Queue, track and download an archive | |
-| [**4570_4**](Data_storages/4570/4570_4.md) | Storage tasks window: cancel a task, paging | |
-| [**4570_5**](Data_storages/4570/4570_5.md) | Storage tasks window: the Owner column is admin/ROLE_STORAGE_ADMIN-only | |
-| [**4570_6**](Data_storages/4570/4570_6.md) | The per-user archive-download task cap blocks queueing | |
-| [**4570_7**](Data_storages/4570/4570_7.md) | An archive download fails once the selection exceeds the `maxFilesCount` configured in `system.async.tasks.config` | |
-| [**4570_8**](Data_storages/4570/4570_8.md) | An archive download fails once the selection exceeds the `maxSizeBytes` configured in `system.async.tasks.config` | |
-| [**4570_9**](Data_storages/4570/4570_9.md) | [MANUAL] A finished archive expires once the `ttlDays` configured in `system.async.tasks.config` has passed | |
-| [**4570_10**](Data_storages/4570/4570_10.md) | Storage tasks window: the Status filter's select-all box and "Reset to defaults" | |
-| [**4570_11**](Data_storages/4570/4570_11.md) | Storage tasks window: clearing the Owner filter by hand, and "Reset to defaults" | |
-| [**4570_12**](Data_storages/4570/4570_12.md) | Storage tasks window: the Owner filter takes a user picked from its suggestion list | |
-| [**4570_13**](Data_storages/4570/4570_13.md) | A user with read-only access can select a folder and download it as an archive | |
-| [**4570_14**](Data_storages/4570/4570_14.md) | A storage that allows no downloads offers no "Download archive" either | |
-| [**4570_15**](Data_storages/4570/4570_15.md) | Remove deletes only the selected items the user may write to | |
-| [**4570_16**](Data_storages/4570/4570_16.md) | Generate URL creates URLs only for the files that can be downloaded | |
-| [**4570_17**](Data_storages/4570/4570_17.md) | Restore is not offered for a selected folder the user may only read | |
-| [**EPMCMBIBPC-2274**](Data_storages/NFS_mount/EPMCMBIBPC-2274.md) | Validation of NFS storage creation | :white_check_mark: |
-| [**EPMCMBIBPC-2275**](Data_storages/NFS_mount/EPMCMBIBPC-2275.md) | Create existing NFS mount (negative), validation | :white_check_mark: |
-| [**EPMCMBIBPC-2276**](Data_storages/NFS_mount/EPMCMBIBPC-2276.md) | Create folder/file in NFS mount, validation | :white_check_mark: |
-| [**EPMCMBIBPC-2290**](Data_storages/NFS_mount/EPMCMBIBPC-2290.md) | [MANUAL] Validation of navigation buttons in NFS mount |  |
-| [**EPMCMBIBPC-2291**](Data_storages/NFS_mount/EPMCMBIBPC-2291.md) | [MANUAL] Validation of content view |  |
-| [**EPMCMBIBPC-2292**](Data_storages/NFS_mount/EPMCMBIBPC-2292.md) | [MANUAL] Validation of remove objects from NFS mount |  |
-| [**EPMCMBIBPC-2293**](Data_storages/NFS_mount/EPMCMBIBPC-2293.md) | [MANUAL] "Generate URL" button validation |  |
-| [**EPMCMBIBPC-2294**](Data_storages/NFS_mount/EPMCMBIBPC-2294.md) | [MANUAL] Folder navigation in NFS mount |  |
-| [**EPMCMBIBPC-2295**](Data_storages/NFS_mount/EPMCMBIBPC-2295.md) | Remove not empty folder on NFS mount | :white_check_mark: |
-| [**EPMCMBIBPC-2296**](Data_storages/NFS_mount/EPMCMBIBPC-2296.md) | [MANUAL] Validation of spaces in objects names for NFS mount |  |
-| [**EPMCMBIBPC-2297**](Data_storages/NFS_mount/EPMCMBIBPC-2297.md) | [MANUAL] Validation of alias and description editing for NFS mount |  |
-| [**EPMCMBIBPC-2298**](Data_storages/NFS_mount/EPMCMBIBPC-2298.md) | [MANUAL] Validation of spaces and slash symbol in NFS mount path |  |
-| [**EPMCMBIBPC-2300**](Data_storages/NFS_mount/EPMCMBIBPC-2300.md) | [Negative] validate of exception if user set invalid mount-point for NFS mount | :white_check_mark: |
-| [**EPMCMBIBPC-2301**](Data_storages/NFS_mount/EPMCMBIBPC-2301.md) | [MANUAL] Validation of mounting NFS in docker container |  |
-| [**EPMCMBIBPC-2302**](Data_storages/NFS_mount/EPMCMBIBPC-2302.md) | [MANUAL] Validation of access to NFS from container |  |
-| [**EPMCMBIBPC-2303**](Data_storages/NFS_mount/EPMCMBIBPC-2303.md) | [MANUAL] Using of Input/output data from NFS in pipeline validation |  |
-| [**EPMCMBIBPC-2304**](Data_storages/NFS_mount/EPMCMBIBPC-2304.md) | [Negative] Validate of handling invalid path of NFS mount | :white_check_mark: |
-| [**EPMCMBIBPC-2307**](Data_storages/NFS_mount/EPMCMBIBPC-2307.md) | Validation of NFS mount unregister | :white_check_mark: |
-| [**EPMCMBIBPC-2308**](Data_storages/NFS_mount/EPMCMBIBPC-2308.md) | [MANUAL] Validation of NFS mount remove |  |
-| [**EPMCMBIBPC-2593**](Data_storages/NFS_mount/EPMCMBIBPC-2593.md) | NFS mount editing form | :white_check_mark: |
-| [**EPMCMBIBPC-2594**](Data_storages/NFS_mount/EPMCMBIBPC-2594.md) | NFS File upload/download validation | :white_check_mark: |
-| [**EPMCMBIBPC-2595**](Data_storages/NFS_mount/EPMCMBIBPC-2595.md) | NFS mount edit alias | :white_check_mark: |
-| [**EPMCMBIBPC-2597**](Data_storages/NFS_mount/EPMCMBIBPC-2597.md) | Navigate to sub-folder in NFS mount | :white_check_mark: |
-| [**EPMCMBIBPC-2598**](Data_storages/NFS_mount/EPMCMBIBPC-2598.md) | [Negative] Create existing folder/file in NFS mount, validation | :white_check_mark: |
-| [**EPMCMBIBPC-2599**](Data_storages/NFS_mount/EPMCMBIBPC-2599.md) | Validation of folder name editing | :white_check_mark: |
-| [**EPMCMBIBPC-2600**](Data_storages/NFS_mount/EPMCMBIBPC-2600.md) | Validation of file name editing | :white_check_mark: |
-| [**EPMCMBIBPC-2601**](Data_storages/NFS_mount/EPMCMBIBPC-2601.md) | Validation of remove several files and folders from NFS mount | :white_check_mark: |
-| [**EPMCMBIBPC-2602**](Data_storages/NFS_mount/EPMCMBIBPC-2602.md) | Validate of "select page" button behavior | :white_check_mark: |
-| [**EPMCMBIBPC-2603**](Data_storages/NFS_mount/EPMCMBIBPC-2603.md) | Validation of NFS storage creation with spaces in path | :white_check_mark: |
-| [**EPMCMBIBPC-2604**](Data_storages/NFS_mount/EPMCMBIBPC-2604.md) | Create files and folders with spaces in name | :white_check_mark: |
-| [**EPMCMBIBPC-2605**](Data_storages/NFS_mount/EPMCMBIBPC-2605.md) | Remove files and folders with spaces in name | :white_check_mark: |
-| [**4599_1**](Data_storages/NFS_mount/4599/4599_1.md) | Exclude NFS storage from file indexing by metadata attribute |  |
-| [**4599_2**](Data_storages/NFS_mount/4599/4599_2.md) | Resume NFS storage file indexing after removing the exclusion attribute |  |
-| [**4599_3**](Data_storages/NFS_mount/4599/4599_3.md) | NFS storage with Billing status=Exclude attribute isn't shown in the Billing report |  |
-| [**4599_4**](Data_storages/NFS_mount/4599/4599_4.md) | "Standard size" of an excluded NFS storage doesn't change after adding files and re-indexing |  |
+| Case ID                                                                 | Description/name | Automated |
+|-------------------------------------------------------------------------| --- | :---: |
+| [**1469**](Data_storages/1469.md)                                       | Check transfer between regions | :white_check_mark: |
+| [**EPMCMBIBPC-1017**](Data_storages/EPMCMBIBPC-1017.md)                 | Cross button validation if user delete bucket | :white_check_mark: |
+| [**EPMCMBIBPC-1035**](Data_storages/EPMCMBIBPC-1035.md)                 | Validation of navigation buttons in storage | :white_check_mark: |
+| [**EPMCMBIBPC-1178**](Data_storages/EPMCMBIBPC-1178.md)                 | [MANUAL] Validation of upload several files |  |
+| [**EPMCMBIBPC-1186**](Data_storages/EPMCMBIBPC-1186.md)                 | [MANUAL] "Generate URL" button validation |  |
+| [**EPMCMBIBPC-1467**](Data_storages/EPMCMBIBPC-1467.md)                 | [MANUAL] File/Folder creation pop-up focus validation |  |
+| [**EPMCMBIBPC-1468**](Data_storages/EPMCMBIBPC-1468.md)                 | [MANUAL] Edit file/folder pop-up focus validation |  |
+| [**EPMCMBIBPC-1469**](Data_storages/EPMCMBIBPC-1469.md)                 | [MANUAL] Edit storage pop-up focus validation |  |
+| [**EPMCMBIBPC-1470**](Data_storages/EPMCMBIBPC-1470.md)                 | [MANUAL] Create storage pop-up focus validation |  |
+| [**EPMCMBIBPC-1542**](Data_storages/EPMCMBIBPC-1542.md)                 | [MANUAL] Validate of file content editing |  |
+| [**EPMCMBIBPC-1549**](Data_storages/EPMCMBIBPC-1549.md)                 | [MANUAL] Create nameless folder |  |
+| [**EPMCMBIBPC-3232**](Data_storages/EPMCMBIBPC-3232.md)                 | [MANUAL] Storage synchronization from the DynamoDB | :white_check_mark: |
+| [**EPMCMBIBPC-448**](Data_storages/EPMCMBIBPC-448.md)                   | Validate bucket creating | :white_check_mark: |
+| [**EPMCMBIBPC-454**](Data_storages/EPMCMBIBPC-454.md)                   | Create subfolder in bucket | :white_check_mark: |
+| [**EPMCMBIBPC-455**](Data_storages/EPMCMBIBPC-455.md)                   | Folder navigation in bucket | :white_check_mark: |
+| [**EPMCMBIBPC-456**](Data_storages/EPMCMBIBPC-456.md)                   | File upload validation | :white_check_mark: |
+| [**EPMCMBIBPC-457**](Data_storages/EPMCMBIBPC-457.md)                   | File download validation | :white_check_mark: |
+| [**EPMCMBIBPC-458**](Data_storages/EPMCMBIBPC-458.md)                   | Folder editing | :white_check_mark: |
+| [**EPMCMBIBPC-459**](Data_storages/EPMCMBIBPC-459.md)                   | Validation of delete folder | :white_check_mark: |
+| [**EPMCMBIBPC-460**](Data_storages/EPMCMBIBPC-460.md)                   | Validation of delete folder with content | :white_check_mark: |
+| [**EPMCMBIBPC-461**](Data_storages/EPMCMBIBPC-461.md)                   | Delete several folders | :white_check_mark: |
+| [**EPMCMBIBPC-462**](Data_storages/EPMCMBIBPC-462.md)                   | Delete several files | :white_check_mark: |
+| [**EPMCMBIBPC-464**](Data_storages/EPMCMBIBPC-464.md)                   | Validation of "Clear selection" button | :white_check_mark: |
+| [**EPMCMBIBPC-467**](Data_storages/EPMCMBIBPC-467.md)                   | Validation of "Select page" button | :white_check_mark: |
+| [**EPMCMBIBPC-468**](Data_storages/EPMCMBIBPC-468.md)                   | File editing | :white_check_mark: |
+| [**EPMCMBIBPC-469**](Data_storages/EPMCMBIBPC-469.md)                   | Folder navigation in the address row | :white_check_mark: |
+| [**EPMCMBIBPC-470**](Data_storages/EPMCMBIBPC-470.md)                   | Bucket editing form | :white_check_mark: |
+| [**EPMCMBIBPC-471**](Data_storages/EPMCMBIBPC-471.md)                   | Edit bucket name | :white_check_mark: |
+| [**EPMCMBIBPC-472**](Data_storages/EPMCMBIBPC-472.md)                   | Edit bucket description | :white_check_mark: |
+| [**EPMCMBIBPC-473**](Data_storages/EPMCMBIBPC-473.md)                   | Edit bucket STS duration | :white_check_mark: |
+| [**EPMCMBIBPC-474**](Data_storages/EPMCMBIBPC-474.md)                   | Edit bucket LTS duration | :white_check_mark: |
+| [**EPMCMBIBPC-475**](Data_storages/EPMCMBIBPC-475.md)                   | Validation of "Refresh" button | :white_check_mark: |
+| [**EPMCMBIBPC-476**](Data_storages/EPMCMBIBPC-476.md)                   | Validate of bucket unregistering | :white_check_mark: |
+| [**EPMCMBIBPC-477**](Data_storages/EPMCMBIBPC-477.md)                   | Validate of existing bucket adding | :white_check_mark: |
+| [**EPMCMBIBPC-478**](Data_storages/EPMCMBIBPC-478.md)                   | Validate of bucket deleting | :white_check_mark: |
+| [**EPMCMBIBPC-481**](Data_storages/EPMCMBIBPC-481.md)                   | Validate of cancel button for edit bucket menu | :white_check_mark: |
+| [**EPMCMBIBPC-482**](Data_storages/EPMCMBIBPC-482.md)                   | Validate of cancel button for edit file menu | :white_check_mark: |
+| [**EPMCMBIBPC-483**](Data_storages/EPMCMBIBPC-483.md)                   | Validate of cancel button for edit folder menu | :white_check_mark: |
+| [**EPMCMBIBPC-484**](Data_storages/EPMCMBIBPC-484.md)                   | Validate of cancel button for delete folder menu | :white_check_mark: |
+| [**EPMCMBIBPC-485**](Data_storages/EPMCMBIBPC-485.md)                   | Validate of cancel button for delete file menu | :white_check_mark: |
+| [**EPMCMBIBPC-486**](Data_storages/EPMCMBIBPC-486.md)                   | Cancel of create folder in bucket | :white_check_mark: |
+| [**EPMCMBIBPC-487**](Data_storages/EPMCMBIBPC-487.md)                   | Validate of cancel bucket creating | :white_check_mark: |
+| [**EPMCMBIBPC-488**](Data_storages/EPMCMBIBPC-488.md)                   | Validate of cancel existing bucket adding | :white_check_mark: |
+| [**EPMCMBIBPC-489**](Data_storages/EPMCMBIBPC-489.md)                   | Validate of cancel bucket deleting | :white_check_mark: |
+| [**EPMCMBIBPC-490**](Data_storages/EPMCMBIBPC-490.md)                   | Validate of cancel deleting several folders | :white_check_mark: |
+| [**EPMCMBIBPC-491**](Data_storages/EPMCMBIBPC-491.md)                   | Create existing bucket (negative) | :white_check_mark: |
+| [**EPMCMBIBPC-492**](Data_storages/EPMCMBIBPC-492.md)                   | Create folder that have name of existing folder in bucket | :white_check_mark: |
+| [**EPMCMBIBPC-843**](Data_storages/EPMCMBIBPC-843.md)                   | [MANUAL] Bucket that haven't versioning creation |  |
+| [**TC-DATASTORAGES-1**](Data_storages/TC-DATASTORAGES-1.md)             | Deactivate Download File Option |  |
+| [**TC-DATASTORAGES-2**](Data_storages/TC-DATASTORAGES-2.md)             | Check API backups storages | :white_check_mark: |
+| [**1339_1**](Data_storages/1339_pipe_storage_ls_paging/1339_1.md)       | Check `pipe storage ls` paging | :white_check_mark: |
+| [**1339_2**](Data_storages/1339_pipe_storage_ls_paging/1339_2.md)       | Check `pipe storage ls` paging of versions | :white_check_mark: |
+| [**2182_1**](Data_storages/2182_2398/2182_1.md)                         | Validate FS Mount configure notifications Form | :white_check_mark: |
+| [**2182_2**](Data_storages/2182_2398/2182_2.md)                         | Validate FS Mount configure notifications Form for general User | :white_check_mark: |
+| [**2182_3**](Data_storages/2182_2398/2182_3.md)                         | MOUNT DISABLED Quota verification | :white_check_mark: |
+| [**2182_4**](Data_storages/2182_2398/2182_4.md)                         | READ ONLY Quota verification | :white_check_mark: |
+| [**2182_5**](Data_storages/2182_2398/2182_5.md)                         | Quota verification at back process | :white_check_mark: |
+| [**2182_6**](Data_storages/2182_2398/2182_6.md)                         | Validate quotas and storage size via UI | :white_check_mark: |
+| [**2398_1**](Data_storages/2182_2398/2398_1.md)                         | [Manual] Grace period for the FS quotas and Effective storage size |  |
+| [**2398_2**](Data_storages/2182_2398/2398_2.md)                         | [Manual] Grace period at double threshold case (2nd period exceeds earlier than 1st) |  |
+| [**2398_3**](Data_storages/2182_2398/2398_3.md)                         | [Manual] Grace period at double threshold case (2nd period exceeds later than 1st) |  |
+| [**2233_1**](Data_storages/2233/2233_1.md)                              | Check webdav access duration preference | :white_check_mark: |
+| [**2233_2**](Data_storages/2233/2233_2.md)                              | Check max number of storages with webdav access | :white_check_mark: |
+| [**2233_3**](Data_storages/2233/2233_3.md)                              | Check Disable link | :white_check_mark: |
+| [**2233_4**](Data_storages/2233/2233_4.md)                              | Check "Remove all" button | :white_check_mark: |
+| [**2233_5**](Data_storages/2233/2233_5.md)                              | Check help tooltip | :white_check_mark: |
+| [**4570_1**](Data_storages/4570/4570_1.md)                              | "Download"/"Download archive" selection items depend on what is selected | |
+| [**4570_2**](Data_storages/4570/4570_2.md)                              | "Download archive" name pop-up: defaults and validation | |
+| [**4570_3**](Data_storages/4570/4570_3.md)                              | Queue, track and download an archive | |
+| [**4570_4**](Data_storages/4570/4570_4.md)                              | Storage tasks window: cancel a task, paging | |
+| [**4570_5**](Data_storages/4570/4570_5.md)                              | Storage tasks window: the Owner column is admin/ROLE_STORAGE_ADMIN-only | |
+| [**4570_6**](Data_storages/4570/4570_6.md)                              | The per-user archive-download task cap blocks queueing | |
+| [**4570_7**](Data_storages/4570/4570_7.md)                              | An archive download fails once the selection exceeds the `maxFilesCount` configured in `system.async.tasks.config` | |
+| [**4570_8**](Data_storages/4570/4570_8.md)                              | An archive download fails once the selection exceeds the `maxSizeBytes` configured in `system.async.tasks.config` | |
+| [**4570_9**](Data_storages/4570/4570_9.md)                              | [MANUAL] A finished archive expires once the `ttlDays` configured in `system.async.tasks.config` has passed | |
+| [**4570_10**](Data_storages/4570/4570_10.md)                            | Storage tasks window: the Status filter's select-all box and "Reset to defaults" | |
+| [**4570_11**](Data_storages/4570/4570_11.md)                            | Storage tasks window: clearing the Owner filter by hand, and "Reset to defaults" | |
+| [**4570_12**](Data_storages/4570/4570_12.md)                            | Storage tasks window: the Owner filter takes a user picked from its suggestion list | |
+| [**4570_13**](Data_storages/4570/4570_13.md)                            | A user with read-only access can select a folder and download it as an archive | |
+| [**4570_14**](Data_storages/4570/4570_14.md)                            | A storage that allows no downloads offers no "Download archive" either | |
+| [**4570_15**](Data_storages/4570/4570_15.md)                            | Remove deletes only the selected items the user may write to | |
+| [**4570_16**](Data_storages/4570/4570_16.md)                            | Generate URL creates URLs only for the files that can be downloaded | |
+| [**4570_17**](Data_storages/4570/4570_17.md)                            | Restore is not offered for a selected folder the user may only read | |
+| [**EPMCMBIBPC-2274**](Data_storages/NFS_mount/EPMCMBIBPC-2274.md)       | Validation of NFS storage creation | :white_check_mark: |
+| [**EPMCMBIBPC-2275**](Data_storages/NFS_mount/EPMCMBIBPC-2275.md)       | Create existing NFS mount (negative), validation | :white_check_mark: |
+| [**EPMCMBIBPC-2276**](Data_storages/NFS_mount/EPMCMBIBPC-2276.md)       | Create folder/file in NFS mount, validation | :white_check_mark: |
+| [**EPMCMBIBPC-2290**](Data_storages/NFS_mount/EPMCMBIBPC-2290.md)       | [MANUAL] Validation of navigation buttons in NFS mount |  |
+| [**EPMCMBIBPC-2291**](Data_storages/NFS_mount/EPMCMBIBPC-2291.md)       | [MANUAL] Validation of content view |  |
+| [**EPMCMBIBPC-2292**](Data_storages/NFS_mount/EPMCMBIBPC-2292.md)       | [MANUAL] Validation of remove objects from NFS mount |  |
+| [**EPMCMBIBPC-2293**](Data_storages/NFS_mount/EPMCMBIBPC-2293.md)       | [MANUAL] "Generate URL" button validation |  |
+| [**EPMCMBIBPC-2294**](Data_storages/NFS_mount/EPMCMBIBPC-2294.md)       | [MANUAL] Folder navigation in NFS mount |  |
+| [**EPMCMBIBPC-2295**](Data_storages/NFS_mount/EPMCMBIBPC-2295.md)       | Remove not empty folder on NFS mount | :white_check_mark: |
+| [**EPMCMBIBPC-2296**](Data_storages/NFS_mount/EPMCMBIBPC-2296.md)       | [MANUAL] Validation of spaces in objects names for NFS mount |  |
+| [**EPMCMBIBPC-2297**](Data_storages/NFS_mount/EPMCMBIBPC-2297.md)       | [MANUAL] Validation of alias and description editing for NFS mount |  |
+| [**EPMCMBIBPC-2298**](Data_storages/NFS_mount/EPMCMBIBPC-2298.md)       | [MANUAL] Validation of spaces and slash symbol in NFS mount path |  |
+| [**EPMCMBIBPC-2300**](Data_storages/NFS_mount/EPMCMBIBPC-2300.md)       | [Negative] validate of exception if user set invalid mount-point for NFS mount | :white_check_mark: |
+| [**EPMCMBIBPC-2301**](Data_storages/NFS_mount/EPMCMBIBPC-2301.md)       | [MANUAL] Validation of mounting NFS in docker container |  |
+| [**EPMCMBIBPC-2302**](Data_storages/NFS_mount/EPMCMBIBPC-2302.md)       | [MANUAL] Validation of access to NFS from container |  |
+| [**EPMCMBIBPC-2303**](Data_storages/NFS_mount/EPMCMBIBPC-2303.md)       | [MANUAL] Using of Input/output data from NFS in pipeline validation |  |
+| [**EPMCMBIBPC-2304**](Data_storages/NFS_mount/EPMCMBIBPC-2304.md)       | [Negative] Validate of handling invalid path of NFS mount | :white_check_mark: |
+| [**EPMCMBIBPC-2307**](Data_storages/NFS_mount/EPMCMBIBPC-2307.md)       | Validation of NFS mount unregister | :white_check_mark: |
+| [**EPMCMBIBPC-2308**](Data_storages/NFS_mount/EPMCMBIBPC-2308.md)       | [MANUAL] Validation of NFS mount remove |  |
+| [**EPMCMBIBPC-2593**](Data_storages/NFS_mount/EPMCMBIBPC-2593.md)       | NFS mount editing form | :white_check_mark: |
+| [**EPMCMBIBPC-2594**](Data_storages/NFS_mount/EPMCMBIBPC-2594.md)       | NFS File upload/download validation | :white_check_mark: |
+| [**EPMCMBIBPC-2595**](Data_storages/NFS_mount/EPMCMBIBPC-2595.md)       | NFS mount edit alias | :white_check_mark: |
+| [**EPMCMBIBPC-2597**](Data_storages/NFS_mount/EPMCMBIBPC-2597.md)       | Navigate to sub-folder in NFS mount | :white_check_mark: |
+| [**EPMCMBIBPC-2598**](Data_storages/NFS_mount/EPMCMBIBPC-2598.md)       | [Negative] Create existing folder/file in NFS mount, validation | :white_check_mark: |
+| [**EPMCMBIBPC-2599**](Data_storages/NFS_mount/EPMCMBIBPC-2599.md)       | Validation of folder name editing | :white_check_mark: |
+| [**EPMCMBIBPC-2600**](Data_storages/NFS_mount/EPMCMBIBPC-2600.md)       | Validation of file name editing | :white_check_mark: |
+| [**EPMCMBIBPC-2601**](Data_storages/NFS_mount/EPMCMBIBPC-2601.md)       | Validation of remove several files and folders from NFS mount | :white_check_mark: |
+| [**EPMCMBIBPC-2602**](Data_storages/NFS_mount/EPMCMBIBPC-2602.md)       | Validate of "select page" button behavior | :white_check_mark: |
+| [**EPMCMBIBPC-2603**](Data_storages/NFS_mount/EPMCMBIBPC-2603.md)       | Validation of NFS storage creation with spaces in path | :white_check_mark: |
+| [**EPMCMBIBPC-2604**](Data_storages/NFS_mount/EPMCMBIBPC-2604.md)       | Create files and folders with spaces in name | :white_check_mark: |
+| [**EPMCMBIBPC-2605**](Data_storages/NFS_mount/EPMCMBIBPC-2605.md)       | Remove files and folders with spaces in name | :white_check_mark: |
+| [**4599_1**](Data_storages/NFS_mount/4599/4599_1.md)                    | Exclude NFS storage from file indexing by metadata attribute |  |
+| [**4599_2**](Data_storages/NFS_mount/4599/4599_2.md)                    | Resume NFS storage file indexing after removing the exclusion attribute |  |
+| [**4599_3**](Data_storages/NFS_mount/4599/4599_3.md)                    | NFS storage with Billing status=Exclude attribute isn't shown in the Billing report |  |
+| [**4599_4**](Data_storages/NFS_mount/4599/4599_4.md)                    | "Standard size" of an excluded NFS storage doesn't change after adding files and re-indexing |  |
 | [**EPMCMBIBPC-2401**](Data_storages/Shared_storages/EPMCMBIBPC-2401.md) | [MANUAL] Validation of shared bucket creation |  |
 | [**EPMCMBIBPC-2402**](Data_storages/Shared_storages/EPMCMBIBPC-2402.md) | [MANUAL] Check access to shared bucket |  |
 | [**EPMCMBIBPC-2403**](Data_storages/Shared_storages/EPMCMBIBPC-2403.md) | [MANUAL] Upload files on shared bucket |  |
@@ -287,39 +287,54 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-1283**](Data_storages/Version_control/EPMCMBIBPC-1283.md) | [MANUAL] Validation of hard deletion files with common keys |  |
 | [**EPMCMBIBPC-1502**](Data_storages/Version_control/EPMCMBIBPC-1502.md) | Deleting bucket after the disable of versioning | :white_check_mark: |
 | [**EPMCMBIBPC-1540**](Data_storages/Version_control/EPMCMBIBPC-1540.md) | Delete one of sibling files | :white_check_mark: |
-| [**EPMCMBIBPC-813**](Data_storages/Version_control/EPMCMBIBPC-813.md) | Validation of "Show files versions" behavior | :white_check_mark: |
-| [**EPMCMBIBPC-815**](Data_storages/Version_control/EPMCMBIBPC-815.md) | Delete file by non admin user | :white_check_mark: |
-| [**EPMCMBIBPC-816**](Data_storages/Version_control/EPMCMBIBPC-816.md) | Restore file validation | :white_check_mark: |
-| [**EPMCMBIBPC-820**](Data_storages/Version_control/EPMCMBIBPC-820.md) | Check versions if user update file | :white_check_mark: |
-| [**EPMCMBIBPC-841**](Data_storages/Version_control/EPMCMBIBPC-841.md) | Delete file that has delete marker | :white_check_mark: |
-| [**EPMCMBIBPC-842**](Data_storages/Version_control/EPMCMBIBPC-842.md) | Delete empty folder validation | :white_check_mark: |
-| [**EPMCMBIBPC-844**](Data_storages/Version_control/EPMCMBIBPC-844.md) | Mark for deletion not empty folder | :white_check_mark: |
-| [**EPMCMBIBPC-845**](Data_storages/Version_control/EPMCMBIBPC-845.md) | Delete not empty folder | :white_check_mark: |
-| [**EPMCMBIBPC-854**](Data_storages/Version_control/EPMCMBIBPC-854.md) | Read permission test for bucket that have enabled versioning | :white_check_mark: |
-| [**EPMCMBIBPC-855**](Data_storages/Version_control/EPMCMBIBPC-855.md) | Edit permission test for bucket that have enabled versioning | :white_check_mark: |
-| [**EPMCMBIBPC-877**](Data_storages/Version_control/EPMCMBIBPC-877.md) | [MANUAL] Validation of mark for deletion file |  |
-| [**EPMCMBIBPC-881**](Data_storages/Version_control/EPMCMBIBPC-881.md) | [MANUAL] Validation of restore marked for deletion file |  |
-| [**EPMCMBIBPC-882**](Data_storages/Version_control/EPMCMBIBPC-882.md) | [MANUAL] Validation of file versions |  |
-| [**EPMCMBIBPC-883**](Data_storages/Version_control/EPMCMBIBPC-883.md) | [MANUAL] Validation of restore specified version |  |
-| [**EPMCMBIBPC-884**](Data_storages/Version_control/EPMCMBIBPC-884.md) | [MANUAL] Validation hard deletion file |  |
-| [**EPMCMBIBPC-885**](Data_storages/Version_control/EPMCMBIBPC-885.md) | [MANUAL] Validation of mark for deletion non-empty folder |  |
-| [**EPMCMBIBPC-886**](Data_storages/Version_control/EPMCMBIBPC-886.md) | [MANUAL] Validation of restore marked for deletion non-empty folder |  |
-| [**EPMCMBIBPC-887**](Data_storages/Version_control/EPMCMBIBPC-887.md) | [MANUAL] Validation hard deletion non-empty folder |  |
-| [**EPMCMBIBPC-888**](Data_storages/Version_control/EPMCMBIBPC-888.md) | Restore specified file version validation | :white_check_mark: |
-| [**EPMCMBIBPC-889**](Data_storages/Version_control/EPMCMBIBPC-889.md) | [MANUAL] Validation of mark for deletion file for non-admin user |  |
-| [**EPMCMBIBPC-890**](Data_storages/Version_control/EPMCMBIBPC-890.md) | [MANUAL] Validation of mark for deletion non-empty folder for non-admin user |  |
-| [**EPMCMBIBPC-891**](Data_storages/Version_control/EPMCMBIBPC-891.md) | [MANUAL] [Negative] Validation of file versions for non-admin and non-owner user |  |
-| [**EPMCMBIBPC-892**](Data_storages/Version_control/EPMCMBIBPC-892.md) | [MANUAL] [Negative] Validation hard deletion file for non-admin and non-owner user |  |
-| [**EPMCMBIBPC-893**](Data_storages/Version_control/EPMCMBIBPC-893.md) | [MANUAL] [Negative] Validation of restore marked for deletion non-empty folder for non-admin and non-owner user |  |
-| [**EPMCMBIBPC-894**](Data_storages/Version_control/EPMCMBIBPC-894.md) | [MANUAL] [Negative] Validation of restore marked for deletion file for non admin and non-owner user |  |
-| [**EPMCMBIBPC-895**](Data_storages/Version_control/EPMCMBIBPC-895.md) | [MANUAL] [Negative] Validation hard deletion non-empty folder for non-admin and non-owner user |  |
-| [**EPMCMBIBPC-945**](Data_storages/Version_control/EPMCMBIBPC-945.md) | [MANUAL] [Negative] Try to mark for delete unexisting file |  |
-| [**EPMCMBIBPC-946**](Data_storages/Version_control/EPMCMBIBPC-946.md) | [MANUAL] [Negative] Try to hard delete unexisting file |  |
-| [**EPMCMBIBPC-947**](Data_storages/Version_control/EPMCMBIBPC-947.md) | [MANUAL] [Negative] Try to restore unexciting file version |  |
-| [**EPMCMBIBPC-948**](Data_storages/Version_control/EPMCMBIBPC-948.md) | [MANUAL] [Negative] Try to restore not removed file |  |
-| [**EPMCMBIBPC-949**](Data_storages/Version_control/EPMCMBIBPC-949.md) | [MANUAL] [Negative] Try to restore latest version of file |  |
-| [**EPMCMBIBPC-993**](Data_storages/Version_control/EPMCMBIBPC-993.md) | [MANUAL] Validation of hard deletion of marked for delete file |  |
-| [**EPMCMBIBPC-998**](Data_storages/Version_control/EPMCMBIBPC-998.md) | [MANUAL] Validation of hard deletion of marked for non-empty folder |  |
+| [**EPMCMBIBPC-813**](Data_storages/Version_control/EPMCMBIBPC-813.md)   | Validation of "Show files versions" behavior | :white_check_mark: |
+| [**EPMCMBIBPC-815**](Data_storages/Version_control/EPMCMBIBPC-815.md)   | Delete file by non admin user | :white_check_mark: |
+| [**EPMCMBIBPC-816**](Data_storages/Version_control/EPMCMBIBPC-816.md)   | Restore file validation | :white_check_mark: |
+| [**EPMCMBIBPC-820**](Data_storages/Version_control/EPMCMBIBPC-820.md)   | Check versions if user update file | :white_check_mark: |
+| [**EPMCMBIBPC-841**](Data_storages/Version_control/EPMCMBIBPC-841.md)   | Delete file that has delete marker | :white_check_mark: |
+| [**EPMCMBIBPC-842**](Data_storages/Version_control/EPMCMBIBPC-842.md)   | Delete empty folder validation | :white_check_mark: |
+| [**EPMCMBIBPC-844**](Data_storages/Version_control/EPMCMBIBPC-844.md)   | Mark for deletion not empty folder | :white_check_mark: |
+| [**EPMCMBIBPC-845**](Data_storages/Version_control/EPMCMBIBPC-845.md)   | Delete not empty folder | :white_check_mark: |
+| [**EPMCMBIBPC-854**](Data_storages/Version_control/EPMCMBIBPC-854.md)   | Read permission test for bucket that have enabled versioning | :white_check_mark: |
+| [**EPMCMBIBPC-855**](Data_storages/Version_control/EPMCMBIBPC-855.md)   | Edit permission test for bucket that have enabled versioning | :white_check_mark: |
+| [**EPMCMBIBPC-877**](Data_storages/Version_control/EPMCMBIBPC-877.md)   | [MANUAL] Validation of mark for deletion file |  |
+| [**EPMCMBIBPC-881**](Data_storages/Version_control/EPMCMBIBPC-881.md)   | [MANUAL] Validation of restore marked for deletion file |  |
+| [**EPMCMBIBPC-882**](Data_storages/Version_control/EPMCMBIBPC-882.md)   | [MANUAL] Validation of file versions |  |
+| [**EPMCMBIBPC-883**](Data_storages/Version_control/EPMCMBIBPC-883.md)   | [MANUAL] Validation of restore specified version |  |
+| [**EPMCMBIBPC-884**](Data_storages/Version_control/EPMCMBIBPC-884.md)   | [MANUAL] Validation hard deletion file |  |
+| [**EPMCMBIBPC-885**](Data_storages/Version_control/EPMCMBIBPC-885.md)   | [MANUAL] Validation of mark for deletion non-empty folder |  |
+| [**EPMCMBIBPC-886**](Data_storages/Version_control/EPMCMBIBPC-886.md)   | [MANUAL] Validation of restore marked for deletion non-empty folder |  |
+| [**EPMCMBIBPC-887**](Data_storages/Version_control/EPMCMBIBPC-887.md)   | [MANUAL] Validation hard deletion non-empty folder |  |
+| [**EPMCMBIBPC-888**](Data_storages/Version_control/EPMCMBIBPC-888.md)   | Restore specified file version validation | :white_check_mark: |
+| [**EPMCMBIBPC-889**](Data_storages/Version_control/EPMCMBIBPC-889.md)   | [MANUAL] Validation of mark for deletion file for non-admin user |  |
+| [**EPMCMBIBPC-890**](Data_storages/Version_control/EPMCMBIBPC-890.md)   | [MANUAL] Validation of mark for deletion non-empty folder for non-admin user |  |
+| [**EPMCMBIBPC-891**](Data_storages/Version_control/EPMCMBIBPC-891.md)   | [MANUAL] [Negative] Validation of file versions for non-admin and non-owner user |  |
+| [**EPMCMBIBPC-892**](Data_storages/Version_control/EPMCMBIBPC-892.md)   | [MANUAL] [Negative] Validation hard deletion file for non-admin and non-owner user |  |
+| [**EPMCMBIBPC-893**](Data_storages/Version_control/EPMCMBIBPC-893.md)   | [MANUAL] [Negative] Validation of restore marked for deletion non-empty folder for non-admin and non-owner user |  |
+| [**EPMCMBIBPC-894**](Data_storages/Version_control/EPMCMBIBPC-894.md)   | [MANUAL] [Negative] Validation of restore marked for deletion file for non admin and non-owner user |  |
+| [**EPMCMBIBPC-895**](Data_storages/Version_control/EPMCMBIBPC-895.md)   | [MANUAL] [Negative] Validation hard deletion non-empty folder for non-admin and non-owner user |  |
+| [**EPMCMBIBPC-945**](Data_storages/Version_control/EPMCMBIBPC-945.md)   | [MANUAL] [Negative] Try to mark for delete unexisting file |  |
+| [**EPMCMBIBPC-946**](Data_storages/Version_control/EPMCMBIBPC-946.md)   | [MANUAL] [Negative] Try to hard delete unexisting file |  |
+| [**EPMCMBIBPC-947**](Data_storages/Version_control/EPMCMBIBPC-947.md)   | [MANUAL] [Negative] Try to restore unexciting file version |  |
+| [**EPMCMBIBPC-948**](Data_storages/Version_control/EPMCMBIBPC-948.md)   | [MANUAL] [Negative] Try to restore not removed file |  |
+| [**EPMCMBIBPC-949**](Data_storages/Version_control/EPMCMBIBPC-949.md)   | [MANUAL] [Negative] Try to restore latest version of file |  |
+| [**EPMCMBIBPC-993**](Data_storages/Version_control/EPMCMBIBPC-993.md)   | [MANUAL] Validation of hard deletion of marked for delete file |  |
+| [**EPMCMBIBPC-998**](Data_storages/Version_control/EPMCMBIBPC-998.md)   | [MANUAL] Validation of hard deletion of marked for non-empty folder |  |
+| [**4571_1**](Data_storages/4571/4571_1.md)                              | Picking an archive together with other files pauses the upload behind a confirmation pop-up |  |
+| [**4571_2**](Data_storages/4571/4571_2.md)                              | "Upload" on the confirmation pop-up uploads the archive as-is, without extracting it |  |
+| [**4571_3**](Data_storages/4571/4571_3.md)                              | "Upload and extract" uploads the batch, then queues extraction and closes |  |
+| [**4571_4**](Data_storages/4571/4571_4.md)                              | The upload confirmation pop-up is not offered outside NFS-mounted-NFS storages |  |
+| [**4571_5**](Data_storages/4571/4571_5.md)                              | The Storage tasks window: its columns, the task type, and filtering on one type |  |
+| [**4571_6**](Data_storages/4571/4571_6.md)                              | An extraction task offers Cancel, and never Download |  |
+| [**4571_7**](Data_storages/4571/4571_7.md)                              | Extract archive from the storage's selection menu |  |
+| [**4571_8**](Data_storages/4571/4571_8.md)                              | [MANUAL] The archive-task allowance governs Upload and extract, and frees up on its own |  |
+| [**4571_9**](Data_storages/4571/4571_9.md)                              |  Extract archive is dimmed at the archive-task limit, and explains why |  |
+| [**4571_10**](Data_storages/4571/4571_10.md)                            | [MANUAL] A finished extraction raises its own notification, with no download link |  |
+| [**4571_11**](Data_storages/4571/4571_11.md)                            | An archive extraction fails before it is fetched once the archive itself exceeds `maxArchiveSizeBytes` configured in `system.async.tasks.config` |  |
+| [**4571_12**](Data_storages/4571/4571_12.md)                            | An archive extraction fails once its uncompressed content exceeds `maxSizeBytes` configured in `system.async.tasks.config` |  |
+| [**4571_13**](Data_storages/4571/4571_13.md)                            | An archive extraction fails once its entries exceed `maxFilesCount` configured in `system.async.tasks.config` |  |
+| [**4571_14**](Data_storages/4571/4571_14.md)                            | Files can be removed from the upload confirmation pop-up before anything is uploaded |  |
+| [**4571_15**](Data_storages/4571/4571_15.md)                            | Removing an archive brings the batch back under the archive-task allowance |  |
 
 </details>
 
