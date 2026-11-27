@@ -65,6 +65,8 @@ reset_config() {
   CP_SANDBOX_MASTER_INSTANCE_TYPE=t3.medium
   CP_SANDBOX_WORKER_INSTANCE_TYPE=t3.medium
   CP_SANDBOX_TTL_HOURS=48
+  CP_SANDBOX_IDP_METADATA_URL=
+  CP_SANDBOX_API_SSO_DIR=
   SG_VPC=
 }
 # Nothing waits between polls.

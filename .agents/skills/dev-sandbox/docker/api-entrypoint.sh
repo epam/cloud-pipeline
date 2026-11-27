@@ -5,9 +5,10 @@
 #   - routes the VPC through the tunnel's SOCKS proxy, so that the API and the node scripts it runs
 #     reach the platform's nodes, the master's registry and the master's private address, where
 #     the nodes reach this API;
-#   - makes the keystore the API serves HTTPS with, and the metadata of an identity provider that
-#     is not there, which its SAML setup reads, and has Java trust the API's certificate, which
-#     the API checks base.api.host against;
+#   - makes the keystore the API serves HTTPS with, and the metadata its SAML setup reads: the
+#     identity provider's, fetched from SANDBOX_IDP_METADATA_URL, or one of an identity provider
+#     that is not there; and has Java trust the API's certificate, which the API checks
+#     base.api.host against;
 #   - exports the secrets the API's settings name, read from their files;
 #   - copies the kubeconfig to ~/.kube/config, where the node scripts read it;
 #   - copies the sandbox's SSH key to SANDBOX_NODE_SSH_KEY, for root only, which the API logs in
@@ -22,6 +23,14 @@
 set -euo pipefail
 
 API_HOME=/var/lib/cp-sandbox-api
+# Where the API's SAML setup reads its identity provider's metadata, and the keystore it signs with,
+# under CP_API_SSO_CONFIG. SSO_ALIAS is the key it signs with, saml.sign.key in the API's settings.
+IDP_METADATA_FILE=$API_HOME/sso/cp-api-srv-fed-meta.xml
+IDP_STORE_FILE=$API_HOME/sso/store.jks
+IDP_FETCH_SECONDS=30
+IDP_FETCH_RETRIES=2
+SSO_ALIAS=sso
+SSO_STORE_NAME=store.jks
 STORE_PASSWORD=changeit
 TUN_DEVICE=tun0
 TUN_ADDRESS=198.18.0.1/15
@@ -61,30 +70,85 @@ SOCKS proxy; the API starts all the same, but cannot reach the VPC until the tun
   done
 }
 
-# Tomcat serves HTTPS with the key under the alias ssl; the API's SAML setup wants a key under sso
-# as well. Both are the API's own TLS key.
+# import_signing_key: the key the API signs its SAML authentication requests with, taken from the
+# keystore of SANDBOX_API_SSO_DIR, whose certificate an identity provider has registered as the
+# service provider's. Only that key is taken: Tomcat keeps serving the sandbox's own certificate,
+# which the platform's nodes reach the API by, and which the API checks base.api.host against.
+import_signing_key() {
+  local store=$SANDBOX_API_SSO_DIR/$SSO_STORE_NAME
+  if [[ ! -f $store ]]; then
+    log "no $SSO_STORE_NAME in $SANDBOX_API_SSO_DIR, which SANDBOX_API_SSO_DIR names"
+    exit 1
+  fi
+  if ! keytool -importkeystore -noprompt -srckeystore "$store" -srcstorepass "$STORE_PASSWORD" \
+    -srcalias "$SSO_ALIAS" -destkeystore "$IDP_STORE_FILE" -deststoretype JKS \
+    -deststorepass "$STORE_PASSWORD" -destkeypass "$STORE_PASSWORD" -destalias "$SSO_ALIAS" \
+    >/dev/null 2>&1; then
+    log "could not take the $SSO_ALIAS key of $store: it holds no such key, or its password is \
+not the one the API's settings name"
+    exit 1
+  fi
+  log "the API signs its authentication requests with the $SSO_ALIAS key of $store"
+}
+
+# Tomcat serves HTTPS with the key under the alias ssl, which is the sandbox's own: the platform's
+# nodes reach the API at the master's address, and the API checks base.api.host against that
+# certificate. The API's SAML setup signs its authentication requests with the key under sso, the
+# sandbox's own as well, unless SANDBOX_API_SSO_DIR names a keystore holding one an identity
+# provider has registered.
 make_keystore() {
   local alias
   mkdir -p "$API_HOME/sso"
-  rm -f "$API_HOME/sso/store.jks"
+  rm -f "$IDP_STORE_FILE"
   for alias in ssl sso; do
+    if [[ $alias == "$SSO_ALIAS" && -n ${SANDBOX_API_SSO_DIR:-} ]]; then
+      import_signing_key
+      continue
+    fi
     openssl pkcs12 -export -in "$SANDBOX_DIR/api-tls.crt" -inkey "$SANDBOX_DIR/api-tls-key.pem" \
       -name "$alias" -passout "pass:$STORE_PASSWORD" -out "$API_HOME/$alias.p12"
     keytool -importkeystore -noprompt -srckeystore "$API_HOME/$alias.p12" -srcstoretype PKCS12 \
-      -srcstorepass "$STORE_PASSWORD" -destkeystore "$API_HOME/sso/store.jks" -deststoretype JKS \
+      -srcstorepass "$STORE_PASSWORD" -destkeystore "$IDP_STORE_FILE" -deststoretype JKS \
       -deststorepass "$STORE_PASSWORD" -destkeypass "$STORE_PASSWORD" -alias "$alias" >/dev/null
     rm -f "$API_HOME/$alias.p12"
   done
 }
 
-# The API reads its SAML identity provider's metadata at startup, and retries, logging an error,
-# every few minutes while there is none. The sandbox has no identity provider, so the metadata
-# names one that is not there: the API's own certificate, and a sign-in address nothing serves.
-# Its REST API takes the JWT tokens alone.
+# fetch_idp_metadata <url>: the metadata of the identity provider the sandbox signs in through,
+# which the API reads in place of the one below. A body that is not identity provider metadata
+# stops the container here: the API would otherwise fail to start on it, leaving a Spring stack
+# trace in its log in place of a line saying what is wrong.
+fetch_idp_metadata() {
+  local url=$1 fetched=$IDP_METADATA_FILE.fetched
+  if ! curl --silent --show-error --fail --location --retry "$IDP_FETCH_RETRIES" \
+    --max-time "$IDP_FETCH_SECONDS" --output "$fetched" "$url"; then
+    rm -f "$fetched"
+    log "could not fetch the identity provider's metadata from $url"
+    exit 1
+  fi
+  if ! grep -q 'EntityDescriptor' "$fetched" || ! grep -q 'IDPSSODescriptor' "$fetched"; then
+    rm -f "$fetched"
+    log "$url answered no SAML identity provider metadata: no EntityDescriptor with an IDPSSODescriptor in it"
+    exit 1
+  fi
+  mv "$fetched" "$IDP_METADATA_FILE"
+  log "the API signs users in through the identity provider at $url"
+}
+
+# The API's SAML setup reads its identity provider's metadata as it starts, and the API fails to
+# start without metadata it can parse. With SANDBOX_IDP_METADATA_URL, that is the metadata of the
+# identity provider it names, and the API's port is published on the workstation's loopback address
+# for the browser (lib/services.sh). Without it, the sandbox has no identity provider, so the
+# metadata names one that is not there: the API's own certificate, and a sign-in address nothing
+# serves. Its REST API takes the JWT tokens either way.
 write_idp_metadata() {
   local cert
+  if [[ -n ${SANDBOX_IDP_METADATA_URL:-} ]]; then
+    fetch_idp_metadata "$SANDBOX_IDP_METADATA_URL"
+    return 0
+  fi
   cert=$(pem_body "$SANDBOX_DIR/api-tls.crt")
-  cat >"$API_HOME/sso/cp-api-srv-fed-meta.xml" <<EOF
+  cat >"$IDP_METADATA_FILE" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="urn:cp-sandbox:no-identity-provider">
   <md:IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">

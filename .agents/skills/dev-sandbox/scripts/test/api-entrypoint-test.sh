@@ -73,9 +73,18 @@ set_up() {
   stub ip 'if [[ "$1 $2" == "link show" ]]; then [[ -f $STUB_KEYSTORES/../tun-made ]]; exit; fi
 [[ "$1 $2" != "tuntap add" ]] || : >"$STUB_KEYSTORES/../tun-made"'
   stub tun2socks
-  stub curl '[[ -z ${STUB_CURL_FAILS:-} ]]'
-  # Keeps each keystore it is asked to import, to be looked at.
-  stub keytool 'prev=
+  # Writes STUB_CURL_BODY where --output names it, as curl writes what it fetched.
+  stub curl 'out= prev=
+for arg in "$@"; do
+  if [[ $prev == --output ]]; then out=$arg; fi
+  prev=$arg
+done
+[[ -z ${STUB_CURL_FAILS:-} ]] || exit 22
+[[ -z $out || -z ${STUB_CURL_BODY:-} ]] || printf "%s" "$STUB_CURL_BODY" >"$out"'
+  # Keeps each keystore it is asked to import, to be looked at. STUB_KEYTOOL_IMPORT_FAILS fails the
+  # import of one alias out of another keystore, as a keystore without that key would.
+  stub keytool '[[ -z ${STUB_KEYTOOL_IMPORT_FAILS:-} || " $* " != *" -srcalias "* ]] || exit 1
+prev=
 for arg in "$@"; do
   if [[ $prev == -srckeystore ]]; then cp "$arg" "$STUB_KEYSTORES/"; fi
   prev=$arg
@@ -166,6 +175,70 @@ test_entrypoint() {
     "$STATUS $(grep -c 'SANDBOX_NODE_SSH_KEY' "$OUTPUT") $(wc -l <"$STUB_CALLS")" '1 1 0'
 }
 
+# With SANDBOX_IDP_METADATA_URL, the API's SAML setup reads the metadata of the identity provider
+# it names, fetched as the container starts, and the container refuses to start without metadata the
+# API could parse.
+test_idp_metadata() {
+  local url=https://idp.example.com/metadata meta=/var/lib/cp-sandbox-api/sso/cp-api-srv-fed-meta.xml
+  local good='<EntityDescriptor entityID="urn:example:idp"><IDPSSODescriptor/></EntityDescriptor>'
+
+  SANDBOX_IDP_METADATA_URL=$url STUB_CURL_BODY=$good run java -jar api.jar
+  check "the metadata is the identity provider's, fetched from the URL, and the API starts" \
+    "$STATUS $(called curl | grep -c -- "--output $meta.fetched $url" || true) $(cat "$meta") $(grep -c "the API signs users in through the identity provider at $url" "$OUTPUT")" \
+    "0 1 $good 1"
+  check "and the fetch leaves nothing beside it" "$([[ -e $meta.fetched ]] && echo left)" ''
+
+  SANDBOX_IDP_METADATA_URL=$url STUB_CURL_BODY='<html>sign in here</html>' run java -jar api.jar
+  check "an answer that is not identity provider metadata stops the container, before the API runs" \
+    "$STATUS $(grep -c 'answered no SAML identity provider metadata' "$OUTPUT") $([[ -e $HANDED ]] && echo ran)" \
+    '1 1 '
+  check "and what the API read before is left as it was" "$(cat "$meta")" "$good"
+
+  SANDBOX_IDP_METADATA_URL=$url STUB_CURL_FAILS=1 run java -jar api.jar
+  check "an identity provider that does not answer stops it too" \
+    "$STATUS $(grep -c "could not fetch the identity provider's metadata from $url" "$OUTPUT") $([[ -e $HANDED ]] && echo ran)" \
+    '1 1 '
+
+  run java -jar api.jar
+  check "without the URL, the metadata names an identity provider that is not there again" \
+    "$STATUS $(grep -c 'entityID="urn:cp-sandbox:no-identity-provider"' "$meta") $(called curl | grep -c -- '--output.*fed-meta' || true)" \
+    '0 1 0'
+}
+
+# With SANDBOX_API_SSO_DIR, the key the API signs its authentication requests with is the one an
+# identity provider has registered, out of that directory's keystore, and only that key: Tomcat
+# keeps serving the sandbox's own certificate.
+test_signing_key() {
+  local sso=$WORK/api-sso store=$WORK/api-sso/store.jks
+
+  mkdir -p "$sso"
+  printf 'a keystore\n' >"$store"
+  rm -f "$STUB_KEYSTORES"/*
+  SANDBOX_API_SSO_DIR=$sso run java -jar api.jar
+  check "the sso key comes from that keystore, and the ssl key stays the sandbox's own" \
+    "$STATUS $(called keytool | grep -c -- "-srckeystore $store -srcstorepass changeit -srcalias sso" || true) $(openssl pkcs12 -in "$STUB_KEYSTORES/ssl.p12" -passin pass:changeit -nokeys 2>/dev/null | sed -n 's/^ *friendlyName: //p') $([[ -e $STUB_KEYSTORES/sso.p12 ]] && echo made)" \
+    "0 1 ssl "
+  check "and it says which keystore signs them" \
+    "$(grep -c "signs its authentication requests with the sso key of $store" "$OUTPUT")" 1
+
+  rm -f "$store"
+  SANDBOX_API_SSO_DIR=$sso run java -jar api.jar
+  check "a directory holding no keystore stops the container, before the API runs" \
+    "$STATUS $(grep -c "no store.jks in $sso" "$OUTPUT") $([[ -e $HANDED ]] && echo ran)" '1 1 '
+
+  printf 'a keystore\n' >"$store"
+  SANDBOX_API_SSO_DIR=$sso STUB_KEYTOOL_IMPORT_FAILS=1 run java -jar api.jar
+  check "a keystore without that key, or with another password, stops it too" \
+    "$STATUS $(grep -c "could not take the sso key of $store" "$OUTPUT") $([[ -e $HANDED ]] && echo ran)" \
+    '1 1 '
+
+  rm -f "$STUB_KEYSTORES"/*
+  run java -jar api.jar
+  check "without the directory, both keys are the sandbox's own certificate again" \
+    "$STATUS $(for alias in ssl sso; do openssl pkcs12 -in "$STUB_KEYSTORES/$alias.p12" -passin pass:changeit -nokeys 2>/dev/null | sed -n 's/^ *friendlyName: //p'; done | paste -sd ' ') $(called keytool | grep -c -- -srcalias || true)" \
+    '0 ssl sso 0'
+}
+
 # docker/service-entrypoint.sh, which the optional services' containers start with, in the same
 # image: it hands the command over with the admin's token in the environment, and nothing else.
 test_service_entrypoint() {
@@ -233,6 +306,8 @@ EOF
 
 set_up
 test_entrypoint
+test_idp_metadata
+test_signing_key
 test_service_entrypoint
 test_ui_entrypoint
 rm -rf "$WORK"

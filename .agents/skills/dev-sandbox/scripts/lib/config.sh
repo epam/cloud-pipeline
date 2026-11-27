@@ -51,6 +51,21 @@ Write KEY=value or KEY=\"value\", with no comment after it: a comment goes on a 
   is_positive_int "$CP_SANDBOX_TTL_HOURS" ||
     die "CP_SANDBOX_TTL_HOURS in $SANDBOX_ENV_FILE must be a whole number of hours, above 0"
 
+  # A config written before these keys knows nothing of them, so the commands read them with
+  # defaults.
+  CP_SANDBOX_IDP_METADATA_URL=${CP_SANDBOX_IDP_METADATA_URL:-}
+  case $CP_SANDBOX_IDP_METADATA_URL in
+    '' | http://* | https://*) ;;
+    *) die "CP_SANDBOX_IDP_METADATA_URL in $SANDBOX_ENV_FILE must be an http or https URL" ;;
+  esac
+  # The directory is on the workstation, which this image sees nothing of, so only the shape is
+  # checked here; the host looks for it, and for the keystore, when it mounts it (lib/services.sh).
+  CP_SANDBOX_API_SSO_DIR=${CP_SANDBOX_API_SSO_DIR:-}
+  case $CP_SANDBOX_API_SSO_DIR in
+    '' | /*) ;;
+    *) die "CP_SANDBOX_API_SSO_DIR in $SANDBOX_ENV_FILE must be an absolute path" ;;
+  esac
+
   # shellcheck disable=SC2034 # read by aws.sh and the commands
   SANDBOX_REGION=$AWS_REGION
 }

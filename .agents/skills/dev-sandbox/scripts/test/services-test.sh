@@ -53,6 +53,7 @@ kube.kubeadm.token=
 kube.kubeadm.cert.hash=
 kube.node.token=
 kube.cluster.name=
+server.ssl.endpoint.id=https://localhost:9999/pipeline/
 EOF
   for service in $OPTIONAL_SERVICES; do
     module=$(service_module "$service")
@@ -224,9 +225,9 @@ test_services_prepare() {
   check "api.properties and api.env hold no secret: the join token and the keys stay in their files" \
     "$(grep -c -e "$FAKE_TOKEN" -e "$(sed -n 2p "$dir/jwt-private-key.pem")" "$dir/api.properties" "$dir/api.env" "$(state_file "$name")" | cut -d: -f2 | paste -sd ' ')" \
     '0 0 0'
-  check "api.env gives the container the state, the VPC, the SOCKS proxy, the master, where to keep the SSH key and pipe-common's code" \
+  check "api.env gives the container the state, the VPC, the SOCKS proxy, the master, where to keep the SSH key, the identity provider and pipe-common's code" \
     "$(paste -sd '|' "$dir/api.env")" \
-    "SANDBOX_DIR=$dir|SANDBOX_VPC_CIDRS=10.0.0.0/16 10.1.0.0/16|SANDBOX_SOCKS_PROXY=cp-sandbox-dev-svc-master:1080|SANDBOX_MASTER_IP=10.0.0.7|SANDBOX_NODE_SSH_KEY=/root/.ssh/cp-sandbox-node-key.pem|PYTHONPATH=$SANDBOX_REPO_ROOT/workflows/pipe-common"
+    "SANDBOX_DIR=$dir|SANDBOX_VPC_CIDRS=10.0.0.0/16 10.1.0.0/16|SANDBOX_SOCKS_PROXY=cp-sandbox-dev-svc-master:1080|SANDBOX_MASTER_IP=10.0.0.7|SANDBOX_NODE_SSH_KEY=/root/.ssh/cp-sandbox-node-key.pem|SANDBOX_IDP_METADATA_URL=|SANDBOX_API_SSO_DIR=|PYTHONPATH=$SANDBOX_REPO_ROOT/workflows/pipe-common"
 
   cert_before=$(openssl x509 -in "$dir/api-tls.crt" -noout -fingerprint)
   base_before=$(state_get "$name" run_id_base)
@@ -257,6 +258,56 @@ test_services_prepare() {
   run_command cmd_services_prepare --name "$name"
   check "services-prepare needs the join token up fetched" \
     "$RUN_STATUS $(logged 'has no kube-join-token.secret in its local state: run up')" '1 1'
+  state_remove "$name"
+  reset_stubs
+}
+
+# The service provider address the API names, read from the checkout's own dev profile and from
+# made-up ones, and what services-prepare does with CP_SANDBOX_IDP_METADATA_URL.
+test_identity_provider() {
+  local name=dev-idp dir url=https://idp.example.com/metadata
+  reset_stubs
+  SANDBOX_REPO_ROOT=$REAL_REPO_ROOT
+  run_command sp_endpoint_id
+  SANDBOX_REPO_ROOT=$STUB_DIR/repo
+  check "the API's service provider address is read from $DEV_PROFILE of the checkout: a browser's, on the API's port" \
+    "$RUN_STATUS $(cat "$RUN_LOG")" "0 https://localhost:$SERVICES_API_PORT/pipeline/"
+
+  fake_repo
+  up_state "$name"
+  dir=$(state_dir "$name")
+  CP_SANDBOX_DISTRIBUTION_URL=https://example.com/builds/cloud-pipeline.0.17.0.1.abc.tgz \
+    CP_SANDBOX_IDP_METADATA_URL=$url run_command cmd_services_prepare --name "$name" --docker-subnets ""
+  check "with an identity provider, api.env names it, for the API's container to fetch its metadata" \
+    "$RUN_STATUS $(sed -n 's/^SANDBOX_IDP_METADATA_URL=//p' "$dir/api.env")" "0 $url"
+
+  printf 'server.port=9999\nserver.ssl.endpoint.id=https://cp-api-srv:9999/pipeline/\n' >"$PROFILE"
+  CP_SANDBOX_IDP_METADATA_URL=$url run_command cmd_services_prepare --name "$name" --docker-subnets ""
+  check "a service provider a browser here does not reach is refused" \
+    "$RUN_STATUS $(logged 'which a browser here does not reach')" '1 1'
+
+  printf 'server.port=9999\nserver.ssl.endpoint.id=http://localhost:9999/pipeline/\n' >"$PROFILE"
+  CP_SANDBOX_IDP_METADATA_URL=$url run_command cmd_services_prepare --name "$name" --docker-subnets ""
+  check "and one that is not https, which is all the API serves" \
+    "$RUN_STATUS $(logged 'which a browser here does not reach')" '1 1'
+
+  printf 'server.port=9999\n' >"$PROFILE"
+  CP_SANDBOX_IDP_METADATA_URL=$url run_command cmd_services_prepare --name "$name" --docker-subnets ""
+  check "and a profile naming no service provider at all" \
+    "$RUN_STATUS $(logged 'names no server.ssl.endpoint.id')" '1 1'
+
+  fake_repo
+  CP_SANDBOX_DISTRIBUTION_URL=https://example.com/builds/cloud-pipeline.0.17.0.1.abc.tgz \
+    CP_SANDBOX_API_SSO_DIR=/opt/api/sso CP_SANDBOX_IDP_METADATA_URL=$url \
+    run_command cmd_services_prepare --name "$name" --docker-subnets ""
+  check "the keystore the API signs its requests with reaches api.env too, for the host to mount" \
+    "$RUN_STATUS $(sed -n 's/^SANDBOX_API_SSO_DIR=//p' "$dir/api.env")" '0 /opt/api/sso'
+
+  CP_SANDBOX_DISTRIBUTION_URL=https://example.com/builds/cloud-pipeline.0.17.0.1.abc.tgz \
+    run_command cmd_services_prepare --name "$name" --docker-subnets ""
+  check "without an identity provider, api.env names neither it nor a keystore, and the profile's address is not looked at" \
+    "$RUN_STATUS $(sed -n 's/^SANDBOX_IDP_METADATA_URL=//p' "$dir/api.env") $(sed -n 's/^SANDBOX_API_SSO_DIR=//p' "$dir/api.env")" \
+    '0  '
   state_remove "$name"
   reset_stubs
 }
@@ -827,6 +878,7 @@ test_cidrs_overlap
 test_newest_distribution
 test_key_pair
 test_services_prepare
+test_identity_provider
 test_services_master
 test_pipe_common_from_checkout
 test_optional_services
