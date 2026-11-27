@@ -68,42 +68,38 @@
   margin: 0 8px 0 0;
 }
 
-/* The compound selector beats antd's single-class rule regardless of stylesheet order,
-   overriding `.ant-alert`'s own padding. */
+/* The compound selector beats antd's own single-class padding rule whatever the order. */
 .capacity-block-offering-card:global(.ant-alert) {
   display: flex;
   align-items: center;
 
-  /* Only equalises width for the unwrapped no-offering alert; a found offering's width
-     comes from `-card-clickable` below instead. */
+  /* Equalises width for the unwrapped no-offering alert; a found offering uses
+     `-card-clickable`. */
   flex: 1;
   padding: 2px 8px 2px 32px;
   min-height: 28px;
 }
 
-/* antd fixes the icon at `top: 10px`, which this card's own, shorter padding no longer
-   centres - re-centre it against the card's own height instead. */
+/* antd fixes the icon at `top: 10px`, which this card's shorter padding no longer centres. */
 .capacity-block-offering-card:global(.ant-alert) :global(.ant-alert-icon) {
   top: 50%;
   transform: translateY(-50%);
 }
 
-/* The icon's space is reserved even when hidden (`-icon-hidden`), so this margin keeps
-   the text off the icon in every state without the text shifting between them. */
+/* The icon's space stays reserved even when hidden, so this margin clears it in every state
+   without the text shifting between them. */
 .capacity-block-offering-card-message {
   display: inline-flex;
   align-items: baseline;
   margin-left: 5px;
 }
 
-/* `showIcon` stays true for the unselected card too, so the icon's padding never moves
-   the text between the two states - only the icon itself is hidden here. */
+/* Only the icon is hidden; `showIcon` stays true so its padding never moves the text. */
 .capacity-block-offering-card-icon-hidden :global(.ant-alert-icon) {
   visibility: hidden;
 }
 
-/* `flex: 1` so this flex item, not just the alert inside it, claims its share of the
-   offerings column - the alert then fills the full width this wrapper resolves to. */
+/* On the wrapper, not just the alert, so it claims its share of the offerings column. */
 .capacity-block-offering-card-clickable {
   flex: 1;
   cursor: pointer;
@@ -161,8 +157,7 @@
   flex-wrap: wrap;
 }
 
-/* Matches `-offering-card`'s own min-height, so a row showing the spinner alone is no
-   shorter than one showing a card - nothing below it jumps. */
+/* Matches `-offering-card`'s min-height, so a spinner-only row does not shift what is below. */
 .capacity-block-offering-pending {
   display: flex;
   align-items: center;
@@ -174,8 +169,7 @@
   min-height: 24px;
 }
 
-/* Shared by both label-line indicators - the catalogue fetch and the offering search -
-   so the two read as the same kind of thing whichever is showing. */
+/* Shared by the catalogue-fetch and offering-search indicators so both read the same. */
 .capacity-block-pending-indicator {
   display: inline-flex;
   align-items: center;

@@ -161,8 +161,7 @@ class HotCluster extends React.Component {
       message.error(request.error, 5);
       return;
     }
-    // The pool is already gone here, so a failed schedule delete still reloads and
-    // closes the modal - a retry would only 404.
+    // The pool is already gone, so a failed schedule delete still reloads and closes the modal.
     let scheduleError;
     if (poolToRemove.schedule && poolToRemove.schedule.id) {
       const scheduleRequest = new HotNodePoolScheduleDelete(poolToRemove.schedule.id);
@@ -274,8 +273,8 @@ class HotCluster extends React.Component {
       );
     }
     const {value: pools = []} = poolsRequest;
-    // Without a loading guard, `res.value` may still be the model's default value, so this
-    // copies it out of MobX's ObservableArray into a plain array (PropTypes.array fails it).
+    // No loading guard, so `res.value` may still be the model's default; the map also copies
+    // it out of MobX's ObservableArray, which fails `PropTypes.array`.
     const reservationsList = ((res || {}).value || []).map(reservation => reservation);
     const {
       createNewPool,

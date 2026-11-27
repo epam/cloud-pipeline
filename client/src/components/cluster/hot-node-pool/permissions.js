@@ -21,8 +21,7 @@ import {
   isNodePoolManager
 } from '../utilities/access-permissions';
 
-// `isAdmin` hands back the user's own `admin` field rather than a strict boolean, so this
-// is coerced to keep every capability below a real boolean.
+// `isAdmin` returns the user's raw `admin` field, not a strict boolean.
 function hasBlanketManageRights (user) {
   return Boolean(isAdmin(user) || isRunAdmin(user));
 }
@@ -33,14 +32,8 @@ function canCreatePools (user) {
   return hasBlanketManageRights(user) || isNodePoolManager(user);
 }
 
-// Two distinct capabilities, not one boolean: a blanket manager handles every pool
-// outright; a NODE_POOL_MANAGER only owns what it created (`canEditPool`/`canDeletePool`).
-//
-// `NodePool` accepts a per-pool WRITE/OWNER grant (`NODE_POOL_ID_WRITE`/`_OWNER`), not just
-// ADMIN/RUN_ADMIN - but `GET /cluster/pool` sends no real per-pool mask yet.
-//
-// Every pool's `mask` is the all-permissions default regardless of the viewer's grant, so
-// keying Edit/Delete off it would show both to anyone who can merely list the pool.
+// Two distinct capabilities, not one: a blanket manager handles every pool outright, while a
+// NODE_POOL_MANAGER can create but only owns what it created (`canEditPool`/`canDeletePool`).
 export function getPoolPermissions (authenticatedUserInfo) {
   const loaded = !!authenticatedUserInfo &&
     !!authenticatedUserInfo.loaded &&
@@ -73,11 +66,11 @@ function isPoolOwner (pool, user) {
   return `${owner}`.toLowerCase() === `${userName}`.toLowerCase();
 }
 
-// `NODE_POOL_ID_WRITE`: ADMIN or RUN_ADMIN outright, or a per-pool WRITE grant - a
-// NODE_POOL_MANAGER has none of its own, so ownership of the pool it created decides.
+// `NODE_POOL_ID_WRITE`: ADMIN or RUN_ADMIN outright, or a per-pool WRITE grant. A
+// NODE_POOL_MANAGER has none, so ownership of the pool it created is what decides.
 //
-// `owner` is what this reads rather than `mask` - see the note on `getPoolPermissions`
-// above for why the mask this endpoint sends cannot be trusted.
+// `owner` rather than `mask`: `GET /cluster/pool` sends every pool's `mask` as the
+// all-permissions default whatever the viewer's grant, so the mask cannot be trusted.
 export function canEditPool (pool, authenticatedUserInfo) {
   const user = authenticatedUserInfo && authenticatedUserInfo.value;
   if (hasBlanketManageRights(user)) {
@@ -86,18 +79,15 @@ export function canEditPool (pool, authenticatedUserInfo) {
   return isNodePoolManager(user) && isPoolOwner(pool, user);
 }
 
-// `/report/pools` requires `ADMIN_OR_CLUSTER_READER` - ADMIN, RUN_ADMIN or
-// ROLE_CLUSTER_READER, with no node-pool-manager exception.
-//
-// `cluster/index.js`'s own "Pools Usage" tab check reads `isClusterReader` alone, missing
-// the RUN_ADMIN case this reads correctly - a pre-existing gap, not one to repeat.
+// `/report/pools` requires `ADMIN_OR_CLUSTER_READER`: ADMIN, RUN_ADMIN or ROLE_CLUSTER_READER,
+// with no node-pool-manager exception. `cluster/index.js`'s tab check misses RUN_ADMIN.
 export function canViewPoolUsage (authenticatedUserInfo) {
   const user = authenticatedUserInfo && authenticatedUserInfo.value;
   return isClusterReader(user) || isRunAdmin(user);
 }
 
-// `NODE_POOL_ID_OWNER`: ADMIN or RUN_ADMIN outright, or a per-pool OWNER grant - the same
-// ownership `canEditPool` reads, since the backend sends no separate OWNER flag.
+// `NODE_POOL_ID_OWNER`: the backend sends no separate OWNER flag, so this reads the same
+// ownership `canEditPool` does.
 export function canDeletePool (pool, authenticatedUserInfo) {
   const user = authenticatedUserInfo && authenticatedUserInfo.value;
   if (hasBlanketManageRights(user)) {

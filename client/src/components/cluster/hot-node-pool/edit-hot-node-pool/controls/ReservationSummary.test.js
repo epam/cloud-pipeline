@@ -33,8 +33,7 @@ describe('formatReservationDate', () => {
     expect(formatReservationDate('not-a-date')).toBeUndefined();
   });
 
-  // UTC is the one zone where reading this value as local instead of UTC is invisible,
-  // so this sets a real offset around the assertion and restores UTC afterwards.
+  // The harness pins the zone to UTC, where this bug is invisible, so set a real offset here.
   test('converts a UTC wall time to the viewer\'s local zone, not read as local', () => {
     moment.tz.setDefault('Asia/Tokyo');
     try {
@@ -56,8 +55,7 @@ test('renders the label and the dash-joined window when both dates are given', (
   expect(screen.getByText('2026-03-01 10:00:00 – 2026-04-01 10:00:00')).toBeInTheDocument();
 });
 
-// AWS terminates the instances at `end`, so a viewer-zone mismatch here is operationally
-// misleading, not cosmetic.
+// AWS terminates the instances at `end`, so a wrong zone here misleads operationally.
 test('renders a granted window in the viewer\'s local zone, not the UTC wall time', () => {
   moment.tz.setDefault('Asia/Tokyo');
   try {

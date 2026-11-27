@@ -20,8 +20,7 @@ import {render, screen, within, change, hover, fn} from '@test';
 import ReservationScheduleControl from './ReservationScheduleControl';
 import {MODE_FUTURE_DATED, MODE_ML_BLOCK} from '../constants';
 
-// Mirrors the `row` helper in `../index.test.js`: the label span's closest `div` is the
-// `formRow` div holding both the label and its control.
+// The label span's closest `div` is the `formRow` div holding both the label and its control.
 function row (labelText) {
   return screen.getByText(labelText).closest('div');
 }
@@ -81,8 +80,8 @@ test('a value carrying a time (an existing reservation\'s granted window) still 
   ).toBe('2026-02-01');
 });
 
-// The harness pins moment-timezone's default to UTC, where this is invisible - a true
-// UTC instant and the viewer's own day coincide - so this sets a real offset.
+// The harness pins the zone to UTC, where a true instant and the viewer's day coincide,
+// so these set a real offset.
 describe('a true-instant echo (an unscheduled reservation\'s requested window)', () => {
   afterEach(() => {
     moment.tz.setDefault('UTC');
@@ -272,8 +271,8 @@ test('children render between the Duration (days) row and the status notice', ()
   ).toBeTruthy();
 });
 
-// No test here drives "Search until" through the UI: a `change` on its textbox, with
-// or without a trailing blur, never reaches `onChangeEnd` under antd 2.13.14 and React 15.
+// "Search until" is never driven through the UI here: under antd 2.13.14 and React 15, a
+// `change` on its textbox never reaches `onChangeEnd`, blur or no blur.
 
 describe('the reservation status notice', () => {
   test('no reservationStatus renders no alert at all', () => {
@@ -344,8 +343,8 @@ describe('the reservation status notice', () => {
     )).not.toBeInTheDocument();
   });
 
-  // antd 2 carries the alert's severity as a class, with no accessible attribute at this
-  // version - same gap `index.test.js`'s `selectIsDisabled` helper documents for `Select`.
+  // Rule 6 exception: antd 2 carries an alert's severity as a class, with no accessible
+  // attribute at this version.
   test('CANCELLED shows the cancelled sentence at warning severity', () => {
     render(
       <ReservationScheduleControl
@@ -362,7 +361,7 @@ describe('the reservation status notice', () => {
     expect(document.querySelector('.ant-alert-warning')).toBeInTheDocument();
   });
 
-  // Same antd-2 gap as above: severity is a class, not an accessible attribute.
+  // Same antd 2 gap: severity is a class, not an accessible attribute.
   test('FAILED shows the failed sentence at error severity', () => {
     render(
       <ReservationScheduleControl
@@ -409,8 +408,7 @@ test('each of the three rows renders a hint trigger', () => {
       onChangeDuration={fn()}
     />
   );
-  // HintControl.test.js establishes this is the only accessible selector for the
-  // trigger - antd's Icon exposes no role.
+  // antd's Icon exposes no role, so this class is the only selector for a hint trigger.
   const triggers = document.querySelectorAll('.anticon-question-circle');
   expect(triggers.length).toBe(3);
 });

@@ -45,8 +45,7 @@ test('renders the zone, the type, the window and the price in that order, but no
   expect(screen.queryByText(/node/)).not.toBeInTheDocument();
 });
 
-// UTC is the one zone where parsing this value as local instead of UTC is invisible,
-// so this sets a real offset around the assertion and restores UTC afterwards.
+// The harness pins the zone to UTC, where this bug is invisible, so set a real offset here.
 test('a UTC wall time renders in the viewer\'s local zone, not read as local', () => {
   moment.tz.setDefault('Asia/Tokyo');
   try {
@@ -110,8 +109,6 @@ test('a missing zone or price leaves the rest of the card intact', () => {
   expect(screen.queryByText('undefined')).not.toBeInTheDocument();
 });
 
-// `aria-pressed` on the button role is what lets a test - and a screen reader - tell
-// the two states apart without touching antd's own classes.
 test('a selected card is a pressed button, with a visible icon', () => {
   const {container} = render(<CapacityBlockOfferingCard offering={offering} selected />);
 
@@ -124,8 +121,6 @@ test('an unselected card is an unpressed button, with a hidden icon', () => {
   const {container} = render(<CapacityBlockOfferingCard offering={offering} />);
 
   expect(screen.getByRole('button', {pressed: false})).toBeInTheDocument();
-  // `showIcon` stays true in both states so the padding never moves the text; this is
-  // the class that hides the icon itself for the unselected card.
   const alert = container.querySelector('.capacityBlockOfferingCard');
   expect(alert).toHaveClass('capacityBlockOfferingCardIconHidden');
 });
@@ -158,8 +153,7 @@ test('the Space key also selects the card', async () => {
   expect(onSelect).toHaveBeenCalledWith('offering-1');
 });
 
-// The one assertion still tied to antd's own class: `aria-pressed` alone can't show
-// the Alert's `type` is wired to `selected`.
+// Rule 6 exception: `aria-pressed` alone cannot show the Alert's `type` is wired to `selected`.
 test('selected renders success and unselected renders info, both by role', () => {
   const {container, rerender} = render(<CapacityBlockOfferingCard offering={offering} />);
   expect(screen.getByRole('button')).toBeInTheDocument();
@@ -179,8 +173,8 @@ test('disabled does not call back', async () => {
   expect(onSelect).not.toHaveBeenCalled();
 });
 
-// `disabled` and `selected` are independent props - a disabled card still has to say
-// which it is, since it can be disabled precisely because it is the already-made choice.
+// A card can be disabled precisely because it is the already-made choice, so it must still
+// report which state it is in.
 test('a disabled card still reports aria-pressed for both states', () => {
   const {rerender} = render(
     <CapacityBlockOfferingCard offering={offering} disabled />

@@ -24,8 +24,8 @@ export function formatReservationDate (value) {
   return formatCloudCommitmentDate(value, 'YYYY-MM-DD HH:mm:ss');
 }
 
-// Granted by the backend's scheduler, not editable through `/cluster/pool`, so an existing
-// reservation pool shows it as read-only text; `startDate`/`endDate` are null until scheduled.
+// The backend's scheduler grants this window and `/cluster/pool` cannot change it, so it is
+// read-only text; `startDate`/`endDate` are null until it is scheduled.
 function ReservationSummary ({start, end}) {
   const formattedStart = formatReservationDate(start);
   const formattedEnd = formatReservationDate(end);

@@ -44,8 +44,7 @@ const offering2 = {
   endDate: '2026-12-31 04:14:02.500'
 };
 
-// `offeringsByCandidate` is keyed by the candidate row's own id, mirroring `index.js`'s
-// own state shape: {offerings, pending, error, searched}.
+// Keyed by candidate id, the shape `index.js` holds: {offerings, pending, error, searched}.
 function entry (overrides = {}) {
   return {offerings: [], pending: false, error: undefined, searched: false, ...overrides};
 }
@@ -81,8 +80,7 @@ test('remove calls onRemove with the row id', async () => {
       onRemove={onRemove}
     />
   );
-  // The remove button carries only an icon and no accessible name, unlike "Add instance
-  // type" and the InputNumber's own up/down spinner buttons, which both have one.
+  // The remove button carries only an icon; every other button in the row has a name.
   await click(screen.getByRole('button', {name: ''}));
 
   expect(onRemove).toHaveBeenCalledWith(7);
@@ -151,8 +149,7 @@ test('a row with matching offerings renders a card per offering', () => {
   expect(screen.getByText('us-east-1b')).toBeInTheDocument();
 });
 
-// The one antd-class assertion in this file, mirroring CapacityBlockOfferingCard.test.js:
-// only this proves the alert is really type="warning", not just its text.
+// Rule 6 exception: only the class proves the alert is really `type="warning"`.
 test('a row with none, in a settled search, renders "No offerings" as a warning alert', () => {
   const {container} = render(
     <CapacityBlockCandidatesControl
@@ -254,8 +251,8 @@ test('one row\'s own failed search does not hide another, already-settled row\'s
     expect(screen.getByText('us-east-1a')).toBeInTheDocument();
   });
 
-// A failed search is its own row's card, not a banner for every row; asserting
-// type="error" (not just the text) means touching antd's class again, deliberately.
+// A failed search is its own row's card, not a banner for every row. Rule 6 exception again:
+// only the class proves `type="error"`.
 test('a row\'s own failed search renders the server message as an error alert, there only',
   () => {
     render(
@@ -272,8 +269,7 @@ test('a row\'s own failed search renders the server message as an error alert, t
       />
     );
     const message = screen.getByText('AWS rejected the search');
-    // `.closest` rather than the container's first match of the class, since row 2's
-    // own warning alert carries the same class - this must be row 1's own alert.
+    // `.closest`, not the first match of the class: row 2's warning alert carries it too.
     const alert = message.closest('.capacityBlockOfferingCard');
     expect(alert).toHaveClass('ant-alert-error');
     expect(screen.getByText('No offerings')).toBeInTheDocument();
@@ -378,8 +374,6 @@ test('clicking the remove button selects nothing', async () => {
   expect(onSelectOffering).not.toHaveBeenCalled();
 });
 
-// The endpoint can return several offerings for one candidate, not just the nearest -
-// each is rendered as its own card, so each is its own click target.
 test('several offerings in one row: each card is its own click target', async () => {
   const onSelectOffering = fn();
   render(
@@ -459,8 +453,7 @@ test('the row carries no button role, click handler or selected class, in any st
     expect(onSelectOffering).not.toHaveBeenCalled();
   });
 
-// A stale offering found before a criteria change must stay unselectable - it is
-// off screen, and the purchase it would trigger is not refundable.
+// A stale offering is off screen, and the purchase it would trigger is not refundable.
 test('a pending search offers nothing selectable, even over a stale offering from a ' +
   'previous search', async () => {
   const onSelectOffering = fn();
@@ -476,8 +469,7 @@ test('a pending search offers nothing selectable, even over a stale offering fro
     .closest('.capacityBlockCandidateRow')
     .querySelector('.capacityBlockCandidateOfferings');
   expect(within(offeringsWrapper).queryByRole('button')).not.toBeInTheDocument();
-  // Nothing renders to click, but the attempt itself is the point: a click reaching the
-  // stale offering's card would be the actual hole, not just the card's absence.
+  // Nothing renders to click, but a click reaching the stale card would be the real hole.
   await click(offeringsWrapper);
   expect(onSelectOffering).not.toHaveBeenCalled();
 });
@@ -495,8 +487,7 @@ test('fullRefetchPending shows the search indicator on the label line, and only 
   const icon = screen.getByLabelText('Loading');
   expect(pending).toBeInTheDocument();
   expect(icon).toBeInTheDocument();
-  // React 15 wraps a text sibling in its own comment markers, so the text node itself -
-  // not `firstChild` - is what has to be found and compared against the icon's position.
+  // React 15 wraps a text sibling in comment markers, so `firstChild` is not the text node.
   const childNodes = Array.from(pending.childNodes);
   const textNode = childNodes.find((node) => node.nodeType === Node.TEXT_NODE);
   expect(textNode.textContent).toBe('Search for offerings...');
@@ -531,8 +522,8 @@ test('instanceTypesPending shows the fetching indicator on the label line, and o
     expect(screen.queryByLabelText('Loading')).not.toBeInTheDocument();
   });
 
-// No candidate can be complete before the catalogue has arrived, so the two indicators
-// cannot meaningfully coexist - but if both flags are somehow set, the catalogue one wins.
+// The two indicators cannot really coexist, since no candidate is complete before the
+// catalogue arrives; this pins which one wins if both flags are set.
 test('instanceTypesPending wins over fullRefetchPending when both are set', () => {
   render(
     <CapacityBlockCandidatesControl
@@ -563,8 +554,7 @@ test('each row whose own search failed carries the message - not one banner for 
   expect(screen.getAllByText('The offering search failed')).toHaveLength(2);
 });
 
-// fullRefetchPending wins over a row's own pending state - a row that is itself
-// still pending shows no spinner once a full refetch is in progress.
+// `fullRefetchPending` wins: a row that is itself pending shows no spinner during one.
 test('a per-candidate fetch shows that row\'s own spinner, a full refetch shows none', () => {
   const {container, rerender} = render(
     <CapacityBlockCandidatesControl

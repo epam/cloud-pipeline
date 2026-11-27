@@ -30,8 +30,7 @@ function formatOfferingWindow (startDate, endDate) {
   return start || end;
 }
 
-// Thousands-separated, two decimals. AWS prices a capacity block in USD in every
-// region, so a USD (or absent) currency gets a `$` prefix rather than a suffix.
+// AWS prices a capacity block in USD in every region, so USD (or no currency) gets a `$` prefix.
 function formatUpfrontFee (amount, currency) {
   if (amount === undefined || amount === null || Number.isNaN(Number(amount))) {
     return undefined;
@@ -46,8 +45,7 @@ function formatUpfrontFee (amount, currency) {
   return `${formatted} ${currency}`;
 }
 
-// One line per offering: zone, instance type, window, price. The nodes count isn't here -
-// the read-only Configuration section shows it instead, filled from the selection.
+// The nodes count is deliberately absent here - the read-only Configuration section shows it.
 function CapacityBlockOfferingCard ({offering, selected, disabled, onSelect}) {
   const {
     offeringId,
@@ -69,8 +67,8 @@ function CapacityBlockOfferingCard ({offering, selected, disabled, onSelect}) {
     <div key="window" className={styles.capacityBlockOfferingCardCell}>{offeringWindow}</div>,
     <div key="price" className={styles.capacityBlockOfferingCardCell}>{price}</div>
   ];
-  // `type` carries the selection (`success`/`info`) rather than a separate highlight;
-  // `showIcon` stays true in both so the icon's padding never shifts the text.
+  // `type` carries the selection rather than a separate highlight class; `showIcon` stays true
+  // in both states so the icon's padding never shifts the text.
   const type = selected ? 'success' : 'info';
   const alert = (
     <Alert
@@ -87,8 +85,7 @@ function CapacityBlockOfferingCard ({offering, selected, disabled, onSelect}) {
       }
     />
   );
-  // antd 2.13.14's `Alert` does not forward unknown props to its root element, so the
-  // role/click/keyboard handling lives on a wrapping element instead.
+  // antd 2.13.14's `Alert` drops unknown props, so role/click/keyboard handling sits on a wrapper.
   const select = () => {
     if (!disabled) {
       onSelect(offeringId);

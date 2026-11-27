@@ -26,8 +26,8 @@ const MODE_NAMES = {
   [MODE_ML_BLOCK]: 'ML Block'
 };
 
-// `mode` is client-only and locked (`disabled`) while editing; `modes` narrows which options
-// are offered - the caller renders this row only once that leaves a real choice.
+// `mode` is client-only, with no backend field behind it. The caller decides whether `modes`
+// leaves a real choice; this component does not guard on that itself.
 function ModeControl ({value, disabled, hint, modes, onChange}) {
   return (
     <SelectInput

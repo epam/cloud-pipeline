@@ -22,8 +22,7 @@ import {MODE_DEFAULT} from './constants';
 
 const loaded = (value) => observable({loaded: true, pending: false, value});
 
-// AWSRegionTag reads awsRegions.getRegion(id)/getRegionByUID(id), not just
-// .loaded/.value — mirrors src/models/cloudRegions/CloudRegions.js.
+// AWSRegionTag reads `getRegion(id)`/`getRegionByUID(id)`, not just `.loaded`/`.value`.
 function awsRegionsStore (regionsList) {
   return observable({
     loaded: true,
@@ -122,13 +121,11 @@ function renderForm (props = {}) {
 }
 
 function row (labelText) {
-  // The label's immediate ancestor div is the formRow div, which also holds
-  // the control itself.
+  // The label's ancestor div is the formRow div, which also holds the control.
   return screen.getByText(labelText).closest('div');
 }
 
-// antd's Select combobox carries no native `disabled` attribute; the state is
-// a class on the `.ant-select` ancestor instead.
+// antd's Select has no native `disabled` attribute; the state is a class on `.ant-select`.
 function selectIsDisabled (labelText) {
   const combobox = within(row(labelText)).getByRole('combobox');
   return combobox.closest('.ant-select').classList.contains('ant-select-disabled');
@@ -423,8 +420,7 @@ test('readOnly disables Region/Price/Instance Type/AMI/Disk, not Pool name/Nodes
   expect(screen.queryByText('Add docker image')).not.toBeInTheDocument();
 });
 
-// `disabled` is the parent's "a save is in flight" flag, so it blocks the whole form -
-// the Add buttons of every section included, the weekly schedule's among them.
+// `disabled` is the parent's "a save is in flight" flag, so it blocks the whole form.
 test('disabled disables every field and the docker, labels and schedule Add buttons', () => {
   renderForm({disabled: true});
   expect(within(row('Pool name:')).getByRole('textbox')).toBeDisabled();
@@ -463,16 +459,14 @@ test('future-dated mode locks Price type to On-demand and disables the control',
   renderForm({values: baseValues({mode: 'FUTURE_DATED', spot: 'ON_DEMAND'})});
 
   expect(selectIsDisabled('Price type:')).toBe(true);
-  // On-demand is the only legal value for a capacity reservation (`NodePoolValidator`
-  // rejects SPOT outright), so the control is disabled rather than merely filtered.
+  // `NodePoolValidator` rejects SPOT outright, so the control is disabled, not just filtered.
   expect(screen.getByText('On-demand')).toBeInTheDocument();
   expect(screen.queryByText('Spot')).not.toBeInTheDocument();
 });
 
 test('ML Block mode renders the ML Block section header instead of Schedule', () => {
   renderForm({values: baseValues({mode: 'ML_BLOCK'})});
-  // A heading query, not a text one: the Mode row's own selected value now reads "ML
-  // Block" too (the loaded mode is always folded into the options it renders from).
+  // A heading query, not a text one: the Mode row's selected value also reads "ML Block".
   expect(screen.getByRole('heading', {name: 'ML Block'})).toBeInTheDocument();
   expect(screen.queryByText('Schedule')).not.toBeInTheDocument();
 });
@@ -533,8 +527,7 @@ test('changing Search in region calls onChange with (\'region\', value)', async 
   expect(onChange).toHaveBeenLastCalledWith('region', '2');
 });
 
-// SelectInput renders its error line as a sibling of the formRow the label sits in,
-// both under the control's own outer wrapper div.
+// SelectInput renders its error line as a sibling of the formRow, under a shared wrapper div.
 function selectInputWrapper (labelText) {
   return screen.getByText(labelText).closest('div').parentElement;
 }
@@ -577,8 +570,8 @@ test('Future dated mode has no Search in region and Region stays editable', () =
   expect(selectIsDisabled('Region:')).toBe(false);
 });
 
-// `validation.region` is never set for a loaded pool, so this is unaffected by the
-// `mlBlock && !isExistingReservation` condition rather than exercising it directly.
+// `validation.region` is never set for a loaded pool, so this does not exercise the
+// `mlBlock && !isExistingReservation` condition directly.
 test('an existing ML Block reservation pool has no Search in region and no region error',
   () => {
     renderForm({

@@ -74,14 +74,13 @@ class EditHotNodePool extends React.Component {
     mlBlockInstanceTypes: [],
     mlBlockInstanceTypesPending: false,
     mlBlockInstanceTypesError: undefined,
-    // The region the catalogue was last fetched for - kept apart from `prevRegion`
-    // below, which drives the allowed-instance-types fetch instead.
+    // The region the catalogue was last fetched for; `prevRegion` drives a different fetch.
     mlBlockInstanceTypesRegion: undefined,
-    // Keyed by the candidate row's own `id`: {offerings, pending, error, searched}.
-    // `pending` covers the whole debounce window, not just the request.
+    // Keyed by candidate id: {offerings, pending, error, searched}. `pending` covers the
+    // whole debounce window, not just the request.
     mlBlockOfferingsByCandidate: {},
-    // True for the whole of a window/duration/region-triggered refetch of every
-    // complete candidate, distinct from any one candidate's own `pending`.
+    // True for a whole window/duration/region refetch of every candidate, as opposed to
+    // one row's own `pending`.
     mlBlockOfferingsFullRefetchPending: false,
     mlBlockOfferingId: undefined,
     modified: false,
@@ -171,12 +170,11 @@ class EditHotNodePool extends React.Component {
   // Plain instance fields, not state: plumbing for the offering search, never rendered.
   mlBlockOfferingsTimers = {};
   mlBlockOfferingsFullRefetchTimer = undefined;
-  // One id, bumped on every dispatch; each row remembers the id of the response it
-  // last applied, and a higher id always wins whatever order responses land in.
+  // Bumped on every dispatch; a row applies only a higher id, so responses may land in any order.
   mlBlockOfferingsRequestId = 0;
   mlBlockOfferingsAppliedRequestId = {};
-  // The second staleness guard: bumped only by a window/duration/region change - a
-  // row's own requestId comparison alone cannot see that the criteria moved.
+  // Second staleness guard, bumped only by a window/duration/region change - a row's own
+  // `requestId` cannot see that the criteria moved.
   mlBlockOfferingsGeneration = 0;
 
   componentDidMount () {
@@ -272,13 +270,12 @@ class EditHotNodePool extends React.Component {
       const {
         scheduleEntries: schedule = []
       } = scheduleObj;
-      // `poolType` applies to every pool, not only a future-dated one - read straight off
-      // regardless of mode, a validated passthrough (wire value and client constant agree).
+      // `poolType` applies to every pool, not only a reservation one, so it is read whatever
+      // the mode. The wire values and the client constants agree.
       const poolType = [POOL_TYPE_STANDARD, POOL_TYPE_SHAREABLE].includes(poolPoolTypeRaw)
         ? poolPoolTypeRaw
         : POOL_TYPE_STANDARD;
-      // The persisted filter is used as loaded - rebuilding it from `currentUserName`
-      // would rewrite another user's pool to whoever opened it.
+      // Used as loaded: rebuilding it from `currentUserName` would rewrite another user's pool.
       const mappedFilters = mapFilters(filters);
       const {reservations} = this.props;
       const matchedReservation = isCapacityReservation && reservations
@@ -286,8 +283,8 @@ class EditHotNodePool extends React.Component {
         : undefined;
       const isCapacityBlockReservation = matchedReservation &&
         matchedReservation.reservationType === RESERVATION_TYPE_CAPACITY_BLOCK;
-      // The matched record's own `reservationType` tells the two reservation modes apart;
-      // future-dated stays the fallback with no record matched.
+      // The matched record's `reservationType` tells the two reservation modes apart; with no
+      // record matched, future-dated is the fallback.
       const mode = isCapacityReservation
         ? (isCapacityBlockReservation ? MODE_ML_BLOCK : MODE_FUTURE_DATED)
         : MODE_DEFAULT;
@@ -311,8 +308,6 @@ class EditHotNodePool extends React.Component {
           ? Math.round(matchedReservation.commitmentDuration / SECONDS_PER_DAY)
           : undefined,
         reservationInstanceCount: getReservationDisplayInstanceCount(matchedReservation),
-        // The reservation record is the source of truth for its own lifecycle - the
-        // notice follows it rather than assuming the pool is still just waiting.
         reservationStatus: getCapacityReservationStatus(pool, matchedReservation),
         mlBlockCandidates: [],
         mlBlockInstanceTypes: [],
@@ -385,14 +380,11 @@ class EditHotNodePool extends React.Component {
         }
       }, this.onChange);
     } else {
-      // Create (`pool` falsy) resolves `mode` to `this.defaultMode`, `allowedModes`'s first
-      // entry - applied before any `onChange`, so a non-admin's forced mode opens pre-seeded.
+      // A forced mode (`allowedModes`'s first entry) is applied before any `onChange`, so a
+      // non-admin's dialog opens pre-seeded.
       const mode = pool ? MODE_DEFAULT : this.defaultMode;
-      // A reopen resets `mlBlockCandidates` without flooring old ids - safe only because
-      // `allowedModes` never lists ML Block first; if that changes, this must floor them too.
-      //
-      // Pre-fills a new future-dated/ML-Block pool's run-owner filter immediately, since a
-      // forced mode's caller never gets an `onChange` to seed it through. Needs a known login.
+      // A forced mode's caller never fires the `onChange` that would seed this filter, so it
+      // is seeded here - and only where the login is known.
       const seededFilters = (mode === MODE_FUTURE_DATED || mode === MODE_ML_BLOCK) &&
         currentUserName
         ? buildRunOwnerFilter(currentUserName)
@@ -411,6 +403,8 @@ class EditHotNodePool extends React.Component {
         reservationCommitmentDurationDays: undefined,
         reservationInstanceCount: undefined,
         reservationStatus: undefined,
+        // Reset without flooring the old ids - safe only because `allowedModes` never lists
+        // ML Block first; if that changes, this must floor them too.
         mlBlockCandidates: [],
         mlBlockInstanceTypes: [],
         mlBlockInstanceTypesPending: false,
@@ -481,8 +475,8 @@ class EditHotNodePool extends React.Component {
     }
   };
 
-  // Follows `updateInstanceTypes`'s own shape, but never for an existing reservation pool:
-  // its candidates control never renders, so nothing would consume the catalogue.
+  // Never fetched for an existing reservation pool: its candidates control never renders,
+  // so nothing would consume the catalogue.
   updateMlBlockInstanceTypes = () => {
     const {mode, region, mlBlockInstanceTypesRegion, isExistingReservation} = this.state;
     if (
@@ -533,8 +527,7 @@ class EditHotNodePool extends React.Component {
     });
   };
 
-  // Cancels `id`'s own pending debounce, if any - a JS-timer cancel only, since
-  // ordering/staleness is `requestId`/`generation`'s job, not this one's.
+  // A timer cancel only; ordering and staleness are `requestId`/`generation`'s job.
   clearMlBlockOfferingsTimer = (id) => {
     if (this.mlBlockOfferingsTimers[id]) {
       clearTimeout(this.mlBlockOfferingsTimers[id]);
@@ -554,8 +547,8 @@ class EditHotNodePool extends React.Component {
     this.mlBlockOfferingsGeneration += 1;
   };
 
-  // Floors `id` at *schedule* time, not *dispatch* time where the id is minted - that
-  // asymmetry is what makes an out-of-order response safe even if `id` is later reused.
+  // Floors at schedule time, not at dispatch time where the id is minted: that asymmetry is
+  // what makes an out-of-order response safe even if the id is later reused.
   reserveMlBlockOfferingsId = (id) => {
     this.mlBlockOfferingsAppliedRequestId[id] = Math.max(
       this.mlBlockOfferingsAppliedRequestId[id] || 0,
@@ -563,20 +556,19 @@ class EditHotNodePool extends React.Component {
     );
   };
 
-  // `.pending` covers the whole debounce window, not just the HTTP call; `.searched`
-  // goes false on every criteria change so a settled empty result reads as such.
+  // `.searched` goes false on every criteria change, so a settled empty result reads as such.
   scheduleMlBlockOfferingsSearchForCandidate = (id) => {
     if (this.state.mode !== MODE_ML_BLOCK) {
       return;
     }
     this.clearMlBlockOfferingsTimer(id);
-    // Floors this id too: a response already in flight for it, from before this very
-    // edit, must not apply under the row's now-changed criteria.
+    // Floors this id too: a response in flight from before this edit must not apply under
+    // the row's changed criteria.
     this.reserveMlBlockOfferingsId(id);
     const {mlBlockCandidates, mlBlockOfferingId, mlBlockOfferingsByCandidate} = this.state;
     const candidate = (mlBlockCandidates || []).find(c => c.id === id);
-    // Dropped now, not once this search's response lands at least a debounce later -
-    // closing the window where CREATE could still buy it for a row already changed.
+    // Dropped now rather than when the response lands, closing the window where CREATE
+    // could still buy an offering for a row already changed.
     const entry = mlBlockOfferingsByCandidate[id];
     const ownsSelection = mlBlockOfferingId && entry &&
       (entry.offerings || []).some(o => o.offeringId === mlBlockOfferingId);
@@ -597,8 +589,7 @@ class EditHotNodePool extends React.Component {
       }, this.onChange);
       return;
     }
-    // Clears this row's own cards immediately rather than leaving stale ones on
-    // screen while it searches again - every other row's own entry is untouched.
+    // Clears this row's cards at once rather than leaving stale ones on screen.
     this.setState({
       ...clearSelection,
       mlBlockOfferingsByCandidate: {
@@ -613,22 +604,21 @@ class EditHotNodePool extends React.Component {
     }, ML_BLOCK_OFFERINGS_FETCH_DELAY_MS);
   };
 
-  // Refetches every complete candidate in one request, since a window/duration/region
-  // change invalidates them all; clears the selection outright and every row's cards.
+  // One request for every complete candidate: a window/duration/region change invalidates
+  // them all, so the selection and every row's cards go too.
   scheduleMlBlockOfferingsSearchForAll = () => {
     if (this.state.mode !== MODE_ML_BLOCK) {
       return;
     }
-    // Supersedes any per-candidate debounce still pending - this refetch covers the
-    // same candidates, so letting one fire too would only duplicate it.
+    // Supersedes any per-candidate debounce still pending; this refetch covers the same rows.
     this.clearAllMlBlockOfferingsTimers();
     const {mlBlockOfferingId, mlBlockCandidates} = this.state;
     const clearSelection = mlBlockOfferingId
       ? {mlBlockOfferingId: undefined, instanceType: undefined, count: undefined}
       : {};
     const complete = getCompleteMlBlockCandidates(mlBlockCandidates);
-    // A complete candidate alone is not enough - the window/duration criteria must be
-    // searchable too, or the request body carries a literal "Invalid date".
+    // A complete candidate is not enough: without a searchable window and duration, the
+    // request body would carry a literal "Invalid date".
     if (!canSearchCapacityBlockOfferings(this.state)) {
       this.setState({
         ...clearSelection,
@@ -654,12 +644,12 @@ class EditHotNodePool extends React.Component {
     }, ML_BLOCK_OFFERINGS_FETCH_DELAY_MS);
   };
 
-  // Shared dispatch for both fetch paths - `candidateIds` is one row's id or every
-  // complete row's, stamped with a fresh requestId and the generation scheduled under.
+  // Shared dispatch for both fetch paths, stamped with a fresh requestId and the generation
+  // it was scheduled under.
   runMlBlockOfferingsSearch = (candidateIds, generation, isFullRefetch) => {
     const {region, mlBlockCandidates} = this.state;
-    // Re-filtered against the row's *current* data, not just looked up by id - a row
-    // complete at schedule time may have gone incomplete inside the same debounce window.
+    // Re-filtered against the row's current data: a row complete at schedule time may have
+    // gone incomplete inside the same debounce window.
     const candidates = getCompleteMlBlockCandidates(
       candidateIds
         .map(id => (mlBlockCandidates || []).find(c => c.id === id))
@@ -713,8 +703,8 @@ class EditHotNodePool extends React.Component {
       });
   };
 
-  // Applies per candidate only where `requestId` beats its own last applied one, using
-  // each row's type as of dispatch (`dispatchedCandidates`), not its current one.
+  // Applies a row's result only where `requestId` beats its last applied one, and reads each
+  // row's type as of dispatch rather than its current one.
   applyMlBlockOfferingsResponse = (
     dispatchedCandidates, offeringsFlat, error, requestId, generation, isFullRefetch
   ) => {
@@ -727,7 +717,6 @@ class EditHotNodePool extends React.Component {
     let clearSelection = false;
     dispatchedCandidates.forEach((candidate) => {
       const {id} = candidate;
-      // Removed since this request was dispatched - nothing left to apply it to.
       const stillExists = (mlBlockCandidates || []).some(c => c.id === id);
       if (!stillExists || requestId <= (this.mlBlockOfferingsAppliedRequestId[id] || 0)) {
         return;
@@ -750,8 +739,8 @@ class EditHotNodePool extends React.Component {
     }
     this.setState({
       ...(changed ? {mlBlockOfferingsByCandidate: nextByCandidate} : {}),
-      // Settled in this same `setState`, not separately - React 15 does not batch a
-      // `setState` from a promise callback, so a split call would show `pending: true` rows.
+      // Settled in this same `setState`: React 15 does not batch a `setState` from a promise
+      // callback, so a split call would flash `pending: true` rows.
       ...(isFullRefetch ? {mlBlockOfferingsFullRefetchPending: false} : {}),
       ...(clearSelection
         ? {mlBlockOfferingId: undefined, instanceType: undefined, count: undefined}
@@ -784,17 +773,17 @@ class EditHotNodePool extends React.Component {
                   .map(o => o.toUpperCase());
                 let {instanceType, spot} = this.state;
                 const {mode, isExistingReservation} = this.state;
-                // ML Block's `instanceType` comes from the picked offering, not the user, and
-                // need not be on this allowed list - a late response here must leave it alone.
+                // ML Block's `instanceType` comes from the picked offering and need not be on
+                // this allowed list, so a late response must leave it alone.
                 if (mode !== MODE_ML_BLOCK && !typeNames.has(instanceType)) {
                   instanceType = undefined;
                 }
-                // An existing reservation's `priceType` must round-trip unchanged
-                // (`validateReservationPoolUpdate`) - left alone even if the allowed list drops it.
+                // `validateReservationPoolUpdate` requires an existing reservation's `priceType`
+                // to round-trip unchanged, even if the allowed list drops it.
                 if (!isExistingReservation && !(new Set(priceTypes)).has(spot)) {
                   if (mode === MODE_FUTURE_DATED || mode === MODE_ML_BLOCK) {
-                    // `NodePoolValidator` rejects SPOT for either reservation mode - where the
-                    // region offers nothing else, leave it unset rather than falling back to it.
+                    // `NodePoolValidator` rejects SPOT for either reservation mode, so a region
+                    // offering nothing else leaves this unset.
                     spot = priceTypes.find(p => !/^spot$/i.test(p));
                   } else {
                     spot = priceTypes[0];
@@ -874,8 +863,7 @@ class EditHotNodePool extends React.Component {
     }
   };
 
-  // The single entry point every control's `onChange` is wired to - a plain scalar field
-  // sets itself; the compound fields dispatch to their own helper below instead.
+  // Every control's `onChange` goes through here; the compound fields dispatch to a helper.
   onChangeField = (key, value) => {
     switch (key) {
       case 'autoscaled':
@@ -918,8 +906,6 @@ class EditHotNodePool extends React.Component {
     }
   };
 
-  // A mode switch into either reservation mode seeds Filters with the creator's run-owner
-  // criterion; a `poolType` switch never touches filters.
   onPoolKindChange = (key, value) => {
     const {currentUserName} = this.props;
     const {mode, spot, touched, initialFilters} = this.state;
@@ -928,12 +914,11 @@ class EditHotNodePool extends React.Component {
       [key]: value,
       touched: {...touched, [key]: true}
     };
-    // A reservation pool (future-dated or ML Block) reserves a fixed block of capacity,
-    // so it can never be autoscaled.
+    // A reservation pool holds a fixed block of capacity, so it can never be autoscaled.
     if (nextMode === MODE_FUTURE_DATED || nextMode === MODE_ML_BLOCK) {
       newState.autoscaled = false;
-      // `NodePoolValidator` rejects SPOT for either reservation type, so leaving Default
-      // mode with Spot selected would carry an instantly-invalid price type in.
+      // `NodePoolValidator` rejects SPOT for either reservation mode, so leaving Default mode
+      // with Spot selected would carry an instantly-invalid price type in.
       if (spot && /^spot$/i.test(spot)) {
         newState.spot = 'ON_DEMAND';
       }
@@ -946,12 +931,11 @@ class EditHotNodePool extends React.Component {
       } else if (mode === MODE_FUTURE_DATED || mode === MODE_ML_BLOCK) {
         newState.filters = initialFilters;
       }
-      // Entering or leaving ML Block clears type/count either way - there is no longer a
-      // selected offering to hold either field.
+      // Either direction leaves no selected offering, so nothing sources type/count.
       if (value === MODE_ML_BLOCK || mode === MODE_ML_BLOCK) {
         this.clearAllMlBlockOfferingsTimers();
-        // Floors every existing id against reuse - a mode round-trip reaches ML Block
-        // again without bumping the generation, so that guard alone would miss it.
+        // Floors every existing id: a mode round-trip reaches ML Block again without bumping
+        // the generation, so that guard alone would miss it.
         (this.state.mlBlockCandidates || []).forEach(({id}) => this.reserveMlBlockOfferingsId(id));
         Object.assign(newState, {
           mlBlockCandidates: [],
@@ -964,8 +948,7 @@ class EditHotNodePool extends React.Component {
           mlBlockOfferingId: undefined,
           instanceType: undefined,
           count: undefined,
-          // Cleared alongside the values - otherwise these now-empty, read-only fields
-          // would show a stale required error from whichever mode typed into them.
+          // Cleared too, or these now-empty read-only fields would show a stale required error.
           touched: {...newState.touched, instanceType: false, count: false}
         });
       }
@@ -981,8 +964,7 @@ class EditHotNodePool extends React.Component {
     if (action.action === 'add') {
       const id = Math.max(...mlBlockCandidates.map(o => o.id), 0) + 1;
       mlBlockCandidates.push({id, instanceType: undefined, instanceCount: 1});
-      // A freshly added row carries no instance type yet, so it is one field short of
-      // complete - nothing for a search to pick up yet.
+      // A new row has no instance type yet, so it is one field short of searchable.
       this.setState({mlBlockCandidates, touched}, this.onChange);
       return;
     }
@@ -991,12 +973,10 @@ class EditHotNodePool extends React.Component {
       return;
     }
     if (action.action === 'remove') {
-      // Nothing to fetch for a row that no longer exists - just drop its entry, and
-      // the selection immediately if it was the one this row's offering filled.
       const [removed] = mlBlockCandidates.splice(index, 1);
       this.clearMlBlockOfferingsTimer(removed.id);
-      // Floors the removed id against reuse: a response already in flight for it must
-      // never land on a different candidate that is later given the same numeric id.
+      // Floors the removed id: a response in flight for it must never land on a row later
+      // given the same numeric id.
       this.reserveMlBlockOfferingsId(removed.id);
       const {[removed.id]: removedEntry, ...mlBlockOfferingsByCandidate} =
         this.state.mlBlockOfferingsByCandidate;
@@ -1017,8 +997,7 @@ class EditHotNodePool extends React.Component {
     mlBlockCandidates.splice(index, 1, after);
     this.setState({mlBlockCandidates, touched}, () => {
       this.onChange();
-      // Skip the request when this edit changes nothing the search would see - a
-      // duplicate value, or a still-incomplete row staying incomplete.
+      // Skip the request when this edit changes nothing the search would see.
       const completeBefore = getCompleteMlBlockCandidates([before]);
       const completeAfter = getCompleteMlBlockCandidates([after]);
       if (JSON.stringify(completeBefore) !== JSON.stringify(completeAfter)) {
@@ -1027,8 +1006,7 @@ class EditHotNodePool extends React.Component {
     });
   };
 
-  // Fills the two read-only Configuration fields from the chosen offering; selecting
-  // nothing (`offeringId` falsy, or no longer in the list) clears both again.
+  // Selecting nothing, or an offering no longer in the list, clears both fields again.
   onMlBlockOfferingChange = (offeringId) => {
     const {touched, mlBlockOfferingsByCandidate} = this.state;
     touched.mlBlockOffering = true;
@@ -1044,8 +1022,7 @@ class EditHotNodePool extends React.Component {
     }, this.onChange);
   };
 
-  // Shared by both reservation modes' window/duration controls; only ML Block mode
-  // searches on a change, since Future dated mode has no offering to search for.
+  // Shared by both reservation modes; only ML Block has offerings to search for.
   onCommitmentWindowChange = (key, value) => {
     const {touched} = this.state;
     this.setState({
@@ -1053,15 +1030,15 @@ class EditHotNodePool extends React.Component {
       touched: {...touched, [key]: true}
     }, () => {
       this.onChange();
-      // Harmless outside ML Block mode: `scheduleMlBlockOfferingsSearchForAll` is the
-      // one that actually guards on the mode, read live rather than from this closure's.
+      // Harmless outside ML Block mode: `scheduleMlBlockOfferingsSearchForAll` guards on the
+      // mode itself, read live rather than from this closure.
       this.bumpMlBlockOfferingsGeneration();
       this.scheduleMlBlockOfferingsSearchForAll();
     });
   };
 
-  // Gives up the previous region's candidates/offerings/selection, and bumps the
-  // generation - an old-region request a freshly added row could otherwise collide with.
+  // Bumps the generation too: an old-region request could otherwise collide with a row
+  // added after the change.
   onRegionChange = (value) => {
     const {touched, mode, mlBlockCandidates} = this.state;
     const newState = {
@@ -1238,8 +1215,8 @@ class EditHotNodePool extends React.Component {
       allowedInstanceTypes,
       allowedInstanceTypesPending
     } = this.state;
-    // ML Block mode has no concrete instance type/count until an offering is picked, so
-    // CREATE must wait on that rather than let `onSave` reject a click after the fact.
+    // ML Block mode has no instance type or count until an offering is picked, so CREATE is
+    // blocked up front rather than letting `onSave` reject the click afterwards.
     const createBlockedByOffering = isNew && mode === MODE_ML_BLOCK && !mlBlockOfferingId;
     return (
       <Modal

@@ -16,13 +16,12 @@
 
 import Remote from '../basic/Remote';
 
-// Held for the page session - the capacity-block catalogue a region sells changes on
-// AWS's timescale, not a user's. A failed fetch is evicted so the next call retries it.
+// Held for the page session: the catalogue a region sells changes on AWS's timescale,
+// not a user's.
 const cache = new Map();
 
 class CapacityBlockInstanceTypes extends Remote {
-  // The endpoint returns a list; `Remote`'s own default is `{}`, which a consumer
-  // reading the value before the first fetch resolves would have to special-case.
+  // `Remote` defaults to `{}`; consumers read this value before the first fetch resolves.
   static defaultValue = [];
 
   constructor (regionId) {
@@ -36,8 +35,7 @@ class CapacityBlockInstanceTypes extends Remote {
    * @returns {Promise<CapacityBlockInstanceTypes>}
    */
   static forRegion (regionId) {
-    // A loaded pool supplies a numeric regionId while RegionSelect's option value is a
-    // string, so the key is normalised here rather than trusting callers to agree.
+    // A loaded pool supplies a numeric regionId, while RegionSelect's option value is a string.
     const key = String(regionId);
     if (!cache.has(key)) {
       cache.set(key, new CapacityBlockInstanceTypes(regionId));
@@ -45,6 +43,7 @@ class CapacityBlockInstanceTypes extends Remote {
     const request = cache.get(key);
     return request.fetchIfNeededOrWait()
       .then(() => {
+        // Evict a failed fetch so the next call retries it.
         if (!request.loaded) {
           cache.delete(key);
         }
@@ -52,8 +51,7 @@ class CapacityBlockInstanceTypes extends Remote {
       });
   }
 
-  // For a test's own `beforeEach` - the module-level cache would otherwise outlive one
-  // test and make `forRegion`'s call count depend on run order.
+  // Test-only: the cache otherwise outlives a test and makes call counts order-dependent.
   static clearCache () {
     cache.clear();
   }

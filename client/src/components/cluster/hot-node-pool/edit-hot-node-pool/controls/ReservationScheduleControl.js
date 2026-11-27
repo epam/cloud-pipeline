@@ -43,8 +43,7 @@ import {
 } from '../constants';
 import styles from '../../edit-hot-node-pool.css';
 
-// Keyed by `getCapacityReservationStatus`'s return value, as `pool-card.js` keys its own
-// map - the notice follows the reservation record rather than assuming it's still pending.
+// Keyed by `getCapacityReservationStatus`'s return value, as `pool-card.js` keys its own map.
 const RESERVATION_STATUS_NOTICE = {
   [RESERVATION_STATUS_REQUIRED_APPROVE]: {
     type: 'info',
@@ -92,8 +91,7 @@ const RESERVATION_STATUS_NOTICE = {
   }
 };
 
-// A status this map does not know (older client, newer backend) must not blank the
-// section or throw - falls back to a neutral notice humanised from the raw value.
+// An unknown status (older client, newer backend) must not blank the section or throw.
 function getReservationStatusNotice (status) {
   return RESERVATION_STATUS_NOTICE[status] || {
     type: 'info',
@@ -101,8 +99,7 @@ function getReservationStatusNotice (status) {
   };
 }
 
-// An echoed value from the API is a true UTC instant; a day typed into the picker never
-// carries a time and needs no conversion.
+// An API-echoed value is a true UTC instant; a day typed into the picker carries no time.
 function toDisplayDay (value) {
   if (!value) {
     return value;
@@ -111,10 +108,9 @@ function toDisplayDay (value) {
   return isInstant ? formatCloudCommitmentDate(value, COMMITMENT_DATE_ONLY_FORMAT) : value;
 }
 
-// A future-dated pool reserves one absolute window, unlike Default mode's weekly
-// schedule - this control does not reuse `ScheduleControl` and must not touch it.
-
-// "Search until" is independently editable, never derived from `start` + `durationDays`.
+// A reservation pool reserves one absolute window rather than Default mode's weekly schedule,
+// so this control shares nothing with `ScheduleControl`. "Search until" is independently
+// editable, never derived from `start` + `durationDays`.
 function ReservationScheduleControl ({
   mode,
   start,

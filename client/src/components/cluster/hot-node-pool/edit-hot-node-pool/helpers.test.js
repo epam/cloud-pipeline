@@ -70,8 +70,7 @@ function baseValues (overrides = {}) {
   };
 }
 
-// Backend lead-time/duration rules are relative to "now", so fixtures use day offsets
-// rather than a fixed past date.
+// The backend's lead-time and duration rules are relative to "now", so fixtures use offsets.
 const fmt = (m) => m.format(COMMITMENT_DATE_TIME_FORMAT);
 const inDays = (days) => moment().add(days, 'days').format(COMMITMENT_DATE_ONLY_FORMAT);
 const futureDatedValues = (overrides = {}) => baseValues({
@@ -99,14 +98,13 @@ const sampleOffering = (overrides = {}) => ({
   ...overrides
 });
 
-// The per-candidate map `getSelectedOffering`/`buildCapacityReservationRequest` read -
-// keyed by the candidate id `mlBlockCandidates` carries, mirroring `index.js`'s own shape.
+// Keyed by candidate id, the shape `index.js` holds.
 const offeringsByCandidate = (id, offerings) => ({
   [id]: {offerings, pending: false, error: undefined, searched: true}
 });
 
-// A fully valid ML Block values object has a selected offering, and the instanceType/
-// count it filled onto the form.
+// A valid ML Block values object needs a selected offering, plus the instanceType and count
+// it filled onto the form.
 const mlBlockValues = (overrides = {}) => {
   const offering = sampleOffering();
   return baseValues({
@@ -124,8 +122,7 @@ const mlBlockValues = (overrides = {}) => {
   });
 };
 
-// Pinned to a fixed instant so a day offset always lands exactly on the fencepost,
-// independent of the harness's own zone pin (`moment.utc` here is explicit either way).
+// A fixed instant, so a day offset always lands exactly on the fencepost under test.
 const FIXED_NOW = '2026-11-20T15:00:00.000Z';
 const dayAt = (offsetDays) => moment.utc(FIXED_NOW)
   .add(offsetDays, 'days')
@@ -159,8 +156,7 @@ describe('getCompleteMlBlockCandidates', () => {
 
 describe('formatCloudCommitmentDate', () => {
   afterEach(() => {
-    // The harness pins moment-timezone's default to UTC; restore it so this suite's
-    // other tests, which rely on that pin, are unaffected by this one.
+    // Restores the harness's UTC pin, which the other tests here rely on.
     moment.tz.setDefault('UTC');
   });
 
@@ -237,8 +233,8 @@ describe('buildCapacityBlockOfferingRequest', () => {
     expect(Object.keys(request)).not.toContain('endDateRange');
   });
 
-  // The harness pins moment-timezone's default to UTC, where the viewer's day and its UTC
-  // instant coincide and this conversion is invisible - so these set a real offset.
+  // The harness pins the zone to UTC, where the viewer's day and its UTC instant coincide,
+  // so these set a real offset.
   describe('the picked day converts to its true UTC instant, not a literal UTC reading', () => {
     afterEach(() => {
       moment.tz.setDefault('UTC');
@@ -653,8 +649,8 @@ describe('getValidationErrors', () => {
         .toBe('Search from date should be between 6 and 121 days from now');
     });
 
-    // `leadDays` floors a fractional diff against a start pinned to 00:00, so the
-    // boundary a user hits is one calendar day later than the backend's own 5/120.
+    // `leadDays` floors against a start pinned to 00:00, so the boundary a user hits is one
+    // calendar day later than the backend's own 5/120.
     describe('the lead-time boundary, pinned to a fixed "now"', () => {
       afterEach(() => {
         useRealTimers();
@@ -699,8 +695,8 @@ describe('getValidationErrors', () => {
       });
     });
 
-    // `commitmentEnd` is sent at 23:59:59.999 of its day, so an N-day duration needs a
-    // span of N calendar days plus one - `endOf('day')` is deliberate; this pins that fencepost.
+    // `commitmentEnd` is sent at 23:59:59.999 of its day, so an N-day duration needs a span
+    // of N calendar days plus one.
     describe('the exact-fit duration boundary', () => {
       afterEach(() => {
         useRealTimers();
@@ -779,8 +775,7 @@ describe('getValidationErrors', () => {
     it(
       'does not block an existing future-dated pool whose count legitimately loads as 0',
       () => {
-        // `NodePoolManager.create` stores a reservation pool with count 0 until activated,
-        // so SAVE must not be blocked by it on an existing pool.
+        // `NodePoolManager.create` stores a reservation pool with count 0 until activated.
         const {valid, errors} = getValidationErrors(
           futureDatedValues({count: 0, isExistingReservation: true})
         );
@@ -840,15 +835,14 @@ describe('getValidationErrors', () => {
       expect(errors.commitmentStart).toBe('Search from date should be in the future');
     });
 
-    // The payload sends 00:00 of the picked day, so today's own start is already past -
-    // a direct consequence of picking by day, with no lead-time rule to mask it here.
+    // The payload sends 00:00 of the picked day, and ML Block has no lead-time rule to
+    // mask that today's own start is already past.
     it('rejects today as a start date: its start of day is already past', () => {
       const {errors} = getValidationErrors(mlBlockValues({commitmentStart: inDays(0)}));
       expect(errors.commitmentStart).toBe('Search from date should be in the future');
     });
 
-    // The backend reads the wire string as UTC (a zone-less `LocalDateTime` via
-    // `ZoneOffset.UTC`), so a picked day flips valid/refused at its own UTC midnight.
+    // The backend reads the wire string as UTC, so the flip happens at UTC midnight.
     describe('a chosen day flips from valid to refused at its own UTC midnight', () => {
       afterEach(() => {
         useRealTimers();
@@ -867,8 +861,8 @@ describe('getValidationErrors', () => {
       });
     });
 
-    // A viewer west of UTC, near their own midnight, is where a literal-as-UTC reading
-    // of "tomorrow" could still land in the past; converting to the true UTC instant fixes it.
+    // West of UTC, near the viewer's own midnight, is where a literal-as-UTC reading of
+    // "tomorrow" could still land in the past.
     describe('a local "tomorrow" is always a future start, even west of UTC near midnight',
       () => {
         afterEach(() => {
@@ -886,8 +880,7 @@ describe('getValidationErrors', () => {
         });
       });
 
-    // The search never needs an end of window, and the purchase carries the offering's
-    // own - requiring it here only blocked CREATE on a field nothing downstream reads.
+    // The search never needs an end of window, and the purchase carries the offering's own.
     it('Search until is optional: the form is valid and the search omits endDateRange', () => {
       const values = mlBlockValues({commitmentEnd: undefined});
       const {valid, errors} = getValidationErrors(values);
@@ -964,8 +957,7 @@ describe('getValidationErrors', () => {
     });
 
     it('skips every ML Block check on an existing reservation pool, count 0 included', () => {
-      // Mirrors a purchased block not yet activated - the backend stores it with
-      // count 0, same as an existing future-dated pool.
+      // The backend stores a purchased block with count 0 until it is activated.
       const {valid, errors} = getValidationErrors(mlBlockValues({
         isExistingReservation: true,
         commitmentStart: undefined,
@@ -1105,8 +1097,7 @@ describe('isModified', () => {
   });
 
   it('ignores minSize/maxSize/thresholds/scaleStep while not autoscaled', () => {
-    // unmodified() already sets these to differ from their initial* counterparts
-    // while autoscaled stays false — this is the quirk under test.
+    // `unmodified()` already sets these to differ from their `initial*` counterparts.
     expect(isModified(unmodified())).toBe(false);
   });
 
@@ -1460,8 +1451,8 @@ describe('buildSchedulePayload', () => {
     expect(payload.scheduleEntries.every(e => !('id' in e))).toBe(true);
   });
 
-  // At the helper level: antd 2.13.14's DatePickers can't be driven through the UI to a
-  // savable future-dated state (see index.test.js's "no schedule request" for the weaker UI check).
+  // Pinned here rather than through the UI: antd 2.13.14's DatePickers cannot be driven to a
+  // savable future-dated state.
   it('is undefined for a future-dated pool: nothing in the future-dated UI can add a schedule' +
     ' entry', () => {
     expect(buildSchedulePayload(futureDatedValues())).toBeUndefined();

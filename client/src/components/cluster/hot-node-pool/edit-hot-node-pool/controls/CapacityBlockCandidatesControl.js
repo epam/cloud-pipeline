@@ -23,11 +23,8 @@ import {getCompleteMlBlockCandidates, formatCapacityBlockInstanceType} from '../
 import {ML_BLOCK_OFFERINGS_ERROR_MESSAGE} from '../constants';
 import styles from '../../edit-hot-node-pool.css';
 
-// A candidate row is "complete" exactly when `getCompleteMlBlockCandidates` would keep it.
-// Each row renders from its own entry only, so one row's search never hides another's cards.
-//
-// The endpoint can return more than one offering per candidate (every AWS match, not just
-// the nearest); each is rendered as its own card, which is the only click target.
+// Each row renders from its own `offeringsByCandidate` entry, so one row's search never touches
+// another's cards. A candidate can have several offerings; each card is its own click target.
 function CapacityBlockCandidatesControl ({
   candidates,
   instanceTypes,
@@ -55,8 +52,8 @@ function CapacityBlockCandidatesControl ({
     }
     const entry = offeringsByCandidate[row.id] || {};
     if (entry.pending) {
-      // The spinner alone, not a stale card - a visible card is always clickable, and one
-      // found under changed criteria must not be. Min-height matches the alert's.
+      // The spinner alone, never a stale card: a visible card is always clickable, and one
+      // found under changed criteria must not be.
       return (
         <span className={styles.capacityBlockOfferingPending}>
           <Icon type="loading" aria-label="Loading" />
@@ -64,8 +61,7 @@ function CapacityBlockCandidatesControl ({
       );
     }
     if (entry.error !== undefined && entry.error !== null) {
-      // Same geometry as the other three states (min-height, reserved icon space, the
-      // re-centred antd icon) so a failed search reads as the same kind of object.
+      // Same card geometry as the other states, so a failed search reads as the same object.
       return (
         <Alert
           type="error"
@@ -81,8 +77,7 @@ function CapacityBlockCandidatesControl ({
     }
     const rowOfferings = entry.offerings || [];
     if (rowOfferings.length === 0) {
-      // A settled empty search is a `warning`, carrying the same card padding and height
-      // as a found offering so all three right-hand states read as one kind of object.
+      // A settled empty search is a `warning` card, with the same geometry as a found offering.
       return entry.searched ? (
         <Alert
           type="warning"
@@ -104,14 +99,14 @@ function CapacityBlockCandidatesControl ({
   };
 
   const renderRow = (row) => {
-    // Another row's own type is unavailable here, so a flat offering response can be
+    // A type held by another row is excluded, which is what lets a flat offering response be
     // attributed back to a row by `instanceType` alone.
     const usedTypes = rows
       .filter(candidate => candidate.id !== row.id)
       .map(candidate => (candidate.instanceType || '').toLowerCase())
       .filter(Boolean);
-    // Sorted by name - AWS does not return the catalogue in a stable order, and an
-    // unsorted list would land the same click on a different instance type between opens.
+    // Sorted because AWS returns the catalogue in no stable order, which would otherwise
+    // move an option between opens and land the same click on a different type.
     const availableTypes = (instanceTypes || [])
       .filter(info => !usedTypes.includes((info.instanceType || '').toLowerCase()))
       .slice()
@@ -170,8 +165,8 @@ function CapacityBlockCandidatesControl ({
           Instance types:
         </span>
         {
-          // No candidate can be complete before the catalogue arrives, so the two indicators
-          // cannot meaningfully overlap - this one wins if they somehow do.
+          // No candidate can be complete before the catalogue arrives, so this indicator wins
+          // if both flags are somehow set.
           instanceTypesPending ? (
             <span className={styles.capacityBlockPendingIndicator}>
               Fetching instance types...
@@ -228,8 +223,7 @@ function CapacityBlockCandidatesControl ({
 
 CapacityBlockCandidatesControl.propTypes = {
   candidates: PropTypes.array,
-  // MobX wraps a Remote's resolved value in an ObservableArray, which fails a strict
-  // PropTypes.array (Array.isArray) check despite behaving as one.
+  // MobX wraps a `Remote`'s value in an ObservableArray, which fails `PropTypes.array`.
   instanceTypes: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   instanceTypesPending: PropTypes.bool,
   instanceTypesError: PropTypes.string,

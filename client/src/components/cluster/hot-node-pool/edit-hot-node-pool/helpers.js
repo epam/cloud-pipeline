@@ -42,8 +42,7 @@ import {
   RESERVATION_TERMINAL_STATUSES
 } from './constants';
 
-// Seeds a new future-dated pool's Filters with the creator as run owner - an editable
-// default, the already backend-supported RUN_OWNER/EQUAL criterion.
+// An editable default for a new reservation pool; the backend already supports RUN_OWNER/EQUAL.
 export function buildRunOwnerFilter (userName) {
   return {
     operator: 'AND',
@@ -71,8 +70,8 @@ export function arraysAreEqual (a, b) {
   return true;
 }
 
-// The sole chokepoint converting a picked day into the true UTC instant the backend
-// receives; parsed with plain `moment()`, not `.local()`, which bypasses `moment.tz.setDefault`.
+// The one place a picked day becomes the UTC instant the backend receives. Plain `moment()`,
+// not `.local()`, which ignores `moment.tz.setDefault`.
 function getCommitmentDayStart (day) {
   const parsed = moment(day, COMMITMENT_DATE_ONLY_FORMAT, true);
   return parsed.isValid() ? parsed.startOf('day').utc() : parsed;
@@ -84,20 +83,19 @@ function getCommitmentDayEnd (day) {
   return parsed.isValid() ? parsed.endOf('day').utc() : parsed;
 }
 
-// Offering and reservation windows arrive as a UTC wall time in a zone-less string
-// (`AwsCapacityReservationService.toLocalDateTime`); parse as UTC, render in the viewer's zone.
+// Windows arrive as a zone-less UTC wall time (`AwsCapacityReservationService.toLocalDateTime`),
+// so they are parsed as UTC and rendered in the viewer's own zone.
 export function formatCloudCommitmentDate (value, format) {
   if (!value) {
     return undefined;
   }
-  // Non-strict: the backend may hand back a value whose formatting differs slightly
-  // from the wire format this client sends.
+  // Non-strict: the backend's formatting may differ slightly from the wire format sent.
   const parsed = moment.utc(value, COMMITMENT_DATE_TIME_FORMAT);
   if (!parsed.isValid()) {
     return undefined;
   }
-  // `.local()` reads the OS zone, not `moment.tz.setDefault`; `displayDate.js` works
-  // around the same quirk by converting through a plain `Date` first.
+  // `.local()` reads the OS zone, not `moment.tz.setDefault`, so this converts through a
+  // plain `Date` instead - the same workaround `displayDate.js` uses.
   return moment(parsed.toDate()).format(format);
 }
 
@@ -113,8 +111,8 @@ export function getCompleteMlBlockCandidates (candidates) {
   return (candidates || []).filter(isCompleteMlBlockCandidate);
 }
 
-// One AWS call per candidate, but a flat response list - `getOfferingsForCandidate`
-// attributes a result back to its row by this same `instanceType` string.
+// The response is one flat list, which `getOfferingsForCandidate` attributes back to a row
+// by this same `instanceType` string.
 export function buildCapacityBlockOfferingRequest (values) {
   const {
     region,
@@ -165,15 +163,13 @@ export function getOfferingsForCandidate (offerings, candidate) {
   return (offerings || []).filter(o => (o.instanceType || '').toLowerCase() === type);
 }
 
-// Every candidate's own offerings, flattened - the selection is one value shared by the
-// whole form, so finding it means looking across every row rather than just one.
+// The selection is one value shared by the whole form, so finding it spans every row.
 export function getAllMlBlockOfferings (offeringsByCandidate) {
   return Object.values(offeringsByCandidate || {})
     .reduce((all, entry) => all.concat((entry || {}).offerings || []), []);
 }
 
-// Whether `offeringId` is among candidate `id`'s own offerings - the ownership check
-// the selection's safety rules key off (dropped when its owner is searched again).
+// A selection is dropped when its owning row is searched again; this is that ownership check.
 export function offeringBelongsToCandidate (offeringsByCandidate, id, offeringId) {
   if (!offeringId) {
     return false;
@@ -208,29 +204,27 @@ export function formatCapacityBlockInstanceType (info) {
   return parts.filter(Boolean).join(', ');
 }
 
-// Shared by the future-dated and ML Block branches below, which differ in the minimum
-// duration, the lead-time window, and whether an end of window is required at all.
+// Shared by the future-dated and ML Block rules, which differ only in these three arguments.
 function getCommitmentWindowErrors (values, minDurationDays, leadTime, endRequired = true) {
   const {commitmentStart, commitmentEnd, commitmentDurationDays} = values;
-  // Validated on the true instants the payload carries, compared against `moment.utc()` -
-  // mirrors exactly what the backend re-checks (`DateUtils.nowUTC()`).
+  // Checked on the true instants the payload carries, as the backend re-checks them
+  // against `DateUtils.nowUTC()`.
   const start = getCommitmentDayStart(commitmentStart);
   const end = getCommitmentDayEnd(commitmentEnd);
   const now = moment.utc();
   let commitmentStartError, commitmentEndError, commitmentDurationError;
-  // A value carrying a time fails this day-only strict parse too, so it counts as
-  // missing rather than as a day.
+  // A value carrying a time fails this day-only strict parse, so it counts as missing.
   if (!commitmentStart || !start.isValid()) {
     commitmentStartError = 'Search from date is required';
   } else if (!start.isAfter(now)) {
     commitmentStartError = 'Search from date should be in the future';
   } else if (leadTime) {
-    // Matches backend `ChronoUnit.DAYS.between`: `Math.floor` of the fractional diff,
-    // not `diff(now, 'days')`, which truncates toward zero instead.
+    // Matches the backend's `ChronoUnit.DAYS.between`: floor of the fractional diff, not
+    // `diff(now, 'days')`, which truncates toward zero.
     const leadDays = Math.floor(start.diff(now, 'days', true));
     if (leadDays < leadTime.min || leadDays > leadTime.max) {
-      // `leadDays` floors against a start pinned to 00:00, so the user's actual calendar
-      // boundary is one day later than `leadTime`'s own min/max - state that, not the raw values.
+      // `leadDays` floors against a start pinned to 00:00, so the calendar boundary a user
+      // hits is one day later than `leadTime`'s own min/max.
       commitmentStartError = 'Search from date should be between ' +
         `${leadTime.min + 1} and ${leadTime.max + 1} days from now`;
     }
@@ -402,14 +396,11 @@ export function getValidationErrors (values) {
       countError = `Count should be a positive value or zero (pool is disabled)`;
     }
   }
-  // Pre-validates the backend's own `NodePoolValidator` rules for a future-dated pool's
-  // single one-time window, so the user sees them before the request.
-  //
-  // The min-vCPU and allowed-family rules are left to the backend - they need lookups
-  // this form does not have.
+  // Pre-validates `NodePoolValidator`'s window rules. Its min-vCPU and allowed-family rules
+  // are left to the backend - they need lookups this form does not have.
   if (mode === MODE_FUTURE_DATED) {
-    // An existing reservation's window cannot be changed through this endpoint, so SAVE
-    // must not be blocked by fields this form leaves empty (the duration GET never echoes).
+    // This endpoint cannot change an existing reservation's window, so SAVE must not be
+    // blocked by fields the form leaves empty (the duration GET never echoes).
     if (!isExistingReservation) {
       ({commitmentStartError, commitmentEndError, commitmentDurationError} =
         getCommitmentWindowErrors(values, MIN_COMMITMENT_DURATION_DAYS, {
@@ -418,14 +409,13 @@ export function getValidationErrors (values) {
         }));
     }
     // The backend stores a reservation pool with count 0 until activated, so an existing
-    // future-dated pool legitimately loads with 0 - SAVE must not be blocked by it.
+    // future-dated pool legitimately loads with 0.
     if (!isExistingReservation && (Number.isNaN(Number(count)) ||
         Number(count) < RESERVATION_COUNT_MIN_SIZE)) {
       countError = 'Count should be at least 1 for a Future dated pool';
     }
   }
-  // Nothing about a purchased block is editable, so none of this runs once the pool
-  // already holds one.
+  // Nothing about a purchased block is editable.
   if (mode === MODE_ML_BLOCK && !isExistingReservation) {
     ({commitmentStartError, commitmentEndError, commitmentDurationError} =
       getCommitmentWindowErrors(values, MIN_ML_BLOCK_DURATION_DAYS, undefined, false));
@@ -441,8 +431,8 @@ export function getValidationErrors (values) {
     if (!getSelectedOffering(values)) {
       mlBlockOfferingError = 'Select one of the offerings';
     }
-    // `count`/`instanceType` are filled from the selected offering, so this only
-    // fails while nothing is selected.
+    // `count`/`instanceType` come from the selected offering, so this only fails with
+    // nothing selected.
     if (Number.isNaN(Number(count)) || Number(count) < RESERVATION_COUNT_MIN_SIZE) {
       countError = 'Count should be at least 1 for an ML Block pool';
     }
@@ -554,22 +544,19 @@ export function isModified (values) {
     (autoscaled && Number(scaleStep) !== Number(initialScaleStep));
 }
 
-// Converts whole days to the backend's `commitmentDuration` seconds exactly once, here,
-// on the way out.
-//
 // `instancePlatform`/`originId` are deliberately omitted - the backend defaults
 // `instancePlatform` to `Linux/UNIX`.
 export function buildCapacityReservationRequest (values) {
   const {mode} = values;
   if (mode === MODE_ML_BLOCK) {
-    // Raw on purpose: the backend reads these dates back as UTC (`toInstant(ZoneOffset.UTC)`),
-    // so converting them here, as the card display does, would corrupt the buy.
     const offering = getSelectedOffering(values) || {};
     const {offeringId, availabilityZone, startDate, endDate, capacityDurationHours} = offering;
     return {
       reservationType: RESERVATION_TYPE_CAPACITY_BLOCK,
       capacityBlockOfferingId: offeringId,
       availabilityZone,
+      // Sent raw: the backend reads these back as UTC (`toInstant(ZoneOffset.UTC)`), so
+      // converting them the way the card display does would corrupt the buy.
       requestedStartDate: startDate,
       requestedEndDate: endDate,
       commitmentDuration: Number(capacityDurationHours) * SECONDS_PER_HOUR
@@ -578,8 +565,8 @@ export function buildCapacityReservationRequest (values) {
   const {commitmentStart, commitmentEnd, commitmentDurationDays} = values;
   return {
     reservationType: RESERVATION_TYPE_FUTURE_DATED,
-    // `commitmentStart`/`commitmentEnd` hold the viewer's day; `getCommitmentDayStart`/`…End`
-    // convert it to the UTC instant it denotes - the backend reads this zone-less string as UTC.
+    // The viewer's picked day, converted to the UTC instant it denotes - the backend reads
+    // this zone-less string as UTC.
     requestedStartDate: getCommitmentDayStart(commitmentStart).format(COMMITMENT_DATE_TIME_FORMAT),
     requestedEndDate: getCommitmentDayEnd(commitmentEnd).format(COMMITMENT_DATE_TIME_FORMAT),
     commitmentDuration: Number(commitmentDurationDays) * SECONDS_PER_DAY
@@ -634,12 +621,12 @@ export function buildPoolPayload (values) {
       }
     }), {})
   };
-  // The backend only reads `poolType` on create (its UPDATE statement omits the column),
-  // so sending it unconditionally can never overwrite an existing pool's type.
+  // The backend reads `poolType` on create only (its UPDATE omits the column), so sending it
+  // unconditionally cannot overwrite an existing pool's type.
   payload.poolType = poolType;
   if (mode === MODE_FUTURE_DATED || mode === MODE_ML_BLOCK) {
-    // `NodePoolManager.update()` never reads `capacityReservationRequest` on an existing
-    // reservation pool, so it is sent only on create, never on an update.
+    // `NodePoolManager.update()` never reads `capacityReservationRequest`, so it goes on
+    // create only.
     if (!isExistingReservation) {
       payload.capacityReservationRequest = buildCapacityReservationRequest(values);
     }
@@ -647,8 +634,8 @@ export function buildPoolPayload (values) {
   return payload;
 }
 
-// Shared with `ReservationSummary`'s own display text, so the pool-card badge and that
-// summary never disagree: a window counts as granted once both dates parse.
+// A window counts as granted once both dates parse. Shared with `ReservationSummary` so the
+// pool-card badge and that summary never disagree.
 export function isReservationScheduled (start, end) {
   return Boolean(
     formatCloudCommitmentDate(start, 'YYYY-MM-DD HH:mm:ss') &&
@@ -656,11 +643,8 @@ export function isReservationScheduled (start, end) {
   );
 }
 
-// The reservation record is the source of truth for its own lifecycle - once available,
-// its `status` enum is returned verbatim for the caller to present, not collapsed here.
-//
-// With no record yet (still loading, or none returned), falls back to inferring
-// Approved/Pending from `pool.startDate`/`endDate` so the badge never goes blank.
+// The record is the source of truth for its own lifecycle, so its `status` is returned verbatim.
+// With no record yet, Approved/Pending is inferred from the pool's dates so nothing goes blank.
 export function getCapacityReservationStatus (pool, reservation) {
   const {isCapacityReservation, startDate, endDate} = pool || {};
   if (!isCapacityReservation) {
@@ -674,8 +658,7 @@ export function getCapacityReservationStatus (pool, reservation) {
     : RESERVATION_STATUS_PENDING;
 }
 
-// An unknown status (older client, newer backend) must still read as something rather
-// than blank or throw - humanised here: `SOME_NEW_STATUS` -> "Some new status".
+// An unknown status must still read as something: `SOME_NEW_STATUS` -> "Some new status".
 export function humanizeReservationStatus (status) {
   const words = `${status}`.toLowerCase().split('_').filter(Boolean);
   if (!words.length) {
@@ -685,8 +668,7 @@ export function humanizeReservationStatus (status) {
     .trim();
 }
 
-// A reservation's `instanceCount` is only real while it still holds capacity - once
-// terminal (`RESERVATION_TERMINAL_STATUSES`), neither the card nor the form may show it.
+// A reservation's `instanceCount` is only real while it still holds capacity.
 export function getReservationDisplayInstanceCount (reservation) {
   if (!reservation || RESERVATION_TERMINAL_STATUSES.includes(reservation.status)) {
     return undefined;
@@ -695,15 +677,14 @@ export function getReservationDisplayInstanceCount (reservation) {
   return instanceCount === null || instanceCount === undefined ? undefined : instanceCount;
 }
 
-// Mirrors the backend's `CapacityReservationService#onPoolDeletion`: deleting a pool
-// also gives up its reservation, which the backend refuses to do implicitly unless forced.
+// Backend `CapacityReservationService#onPoolDeletion`: deleting a pool gives up its reservation.
 const RESERVATION_SAFE_TO_DELETE_STATUSES = [
   ...RESERVATION_TERMINAL_STATUSES,
   RESERVATION_STATUS_REQUIRED_APPROVE
 ];
 
-// Safe without forcing only at a terminal status or `REQUIRED_APPROVE` - anywhere else,
-// including `ACTIVE`, giving up the capacity may still cost money.
+// At any other status, `ACTIVE` included, giving up the capacity may still cost money, so the
+// backend refuses to do it implicitly.
 export function needsForceToDeletePool (pool, reservation) {
   const {isCapacityReservation} = pool || {};
   if (!isCapacityReservation || !reservation) {
