@@ -226,6 +226,7 @@
                 <!--updateNodePoolReservationStateQuery-->
                 <![CDATA[
                     UPDATE pipeline.node_pool SET
+                        instance_type = :POOL_INSTANCE_TYPE,
                         instance_count = :POOL_INSTANCE_COUNT,
                         start_date = :POOL_START_DATE,
                         end_date = :POOL_END_DATE,

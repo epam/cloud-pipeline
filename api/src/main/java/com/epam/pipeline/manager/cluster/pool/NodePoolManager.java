@@ -35,6 +35,7 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
+import com.epam.pipeline.vo.CapacitySpecification;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -184,8 +185,10 @@ public class NodePoolManager implements SecuredEntityManager {
                 .name(pool.getName())
                 .regionId(pool.getRegionId())
                 .owner(pool.getOwner())
-                .instanceType(pool.getInstanceType())
-                .instanceCount(vo.getCount())
+                .candidate(CapacitySpecification.builder()
+                        .instanceType(pool.getInstanceType())
+                        .instanceCount(vo.getCount())
+                        .build())
                 .build();
     }
 

@@ -21,19 +21,23 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.cluster.pool.CapacityReservationRequest;
 import com.epam.pipeline.dao.cluster.capacityreservation.CapacityReservationDao;
 import com.epam.pipeline.entity.cluster.AMIConfiguration;
+import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.vo.CapacitySpecification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,11 +49,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Business-logic layer for capacity reservations: the reservation's own record, and the node pool it drives.
@@ -58,9 +65,12 @@ import java.util.Set;
  * {@link CapacityReservationApprovalService} decides the status it starts in. From then on the reservation drives
  * the pool, which is what the pool methods are for:
  * <ul>
- *   <li>{@link #schedulePool} - gives the pool the window it is usable in and the reservation's target, zone and
- *       subnet, and leaves its size alone, which at that point is still no nodes.</li>
- *   <li>{@link #activatePool} - sizes the pool to the reserved instance count, once the capacity is live.</li>
+ *   <li>{@link #schedulePool} - gives the pool the window it is usable in, the reservation's target, zone and
+ *       subnet, and the instance type the provider has scheduled - whichever candidate that turned out to be for
+ *       a {@code FUTURE_DATED} reservation with fallbacks - while leaving its size alone, still no nodes at that
+ *       point.</li>
+ *   <li>{@link #activatePool} - sizes the pool to the reserved instance count once the capacity is live; the
+ *       instance type is already there from {@link #schedulePool}.</li>
  *   <li>{@link #extendPoolEndDate} - moves the pool's own end date out to match a capacity block extension,
  *       without touching anything else {@link #schedulePool} sets, since an extension changes nothing else.</li>
  *   <li>{@link #deactivatePool} - takes all of that back off the pool, leaving a pool of no nodes, which
@@ -85,6 +95,12 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class CapacityReservationService {
 
+    private static final Comparator<InstanceOffer> BIGGEST_FIRST = Comparator
+            .comparingInt(InstanceOffer::getGpu)
+            .thenComparingInt(InstanceOffer::getVCPU)
+            .thenComparingDouble(InstanceOffer::getMemory)
+            .reversed();
+
     private final CapacityReservationDao reservationDao;
     private final CapacityReservationApprovalService approvalService;
     private final CapacityReservationStatusService statusService;
@@ -93,6 +109,7 @@ public class CapacityReservationService {
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
+    private final InstanceOfferManager instanceOfferManager;
 
     @Autowired
     @Lazy
@@ -144,8 +161,9 @@ public class CapacityReservationService {
     }
 
     /**
-     * Prepares the pool behind a scheduled reservation: the window it is usable in, and the reservation's target,
-     * zone and subnet in its launch configuration. The pool's count stays 0.
+     * Prepares the pool behind a scheduled reservation: the window it is usable in, the reservation's target,
+     * zone and subnet in its launch configuration, and the instance type the provider has committed to deliver -
+     * whichever candidate that turned out to be. The pool's count stays 0 until the capacity is actually live.
      */
     @Transactional
     public void schedulePool(final CapacityReservation reservation) {
@@ -154,6 +172,7 @@ public class CapacityReservationService {
         final String subnet = allowedNetworks(regionCodeOf(reservation)).get(zone);
         final LocalDateTime poolEndDate = getPoolEndDate(reservation);
         poolManager.applyReservationState(reservation.getNodePoolId(), pool -> {
+            pool.setInstanceType(reservation.getCandidate().getInstanceType());
             pool.setStartDate(reservation.getStartDate());
             pool.setEndDate(poolEndDate);
             pool.setAmiConfiguration(withReservation(pool.getAmiConfiguration(), launchSpecification, zone, subnet));
@@ -181,12 +200,23 @@ public class CapacityReservationService {
                 .orElse(null);
     }
 
+    /**
+     * Sizes the pool to the reserved instance count once the capacity is live. The instance type is
+     * already there - {@link #schedulePool} always runs before this, whether at an earlier SCHEDULED
+     * transition or right before this call - so repeating that write here is a no-op; it stays so a
+     * caller never depends on {@code schedulePool} having run first.
+     *
+     * @param reservation the reservation whose granted instance type/count the pool should now match
+     */
     @Transactional
     public void activatePool(final CapacityReservation reservation) {
-        poolManager.applyReservationState(reservation.getNodePoolId(),
-            pool -> pool.setCount(reservation.getInstanceCount()));
-        log.debug("Activated node pool {} with {} nodes for capacity reservation {}",
-                reservation.getNodePoolId(), reservation.getInstanceCount(), reservation.getId());
+        poolManager.applyReservationState(reservation.getNodePoolId(), pool -> {
+            pool.setInstanceType(reservation.getCandidate().getInstanceType());
+            pool.setCount(reservation.getCandidate().getInstanceCount());
+        });
+        log.debug("Activated node pool {} with {} {} nodes for capacity reservation {}",
+                reservation.getNodePoolId(), reservation.getCandidate().getInstanceCount(),
+                reservation.getCandidate().getInstanceType(), reservation.getId());
     }
 
     /**
@@ -308,8 +338,7 @@ public class CapacityReservationService {
                 .owner(request.getOwner())
                 .created(DateUtils.nowUTC())
                 .updated(DateUtils.nowUTC())
-                .instanceType(request.getInstanceType())
-                .instanceCount(request.getInstanceCount())
+                .candidate(request.getCandidate())
                 .requestedStartDate(request.getRequestedStartDate())
                 .requestedEndDate(request.getRequestedEndDate())
                 .commitmentDuration(request.getCommitmentDuration())
@@ -321,8 +350,38 @@ public class CapacityReservationService {
                     .availabilityZone(request.getAvailabilityZone())
                     .startDate(request.getRequestedStartDate())
                     .endDate(request.getRequestedEndDate());
+        } else if (CapacityReservationType.FUTURE_DATED == request.getReservationType()) {
+            reservation.fallbackCandidates(buildFallbackCandidates(request));
         }
         return reservation.build();
+    }
+
+    /**
+     * Drops any candidate matching the main candidate or another fallback - merged, not rejected - then
+     * sorts what's left biggest instance first: GPU count, then vCPU count, then memory, all descending.
+     * An unpriced type sorts last, as if it had none of either.
+     */
+    private List<CapacitySpecification> buildFallbackCandidates(final CapacityReservationRequest request) {
+        final CapacitySpecification main = request.getCandidate();
+        final List<CapacitySpecification> deduped = ListUtils.emptyIfNull(request.getFallbackCandidates()).stream()
+                .filter(candidate -> !candidate.equals(main))
+                .distinct()
+                .collect(Collectors.toList());
+        // looked up once per candidate here, rather than on every comparison the sort below makes
+        final Map<CapacitySpecification, InstanceOffer> offers = deduped.stream()
+                .collect(Collectors.toMap(Function.identity(), candidate -> offerOf(candidate, request.getRegionId())));
+        return deduped.stream()
+                .sorted(Comparator.comparing(offers::get, BIGGEST_FIRST))
+                .collect(Collectors.toList());
+    }
+
+    private InstanceOffer offerOf(final CapacitySpecification candidate, final Long regionId) {
+        final Optional<InstanceOffer> offer = instanceOfferManager.findOffer(candidate.getInstanceType(), regionId);
+        if (!offer.isPresent()) {
+            log.warn("No price catalogue entry for fallback candidate instance type {} in region {}; sorting it "
+                    + "last among the fallbacks", candidate.getInstanceType(), regionId);
+        }
+        return offer.orElseGet(InstanceOffer::new);
     }
 
     private Map<String, String> allowedNetworks(final String regionCode) {

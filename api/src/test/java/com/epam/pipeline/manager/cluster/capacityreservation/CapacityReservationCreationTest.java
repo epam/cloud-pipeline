@@ -46,6 +46,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
+import com.epam.pipeline.vo.CapacitySpecification;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -248,8 +249,8 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(reservation.get().getNodePoolId()).isEqualTo(created.getId());
         assertThat(reservation.get().getName()).isEqualTo(POOL_NAME);
         assertThat(reservation.get().getRegionId()).isEqualTo(REGION_ID);
-        assertThat(reservation.get().getInstanceType()).isEqualTo(INSTANCE_TYPE);
-        assertThat(reservation.get().getInstanceCount()).isEqualTo(INSTANCE_COUNT);
+        assertThat(reservation.get().getCandidate().getInstanceType()).isEqualTo(INSTANCE_TYPE);
+        assertThat(reservation.get().getCandidate().getInstanceCount()).isEqualTo(INSTANCE_COUNT);
         assertThat(reservation.get().getCommitmentDuration()).isEqualTo(COMMITMENT_DURATION);
         assertThat(reservation.get().getOwner()).isEqualTo(OWNER);
         assertThat(reservation.get().getInstancePlatform())
@@ -265,8 +266,10 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         request.setName(RENAMED);
         request.setRegionId(FOREIGN_REGION_ID);
         request.setOwner(FOREIGN_OWNER);
-        request.setInstanceType(FOREIGN_INSTANCE_TYPE);
-        request.setInstanceCount(INSTANCE_COUNT + 1);
+        request.setCandidate(CapacitySpecification.builder()
+                .instanceType(FOREIGN_INSTANCE_TYPE)
+                .instanceCount(INSTANCE_COUNT + 1)
+                .build());
 
         final NodePool created = poolManager.create(vo);
 
@@ -276,8 +279,8 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(reservation.getName()).isEqualTo(POOL_NAME);
         assertThat(reservation.getRegionId()).isEqualTo(REGION_ID);
         assertThat(reservation.getOwner()).isEqualTo(OWNER);
-        assertThat(reservation.getInstanceType()).isEqualTo(INSTANCE_TYPE);
-        assertThat(reservation.getInstanceCount()).isEqualTo(INSTANCE_COUNT);
+        assertThat(reservation.getCandidate().getInstanceType()).isEqualTo(INSTANCE_TYPE);
+        assertThat(reservation.getCandidate().getInstanceCount()).isEqualTo(INSTANCE_COUNT);
     }
 
     @Test
@@ -289,7 +292,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(loaded.getCount()).isZero();
         assertThat(loaded.isActive(DateUtils.nowUTC())).isFalse();
         assertThat(reservationDao.findByNodePoolId(created.getId()).orElseThrow(AssertionError::new)
-                .getInstanceCount()).isEqualTo(INSTANCE_COUNT);
+                .getCandidate().getInstanceCount()).isEqualTo(INSTANCE_COUNT);
     }
 
     @Test
@@ -659,7 +662,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Cannot change the count");
         assertThat(reservationDao.findByNodePoolId(created.getId()).orElseThrow(AssertionError::new)
-                .getInstanceCount()).isEqualTo(INSTANCE_COUNT);
+                .getCandidate().getInstanceCount()).isEqualTo(INSTANCE_COUNT);
         assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).getCount()).isZero();
     }
 

@@ -17,6 +17,7 @@
 package com.epam.pipeline.controller.vo.cluster.pool;
 
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
+import com.epam.pipeline.vo.CapacitySpecification;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,6 +25,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * The capacity reservation part of a {@link NodePoolVO}: what the caller asks a cloud provider to hold for the pool
@@ -67,6 +69,13 @@ public class CapacityReservationRequest {
      */
     private String availabilityZone;
 
+    /**
+     * Other instance types the platform may fall back to, in the order the caller sends them - the
+     * platform merges duplicates and sorts the rest itself (biggest instance first) before trying any.
+     * {@link CapacityReservationType#FUTURE_DATED} only.
+     */
+    private List<CapacitySpecification> fallbackCandidates;
+
     @JsonIgnore
     private Long nodePoolId;
     @JsonIgnore
@@ -76,7 +85,5 @@ public class CapacityReservationRequest {
     @JsonIgnore
     private String owner;
     @JsonIgnore
-    private String instanceType;
-    @JsonIgnore
-    private Integer instanceCount;
+    private CapacitySpecification candidate;
 }

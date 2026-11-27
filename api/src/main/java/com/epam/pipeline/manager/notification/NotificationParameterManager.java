@@ -132,8 +132,8 @@ public class NotificationParameterManager {
         parameters.put("reservationType", reservation.getReservationType());
         parameters.put("cloudProvider", reservation.getCloudProvider());
         parameters.put("regionId", reservation.getRegionId());
-        parameters.put("instanceType", reservation.getInstanceType());
-        parameters.put("instanceCount", reservation.getInstanceCount());
+        parameters.put("instanceType", reservation.getCandidate().getInstanceType());
+        parameters.put("instanceCount", reservation.getCandidate().getInstanceCount());
         parameters.put("commitmentDuration", reservation.getCommitmentDuration());
         parameters.put("startDate", reservation.getStartDate());
         parameters.put("endDate", reservation.getEndDate());

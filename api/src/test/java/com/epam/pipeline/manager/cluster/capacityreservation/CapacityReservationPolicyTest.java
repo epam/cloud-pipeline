@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationP
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.utils.condition.field.CapacityReservationField;
 import com.epam.pipeline.utils.condition.field.SubjectEntityField;
+import com.epam.pipeline.vo.CapacitySpecification;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -114,8 +115,10 @@ public class CapacityReservationPolicyTest {
     @Test
     public void shouldExtractFieldValuesFromReservation() {
         final CapacityReservation reservation = new CapacityReservation();
-        reservation.setInstanceType("p5.48xlarge");
-        reservation.setInstanceCount(INSTANCE_COUNT);
+        reservation.setCandidate(CapacitySpecification.builder()
+                .instanceType("p5.48xlarge")
+                .instanceCount(INSTANCE_COUNT)
+                .build());
         reservation.setCommitmentDuration(COMMITMENT_DURATION);
 
         assertThat(extract(CapacityReservationField.INSTANCE_TYPE, reservation)).isEqualTo("p5.48xlarge");

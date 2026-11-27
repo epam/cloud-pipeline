@@ -492,7 +492,7 @@ export function getReservationDisplayInstanceCount (reservation) {
   if (!reservation || RESERVATION_TERMINAL_STATUSES.includes(reservation.status)) {
     return undefined;
   }
-  const {instanceCount} = reservation;
+  const {instanceCount} = reservation.candidate || {};
   return instanceCount === null || instanceCount === undefined ? undefined : instanceCount;
 }
 
