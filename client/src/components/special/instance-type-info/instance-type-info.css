@@ -26,14 +26,24 @@
 .instance-type-info-parts {
   font-size: smaller;
   flex: 1;
+  min-width: 0;
+
+  /* the text wraps anywhere and the block shows one line, so it never widens the select */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+  height: 1.5em;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .instance-type-info-part:not(:last-child)::after {
   content: ', ';
   white-space: pre;
+}
+
+.instance-type-tag {
+  flex-shrink: 0;
+  margin-left: 4px;
 }
 
 .instance-type-region::before {

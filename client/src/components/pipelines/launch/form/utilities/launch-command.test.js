@@ -41,4 +41,18 @@ describe('LaunchCommand request', () => {
     expect(pipelineStart.instanceType).toBe('m5.large');
     expect(pipelineStart.podAssignPolicy).toEqual(payload.podAssignPolicy);
   });
+
+  it('shows CP_CAP_POOL_ID in the preview for a pool launch, unlike a plain one', async () => {
+    const api = stubApi({'/run/cmd': 'pipe run'});
+    const payload = {
+      instanceType: 'm5.large',
+      params: {CP_CAP_POOL_ID: {value: '30'}}
+    };
+
+    renderWithStores(<LaunchCommand payload={payload} />, {preferences});
+
+    await waitFor(() => expect(api.calls).toHaveLength(1));
+    const {pipelineStart} = JSON.parse(api.calls[0].body);
+    expect(pipelineStart.params.CP_CAP_POOL_ID).toEqual({value: '30'});
+  });
 });
