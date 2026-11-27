@@ -44,9 +44,11 @@
 # The session is read from E2E_ADMIN_SESSION or from the file E2E_ADMIN_SESSION_FILE (default ~/.cp-e2e/admin-session)
 # by "extend" and "sso"; "watch" and "restore" (and "sso" with --state) use the copy kept in <dir> (0700). "create"
 # needs none of that: it mints the session itself and is the one command that writes <dir> from scratch.
-# It is a row of the API database table pipeline.spring_session (Spring Session JDBC): the update is done with psql in
-# the API database pod (label cloud-pipeline/cp-api-db=true, else the pod behind the service of PSG_HOST, such as
-# cp-api-db-16; CP_API_DB_POD overrides both), the session id is passed through stdin, never on a command line.
+# It is a row of the API database table pipeline.spring_3_session (Spring Session 3 JDBC; CP_API_DB_SESSION_TABLE
+# overrides it), whose attributes are keyed by its primary_id; the SESSION cookie is its session_id base64-encoded. The
+# update is done with psql in the API database pod (label cloud-pipeline/cp-api-db=true, else the pod behind the
+# service of PSG_HOST, such as cp-api-db-16; CP_API_DB_POD overrides both), the session id is passed through stdin,
+# never on a command line.
 #
 # The SSO authentication has an end of its own that no session extension changes: the API signs in with Spring SAML,
 # whose authentication stops being valid at the earliest SessionNotOnOrAfter of the SAML assertion
@@ -126,26 +128,39 @@ e2e_require_tools kubectl jq curl
 [[ "$_CMD" =~ ^(sso|watch)$ ]] && e2e_require_tools perl
 cp_init_api
 
-_TABLE="${CP_API_DB_SESSION_TABLE:-pipeline.spring_session}"
+_TABLE="${CP_API_DB_SESSION_TABLE:-pipeline.spring_3_session}"
 _STATE_FILE="$_STATE/admin-session.json"
 
 function _sql {
     cp_db_sql
 }
 
+# The session_id of the table row: the SESSION cookie carries it base64-encoded
+function _db_id {
+    local _id
+    _id="$(base64 -d <<< "$1" 2> /dev/null)" && [[ "$_id" =~ ^[0-9a-f-]{36}$ ]] || return 1
+    echo "$_id"
+}
+
+# A SESSION cookie value; only the session_id _db_id makes of it goes into SQL
 function _valid_id {
-    [[ "$1" =~ ^[A-Za-z0-9-]{16,128}$ ]]
+    [[ "$1" =~ ^[A-Za-z0-9-]{16,128}$ ]] && _db_id "$1" > /dev/null
 }
 
 # Prints "<max_inactive_interval>\t<principal>\t<last access, UTC>" of the session, nothing if it does not exist
 function _session_row {
+    local _id
+    _id="$(_db_id "$1")" || return 1
     printf "select max_inactive_interval, principal_name, to_char(to_timestamp(last_access_time / 1000) at time zone 'UTC', 'YYYY-MM-DD HH24:MI:SS') from %s where session_id = '%s';\n" \
-        "$_TABLE" "$1" | _sql
+        "$_TABLE" "$_id" | _sql
 }
 
+# Spring Session deletes the rows by expiry_time, which it only recomputes on a request: set together
 function _set_interval {
-    printf "update %s set max_inactive_interval = %d where session_id = '%s' returning max_inactive_interval;\n" \
-        "$_TABLE" "$2" "$1" | _sql
+    local _id
+    _id="$(_db_id "$1")" || return 1
+    printf "update %s set max_inactive_interval = %d, expiry_time = last_access_time + %d::bigint * 1000 where session_id = '%s' returning max_inactive_interval;\n" \
+        "$_TABLE" "$2" "$2" "$_id" | _sql
 }
 
 # Prints "<HTTP code>\t<user the session authenticates as>" (000 if the API did not answer)
@@ -257,18 +272,18 @@ function _set_email {
 # that is not exactly one match. Overwrites those bytes with <new ms>, so the deadline is <new ms> instead of 60 s
 # after creation, and fails unless <new ms> is then read back at the same place.
 function _patch_token_expiration {
-    local _session="$1" _new_ms="$2" _found _count _pos _written
-    _valid_id "$_session" || { e2e_err "Invalid session id, not patching it"; return 1; }
+    local _session="$1" _new_ms="$2" _id _found _count _pos _written
+    _id="$(_db_id "$_session")" || { e2e_err "Invalid session id, not patching it"; return 1; }
     [[ "$_new_ms" =~ ^[0-9]+$ ]] || { e2e_err "Invalid new token expiration $_new_ms, not patching it"; return 1; }
-    _found="$(printf "with s as (select creation_time, (select attribute_bytes from %s_attributes where session_id = '%s' and attribute_name = 'SPRING_SECURITY_CONTEXT') as b from %s where session_id = '%s'), m as (select position(int8send(ms) in b) as pos from s, generate_series(s.creation_time, s.creation_time + 62000) as ms where b is not null and position(int8send(ms) in b) > 0) select count(*), coalesce(max(pos), 0) from m;\n" \
-        "$_TABLE" "$_session" "$_TABLE" "$_session" | _sql)" || return 1
+    _found="$(printf "with s as (select creation_time, (select attribute_bytes from %s_attributes where session_primary_id = t.primary_id and attribute_name = 'SPRING_SECURITY_CONTEXT') as b from %s t where session_id = '%s'), m as (select position(int8send(ms) in b) as pos from s, generate_series(s.creation_time, s.creation_time + 62000) as ms where b is not null and position(int8send(ms) in b) > 0) select count(*), coalesce(max(pos), 0) from m;\n" \
+        "$_TABLE" "$_TABLE" "$_id" | _sql)" || return 1
     IFS=$'\t' read -r _count _pos <<< "$_found"
     if [ "$_count" != "1" ]; then
         e2e_err "Found $_count candidates for the token expiration field of the session, expected exactly 1: not patching it"
         return 1
     fi
-    _written="$(printf "update %s_attributes set attribute_bytes = overlay(attribute_bytes placing int8send(%d::bigint) from %d for 8) where session_id = '%s' and attribute_name = 'SPRING_SECURITY_CONTEXT' returning position(int8send(%d::bigint) in attribute_bytes);\n" \
-        "$_TABLE" "$_new_ms" "$_pos" "$_session" "$_new_ms" | _sql)" || return 1
+    _written="$(printf "update %s_attributes set attribute_bytes = overlay(attribute_bytes placing int8send(%d::bigint) from %d for 8) where session_primary_id = (select primary_id from %s where session_id = '%s') and attribute_name = 'SPRING_SECURITY_CONTEXT' returning position(int8send(%d::bigint) in attribute_bytes);\n" \
+        "$_TABLE" "$_new_ms" "$_pos" "$_TABLE" "$_id" "$_new_ms" | _sql)" || return 1
     if [ "$_written" != "$_pos" ]; then
         e2e_err "The token expiration field of the session reads back at '${_written:-no row}', expected $_pos"
         return 1
@@ -288,9 +303,10 @@ function _given_session {
 # "none" only when AuthnStatements were found and none has a SessionNotOnOrAfter. Fails if the session has no SAML
 # assertion with an AuthnStatement (no such session, not an SSO sign-in, other format) or a time does not parse.
 function _sso_times {
-    local _statements _i _e _t _not_after="" _instant=""
-    _statements="$(printf "select encode(attribute_bytes, 'base64') from %s_attributes where session_id = '%s' and attribute_name = 'SPRING_SECURITY_CONTEXT';\n" \
-            "$_TABLE" "$1" | _sql | base64 -d 2> /dev/null | perl "$E2E_SCRIPTS_DIR/saml-authn-statements.pl")" || return 1
+    local _id _statements _i _e _t _not_after="" _instant=""
+    _id="$(_db_id "$1")" || return 1
+    _statements="$(printf "select encode(a.attribute_bytes, 'base64') from %s_attributes a join %s s on s.primary_id = a.session_primary_id where s.session_id = '%s' and a.attribute_name = 'SPRING_SECURITY_CONTEXT';\n" \
+            "$_TABLE" "$_TABLE" "$_id" | _sql | base64 -d 2> /dev/null | perl "$E2E_SCRIPTS_DIR/saml-authn-statements.pl")" || return 1
     [ "$_statements" ] || return 1
     while IFS=$'\t' read -r _i _e; do
         if [ "$_i" != "-" ]; then
@@ -547,10 +563,9 @@ case "$_CMD" in
             elif ! _valid_id "$_session"; then
                 e2e_err "Invalid session in $_STATE_FILE, not deleting it"
                 _failed="true"
-            # The attributes first: Spring Session, not Flyway, creates the tables, so the foreign key between them
-            # may lack ON DELETE CASCADE
-            elif printf "delete from %s_attributes where session_id = '%s'; delete from %s where session_id = '%s';\n" \
-                    "$_TABLE" "$_session" "$_TABLE" "$_session" | _sql > /dev/null; then
+            # Its attributes go with it: ON DELETE CASCADE (Flyway migration v2026.08.07_18.00)
+            elif printf "delete from %s where session_id = '%s';\n" "$_TABLE" "$(_db_id "$_session")" \
+                    | _sql > /dev/null; then
                 e2e_log "Database-made session of $_principal: deleted (it was created for this run, not an SSO" \
                     "sign-in to restore)"
             else
