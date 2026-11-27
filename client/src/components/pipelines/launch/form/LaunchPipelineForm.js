@@ -794,8 +794,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   }
 
   getIsInstanceTypeWithReservation () {
-    // Only a pool picked from "Reserved capacity blocks" is a reservation: a
-    // plain instance type launches without one, even where a pool backs it.
+    // True when the chosen node type is a pool option.
     return formOffersCapacityBlocks(this.props) && !!this.selectedCapacityBlockPool;
   }
 
@@ -932,8 +931,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             payload = await this.generateLaunchPayload(values);
           } else if (this.props.editConfigurationMode) {
             payload = await this.generateConfigurationPayload(values, {
-              skipReservationParameters: false,
-              applyAdditionalParameters: false
+              skipReservationParameters: false
             });
           } else if (this.props.detached) {
             // single payload
@@ -1213,8 +1211,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   generateConfigurationPayload = async (values, options = {}) => {
     const {
-      skipReservationParameters = false,
-      applyAdditionalReservationParameters = true
+      skipReservationParameters = false
     } = options || {};
     let cmd = values[ADVANCED].cmdTemplate;
     if (this.state.useDefaultCmd && this.toolDefaultCmd) {
@@ -1375,10 +1372,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         this.state.reservationParameters,
         instanceType,
         payload.parameters,
-        {
-          applyAdditionalParameters: applyAdditionalReservationParameters,
-          poolId: capacityBlockPoolId
-        }
+        {poolId: capacityBlockPoolId}
       );
       payload.parameters = appliedReservationParameters;
     }
@@ -1433,11 +1427,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       : (values[EXEC_ENVIRONMENT].fallbackInstanceTypes || []).slice();
     const payload = {
       instanceType,
-      // The pool backing `instanceType`, if the user picked one explicitly -
-      // not a run API field. `run()` (`ensureValidReservationParametersForLaunchPayloads`)
-      // reads this to apply that pool's launch config - without it the run
-      // has no reservation - and deletes it before the payload becomes a
-      // request body.
+      // The chosen pool, if any. A launch form field, removed before the request.
       capacityBlockPoolId,
       fallbackInstanceTypes: fallbackInstanceTypes.length > 0
         ? fallbackInstanceTypes
@@ -1618,8 +1608,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       payload.params = generateContinueRunParameters(this.props.continueRun, payload.params);
     }
     const {
-      parameters: appliedReservationParameters,
-      podAssignPolicy
+      parameters: appliedReservationParameters
     } = await buildLaunchParametersFromReservationParameters(
       this.state.reservationParameters,
       instanceType,
@@ -1633,7 +1622,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         this.getParameters(parametersPayloadId),
         this.state.parametersMetadata
       );
-    payload.podAssignPolicy = podAssignPolicy;
     if (!payload.isSpot &&
       !this.state.launchCluster &&
       this.state.scheduleRules &&
@@ -2776,11 +2764,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     : cpu;
 
   instanceTypeSuggestionSelected = (instanceType, pool) => {
-    // `InstanceTypeSuggestion` already knows which specific pool a suggestion
-    // row belongs to and passes it here - encode it, the same way the Select's
-    // own "Reserved capacity blocks" option for that pool would. Skipping this
-    // would set the field to the plain type, which launches without a
-    // reservation.
+    // Selects the suggested pool's own option, so the run launches on that pool.
     const value = (pool && encodeCapacityBlockValue(pool)) || instanceType;
     this.props.form.setFieldsValue({
       [`${EXEC_ENVIRONMENT}.type`]: value

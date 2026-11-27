@@ -5,7 +5,8 @@ import {
 import {
   CP_CAP_REQUESTS_CPU,
   CP_CAP_REQUESTS_GPU,
-  CP_CAP_REQUESTS_RAM
+  CP_CAP_REQUESTS_RAM,
+  CP_CAP_POOL_ID
 } from '../../utilities/parameters';
 import capacityBlocks from '../../../../../../models/cluster/capacity-blocks';
 import InstanceTypes from '../../../../../../models/utils/InstanceTypes';
@@ -31,6 +32,21 @@ export function readReservationParameters (parameters = {}) {
     gpu: asNumber(gpu),
     ram: asNumber(ram)
   };
+}
+
+// Puts the CPU/RAM/GPU requests into `parameters`, the way `readReservationParameters` reads them.
+export function writeReservationParameters (parameters = {}, reservationParameters = {}) {
+  const {cpu = 0, ram = 0, gpu = 0} = reservationParameters || {};
+  const result = {...(parameters || {})};
+  [[CP_CAP_REQUESTS_CPU, cpu], [CP_CAP_REQUESTS_RAM, ram], [CP_CAP_REQUESTS_GPU, gpu]]
+    .forEach(([name, value]) => {
+      if (value > 0) {
+        result[name] = {value: String(value)};
+      } else {
+        delete result[name];
+      }
+    });
+  return result;
 }
 
 export function reservationParametersDiffer (a, b) {
@@ -193,7 +209,6 @@ export async function buildLaunchParametersFromReservationParameters (
   options = {}
 ) {
   const {
-    applyAdditionalParameters = true,
     poolId
   } = options || {};
   const [
@@ -215,6 +230,11 @@ export async function buildLaunchParametersFromReservationParameters (
       console.warn(`error removing parameter ${key} from payload`, error);
     }
   }
+  // A pool launch carries the pool id; a plain launch carries none.
+  delete result[CP_CAP_POOL_ID];
+  if (poolId !== undefined && poolId !== null) {
+    result[CP_CAP_POOL_ID] = {value: String(poolId)};
+  }
   if (!cfg) {
     return {
       parameters: result
@@ -223,9 +243,7 @@ export async function buildLaunchParametersFromReservationParameters (
   let {
     cpuRequestsEnabled: cpuEnabled = false,
     gpuRequestsEnabled: gpuEnabled = false,
-    ramRequestsEnabled: ramEnabled = false,
-    additionalParameters = {},
-    kubeAssignPolicy: podAssignPolicy
+    ramRequestsEnabled: ramEnabled = false
   } = cfg;
   const {
     cpu = 1,
@@ -249,12 +267,7 @@ export async function buildLaunchParametersFromReservationParameters (
       value: ram
     };
   }
-  if (applyAdditionalParameters && (cpuEnabled || gpuEnabled || ramEnabled)) {
-    for (const [key, value] of Object.entries(additionalParameters || {})) {
-      result[key] = {value};
-    }
-  }
-  return {parameters: result, podAssignPolicy};
+  return {parameters: result};
 }
 
 export async function ensureValidReservationParametersForLaunchPayloads (payloads) {
@@ -263,25 +276,16 @@ export async function ensureValidReservationParametersForLaunchPayloads (payload
       readReservationParameters(p.params),
       p.instanceType,
       p.params,
-      // A caller that knows which pool the user picked - the launch form's
-      // `generateLaunchPayload`, or the launch confirmation dialog's own
-      // selector state - sets `capacityBlockPoolId` on the payload itself;
-      // this is the one place that reads it. A payload without it launches
-      // with no reservation requests at all.
+      // `capacityBlockPoolId` is the chosen pool, if any.
       {poolId: p.capacityBlockPoolId}
     ))
   );
   for (let i = 0; i < reservationRequests.length; i++) {
     const {
-      parameters: appliedReservationParameters,
-      podAssignPolicy
+      parameters: appliedReservationParameters
     } = reservationRequests[i];
     payloads[i].params = appliedReservationParameters;
-    payloads[i].podAssignPolicy = podAssignPolicy;
-    // `capacityBlockPoolId` is how a caller tells this function which pool to
-    // use - it is not a run API field, so it must never reach the request
-    // body a payload becomes. Deleting it here, rather than in every caller,
-    // keeps that one contract in one place.
+    // A launch form field, removed before the request.
     delete payloads[i].capacityBlockPoolId;
   }
 }

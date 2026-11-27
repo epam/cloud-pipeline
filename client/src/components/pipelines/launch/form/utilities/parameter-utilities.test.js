@@ -18,13 +18,14 @@ import {stubApi} from '@test';
 import preferences from '../../../../../models/preferences/PreferencesLoad';
 import runDefaultParameters from '../../../../../models/pipelines/PipelineRunDefaultParameters';
 import capacityBlocks from '../../../../../models/cluster/capacity-blocks';
-import {CP_NODEUP_RETRY_COUNT} from './parameters';
+import {CP_CAP_POOL_ID, CP_NODEUP_RETRY_COUNT} from './parameters';
 import {
   getNodeUpRetryCountParameter,
   getParameterConfig,
   getVisibleParameters,
   getReservationRequestParameters,
   isReservationRequestParameter,
+  isReservedParameter,
   parametersToPayloadParams,
   parametersToConfigurationParams,
   readParametersFromConfiguration,
@@ -275,6 +276,17 @@ describe('isReservationRequestParameter', () => {
     expect(isReservationRequestParameter('CP_CAP_CUSTOM_PARAM')).toBe(true);
     expect(isReservationRequestParameter('cp_cap_custom_param')).toBe(true);
     expect(isReservationRequestParameter('CP_CAP_UNRELATED')).toBe(false);
+  });
+});
+
+describe('isReservedParameter', () => {
+  it('hides CP_CAP_POOL_ID', () => {
+    expect(isReservedParameter(CP_CAP_POOL_ID)).toBe(true);
+    expect(isReservedParameter(CP_CAP_POOL_ID.toLowerCase())).toBe(true);
+  });
+
+  it('does not hide an unrelated parameter', () => {
+    expect(isReservedParameter('CP_CAP_UNRELATED')).toBe(false);
   });
 });
 

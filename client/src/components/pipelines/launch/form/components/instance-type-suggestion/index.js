@@ -41,12 +41,8 @@ function displayDate (value) {
   return parsed ? moment(parsed.toDate()).format('D MMM YYYY') : undefined;
 }
 
-// Every pool handed to this component is already an active capacity block -
-// `capacityBlocks`'s own filter (`isCapacityReservation: true, active: true`)
-// decided that server-side, so there is no window or status check left to do
-// here. This only pairs a pool with its matching `/cluster/capacity-reservation`
-// record, when there is one, which is where the count and end date fall back to
-// when the pool itself does not carry them (a non-admin on somebody else's pool).
+// Pairs each pool with its `/cluster/capacity-reservation` record, if any.
+// The count and end date come from that record when the pool has none.
 function buildSuggestions (pools, reservations) {
   return (pools || [])
     .filter((pool) => pool && pool.instanceType)
@@ -163,7 +159,8 @@ class InstanceTypeSuggestion extends React.Component {
             // reserved count is unknown must not render a trailing one.
             count !== undefined && (
               <span className={classNames(styles.count, 'cp-text-not-important')}>
-                {`, ${count} node${count === 1 ? '' : 's'} reserved`}
+                {`, ${count} node${count === 1 ? '' : 's'}`}
+                {pool.isCapacityReservation ? ' reserved' : ''}
               </span>
             )
           }
@@ -281,9 +278,9 @@ class InstanceTypeSuggestion extends React.Component {
         message={
           <div>
             <div className={styles.header}>
-              {`You have reserved capacity available right now `}
-              {`(${suggestions.length} ${suggestions.length === 1 ? 'pool' : 'pools'}). `}
-              Launching a run on one of these node types will use the reservation.
+              {`You have ${suggestions.length} `}
+              {`node ${suggestions.length === 1 ? 'pool' : 'pools'} available. `}
+              Please consider one of the node types below to re-use existing capacity:
             </div>
             <div className={styles.suggestions}>
               {visible.map(this.renderSuggestion)}

@@ -490,10 +490,7 @@ export default class EditToolForm extends React.Component {
         } = await buildLaunchParametersFromReservationParameters(
           this.state.reservationParameters,
           configuration.instance_size,
-          configuration.parameters,
-          {
-            applyAdditionalParameters: false
-          }
+          configuration.parameters
         );
         configuration.parameters = appliedReservationParameters;
         const {

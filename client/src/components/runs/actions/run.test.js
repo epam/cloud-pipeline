@@ -64,11 +64,7 @@ describe('run without confirmation', () => {
 });
 
 describe('a capacity-block pool chosen before launch', () => {
-  // Two pools backing the same instance type and region - the case the whole
-  // "Reserved capacity blocks" group exists for: the user chose one specific
-  // pool, not "an m5.2xlarge with whichever pool happens to match first".
-  // `generateLaunchPayload` (`LaunchPipelineForm.js`) sets `capacityBlockPoolId`
-  // on the payload exactly like this once the user has picked one.
+  // Two pools with the same instance type and region: the launch uses the chosen one.
   const lowerIdPool = {
     id: 10,
     name: 'lower-id-pool',
@@ -93,7 +89,8 @@ describe('a capacity-block pool chosen before launch', () => {
   };
 
   it('launches with the explicitly chosen pool\'s own config, not the lowest ' +
-    'id sharing its type and region, and never sends capacityBlockPoolId itself', async () => {
+    'id sharing its type and region, names it with CP_CAP_POOL_ID, and never ' +
+    'sends capacityBlockPoolId or the pool\'s additionalParameters itself', async () => {
     const api = stubApi({'/run': {id: 1}, '/cluster/pool/filter': [lowerIdPool, higherIdPool]});
     const payload = {
       dockerImage: image,
@@ -105,7 +102,9 @@ describe('a capacity-block pool chosen before launch', () => {
     await run({props: {}})(payload, false);
 
     const [body] = launchedBodies(api);
-    expect(body.params.CP_CAP_HIGHER).toEqual({value: 'true'});
+    expect(body.params.CP_CAP_POOL_ID).toEqual({value: String(higherIdPool.id)});
+    expect(body.params.CP_CAP_REQUESTS_GPU).toEqual({value: '1'});
+    expect(body.params.CP_CAP_HIGHER).toBeUndefined();
     expect(body.params.CP_CAP_LOWER).toBeUndefined();
     expect('capacityBlockPoolId' in body).toBe(false);
   });
@@ -179,7 +178,7 @@ describe('RunConfirmation estimated price', () => {
     expect(await screen.findByText(/Estimated price:/)).toBeInTheDocument();
   });
 
-  it('is hidden for a pool picked from "Reserved capacity blocks"', async () => {
+  it('is hidden for a pool picked from the "Pools" group', async () => {
     await renderDialog(confirmation('pool:30'));
 
     expect(screen.queryByText(/Estimated price/)).toBeNull();
@@ -200,5 +199,79 @@ describe('RunConfirmation estimated price', () => {
     );
 
     expect(screen.queryByText(/Estimated price/)).toBeNull();
+  });
+});
+
+describe('RunConfirmation node type selection with a shareable pool', () => {
+  const shareablePool = {
+    id: 31,
+    name: 'shareable-pool',
+    instanceType: 'm5.2xlarge',
+    regionId: 1,
+    poolType: 'SHAREABLE_NODE',
+    launchConfig: {
+      cpuRequestsEnabled: true,
+      ramRequestsEnabled: true,
+      ramRequestsUnit: 'GiB'
+    }
+  };
+  const instanceTypes = [
+    {
+      name: 'm5.2xlarge',
+      instanceFamily: 'General purpose',
+      vcpu: 8,
+      memory: 32,
+      gpu: 0,
+      regionId: 1
+    }
+  ];
+  const loaded = (value) => observable({
+    loaded: true,
+    pending: false,
+    value,
+    fetchIfNeededOrWait: () => Promise.resolve()
+  });
+
+  async function renderSelection (instanceType) {
+    stubApi({
+      '/cluster/pool/filter': [shareablePool],
+      '/pipeline/price': {pricePerHour: 1, minimumTimePrice: 1, maximumTimePrice: 1},
+      '/dockerRegistry/loadTree': {registries: []}
+    });
+    capacityBlocks.invalidateCache();
+    await capacityBlocks.load();
+    const stores = {
+      preferences: loaded([]),
+      dockerRegistries: loaded({registries: []}),
+      usersInfo: loaded([]),
+      authenticatedUserInfo: loaded({admin: true})
+    };
+    renderWithStores(
+      React.cloneElement(
+        <RunConfirmation
+          instanceType={instanceType}
+          instanceTypes={instanceTypes}
+          cloudRegionId={1}
+          dockerImage={image}
+          showInstanceTypeSelection
+          reservationParameters={{cpu: 2, ram: 4, gpu: 0}}
+        />,
+        stores
+      ),
+      stores
+    );
+    await flushPromises();
+  }
+
+  it('shows the CPU/RAM request control for a shareable pool', async () => {
+    await renderSelection('pool:31');
+
+    expect(await screen.findByText(/RAM request \(GiB\)/)).toBeInTheDocument();
+  });
+
+  it('shows no request control for a plain instance type', async () => {
+    await renderSelection('m5.2xlarge');
+
+    expect(screen.queryByText(/RAM request/)).toBeNull();
   });
 });

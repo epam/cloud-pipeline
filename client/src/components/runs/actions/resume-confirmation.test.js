@@ -61,7 +61,7 @@ describe('resume-confirmation, capacity blocks', () => {
 
     // A resumed run has no field for a pool, so no pool is offered, and the
     // plain type carries no tag: picking it launches without a reservation.
-    expect(screen.queryByText('Reserved capacity blocks')).toBeNull();
+    expect(screen.queryByText('Pools')).toBeNull();
     expect(screen.queryByText('pool-351')).toBeNull();
     await click(screen.getByRole('menuitem', {name: /m5\.2xlarge/}));
     await click(screen.getByText('RESUME'));
