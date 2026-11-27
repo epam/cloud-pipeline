@@ -2,6 +2,7 @@
 
 - [Migration to Java 21](#migration-to-java-21)
 - [Capacity block offering search over several instance types](#capacity-block-offering-search-over-several-instance-types)
+- [ML Block mode for a hot node pool](#ml-block-mode-for-a-hot-node-pool)
 - [Parallel download into the disk buffer of a storage mount](#parallel-download-into-the-disk-buffer-of-a-storage-mount)
 - [Launch capabilities: restrict a capability to certain users or roles](#launch-capabilities-restrict-a-capability-to-certain-users-or-roles)
 
@@ -28,6 +29,20 @@ Additionally, Spring Boot moved from **1.5**/**2** to Spring Boot **3.3**.
 Searching for a capacity block offering can now ask about several candidate instance types - each with its own count - in a single request, rather than one search per type, so a user can compare a primary instance type against whatever fallback types they would also accept before deciding which offering to buy. The response merges every candidate's offerings into one list, sorted by start date, nearest first. See [Browsing capacity block offerings](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#browsing-capacity-block-offerings).
 
 How many candidates one request may carry is bounded by the `cluster.capacity.block.offering.candidates.max.count` preference - **5** by default, `-1` to disable the limit.
+
+***
+
+## ML Block mode for a hot node pool
+
+Creating a hot node pool now offers a third **Mode**, **ML Block**, beside **Default** and **Future dated**: a pool backed by an AWS Capacity Block for ML, bought whole for a fixed window AWS currently has for sale, rather than searched for over a date range the way a **Future dated** reservation is.
+
+In this mode, the **Search from** / **Search until** / **Duration (days)** fields (the last with a 1-day minimum, rather than 14, and **Search until** optional, unlike a **Future dated** reservation's) are joined by a **Search in region** field and one or more candidate instance types, each with a nodes count - the region moves into this section because it is itself a search criterion, and the pool's own **Region** field becomes read-only. As the candidates, the window, the duration or the region change, the platform searches AWS for offerings matching each candidate and shows them as cards, each listing the offering's availability zone, instance type, window and up-front price, in that order - or **No offerings** once a search has settled and found none. Each offering is its own card to pick, whether a row shows one or several. Picking one fills the pool's **Instance type** and **Nodes count** read-only from that exact offering, and **CREATE** is refused until one is picked. Changing **Search in region** clears the candidates, the search results and the pick.
+
+An offering's window, and a purchased block's own granted window, are now shown converted to the viewer's own local time - an earlier release rendered the backend's UTC wall-clock values as if they were already local, understating a window's start and end by the viewer's own offset from UTC.
+
+Picking a day for **Search from** / **Search until** - in either a **Future dated** or an **ML Block** reservation - now sends that day's true start and end instant, computed in the viewer's own zone, rather than the day's wall-clock boundary sent as if the viewer were already in UTC; a viewer elsewhere could otherwise search, or request, a window off by their own offset from the day they actually picked.
+
+The up-front fee is non-refundable, and a purchased block cannot be cancelled - it simply ends at its fixed time. See [ML Block node pools](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#ml-block-node-pools).
 
 ***
 

@@ -18,17 +18,16 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Select} from 'antd';
 import SelectInput from './SelectInput';
-import {MODE_DEFAULT, MODE_FUTURE_DATED} from '../constants';
+import {MODE_DEFAULT, MODE_FUTURE_DATED, MODE_ML_BLOCK} from '../constants';
 
 const MODE_NAMES = {
   [MODE_DEFAULT]: 'Default',
-  [MODE_FUTURE_DATED]: 'Future dated'
+  [MODE_FUTURE_DATED]: 'Future dated',
+  [MODE_ML_BLOCK]: 'ML Block'
 };
 
-// `mode` is client-only: there is no backend field for it, so an existing pool
-// always loads as DEFAULT and this control is locked (via `disabled`) while editing.
-// `modes` narrows which options are offered — a non-admin's forced-future-dated Create
-// passes `['FUTURE_DATED']`, which the form then skips rendering this control for entirely.
+// `mode` is client-only, with no backend field behind it. The caller decides whether `modes`
+// leaves a real choice; this component does not guard on that itself.
 function ModeControl ({value, disabled, hint, modes, onChange}) {
   return (
     <SelectInput

@@ -22,28 +22,28 @@ export const COUNT_MIN_SIZE = 0;
 export const MODE_DEFAULT = 'DEFAULT';
 export const MODE_FUTURE_DATED = 'FUTURE_DATED';
 export const POOL_TYPE_STANDARD = 'STANDARD';
-// The literal is the backend `NodePoolType` enum value.
+// The literal is the backend `NodePoolType` enum value, not the constant's name.
 export const POOL_TYPE_SHAREABLE = 'SHAREABLE_NODE';
 // The backend's `LocalDateTime` pattern (`JsonMapper`/`Constants`): milliseconds required,
 // no `T`, no timezone.
 export const COMMITMENT_DATE_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
+// What the picker shows and the state holds; converted to the wire format on the way out.
+export const COMMITMENT_DATE_ONLY_FORMAT = 'YYYY-MM-DD';
 
 export const RESERVATION_COUNT_MIN_SIZE = 1; // reservation pools cannot be "disabled"
 export const SECONDS_PER_DAY = 24 * 60 * 60;
-// The duration is entered in whole days and sent in seconds: `NodePoolValidator`
-// requires at least 1209600 seconds, i.e. these 14 days.
+// Entered in whole days, sent in seconds: `NodePoolValidator` requires at least 1209600.
 export const MIN_COMMITMENT_DURATION_DAYS = 14;
 export const MIN_RESERVATION_LEAD_DAYS = 5; // NodePoolValidator.MINIMUM_LEAD_DAYS
 export const MAX_RESERVATION_LEAD_DAYS = 120; // NodePoolValidator.MAX_RESERVATION_LEAD_DAYS
 export const RESERVATION_TYPE_FUTURE_DATED = 'FUTURE_DATED'; // the only type the backend accepts
 
-// Client-only label for a future-dated reservation pool's approval state before any
-// reservation record exists (there is no backend enum for this — it is derived from
-// whether `startDate`/`endDate` have been granted yet).
+// Client-only label, with no backend enum behind it: inferred from whether
+// `startDate`/`endDate` have been granted yet.
 export const RESERVATION_STATUS_PENDING = 'PENDING';
 
-// These mirror the backend's `CapacityReservationStatus` enum verbatim, so a reservation
-// record's own `status` can be used as the pool-card badge key directly.
+// Verbatim `CapacityReservationStatus` values, so a record's own `status` keys the badge
+// and notice maps directly.
 export const RESERVATION_STATUS_REQUIRED_APPROVE = 'REQUIRED_APPROVE';
 export const RESERVATION_STATUS_APPROVED = 'APPROVED';
 export const RESERVATION_STATUS_ASSESSING = 'ASSESSING_BY_CLOUD_PROVIDER';
@@ -55,12 +55,25 @@ export const RESERVATION_STATUS_PURCHASE_FAILED = 'PURCHASE_FAILED';
 export const RESERVATION_STATUS_FAILED = 'FAILED';
 export const RESERVATION_STATUS_CANCELLED = 'CANCELLED';
 
-// Mirrors the backend's `CapacityReservationStatus.terminalStatuses()`: once a reservation
-// reaches one of these it will never again hold capacity, so a count sourced from it must
-// not be presented as currently reserved.
+// Backend `CapacityReservationStatus.terminalStatuses()`. Past these the reservation holds
+// no capacity, so its count must not be shown as currently reserved.
 export const RESERVATION_TERMINAL_STATUSES = [
   RESERVATION_STATUS_PURCHASE_FAILED,
   RESERVATION_STATUS_FINISHED,
   RESERVATION_STATUS_FAILED,
   RESERVATION_STATUS_CANCELLED
 ];
+
+export const MODE_ML_BLOCK = 'ML_BLOCK';
+// The backend `CapacityReservationType` enum value.
+export const RESERVATION_TYPE_CAPACITY_BLOCK = 'CAPACITY_BLOCK';
+// The only `CapacityBlockResourceType` the backend accepts today.
+export const CAPACITY_BLOCK_RESOURCE_TYPE_INSTANCE = 'INSTANCE';
+// AWS sells a block by the hour; this form asks for whole days.
+export const MIN_ML_BLOCK_DURATION_DAYS = 1;
+export const HOURS_PER_DAY = 24;
+export const SECONDS_PER_HOUR = 60 * 60;
+// A nodes count is typed digit by digit, so the search waits for the typing to settle.
+export const ML_BLOCK_OFFERINGS_FETCH_DELAY_MS = 500;
+// Shared by `index.js` and the candidates control so both report the same failure text.
+export const ML_BLOCK_OFFERINGS_ERROR_MESSAGE = 'Error searching for capacity block offerings';

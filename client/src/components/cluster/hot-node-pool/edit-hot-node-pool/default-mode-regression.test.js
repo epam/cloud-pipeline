@@ -30,10 +30,10 @@ import {
 } from '@test';
 import EditHotNodePool from './index';
 import {getValidationErrors, buildPoolPayload, buildSchedulePayload} from './helpers';
-import {COMMITMENT_DATE_TIME_FORMAT} from './constants';
+import {COMMITMENT_DATE_ONLY_FORMAT} from './constants';
 
-// Now-relative fixtures: see helpers.test.js for why a fixed past date no longer works.
-const inDays = (days) => moment().add(days, 'days').format(COMMITMENT_DATE_TIME_FORMAT);
+// The backend's lead-time and duration rules are relative to "now", so fixtures use offsets.
+const inDays = (days) => moment().add(days, 'days').format(COMMITMENT_DATE_ONLY_FORMAT);
 
 const loaded = (value) => observable({loaded: true, pending: false, value});
 
@@ -105,9 +105,7 @@ function fullPool (overrides = {}) {
   };
 }
 
-// Same shape as `helpers.test.js`'s own `baseValues()` plus the four new client-only
-// fields, so `getValidationErrors`/`buildPoolPayload` see a values object exactly like
-// the one `EditHotNodePool`'s state produces.
+// Matches what `EditHotNodePool`'s own state produces, client-only fields included.
 function baseValues (overrides = {}) {
   return {
     disk: 50,
@@ -134,15 +132,10 @@ function baseValues (overrides = {}) {
   };
 }
 
-// Mounting always fires an AllowedInstanceTypes request (prevRegion starts at -1),
-// including in create mode with no region yet — this waits for it to settle before the
-// test's assertions and cleanup run, so the pending `.then()` cannot resolve after
-// `stubApi()` has been torn down and leak a "Network access in a unit test" rejection
-// into a later test. A single `handle()` for the whole test, rather than `reply()` per
-// case: `stubApi` matches the first-registered handler for a pattern, so a second
-// `reply()` for the same regex would be shadowed and never reached.
 async function renderPool (props = {}, instanceTypesForCall = () => instanceAllowedPayload) {
   const api = stubApi();
+  // `stubApi` matches only the first-registered handler for a pattern, so a second `reply()`
+  // here would be shadowed.
   api.handle(/\/cluster\/instance\/allowed/, (call) => ({
     status: 'OK',
     payload: instanceTypesForCall(call)
@@ -151,6 +144,8 @@ async function renderPool (props = {}, instanceTypesForCall = () => instanceAllo
     <EditHotNodePool visible disabled={false} currentUserName="USER1" {...props} />,
     stores()
   );
+  // Mounting always fires this request; awaiting it stops its `.then()` from rejecting after
+  // `stubApi` tears down.
   await waitFor(() => expect(api.calls.length).toBeGreaterThan(0));
   await flushPromises();
   return {...result, api};
@@ -330,8 +325,7 @@ describe('rendered Default-mode control set is unchanged', () => {
 
     [
       'Mode:',
-      // Pool type applies in every mode: it is offered in
-      // Default mode too, so it belongs in the "present" list, not the "absent" one.
+      // Pool type applies in every mode, Default included.
       'Pool type:',
       'Pool name:',
       'Autoscaled:',
@@ -379,8 +373,7 @@ describe('edit-mode round trip is byte-identical', () => {
       dockerImages: ['registry.com/group/image:1'],
       instanceType: 'm5.xlarge',
       name: 'my-pool',
-      // poolType is sent for every pool; fullPool() carries none of its own,
-      // so the form falls back to Standard.
+      // Sent for every pool; `fullPool()` carries none, so the form falls back to Standard.
       poolType: 'STANDARD',
       priceType: 'SPOT',
       regionId: 1,

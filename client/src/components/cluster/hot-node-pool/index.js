@@ -43,7 +43,7 @@ import {
   canDeletePool,
   canViewPoolUsage
 } from './permissions';
-import {MODE_DEFAULT, MODE_FUTURE_DATED} from './edit-hot-node-pool/constants';
+import {MODE_DEFAULT, MODE_FUTURE_DATED, MODE_ML_BLOCK} from './edit-hot-node-pool/constants';
 
 async function updateSchedule (payload, scheduleId) {
   const scheduleRequest = new HotNodePoolScheduleUpdate();
@@ -161,9 +161,7 @@ class HotCluster extends React.Component {
       message.error(request.error, 5);
       return;
     }
-    // The pool is already gone at this point, so a failed schedule delete still
-    // reloads the list and closes the modal: a second DELETE would only fail
-    // with "not found".
+    // The pool is already gone, so a failed schedule delete still reloads and closes the modal.
     let scheduleError;
     if (poolToRemove.schedule && poolToRemove.schedule.id) {
       const scheduleRequest = new HotNodePoolScheduleDelete(poolToRemove.schedule.id);
@@ -275,10 +273,8 @@ class HotCluster extends React.Component {
       );
     }
     const {value: pools = []} = poolsRequest;
-    // Reservations are rendered without a loading guard, so `res.value` can still be
-    // the model's `defaultValue` here. MobX also wraps a resolved value in an
-    // ObservableArray, which fails a `PropTypes.array` check, so copy it into a plain
-    // array before passing it down — the same thing `nodes` does below.
+    // No loading guard, so `res.value` may still be the model's default; the map also copies
+    // it out of MobX's ObservableArray, which fails `PropTypes.array`.
     const reservationsList = ((res || {}).value || []).map(reservation => reservation);
     const {
       createNewPool,
@@ -348,7 +344,11 @@ class HotCluster extends React.Component {
           visible={!!editablePool || createNewPool}
           pool={editablePool}
           currentUserName={this.currentUserName}
-          allowedModes={canCreateAnyMode ? [MODE_DEFAULT, MODE_FUTURE_DATED] : [MODE_FUTURE_DATED]}
+          // Never put MODE_ML_BLOCK first: `edit-hot-node-pool/index.js` relies on a
+          // reopened dialog not defaulting to it.
+          allowedModes={canCreateAnyMode
+            ? [MODE_DEFAULT, MODE_FUTURE_DATED, MODE_ML_BLOCK]
+            : [MODE_FUTURE_DATED, MODE_ML_BLOCK]}
           reservations={reservationsList}
           onCancel={this.closeEditPoolModal}
           onSave={this.operationWrapper(this.onSaveEditablePool)}

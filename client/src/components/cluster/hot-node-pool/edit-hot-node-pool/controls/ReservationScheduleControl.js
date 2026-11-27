@@ -21,10 +21,14 @@ import classNames from 'classnames';
 import moment from 'moment-timezone';
 import StringInput from './StringInput';
 import HintControl from './HintControl';
-import {humanizeReservationStatus} from '../helpers';
+import {humanizeReservationStatus, formatCloudCommitmentDate} from '../helpers';
 import {
+  COMMITMENT_DATE_ONLY_FORMAT,
   COMMITMENT_DATE_TIME_FORMAT,
   MIN_COMMITMENT_DURATION_DAYS,
+  MIN_ML_BLOCK_DURATION_DAYS,
+  MODE_FUTURE_DATED,
+  MODE_ML_BLOCK,
   RESERVATION_STATUS_PENDING,
   RESERVATION_STATUS_REQUIRED_APPROVE,
   RESERVATION_STATUS_APPROVED,
@@ -39,10 +43,7 @@ import {
 } from '../constants';
 import styles from '../../edit-hot-node-pool.css';
 
-// Keyed by `getCapacityReservationStatus`'s return value, exactly as `pool-card.js` keys
-// its own presentation map - the reservation record is the source of truth for its own
-// lifecycle, so the notice tells the user what is actually happening instead of always
-// assuming a brand new pool still waiting on the capacity reservation service.
+// Keyed by `getCapacityReservationStatus`'s return value, as `pool-card.js` keys its own map.
 const RESERVATION_STATUS_NOTICE = {
   [RESERVATION_STATUS_REQUIRED_APPROVE]: {
     type: 'info',
@@ -90,9 +91,7 @@ const RESERVATION_STATUS_NOTICE = {
   }
 };
 
-// A status this map does not know (an older client against a newer backend release) must
-// not blank the section or throw: fall back to a neutral notice with a label humanised
-// from the raw value.
+// An unknown status (older client, newer backend) must not blank the section or throw.
 function getReservationStatusNotice (status) {
   return RESERVATION_STATUS_NOTICE[status] || {
     type: 'info',
@@ -100,16 +99,20 @@ function getReservationStatusNotice (status) {
   };
 }
 
-// A future-dated pool reserves capacity for a single one-time absolute window, unlike Default
-// mode's weekly recurring schedule (see `ScheduleControl`/`ScheduleControls`, which this
-// control does not reuse and must not touch). `start`/`end` are carried as plain strings
-// in `COMMITMENT_DATE_TIME_FORMAT`, parsed/formatted with `moment` in the local zone so
-// they round-trip; `[start, end]` is the window the platform *searches* in for matching
-// capacity, and `durationDays` the committed length, in days, that must fit somewhere
-// inside it - converted to the backend's seconds only in
-// `buildCapacityReservationRequest`. "Search until" is independently editable and never
-// derived from `start` + `durationDays`.
+// An API-echoed value is a true UTC instant; a day typed into the picker carries no time.
+function toDisplayDay (value) {
+  if (!value) {
+    return value;
+  }
+  const isInstant = moment.utc(value, COMMITMENT_DATE_TIME_FORMAT, true).isValid();
+  return isInstant ? formatCloudCommitmentDate(value, COMMITMENT_DATE_ONLY_FORMAT) : value;
+}
+
+// A reservation pool reserves one absolute window rather than Default mode's weekly schedule,
+// so this control shares nothing with `ScheduleControl`. "Search until" is independently
+// editable, never derived from `start` + `durationDays`.
 function ReservationScheduleControl ({
+  mode,
   start,
   end,
   durationDays,
@@ -124,22 +127,29 @@ function ReservationScheduleControl ({
   reservationStatus,
   onChangeStart,
   onChangeEnd,
-  onChangeDuration
+  onChangeDuration,
+  children
 }) {
   const notice = reservationStatus ? getReservationStatusNotice(reservationStatus) : undefined;
+  const durationMin = mode === MODE_ML_BLOCK
+    ? MIN_ML_BLOCK_DURATION_DAYS
+    : MIN_COMMITMENT_DURATION_DAYS;
   return (
     <div>
       <div className={styles.formRow}>
         <span className={styles.label}>Search from:</span>
         <DatePicker
-          showTime
-          format={COMMITMENT_DATE_TIME_FORMAT}
-          placeholder="Start date and time"
+          format={COMMITMENT_DATE_ONLY_FORMAT}
+          placeholder="Start date"
           className={classNames(styles.formItem, styles.small)}
           disabled={disabled}
-          value={start ? moment(start, COMMITMENT_DATE_TIME_FORMAT) : undefined}
+          value={
+            start
+              ? moment(toDisplayDay(start), COMMITMENT_DATE_ONLY_FORMAT, true)
+              : undefined
+          }
           onChange={date => onChangeStart(
-            date ? date.format(COMMITMENT_DATE_TIME_FORMAT) : undefined
+            date ? date.format(COMMITMENT_DATE_ONLY_FORMAT) : undefined
           )}
         />
         <HintControl hint={startHint} />
@@ -154,14 +164,17 @@ function ReservationScheduleControl ({
       <div className={styles.formRow}>
         <span className={styles.label}>Search until:</span>
         <DatePicker
-          showTime
-          format={COMMITMENT_DATE_TIME_FORMAT}
-          placeholder="End date and time"
+          format={COMMITMENT_DATE_ONLY_FORMAT}
+          placeholder="End date"
           className={classNames(styles.formItem, styles.small)}
           disabled={disabled}
-          value={end ? moment(end, COMMITMENT_DATE_TIME_FORMAT) : undefined}
+          value={
+            end
+              ? moment(toDisplayDay(end), COMMITMENT_DATE_ONLY_FORMAT, true)
+              : undefined
+          }
           onChange={date => onChangeEnd(
-            date ? date.format(COMMITMENT_DATE_TIME_FORMAT) : undefined
+            date ? date.format(COMMITMENT_DATE_ONLY_FORMAT) : undefined
           )}
         />
         <HintControl hint={endHint} />
@@ -177,13 +190,14 @@ function ReservationScheduleControl ({
         type="number"
         label="Duration (days):"
         value={durationDays}
-        min={MIN_COMMITMENT_DURATION_DAYS}
+        min={durationMin}
         disabled={disabled}
         hint={durationHint}
         error={durationError}
         touched={touched}
         onChange={onChangeDuration}
       />
+      {children}
       {
         notice && (
           <div className={styles.formRow}>
@@ -196,6 +210,7 @@ function ReservationScheduleControl ({
 }
 
 ReservationScheduleControl.propTypes = {
+  mode: PropTypes.string,
   start: PropTypes.string,
   end: PropTypes.string,
   durationDays: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
@@ -210,7 +225,12 @@ ReservationScheduleControl.propTypes = {
   reservationStatus: PropTypes.string,
   onChangeStart: PropTypes.func,
   onChangeEnd: PropTypes.func,
-  onChangeDuration: PropTypes.func
+  onChangeDuration: PropTypes.func,
+  children: PropTypes.node
+};
+
+ReservationScheduleControl.defaultProps = {
+  mode: MODE_FUTURE_DATED
 };
 
 export default ReservationScheduleControl;

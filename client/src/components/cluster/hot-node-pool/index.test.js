@@ -89,21 +89,19 @@ const instanceAllowedPayload = {
 
 const admin = {loaded: true, pending: false, value: {admin: true}};
 const nonAdmin = {loaded: true, pending: false, value: {admin: false, roles: []}};
-// `NodePoolApiService.create`'s `NODE_POOL_CREATE` ACL expression is
-// `ADMIN OR RUN_ADMIN OR NODE_POOL_MANAGER`, so only a user carrying this role (and not
-// a plain authenticated non-admin) may create a pool at all.
+// `NODE_POOL_CREATE` needs ADMIN, RUN_ADMIN or NODE_POOL_MANAGER (see `permissions.js`), so
+// a plain non-admin user may not create a pool.
 const nodePoolManager = {
   loaded: true,
   pending: false,
-  // `userName` matches the `users` store fixture below, so the Run owner criterion
-  // a forced-future-dated Create seeds (`buildRunOwnerFilter(currentUserName)`) has a
-  // matching option to render, same as `edit-hot-node-pool/index.test.js` does.
+  // `userName` matches the `users` fixture, so the seeded Run owner criterion has an
+  // option to render.
   value: {admin: false, userName: 'USER1', roles: [{name: 'ROLE_NODE_POOL_MANAGER'}]}
 };
 const unloaded = {loaded: false, pending: false, value: undefined};
 
-// `pools`/`clusterNodes`/`reservations` are module singletons `HotCluster` injects by
-// name, so a previous test's resolved value would otherwise leak into the next one.
+// These are module singletons `HotCluster` injects by name, so one test's resolved value
+// would otherwise leak into the next.
 beforeEach(() => {
   pools.invalidateCache();
   clusterNodes.invalidateCache();
@@ -114,8 +112,7 @@ function row (labelText) {
   return screen.getByText(labelText).closest('div');
 }
 
-// antd's Select combobox carries no native `disabled` attribute; the state is
-// a class on the `.ant-select` ancestor instead.
+// antd's Select has no native `disabled` attribute; the state is a class on `.ant-select`.
 function selectIsDisabled (labelText) {
   const combobox = within(row(labelText)).getByRole('combobox');
   return combobox.closest('.ant-select').classList.contains('ant-select-disabled');
@@ -153,14 +150,10 @@ test(
     const router = {push: fn()};
     await renderCluster(nonAdmin, {router});
 
-    // `NODE_POOL_CREATE` is `ADMIN OR RUN_ADMIN OR NODE_POOL_MANAGER` - a plain
-    // authenticated user with none of the three gets a 403 from the backend, so Create
-    // must not be offered to them at all.
     expect(screen.queryByText('Create')).not.toBeInTheDocument();
     const card = screen.getByText('my-pool').closest('.cp-hot-node-pool');
-    // No action at all: edit and remove need ADMIN/RUN_ADMIN or a grant on the pool, and
-    // the "usage" (area-chart) button needs ADMIN_OR_CLUSTER_READER, which the usage page
-    // behind it is gated on.
+    // Edit and remove need ADMIN/RUN_ADMIN or a grant on the pool; usage needs
+    // ADMIN_OR_CLUSTER_READER.
     expect(card.querySelectorAll('button').length).toBe(0);
 
     await click(card);
@@ -181,9 +174,7 @@ test('NODE_POOL_MANAGER: Create is present, no action on a pool it does not own'
 
     expect(screen.getByText('Create')).toBeInTheDocument();
     const card = screen.getByText('my-pool').closest('.cp-hot-node-pool');
-    // `myPool` carries no owner, so this manager holds nothing on it: `NODE_POOL_ID_WRITE`
-    // grants the role itself no write. The usage button is gone too - that page is
-    // ADMIN_OR_CLUSTER_READER, with no node-pool-manager exception.
+    // `myPool` has no owner, so this manager gets no write; usage has no manager exception.
     expect(card.querySelectorAll('button').length).toBe(0);
 
     await click(card);
@@ -197,14 +188,12 @@ test('NODE_POOL_MANAGER: a pool it owns is editable from the card', async () => 
 
   const card = screen.getByText('my-pool').closest('.cp-hot-node-pool');
   expect(card.querySelectorAll('.anticon-edit').length).toBe(1);
-  // `NODE_POOL_ID_OWNER` grants the same ownership `NODE_POOL_ID_WRITE` does, so remove
-  // is offered too; the usage button stays gone - that page is ADMIN_OR_CLUSTER_READER,
-  // with no owner exception.
+  // `NODE_POOL_ID_OWNER` reads the same ownership, so remove is offered; usage has no
+  // owner exception.
   expect(card.querySelectorAll('.anticon-area-chart').length).toBe(0);
   expect(card.querySelectorAll('.anticon-delete').length).toBe(1);
 
-  // The card itself is clickable only where editing is allowed, so an owned pool now
-  // opens its state view for a manager, where it did nothing before.
+  // The card is clickable only where editing is allowed.
   await click(card);
 
   expect(router.push).toHaveBeenCalledWith('/cluster?pool_id=1');
@@ -220,33 +209,69 @@ test('NODE_POOL_MANAGER: the edit button on an owned pool opens the pool form', 
 });
 
 test(
-  'NODE_POOL_MANAGER: Create opens the modal forced into future-dated mode end to end - ' +
-  'no Mode row, an enabled Pool type, the seeded Run owner criterion with Filters enabled, ' +
-  'and the search-window controls',
+  'NODE_POOL_MANAGER: editing an owned Default pool shows Mode: as Default, not the raw ' +
+  'DEFAULT value - allowedModes offers only the two reservation modes to this user, ' +
+  'neither of which is the loaded pool\'s own mode',
+  async () => {
+    await renderCluster(nodePoolManager, {}, {...myPool, owner: 'USER1'});
+
+    const card = screen.getByText('my-pool').closest('.cp-hot-node-pool');
+    await click(card.querySelector('.anticon-edit').closest('button'));
+
+    await waitFor(() => expect(screen.getByText('Mode:')).toBeInTheDocument());
+    expect(within(row('Mode:')).getByText('Default')).toBeInTheDocument();
+    expect(selectIsDisabled('Mode:')).toBe(true);
+  }
+);
+
+test(
+  'NODE_POOL_MANAGER: Create opens the modal in future-dated mode by default, with a ' +
+  'Mode row now offering a choice (Future dated and ML Block, never Default), an enabled ' +
+  'Pool type, the seeded Run owner criterion with Filters enabled, and the ' +
+  'search-window controls',
   async () => {
     await renderCluster(nodePoolManager);
 
     await click(screen.getByText('Create'));
 
     await waitFor(() => expect(screen.getByText('Pool type:')).toBeInTheDocument());
-    expect(screen.queryByText('Mode:')).not.toBeInTheDocument();
-    // Pool type is not locked by a single-mode caller: a ROLE_NODE_POOL_MANAGER's
-    // forced-future-dated Create chooses it like anyone else.
+    // Two modes to choose from, so the form's own `modes.length > 1` guard renders the row.
+    expect(within(row('Mode:')).getByText('Future dated')).toBeInTheDocument();
+    await click(within(row('Mode:')).getByRole('combobox'));
+    expect(screen.queryByText('Default')).not.toBeInTheDocument();
+    expect(screen.getByText('ML Block')).toBeInTheDocument();
+    // A manager's Create does not lock Pool type; it is chosen like anyone else's.
     expect(selectIsDisabled('Pool type:')).toBe(false);
-    // The creator's own run-owner criterion is seeded, editable, in an unlocked
-    // Filters panel.
     expect(screen.getByText('Run owner')).toBeInTheDocument();
     expect(screen.getByText('user1')).toBeInTheDocument();
     expect(selectIsDisabled('Condition:')).toBe(false);
     expect(screen.getByRole('button', {name: 'Add filter'})).not.toBeDisabled();
-    // The reservation's search-window controls render under their current names.
     expect(screen.getByText('Search from:')).toBeInTheDocument();
     expect(screen.getByText('Duration (days):')).toBeInTheDocument();
 
-    // Closes the modal before the test ends: antd's Dialog only removes its
-    // body-level portal node synchronously on unmount when `visible` is already
-    // false — left open, it defers removal to a CSS transition's `afterClose`
-    // that jsdom never fires, leaking this test's DOM into the next one.
+    // antd's Dialog removes its portal from a CSS transition's `afterClose`, which jsdom
+    // never fires, so an open modal leaks its DOM into the next test.
+    await click(screen.getByText('CANCEL'));
+  });
+
+test(
+  'NODE_POOL_MANAGER: switching Create to ML Block mode keeps the Run owner criterion ' +
+  'seeded and Filters enabled, same as future-dated mode',
+  async () => {
+    await renderCluster(nodePoolManager);
+
+    await click(screen.getByText('Create'));
+    await waitFor(() => expect(screen.getByText('Pool type:')).toBeInTheDocument());
+
+    await click(within(row('Mode:')).getByRole('combobox'));
+    await click(screen.getByText('ML Block'));
+
+    expect(within(row('Mode:')).getByText('ML Block')).toBeInTheDocument();
+    expect(screen.getByText('Run owner')).toBeInTheDocument();
+    expect(screen.getByText('user1')).toBeInTheDocument();
+    expect(selectIsDisabled('Condition:')).toBe(false);
+    expect(screen.getByRole('button', {name: 'Add filter'})).not.toBeDisabled();
+
     await click(screen.getByText('CANCEL'));
   });
 
@@ -264,6 +289,22 @@ test('admin: Create opens the modal in Default mode, with the Mode row shown', a
   await click(screen.getByText('CANCEL'));
 });
 
+test('admin: Create offers Default, Future dated and ML Block, the full allowedModes set',
+  async () => {
+    await renderCluster(admin);
+
+    await click(screen.getByText('Create'));
+    await waitFor(() => expect(screen.getByText('Pool type:')).toBeInTheDocument());
+
+    await click(within(row('Mode:')).getByRole('combobox'));
+    // Default is the selected value, so it renders twice: the closed-box label and the option.
+    expect(screen.getAllByText('Default').length).toBeGreaterThan(0);
+    expect(screen.getByText('Future dated')).toBeInTheDocument();
+    expect(screen.getByText('ML Block')).toBeInTheDocument();
+
+    await click(screen.getByText('CANCEL'));
+  });
+
 test('a Default-mode pool shows no reservation badge', async () => {
   await renderCluster(admin);
 
@@ -280,10 +321,8 @@ async function renderClusterWithPool (pool, reservationsList = [], authenticated
     status: 'OK',
     payload: instanceAllowedPayload
   }));
-  // No route for DELETE is registered here: the delete flow's own tests register
-  // whichever response - success or failure - the specific test needs, since a route
-  // baked in here would always win over one a test tries to add afterward (`stubApi`'s
-  // `handlers.find` returns the first match, in registration order).
+  // No DELETE route here: `stubApi` matches the first-registered handler, so one baked in
+  // would always beat whatever the delete-flow tests add later.
   renderWithStores(
     <HotCluster router={{push: fn()}} />,
     stores(authenticatedUserInfo)
@@ -335,9 +374,8 @@ test(
       endDate: undefined
     });
 
-    // A future-dated pool legitimately has no nodes until its reservation is
-    // activated, so it must not read as a fault - its reservation badge already
-    // carries the real state.
+    // A future-dated pool legitimately has no nodes until its reservation activates, and
+    // the badge already carries the real state.
     expect(screen.getByText('Pending approval')).toBeInTheDocument();
     expect(screen.queryByText('(disabled)')).not.toBeInTheDocument();
     expect(
@@ -400,15 +438,14 @@ test(
 
     const card = screen.getByText('reservation-pool-finished').closest('.cp-hot-node-pool');
     expect(screen.getByText('Finished')).toBeInTheDocument();
-    // A finished reservation never again holds capacity, so its instanceCount must not
-    // be shown as the card's total - unlike the live-reservation case above.
+    // A finished reservation never again holds capacity, so its `instanceCount` must not
+    // be shown as the card's total.
     expect(within(card).queryByText('4')).not.toBeInTheDocument();
   }
 );
 
-// The badge now shows the reservation record's own status, translated to the backend's
-// ten-state `CapacityReservationStatus` lifecycle - not collapsed into the old two-bucket
-// Approved/Pending approval reading.
+// The badge shows the record's own status, across the backend's ten-state
+// `CapacityReservationStatus` lifecycle.
 function statusPool (id, name) {
   return {
     ...myPool,
@@ -587,8 +624,7 @@ test(
     expect(screen.getByText(/active and has not been given up yet/)).toBeInTheDocument();
     expect(screen.getByText('DELETE').closest('button')).toBeDisabled();
 
-    // Closes the modal before the test ends - see the identical note on the edit modal
-    // above: left open, antd's Dialog leaks its portal node into whatever test runs next.
+    // Left open, antd's Dialog leaks its portal node into whatever test runs next.
     await click(screen.getByText('CANCEL').closest('button'));
   }
 );
@@ -607,10 +643,8 @@ test(
     await click(okButton);
     await flushPromises();
 
-    // `closeRemovePoolModal()` is only reached on the success path, so `poolToRemove`
-    // is still set: the confirmation stays on screen rather than silently vanishing
-    // alongside the error, and `operationWrapper`'s `finally` still resets `pending`,
-    // so the button is clickable again rather than stuck mid-request.
+    // `closeRemovePoolModal()` is reached only on success, and `operationWrapper`'s
+    // `finally` re-enables the button.
     expect(screen.getByText('Are you sure you want to delete "to-delete-failing" pool?'))
       .toBeInTheDocument();
     expect(okButton).not.toBeDisabled();

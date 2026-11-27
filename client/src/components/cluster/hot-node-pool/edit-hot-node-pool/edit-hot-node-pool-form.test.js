@@ -22,8 +22,7 @@ import {MODE_DEFAULT} from './constants';
 
 const loaded = (value) => observable({loaded: true, pending: false, value});
 
-// AWSRegionTag reads awsRegions.getRegion(id)/getRegionByUID(id), not just
-// .loaded/.value — mirrors src/models/cloudRegions/CloudRegions.js.
+// AWSRegionTag reads `getRegion(id)`/`getRegionByUID(id)`, not just `.loaded`/`.value`.
 function awsRegionsStore (regionsList) {
   return observable({
     loaded: true,
@@ -122,20 +121,16 @@ function renderForm (props = {}) {
 }
 
 function row (labelText) {
-  // The label's immediate ancestor div is the formRow div, which also holds
-  // the control itself.
+  // The label's ancestor div is the formRow div, which also holds the control.
   return screen.getByText(labelText).closest('div');
 }
 
-// antd's Select combobox carries no native `disabled` attribute; the state is
-// a class on the `.ant-select` ancestor instead.
+// antd's Select has no native `disabled` attribute; the state is a class on `.ant-select`.
 function selectIsDisabled (labelText) {
   const combobox = within(row(labelText)).getByRole('combobox');
   return combobox.closest('.ant-select').classList.contains('ant-select-disabled');
 }
 
-// The form renders Pool name, then Pool type, then Mode. This assertion used to pin the
-// opposite order, which an earlier reorder of the two rows had already made wrong.
 test('the Mode row renders and follows Pool name', () => {
   renderForm();
   const text = document.body.textContent;
@@ -162,8 +157,7 @@ test(
     });
     expect(screen.queryByText('Mode:')).not.toBeInTheDocument();
     expect(screen.getByText('Pool type:')).toBeInTheDocument();
-    // A single-mode caller (a ROLE_NODE_POOL_MANAGER's Create) chooses its Pool type
-    // like anyone else - the dropped `modes.length <= 1` lock no longer applies.
+    // A single-mode caller (a ROLE_NODE_POOL_MANAGER's Create) still chooses its own Pool type.
     expect(selectIsDisabled('Pool type:')).toBe(false);
     expect(screen.getByText('Duration (days):')).toBeInTheDocument();
   }
@@ -256,8 +250,8 @@ test('future-dated mode renders Search from, Search until and Duration as three 
     renderForm({
       values: baseValues({
         mode: 'FUTURE_DATED',
-        commitmentStart: '2026-01-01 10:00:00.000',
-        commitmentEnd: '2026-02-01 10:00:00.000',
+        commitmentStart: '2026-01-01',
+        commitmentEnd: '2026-02-01',
         commitmentDurationDays: 14
       })
     });
@@ -266,7 +260,7 @@ test('future-dated mode renders Search from, Search until and Duration as three 
     expect(screen.getByText('Duration (days):')).toBeInTheDocument();
     expect(
       within(row('Search until:')).getByRole('textbox').value
-    ).toBe('2026-02-01 10:00:00.000');
+    ).toBe('2026-02-01');
   });
 
 test('future-dated mode shows the commitment start error once touched', () => {
@@ -426,8 +420,7 @@ test('readOnly disables Region/Price/Instance Type/AMI/Disk, not Pool name/Nodes
   expect(screen.queryByText('Add docker image')).not.toBeInTheDocument();
 });
 
-// `disabled` is the parent's "a save is in flight" flag, so it blocks the whole form -
-// the Add buttons of every section included, the weekly schedule's among them.
+// `disabled` is the parent's "a save is in flight" flag, so it blocks the whole form.
 test('disabled disables every field and the docker, labels and schedule Add buttons', () => {
   renderForm({disabled: true});
   expect(within(row('Pool name:')).getByRole('textbox')).toBeDisabled();
@@ -466,11 +459,186 @@ test('future-dated mode locks Price type to On-demand and disables the control',
   renderForm({values: baseValues({mode: 'FUTURE_DATED', spot: 'ON_DEMAND'})});
 
   expect(selectIsDisabled('Price type:')).toBe(true);
-  // On-demand is the only legal value for a capacity reservation (`NodePoolValidator`
-  // rejects SPOT outright), so there is nothing to pick between - the control is
-  // disabled rather than merely filtered, and Spot never appears at all.
+  // `NodePoolValidator` rejects SPOT outright, so the control is disabled, not just filtered.
   expect(screen.getByText('On-demand')).toBeInTheDocument();
   expect(screen.queryByText('Spot')).not.toBeInTheDocument();
+});
+
+test('ML Block mode renders the ML Block section header instead of Schedule', () => {
+  renderForm({values: baseValues({mode: 'ML_BLOCK'})});
+  // A heading query, not a text one: the Mode row's selected value also reads "ML Block".
+  expect(screen.getByRole('heading', {name: 'ML Block'})).toBeInTheDocument();
+  expect(screen.queryByText('Schedule')).not.toBeInTheDocument();
+});
+
+test('ML Block mode shows the one-time commitment window, not the weekly schedule UI', () => {
+  renderForm({values: baseValues({mode: 'ML_BLOCK'})});
+  expect(screen.getByText('Search from:')).toBeInTheDocument();
+  expect(screen.getByText('Search until:')).toBeInTheDocument();
+  expect(screen.getByText('Duration (days):')).toBeInTheDocument();
+  expect(screen.queryByText('Add schedule')).not.toBeInTheDocument();
+});
+
+test('ML Block mode hides the Autoscaled checkbox but keeps Nodes count', () => {
+  renderForm({values: baseValues({mode: 'ML_BLOCK'})});
+  expect(screen.queryByText('Autoscaled:')).not.toBeInTheDocument();
+  expect(screen.getByText('Nodes count:')).toBeInTheDocument();
+});
+
+test('ML Block mode disables Instance Type and Nodes count, filled from the offering', () => {
+  renderForm({values: baseValues({mode: 'ML_BLOCK'})});
+  expect(selectIsDisabled('Instance Type:')).toBe(true);
+  expect(within(row('Nodes count:')).getByRole('textbox')).toBeDisabled();
+});
+
+test('ML Block mode renders the candidates control under Duration (days)', () => {
+  renderForm({values: baseValues({mode: 'ML_BLOCK'})});
+  const text = document.body.textContent;
+  expect(text.indexOf('Duration (days):')).toBeLessThan(text.indexOf('Instance types:'));
+  expect(screen.getByRole('button', {name: 'Add instance type'})).toBeInTheDocument();
+});
+
+test(
+  'ML Block mode renders Search in region under Duration (days) and above the candidates',
+  () => {
+    renderForm({values: baseValues({mode: 'ML_BLOCK'})});
+    const text = document.body.textContent;
+    expect(text.indexOf('Duration (days):')).toBeLessThan(text.indexOf('Search in region:'));
+    expect(text.indexOf('Search in region:')).toBeLessThan(text.indexOf('Instance types:'));
+  }
+);
+
+test(
+  'ML Block mode disables Configuration\'s Region, editable only through Search in region',
+  () => {
+    renderForm({values: baseValues({mode: 'ML_BLOCK'})});
+    expect(selectIsDisabled('Region:')).toBe(true);
+    expect(selectIsDisabled('Search in region:')).toBe(false);
+  }
+);
+
+test('changing Search in region calls onChange with (\'region\', value)', async () => {
+  const onChange = fn();
+  renderForm({onChange, values: baseValues({mode: 'ML_BLOCK', region: 1})});
+
+  await click(within(row('Search in region:')).getByRole('combobox'));
+  await click(screen.getByText('westeurope'));
+
+  expect(onChange).toHaveBeenLastCalledWith('region', '2');
+});
+
+// SelectInput renders its error line as a sibling of the formRow, under a shared wrapper div.
+function selectInputWrapper (labelText) {
+  return screen.getByText(labelText).closest('div').parentElement;
+}
+
+test(
+  'ML Block mode shows a region error once, under Search in region, not under the ' +
+  'disabled Configuration Region',
+  () => {
+    renderForm({
+      values: baseValues({mode: 'ML_BLOCK', region: undefined}),
+      validation: {region: 'Region is required'},
+      touched: {region: true}
+    });
+    expect(screen.getAllByText('Region is required')).toHaveLength(1);
+    expect(within(selectInputWrapper('Search in region:')).getByText('Region is required'))
+      .toBeInTheDocument();
+  }
+);
+
+test('Default mode shows a region error once, under Configuration\'s Region', () => {
+  renderForm({
+    values: baseValues({mode: MODE_DEFAULT, region: undefined}),
+    validation: {region: 'Region is required'},
+    touched: {region: true}
+  });
+  expect(screen.getAllByText('Region is required')).toHaveLength(1);
+  expect(within(selectInputWrapper('Region:')).getByText('Region is required'))
+    .toBeInTheDocument();
+});
+
+test('Default mode has no Search in region and Region stays editable', () => {
+  renderForm({values: baseValues({mode: MODE_DEFAULT})});
+  expect(screen.queryByText('Search in region:')).not.toBeInTheDocument();
+  expect(selectIsDisabled('Region:')).toBe(false);
+});
+
+test('Future dated mode has no Search in region and Region stays editable', () => {
+  renderForm({values: baseValues({mode: 'FUTURE_DATED'})});
+  expect(screen.queryByText('Search in region:')).not.toBeInTheDocument();
+  expect(selectIsDisabled('Region:')).toBe(false);
+});
+
+// `validation.region` is never set for a loaded pool, so this does not exercise the
+// `mlBlock && !isExistingReservation` condition directly.
+test('an existing ML Block reservation pool has no Search in region and no region error',
+  () => {
+    renderForm({
+      values: baseValues({mode: 'ML_BLOCK'}),
+      readOnly: true,
+      isExistingReservation: true,
+      reservationStartDate: '2026-03-01 10:00:00.000',
+      reservationEndDate: '2026-04-01 10:00:00.000'
+    });
+    expect(screen.queryByText('Search in region:')).not.toBeInTheDocument();
+    expect(selectIsDisabled('Region:')).toBe(true);
+    expect(screen.queryByText('Region is required')).not.toBeInTheDocument();
+  });
+
+test('ML Block mode locks Price type to On-demand and hides Spot', () => {
+  renderForm({values: baseValues({mode: 'ML_BLOCK', spot: 'ON_DEMAND'})});
+  expect(selectIsDisabled('Price type:')).toBe(true);
+  expect(screen.getByText('On-demand')).toBeInTheDocument();
+  expect(screen.queryByText('Spot')).not.toBeInTheDocument();
+});
+
+test('Add instance type calls onChange with an add action for mlBlockCandidates', async () => {
+  const onChange = fn();
+  renderForm({onChange, values: baseValues({mode: 'ML_BLOCK'})});
+
+  await click(screen.getByRole('button', {name: 'Add instance type'}));
+
+  expect(onChange).toHaveBeenLastCalledWith('mlBlockCandidates', {action: 'add'});
+});
+
+test('selecting an offering calls onChange with (\'mlBlockOffering\', offeringId)', async () => {
+  const onChange = fn();
+  renderForm({
+    onChange,
+    values: baseValues({
+      mode: 'ML_BLOCK',
+      mlBlockCandidates: [{id: 1, instanceType: 'p5.48xlarge', instanceCount: 4}]
+    }),
+    mlBlockOfferingsByCandidate: {
+      1: {
+        offerings: [{
+          offeringId: 'o-1',
+          instanceType: 'p5.48xlarge',
+          instanceCount: 4,
+          availabilityZone: 'eu-central-1a',
+          startDate: '2026-12-21 04:14:02.500',
+          endDate: '2026-12-31 04:14:02.500'
+        }],
+        pending: false,
+        error: undefined,
+        searched: true
+      }
+    }
+  });
+
+  await click(screen.getByRole('button', {name: /p5\.48xlarge/}));
+
+  expect(onChange).toHaveBeenLastCalledWith('mlBlockOffering', 'o-1');
+});
+
+test('ML Block mode shows the "Select one of the offerings" error once touched', () => {
+  renderForm({
+    values: baseValues({mode: 'ML_BLOCK'}),
+    validation: {mlBlockOffering: 'Select one of the offerings'},
+    touched: {mlBlockOffering: true}
+  });
+  expect(screen.getByText('Select one of the offerings')).toBeInTheDocument();
 });
 
 test('DEFAULT mode still offers both price types', async () => {

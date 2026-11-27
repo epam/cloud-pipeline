@@ -59,3 +59,11 @@ test('with modes={["FUTURE_DATED"]} only the Future dated option is offered', as
   expect(screen.queryByText('Default')).not.toBeInTheDocument();
   expect(screen.getByText('Future dated')).toBeInTheDocument();
 });
+
+test('with modes={["ML_BLOCK"]} the ML Block option is offered', async () => {
+  render(<ModeControl modes={['ML_BLOCK']} onChange={fn()} />);
+
+  await click(screen.getByRole('combobox'));
+
+  expect(screen.getByText('ML Block')).toBeInTheDocument();
+});

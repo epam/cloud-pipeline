@@ -17,29 +17,32 @@
 import moment from 'moment-timezone';
 import {getFiltersError, filtersAreEqual} from '../filters-control';
 import {compareSchedulesArray, scheduleIsValid} from './controls/ScheduleControl';
-import {isReservationScheduled} from './controls/ReservationSummary';
 import {
   DISK_MIN_SIZE,
   DISK_MAX_SIZE,
   COUNT_MIN_SIZE,
   MODE_FUTURE_DATED,
+  MODE_ML_BLOCK,
   COMMITMENT_DATE_TIME_FORMAT,
+  COMMITMENT_DATE_ONLY_FORMAT,
   RESERVATION_COUNT_MIN_SIZE,
   SECONDS_PER_DAY,
   MIN_COMMITMENT_DURATION_DAYS,
   MIN_RESERVATION_LEAD_DAYS,
   MAX_RESERVATION_LEAD_DAYS,
   RESERVATION_TYPE_FUTURE_DATED,
+  RESERVATION_TYPE_CAPACITY_BLOCK,
+  CAPACITY_BLOCK_RESOURCE_TYPE_INSTANCE,
+  MIN_ML_BLOCK_DURATION_DAYS,
+  HOURS_PER_DAY,
+  SECONDS_PER_HOUR,
   RESERVATION_STATUS_PENDING,
   RESERVATION_STATUS_APPROVED,
   RESERVATION_STATUS_REQUIRED_APPROVE,
   RESERVATION_TERMINAL_STATUSES
 } from './constants';
 
-// A new future-dated pool opens with its creator as the run owner - a default the
-// user may edit or remove, not a derived or enforced value. It is the already
-// backend-supported RUN_OWNER/EQUAL criterion, sent in the payload exactly like a
-// hand-made filter.
+// An editable default for a new reservation pool; the backend already supports RUN_OWNER/EQUAL.
 export function buildRunOwnerFilter (userName) {
   return {
     operator: 'AND',
@@ -67,6 +70,198 @@ export function arraysAreEqual (a, b) {
   return true;
 }
 
+// The one place a picked day becomes the UTC instant the backend receives. Plain `moment()`,
+// not `.local()`, which ignores `moment.tz.setDefault`.
+function getCommitmentDayStart (day) {
+  const parsed = moment(day, COMMITMENT_DATE_ONLY_FORMAT, true);
+  return parsed.isValid() ? parsed.startOf('day').utc() : parsed;
+}
+
+// Same parsing as `getCommitmentDayStart`, anchored to the day's end instead.
+function getCommitmentDayEnd (day) {
+  const parsed = moment(day, COMMITMENT_DATE_ONLY_FORMAT, true);
+  return parsed.isValid() ? parsed.endOf('day').utc() : parsed;
+}
+
+// Windows arrive as a zone-less UTC wall time (`AwsCapacityReservationService.toLocalDateTime`),
+// so they are parsed as UTC and rendered in the viewer's own zone.
+export function formatCloudCommitmentDate (value, format) {
+  if (!value) {
+    return undefined;
+  }
+  // Non-strict: the backend's formatting may differ slightly from the wire format sent.
+  const parsed = moment.utc(value, COMMITMENT_DATE_TIME_FORMAT);
+  if (!parsed.isValid()) {
+    return undefined;
+  }
+  // `.local()` reads the OS zone, not `moment.tz.setDefault`, so this converts through a
+  // plain `Date` instead - the same workaround `displayDate.js` uses.
+  return moment(parsed.toDate()).format(format);
+}
+
+// The two fields the offering search sends per candidate.
+function isCompleteMlBlockCandidate (candidate) {
+  const {instanceType, instanceCount} = candidate || {};
+  return Boolean((instanceType || '').trim()) &&
+    Number.isInteger(Number(instanceCount)) &&
+    Number(instanceCount) >= 1;
+}
+
+export function getCompleteMlBlockCandidates (candidates) {
+  return (candidates || []).filter(isCompleteMlBlockCandidate);
+}
+
+// The response is one flat list, which `getOfferingsForCandidate` attributes back to a row
+// by this same `instanceType` string.
+export function buildCapacityBlockOfferingRequest (values) {
+  const {
+    region,
+    commitmentStart,
+    commitmentEnd,
+    commitmentDurationDays,
+    mlBlockCandidates
+  } = values;
+  const request = {
+    regionId: Number(region),
+    resourceType: CAPACITY_BLOCK_RESOURCE_TYPE_INSTANCE,
+    candidates: getCompleteMlBlockCandidates(mlBlockCandidates)
+      .map(({instanceType, instanceCount}) => ({
+        instanceType,
+        instanceCount: Number(instanceCount)
+      })),
+    startDateRange: getCommitmentDayStart(commitmentStart).format(COMMITMENT_DATE_TIME_FORMAT),
+    capacityDurationHours: Number(commitmentDurationDays) * HOURS_PER_DAY
+  };
+  const end = getCommitmentDayEnd(commitmentEnd);
+  if (commitmentEnd && end.isValid()) {
+    request.endDateRange = end.format(COMMITMENT_DATE_TIME_FORMAT);
+  }
+  return request;
+}
+
+export function canSearchCapacityBlockOfferings (values) {
+  const {region, commitmentStart, commitmentDurationDays, mlBlockCandidates} = values;
+  if (!region) {
+    return false;
+  }
+  const start = moment(commitmentStart, COMMITMENT_DATE_ONLY_FORMAT, true);
+  if (!commitmentStart || !start.isValid()) {
+    return false;
+  }
+  const durationDays = Number(commitmentDurationDays);
+  if (!Number.isInteger(durationDays) || durationDays < MIN_ML_BLOCK_DURATION_DAYS) {
+    return false;
+  }
+  return getCompleteMlBlockCandidates(mlBlockCandidates).length > 0;
+}
+
+export function getOfferingsForCandidate (offerings, candidate) {
+  const type = ((candidate || {}).instanceType || '').toLowerCase();
+  if (!type) {
+    return [];
+  }
+  return (offerings || []).filter(o => (o.instanceType || '').toLowerCase() === type);
+}
+
+// The selection is one value shared by the whole form, so finding it spans every row.
+export function getAllMlBlockOfferings (offeringsByCandidate) {
+  return Object.values(offeringsByCandidate || {})
+    .reduce((all, entry) => all.concat((entry || {}).offerings || []), []);
+}
+
+// A selection is dropped when its owning row is searched again; this is that ownership check.
+export function offeringBelongsToCandidate (offeringsByCandidate, id, offeringId) {
+  if (!offeringId) {
+    return false;
+  }
+  const entry = (offeringsByCandidate || {})[id];
+  return Boolean(entry && (entry.offerings || []).some(o => o.offeringId === offeringId));
+}
+
+export function getSelectedOffering (values) {
+  const {mlBlockOfferingsByCandidate, mlBlockOfferingId} = values;
+  if (!mlBlockOfferingId) {
+    return undefined;
+  }
+  return getAllMlBlockOfferings(mlBlockOfferingsByCandidate)
+    .find(o => o.offeringId === mlBlockOfferingId);
+}
+
+// The catalogue reports memory in MiB; this line shows it in GB.
+export function formatCapacityBlockInstanceType (info) {
+  const {instanceType, vCPU, memoryInMiB, gpuCount, gpuDeviceName} = info || {};
+  const parts = [instanceType];
+  if (gpuCount) {
+    parts.push(gpuDeviceName ? `${gpuCount} x ${gpuDeviceName}` : `${gpuCount} GPU`);
+  }
+  if (vCPU !== undefined && vCPU !== null) {
+    parts.push(`${vCPU} vCPU`);
+  }
+  if (memoryInMiB !== undefined && memoryInMiB !== null) {
+    const memoryInGb = (memoryInMiB / 1024).toFixed(1).replace(/\.0$/, '');
+    parts.push(`${memoryInGb} GB`);
+  }
+  return parts.filter(Boolean).join(', ');
+}
+
+// Shared by the future-dated and ML Block rules, which differ only in these three arguments.
+function getCommitmentWindowErrors (values, minDurationDays, leadTime, endRequired = true) {
+  const {commitmentStart, commitmentEnd, commitmentDurationDays} = values;
+  // Checked on the true instants the payload carries, as the backend re-checks them
+  // against `DateUtils.nowUTC()`.
+  const start = getCommitmentDayStart(commitmentStart);
+  const end = getCommitmentDayEnd(commitmentEnd);
+  const now = moment.utc();
+  let commitmentStartError, commitmentEndError, commitmentDurationError;
+  // A value carrying a time fails this day-only strict parse, so it counts as missing.
+  if (!commitmentStart || !start.isValid()) {
+    commitmentStartError = 'Search from date is required';
+  } else if (!start.isAfter(now)) {
+    commitmentStartError = 'Search from date should be in the future';
+  } else if (leadTime) {
+    // Matches the backend's `ChronoUnit.DAYS.between`: floor of the fractional diff, not
+    // `diff(now, 'days')`, which truncates toward zero.
+    const leadDays = Math.floor(start.diff(now, 'days', true));
+    if (leadDays < leadTime.min || leadDays > leadTime.max) {
+      // `leadDays` floors against a start pinned to 00:00, so the calendar boundary a user
+      // hits is one day later than `leadTime`'s own min/max.
+      commitmentStartError = 'Search from date should be between ' +
+        `${leadTime.min + 1} and ${leadTime.max + 1} days from now`;
+    }
+  }
+  if (!commitmentEnd) {
+    if (endRequired) {
+      commitmentEndError = 'Search until date is required';
+    }
+  } else if (!end.isValid()) {
+    commitmentEndError = 'Search until date is required';
+  } else if (start.isValid() && !end.isAfter(start)) {
+    commitmentEndError = 'Search until date should be after the search from date';
+  }
+  if (
+    commitmentDurationDays === undefined ||
+    commitmentDurationDays === null ||
+    commitmentDurationDays === '' ||
+    Number.isNaN(Number(commitmentDurationDays)) ||
+    Number(commitmentDurationDays) <= 0
+  ) {
+    commitmentDurationError = 'Duration should be a positive number of days';
+  } else if (!Number.isInteger(Number(commitmentDurationDays))) {
+    commitmentDurationError = 'Duration should be a whole number of days';
+  } else if (Number(commitmentDurationDays) < minDurationDays) {
+    commitmentDurationError = 'Duration should be at least ' +
+      `${minDurationDays} day${minDurationDays === 1 ? '' : 's'}`;
+  } else if (
+    start.isValid() &&
+    end.isValid() &&
+    end.isAfter(start) &&
+    end.diff(start, 'seconds') < Number(commitmentDurationDays) * SECONDS_PER_DAY
+  ) {
+    commitmentDurationError = 'Duration should fit between "Search from" and "Search until"';
+  }
+  return {commitmentStartError, commitmentEndError, commitmentDurationError};
+}
+
 export function getValidationErrors (values) {
   const {
     disk,
@@ -85,9 +280,7 @@ export function getValidationErrors (values) {
     scaleStep,
     labels = [],
     mode,
-    commitmentStart,
-    commitmentEnd,
-    commitmentDurationDays,
+    mlBlockCandidates,
     isExistingReservation
   } = values;
   let diskError,
@@ -106,7 +299,9 @@ export function getValidationErrors (values) {
     labelsError,
     commitmentStartError,
     commitmentEndError,
-    commitmentDurationError;
+    commitmentDurationError,
+    mlBlockCandidatesError,
+    mlBlockOfferingError;
   if (
     Number.isNaN(Number(disk)) ||
     Number(disk) < DISK_MIN_SIZE ||
@@ -201,67 +396,45 @@ export function getValidationErrors (values) {
       countError = `Count should be a positive value or zero (pool is disabled)`;
     }
   }
-  // Future-dated pools reserve a single one-time window. These are the backend's own
-  // `NodePoolValidator` rules, pre-validated here so the user sees them before the
-  // request. The minimum-32-vCPU and allowed-instance-family rules are intentionally
-  // left to the backend: both need async lookups this form does not have.
+  // Pre-validates `NodePoolValidator`'s window rules. Its min-vCPU and allowed-family rules
+  // are left to the backend - they need lookups this form does not have.
   if (mode === MODE_FUTURE_DATED) {
-    // An existing reservation's window cannot be changed through this endpoint, so
-    // there is nothing to validate here, and SAVE must not be blocked by three fields
-    // the form intentionally leaves empty for an existing reservation pool (the
-    // requested duration is never echoed back by GET).
+    // This endpoint cannot change an existing reservation's window, so SAVE must not be
+    // blocked by fields the form leaves empty (the duration GET never echoes).
     if (!isExistingReservation) {
-      const start = moment(commitmentStart, COMMITMENT_DATE_TIME_FORMAT, true);
-      const end = moment(commitmentEnd, COMMITMENT_DATE_TIME_FORMAT, true);
-      const now = moment();
-      if (!commitmentStart || !start.isValid()) {
-        commitmentStartError = 'Search from date is required';
-      } else if (!start.isAfter(now)) {
-        commitmentStartError = 'Search from date should be in the future';
-      } else {
-        // Matches `ChronoUnit.DAYS.between` on the backend: `Math.floor` on the
-        // fractional diff, not a plain integer `diff(now, 'days')` (which truncates
-        // toward zero and happens to agree here, but is not the same operation).
-        const leadDays = Math.floor(start.diff(now, 'days', true));
-        if (leadDays < MIN_RESERVATION_LEAD_DAYS || leadDays > MAX_RESERVATION_LEAD_DAYS) {
-          commitmentStartError = 'Search from date should be between ' +
-            `${MIN_RESERVATION_LEAD_DAYS} and ${MAX_RESERVATION_LEAD_DAYS} days from now`;
-        }
-      }
-      if (!commitmentEnd || !end.isValid()) {
-        commitmentEndError = 'Search until date is required';
-      } else if (start.isValid() && !end.isAfter(start)) {
-        commitmentEndError = 'Search until date should be after the search from date';
-      }
-      if (
-        commitmentDurationDays === undefined ||
-        commitmentDurationDays === null ||
-        commitmentDurationDays === '' ||
-        Number.isNaN(Number(commitmentDurationDays)) ||
-        Number(commitmentDurationDays) <= 0
-      ) {
-        commitmentDurationError = 'Duration should be a positive number of days';
-      } else if (!Number.isInteger(Number(commitmentDurationDays))) {
-        commitmentDurationError = 'Duration should be a whole number of days';
-      } else if (Number(commitmentDurationDays) < MIN_COMMITMENT_DURATION_DAYS) {
-        commitmentDurationError = 'Duration should be at least ' +
-          `${MIN_COMMITMENT_DURATION_DAYS} days`;
-      } else if (
-        start.isValid() &&
-        end.isValid() &&
-        end.isAfter(start) &&
-        end.diff(start, 'seconds') < Number(commitmentDurationDays) * SECONDS_PER_DAY
-      ) {
-        commitmentDurationError = 'Duration should fit between "Search from" and "Search until"';
-      }
+      ({commitmentStartError, commitmentEndError, commitmentDurationError} =
+        getCommitmentWindowErrors(values, MIN_COMMITMENT_DURATION_DAYS, {
+          min: MIN_RESERVATION_LEAD_DAYS,
+          max: MAX_RESERVATION_LEAD_DAYS
+        }));
     }
-    // The backend enforces count >= 1 on the reservation request, but it then stores
-    // the pool with count 0 until the reservation is activated - so an existing
-    // future-dated pool legitimately loads with 0 and SAVE must not be blocked by it
-    // (its Count input is disabled and round-trips unchanged anyway).
+    // The backend stores a reservation pool with count 0 until activated, so an existing
+    // future-dated pool legitimately loads with 0.
     if (!isExistingReservation && (Number.isNaN(Number(count)) ||
         Number(count) < RESERVATION_COUNT_MIN_SIZE)) {
       countError = 'Count should be at least 1 for a Future dated pool';
+    }
+  }
+  // Nothing about a purchased block is editable.
+  if (mode === MODE_ML_BLOCK && !isExistingReservation) {
+    ({commitmentStartError, commitmentEndError, commitmentDurationError} =
+      getCommitmentWindowErrors(values, MIN_ML_BLOCK_DURATION_DAYS, undefined, false));
+    const candidates = mlBlockCandidates || [];
+    const hasIncompleteTypedRow = candidates.some(c =>
+      (c.instanceType || '').trim() && !isCompleteMlBlockCandidate(c)
+    );
+    if (hasIncompleteTypedRow) {
+      mlBlockCandidatesError = 'Specify the nodes count for every instance type';
+    } else if (getCompleteMlBlockCandidates(candidates).length === 0) {
+      mlBlockCandidatesError = 'Add at least one instance type';
+    }
+    if (!getSelectedOffering(values)) {
+      mlBlockOfferingError = 'Select one of the offerings';
+    }
+    // `count`/`instanceType` come from the selected offering, so this only fails with
+    // nothing selected.
+    if (Number.isNaN(Number(count)) || Number(count) < RESERVATION_COUNT_MIN_SIZE) {
+      countError = 'Count should be at least 1 for an ML Block pool';
     }
   }
   const labelsNames = [...new Set(labels.map((lb) => (lb.name || '').trim().toLowerCase()))];
@@ -286,7 +459,9 @@ export function getValidationErrors (values) {
     !labelsError &&
     !commitmentStartError &&
     !commitmentEndError &&
-    !commitmentDurationError;
+    !commitmentDurationError &&
+    !mlBlockCandidatesError &&
+    !mlBlockOfferingError;
   return {
     valid,
     errors: {
@@ -306,7 +481,9 @@ export function getValidationErrors (values) {
       labelsError,
       commitmentStart: commitmentStartError,
       commitmentEnd: commitmentEndError,
-      commitmentDurationDays: commitmentDurationError
+      commitmentDurationDays: commitmentDurationError,
+      mlBlockCandidates: mlBlockCandidatesError,
+      mlBlockOffering: mlBlockOfferingError
     }
   };
 }
@@ -367,22 +544,31 @@ export function isModified (values) {
     (autoscaled && Number(scaleStep) !== Number(initialScaleStep));
 }
 
-// The form carries the duration in whole days (`commitmentDurationDays`), the unit a
-// user reasons about; the backend's `commitmentDuration` field is seconds, so the
-// conversion happens exactly once, here, on the way out. `instancePlatform`/`originId`
-// are deliberately not sent (the backend defaults `instancePlatform` to `Linux/UNIX`).
+// `instancePlatform`/`originId` are deliberately omitted - the backend defaults
+// `instancePlatform` to `Linux/UNIX`.
 export function buildCapacityReservationRequest (values) {
+  const {mode} = values;
+  if (mode === MODE_ML_BLOCK) {
+    const offering = getSelectedOffering(values) || {};
+    const {offeringId, availabilityZone, startDate, endDate, capacityDurationHours} = offering;
+    return {
+      reservationType: RESERVATION_TYPE_CAPACITY_BLOCK,
+      capacityBlockOfferingId: offeringId,
+      availabilityZone,
+      // Sent raw: the backend reads these back as UTC (`toInstant(ZoneOffset.UTC)`), so
+      // converting them the way the card display does would corrupt the buy.
+      requestedStartDate: startDate,
+      requestedEndDate: endDate,
+      commitmentDuration: Number(capacityDurationHours) * SECONDS_PER_HOUR
+    };
+  }
   const {commitmentStart, commitmentEnd, commitmentDurationDays} = values;
   return {
     reservationType: RESERVATION_TYPE_FUTURE_DATED,
-    // Re-formatting through `moment` (rather than passing the string straight through)
-    // normalizes whatever the picker produced into the backend's exact pattern,
-    // including the mandatory `.SSS`. Never append a `Z` and never call `.utc()` — the
-    // backend field is a zone-less local datetime.
-    requestedStartDate: moment(commitmentStart, COMMITMENT_DATE_TIME_FORMAT, true)
-      .format(COMMITMENT_DATE_TIME_FORMAT),
-    requestedEndDate: moment(commitmentEnd, COMMITMENT_DATE_TIME_FORMAT, true)
-      .format(COMMITMENT_DATE_TIME_FORMAT),
+    // The viewer's picked day, converted to the UTC instant it denotes - the backend reads
+    // this zone-less string as UTC.
+    requestedStartDate: getCommitmentDayStart(commitmentStart).format(COMMITMENT_DATE_TIME_FORMAT),
+    requestedEndDate: getCommitmentDayEnd(commitmentEnd).format(COMMITMENT_DATE_TIME_FORMAT),
     commitmentDuration: Number(commitmentDurationDays) * SECONDS_PER_DAY
   };
 }
@@ -435,15 +621,12 @@ export function buildPoolPayload (values) {
       }
     }), {})
   };
-  // `poolType` applies to every pool, not only a future-dated one, and the backend
-  // only reads it on create — its UPDATE statement does not include the `pool_type`
-  // column — so sending it unconditionally can never overwrite an existing pool's type.
+  // The backend reads `poolType` on create only (its UPDATE omits the column), so sending it
+  // unconditionally cannot overwrite an existing pool's type.
   payload.poolType = poolType;
-  if (mode === MODE_FUTURE_DATED) {
-    // `NodePoolManager.update()` never reads `capacityReservationRequest` on an
-    // existing reservation pool — the window cannot be changed through this
-    // endpoint at all (a separate "extend" flow, out of scope) — so it is only ever
-    // sent on create, never on an update of an already-reserved pool.
+  if (mode === MODE_FUTURE_DATED || mode === MODE_ML_BLOCK) {
+    // `NodePoolManager.update()` never reads `capacityReservationRequest`, so it goes on
+    // create only.
     if (!isExistingReservation) {
       payload.capacityReservationRequest = buildCapacityReservationRequest(values);
     }
@@ -451,13 +634,17 @@ export function buildPoolPayload (values) {
   return payload;
 }
 
-// Returns the pool-card badge status for a future-dated pool. The reservation record is
-// the source of truth for its own lifecycle, so once one is available its `status` is
-// returned verbatim - the ten-state backend enum (REQUIRED_APPROVE through FINISHED, plus
-// the terminal failures) is for the caller to present, not to collapse here. When no record
-// is provided (data still loading, endpoint returned nothing) the function falls back to
-// inferring Approved/Pending from `pool.startDate`/`endDate` so the badge never goes blank.
-// Returns `undefined` for a non-reservation pool.
+// A window counts as granted once both dates parse. Shared with `ReservationSummary` so the
+// pool-card badge and that summary never disagree.
+export function isReservationScheduled (start, end) {
+  return Boolean(
+    formatCloudCommitmentDate(start, 'YYYY-MM-DD HH:mm:ss') &&
+    formatCloudCommitmentDate(end, 'YYYY-MM-DD HH:mm:ss')
+  );
+}
+
+// The record is the source of truth for its own lifecycle, so its `status` is returned verbatim.
+// With no record yet, Approved/Pending is inferred from the pool's dates so nothing goes blank.
 export function getCapacityReservationStatus (pool, reservation) {
   const {isCapacityReservation, startDate, endDate} = pool || {};
   if (!isCapacityReservation) {
@@ -471,10 +658,7 @@ export function getCapacityReservationStatus (pool, reservation) {
     : RESERVATION_STATUS_PENDING;
 }
 
-// A status none of the presentation maps keyed off `getCapacityReservationStatus` knows
-// (an older client against a newer backend release) must still read as something rather
-// than blank out or throw, so they fall back to the raw enum value humanised here:
-// `SOME_NEW_STATUS` -> "Some new status".
+// An unknown status must still read as something: `SOME_NEW_STATUS` -> "Some new status".
 export function humanizeReservationStatus (status) {
   const words = `${status}`.toLowerCase().split('_').filter(Boolean);
   if (!words.length) {
@@ -484,10 +668,7 @@ export function humanizeReservationStatus (status) {
     .trim();
 }
 
-// The reserved count a matched reservation record carries is only real while that
-// reservation still holds, or may still hold, capacity - a terminal status (see
-// `RESERVATION_TERMINAL_STATUSES`) means it never will again, so neither the pool card
-// nor the edit form may present its `instanceCount` as currently reserved.
+// A reservation's `instanceCount` is only real while it still holds capacity.
 export function getReservationDisplayInstanceCount (reservation) {
   if (!reservation || RESERVATION_TERMINAL_STATUSES.includes(reservation.status)) {
     return undefined;
@@ -496,24 +677,14 @@ export function getReservationDisplayInstanceCount (reservation) {
   return instanceCount === null || instanceCount === undefined ? undefined : instanceCount;
 }
 
-// Mirrors the backend's `CapacityReservationService#onPoolDeletion`: deleting a pool gives
-// its reservation up too, and the backend refuses that implicit cancellation - unless the
-// caller forces it - while the reservation is still open to anything but these two
-// outcomes: a terminal status (see `RESERVATION_TERMINAL_STATUSES`), where there is
-// nothing left to give up, or `REQUIRED_APPROVE`, where there is nothing yet committed
-// with the cloud provider. Anywhere else (including `ACTIVE`) the capacity is still held,
-// and giving it up may still cost money, which is why the client asks for the same consent
-// the backend requires - from an admin exactly as much as from the pool's own owner.
-//
-// A pool that is not a capacity reservation at all (a `Default` pool) never needs this -
-// the backend's own check short-circuits there too. Nor does one with no reservation
-// record to find: the backend's own check finds nothing to cancel and returns early, so
-// there is nothing for the client to hold the caller to either.
+// Backend `CapacityReservationService#onPoolDeletion`: deleting a pool gives up its reservation.
 const RESERVATION_SAFE_TO_DELETE_STATUSES = [
   ...RESERVATION_TERMINAL_STATUSES,
   RESERVATION_STATUS_REQUIRED_APPROVE
 ];
 
+// At any other status, `ACTIVE` included, giving up the capacity may still cost money, so the
+// backend refuses to do it implicitly.
 export function needsForceToDeletePool (pool, reservation) {
   const {isCapacityReservation} = pool || {};
   if (!isCapacityReservation || !reservation) {

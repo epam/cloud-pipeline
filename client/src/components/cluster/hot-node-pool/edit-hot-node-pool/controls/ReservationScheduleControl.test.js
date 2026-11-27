@@ -15,11 +15,12 @@
  */
 
 import React from 'react';
+import moment from 'moment-timezone';
 import {render, screen, within, change, hover, fn} from '@test';
 import ReservationScheduleControl from './ReservationScheduleControl';
+import {MODE_FUTURE_DATED, MODE_ML_BLOCK} from '../constants';
 
-// Mirrors the `row` helper in `../index.test.js`: the label span's closest `div` is the
-// `formRow` div holding both the label and its control.
+// The label span's closest `div` is the `formRow` div holding both the label and its control.
 function row (labelText) {
   return screen.getByText(labelText).closest('div');
 }
@@ -40,11 +41,11 @@ test('renders the three date/duration labels', () => {
   expect(screen.getByText('Duration (days):')).toBeInTheDocument();
 });
 
-test('Search from and Search until show their own values independently', () => {
+test('Search from and Search until show their own values independently, as a day', () => {
   render(
     <ReservationScheduleControl
-      start="2026-01-01 10:00:00.000"
-      end="2026-02-01 10:00:00.000"
+      start="2026-01-01"
+      end="2026-02-01"
       durationDays={undefined}
       onChangeStart={fn()}
       onChangeEnd={fn()}
@@ -53,10 +54,58 @@ test('Search from and Search until show their own values independently', () => {
   );
   expect(
     within(row('Search from:')).getByRole('textbox').value
-  ).toBe('2026-01-01 10:00:00.000');
+  ).toBe('2026-01-01');
   expect(
     within(row('Search until:')).getByRole('textbox').value
-  ).toBe('2026-02-01 10:00:00.000');
+  ).toBe('2026-02-01');
+});
+
+test('a value carrying a time (an existing reservation\'s granted window) still ' +
+  'renders as a day only, and offers no time to pick', () => {
+  render(
+    <ReservationScheduleControl
+      start="2026-01-01 10:00:00.000"
+      end="2026-02-01 18:30:00.000"
+      durationDays={undefined}
+      onChangeStart={fn()}
+      onChangeEnd={fn()}
+      onChangeDuration={fn()}
+    />
+  );
+  expect(
+    within(row('Search from:')).getByRole('textbox').value
+  ).toBe('2026-01-01');
+  expect(
+    within(row('Search until:')).getByRole('textbox').value
+  ).toBe('2026-02-01');
+});
+
+// The harness pins the zone to UTC, where a true instant and the viewer's day coincide,
+// so these set a real offset.
+describe('a true-instant echo (an unscheduled reservation\'s requested window)', () => {
+  afterEach(() => {
+    moment.tz.setDefault('UTC');
+  });
+
+  test('renders the viewer\'s own local day, not the UTC literal one', () => {
+    moment.tz.setDefault('Asia/Tokyo');
+    render(
+      <ReservationScheduleControl
+        start="2026-12-25 20:00:00.000"
+        end="2026-12-26 20:00:00.000"
+        durationDays={undefined}
+        onChangeStart={fn()}
+        onChangeEnd={fn()}
+        onChangeDuration={fn()}
+      />
+    );
+    expect(
+      within(row('Search from:')).getByRole('textbox').value
+    ).toBe('2026-12-26');
+    expect(
+      within(row('Search until:')).getByRole('textbox').value
+    ).toBe('2026-12-27');
+  });
 });
 
 test('disabled disables all three inputs', () => {
@@ -145,14 +194,85 @@ test('changing Duration calls onChangeDuration', async () => {
   expect(onChangeDuration).toHaveBeenCalledWith(30);
 });
 
-// There is no test here driving the "Search until" picker through the UI, and that is
-// deliberate: a `change` on its textbox, with or without a trailing `Enter`/blur to make
-// rc-calendar commit the value, never reaches `onChangeEnd` under antd 2.13.14 and React
-// 15 — both forms were tried. Nothing anywhere in this codebase drives an antd DatePicker
-// from a unit test. The tests above ("Search from and Search until show their own values
-// independently", "disabled disables all three inputs", "startError and endError each
-// show only when touched, independently") carry the proof instead: the end date is a real
-// input of its own, not a value derived from the other two fields.
+test('the pickers show a day only in ML Block mode too', () => {
+  render(
+    <ReservationScheduleControl
+      mode={MODE_ML_BLOCK}
+      start="2026-01-01"
+      end="2026-02-01"
+      durationDays={undefined}
+      onChangeStart={fn()}
+      onChangeEnd={fn()}
+      onChangeDuration={fn()}
+    />
+  );
+  expect(
+    within(row('Search from:')).getByRole('textbox').value
+  ).toBe('2026-01-01');
+  expect(
+    within(row('Search until:')).getByRole('textbox').value
+  ).toBe('2026-02-01');
+});
+
+test('the duration minimum is 14 in future-dated mode and 1 in ML Block mode', () => {
+  const {rerender} = render(
+    <ReservationScheduleControl
+      mode={MODE_FUTURE_DATED}
+      start={undefined}
+      end={undefined}
+      durationDays={undefined}
+      onChangeStart={fn()}
+      onChangeEnd={fn()}
+      onChangeDuration={fn()}
+    />
+  );
+  expect(
+    within(row('Duration (days):')).getByRole('textbox')
+  ).toHaveAttribute('min', '14');
+
+  rerender(
+    <ReservationScheduleControl
+      mode={MODE_ML_BLOCK}
+      start={undefined}
+      end={undefined}
+      durationDays={undefined}
+      onChangeStart={fn()}
+      onChangeEnd={fn()}
+      onChangeDuration={fn()}
+    />
+  );
+  expect(
+    within(row('Duration (days):')).getByRole('textbox')
+  ).toHaveAttribute('min', '1');
+});
+
+test('children render between the Duration (days) row and the status notice', () => {
+  render(
+    <ReservationScheduleControl
+      start={undefined}
+      end={undefined}
+      durationDays={undefined}
+      reservationStatus="ACTIVE"
+      onChangeStart={fn()}
+      onChangeEnd={fn()}
+      onChangeDuration={fn()}
+    >
+      <div>Candidates placeholder</div>
+    </ReservationScheduleControl>
+  );
+  const durationLabel = screen.getByText('Duration (days):');
+  const child = screen.getByText('Candidates placeholder');
+  const notice = screen.getByText('This reservation is active.');
+  expect(
+    durationLabel.compareDocumentPosition(child) & Node.DOCUMENT_POSITION_FOLLOWING
+  ).toBeTruthy();
+  expect(
+    child.compareDocumentPosition(notice) & Node.DOCUMENT_POSITION_FOLLOWING
+  ).toBeTruthy();
+});
+
+// "Search until" is never driven through the UI here: under antd 2.13.14 and React 15, a
+// `change` on its textbox never reaches `onChangeEnd`, blur or no blur.
 
 describe('the reservation status notice', () => {
   test('no reservationStatus renders no alert at all', () => {
@@ -223,8 +343,8 @@ describe('the reservation status notice', () => {
     )).not.toBeInTheDocument();
   });
 
-  // antd 2 carries the alert's severity as a class, with no accessible attribute at this
-  // version - same gap `index.test.js`'s `selectIsDisabled` helper documents for `Select`.
+  // Rule 6 exception: antd 2 carries an alert's severity as a class, with no accessible
+  // attribute at this version.
   test('CANCELLED shows the cancelled sentence at warning severity', () => {
     render(
       <ReservationScheduleControl
@@ -241,7 +361,7 @@ describe('the reservation status notice', () => {
     expect(document.querySelector('.ant-alert-warning')).toBeInTheDocument();
   });
 
-  // Same antd-2 gap as above: severity is a class, not an accessible attribute.
+  // Same antd 2 gap: severity is a class, not an accessible attribute.
   test('FAILED shows the failed sentence at error severity', () => {
     render(
       <ReservationScheduleControl
@@ -288,8 +408,7 @@ test('each of the three rows renders a hint trigger', () => {
       onChangeDuration={fn()}
     />
   );
-  // HintControl.test.js establishes this is the only accessible selector for the
-  // trigger - antd's Icon exposes no role.
+  // antd's Icon exposes no role, so this class is the only selector for a hint trigger.
   const triggers = document.querySelectorAll('.anticon-question-circle');
   expect(triggers.length).toBe(3);
 });

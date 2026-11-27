@@ -25,26 +25,29 @@ import CheckboxControl from './controls/CheckboxControl';
 import ModeControl from './controls/ModeControl';
 import PoolTypeControl from './controls/PoolTypeControl';
 import ReservationScheduleControl from './controls/ReservationScheduleControl';
-import ReservationSummary, {isReservationScheduled} from './controls/ReservationSummary';
+import ReservationSummary from './controls/ReservationSummary';
 import ScheduleControls from './controls/ScheduleControls';
 import DockerImagesControl from './controls/DockerImagesControl';
 import LabelsControl from './controls/LabelsControl';
 import FiltersControl from './controls/FiltersControl';
+import CapacityBlockCandidatesControl from './controls/CapacityBlockCandidatesControl';
 import InstanceDetails from '../instance-details';
 import * as hints from '../hot-node-pool-hints';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import {getSpotTypeName} from '../../../special/spot-instance-names';
+import {isReservationScheduled} from './helpers';
 import {
   DISK_MIN_SIZE,
   DISK_MAX_SIZE,
   COUNT_MIN_SIZE,
   MODE_DEFAULT,
   MODE_FUTURE_DATED,
+  MODE_ML_BLOCK,
   POOL_TYPE_STANDARD
 } from './constants';
 import styles from '../edit-hot-node-pool.css';
 
-function RegionSelect ({regions, value, onChange, disabled, error, touched}) {
+function RegionSelect ({regions, value, onChange, disabled, error, touched, label}) {
   const providers = [...(new Set(regions.map(r => r.provider)))];
   const data = providers.map(provider => ({
     provider,
@@ -52,7 +55,7 @@ function RegionSelect ({regions, value, onChange, disabled, error, touched}) {
   }));
   return (
     <SelectInput
-      label="Region:"
+      label={label}
       showSearch
       value={value ? `${value}` : undefined}
       onChange={onChange}
@@ -85,6 +88,10 @@ function RegionSelect ({regions, value, onChange, disabled, error, touched}) {
     </SelectInput>
   );
 }
+
+RegionSelect.defaultProps = {
+  label: 'Region:'
+};
 
 function InstanceTypeSelect ({
   instanceTypes,
@@ -133,10 +140,10 @@ function InstanceTypeSelect ({
   );
 }
 
-function PriceTypeSelect ({priceTypes, currentProvider, value, onChange, disabled, futureDated}) {
-  // `NodePoolValidator` rejects a `SPOT` price type for a capacity reservation, so the
-  // option is not offered in future-dated mode.
-  const availablePriceTypes = futureDated ? priceTypes.filter(pt => !pt) : priceTypes;
+function PriceTypeSelect ({priceTypes, currentProvider, value, onChange, disabled, reservation}) {
+  // `NodePoolValidator` rejects SPOT for either reservation mode. A `priceTypes` entry is a
+  // boolean, `true` meaning spot, so dropping spot is `filter(pt => !pt)`.
+  const availablePriceTypes = reservation ? priceTypes.filter(pt => !pt) : priceTypes;
   return (
     <SelectInput
       label="Price type:"
@@ -164,9 +171,8 @@ function PriceTypeSelect ({priceTypes, currentProvider, value, onChange, disable
   );
 }
 
-// `values` is built as a fresh inline literal by index.js on every render, which is
-// what keeps mobx-react's shallow-prop shouldComponentUpdate from ever skipping a
-// re-render here, even though index.js mutates arrays in state in place.
+// `index.js` passes a fresh inline `values` literal every render; that is what keeps
+// mobx-react's shallow-prop `shouldComponentUpdate` from skipping a re-render.
 function EditHotNodePoolForm ({
   values,
   validation,
@@ -189,9 +195,15 @@ function EditHotNodePoolForm ({
   currentProvider,
   roles,
   allowedModes,
+  mlBlockInstanceTypes,
+  mlBlockInstanceTypesPending,
+  mlBlockInstanceTypesError,
+  mlBlockOfferingsByCandidate,
+  mlBlockOfferingsFullRefetchPending,
+  mlBlockOfferingId,
   onChange
 }) {
-  const modes = allowedModes && allowedModes.length > 0
+  const providedModes = allowedModes && allowedModes.length > 0
     ? allowedModes
     : [MODE_DEFAULT, MODE_FUTURE_DATED];
   const {
@@ -216,9 +228,19 @@ function EditHotNodePoolForm ({
     filters,
     commitmentStart,
     commitmentEnd,
-    commitmentDurationDays
+    commitmentDurationDays,
+    mlBlockCandidates
   } = values;
-  const futureDated = (mode || MODE_DEFAULT) === MODE_FUTURE_DATED;
+  const normalizedMode = mode || MODE_DEFAULT;
+  const futureDated = normalizedMode === MODE_FUTURE_DATED;
+  const mlBlock = normalizedMode === MODE_ML_BLOCK;
+  // Both reservation modes reserve an absolute window rather than Default's weekly schedule.
+  const reservation = futureDated || mlBlock;
+  // A loaded pool's mode may not be one `allowedModes` offers; without it the Select would
+  // show the raw value instead of its label.
+  const modes = providedModes.includes(normalizedMode)
+    ? providedModes
+    : [...providedModes, normalizedMode];
   return (
     <div>
       <StringInput
@@ -239,7 +261,7 @@ function EditHotNodePoolForm ({
         modes.length > 1 ? (
           <ModeControl
             modes={modes}
-            value={mode || MODE_DEFAULT}
+            value={normalizedMode}
             disabled={disabled || readOnly}
             hint={hints.modeHint}
             onChange={value => onChange('mode', value)}
@@ -247,22 +269,21 @@ function EditHotNodePoolForm ({
         ) : null
       }
       <div className={classNames(styles.sectionHeader, 'cp-divider', 'bottom')}>
-        <h2>Schedule</h2>
+        <h2>{mlBlock ? 'ML Block' : 'Schedule'}</h2>
       </div>
       {
-        futureDated ? (
+        reservation ? (
           isExistingReservation ? (
             isReservationScheduled(reservationStartDate, reservationEndDate) ? (
-              // Granted window: show as read-only text.
               <ReservationSummary
                 start={reservationStartDate}
                 end={reservationEndDate}
               />
             ) : (
-              // Not yet scheduled: show the originally-requested window read-only so the
-              // user can see what was requested; the control itself carries the notice
+              // Shows the originally-requested window; the control itself carries the notice
               // for the reservation's current status.
               <ReservationScheduleControl
+                mode={mode}
                 start={reservationRequestedStartDate}
                 end={reservationRequestedEndDate}
                 durationDays={reservationCommitmentDurationDays}
@@ -274,8 +295,8 @@ function EditHotNodePoolForm ({
               />
             )
           ) : (
-            // New pool: editable controls.
             <ReservationScheduleControl
+              mode={mode}
               start={commitmentStart}
               end={commitmentEnd}
               durationDays={commitmentDurationDays}
@@ -293,7 +314,45 @@ function EditHotNodePoolForm ({
               onChangeStart={value => onChange('commitmentStart', value)}
               onChangeEnd={value => onChange('commitmentEnd', value)}
               onChangeDuration={value => onChange('commitmentDurationDays', value)}
-            />
+            >
+              {
+                mlBlock ? (
+                  // One wrapper: React 15 has no `Fragment` to hold both controls.
+                  <div>
+                    <RegionSelect
+                      label="Search in region:"
+                      regions={regions}
+                      value={region}
+                      onChange={value => onChange('region', value)}
+                      disabled={disabled || readOnly}
+                      error={validation.region}
+                      touched={touched.region}
+                    />
+                    <CapacityBlockCandidatesControl
+                      candidates={mlBlockCandidates}
+                      instanceTypes={mlBlockInstanceTypes}
+                      instanceTypesPending={mlBlockInstanceTypesPending}
+                      instanceTypesError={mlBlockInstanceTypesError}
+                      offeringsByCandidate={mlBlockOfferingsByCandidate}
+                      fullRefetchPending={mlBlockOfferingsFullRefetchPending}
+                      selectedOfferingId={mlBlockOfferingId}
+                      disabled={disabled}
+                      readOnly={readOnly}
+                      // One error slot: a candidate problem comes first, since it blocks
+                      // picking an offering at all.
+                      error={validation.mlBlockCandidates || validation.mlBlockOffering}
+                      touched={touched.mlBlockCandidates || touched.mlBlockOffering}
+                      onAdd={() => onChange('mlBlockCandidates', {action: 'add'})}
+                      onRemove={id => onChange('mlBlockCandidates', {action: 'remove', id})}
+                      onChange={(id, field, value) => onChange(
+                        'mlBlockCandidates', {action: 'update', id, field, value}
+                      )}
+                      onSelectOffering={offeringId => onChange('mlBlockOffering', offeringId)}
+                    />
+                  </div>
+                ) : null
+              }
+            </ReservationScheduleControl>
           )
         ) : (
           <ScheduleControls
@@ -311,7 +370,7 @@ function EditHotNodePoolForm ({
         <h2>Configuration</h2>
       </div>
       {
-        futureDated ? null : (
+        reservation ? null : (
           <CheckboxControl
             label="Autoscaled:"
             checked={autoscaled}
@@ -324,11 +383,8 @@ function EditHotNodePoolForm ({
       {
         autoscaled ? null : (
           isExistingReservation && !count && reservationInstanceCount != null ? (
-            // The pool's own `count` stays 0 until the reservation is activated, so
-            // the reserved amount - what the user actually asked for - comes from
-            // the matched reservation record instead. Once the pool reports nodes of
-            // its own, that count is the real one again, the same way the pool card
-            // stops substituting the reserved number.
+            // `count` stays 0 until the reservation is activated, so the reserved amount comes
+            // from the matched record, as the pool card does.
             <div className={styles.formRow}>
               <span className={styles.label}>Nodes count:</span>
               <span>{`${count || 0} out of ${reservationInstanceCount}`}</span>
@@ -339,11 +395,9 @@ function EditHotNodePoolForm ({
               label="Nodes count:"
               value={count}
               onChange={value => onChange('count', value)}
-              // `validateReservationPoolUpdate` rejects an update that changes `count`
-              // on a reservation pool, so the form does not offer the change. This is
-              // narrower than `readOnly={!isNew}` (which already disables other fields
-              // on every edit) and must not be folded into it.
-              disabled={disabled || isExistingReservation}
+              // `validateReservationPoolUpdate` rejects a `count` change on a reservation pool -
+              // narrower than `readOnly={!isNew}`, so do not fold it in.
+              disabled={disabled || isExistingReservation || mlBlock}
               min={COUNT_MIN_SIZE}
               error={validation.count}
               touched={touched.count}
@@ -352,7 +406,7 @@ function EditHotNodePoolForm ({
         )
       }
       {
-        autoscaled && !futureDated ? (
+        autoscaled && !reservation ? (
           <StringInput
             type="number"
             label="Min Size:"
@@ -368,7 +422,7 @@ function EditHotNodePoolForm ({
         ) : null
       }
       {
-        autoscaled && !futureDated ? (
+        autoscaled && !reservation ? (
           <StringInput
             type="number"
             label="Max Size:"
@@ -384,7 +438,7 @@ function EditHotNodePoolForm ({
         ) : null
       }
       {
-        autoscaled && !futureDated ? (
+        autoscaled && !reservation ? (
           <StringInput
             type="number"
             label="Scale Up Threshold:"
@@ -401,7 +455,7 @@ function EditHotNodePoolForm ({
         ) : null
       }
       {
-        autoscaled && !futureDated ? (
+        autoscaled && !reservation ? (
           <StringInput
             type="number"
             label="Scale Down Threshold:"
@@ -418,7 +472,7 @@ function EditHotNodePoolForm ({
         ) : null
       }
       {
-        autoscaled && !futureDated ? (
+        autoscaled && !reservation ? (
           <StringInput
             type="number"
             label="Scale Step:"
@@ -438,33 +492,34 @@ function EditHotNodePoolForm ({
         regions={regions}
         value={region}
         onChange={value => onChange('region', value)}
-        disabled={disabled || readOnly}
-        error={validation.region}
-        touched={touched.region}
+        // In ML Block mode the "Search in region" control above sets this value instead - but
+        // only for a new pool, which is where that control renders and why the next two lines
+        // test `!isExistingReservation`.
+        disabled={disabled || readOnly || mlBlock}
+        error={mlBlock && !isExistingReservation ? undefined : validation.region}
+        touched={mlBlock && !isExistingReservation ? undefined : touched.region}
       />
       <PriceTypeSelect
         priceTypes={priceTypes}
         currentProvider={currentProvider}
         value={spot}
         onChange={value => onChange('spot', value)}
-        // `validateReservationPoolUpdate` rejects an update that changes `priceType`
-        // on a reservation pool, so the form does not offer the change. This is
-        // narrower than `readOnly={!isNew}` (already included below) and must not be
-        // folded into it. `futureDated` is included too: `NodePoolValidator` rejects SPOT
-        // for a capacity reservation outright, so On-demand is the only legal value and
-        // the control has nothing to offer a user to choose between.
+        // `validateReservationPoolUpdate` rejects a `priceType` change on a reservation pool -
+        // narrower than `readOnly={!isNew}`, so do not fold it in.
+        // `reservation` is here too: SPOT being rejected outright leaves On-demand the only value.
         disabled={
           disabled || allowedInstanceTypesPending || readOnly ||
-          isExistingReservation || futureDated
+          isExistingReservation || reservation
         }
-        futureDated={futureDated}
+        reservation={reservation}
       />
       <InstanceTypeSelect
         instanceTypes={instanceTypes}
         allowedInstanceTypes={allowedInstanceTypes}
         value={instanceType}
         onChange={value => onChange('instanceType', value)}
-        disabled={disabled || allowedInstanceTypesPending || readOnly}
+        // ML Block mode fills this from the selected offering, never from the user.
+        disabled={disabled || allowedInstanceTypesPending || readOnly || mlBlock}
         error={validation.instanceType}
         touched={touched.instanceType}
       />
@@ -545,14 +600,20 @@ EditHotNodePoolForm.propTypes = {
   reservationStatus: PropTypes.string,
   regions: PropTypes.array,
   instanceTypes: PropTypes.array,
-  // MobX wraps a Remote's resolved value in an ObservableArray, which fails a
-  // strict PropTypes.array (Array.isArray) check despite behaving as one.
+  // MobX wraps a `Remote`'s value in an ObservableArray, which fails `PropTypes.array`.
   allowedInstanceTypes: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   allowedInstanceTypesPending: PropTypes.bool,
   priceTypes: PropTypes.array,
   currentProvider: PropTypes.string,
   roles: PropTypes.object,
   allowedModes: PropTypes.arrayOf(PropTypes.string),
+  // MobX wraps a `Remote`'s value in an ObservableArray, which fails `PropTypes.array`.
+  mlBlockInstanceTypes: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
+  mlBlockInstanceTypesPending: PropTypes.bool,
+  mlBlockInstanceTypesError: PropTypes.string,
+  mlBlockOfferingsByCandidate: PropTypes.object,
+  mlBlockOfferingsFullRefetchPending: PropTypes.bool,
+  mlBlockOfferingId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   onChange: PropTypes.func
 };
 

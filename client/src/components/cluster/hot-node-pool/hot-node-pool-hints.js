@@ -64,7 +64,9 @@ const modeHint = (
   <div>
     <b>Default</b> pools keep a number of nodes up on a weekly recurring schedule.<br />
     <b>Future dated</b> pools reserve capacity for a single one-time window and cannot
-    be autoscaled.
+    be autoscaled.<br />
+    <b>ML Block</b> pools purchase a concrete AWS Capacity Block offering for a single
+    one-time window and cannot be autoscaled.
   </div>
 );
 
@@ -79,11 +81,12 @@ const poolTypeHint = (
 
 const searchFromHint = (
   <div>
-    The earliest moment the reservation may begin. Together with <b>Search until</b> it<br />
-    defines a search window: the cloud provider (AWS) reserves the requested<br />
-    <b>Duration</b> somewhere inside that window, as soon as matching capacity is<br />
-    available. The granted dates are shown on the pool once the reservation is made.<br />
-    Must be between 5 and 120 days from now.
+    The earliest day the reservation may begin - the request is sent as that day's own<br />
+    start, 00:00. Together with <b>Search until</b> it defines a search window: the cloud<br />
+    provider (AWS) reserves the requested <b>Duration</b> somewhere inside that window, as<br />
+    soon as matching capacity is available. The granted dates are shown on the pool once<br />
+    the reservation is made.<br />
+    Must be between 6 and 121 days from today.
   </div>
 );
 
@@ -98,7 +101,9 @@ const searchUntilHint = (
 const commitmentDurationHint = (
   <div>
     How long the capacity is committed for, in whole days, minimum 14.<br />
-    It must fit between <b>Search from</b> and <b>Search until</b>.
+    <b>Search until</b> is sent as that day's own end, 23:59:59.999, so the window must<br />
+    span more than this many days - an N-day duration needs N+1 calendar days between<br />
+    <b>Search from</b> and <b>Search until</b>.
   </div>
 );
 
