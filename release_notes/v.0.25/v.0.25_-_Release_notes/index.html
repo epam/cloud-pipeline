@@ -68,6 +68,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#launch-capabilities-restrict-a-capability-to-certain-users-or-roles">Launch capabilities: restrict a capability to certain users or roles</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#launch-form-run-on-any-active-node-pool">Launch form: run on any active node pool</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#notable-bug-fixes">Notable Bug fixes</a>
         <ul>
     <li class="toctree-l3"><a class="reference internal" href="#unavailable-cluster-nodes-are-not-detected">Unavailable cluster nodes are not detected</a>
@@ -439,6 +441,7 @@
 <li><a href="#fallback-instance-types-for-a-future-dated-capacity-reservation">Fallback instance types for a future-dated capacity reservation</a></li>
 <li><a href="#parallel-download-into-the-disk-buffer-of-a-storage-mount">Parallel download into the disk buffer of a storage mount</a></li>
 <li><a href="#launch-capabilities-restrict-a-capability-to-certain-users-or-roles">Launch capabilities: restrict a capability to certain users or roles</a></li>
+<li><a href="#launch-form-run-on-any-active-node-pool">Launch form: run on any active node pool</a></li>
 </ul>
 <hr />
 <ul>
@@ -491,6 +494,10 @@
 </code></pre>
 <p>Here <code>cap1</code> is shown only to the members of <code>ROLE_ADMIN</code> and to <code>USER1</code>, while <code>cap2</code> stays visible to everyone.
 See details in <a href="../../../manual/10_Manage_Tools/10.9._Run_capabilities/#custom-capabilities">10.9. Run capabilities</a>.</p>
+<hr />
+<h2 id="launch-form-run-on-any-active-node-pool">Launch form: run on any active node pool</h2>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/4960">#4960</a></p>
+<p>The <strong>Node type</strong> list of the launch form offers every active node pool of the region. A run launched on a pool gets the <code>CP_CAP_POOL_ID</code> parameter. See <a href="../../../manual/06_Manage_Pipeline/6._Manage_Pipeline/#configuration">6. Manage Pipeline</a>.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
 <h3 id="unavailable-cluster-nodes-are-not-detected">Unavailable cluster nodes are not detected</h3>
