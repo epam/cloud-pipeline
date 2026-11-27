@@ -17,6 +17,8 @@ package com.epam.pipeline.manager.cluster.pool;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.cluster.CapacitySpecification;
+import com.epam.pipeline.controller.vo.cluster.capacityreservation.CapacityBlockOfferingRequest;
 import com.epam.pipeline.controller.vo.cluster.pool.CapacityReservationRequest;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.entity.cluster.AMIConfiguration;
@@ -25,6 +27,7 @@ import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.docker.ToolVersionAttributes;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockOffering;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
@@ -74,6 +77,7 @@ public class NodePoolValidator {
     private static final int MAX_RESERVATION_LEAD_DAYS = 120;
     private static final long MIN_RESERVATION_COMMITMENT_SECONDS = 14 * 24 * 3600L;
     private static final int MIN_RESERVATION_VCPUS = 32;
+    private static final long SECONDS_PER_HOUR = 3600L;
 
     private static final Set<String> SUPPORTED_INSTANCE_PLATFORMS = Collections.unmodifiableSet(
             new HashSet<>(Arrays.asList("Linux/UNIX", "Red Hat Enterprise Linux", "SUSE Linux")));
@@ -87,6 +91,12 @@ public class NodePoolValidator {
     private final PreferenceManager preferenceManager;
     private final CapacityReservationCloudFacade reservationCloudFacade;
 
+    /**
+     * Validates a pool, including the reservation it asks for if any. For a {@code CAPACITY_BLOCK} reservation
+     * this also corrects it: {@link #applyCapacityBlockOffering} overwrites the {@code CapacityReservationRequest}
+     * object {@code vo} carries with what the named offering actually reports, so a caller must expect the
+     * request it passed in to come back changed, not just accepted or rejected.
+     */
     public void validate(final NodePoolVO vo) {
         Assert.notNull(vo.getRegionId(),
                 messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_MISSING_REGION));
@@ -173,8 +183,9 @@ public class NodePoolValidator {
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_INSTANCE_COUNT_INVALID));
 
         if (CapacityReservationType.CAPACITY_BLOCK == type) {
-            validateCapacityBlockPurchase(request);
+            // cheap, local checks first: validateCapacityBlockPurchase's offering re-search is a live AWS call
             validateReservationInstance(vo, request);
+            validateCapacityBlockPurchase(vo, request);
         } else {
             Assert.isTrue(CapacityReservationType.FUTURE_DATED == type,
                     messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_TYPE_NOT_SUPPORTED, type));
@@ -185,13 +196,61 @@ public class NodePoolValidator {
     }
 
     /**
-     * A capacity block names an exact offering, not a window to search. So there is no size or lead-time policy
-     * to check here. The AWS limits - 1 to 64 instances, and a start no more than 8 weeks away - are already
-     * checked when the offering is searched for.
+     * A capacity block names an exact offering, not a window to search - but nothing stops a caller from naming a
+     * real offering alongside fabricated dates, since the purchase itself ({@link AwsCapacityReservationService
+     * #purchaseCapacityBlock}) takes only the offering id and never checks them. So there is no size or lead-time
+     * policy to apply here - those are {@link CapacityReservationType#FUTURE_DATED}'s own - only enough null-safety
+     * to search for the offering at all. The named offering is then loaded fresh from the provider in
+     * {@link #applyCapacityBlockOffering}, which fails the request if it cannot be found, and otherwise
+     * overwrites the claimed window and duration with what that offering actually reports.
      */
-    private void validateCapacityBlockPurchase(final CapacityReservationRequest request) {
+    private void validateCapacityBlockPurchase(final NodePoolVO vo, final CapacityReservationRequest request) {
         Assert.isTrue(StringUtils.isNotBlank(request.getCapacityBlockOfferingId()),
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_OFFERING_ID_REQUIRED));
+        Assert.isTrue(Objects.nonNull(request.getRequestedStartDate())
+                        && Objects.nonNull(request.getRequestedEndDate()),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_DATES_REQUIRED,
+                        request.getReservationType()));
+        Assert.isTrue(Objects.nonNull(request.getCommitmentDuration()),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_DURATION_INVALID));
+        applyCapacityBlockOffering(vo, request);
+    }
+
+    private void applyCapacityBlockOffering(final NodePoolVO vo, final CapacityReservationRequest request) {
+        final Optional<CapacityBlockOffering> found = findOffering(vo, request);
+        Assert.isTrue(found.isPresent(),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_OFFERING_MISMATCH,
+                        request.getCapacityBlockOfferingId(), vo.getCount(), vo.getInstanceType(),
+                        request.getRequestedStartDate(), request.getRequestedEndDate()));
+        final CapacityBlockOffering offering = found.get();
+        Assert.isTrue(request.getCapacityBlockOfferingId().equals(offering.getOfferingId()),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_OFFERING_MISMATCH,
+                        request.getCapacityBlockOfferingId(), vo.getCount(), vo.getInstanceType(),
+                        request.getRequestedStartDate(), request.getRequestedEndDate()));
+        request.setRequestedStartDate(offering.getStartDate());
+        request.setRequestedEndDate(offering.getEndDate());
+        request.setCommitmentDuration(offering.getCapacityDurationHours() * SECONDS_PER_HOUR);
+    }
+
+    private Optional<CapacityBlockOffering> findOffering(final NodePoolVO vo,
+                                                         final CapacityReservationRequest request) {
+        final int durationHours = Math.toIntExact(
+                Duration.ofSeconds(request.getCommitmentDuration()).toHours());
+        final AbstractCloudRegion region = regionManager.load(vo.getRegionId());
+        final CapacitySpecification candidate = CapacitySpecification.builder()
+                .instanceType(vo.getInstanceType())
+                .instanceCount(vo.getCount())
+                .build();
+        final CapacityBlockOfferingRequest search = CapacityBlockOfferingRequest.builder()
+                .regionId(vo.getRegionId())
+                .candidates(Collections.singletonList(candidate))
+                .startDateRange(request.getRequestedStartDate())
+                .endDateRange(request.getRequestedEndDate())
+                .capacityDurationHours(durationHours)
+                .build();
+        return reservationCloudFacade.listCapacityBlockOfferings(region, search, candidate).stream()
+                .filter(offering -> request.getCapacityBlockOfferingId().equals(offering.getOfferingId()))
+                .findAny();
     }
 
     private void validateReservationSize(final NodePoolVO vo) {

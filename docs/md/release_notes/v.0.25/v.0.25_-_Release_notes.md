@@ -9,6 +9,7 @@
 - [Notable Bug fixes](#notable-bug-fixes)
     - [Unavailable cluster nodes are not detected](#unavailable-cluster-nodes-are-not-detected)
     - [A capacity block reservation request could carry an availability zone that was never used](#a-capacity-block-reservation-request-could-carry-an-availability-zone-that-was-never-used)
+    - [A capacity block reservation's requested window was never checked against the offering it named](#a-capacity-block-reservations-requested-window-was-never-checked-against-the-offering-it-named)
 
 ***
 
@@ -59,3 +60,11 @@ Please note: after the update, nodes that have already been unavailable for long
 [#4590](https://github.com/epam/cloud-pipeline/issues/4590)
 
 `capacityReservationRequest.availabilityZone` has been removed from the request that creates a pool backed by a capacity block. The zone was copied onto the reservation at creation time, but the purchase call to the cloud provider never sent it - it is fixed by the chosen offering alone - and the reservation's own zone was always overwritten by what the provider reported once the block was actually bought. The submitted value was therefore never the one that ended up in use.
+
+### A capacity block reservation's requested window was never checked against the offering it named
+
+[#4590](https://github.com/epam/cloud-pipeline/issues/4590)
+
+Creating a pool backed by a capacity block carried the offering's id, start date, end date and commitment duration as separate fields, and nothing checked that they actually described the same offering - they were not even required. Since the purchase itself asks the provider for nothing but the offering id, a request naming a real offering together with fabricated dates would be approved (or denied, or auto-approved) based on a window that had nothing to do with what was actually bought.
+
+Requesting a capacity block now requires `requestedStartDate`, `requestedEndDate` and `commitmentDuration`, and the platform re-searches the provider for offerings of the pool's own instance type and count over that window before the request is accepted, loading the named offering from the answer. The request is rejected if that offering does not come back at all; if it does, its own start date, end date and duration overwrite whatever was submitted, the same correction already made once a block is actually bought.
