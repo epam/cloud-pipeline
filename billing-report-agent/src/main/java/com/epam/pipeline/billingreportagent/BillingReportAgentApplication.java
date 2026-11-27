@@ -18,9 +18,19 @@ package com.epam.pipeline.billingreportagent;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
+import org.springframework.boot.autoconfigure.http.client.HttpClientAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 
-@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
+
+@SpringBootApplication(exclude = {
+    DataSourceAutoConfiguration.class,
+    // The Elasticsearch 6 clients are configured in ElasticsearchConfig
+    ElasticsearchRestClientAutoConfiguration.class,
+    HttpClientAutoConfiguration.class,
+    RestClientAutoConfiguration.class
+})
 @SuppressWarnings("checkstyle:HideUtilityClassConstructor")
 public class BillingReportAgentApplication {
     public static void main(String[] args) {

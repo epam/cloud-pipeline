@@ -34,7 +34,7 @@ import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.mockito.Mockito;
 
 import java.time.LocalDateTime;
@@ -46,8 +46,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 
 /**
  * Utility class for testing help methods
@@ -59,7 +59,9 @@ public final class TestUtils {
     public static final String DEFAULT_STORAGE_NAME_PATTERN = "@@-home";
     public static final String TEMPLATE_REPLACE_MARK = "@@";
     private static final long PROJECT_ID = 1L;
-    private static final int EXTENDED_DEFAULT_ROLES_NUMBER = 6;
+    // predefined roles the migrations create but DefaultRoles does not list:
+    // ROLE_ADVANCED_USER, ROLE_USER_METADATA_READER and ROLE_USER_READER
+    private static final int EXTENDED_DEFAULT_ROLES_NUMBER = 3;
     public static final int EXPECTED_DEFAULT_ROLES_NUMBER =
             DefaultRoles.values().length + EXTENDED_DEFAULT_ROLES_NUMBER;
 
@@ -101,7 +103,7 @@ public final class TestUtils {
         Map<String, Object> loadedProperties = objectMapper.convertValue(loaded, objectMapper.getTypeFactory()
             .constructParametricType(Map.class, String.class, Object.class));
 
-        originProperties.forEach((key, value) -> Assert.assertEquals(value, loadedProperties.get(key)));
+        originProperties.forEach((key, value) -> Assertions.assertEquals(value, loadedProperties.get(key)));
     }
 
     public static void generateScanResult(int criticalVulnerabilitiesCount, int highVulnerabilitiesCount,

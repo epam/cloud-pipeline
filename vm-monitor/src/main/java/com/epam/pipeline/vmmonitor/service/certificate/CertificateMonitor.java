@@ -254,12 +254,7 @@ public class CertificateMonitor implements Monitor {
         return LocalDateTime.now().plusDays(daysToNotify).isAfter(expirationDate);
     }
 
-    @lombok.Value
-    private static class CertificateFile {
-        private final FileTime lastModifiedTime;
-        private final long size;
-        private final Object fileKey;
-    }
+    private record CertificateFile(FileTime lastModifiedTime, long size, Object fileKey) {}
 
     private static final class FolderScan {
         private final Map<Path, CertificateFile> certificates;

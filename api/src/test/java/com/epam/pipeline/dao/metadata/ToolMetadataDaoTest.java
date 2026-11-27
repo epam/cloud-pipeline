@@ -15,8 +15,8 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.security.AuthManager;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,8 +28,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.when;
 
 public class ToolMetadataDaoTest extends AbstractSpringTest {
@@ -70,7 +70,7 @@ public class ToolMetadataDaoTest extends AbstractSpringTest {
     @SpyBean
     private AuthManager authManager;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         firstRegistry = new DockerRegistry();
         firstRegistry.setPath(TEST_REPO);

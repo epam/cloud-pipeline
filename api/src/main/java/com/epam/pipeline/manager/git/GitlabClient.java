@@ -42,7 +42,7 @@ import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import com.epam.pipeline.utils.GitUtils;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import lombok.experimental.Wither;
+import lombok.With;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -80,7 +80,7 @@ import java.util.stream.Stream;
 
 import static com.epam.pipeline.manager.git.RestApiUtils.execute;
 
-@Wither
+@With
 @AllArgsConstructor
 @NoArgsConstructor
 public class GitlabClient {

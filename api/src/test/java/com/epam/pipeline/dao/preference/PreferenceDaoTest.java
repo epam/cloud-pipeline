@@ -16,17 +16,17 @@
 
 package com.epam.pipeline.dao.preference;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.List;
 
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.preference.PreferenceType;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,7 +48,7 @@ public class PreferenceDaoTest extends AbstractSpringTest {
     private Preference preference;
     private Preference preference2;
 
-    @Before
+    @BeforeEach
     public void setup() {
         preference = new Preference(TEST_NAME, TEST_VALUE, TEST_GROUP,
                 TEST_DESCRIPTION, TEST_TYPE, TEST_VISIBLE);

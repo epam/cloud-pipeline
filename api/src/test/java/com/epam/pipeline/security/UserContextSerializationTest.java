@@ -17,7 +17,7 @@
 package com.epam.pipeline.security;
 
 import com.epam.pipeline.entity.user.Role;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

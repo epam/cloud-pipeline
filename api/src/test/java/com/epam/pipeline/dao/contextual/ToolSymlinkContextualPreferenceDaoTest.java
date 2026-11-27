@@ -13,15 +13,15 @@ import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.preference.PreferenceType;
 import com.epam.pipeline.entity.utils.DateUtils;
 import org.assertj.core.api.Assertions;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ToolSymlinkContextualPreferenceDaoTest  extends AbstractSpringTest {
     
@@ -55,7 +55,7 @@ public class ToolSymlinkContextualPreferenceDaoTest  extends AbstractSpringTest 
     @Autowired
     private ContextualPreferenceDao contextualPreferenceDao;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         firstRegistry = new DockerRegistry();
         firstRegistry.setPath(TEST_REPO);
@@ -125,7 +125,8 @@ public class ToolSymlinkContextualPreferenceDaoTest  extends AbstractSpringTest 
         
         assertTrue(loadedPreference.isPresent());
         final ContextualPreference actualPreference = loadedPreference.get();
-        Assertions.assertThat(actualPreference).isEqualToIgnoringGivenFields(expectedPreference, "createdDate");
+        Assertions.assertThat(actualPreference)
+            .isEqualToIgnoringGivenFields(expectedPreference, "createdDate");
     }
 
     @Test
@@ -138,14 +139,15 @@ public class ToolSymlinkContextualPreferenceDaoTest  extends AbstractSpringTest 
         
         assertTrue(loadedPreference.isPresent());
         final ContextualPreference actualPreference = loadedPreference.get();
-        Assertions.assertThat(actualPreference).isEqualToIgnoringGivenFields(expectedPreference, "createdDate");
+        Assertions.assertThat(actualPreference)
+            .isEqualToIgnoringGivenFields(expectedPreference, "createdDate");
     }
 
     @Test
     @Transactional
     public void testLoadForNonExistingTool() {
-        Assert.assertFalse(contextualPreferenceDao.load(NAME, resource(tool)).isPresent());
-        Assert.assertFalse(contextualPreferenceDao.load(NAME, resource(symlink)).isPresent());
+        assertFalse(contextualPreferenceDao.load(NAME, resource(tool)).isPresent());
+        assertFalse(contextualPreferenceDao.load(NAME, resource(symlink)).isPresent());
     }
 
     private ContextualPreference preference(final Tool tool) {

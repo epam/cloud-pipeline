@@ -46,8 +46,8 @@ import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.google.common.collect.Maps;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -80,13 +80,13 @@ import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
@@ -170,7 +170,7 @@ public class PipelineRunManagerUnitTest {
     private final List<PipelineRunParameter> parameters = singletonList(
             new PipelineRunParameter(PARAM_NAME_1, TEST_STRING));
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
     }
@@ -1281,15 +1281,15 @@ public class PipelineRunManagerUnitTest {
     private void assertContainsUser(final List<RunSid> runSids, final String userName,
                                     final RunAccessType accessType) {
         final RunSid user = findRunSid(runSids, userName, true);
-        assertNotNull(String.format("User %s not found", userName), user);
-        assertEquals(String.format("User %s has wrong access type", userName), accessType, user.getAccessType());
+        assertNotNull(user);
+        assertEquals(accessType, user.getAccessType());
     }
 
     private void assertContainsRole(final List<RunSid> runSids, final String roleName,
                                     final RunAccessType accessType) {
         final RunSid role = findRunSid(runSids, roleName, false);
-        assertNotNull(String.format("Role %s not found", roleName), role);
-        assertEquals(String.format("Role %s has wrong access type", roleName), accessType, role.getAccessType());
+        assertNotNull(role);
+        assertEquals(accessType, role.getAccessType());
     }
 
     private RunSid findRunSid(final List<RunSid> runSids, final String name, final boolean isPrincipal) {

@@ -53,6 +53,14 @@
 - [NoMachine on Rocky Linux 10](#nomachine-on-rocky-linux-10)
 - [Parallel download into the disk buffer of a storage mount](#parallel-download-into-the-disk-buffer-of-a-storage-mount)
 - [Launch capabilities: restrict a capability to certain users or roles](#launch-capabilities-restrict-a-capability-to-certain-users-or-roles)
+- [Java 21 and Spring Boot 3 for the platform services](#java-21-and-spring-boot-3-for-the-platform-services)
+- [Download storage contents as an archive](#download-storage-contents-as-an-archive)
+- [Upload and extract archives](#upload-and-extract-archives)
+- [Data storage: bulk actions on the permitted items only](#data-storage-bulk-actions-on-the-permitted-items-only)
+- [Data storage: the controls row and the column header stay visible while scrolling](#data-storage-the-controls-row-and-the-column-header-stay-visible-while-scrolling)
+- [FireCloud integration is removed](#firecloud-integration-is-removed)
+- [Failed notifications are kept in a dead-letter queue](#failed-notifications-are-kept-in-a-dead-letter-queue)
+- [Run prices are billed per status period](#run-prices-are-billed-per-status-period)
 
 ***
 
@@ -121,6 +129,7 @@
     - [`pipe storage mount`: removing a folder that is not empty deletes all its content](#pipe-storage-mount-removing-a-folder-that-is-not-empty-deletes-all-its-content)
     - [Rocky Linux 9 and 10 runs: the default repos stay next to the repos mirror](#rocky-linux-9-and-10-runs-the-default-repos-stay-next-to-the-repos-mirror)
     - [Enabling a tool does not register its versions: its custom launch form has no Docker image](#enabling-a-tool-does-not-register-its-versions-its-custom-launch-form-has-no-docker-image)
+    - [Data storage: "Select page" is enabled when no item on the page can be selected](#data-storage-select-page-is-enabled-when-no-item-on-the-page-can-be-selected)
     - [Rocky Linux runs without a repos mirror URL: the warning names the Ubuntu parameter](#rocky-linux-runs-without-a-repos-mirror-url-the-warning-names-the-ubuntu-parameter)
     - [Preferences cannot be saved while `system.notifications.exp.period` has no value](#preferences-cannot-be-saved-while-systemnotificationsexpperiod-has-no-value)
     - [The cleanup of the in-app notifications runs every 86.4 seconds](#the-cleanup-of-the-in-app-notifications-runs-every-864-seconds)
@@ -1066,6 +1075,68 @@ Here `cap1` is shown only to the members of `ROLE_ADMIN` and to `USER1`, while `
 
 ***
 
+## Java 21 and Spring Boot 3 for the platform services
+
+The Java services of the platform - the API (`cp-api-srv`), the billing service (`cp-billing-srv`), the search service (`cp-search`), the notifier (`cp-notifier`), the monitoring service (`cp-monitoring-srv`), the VM monitor (`cp-vm-monitor`), the data sharing service (`cp-share-srv`), the docker components scanner (`cp-docker-comp`) and the data transfer service (`cp-dts`) - now run on Java 21, with Spring Boot 3 and Spring Security 6. They ran on Java 8: the API, the notifier, the data sharing service and the docker components scanner with Spring Boot 1.5, the others with Spring Boot 2.0. The API updates its database with Flyway 10 instead of Flyway 4. Users see no change from this. An operator needs to know:
+
+- The service images have OpenJDK 21 (`java-21-openjdk` of Rocky Linux 9.8). The `cp-dts` image stays on CentOS 7, with Amazon Corretto 21. A data transfer service that runs on a host, outside of this image, needs Java 21 there.
+- The data transfer service keeps its local database in a new file, `./db/dts_v2_3`: its H2 2.3 cannot open the H2 1.4 file `./db/dts`. The history of transfer tasks and submissions in the old file is not moved over, and the old file can be removed after the upgrade.
+- **`CP_API_FLYWAY_OUT_OF_ORDER`** is now `true` by default. This version adds database migrations whose versions are older than the newest migration of a 0.16 database, and Flyway applies them only in this mode. Keep it `true` for the update.
+- **`CP_API_FLYWAY_IGNORE_MISSING`** now sets the Flyway ignore patterns (`spring.flyway.ignore-migration-patterns`), e.g. `*:missing`. It is empty by default. It no longer takes `true`: with that value, the API does not start. Flyway keeps its history in the `schema_version` table, as before.
+- The API keeps the web sessions in new tables (`spring_3_session`) and does not read the sessions of the earlier version, so the users sign in again after the update. Update all the API replicas together.
+- The `application.properties` files of the service images use the Spring Boot 3 property names, e.g. `server.servlet.context-path` and `spring.flyway.*`. A deployment that replaces these files needs the new names. The environment variables of the services stay the same, with three exceptions: `CP_API_SRV_SESSION_STORE_TYPE` no longer has an effect, the API always keeps the web sessions in its database; `CP_REDIS_EXPOSE_CONNECTION` is no longer read; the default of `CP_NOTIFIER_DB_POOL_SIZE` is 3, not 1.
+- A new service, the storage task service (`cp-storage-async-task-service`), performs the archive downloads and the archive extractions of the data storages (see [Download storage contents as an archive](#download-storage-contents-as-an-archive)). The installer deploys it on the node that **`CP_STORAGE_ASYNC_TASK_SERVICE_KUBE_NODE_NAME`** names, the master node by default. Its pod is privileged, as it mounts the NFS shares itself, and it needs disk space on the node for the archives it prepares. It reaches a storage through a role of the storage's cloud region, so the node of this service must be able to assume the roles of the regions. The archive downloads also need a data storage for the finished archives: set its ID in `tasks.storageDownloadAsArchive.destinationStorageId` of the **`system.async.tasks.config`** preference. Until then, the archive downloads stay pending.
+
+***
+
+## Download storage contents as an archive
+
+Previously, a folder of a data storage could not be downloaded from the GUI, and several files were downloaded one by one.
+
+In the current version, a selection of files **and** folders can be downloaded as one `ZIP` archive, from AWS S3 storages and from NFS storages whose share is mounted as NFS. The new **Download archive** item of the selection menu asks for the archive name. The platform builds the archive in the background. The new **Storage tasks** window, opened by **Show storage tasks** in the presentation menu of the storage, lists the tasks with their status and size, cancels them, and downloads a finished archive. A notification announces a finished archive, also one that finished while the application was closed. The number of archive tasks that a user may have in progress at once is limited, and the limits are set in the **`system.async.tasks.config`** preference. The archives are prepared by the new storage task service (see [Java 21 and Spring Boot 3 for the platform services](#java-21-and-spring-boot-3-for-the-platform-services)).
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8.2._Upload_Download_data.md#download-as-archive).
+
+## Upload and extract archives
+
+Previously, an archive uploaded to a data storage stayed an archive: to get its content into the storage, it had to be extracted locally and uploaded again.
+
+In the current version, when the files to upload include an archive (`ZIP`, `TAR`, `TAR.GZ`, `TGZ`, `TAR.BZ2`, `TAR.XZ`, `GZ`, `BZ2` or `XZ`), on an AWS S3 storage or an NFS storage whose share is mounted as NFS, the **Upload files** pop-up asks first: **Upload** uploads the files as before, and **Upload and extract** also extracts each uploaded archive in the background, into a new folder beside it, named after the archive. An archive that is already in the storage is extracted with the new **Extract archive** item of the selection menu, one archive at a time. The extractions are listed in the **Storage tasks** window, and count against the same limit of archive tasks as the downloads. When the limit is reached, the action is disabled and says why. A notification announces a finished extraction.
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8.2._Upload_Download_data.md#upload-data).
+
+## Data storage: bulk actions on the permitted items only
+
+Previously, the selection menu of a data storage offered **Remove** only when the user could write to every selected item, and **Generate URL** only when every selected item was a file that the user could download. One other item in the selection hid the menu item.
+
+In the current version, **Remove** is offered when you may write to at least one selected item, and removes only such items. **Generate URL** is offered when at least one selected file can be downloaded, and generates URLs only for such files. Where some of the selected items are skipped, the item shows an information icon, and its hint says how many items are taken. The hint is shown above the menu. The confirmation of **Remove** then asks "Remove N of M selected items?". Also, a folder can now be selected for an archive download even where you may not edit it.
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage.md#remove-all-selected).
+
+## Data storage: the controls row and the column header stay visible while scrolling
+
+The controls row of a data storage - **Select page**, **Create**, **Upload** and the others - and the column header now stay at the top while the file list is scrolled.
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage.md#controls).
+
+## FireCloud integration is removed
+
+The integration with FireCloud is removed. The GUI no longer offers FireCloud methods in the pipeline browser of the launch dialog, in the detached configurations and on the run page. The `/firecloud` methods of the API are removed, and the update deletes the FireCloud preferences (`firecloud.*`, `google.client.settings`, `google.client.id` and `google.redirect.url`).
+
+## Failed notifications are kept in a dead-letter queue
+
+Previously, the notifier took a notification out of the queue before it sent it. When the email could not be sent, the notification was lost, with a warning in the notifier log.
+
+In the current version, such a notification is saved to the `notification_queue_dlq` table of the database, with the reason of the failure. The notifier does not send these notifications again.
+
+## Run prices are billed per status period
+
+Previously, the billing service priced the whole run with the price that the run had at the moment of the billing.
+
+In the current version, the API records the price per hour of a run (its compute and disk parts) with each status change of the run. The billing service prices each period between two status changes with the price that was recorded at its start. The status changes recorded before the update have no price, so their periods are priced as before.
+
+***
+
 ## Notable Bug fixes
 
 ### Parameter values changes cannot be saved for a tool
@@ -1570,6 +1641,14 @@ Now, the run removes the repo files of the image's `rocky-repos` package, on Roc
 
 Previously, enabling a tool in a tool group (**Enable tool**) did not register the versions of its image. A version was registered later: by a scheduled security scan of the tool that completed, by a push of the image to the registry, or when the version settings were saved. Until then, the tool had no version settings, and the launch form that **Run** → **Custom settings** opens for it had an empty **Docker image** field ("Docker image is required") and no tool name in its header.
 Now, enabling a tool registers a version for each tag of its image in the registry, as a completed scan does, so the launch form gets the tool's image at once. A tool enabled before the update gets its versions in the same ways as before.
+
+### Data storage: "Select page" is enabled when no item on the page can be selected
+
+[#4846](https://github.com/epam/cloud-pipeline/issues/4846)
+
+Previously, the **Select page** control of a data storage was enabled whenever the current page listed any item that was not selected yet, also when no item there had a checkbox. Clicking the control then selected nothing, with no message.
+Now, **Select page** is disabled unless the page has an item that can be selected and is not selected yet.
+See details in [8. Manage Data Storage](../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage.md#select-page).
 
 ### Rocky Linux runs without a repos mirror URL: the warning names the Ubuntu parameter
 

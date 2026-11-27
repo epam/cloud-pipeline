@@ -22,10 +22,8 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.ImportResource;
 
 @Configuration
-@ImportResource({"classpath*:dao/*.xml"})
 public class ElasticsearchConfig {
 
     @Value("${elasticsearch.client.url:#{null}}")

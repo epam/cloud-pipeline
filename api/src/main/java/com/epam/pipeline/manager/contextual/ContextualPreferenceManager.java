@@ -106,9 +106,9 @@ public class ContextualPreferenceManager {
     private void validateResource(final ContextualPreferenceExternalResource resource) {
         Assert.notNull(resource, messageHelper.getMessage(
                 MessageConstants.ERROR_CONTEXTUAL_PREFERENCE_EXTERNAL_RESOURCE_MISSING));
-        Assert.notNull(resource.getLevel(), messageHelper.getMessage(
+        Assert.notNull(resource.level(), messageHelper.getMessage(
                 MessageConstants.ERROR_CONTEXTUAL_PREFERENCE_EXTERNAL_RESOURCE_LEVEL_MISSING));
-        Assert.notNull(resource.getResourceId(), messageHelper.getMessage(
+        Assert.notNull(resource.resourceId(), messageHelper.getMessage(
                 MessageConstants.ERROR_CONTEXTUAL_PREFERENCE_EXTERNAL_RESOURCE_ID_MISSING));
     }
 
@@ -159,7 +159,7 @@ public class ContextualPreferenceManager {
                 .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
                         MessageConstants.ERROR_CONTEXTUAL_PREFERENCE_NOT_FOUND, preferences, resources.stream()
                                 .map(resource -> String.format("%s=%s",
-                                        resource.getLevel().toString(), resource.getResourceId()))
+                                        resource.level().toString(), resource.resourceId()))
                                 .collect(Collectors.toList()))));
     }
 
@@ -183,10 +183,10 @@ public class ContextualPreferenceManager {
 
     public static <T> T parse(final ContextualPreference preference,
                               final TypeReference<T> type) {
-        if (preference == null || StringUtils.isBlank(preference.getValue())) {
+        if (preference == null || StringUtils.isBlank(preference.value())) {
             return null;
         }
-        return JsonMapper.parseData(preference.getValue(), type);
+        return JsonMapper.parseData(preference.value(), type);
     }
 
     private void validateNames(final List<String> names) {
@@ -251,7 +251,7 @@ public class ContextualPreferenceManager {
     public ContextualPreference upsert(final ContextualPreferenceVO preferenceVO) {
         validatePreferenceFields(preferenceVO);
         validatePreferenceTypeAccordingToPreferencesWithTheSameName(preferenceVO);
-        Assert.isTrue(preferenceVO.getResource().getLevel() != ContextualPreferenceLevel.SYSTEM,
+        Assert.isTrue(preferenceVO.resource().level() != ContextualPreferenceLevel.SYSTEM,
                 messageHelper.getMessage(
                         MessageConstants.ERROR_SAVE_CONTEXTUAL_PREFERENCE_EXTERNAL_RESOURCE_LEVEL_INVALID));
         final ContextualPreference preference = preferenceFromVO(preferenceVO);
@@ -260,40 +260,40 @@ public class ContextualPreferenceManager {
         } else {
             throw new IllegalArgumentException(messageHelper.getMessage(
                     MessageConstants.ERROR_CONTEXTUAL_PREFERENCE_EXTERNAL_RESOURCE_NOT_FOUND,
-                    preference.getResource()));
+                    preference.resource()));
         }
     }
 
     private void validatePreferenceTypeAccordingToPreferencesWithTheSameName(
             final ContextualPreferenceVO preferenceVO) {
         retrieveExpectedType(preferenceVO).ifPresent(type ->
-                Assert.isTrue(type == preferenceVO.getType(), messageHelper.getMessage(
-                        MessageConstants.ERROR_CONTEXTUAL_PREFERENCE_TYPE_INVALID, preferenceVO.getType(), type)));
-        Assert.isTrue(preferenceVO.getType().validate(preferenceVO.getValue()), messageHelper.getMessage(
-                MessageConstants.ERROR_CONTEXTUAL_PREFERENCE_VALUE_INVALID, preferenceVO.getValue(),
-                preferenceVO.getType()));
+                Assert.isTrue(type == preferenceVO.type(), messageHelper.getMessage(
+                        MessageConstants.ERROR_CONTEXTUAL_PREFERENCE_TYPE_INVALID, preferenceVO.type(), type)));
+        Assert.isTrue(preferenceVO.type().validate(preferenceVO.value()), messageHelper.getMessage(
+                MessageConstants.ERROR_CONTEXTUAL_PREFERENCE_VALUE_INVALID, preferenceVO.value(),
+                preferenceVO.type()));
     }
 
     private void validatePreferenceFields(final ContextualPreferenceVO preferenceVO) {
-        validateName(preferenceVO.getName());
-        validateResource(preferenceVO.getResource());
-        Assert.notNull(preferenceVO.getValue(), messageHelper.getMessage(
+        validateName(preferenceVO.name());
+        validateResource(preferenceVO.resource());
+        Assert.notNull(preferenceVO.value(), messageHelper.getMessage(
                 MessageConstants.ERROR_CONTEXTUAL_PREFERENCE_VALUE_MISSING));
-        Assert.notNull(preferenceVO.getType(), messageHelper.getMessage(
+        Assert.notNull(preferenceVO.type(), messageHelper.getMessage(
                 MessageConstants.ERROR_CONTEXTUAL_PREFERENCE_TYPE_MISSING));
     }
 
     private Optional<PreferenceType> retrieveExpectedType(final ContextualPreferenceVO preferenceVO) {
         final List<ContextualPreference> sameContextualPreferences =
-                contextualPreferenceDao.load(preferenceVO.getName());
+                contextualPreferenceDao.load(preferenceVO.name());
         return sameContextualPreferences.isEmpty()
                 ? Optional.empty()
-                : Optional.ofNullable(sameContextualPreferences.get(0).getType());
+                : Optional.ofNullable(sameContextualPreferences.get(0).type());
     }
 
     private ContextualPreference preferenceFromVO(final ContextualPreferenceVO preferenceVO) {
-        return new ContextualPreference(preferenceVO.getName(), preferenceVO.getValue(), preferenceVO.getType(),
-                preferenceVO.getResource());
+        return new ContextualPreference(preferenceVO.name(), preferenceVO.value(), preferenceVO.type(),
+                preferenceVO.resource());
     }
 
     /**

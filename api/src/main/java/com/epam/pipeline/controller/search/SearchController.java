@@ -21,11 +21,11 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.search.ElasticSearchRequest;
 import com.epam.pipeline.entity.search.SearchResult;
 import com.epam.pipeline.manager.search.SearchManager;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -34,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
+@Tag(name = "search-controller", description = "Search Controller")
 public class SearchController extends AbstractRestController {
 
     private final SearchManager searchManager;
@@ -41,12 +42,11 @@ public class SearchController extends AbstractRestController {
 
     @RequestMapping(value = "/search", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Full text search over all application.",
-            notes = "Full text search over all application.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Full text search over all application.",
+            description = "Full text search over all application.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<SearchResult> search(@RequestBody ElasticSearchRequest searchRequest) {
         return Result.success(searchManager.search(searchRequest));

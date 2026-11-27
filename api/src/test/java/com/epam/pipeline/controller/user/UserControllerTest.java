@@ -20,15 +20,15 @@ import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.UserApiService;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -87,7 +87,6 @@ public class UserControllerTest extends AbstractControllerTest {
 
     private static MockHttpServletRequestBuilder tokenRequest() {
         return get(USER_TOKEN_URL)
-                .servletPath(SERVLET_PATH)
                 .param(EXPIRATION, String.valueOf(EXPIRATION_SECONDS));
     }
 }

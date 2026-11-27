@@ -31,8 +31,8 @@ import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
 import com.epam.pipeline.entity.pipeline.*;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.security.acl.AclPermission;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -45,6 +45,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.epam.pipeline.manager.ObjectCreatorUtils.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @DirtiesContext
 @ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
@@ -91,7 +92,7 @@ public class RunConfigurationApiServiceTest extends AbstractManagerTest {
     private DockerRegistry dockerRegistry;
     private ToolGroup toolGroup;
 
-    @Before
+    @BeforeEach
     public void setUp() {
 
         // Create SIDs for "test" users
@@ -158,9 +159,9 @@ public class RunConfigurationApiServiceTest extends AbstractManagerTest {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     @WithMockUser(username = TEST_USER_2)
-    @Test(expected = AccessDeniedException.class)
+    @Test
     public void testSaveConfigurationByUserHasNoPermission() {
-        runConfigurationApiService.save(runConfigurationVO);
+        assertThrows(AccessDeniedException.class, () -> runConfigurationApiService.save(runConfigurationVO));
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
@@ -187,12 +188,14 @@ public class RunConfigurationApiServiceTest extends AbstractManagerTest {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     @WithMockUser(username = TEST_USER_2, roles = TEST_CONFIGURATION_MANAGER_ROLE)
-    @Test(expected = AccessDeniedException.class)
+    @Test
     public void testLoadConfigurationByUserNoPermission() {
-        runConfigurationApiService.save(runConfigurationVO);
-        Long id = runConfigurationDao.loadAll().get(0).getId();
+        assertThrows(AccessDeniedException.class, () -> {
+            runConfigurationApiService.save(runConfigurationVO);
+            Long id = runConfigurationDao.loadAll().get(0).getId();
 
-        runConfigurationApiService.load(id);
+            runConfigurationApiService.load(id);
+        });
     }
 
     private Tool createTool(ToolGroup toolGroup) {

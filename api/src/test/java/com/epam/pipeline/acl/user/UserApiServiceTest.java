@@ -20,7 +20,7 @@ import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.manager.user.UserApiService;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.test.acl.AbstractAclTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;

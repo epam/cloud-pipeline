@@ -32,23 +32,28 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.PermissionsService;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.util.Arrays;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.when;
+import static org.mockito.quality.Strictness.LENIENT;
 
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = LENIENT)
 @SuppressWarnings("PMD.UnusedPrivateField")
 public class PipelineConfigurationForRunnerTest extends AbstractManagerTest {
     private static final String TEST_IMAGE = "image";
@@ -69,9 +74,6 @@ public class PipelineConfigurationForRunnerTest extends AbstractManagerTest {
     private static final String INSTANCE_DISK_FIELD = "instanceDisk";
     private static final String WORKED_CMD_FIELD = "workerCmd";
     public static final long PIPELINE_ID = 1L;
-
-    @InjectMocks
-    private PipelineConfigurationManager pipelineConfigurationManager;
 
     @MockBean
     private ToolManager toolManagerMock;
@@ -97,9 +99,11 @@ public class PipelineConfigurationForRunnerTest extends AbstractManagerTest {
     private PipelineManager pipelineManager;
     private ConfigurationEntry configurationEntry;
 
-    @Before
+    @InjectMocks
+    private PipelineConfigurationManager pipelineConfigurationManager;
+
+    @BeforeEach
     public void setUp() throws GitClientException {
-        MockitoAnnotations.initMocks(this);
 
         PipelineConfiguration pipelineConfiguration = new PipelineConfiguration();
         pipelineConfiguration.setWorkerCmd(TEST_WORKED_CMD);
@@ -116,12 +120,12 @@ public class PipelineConfigurationForRunnerTest extends AbstractManagerTest {
 
         when(toolManagerMock.getTagFromImageName(anyString())).thenReturn("latest");
         when(gitManagerMock.getGitCredentials(anyLong())).thenReturn(null);
-        when(pipelineVersionManagerMock.loadConfigurationEntry(anyLong(), anyString(), anyString()))
-                .thenReturn(configurationEntry);
+        when(pipelineVersionManagerMock.loadConfigurationEntry(
+            nullable(Long.class), nullable(String.class), nullable(String.class))).thenReturn(configurationEntry);
         when(pipelineVersionManagerMock.getValidDockerImage(anyString())).thenReturn(TEST_IMAGE);
         when(dataStorageApiServiceMock.getWritableStorages()).thenReturn(Collections.emptyList());
-        when(permissionsServiceMock.isMaskBitSet(anyInt(), anyInt())).thenReturn(true);
-        when(toolVersionManagerMock.loadToolVersionSettings(anyLong(), anyString()))
+        when(permissionsServiceMock.isMaskBitSet(nullable(Integer.class), nullable(Integer.class))).thenReturn(true);
+        when(toolVersionManagerMock.loadToolVersionSettings(nullable(Long.class), nullable(String.class)))
                 .thenReturn(Collections.singletonList(ToolVersion.builder()
                         .settings(Collections.singletonList(configurationEntry)).build()));
         when(launchCapabilitiesProcessor.process(any())).thenReturn(Collections.emptyMap());
@@ -193,7 +197,7 @@ public class PipelineConfigurationForRunnerTest extends AbstractManagerTest {
         pipelineConfiguration.setInstanceDisk(TEST_HDD_SIZE);
         otherConfigurationEntry.setConfiguration(pipelineConfiguration);
 
-        when(toolVersionManagerMock.loadToolVersionSettings(anyLong(), anyString()))
+        when(toolVersionManagerMock.loadToolVersionSettings(nullable(Long.class), nullable(String.class)))
                 .thenReturn(Collections.singletonList(ToolVersion.builder()
                         .settings(Arrays.asList(configurationEntry, otherConfigurationEntry)).build()));
 

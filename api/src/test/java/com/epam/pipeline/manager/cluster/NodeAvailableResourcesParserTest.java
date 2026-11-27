@@ -20,8 +20,8 @@ import com.epam.pipeline.entity.cluster.ContainerInstance;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.NodeResources;
 import com.epam.pipeline.entity.cluster.PodInstance;
-import org.junit.Assert;
-import org.junit.Test;
+import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -77,13 +77,13 @@ public class NodeAvailableResourcesParserTest {
         final List<PodInstance> pods = Arrays.asList(pod1, pod2, new PodInstance());
 
         final NodeResources actual = NodeAvailableResourcesParser.parse(node, pods);
-        Assert.assertThat(actual.getNodeName(), is(NODE_NAME));
-        Assert.assertThat(actual.getUsed().getCpu(), is(4L));
-        Assert.assertThat(actual.getUsed().getGpu(), is(1L));
-        Assert.assertThat(actual.getUsed().getMemory(), is(TWO_GB_IN_BYTES));
-        Assert.assertThat(actual.getTotal().getCpu(), is(7L));
-        Assert.assertThat(actual.getTotal().getGpu(), is(1L));
-        Assert.assertThat(actual.getTotal().getMemory(), is(FOUR_GB_IN_BYTES));
+        MatcherAssert.assertThat(actual.getNodeName(), is(NODE_NAME));
+        MatcherAssert.assertThat(actual.getUsed().getCpu(), is(4L));
+        MatcherAssert.assertThat(actual.getUsed().getGpu(), is(1L));
+        MatcherAssert.assertThat(actual.getUsed().getMemory(), is(TWO_GB_IN_BYTES));
+        MatcherAssert.assertThat(actual.getTotal().getCpu(), is(7L));
+        MatcherAssert.assertThat(actual.getTotal().getGpu(), is(1L));
+        MatcherAssert.assertThat(actual.getTotal().getMemory(), is(FOUR_GB_IN_BYTES));
     }
 
     @Test
@@ -98,12 +98,12 @@ public class NodeAvailableResourcesParserTest {
         node.setAllocatable(allocatable);
 
         final NodeResources actual = NodeAvailableResourcesParser.parse(node, null);
-        Assert.assertThat(actual.getNodeName(), is(NODE_NAME));
-        Assert.assertThat(actual.getUsed().getCpu(), is(0L));
-        Assert.assertThat(actual.getUsed().getGpu(), is(0L));
-        Assert.assertThat(actual.getUsed().getMemory(), is(0L));
-        Assert.assertThat(actual.getTotal().getCpu(), is(7L));
-        Assert.assertThat(actual.getTotal().getGpu(), is(1L));
-        Assert.assertThat(actual.getTotal().getMemory(), is(FOUR_GB_IN_BYTES));
+        MatcherAssert.assertThat(actual.getNodeName(), is(NODE_NAME));
+        MatcherAssert.assertThat(actual.getUsed().getCpu(), is(0L));
+        MatcherAssert.assertThat(actual.getUsed().getGpu(), is(0L));
+        MatcherAssert.assertThat(actual.getUsed().getMemory(), is(0L));
+        MatcherAssert.assertThat(actual.getTotal().getCpu(), is(7L));
+        MatcherAssert.assertThat(actual.getTotal().getGpu(), is(1L));
+        MatcherAssert.assertThat(actual.getTotal().getMemory(), is(FOUR_GB_IN_BYTES));
     }
 }

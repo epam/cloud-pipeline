@@ -165,7 +165,7 @@ public class MetadataWriter {
     @AllArgsConstructor
     @Getter
     @Setter
-    private class SimpleReference<VALUE_TYPE> {
-        private VALUE_TYPE value;
+    private static final class SimpleReference<V> {
+        private V value;
     }
 }

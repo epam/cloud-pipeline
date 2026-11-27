@@ -20,6 +20,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.Data;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -96,6 +97,7 @@ public class MonitoringStats {
 
     @Data
     @Builder
+    @Jacksonized
     public static class GPUUsage {
         private MonitoringMetrics gpuUtilization;
         private MonitoringMetrics gpuMemoryUtilization;

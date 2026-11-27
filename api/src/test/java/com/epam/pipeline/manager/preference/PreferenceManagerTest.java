@@ -26,13 +26,13 @@ import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.preference.PreferenceType;
 import io.reactivex.Observable;
 import io.reactivex.subscribers.TestSubscriber;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SuppressWarnings("unchecked")
 public class PreferenceManagerTest extends AbstractSpringTest {
@@ -59,7 +59,7 @@ public class PreferenceManagerTest extends AbstractSpringTest {
 
         assertThrows(IllegalArgumentException.class,
             () -> preferenceManager.delete(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY.getKey()));
-        Assert.assertEquals(ClusterKeepAlivePolicy.IDLE_MINUTES.name(),
+        assertEquals(ClusterKeepAlivePolicy.IDLE_MINUTES.name(),
                 preferenceManager.getPreference(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY));
     }
 
@@ -73,7 +73,7 @@ public class PreferenceManagerTest extends AbstractSpringTest {
 
         preferenceManager.delete(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY.getKey());
 
-        Assert.assertEquals(ClusterKeepAlivePolicy.MINUTES_TILL_HOUR.name(),
+        assertEquals(ClusterKeepAlivePolicy.MINUTES_TILL_HOUR.name(),
                 preferenceManager.getPreference(SystemPreferences.CLUSTER_KEEP_ALIVE_POLICY));
     }
 
@@ -85,7 +85,7 @@ public class PreferenceManagerTest extends AbstractSpringTest {
                  "", PreferenceType.STRING, true);
         preferenceManager.update(Collections.singletonList(preference));
         String load = preferenceManager.getStringPreference(NAME);
-        Assert.assertEquals(VALUE, load);
+        assertEquals(VALUE, load);
     }
 
     @Test
@@ -96,7 +96,7 @@ public class PreferenceManagerTest extends AbstractSpringTest {
                 "", PreferenceType.INTEGER, true);
         preferenceManager.update(Collections.singletonList(preference));
         Integer load = preferenceManager.getIntPreference(NAME);
-        Assert.assertEquals(1, load.intValue());
+        assertEquals(1, load.intValue());
     }
 
     @Test
@@ -107,20 +107,20 @@ public class PreferenceManagerTest extends AbstractSpringTest {
                 "", PreferenceType.OBJECT, true);
         preferenceManager.update(Collections.singletonList(preference));
         Map<String, Object> load = preferenceManager.getObjectPreference(NAME);
-        Assert.assertEquals("first", load.get("name"));
-        Assert.assertEquals(1, ((Map<String, Object>)load.get("object")).get("param1"));
-        Assert.assertEquals(2, ((Map<String, Object>)load.get("object")).get("param2"));
+        assertEquals("first", load.get("name"));
+        assertEquals(1, ((Map<String, Object>)load.get("object")).get("param1"));
+        assertEquals(2, ((Map<String, Object>)load.get("object")).get("param2"));
 
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void castExceptionTest() {
         Preference preference = new Preference(
                 NAME, "1", GROUP,
                 "", PreferenceType.STRING, true);
         preferenceManager.update(Collections.singletonList(preference));
-        preferenceManager.getIntPreference(NAME);
+        assertThrows(IllegalArgumentException.class, () -> preferenceManager.getIntPreference(NAME));
     }
 
     @Test
@@ -132,13 +132,13 @@ public class PreferenceManagerTest extends AbstractSpringTest {
         preferenceManager.update(Collections.singletonList(preference));
         String load = preferenceManager.getStringPreference(NAME);
 
-        Assert.assertEquals(VALUE, load);
+        assertEquals(VALUE, load);
 
         preference.setValue(NEW_VALUE);
         preferenceManager.update(Collections.singletonList(preference));
         load = preferenceManager.getStringPreference(NAME);
 
-        Assert.assertEquals(NEW_VALUE, load);
+        assertEquals(NEW_VALUE, load);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
@@ -149,11 +149,11 @@ public class PreferenceManagerTest extends AbstractSpringTest {
         preferenceManager.update(Collections.singletonList(preference));
         String load = preferenceManager.getStringPreference(NAME);
 
-        Assert.assertEquals(VALUE, load);
+        assertEquals(VALUE, load);
 
         preferenceManager.delete(NAME);
 
-        Assert.assertNull(preferenceManager.getStringPreference(NAME));
+        assertNull(preferenceManager.getStringPreference(NAME));
     }
 
     @Test
@@ -167,7 +167,7 @@ public class PreferenceManagerTest extends AbstractSpringTest {
         Preference load = preferenceManager.load(NAME).get();
         String fetch = preferenceManager.getStringPreference(NAME);
 
-        Assert.assertEquals(fetch, load.getValue());
+        assertEquals(fetch, load.getValue());
 
         preference.setValue(NEW_VALUE);
         preferenceManager.update(Collections.singletonList(preference));
@@ -175,7 +175,7 @@ public class PreferenceManagerTest extends AbstractSpringTest {
         load = preferenceManager.load(NAME).get();
         fetch = preferenceManager.getStringPreference(NAME);
 
-        Assert.assertEquals(fetch, load.getValue());
+        assertEquals(fetch, load.getValue());
     }
 
     @Test

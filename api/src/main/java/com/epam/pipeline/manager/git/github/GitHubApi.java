@@ -38,7 +38,7 @@ import retrofit2.http.Query;
 
 import java.util.List;
 
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+@SuppressWarnings({"PMD.AvoidDuplicateLiterals", "checkstyle:LineLength"})
 public interface GitHubApi {
 
     String PATH = "path";

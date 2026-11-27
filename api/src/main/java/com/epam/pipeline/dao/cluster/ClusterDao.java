@@ -18,10 +18,12 @@ package com.epam.pipeline.dao.cluster;
 
 import com.epam.pipeline.dao.DaoHelper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class ClusterDao  extends NamedParameterJdbcDaoSupport {
     @Autowired
@@ -33,8 +35,12 @@ public class ClusterDao  extends NamedParameterJdbcDaoSupport {
     public Long createNextFreeNodeId() {
         return daoHelper.createId(freeNodeSequence);
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(freeNodeSequence, "Required query freeNodeSequence is not set");
+    }
 
-    @Required
+
     public void setFreeNodeSequence(String freeNodeSequence) {
         this.freeNodeSequence = freeNodeSequence;
     }

@@ -21,12 +21,11 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.dts.DtsRegistryVO;
 import com.epam.pipeline.entity.dts.DtsRegistry;
 import com.epam.pipeline.manager.dts.DtsRegistryApiService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,7 +39,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.List;
 
 @Controller
-@Api(value = "Data Transfer Service registry")
+@Tag(name = "dts-registry-controller", description = "Data Transfer Service registry")
 @RequestMapping(value = "/dts")
 @AllArgsConstructor
 public class DtsRegistryController extends AbstractRestController {
@@ -50,52 +49,36 @@ public class DtsRegistryController extends AbstractRestController {
 
     @GetMapping
     @ResponseBody
-    @ApiOperation(
-            value = "Lists Data Transfer Service registry.",
-            notes = "Lists Data Transfer Service registry.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+    @Operation(summary = "Lists Data Transfer Service registry.",
+            description = "Lists Data Transfer Service registry.")
+    @ApiResponses(@ApiResponse(description = API_STATUS_DESCRIPTION))
     public Result<List<DtsRegistry>> loadAll() {
         return Result.success(dtsRegistryApiService.loadAll());
     }
 
     @GetMapping(value = "/{registryId}")
     @ResponseBody
-    @ApiOperation(
-            value = "Lists Data Transfer Service registry specified by ID.",
-            notes = "Lists Data Transfer Service registry specified by ID.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+    @Operation(summary = "Lists Data Transfer Service registry specified by ID.",
+            description = "Lists Data Transfer Service registry specified by ID.")
+    @ApiResponses(@ApiResponse(description = API_STATUS_DESCRIPTION))
     public Result<DtsRegistry> load(@PathVariable(value = REGISTRY_ID) Long registryId) {
         return Result.success(dtsRegistryApiService.load(registryId));
     }
 
     @PostMapping
     @ResponseBody
-    @ApiOperation(
-            value = "Creates a new Data Transfer Service registry.",
-            notes = "Creates a new Data Transfer Service registry.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+    @Operation(summary = "Creates a new Data Transfer Service registry.",
+            description = "Creates a new Data Transfer Service registry.")
+    @ApiResponses(@ApiResponse(description = API_STATUS_DESCRIPTION))
     public Result<DtsRegistry> createDtsRegistry(@RequestBody DtsRegistryVO dtsRegistryVO) {
         return Result.success(dtsRegistryApiService.create(dtsRegistryVO));
     }
 
     @PutMapping(value = "/{registryId}")
     @ResponseBody
-    @ApiOperation(
-            value = "Updates Data Transfer Service registry.",
-            notes = "Updates Data Transfer Service registry.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+    @Operation(summary = "Updates Data Transfer Service registry.",
+            description = "Updates Data Transfer Service registry.")
+    @ApiResponses(@ApiResponse(description = API_STATUS_DESCRIPTION))
     public Result<DtsRegistry> updateDtsRegistry(@PathVariable(value = REGISTRY_ID) Long registryId,
                                                  @RequestBody DtsRegistryVO dtsRegistryVO) {
         return Result.success(dtsRegistryApiService.update(registryId, dtsRegistryVO));
@@ -103,13 +86,9 @@ public class DtsRegistryController extends AbstractRestController {
 
     @DeleteMapping(value = "/{registryId}")
     @ResponseBody
-    @ApiOperation(
-            value = "Deletes Data Transfer Service registry.",
-            notes = "Deletes Data Transfer Service registry.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+    @Operation(summary = "Deletes Data Transfer Service registry.",
+            description = "Deletes Data Transfer Service registry.")
+    @ApiResponses(@ApiResponse(description = API_STATUS_DESCRIPTION))
     public Result<DtsRegistry> updateDtsRegistry(@PathVariable(value = REGISTRY_ID) Long registryId) {
         return Result.success(dtsRegistryApiService.delete(registryId));
     }

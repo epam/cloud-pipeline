@@ -101,6 +101,11 @@ public class StoragePermissionManager {
         return grantPermissionManager.storagePermission(storage, permissionName);
     }
 
+    public boolean hasStoragePermission(final Long storageId, final String permissionName) {
+        return (isStorageAdmin() || storagePermissionById(storageId, permissionName))
+                && grantPermissionManager.checkStorageShared(storageId);
+    }
+
     public boolean storagePermissions(final Long storageId,
                                       final List<String> permissionNames) {
         return Optional.ofNullable(permissionNames)

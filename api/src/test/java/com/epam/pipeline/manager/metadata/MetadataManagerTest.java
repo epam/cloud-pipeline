@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.metadata;
 
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
@@ -23,9 +25,8 @@ import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.exception.MetadataReadingException;
 import org.apache.commons.io.IOUtils;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockMultipartFile;
 
@@ -33,6 +34,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class MetadataManagerTest extends AbstractSpringTest {
 
@@ -53,7 +56,7 @@ public class MetadataManagerTest extends AbstractSpringTest {
     private static final String TSV_FILE_NAME = "test_file.tsv";
     private static final String CSV_FILE_NAME = "test_file.csv";
 
-    @Before
+    @BeforeEach
     public void setup() {
         expectedData.put(KEY_1, new PipeConfValue(TYPE, VALUE_1));
         expectedData.put(KEY_2, new PipeConfValue(TYPE, VALUE_2));
@@ -111,55 +114,99 @@ public class MetadataManagerTest extends AbstractSpringTest {
         assertFileContent(exampleContent, CSV_FILE_NAME);
     }
 
-    @Test(expected = MetadataReadingException.class)
-    public void metadataFileShouldFailWithoutHeader() throws IOException {
+    @Test
+    public void metadataFileShouldFailWithoutHeader() {
         String exampleContent = simpleContent("\t", false);
-        assertFileContent(exampleContent, TSV_FILE_NAME);
+        assertThrows(MetadataReadingException.class, () -> {
+            try {
+                assertFileContent(exampleContent, TSV_FILE_NAME);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
-    @Test(expected = MetadataReadingException.class)
-    public void metadataFileShouldFailWithExtraColumnInHeader() throws IOException {
+    @Test
+    public void metadataFileShouldFailWithExtraColumnInHeader() {
         String exampleContent = TSV_HEADER + "Id\n" + simpleContent("\t", false);
-        assertFileContent(exampleContent, TSV_FILE_NAME);
+        assertThrows(MetadataReadingException.class, () -> {
+            try {
+                assertFileContent(exampleContent, TSV_FILE_NAME);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void metadataFileShouldFailWithExtraColumnInLine() throws IOException {
+    @Test
+    public void metadataFileShouldFailWithExtraColumnInLine() {
         String exampleContent = TSV_HEADER + "\n" +
                 KEY_1 + "\t" + VALUE_1 + "\t" + TYPE + "\t" + "Extra\n" +
                 KEY_2 + "\t" + VALUE_2 + "\t" + TYPE + "\n";
-        assertFileContent(exampleContent, TSV_FILE_NAME);
+        assertThrows(IllegalArgumentException.class,
+            () -> {
+                try {
+                    assertFileContent(exampleContent, TSV_FILE_NAME);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
     }
 
-    @Test(expected = MetadataReadingException.class)
-    public void metadataFileShouldFailWithIncorrectDelimiter() throws IOException {
+    @Test
+    public void metadataFileShouldFailWithIncorrectDelimiter() {
         String exampleContent = TSV_HEADER + "\n" + simpleContent("\t", false);
-        assertFileContent(exampleContent, CSV_FILE_NAME);
+        assertThrows(MetadataReadingException.class, () -> {
+            try {
+                assertFileContent(exampleContent, CSV_FILE_NAME);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void metadataFileShouldFailWithUnsupportedFileExtension() throws IOException {
         String exampleContent = TSV_HEADER + "\n" + simpleContent("\t", false);
-        assertFileContent(exampleContent, "test_file.txt");
+        assertThrows(IllegalArgumentException.class,
+            () -> {
+                try {
+                    assertFileContent(exampleContent, "test_file.txt");
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void metadataFileShouldFailWithoutRequiredColumn() throws IOException {
+    @Test
+    public void metadataFileShouldFailWithoutRequiredColumn() {
         String exampleContent = "Key\n" + KEY_1 + "\n" + KEY_2 + "\n";
-        assertFileContent(exampleContent, TSV_FILE_NAME);
+        assertThrows(IllegalArgumentException.class, () -> {
+            try {
+                assertFileContent(exampleContent, TSV_FILE_NAME);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
-    @Test(expected = MetadataReadingException.class)
+    @Test
     public void metadataFileShouldFailWithIncorrectColumnName() throws IOException {
         String exampleContent = "Key\tValue\tTypes\n" + simpleContent("\t", false);
-        assertFileContent(exampleContent, TSV_FILE_NAME);
+        assertThrows(MetadataReadingException.class, () -> {
+            try {
+                assertFileContent(exampleContent, TSV_FILE_NAME);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     private void assertFileContent(String exampleContent, String fileName) throws IOException {
         try (InputStream inputStream = IOUtils.toInputStream(exampleContent, "UTF-8")) {
             Map<String, PipeConfValue> actualData = metadataManager
                     .convertFileContentToMetadata(new MockMultipartFile(fileName, fileName, null, inputStream));
-            Assert.assertEquals(expectedData, actualData);
+            assertEquals(expectedData, actualData);
         }
     }
 

@@ -48,9 +48,9 @@ public class DefaultContextualPreferenceReducer implements ContextualPreferenceR
             return Optional.of(validPreference);
         }
         final List<ContextualPreference> invalidPreferences = preferences.stream()
-                .filter(preference -> !preference.getName().equals(validPreference.getName())
-                        || preference.getResource().getLevel() != validPreference.getResource().getLevel()
-                        || preference.getType() != validPreference.getType())
+                .filter(preference -> !preference.name().equals(validPreference.name())
+                        || preference.resource().level() != validPreference.resource().level()
+                        || preference.type() != validPreference.type())
                 .collect(Collectors.toList());
         return invalidPreferences.isEmpty()
                 ? reduceValidPreferences(preferences)
@@ -58,14 +58,14 @@ public class DefaultContextualPreferenceReducer implements ContextualPreferenceR
     }
 
     private Optional<ContextualPreference> reduceValidPreferences(final List<ContextualPreference> preferences) {
-        return preferenceReducerMap.getOrDefault(preferences.get(0).getName(), defaultReducer())
+        return preferenceReducerMap.getOrDefault(preferences.get(0).name(), defaultReducer())
                 .reduce(preferences);
     }
 
     private ContextualPreferenceReducer defaultReducer() {
         return preferences -> {
             final Set<String> values = preferences.stream()
-                    .map(ContextualPreference::getValue)
+                    .map(ContextualPreference::value)
                     .collect(Collectors.toSet());
             if (values.size() > 1) {
                 log.warn(messageHelper.getMessage(MessageConstants.WARN_CONTEXTUAL_PREFERENCE_DIFFERENT_VALUES,

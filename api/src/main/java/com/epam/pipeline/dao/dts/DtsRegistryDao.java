@@ -20,7 +20,6 @@ import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.dts.DtsRegistry;
 import com.epam.pipeline.entity.utils.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -35,6 +34,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.epam.pipeline.dao.DaoHelper.mapListToSqlArray;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
     @Autowired
@@ -81,32 +82,36 @@ public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
         getJdbcTemplate().update(deleteDtsRegistryQuery, registryId);
     }
 
-    @Required
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(dtsRegistrySequence, "Required query dtsRegistrySequence is not set");
+        Assert.notNull(loadAllDtsRegistriesQuery, "Required query loadAllDtsRegistriesQuery is not set");
+        Assert.notNull(loadDtsRegistryQuery, "Required query loadDtsRegistryQuery is not set");
+        Assert.notNull(createDtsRegistryQuery, "Required query createDtsRegistryQuery is not set");
+        Assert.notNull(updateDtsRegistryQuery, "Required query updateDtsRegistryQuery is not set");
+        Assert.notNull(deleteDtsRegistryQuery, "Required query deleteDtsRegistryQuery is not set");
+    }
+
     public void setDtsRegistrySequence(String dtsRegistrySequence) {
         this.dtsRegistrySequence = dtsRegistrySequence;
     }
 
-    @Required
     public void setLoadAllDtsRegistriesQuery(String loadAllDtsRegistriesQuery) {
         this.loadAllDtsRegistriesQuery = loadAllDtsRegistriesQuery;
     }
 
-    @Required
     public void setLoadDtsRegistryQuery(String loadDtsRegistryQuery) {
         this.loadDtsRegistryQuery = loadDtsRegistryQuery;
     }
 
-    @Required
     public void setCreateDtsRegistryQuery(String createDtsRegistryQuery) {
         this.createDtsRegistryQuery = createDtsRegistryQuery;
     }
 
-    @Required
     public void setUpdateDtsRegistryQuery(String updateDtsRegistryQuery) {
         this.updateDtsRegistryQuery = updateDtsRegistryQuery;
     }
 
-    @Required
     public void setDeleteDtsRegistryQuery(String deleteDtsRegistryQuery) {
         this.deleteDtsRegistryQuery = deleteDtsRegistryQuery;
     }

@@ -18,9 +18,10 @@ package com.epam.pipeline.manager.metadata;
 
 import static com.epam.pipeline.util.CategoricalAttributeTestUtils.assertAttribute;
 import static com.epam.pipeline.util.CategoricalAttributeTestUtils.fromStrings;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertThat;
 
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.controller.vo.EntityVO;
@@ -36,8 +37,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.user.UserManager;
 import org.apache.commons.collections4.CollectionUtils;
 import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +50,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Transactional
 public class CategoricalAttributeManagerTest extends AbstractSpringTest {
@@ -81,7 +82,7 @@ public class CategoricalAttributeManagerTest extends AbstractSpringTest {
         preferenceManager.update(Collections.singletonList(new Preference(
                 SystemPreferences.MISC_METADATA_SENSITIVE_KEYS.getKey(),
                 String.format("[\"%s\"]", SENSITIVE_KEY))));
-        Assert.assertEquals(0, categoricalAttributeManager.loadAll().size());
+        assertEquals(0, categoricalAttributeManager.loadAll().size());
 
         final PipelineUser testUser = userManager
             .create(TEST_USER, Collections.emptyList(), Collections.emptyList(), Collections.emptyMap(), null);
@@ -101,12 +102,12 @@ public class CategoricalAttributeManagerTest extends AbstractSpringTest {
                 attribute -> attribute.getValues().stream()
                                           .map(CategoricalAttributeValue::getValue)
                                           .collect(Collectors.toList())));
-        Assert.assertEquals(2, categoricalAttributesAfterSync.size());
+        assertEquals(2, categoricalAttributesAfterSync.size());
         assertThat(categoricalAttributesAfterSync.get(KEY_1),
                           CoreMatchers.is(Collections.singletonList(VALUE_1)));
         assertThat(categoricalAttributesAfterSync.get(KEY_2),
                           CoreMatchers.is(Collections.singletonList(VALUE_2)));
-        Assert.assertFalse(categoricalAttributesAfterSync.containsKey(SENSITIVE_KEY));
+        assertFalse(categoricalAttributesAfterSync.containsKey(SENSITIVE_KEY));
     }
 
     @Test
@@ -124,21 +125,21 @@ public class CategoricalAttributeManagerTest extends AbstractSpringTest {
 
         final Map<String, List<CategoricalAttributeValue>> attributeMap = categoricalAttributeManager.loadAll().stream()
             .collect(Collectors.toMap(CategoricalAttribute::getKey, CategoricalAttribute::getValues));
-        Assert.assertTrue(attributeMap.get(KEY_1).stream()
+        assertTrue(attributeMap.get(KEY_1).stream()
                               .map(CategoricalAttributeValue::getLinks)
                               .allMatch(CollectionUtils::isEmpty));
         final List<CategoricalAttributeValue> valuesForKey2 = attributeMap.get(KEY_2);
-        Assert.assertEquals(1, valuesForKey2.size());
+        assertEquals(1, valuesForKey2.size());
         final CategoricalAttributeValue value1ForKey2 = valuesForKey2.get(0);
-        Assert.assertEquals(KEY_2, value1ForKey2.getKey());
-        Assert.assertEquals(VALUE_3, value1ForKey2.getValue());
+        assertEquals(KEY_2, value1ForKey2.getKey());
+        assertEquals(VALUE_3, value1ForKey2.getValue());
         final List<CategoricalAttributeValue> links = value1ForKey2.getLinks();
-        Assert.assertEquals(1, links.size());
+        assertEquals(1, links.size());
         final CategoricalAttributeValue linkToKey1Value1 = links.get(0);
-        Assert.assertEquals(KEY_1, linkToKey1Value1.getKey());
-        Assert.assertEquals(VALUE_1, linkToKey1Value1.getValue());
-        Assert.assertFalse(linkToKey1Value1.getAutofill());
-        Assert.assertEquals(attributeMap.get(KEY_1).stream()
+        assertEquals(KEY_1, linkToKey1Value1.getKey());
+        assertEquals(VALUE_1, linkToKey1Value1.getValue());
+        assertFalse(linkToKey1Value1.getAutofill());
+        assertEquals(attributeMap.get(KEY_1).stream()
                                 .filter(value -> value.getKey().equals(KEY_1) && value.getValue().equals(VALUE_1))
                                 .map(CategoricalAttributeValue::getId)
                                 .findAny()
@@ -149,15 +150,16 @@ public class CategoricalAttributeManagerTest extends AbstractSpringTest {
         final Map<String, List<CategoricalAttributeValue>> attributeMapAfterDelete =
             categoricalAttributeManager.loadAll().stream()
                 .collect(Collectors.toMap(CategoricalAttribute::getKey, CategoricalAttribute::getValues));
-        Assert.assertTrue(attributeMapAfterDelete.values().stream()
+        assertTrue(attributeMapAfterDelete.values().stream()
                               .flatMap(Collection::stream)
                               .map(CategoricalAttributeValue::getLinks)
                               .allMatch(CollectionUtils::isEmpty));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void loadValuesForNonExistentKey() {
-        categoricalAttributeManager.loadAllValuesForKey(INVALID_KEY);
+        assertThrows(IllegalArgumentException.class,
+            () -> categoricalAttributeManager.loadAllValuesForKey(INVALID_KEY));
     }
 
     @Test
@@ -165,28 +167,29 @@ public class CategoricalAttributeManagerTest extends AbstractSpringTest {
     public void testUpdateAttributesValues() {
         final List<CategoricalAttribute> values = new ArrayList<>();
         values.add(new CategoricalAttribute(KEY_1, fromStrings(KEY_1, Arrays.asList(VALUE_1, VALUE_2))));
-        Assert.assertTrue(categoricalAttributeManager.updateCategoricalAttributes(values));
+        assertTrue(categoricalAttributeManager.updateCategoricalAttributes(values));
         final List<CategoricalAttribute> attributes = categoricalAttributeManager.loadAll();
-        Assert.assertEquals(1, attributes.size());
+        assertEquals(1, attributes.size());
         assertAttribute(attributes.get(0), KEY_1, VALUE_1, VALUE_2);
 
         final List<CategoricalAttribute> valuesToReplace = new ArrayList<>();
         valuesToReplace.add(new CategoricalAttribute(KEY_1, fromStrings(KEY_1, Collections.singletonList(VALUE_3))));
-        Assert.assertTrue(categoricalAttributeManager.updateCategoricalAttributes(valuesToReplace));
+        assertTrue(categoricalAttributeManager.updateCategoricalAttributes(valuesToReplace));
         final List<CategoricalAttribute> attributesAfter = categoricalAttributeManager.loadAll();
-        Assert.assertEquals(1, attributesAfter.size());
+        assertEquals(1, attributesAfter.size());
         assertAttribute(attributesAfter.get(0), KEY_1, VALUE_3);
     }
 
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void testCreateLinkOnNonExistentAttributeValue() {
         final CategoricalAttributeValue valueWithLink = new CategoricalAttributeValue(KEY_2, VALUE_3);
         valueWithLink.setLinks(Collections.singletonList(new CategoricalAttributeValue(KEY_1, VALUE_1)));
         final List<CategoricalAttribute> attributes = Collections
             .singletonList(new CategoricalAttribute(KEY_2, Collections.singletonList(valueWithLink)));
-        categoricalAttributeManager.updateCategoricalAttributes(attributes);
+        assertThrows(IllegalArgumentException.class,
+            () -> categoricalAttributeManager.updateCategoricalAttributes(attributes));
     }
 
     @Test

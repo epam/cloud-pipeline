@@ -230,6 +230,11 @@ jobs:
             needs_dist_url: true
             tag: storage-lifecycle-service-$DOCKERS_VERSION
 
+          - service: cp-storage-async-task-service
+            context: cp-storage-async-task-service
+            needs_dist_url: true
+            tag: storage-async-task-service-$DOCKERS_VERSION
+
           - service: cp-dav
             context: cp-dav
             tag: dav-$DOCKERS_VERSION

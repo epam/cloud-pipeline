@@ -20,8 +20,8 @@ import com.auth0.jwt.JWT;
 import com.epam.pipeline.entity.security.JwtTokenClaims;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -48,7 +48,7 @@ public class JwtTokenGeneratorTest {
     private JwtTokenGenerator generator;
     private JwtTokenVerifier verifier;
 
-    @Before
+    @BeforeEach
     public void setUp() throws NoSuchAlgorithmException {
         final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
         keyPairGenerator.initialize(KEY_SIZE);
@@ -64,7 +64,7 @@ public class JwtTokenGeneratorTest {
         ReflectionTestUtils.setField(generator, "privateKeyString", privateKey);
         ReflectionTestUtils.setField(generator, "publicKeyString", publicKey);
         ReflectionTestUtils.setField(generator, "preferenceManager", preferenceManager);
-        generator.initKey();
+        generator.afterPropertiesSet();
 
         verifier = new JwtTokenVerifier(publicKey);
     }

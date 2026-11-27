@@ -28,8 +28,9 @@ import com.fasterxml.jackson.datatype.jsr310.deser.LocalTimeDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalTimeSerializer;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.InitializingBean;
 
-import javax.annotation.PostConstruct;
+
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
@@ -37,7 +38,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-public class JsonMapper extends ObjectMapper {
+public class JsonMapper extends ObjectMapper implements InitializingBean {
     private static final long serialVersionUID = -1414537788709027470L;
 
     /**
@@ -52,8 +53,8 @@ public class JsonMapper extends ObjectMapper {
 
     private static volatile JsonMapper instance;
 
-    @PostConstruct
-    public void init() {
+    @Override
+    public void afterPropertiesSet() {
         instance = this;
     }
 
@@ -74,11 +75,11 @@ public class JsonMapper extends ObjectMapper {
         // the used format is 'yyyy-MM-dd'
         super.setDateFormat(new SimpleDateFormat(FMT_ISO_LOCAL_DATE));
 
-        // enforces to skip null and empty values in the serialized JSON output
-        super.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-
-        // enforces to skip null references in the serialized output of Map
-        super.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
+        // Skips a property whose value is null or empty ("", [] or {}).
+        // In a Map, skips only an entry whose value is null: an entry whose value is "", [] or {} is kept.
+        // setSerializationInclusion(NON_EMPTY) is not used, as it skips such Map entries too.
+        super.setDefaultPropertyInclusion(
+                JsonInclude.Value.construct(JsonInclude.Include.NON_EMPTY, JsonInclude.Include.NON_NULL));
 
         // enables serialization failures, when mapper encounters unknown properties names
         super.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
@@ -136,7 +137,7 @@ public class JsonMapper extends ObjectMapper {
         }
 
         try {
-            return customMapper.readValue(data, type);
+            return (T) customMapper.readValue(data, type);
         } catch (IOException e) {
             throw new IllegalArgumentException("Could not parse json data " + data, e);
         }

@@ -37,8 +37,8 @@ import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -53,8 +53,9 @@ import java.util.List;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 
 @DirtiesContext
@@ -101,7 +102,7 @@ public class RunScheduleManagerTest extends AbstractManagerTest {
     private RunConfiguration runConfiguration;
     private Pipeline testPipeline;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         testPipeline = new Pipeline();
         testPipeline.setName(TEST_NAME);
@@ -142,31 +143,31 @@ public class RunScheduleManagerTest extends AbstractManagerTest {
 
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @WithMockUser(username = USER_OWNER)
     public void testCreateRunScheduleWithExistentCronExpression() {
         runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
                 Collections.singletonList(testRunScheduleVO));
         testRunScheduleVO.setAction(RunScheduledAction.RESUME);
-        runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
-                Collections.singletonList(testRunScheduleVO));
+        assertThrows(IllegalArgumentException.class, () -> runScheduleManager.createSchedules(RUN_ID,
+            ScheduleType.PIPELINE_RUN, Collections.singletonList(testRunScheduleVO)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @WithMockUser(username = USER_OWNER)
     public void  createSchedulesWithIdenticalExpressions() {
         final PipelineRunScheduleVO runScheduleVO = getRunScheduleVO(RunScheduledAction.PAUSE, CRON_EXPRESSION1);
         final PipelineRunScheduleVO runScheduleVO2 = getRunScheduleVO(RunScheduledAction.RESUME, CRON_EXPRESSION1);
-        runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
-                Arrays.asList(runScheduleVO, runScheduleVO2));
+        assertThrows(IllegalArgumentException.class, () -> runScheduleManager.createSchedules(RUN_ID,
+            ScheduleType.PIPELINE_RUN, Arrays.asList(runScheduleVO, runScheduleVO2)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @WithMockUser(username = USER_OWNER)
     public void  createSchedulesWithWrongAction() {
         final PipelineRunScheduleVO runScheduleVO = getRunScheduleVO(RunScheduledAction.RESUME, CRON_EXPRESSION1);
-        runScheduleManager.createSchedules(RUN_ID, ScheduleType.RUN_CONFIGURATION,
-                Collections.singletonList(runScheduleVO));
+        assertThrows(IllegalArgumentException.class, () -> runScheduleManager.createSchedules(RUN_ID,
+            ScheduleType.RUN_CONFIGURATION, Collections.singletonList(runScheduleVO)));
     }
 
     @Test
@@ -194,7 +195,7 @@ public class RunScheduleManagerTest extends AbstractManagerTest {
         Mockito.verify(runScheduler, Mockito.times(4)).scheduleRunSchedule(any());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @WithMockUser(username = USER_OWNER)
     public void testUpdateRunSchedulesFailsWithoutScheduleId() {
         runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
@@ -202,8 +203,9 @@ public class RunScheduleManagerTest extends AbstractManagerTest {
 
         testRunScheduleVO.setCronExpression(CRON_EXPRESSION2);
 
-        runScheduleManager.updateSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
-                        Collections.singletonList(testRunScheduleVO));
+        assertThrows(IllegalArgumentException.class,
+            () -> runScheduleManager.updateSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
+                Collections.singletonList(testRunScheduleVO)));
     }
 
     @Test
@@ -272,13 +274,14 @@ public class RunScheduleManagerTest extends AbstractManagerTest {
         Mockito.verify(runScheduler, Mockito.times(2)).unscheduleRunSchedule(any());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @WithMockUser(username = USER_OWNER)
     public void loadRunScheduleByWrongId() {
         final RunSchedule runSchedule =
             runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
                     Collections.singletonList(testRunScheduleVO)).get(0);
-        runScheduleManager.loadSchedule(runSchedule.getSchedulableId());
+        assertThrows(IllegalArgumentException.class,
+            () -> runScheduleManager.loadSchedule(runSchedule.getSchedulableId()));
     }
 
     private PipelineRunScheduleVO getRunScheduleVO(final RunScheduledAction action, final String cronExpression) {

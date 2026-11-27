@@ -21,7 +21,6 @@ import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.AclMaskList;
-import com.epam.pipeline.manager.user.RoleManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PostFilter;

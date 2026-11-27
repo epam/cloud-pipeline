@@ -18,7 +18,7 @@ package com.epam.pipeline.dao.dts;
 
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.dts.DtsRegistry;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Transactional
 public class DtsRegistryDaoTest extends AbstractSpringTest {

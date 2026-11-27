@@ -27,9 +27,8 @@ import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.util.TestUtils;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
@@ -39,6 +38,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @DirtiesContext
 @ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
@@ -61,9 +63,10 @@ public class RunStatusReasonTest extends AbstractManagerTest {
 
     private PipelineUser testOwner;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         testOwner = new PipelineUser("testOwner");
+        testOwner.setOwner("testOwner");
         userDao.createUser(testOwner, Collections.emptyList());
     }
 
@@ -85,9 +88,9 @@ public class RunStatusReasonTest extends AbstractManagerTest {
         RunStatus runStatus = runStatuses.stream()
                 .max(Comparator.comparing(RunStatus::getTimestamp))
                 .orElse(null);
-        Assert.assertNotNull(runStatus);
-        Assert.assertEquals(TaskStatus.PAUSED, runStatus.getStatus());
-        Assert.assertEquals(RESUME_RUN_FAILED_MESSAGE, runStatus.getReason());
+        assertNotNull(runStatus);
+        assertEquals(TaskStatus.PAUSED, runStatus.getStatus());
+        assertEquals(RESUME_RUN_FAILED_MESSAGE, runStatus.getReason());
 
     }
 

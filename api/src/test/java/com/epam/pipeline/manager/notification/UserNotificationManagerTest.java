@@ -17,13 +17,13 @@
 package com.epam.pipeline.manager.notification;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
-import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.notification.UserNotificationMapper;
 import com.epam.pipeline.repository.notification.UserNotificationRepository;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.config.EmbeddedValueResolver;
 import org.springframework.context.support.GenericApplicationContext;
@@ -34,9 +34,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.mockito.Matchers.any;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -51,8 +51,8 @@ public class UserNotificationManagerTest {
     private final UserNotificationRepository userNotificationRepository = mock(UserNotificationRepository.class);
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
     private final UserNotificationManager manager = new UserNotificationManager(userNotificationRepository,
-            mock(UserNotificationMapper.class), preferenceManager, mock(AuthManager.class), mock(UserManager.class),
-            mock(MessageHelper.class));
+            mock(UserNotificationMapper.class), preferenceManager, mock(AuthManager.class), mock(MessageHelper.class),
+            mock(UserDao.class));
 
     @Test
     public void expPeriodShouldBeThreeDaysByDefault() {
@@ -66,7 +66,7 @@ public class UserNotificationManagerTest {
 
         manager.cleanUp();
 
-        verify(userNotificationRepository, never()).deleteByCreatedDateLessThan(any(LocalDateTime.class));
+        verify(userNotificationRepository, never()).deleteByCreatedDateLessThan(any());
     }
 
     @Test

@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.entity.git;
 
-import org.springframework.util.Assert;
+import org.apache.commons.lang3.Validate;
 
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -99,11 +99,11 @@ public final class GitRepositoryUrl {
         final StringBuffer builder = new StringBuffer();
         builder.append(protocol);
         Optional.ofNullable(username).ifPresent(builder::append);
-        Optional.ofNullable(password).ifPresent(p -> builder.append(":").append(p));
-        Optional.ofNullable(username).ifPresent(u -> builder.append("@"));
+        Optional.ofNullable(password).ifPresent(p -> builder.append(':').append(p));
+        Optional.ofNullable(username).ifPresent(u -> builder.append('@'));
         builder.append(host);
-        Optional.ofNullable(namespace).ifPresent(n -> builder.append("/").append(n));
-        Optional.ofNullable(project).ifPresent(p -> builder.append("/").append(p).append(".git"));
+        Optional.ofNullable(namespace).ifPresent(n -> builder.append('/').append(n));
+        Optional.ofNullable(project).ifPresent(p -> builder.append('/').append(p).append(".git"));
         return builder.toString();
     }
 
@@ -171,7 +171,7 @@ public final class GitRepositoryUrl {
 
     private static String ensureMatches(final String value, final String pattern, final boolean matchesIfAbsent) {
         final Boolean matches = Optional.ofNullable(value).map(v -> v.matches(pattern)).orElse(matchesIfAbsent);
-        Assert.isTrue(matches, "Should match pattern " + pattern);
+        Validate.isTrue(matches, "Should match pattern " + pattern);
         return value;
     }
 
@@ -184,7 +184,7 @@ public final class GitRepositoryUrl {
     }
 
     private static GitRepositoryUrl parseUrl(final Matcher matcher) {
-        Assert.isTrue(matcher.matches(), INVALID_URL_FORMAT_MESSAGE);
+        Validate.isTrue(matcher.matches(), INVALID_URL_FORMAT_MESSAGE);
         return new GitRepositoryUrl(
                 matcher.group("protocol"),
                 matcher.group("username"),

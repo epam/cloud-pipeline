@@ -26,9 +26,9 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.manager.AbstractManagerTest;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -48,9 +48,9 @@ public class RunLogManagerTest extends AbstractManagerTest {
     @InjectMocks
     private RunLogManager logManager;
 
-    @Before
+    @BeforeEach
     public void setup() {
-        MockitoAnnotations.initMocks(this.getClass());
+        MockitoAnnotations.openMocks(this.getClass());
     }
 
     @Test
@@ -66,7 +66,7 @@ public class RunLogManagerTest extends AbstractManagerTest {
         Mockito.when(runCRUDServiceMock.loadRunById(run.getId())).thenReturn(run);
         Mockito.when(logDao.loadAllLogsForRun(run.getId())).thenReturn(logs);
         String result = logManager.downloadLogs(run);
-        Assert.assertNotNull(result);
-        Assert.assertTrue(!result.isEmpty());
+        Assertions.assertNotNull(result);
+        Assertions.assertTrue(!result.isEmpty());
     }
 }

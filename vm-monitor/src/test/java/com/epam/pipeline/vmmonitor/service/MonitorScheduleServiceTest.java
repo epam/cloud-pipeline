@@ -23,11 +23,12 @@ import com.epam.pipeline.vmmonitor.service.k8s.TinyproxyMonitor;
 import com.epam.pipeline.vmmonitor.service.node.NodeMonitor;
 import com.epam.pipeline.vmmonitor.service.vm.VMMonitor;
 import org.junit.jupiter.api.Test;
-import org.springframework.scheduling.support.CronSequenceGenerator;
+import org.springframework.scheduling.support.CronExpression;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Date;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -70,13 +71,13 @@ public class MonitorScheduleServiceTest {
         try (InputStream stream = MonitorScheduleServiceTest.class.getResourceAsStream("/application.properties")) {
             properties.load(stream);
         }
-        final CronSequenceGenerator cron = new CronSequenceGenerator(properties.getProperty(CHANGES_CRON));
-        final Date start = new Date(TimeUnit.DAYS.toMillis(1));
+        final CronExpression cron = CronExpression.parse(properties.getProperty(CHANGES_CRON));
+        final LocalDateTime start = LocalDateTime.of(1970, 1, 2, 0, 0);
 
-        final Date first = cron.next(start);
-        final Date second = cron.next(first);
+        final LocalDateTime first = cron.next(start);
+        final LocalDateTime second = cron.next(first);
 
-        assertThat(second.getTime() - first.getTime(), is(TimeUnit.MINUTES.toMillis(1)));
-        assertThat(first.getTime() - start.getTime(), is(TimeUnit.MINUTES.toMillis(1)));
+        assertThat(Duration.between(first, second).toMillis(), is(TimeUnit.MINUTES.toMillis(1)));
+        assertThat(Duration.between(start, first).toMillis(), is(TimeUnit.MINUTES.toMillis(1)));
     }
 }

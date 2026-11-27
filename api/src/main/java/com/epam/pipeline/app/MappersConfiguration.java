@@ -17,6 +17,7 @@
 package com.epam.pipeline.app;
 
 import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
+import com.epam.pipeline.mapper.async.AsyncTaskMapper;
 import com.epam.pipeline.mapper.cloud.credentials.CloudProfileCredentialsMapper;
 import com.epam.pipeline.mapper.cluster.KubernetesMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolUsageMapper;
@@ -159,5 +160,10 @@ public class MappersConfiguration {
     @Bean
     public RunnerSidMapper runnerSidMapper() {
         return Mappers.getMapper(RunnerSidMapper.class);
+    }
+
+    @Bean
+    public AsyncTaskMapper asyncTaskMapper() {
+        return Mappers.getMapper(AsyncTaskMapper.class);
     }
 }

@@ -16,15 +16,6 @@
 
 package com.epam.pipeline.entity.search;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-
 import java.util.Set;
 
-@AllArgsConstructor
-@Getter
-public class StorageFileSearchMask {
-
-    private final String storageName;
-    private final Set<String> hiddenFilePathGlobs;
-}
+public record StorageFileSearchMask(String storageName, Set<String> hiddenFilePathGlobs) {}

@@ -16,17 +16,18 @@
 
 package com.epam.pipeline.notifier.service.task;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.internet.MimeMessage;
+import jakarta.mail.Message;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 
+import com.icegreen.greenmail.util.GreenMail;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LogEvent;
@@ -34,8 +35,9 @@ import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.apache.logging.log4j.core.config.Property;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,7 +47,6 @@ import com.epam.pipeline.entity.notification.NotificationTemplate;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.notifier.AbstractSpringTest;
 import com.epam.pipeline.notifier.repository.UserRepository;
-import com.icegreen.greenmail.junit.GreenMailRule;
 import com.icegreen.greenmail.util.GreenMailUtil;
 import com.icegreen.greenmail.util.ServerSetupTest;
 
@@ -69,8 +70,18 @@ public class SMTPNotificationManagerTest extends AbstractSpringTest {
     private static final int RUN_ID = 14638;
     private static final long MESSAGE_ID = 1L;
 
-    @Rule
-    public final GreenMailRule greenMail = new GreenMailRule(ServerSetupTest.SMTP);
+    private GreenMail greenMail;
+
+    @BeforeEach
+    void setUp() {
+        greenMail = new GreenMail(ServerSetupTest.SMTP);
+        greenMail.start();
+    }
+
+    @AfterEach
+    public void tearDown() {
+        greenMail.stop();
+    }
 
     @Autowired
     private SMTPNotificationManager smtpNotificationManager;
@@ -249,7 +260,7 @@ public class SMTPNotificationManagerTest extends AbstractSpringTest {
         assertEquals(2, greenMail.getReceivedMessages().length);
         String expected = String.format("Email from message %s with subject '%s' formed and will be send to: [%s], "
                 + "cc: [], bcc: [%s]", MESSAGE_ID, PARSED_RUN_SUBJECT, EMAIL, COPY_EMAIL);
-        assertTrue(String.format("No '%s' in %s", expected, logged), logged.contains(expected));
+        assertTrue(logged.contains(expected), String.format("No '%s' in %s", expected, logged));
     }
 
     /**

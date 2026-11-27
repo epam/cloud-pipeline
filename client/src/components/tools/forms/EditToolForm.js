@@ -1559,7 +1559,6 @@ export default class EditToolForm extends React.Component {
   };
 
   renderExecutionEnvironment = () => {
-    const {isInstanceTypeWithReservation} = this;
     const renderExecutionEnvironmentSection = () => {
       const {getFieldDecorator, getFieldValue} = this.props.form;
       let allowSensitive = getFieldValue('allowSensitive');
@@ -1567,7 +1566,6 @@ export default class EditToolForm extends React.Component {
         allowSensitive = this.getAllowSensitiveInitialValue();
       }
       const limitMountsValue = getFieldValue('limitMounts');
-      const instanceTypeValue = this.getInstanceTypeValue();
       return (
         <div>
           {this.renderSeparator('Execution defaults')}

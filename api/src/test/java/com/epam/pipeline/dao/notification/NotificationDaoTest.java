@@ -16,9 +16,7 @@
 
 package com.epam.pipeline.dao.notification;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -32,9 +30,8 @@ import com.epam.pipeline.controller.vo.SystemNotificationFilterVO;
 import com.epam.pipeline.entity.notification.SystemNotification;
 import com.epam.pipeline.entity.notification.SystemNotificationSeverity;
 import com.epam.pipeline.entity.notification.SystemNotificationState;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,7 +55,7 @@ public class NotificationDaoTest extends AbstractSpringTest {
     private SystemNotification systemNotification;
     private SystemNotification additionalNotification;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         systemNotification = new SystemNotification();
         systemNotification.setCreatedDate(DATE);
@@ -100,7 +97,7 @@ public class NotificationDaoTest extends AbstractSpringTest {
         notificationDao.createNotification(additionalNotification);
         List<SystemNotification> actualNotifications = notificationDao.loadAllNotifications();
         assertFalse(actualNotifications.isEmpty());
-        Assert.assertEquals(2, actualNotifications.size());
+        assertEquals(2, actualNotifications.size());
 
         notificationDao.deleteNotification(systemNotification.getNotificationId());
         notificationDao.deleteNotification(additionalNotification.getNotificationId());

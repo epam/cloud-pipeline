@@ -36,12 +36,12 @@ import org.springframework.util.StringUtils;
         include = JsonTypeInfo.As.PROPERTY,
         property = "type")
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = S3bucketDataStorage.class, name = "S3"),
-        @JsonSubTypes.Type(value = AWSOmicsRefStorage.class, name = "AWS_OMICS_REF"),
-        @JsonSubTypes.Type(value = AWSOmicsSeqStorage.class, name = "AWS_OMICS_SEQ"),
-        @JsonSubTypes.Type(value = NFSDataStorage.class, name = "NFS"),
-        @JsonSubTypes.Type(value = AzureBlobStorage.class, name = "AZ"),
-        @JsonSubTypes.Type(value = GSBucketStorage.class, name = "GS")})
+    @JsonSubTypes.Type(value = S3bucketDataStorage.class, name = "S3"),
+    @JsonSubTypes.Type(value = AWSOmicsRefStorage.class, name = "AWS_OMICS_REF"),
+    @JsonSubTypes.Type(value = AWSOmicsSeqStorage.class, name = "AWS_OMICS_SEQ"),
+    @JsonSubTypes.Type(value = NFSDataStorage.class, name = "NFS"),
+    @JsonSubTypes.Type(value = AzureBlobStorage.class, name = "AZ"),
+    @JsonSubTypes.Type(value = GSBucketStorage.class, name = "GS")})
 public abstract class AbstractDataStorage extends AbstractSecuredEntity {
 
     private String description;

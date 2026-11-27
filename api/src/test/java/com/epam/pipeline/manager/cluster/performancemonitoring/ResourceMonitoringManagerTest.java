@@ -46,20 +46,23 @@ import io.reactivex.Observable;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.mockito.internal.util.reflection.Whitebox;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -74,9 +77,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.anyMap;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
@@ -86,6 +89,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings("PMD.TooManyStaticImports")
+@MockitoSettings(strictness = Strictness.LENIENT)
+@ExtendWith(MockitoExtension.class)
 public class ResourceMonitoringManagerTest {
     private static final long TEST_OK_RUN_ID = 1;
     private static final double TEST_OK_RUN_CPU_LOAD = 800.0;
@@ -167,10 +172,9 @@ public class ResourceMonitoringManagerTest {
 
     private Map<String, Double> mockStats;
 
-    @Before
+    @BeforeEach
     @SuppressWarnings("checkstyle:MethodLength")
     public void setUp() throws Exception {
-        MockitoAnnotations.initMocks(this);
         ResourceMonitoringManager.ResourceMonitoringManagerCore core =
             new ResourceMonitoringManager.ResourceMonitoringManagerCore(pipelineRunManager,
                                                                         pipelineRunDockerOperationManager,
@@ -182,9 +186,9 @@ public class ResourceMonitoringManagerTest {
                                                                         runStatusManager,
                                                                         nodesManager);
         resourceMonitoringManager = new ResourceMonitoringManager(core);
-        Whitebox.setInternalState(resourceMonitoringManager, "authManager", authManager);
-        Whitebox.setInternalState(resourceMonitoringManager, "preferenceManager", preferenceManager);
-        Whitebox.setInternalState(resourceMonitoringManager, "scheduler", taskScheduler);
+        ReflectionTestUtils.setField(resourceMonitoringManager, "authManager", authManager);
+        ReflectionTestUtils.setField(resourceMonitoringManager, "preferenceManager", preferenceManager);
+        ReflectionTestUtils.setField(resourceMonitoringManager, "scheduler", taskScheduler);
         when(preferenceManager.getObservablePreference(SystemPreferences.SYSTEM_RESOURCE_MONITORING_PERIOD))
             .thenReturn(Observable.empty());
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_RESOURCE_MONITORING_PERIOD))
@@ -330,24 +334,25 @@ public class ResourceMonitoringManagerTest {
         verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
 
         List<PipelineRun> updatedRuns = runsToUpdateCaptor.getAllValues().get(0);
-        Assert.assertEquals(2, updatedRuns.size());
-        Assert.assertTrue(updatedRuns.stream().anyMatch(r -> r.getPodId().equals(idleSpotRun.getPodId())));
-        Assert.assertTrue(updatedRuns.stream().anyMatch(r -> r.getPodId().equals(idleOnDemandRun.getPodId())));
-        Assert.assertTrue(updatedRuns.stream().anyMatch(r -> r.getLastIdleNotificationTime() != null));
+        Assertions.assertEquals(2, updatedRuns.size());
+        Assertions.assertTrue(updatedRuns.stream().anyMatch(r -> r.getPodId().equals(idleSpotRun.getPodId())));
+        Assertions.assertTrue(updatedRuns.stream().anyMatch(r -> r.getPodId().equals(idleOnDemandRun.getPodId())));
+        Assertions.assertTrue(updatedRuns.stream().anyMatch(r -> r.getLastIdleNotificationTime() != null));
 
         List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyIdleCaptor.getValue();
-        Assert.assertEquals(2, runsToNotify.size());
-        Assert.assertTrue(runsToNotify.stream().anyMatch(r -> r.getLeft().getPodId().equals(idleSpotRun.getPodId())));
-        Assert.assertEquals(
+        Assertions.assertEquals(2, runsToNotify.size());
+        Assertions.assertTrue(runsToNotify.stream()
+                .anyMatch(r -> r.getLeft().getPodId().equals(idleSpotRun.getPodId())));
+        Assertions.assertEquals(
             mockStats.get(idleSpotRun.getInstance().getNodeName()) / MILICORES_TO_CORES / testType.getVCPU(),
             runsToNotify.stream()
                 .filter(r -> r.getLeft().getPodId().equals(idleSpotRun.getPodId()))
                 .findFirst().get().getRight(),
             DELTA
         );
-        Assert.assertTrue(runsToNotify.stream()
+        Assertions.assertTrue(runsToNotify.stream()
                 .anyMatch(r -> r.getLeft().getPodId().equals(idleOnDemandRun.getPodId())));
-        Assert.assertEquals(
+        Assertions.assertEquals(
             mockStats.get(idleOnDemandRun.getInstance().getNodeName()) / MILICORES_TO_CORES / testType.getVCPU(),
             runsToNotify.stream()
                 .filter(r -> r.getLeft().getPodId().equals(idleOnDemandRun.getPodId()))
@@ -375,12 +380,12 @@ public class ResourceMonitoringManagerTest {
         verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
 
         List<PipelineRun> updatedRuns = runsToUpdateCaptor.getAllValues().get(0);
-        Assert.assertEquals(1, updatedRuns.size());
-        Assert.assertTrue(updatedRuns.stream().anyMatch(r -> r.getPodId().equals(idleRunToProlong.getPodId())));
+        Assertions.assertEquals(1, updatedRuns.size());
+        Assertions.assertTrue(updatedRuns.stream().anyMatch(r -> r.getPodId().equals(idleRunToProlong.getPodId())));
 
         List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyIdleCaptor.getValue();
-        Assert.assertEquals(1, runsToNotify.size());
-        Assert.assertTrue(runsToNotify.stream()
+        Assertions.assertEquals(1, runsToNotify.size());
+        Assertions.assertTrue(runsToNotify.stream()
                 .anyMatch(r -> r.getLeft().getPodId().equals(idleRunToProlong.getPodId())));
 
         //now prolong run and check that notification gone
@@ -395,10 +400,10 @@ public class ResourceMonitoringManagerTest {
                 .notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
 
         updatedRuns = runsToUpdateCaptor.getValue();
-        Assert.assertEquals(0, updatedRuns.size());
+        Assertions.assertEquals(0, updatedRuns.size());
 
         runsToNotify = runsToNotifyIdleCaptor.getValue();
-        Assert.assertEquals(0, runsToNotify.size());
+        Assertions.assertEquals(0, runsToNotify.size());
 
         //finally reset idleNotificationTime and again check that notification prevents again
         idleRunToProlong.setProlongedAtTime(DateUtils.nowUTC()
@@ -412,12 +417,12 @@ public class ResourceMonitoringManagerTest {
                 .notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
 
         updatedRuns = runsToUpdateCaptor.getAllValues().get(0);
-        Assert.assertEquals(1, updatedRuns.size());
-        Assert.assertTrue(updatedRuns.stream().anyMatch(r -> r.getPodId().equals(idleRunToProlong.getPodId())));
+        Assertions.assertEquals(1, updatedRuns.size());
+        Assertions.assertTrue(updatedRuns.stream().anyMatch(r -> r.getPodId().equals(idleRunToProlong.getPodId())));
 
         runsToNotify = runsToNotifyIdleCaptor.getValue();
-        Assert.assertEquals(1, runsToNotify.size());
-        Assert.assertTrue(runsToNotify.stream()
+        Assertions.assertEquals(1, runsToNotify.size());
+        Assertions.assertTrue(runsToNotify.stream()
                 .anyMatch(r -> r.getLeft().getPodId().equals(idleRunToProlong.getPodId())));
     }
 
@@ -436,12 +441,12 @@ public class ResourceMonitoringManagerTest {
         verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
 
         List<PipelineRun> updatedRuns = runsToUpdateCaptor.getAllValues().get(0);
-        Assert.assertEquals(2, updatedRuns.size());
-        Assert.assertFalse(updatedRuns.stream()
+        Assertions.assertEquals(2, updatedRuns.size());
+        Assertions.assertFalse(updatedRuns.stream()
                                .anyMatch(r -> r.getLastIdleNotificationTime().equals(lastNotificationDate)));
 
         List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyIdleCaptor.getValue();
-        Assert.assertEquals(2, runsToNotify.size());
+        Assertions.assertEquals(2, runsToNotify.size());
     }
 
     /**
@@ -477,10 +482,10 @@ public class ResourceMonitoringManagerTest {
         verify(notificationManager).notifyIdleRuns(any(), eq(NotificationType.IDLE_RUN_PAUSED));
 
         List<PipelineRun> updatedRuns = runsToUpdateCaptor.getAllValues().get(0);
-        Assert.assertEquals(2, updatedRuns.size());
-        Assert.assertFalse(updatedRuns.stream()
+        Assertions.assertEquals(2, updatedRuns.size());
+        Assertions.assertFalse(updatedRuns.stream()
                                .anyMatch(r -> lastNotificationDate.equals(r.getLastIdleNotificationTime())));
-        Assert.assertNull(updatedRuns.stream()
+        Assertions.assertNull(updatedRuns.stream()
                               .filter(r -> r.getPodId().equals(idleOnDemandRun.getPodId()))
                               .findFirst()
                               .get()
@@ -490,7 +495,7 @@ public class ResourceMonitoringManagerTest {
         verify(pipelineRunDockerOperationManager, never()).pauseRun(TEST_OK_RUN_ID, true);
 
         List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyIdleCaptor.getValue();
-        Assert.assertEquals(1, runsToNotify.size());
+        Assertions.assertEquals(1, runsToNotify.size());
     }
 
     @Test
@@ -504,7 +509,7 @@ public class ResourceMonitoringManagerTest {
 
         resourceMonitoringManager.monitorResourceUsage();
         // check that notification was sent
-        Assert.assertNotNull(autoscaleMasterRun.getLastIdleNotificationTime());
+        Assertions.assertNotNull(autoscaleMasterRun.getLastIdleNotificationTime());
 
         resourceMonitoringManager.monitorResourceUsage();
         // but pause run wasn't called
@@ -529,8 +534,8 @@ public class ResourceMonitoringManagerTest {
         verify(notificationManager).notifyIdleRuns(any(), eq(NotificationType.IDLE_RUN_PAUSED));
 
         List<PipelineRun> updatedRuns = runsToUpdateCaptor.getAllValues().get(0);
-        Assert.assertEquals(2, updatedRuns.size());
-        Assert.assertNull(updatedRuns.stream()
+        Assertions.assertEquals(2, updatedRuns.size());
+        Assertions.assertNull(updatedRuns.stream()
                               .filter(r -> r.getPodId().equals(idleOnDemandRun.getPodId()))
                               .findFirst()
                               .get()
@@ -541,7 +546,7 @@ public class ResourceMonitoringManagerTest {
         verify(pipelineRunManager, never()).stop(TEST_OK_RUN_ID);
         verify(pipelineRunDockerOperationManager, never()).pauseRun(TEST_OK_RUN_ID, true);
 
-        Assert.assertTrue(runsToNotifyIdleCaptor.getValue().isEmpty());
+        Assertions.assertTrue(runsToNotifyIdleCaptor.getValue().isEmpty());
     }
 
     @Test
@@ -559,10 +564,10 @@ public class ResourceMonitoringManagerTest {
         verify(notificationManager, times(2)).notifyIdleRuns(any(),
                                                                      eq(NotificationType.IDLE_RUN_STOPPED));
 
-        Assert.assertTrue(runsToNotifyIdleCaptor.getValue().isEmpty());
+        Assertions.assertTrue(runsToNotifyIdleCaptor.getValue().isEmpty());
 
         List<PipelineRun> updatedRuns = runsToUpdateCaptor.getAllValues().get(0);
-        Assert.assertEquals(2, updatedRuns.size());
+        Assertions.assertEquals(2, updatedRuns.size());
 
         verify(pipelineRunManager).stop(TEST_IDLE_ON_DEMAND_RUN_ID);
         verify(pipelineRunManager).stop(TEST_IDLE_SPOT_RUN_ID);
@@ -585,9 +590,9 @@ public class ResourceMonitoringManagerTest {
         verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
 
         List<PipelineRun> updatedRuns = runsToUpdateCaptor.getAllValues().get(0);
-        Assert.assertEquals(2, updatedRuns.size());
+        Assertions.assertEquals(2, updatedRuns.size());
 
-        Assert.assertNull(updatedRuns.stream()
+        Assertions.assertNull(updatedRuns.stream()
                               .filter(r -> r.getPodId().equals(idleSpotRun.getPodId()))
                               .findFirst()
                               .get()
@@ -620,10 +625,10 @@ public class ResourceMonitoringManagerTest {
 
         // checks runs were not updated
         verify(pipelineRunManager, atLeastOnce()).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
-        Assert.assertTrue(CollectionUtils.isEmpty(runsToUpdateCaptor.getValue()));
+        Assertions.assertTrue(CollectionUtils.isEmpty(runsToUpdateCaptor.getValue()));
 
         verify(pipelineRunManager, atLeastOnce()).updateRunsTags(runsToUpdateTagsCaptor.capture());
-        Assert.assertTrue(CollectionUtils.isEmpty(runsToUpdateTagsCaptor.getValue()));
+        Assertions.assertTrue(CollectionUtils.isEmpty(runsToUpdateTagsCaptor.getValue()));
 
         // checks stop action is not performed
         verify(pipelineRunManager, never()).stop(TEST_OK_RUN_ID);
@@ -643,8 +648,8 @@ public class ResourceMonitoringManagerTest {
         verify(notificationManager).notifyHighResourceConsumingRuns(runsToNotifyResConsumingCaptor.capture(),
                 eq(NotificationType.HIGH_CONSUMED_RESOURCES));
         List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> value = runsToNotifyResConsumingCaptor.getValue();
-        Assert.assertEquals(1, value.size());
-        Assert.assertEquals(HIGH_CONSUMING_POD_ID, value.get(0).getKey().getPodId());
+        Assertions.assertEquals(1, value.size());
+        Assertions.assertEquals(HIGH_CONSUMING_POD_ID, value.get(0).getKey().getPodId());
     }
 
     @Test
@@ -657,7 +662,7 @@ public class ResourceMonitoringManagerTest {
         resourceMonitoringManager.monitorResourceUsage();
         assertThat(spyIdledRun.getTags(), CoreMatchers.is(IDLE_TAGS));
         assertThat(spyOkayRun.getTags(), CoreMatchers.is(Collections.emptyMap()));
-        Assert.assertNull(spyOkayRun.getLastIdleNotificationTime());
+        Assertions.assertNull(spyOkayRun.getLastIdleNotificationTime());
         verify(spyIdledRun, times(1)).addTag(UTILIZATION_LEVEL_LOW, TRUE_VALUE_STRING);
         verify(spyOkayRun, times(1)).removeTag(UTILIZATION_LEVEL_LOW);
     }

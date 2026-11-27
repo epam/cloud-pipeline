@@ -18,8 +18,10 @@ package com.epam.pipeline.elasticsearchagent.model.git;
 import com.epam.pipeline.elasticsearchagent.model.PipelineEvent;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
 public class GitEventDescription {
     private PipelineEvent pipelineEvent;

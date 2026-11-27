@@ -29,8 +29,8 @@ import com.epam.pipeline.entity.security.acl.AclPermissionEntry;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
@@ -41,7 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 import static com.epam.pipeline.manager.ObjectCreatorUtils.constructPipeline;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @DirtiesContext
 @ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
@@ -74,7 +74,7 @@ public class PipelineWithPermissionsTest extends AbstractManagerTest {
     private AclTestDao.AclSid testUserSid1;
     private AclTestDao.AclSid testUserSid2;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         AclTestDao.AclClass folderAclClass = new AclTestDao.AclClass(Folder.class.getCanonicalName());
         aclTestDao.createAclClassIfNotPresent(folderAclClass);

@@ -31,9 +31,9 @@ import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.util.TestUtils;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -85,7 +85,7 @@ public class ToolGroupApiServiceTest extends AbstractManagerTest {
     private AclTestDao.AclSid user2Sid;
     private AclTestDao.AclSid userGroupSid;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         TestUtils.configureDockerClientMock(dockerClient, clientFactory);
 
@@ -157,7 +157,7 @@ public class ToolGroupApiServiceTest extends AbstractManagerTest {
     /**
      * Should fail on attempt to add a tool to other user's private group
      */
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     @WithMockUser(username = TEST_USER2)
     public void testCreateToolInOtherPrivateGroupFails() {
@@ -166,7 +166,7 @@ public class ToolGroupApiServiceTest extends AbstractManagerTest {
         tool.setToolGroupId(existingGroup.getId());
         tool.setToolGroup(existingGroup.getName());
 
-        toolApiService.create(tool);
+        Assertions.assertThrows(AccessDeniedException.class, () -> toolApiService.create(tool));
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
@@ -184,12 +184,13 @@ public class ToolGroupApiServiceTest extends AbstractManagerTest {
         toolApiService.create(tool);
 
         ToolGroup loadedPrivateGroup = toolGroupApiService.loadPrivate(registry.getId());
-        Assert.assertEquals(privateGroup.getId(), loadedPrivateGroup.getId());
-        Assert.assertEquals(privateGroup.getName(), loadedPrivateGroup.getName());
-        Assert.assertEquals(privateGroup.getRegistryId(), loadedPrivateGroup.getRegistryId());
-        Assert.assertFalse(loadedPrivateGroup.getTools().isEmpty());
-        Assert.assertTrue(loadedPrivateGroup.getTools().stream().anyMatch(t -> t.getImage().equals(tool.getImage())));
-        Assert.assertTrue(loadedPrivateGroup.isPrivateGroup());
+        Assertions.assertEquals(privateGroup.getId(), loadedPrivateGroup.getId());
+        Assertions.assertEquals(privateGroup.getName(), loadedPrivateGroup.getName());
+        Assertions.assertEquals(privateGroup.getRegistryId(), loadedPrivateGroup.getRegistryId());
+        Assertions.assertFalse(loadedPrivateGroup.getTools().isEmpty());
+        Assertions.assertTrue(loadedPrivateGroup.getTools().stream()
+                .anyMatch(t -> t.getImage().equals(tool.getImage())));
+        Assertions.assertTrue(loadedPrivateGroup.isPrivateGroup());
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
@@ -200,9 +201,9 @@ public class ToolGroupApiServiceTest extends AbstractManagerTest {
         createToolGroup();
 
         List<ToolGroup> groups = toolGroupApiService.loadByRegistryId(registry.getId());
-        Assert.assertTrue(groups.size() > 1);
-        Assert.assertTrue(groups.stream().anyMatch(g -> g.isPrivateGroup()));
-        Assert.assertTrue(groups.stream().anyMatch(g -> !g.isPrivateGroup()));
+        Assertions.assertTrue(groups.size() > 1);
+        Assertions.assertTrue(groups.stream().anyMatch(g -> g.isPrivateGroup()));
+        Assertions.assertTrue(groups.stream().anyMatch(g -> !g.isPrivateGroup()));
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
@@ -212,12 +213,12 @@ public class ToolGroupApiServiceTest extends AbstractManagerTest {
         ToolGroup privateGroup = toolGroupApiService.createPrivate(registry.getId());
 
         List<ToolGroup> groups = toolGroupApiService.loadByRegistryId(registry.getId());
-        Assert.assertTrue(groups.stream().noneMatch(g -> g.getName().equals(existingGroup.getName())));
-        Assert.assertTrue(groups.stream().anyMatch(g -> g.getName().equals(privateGroup.getName())));
+        Assertions.assertTrue(groups.stream().noneMatch(g -> g.getName().equals(existingGroup.getName())));
+        Assertions.assertTrue(groups.stream().anyMatch(g -> g.getName().equals(privateGroup.getName())));
 
         groups = toolGroupApiService.loadByRegistryNameOrId(registry.getPath());
-        Assert.assertTrue(groups.stream().noneMatch(g -> g.getName().equals(existingGroup.getName())));
-        Assert.assertTrue(groups.stream().anyMatch(g -> g.getName().equals(privateGroup.getName())));
+        Assertions.assertTrue(groups.stream().noneMatch(g -> g.getName().equals(existingGroup.getName())));
+        Assertions.assertTrue(groups.stream().anyMatch(g -> g.getName().equals(privateGroup.getName())));
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
@@ -225,7 +226,7 @@ public class ToolGroupApiServiceTest extends AbstractManagerTest {
     @Test()
     public void testLoadOtherPrivateGroupFails2() {
         ToolGroup group = toolGroupApiService.load(existingGroup.getId());
-        Assert.assertTrue(group.getTools().isEmpty());
+        Assertions.assertTrue(group.getTools().isEmpty());
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
@@ -235,9 +236,9 @@ public class ToolGroupApiServiceTest extends AbstractManagerTest {
         ToolGroup group = createToolGroup();
 
         ToolGroup loaded = toolGroupApiService.load(group.getId());
-        Assert.assertEquals(group.getName(), loaded.getName());
-        Assert.assertEquals(group.getRegistryId(), loaded.getRegistryId());
-        Assert.assertEquals(TEST_USER2, loaded.getOwner());
+        Assertions.assertEquals(group.getName(), loaded.getName());
+        Assertions.assertEquals(group.getRegistryId(), loaded.getRegistryId());
+        Assertions.assertEquals(TEST_USER2, loaded.getOwner());
     }
 
     private ToolGroup createToolGroup() {

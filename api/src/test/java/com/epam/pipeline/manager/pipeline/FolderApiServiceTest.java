@@ -17,10 +17,11 @@
 package com.epam.pipeline.manager.pipeline;
 
 import static com.epam.pipeline.manager.ObjectCreatorUtils.constructPipeline;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.anyString;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 import com.epam.pipeline.app.TestApplicationWithAclSecurity;
@@ -33,8 +34,8 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.security.acl.AclPermission;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,7 +86,7 @@ public class FolderApiServiceTest extends AbstractManagerTest {
     private Folder childFolder;
     private Pipeline pipeline1;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         MockitoAnnotations.initMocks(this);
         ReflectionTestUtils.setField(folderApiService, "folderManager", folderManager);
@@ -192,11 +193,11 @@ public class FolderApiServiceTest extends AbstractManagerTest {
         createTemplateAndGetProject();
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @WithMockUser(username = TEST_USER2)
     public void testCreateTemplateByNotAllowedUser() {
-        createTemplateAndGetProject();
+        assertThrows(AccessDeniedException.class, this::createTemplateAndGetProject);
     }
 
     private void createTemplateAndGetProject() {
@@ -207,52 +208,53 @@ public class FolderApiServiceTest extends AbstractManagerTest {
         when(folderManager.create(folder)).thenReturn(folder);
         folderApiService.create(folder);
 
-        when(folderManager.createFromTemplate(anyObject(), anyString())).thenReturn(folder);
+        when(folderManager.createFromTemplate(any(), anyString())).thenReturn(folder);
         folderApiService.createFromTemplate(folder, "template");
 
         FolderWithMetadata folderWithMetadata = new FolderWithMetadata();
         folderWithMetadata.setId(parent.getId());
-        when(folderManager.getProject(anyLong(), anyObject())).thenReturn(folderWithMetadata);
+        when(folderManager.getProject(anyLong(), any())).thenReturn(folderWithMetadata);
         folderApiService.getProject(folderWithMetadata.getId(), AclClass.FOLDER);
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     @WithMockUser(username = TEST_USER2)
     public void testDeleteFolderByNotAdminOrFolderManagerAndWrite() {
         when(folderManager.delete(anyLong())).thenReturn(parent);
 
-        folderApiService.delete(parent.getId());
+        assertThrows(AccessDeniedException.class, () -> folderApiService.delete(parent.getId()));
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     @WithMockUser(username = TEST_USER2)
     public void testLockByNotAdminOrOwner() {
         when(folderManager.lockFolder(anyLong())).thenReturn(parent);
 
-        folderApiService.lockFolder(parent.getId());
+        assertThrows(AccessDeniedException.class, () -> folderApiService.lockFolder(parent.getId()));
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     @WithMockUser(username = TEST_USER2)
     public void testUnlockByNotAdminOrOwner() {
         when(folderManager.unlockFolder(anyLong())).thenReturn(parent);
 
-        folderApiService.unlockFolder(parent.getId());
+        assertThrows(AccessDeniedException.class, () -> folderApiService.unlockFolder(parent.getId()));
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     @WithMockUser(username = TEST_USER2)
     public void testLoadByIDOrPathNotAdminOrReadPermission() {
         when(folderManager.loadByNameOrId(anyString())).thenReturn(parent);
 
-        folderApiService.loadByIdOrPath(parent.getId().toString());
+        assertThrows(AccessDeniedException.class,
+            () -> folderApiService.loadByIdOrPath(parent.getId().toString()));
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     @WithMockUser(username = TEST_USER2)
     public void testCreateFolderByNotAdminOrFolderManagerAndWrite() {
@@ -261,7 +263,7 @@ public class FolderApiServiceTest extends AbstractManagerTest {
         folder.setParentId(parent.getId());
         when(folderManager.create(folder)).thenReturn(folder);
 
-        folderApiService.create(folder);
+        assertThrows(AccessDeniedException.class, () -> folderApiService.create(folder));
     }
 
     @Test
@@ -297,10 +299,10 @@ public class FolderApiServiceTest extends AbstractManagerTest {
         folderApiService.deleteForce(parent.getId());
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @WithMockUser(username = TEST_USER, roles = FOLDER_MANAGER_ROLE)
     public void testDeleteForceFolderByUserWithoutPermissionToChildren() {
-        folderApiService.deleteForce(parent.getId());
+        assertThrows(AccessDeniedException.class, () -> folderApiService.deleteForce(parent.getId()));
     }
 }

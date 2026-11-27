@@ -25,9 +25,8 @@ import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,9 +39,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.samePropertyValuesAs;
 
 @Transactional
 public class ToolVersionDaoTest extends AbstractSpringTest {
@@ -80,7 +84,7 @@ public class ToolVersionDaoTest extends AbstractSpringTest {
     private ToolVersion toolVersion2;
     private ConfigurationEntry configurationEntry;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         DockerRegistry dockerRegistry1 = new DockerRegistry();
         dockerRegistry1.setPath(TEST_REGISTRY_PATH);
@@ -134,8 +138,7 @@ public class ToolVersionDaoTest extends AbstractSpringTest {
                 .toolId(tool.getId())
                 .settings(Collections.singletonList(configurationEntry))
                 .build();
-        toolVersion2 = ToolVersion
-                .builder()
+        toolVersion2 = ToolVersion.builder()
                 .digest(TEST_DIGEST_2)
                 .size(TEST_SIZE)
                 .version(TEST_VERSION_2)
@@ -147,14 +150,13 @@ public class ToolVersionDaoTest extends AbstractSpringTest {
 
     private static void validateToolVersion(ToolVersion actual, String digest, Long size, String version,
                                             Date modificationDate, Long toolId, boolean allowCommit) {
-        assertThat(actual)
-                .isNotNull()
-                .hasFieldOrPropertyWithValue("digest", digest)
-                .hasFieldOrPropertyWithValue("size", size)
-                .hasFieldOrPropertyWithValue("version", version)
-                .hasFieldOrPropertyWithValue("modificationDate", modificationDate)
-                .hasFieldOrPropertyWithValue("toolId", toolId)
-                .hasFieldOrPropertyWithValue("allowCommit", allowCommit);
+        assertThat(actual, is(notNullValue()));
+        assertThat(actual, hasProperty("digest", is(digest)));
+        assertThat(actual, hasProperty("size", is(size)));
+        assertThat(actual, hasProperty("version", is(version)));
+        assertThat(actual, hasProperty("modificationDate", is(modificationDate)));
+        assertThat(actual, hasProperty("toolId", is(toolId)));
+        assertThat(actual, hasProperty("allowCommit", is(allowCommit)));
     }
 
     @Test
@@ -183,7 +185,7 @@ public class ToolVersionDaoTest extends AbstractSpringTest {
 
         toolVersionDao.deleteToolVersion(toolId, TEST_VERSION);
         actual = toolVersionDao.loadToolVersion(toolId, TEST_VERSION).orElse(null);
-        assertThat(actual).isNull();
+        assertThat(actual, nullValue());
     }
 
     @Test
@@ -213,7 +215,7 @@ public class ToolVersionDaoTest extends AbstractSpringTest {
 
         toolVersionDao.deleteToolVersions(toolId);
         actual = toolVersionDao.loadToolVersion(toolId, TEST_VERSION).orElse(null);
-        assertThat(actual).isNull();
+        assertThat(actual, nullValue());
     }
 
     @Test
@@ -324,8 +326,8 @@ public class ToolVersionDaoTest extends AbstractSpringTest {
     private void assertVersions(final List<ToolVersion> actualVersions, final List<ToolVersion> expectedVersions) {
         actualVersions.sort(Comparator.comparing(ToolVersion::getId));
         expectedVersions.sort(Comparator.comparing(ToolVersion::getId));
-        Assert.assertThat(actualVersions.size(), is(expectedVersions.size()));
-        Assert.assertThat(actualVersions.size(), greaterThan(0));
+        assertThat(actualVersions.size(), is(expectedVersions.size()));
+        assertThat(actualVersions.size(), greaterThan(0));
         for (int i = 0; i < actualVersions.size(); i++) {
             final ToolVersion actualVersion = actualVersions.get(i);
             final ToolVersion expectedVersion = expectedVersions.get(i);
@@ -337,8 +339,8 @@ public class ToolVersionDaoTest extends AbstractSpringTest {
                                             final List<ToolVersion> expectedVersions) {
         actualVersions.sort(Comparator.comparing(ToolVersion::getId));
         expectedVersions.sort(Comparator.comparing(ToolVersion::getId));
-        Assert.assertThat(actualVersions.size(), is(expectedVersions.size()));
-        Assert.assertThat(actualVersions.size(), greaterThan(0));
+        assertThat(actualVersions.size(), is(expectedVersions.size()));
+        assertThat(actualVersions.size(), greaterThan(0));
         for (int i = 0; i < actualVersions.size(); i++) {
             final ToolVersion actualVersion = actualVersions.get(i);
             final ToolVersion expectedVersion = expectedVersions.get(i);
@@ -347,9 +349,9 @@ public class ToolVersionDaoTest extends AbstractSpringTest {
     }
 
     private void assertVersions(final ToolVersion actualVersion, final ToolVersion expectedVersion) {
-        Assert.assertThat(actualVersion.getId(), is(expectedVersion.getId()));
-        Assert.assertThat(actualVersion.getToolId(), is(expectedVersion.getToolId()));
-        Assert.assertThat(actualVersion.getVersion(), is(expectedVersion.getVersion()));
+        assertThat(actualVersion.getId(), is(expectedVersion.getId()));
+        assertThat(actualVersion.getToolId(), is(expectedVersion.getToolId()));
+        assertThat(actualVersion.getVersion(), is(expectedVersion.getVersion()));
     }
 
     private void assertVersionsWithSettings(final ToolVersion actualVersion, final ToolVersion expectedVersion) {
@@ -359,12 +361,12 @@ public class ToolVersionDaoTest extends AbstractSpringTest {
 
     private void assertSettings(final List<ConfigurationEntry> actualSettings,
                                 final List<ConfigurationEntry> expectedSettings) {
-        Assert.assertThat(actualSettings.size(), is(expectedSettings.size()));
-        Assert.assertThat(actualSettings.size(), greaterThan(0));
+        assertThat(actualSettings.size(), is(expectedSettings.size()));
+        assertThat(actualSettings.size(), greaterThan(0));
         for (int i = 0; i < actualSettings.size(); i++) {
             final ConfigurationEntry actualConfiguration = actualSettings.get(i);
             final ConfigurationEntry expectedConfiguration = expectedSettings.get(i);
-            Assert.assertThat(actualConfiguration.getName(), is(expectedConfiguration.getName()));
+            assertThat(actualConfiguration.getName(), is(expectedConfiguration.getName()));
         }
     }
 
@@ -382,38 +384,38 @@ public class ToolVersionDaoTest extends AbstractSpringTest {
 
         final Map<String, ToolVersion> versions = toolVersionDao.loadToolVersions(toolId,
                 Arrays.asList(TEST_VERSION, TEST_VERSION_2));
-        assertThat(versions).hasSize(2);
+        assertThat(versions.values(), hasSize(2));
 
         toolVersionDao.deleteToolVersions(toolId);
         actual = toolVersionDao.loadToolVersion(toolId, TEST_VERSION).orElse(null);
-        assertThat(actual).isNull();
+        assertThat(actual, nullValue());
         actual = toolVersionDao.loadToolVersion(toolId, TEST_VERSION_2).orElse(null);
-        assertThat(actual).isNull();
+        assertThat(actual, nullValue());
     }
 
     private static void validateToolVersionSettings(ToolVersion actual, ConfigurationEntry settings,
                                                     String version, Long toolId, String parameterName) {
-        assertThat(actual)
-                .isNotNull()
-                .hasFieldOrPropertyWithValue("version", version)
-                .hasFieldOrPropertyWithValue("toolId", toolId)
-                .hasFieldOrProperty("settings");
-        assertThat(actual.getSettings())
-                .hasSize(1);
-        assertThat(actual.getSettings().get(0))
-                .isNotNull()
-                .hasFieldOrProperty("configuration");
-        PipelineConfiguration actualConfiguration = actual.getSettings().get(0).getConfiguration();
+        assertThat(actual, is(notNullValue()));
+        assertThat(actual, hasProperty("version", is(version)));
+        assertThat(actual, hasProperty("toolId", is(toolId)));
+        assertThat(actual, hasProperty("settings"));
+
+        assertThat(actual.getSettings(), hasSize(1));
+        ConfigurationEntry actualSetting = actual.getSettings().get(0);
+        assertThat(actualSetting, is(notNullValue()));
+        assertThat(actualSetting, hasProperty("configuration"));
+
+        PipelineConfiguration actualConfiguration = actualSetting.getConfiguration();
         PipelineConfiguration expectedConfiguration = settings.getConfiguration();
-        assertThat(actualConfiguration)
-                .isNotNull()
-                .hasFieldOrPropertyWithValue("cmdTemplate", expectedConfiguration.getCmdTemplate())
-                .hasFieldOrPropertyWithValue("nodeCount", expectedConfiguration.getNodeCount())
-                .hasFieldOrProperty("parameters");
-        assertThat(actualConfiguration.getParameters())
-                .hasSize(1);
-        assertThat(actualConfiguration.getParameters().get(parameterName))
-                .isEqualToComparingFieldByFieldRecursively(settings.getConfiguration()
-                        .getParameters().get(parameterName));
+        assertThat(actualConfiguration, is(notNullValue()));
+        assertThat(actualConfiguration, hasProperty("cmdTemplate",
+                is(expectedConfiguration.getCmdTemplate())));
+        assertThat(actualConfiguration, hasProperty("nodeCount",
+                is(expectedConfiguration.getNodeCount())));
+        assertThat(actualConfiguration, hasProperty("parameters"));
+
+        assertThat(actualConfiguration.getParameters().values(), hasSize(1));
+        assertThat(actualConfiguration.getParameters().get(parameterName),
+                samePropertyValuesAs(settings.getConfiguration().getParameters().get(parameterName)));
     }
 }

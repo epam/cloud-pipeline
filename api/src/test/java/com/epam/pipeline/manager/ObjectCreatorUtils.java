@@ -22,8 +22,6 @@ import com.epam.pipeline.controller.vo.configuration.RunConfigurationVO;
 import com.epam.pipeline.controller.vo.docker.DockerRegistryVO;
 import com.epam.pipeline.controller.vo.metadata.MetadataEntityVO;
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
-import com.epam.pipeline.entity.configuration.FirecloudRunConfigurationEntry;
-import com.epam.pipeline.entity.configuration.InputsOutputs;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
@@ -62,7 +60,6 @@ public final class ObjectCreatorUtils {
     private static final String TEST_SERVICE_URL = "service_url";
     private static final String TEST_REGION = "region";
     public static final int TEST_DISK_SIZE = 100;
-    private static final String TEST_PLATFORM = "linux";
     private static final String FAKE_IP = "127.0.0.1";
 
     private ObjectCreatorUtils() {
@@ -150,21 +147,6 @@ public final class ObjectCreatorUtils {
         entry.setName(name);
         entry.setDefaultConfiguration(defaultEntry);
         entry.setConfiguration(configuration);
-        return entry;
-    }
-
-    public static FirecloudRunConfigurationEntry createFirecloudConfigEntry(String name,
-                                                                            List<InputsOutputs> inputs,
-                                                                            List<InputsOutputs> outputs,
-                                                                            String methodName, String methodSnapshot,
-                                                                            String configName) {
-        FirecloudRunConfigurationEntry entry = new FirecloudRunConfigurationEntry();
-        entry.setName(name);
-        entry.setMethodInputs(inputs);
-        entry.setMethodOutputs(outputs);
-        entry.setMethodName(methodName);
-        entry.setMethodSnapshot(methodSnapshot);
-        entry.setMethodConfigurationName(configName);
         return entry;
     }
 

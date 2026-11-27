@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.dts.transfer;
 
-import com.epam.pipeline.dts.transfer.configuration.TransferRestConfiguration;
 import com.epam.pipeline.dts.transfer.model.StorageType;
 import com.epam.pipeline.dts.transfer.service.CmdExecutorsProvider;
 import com.epam.pipeline.dts.transfer.service.DataUploader;
@@ -30,13 +29,8 @@ import com.epam.pipeline.dts.transfer.service.impl.PipelineCliProviderImpl;
 import com.epam.pipeline.dts.transfer.service.impl.S3DataUploader;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import org.springframework.stereotype.Controller;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -44,12 +38,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-@SpringBootConfiguration
-@EntityScan(basePackages = {"com.epam.pipeline.dts.transfer.model"})
-@EnableJpaRepositories(basePackages = {"com.epam.pipeline.dts.transfer.repository"})
-@ComponentScan(excludeFilters = {
-        @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = TransferRestConfiguration.class),
-        @ComponentScan.Filter(type = FilterType.ANNOTATION, value = Controller.class)})
+@Configuration
 public class TransferConfiguration {
 
     @Bean

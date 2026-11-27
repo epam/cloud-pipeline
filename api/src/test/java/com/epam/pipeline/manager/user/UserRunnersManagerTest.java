@@ -24,7 +24,7 @@ import com.epam.pipeline.entity.user.RunnerSid;
 import com.epam.pipeline.mapper.user.RunnerSidMapper;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.test.creator.user.UserCreatorUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.List;
@@ -55,7 +55,7 @@ public class UserRunnersManagerTest {
 
     @Test
     public void shouldGetRunners() {
-        when(pipelineUserRepository.findOne(ID)).thenReturn(serviceAccountWithAllowedUser());
+        when(pipelineUserRepository.findById(ID)).thenReturn(Optional.of(serviceAccountWithAllowedUser()));
 
         final List<RunnerSid> runners = manager.getRunners(ID);
 
@@ -64,7 +64,7 @@ public class UserRunnersManagerTest {
 
     @Test
     public void shouldSaveRunners() {
-        when(pipelineUserRepository.findOne(ID)).thenReturn(UserCreatorUtils.getPipelineUser());
+        when(pipelineUserRepository.findById(ID)).thenReturn(Optional.of(UserCreatorUtils.getPipelineUser()));
         when(runnerSidMapper.toEntity(userRunnerSidVO)).thenReturn(userRunnerSid);
         final List<RunnerSidVO> runners = manager.saveRunners(ID, Collections.singletonList(userRunnerSidVO));
 

@@ -39,6 +39,7 @@ import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunRegionShiftHandler;
+import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
@@ -55,13 +56,14 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -92,7 +94,7 @@ import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODE
 @Slf4j
 @ConditionalOnProperty(value = "cluster.disable.autoscaling", matchIfMissing = true, havingValue = "false")
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
-public class AutoscaleManager extends AbstractSchedulingManager {
+public class AutoscaleManager extends AbstractSchedulingManager implements InitializingBean {
     private final AutoscaleManagerCore core;
 
     @Autowired
@@ -100,8 +102,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         this.core = core;
     }
 
-    @PostConstruct
-    public void init() {
+    @Override
+    public void afterPropertiesSet() {
         if (preferenceManager.getPreference(SystemPreferences.CLUSTER_ENABLE_AUTOSCALING)) {
             scheduleFixedDelaySecured(core::runAutoscaling, SystemPreferences.CLUSTER_AUTOSCALE_RATE,
                     "Autoscaling job");
@@ -132,6 +134,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         private final Map<Long, Integer> spotNodeUpAttempts = new ConcurrentHashMap<>();
         private final Map<Long, Integer> poolNodeUpTaskInProgress = new ConcurrentHashMap<>();
         private final Map<Long, Integer> lostRunIds = new ConcurrentHashMap<>();
+        private final RunStatusManager runStatusManager;
 
         @Autowired
         AutoscaleManagerCore(final PipelineRunManager pipelineRunManager,
@@ -148,7 +151,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                              final List<RunCleaner> runCleaners,
                              final PoolAutoscaler poolAutoscaler,
                              final RunRegionShiftHandler runRegionShiftHandler,
-                             final MetadataManager metadataManager) {
+                             final MetadataManager metadataManager,
+                             final RunStatusManager runStatusManager) {
             this.pipelineRunManager = pipelineRunManager;
             this.executorService = executorService;
             this.autoscalerService = autoscalerService;
@@ -164,6 +168,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             this.poolAutoscaler = poolAutoscaler;
             this.runRegionShiftHandler = runRegionShiftHandler;
             this.metadataManager = metadataManager;
+            this.runStatusManager = runStatusManager;
         }
 
         @SchedulerLock(name = "AutoscaleManager_runAutoscaling", lockAtMostForString = "PT10M")
@@ -572,12 +577,10 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                                 requiredInstance.getTags()
                         );
                         //save instance ID and IP
-                        pipelineRunManager.updateRunInstance(longId, startedInstance);
-                        if (!initialInstanceType.equals(nodeType)) {
-                            pipelineRunManager.updateRunPrice(longId, startedInstance);
-                        }
+                        pipelineRunManager.updateRunInstanceAndPrices(longId, startedInstance);
                         pipelineRunManager.updateRunInstanceStartDate(longId, DateUtils.nowUTC());
                         autoscalerService.registerDisks(longId, startedInstance);
+                        runStatusManager.updatePriceForCurrentActiveRunStatus(longId);
                         removeNodeUpTask(longId);
                         Instant end = Instant.now();
                         log.debug("Time to create a node for run {} : {} s.", runId,
@@ -676,7 +679,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                     spotNodeUpAttempts.getOrDefault(run.getId(), 0) >= preferenceManager.getPreference(
                             SystemPreferences.CLUSTER_SPOT_MAX_ATTEMPTS)) {
                 instance.setSpot(false);
-                pipelineRunManager.updateRunInstance(run.getId(), instance);
+                pipelineRunManager.updateRunInstanceAndPrices(run.getId(), instance);
             }
             final InstanceRequest instanceRequest = new InstanceRequest();
             instanceRequest.setInstance(instance);

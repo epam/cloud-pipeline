@@ -27,11 +27,8 @@ import com.epam.pipeline.dao.DryRunJdbcDaoSupport;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
-import com.epam.pipeline.utils.CommonUtils;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.transaction.annotation.Propagation;
@@ -172,37 +169,30 @@ public class RunLogDao extends DryRunJdbcDaoSupport {
         }
     }
 
-    @Required
     public void setCreatePipelineLogQuery(String createPipelineLogQuery) {
         this.createPipelineLogQuery = createPipelineLogQuery;
     }
 
-    @Required
     public void setLoadAllLogsByRunIdQuery(String loadAllLogsByRunIdQuery) {
         this.loadAllLogsByRunIdQuery = loadAllLogsByRunIdQuery;
     }
 
-    @Required
     public void setLoadTasksByRunIdQuery(String loadTasksByRunIdQuery) {
         this.loadTasksByRunIdQuery = loadTasksByRunIdQuery;
     }
 
-    @Required
     public void setLoadAllLogsForTaskQuery(String loadAllLogsForTaskQuery) {
         this.loadAllLogsForTaskQuery = loadAllLogsForTaskQuery;
     }
 
-    @Required
     public void setLoadTaskForInstanceQuery(String loadTaskForInstanceQuery) {
         this.loadTaskForInstanceQuery = loadTaskForInstanceQuery;
     }
 
-    @Required
     public void setLoadTaskStatusQuery(String loadTaskStatusQuery) {
         this.loadTaskStatusQuery = loadTaskStatusQuery;
     }
 
-    @Required
     public void setDeleteRunLogByRunIdsQuery(String deleteRunLogByRunIdsQuery) {
         this.deleteRunLogByRunIdsQuery = deleteRunLogByRunIdsQuery;
     }

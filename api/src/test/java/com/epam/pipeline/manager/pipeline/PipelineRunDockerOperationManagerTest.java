@@ -33,16 +33,18 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.quota.RunLimitsService;
 import org.apache.commons.lang.time.DateUtils;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import static com.epam.pipeline.entity.utils.DateUtils.convertDateToLocalDateTime;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -157,7 +159,7 @@ public class PipelineRunDockerOperationManagerTest {
         verify(dockerContainerOperationManager).resumeRun(eq(runToResume), eq(TEST_NAMES));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void shouldNotPauseIfPauseDisabled() {
         final PipelineRun runToPause = pauseDisabledRun();
         runToPause.setId(TEST_ID);
@@ -168,51 +170,51 @@ public class PipelineRunDockerOperationManagerTest {
                 .thenReturn(Optional.of(false));
         when(pipelineRunDao.loadPipelineRun(TEST_ID))
                 .thenReturn(runToPause);
-        pipelineRunDockerOperationManager.pauseRun(TEST_ID, false);
-
+        assertThrows(IllegalStateException.class,
+                () -> pipelineRunDockerOperationManager.pauseRun(TEST_ID, false));
     }
 
 
     @Test
     public void shouldCorrectlyCalculateContainerSizeAgainstLimits() {
         TwoBoundaryLimit limit = TwoBoundaryLimit.builder().soft(Long.MAX_VALUE / 2).hard(Long.MAX_VALUE).build();
-        Assert.assertEquals(
+        assertEquals(
                 ConditionCheck.Result.OK,
                 PipelineRunDockerOperationManager.mapContainerSizeOnLimits(Long.MAX_VALUE / 4, limit).getKey()
         );
 
         limit = TwoBoundaryLimit.builder().soft(Long.MAX_VALUE / 2).hard(Long.MAX_VALUE).build();
-        Assert.assertEquals(
+        assertEquals(
                 ConditionCheck.Result.WARN,
                 PipelineRunDockerOperationManager.mapContainerSizeOnLimits(Long.MAX_VALUE / 2 + 1, limit).getKey()
         );
 
         limit = TwoBoundaryLimit.builder().soft(Long.MAX_VALUE / 2).hard(Long.MAX_VALUE - 1).build();
-        Assert.assertEquals(
+        assertEquals(
                 ConditionCheck.Result.FAIL,
                 PipelineRunDockerOperationManager.mapContainerSizeOnLimits(Long.MAX_VALUE, limit).getKey()
         );
 
         limit = TwoBoundaryLimit.builder().hard(Long.MAX_VALUE).build();
-        Assert.assertEquals(
+        assertEquals(
                 ConditionCheck.Result.OK,
                 PipelineRunDockerOperationManager.mapContainerSizeOnLimits(Long.MAX_VALUE - 1, limit).getKey()
         );
 
         limit = TwoBoundaryLimit.builder().soft(0L).hard(Long.MAX_VALUE).build();
-        Assert.assertEquals(
+        assertEquals(
                 ConditionCheck.Result.OK,
                 PipelineRunDockerOperationManager.mapContainerSizeOnLimits(Long.MAX_VALUE - 1, limit).getKey()
         );
 
         limit = TwoBoundaryLimit.builder().hard(Long.MAX_VALUE / 2).build();
-        Assert.assertEquals(
+        assertEquals(
                 ConditionCheck.Result.OK,
                 PipelineRunDockerOperationManager.mapContainerSizeOnLimits(Long.MAX_VALUE / 4, limit).getKey()
         );
 
         limit = TwoBoundaryLimit.builder().hard(Long.MAX_VALUE / 2).build();
-        Assert.assertEquals(
+        assertEquals(
                 ConditionCheck.Result.FAIL,
                 PipelineRunDockerOperationManager.mapContainerSizeOnLimits(Long.MAX_VALUE / 2 + 1, limit).getKey()
         );

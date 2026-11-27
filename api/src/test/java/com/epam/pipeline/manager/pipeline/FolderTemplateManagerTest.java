@@ -38,9 +38,9 @@ import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3StorageProvider;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -56,7 +56,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 
 @DirtiesContext
@@ -95,7 +95,7 @@ public class FolderTemplateManagerTest extends AbstractSpringTest {
     private AwsRegion awsRegion;
 
 
-    @Before
+    @BeforeEach
     public void setUp() {
         doReturn(new MockS3Helper()).when(storageProviderManager).getS3Helper(any(S3bucketDataStorage.class));
 
@@ -146,27 +146,27 @@ public class FolderTemplateManagerTest extends AbstractSpringTest {
 
         Folder savedRootFolder = folderManager.loadByNameOrId(TEMPLATE_FOLDER_NAME);
         savedRootFolder = folderManager.load(savedRootFolder.getId());
-        Assert.assertNotNull(savedRootFolder);
+        Assertions.assertNotNull(savedRootFolder);
         Long rootFolderId = savedRootFolder.getId();
         List<EntityVO> metadataEntries = Collections.singletonList(new EntityVO(rootFolderId, AclClass.FOLDER));
-        Assert.assertEquals(metadata, metadataManager.listMetadataItems(metadataEntries).get(0).getData());
+        Assertions.assertEquals(metadata, metadataManager.listMetadataItems(metadataEntries).get(0).getData());
         AbstractDataStorage clonedDataStorage = savedRootFolder.getStorages().get(0);
         clonedDataStorage = dataStorageManager.load(clonedDataStorage.getId());
-        Assert.assertTrue(clonedDataStorage.getName().startsWith(DATASTORAGE_NAME_1));
-        Assert.assertTrue(clonedDataStorage.getPath().startsWith(TEST_PATH));
+        Assertions.assertTrue(clonedDataStorage.getName().startsWith(DATASTORAGE_NAME_1));
+        Assertions.assertTrue(clonedDataStorage.getPath().startsWith(TEST_PATH));
         metadataEntries = Collections.singletonList(new EntityVO(clonedDataStorage.getId(), AclClass.DATA_STORAGE));
-        Assert.assertEquals(metadata, metadataManager.listMetadataItems(metadataEntries).get(0).getData());
+        Assertions.assertEquals(metadata, metadataManager.listMetadataItems(metadataEntries).get(0).getData());
         List<AclPermissionEntry> rootFolderPermissions = permissionManager.getPermissions(rootFolderId, AclClass.FOLDER)
                 .getPermissions();
-        Assert.assertEquals(1, rootFolderPermissions.size());
+        Assertions.assertEquals(1, rootFolderPermissions.size());
         AclPermissionEntry actualPermission = rootFolderPermissions.get(0);
-        Assert.assertEquals(permissionVO.getMask(), actualPermission.getMask());
-        Assert.assertEquals(permissionVO.getPrincipal(), actualPermission.getSid().isPrincipal());
-        Assert.assertEquals(permissionVO.getUserName(), actualPermission.getSid().getName());
+        Assertions.assertEquals(permissionVO.getMask(), actualPermission.getMask());
+        Assertions.assertEquals(permissionVO.getPrincipal(), actualPermission.getSid().isPrincipal());
+        Assertions.assertEquals(permissionVO.getUserName(), actualPermission.getSid().getName());
 
         Folder savedChildFolder = folderManager.loadByNameOrId(TEMPLATE_FOLDER_NAME + "/" +
                 CHILD_TEMPLATE_FOLDER_NAME_1);
-        Assert.assertNotNull(savedChildFolder);
-        Assert.assertEquals(rootFolderId, savedChildFolder.getParentId());
+        Assertions.assertNotNull(savedChildFolder);
+        Assertions.assertEquals(rootFolderId, savedChildFolder.getParentId());
     }
 }

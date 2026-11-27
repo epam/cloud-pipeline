@@ -48,8 +48,7 @@ import com.epam.pipeline.manager.cluster.performancemonitoring.ResourceMonitorin
 import com.epam.pipeline.manager.cluster.pool.NodePoolMonitoringService;
 import com.epam.pipeline.manager.docker.scan.AggregatingToolScanManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
-import com.epam.pipeline.manager.firecloud.FirecloudApiService;
-import com.epam.pipeline.manager.firecloud.FirecloudManager;
+import com.epam.pipeline.manager.git.GitTokenRotationService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.quota.BillingQuotasScheduler;
@@ -58,14 +57,14 @@ import com.epam.pipeline.manager.user.InactiveUsersMonitoringService;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.util.TestUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
@@ -79,10 +78,10 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -129,10 +128,6 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
     @MockBean
     private ToolScanScheduler toolScanScheduler;
     @MockBean
-    private FirecloudApiService firecloudApiService;
-    @MockBean
-    private FirecloudManager firecloudManager;
-    @MockBean
     private RunScheduleMonitoringManager runScheduleMonitoringManager;
     @MockBean
     private BillingQuotasScheduler billingQuotasScheduler;
@@ -142,6 +137,8 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
     private InactiveUsersMonitoringService inactiveUsersMonitoringService;
     @MockBean
     private BandwidthMonitoringService bandwidthMonitoringService;
+    @MockBean
+    private GitTokenRotationService gitTokenRotationService;
 
     @SpyBean
     private PipelineRunDao pipelineRunDao;
@@ -168,7 +165,7 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
     @Autowired
     private ArchiveRunService archiveRunService;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         doReturn(TEST).when(preferenceManager).getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_METADATA_KEY);
         doReturn(CHUNK_SIZE).when(preferenceManager)
@@ -460,7 +457,8 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
                 Arrays.asList(run1.getId(), run2.getId(), run3.getId(), runAfterTestDate.getId())))
                 .hasSize(4);
 
-        verifyDryRunInvoked(7, 6 * 2);
+        // 6 deletes per chunk; RunServiceUrlDao is a mock bean of TestApplication, so 5 reach the wrapper
+        verifyDryRunInvoked(7, 5 * 2);
     }
 
     private PipelineRun run() {

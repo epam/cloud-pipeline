@@ -32,6 +32,7 @@ import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
+import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import io.fabric8.kubernetes.api.model.Node;
@@ -43,8 +44,8 @@ import io.fabric8.kubernetes.api.model.PodCondition;
 import io.fabric8.kubernetes.api.model.PodList;
 import io.fabric8.kubernetes.api.model.PodStatus;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.time.LocalDateTime;
@@ -60,11 +61,11 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.cluster.NodeCreatorUtils.getNodeCondition;
 import static com.epam.pipeline.test.creator.cluster.NodeCreatorUtils.getNodeWithConditions;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -99,7 +100,8 @@ public class ScaleDownHandlerTest {
     private final KubernetesClient client = mock(KubernetesClient.class);
     private final IAMProfileVerifier iamProfileVerifier = mock(IAMProfileVerifier.class);
     private final ReassignHandler reassignHandler = new ReassignHandler(autoscalerService, cloudFacade,
-            pipelineRunManager, Collections.emptyList(), mock(MetadataManager.class), iamProfileVerifier);
+            pipelineRunManager, Collections.emptyList(), mock(MetadataManager.class), iamProfileVerifier,
+            mock(RunStatusManager.class));
 
     private final ScaleDownHandler scaleDownHandler = new ScaleDownHandler(autoscalerService, cloudFacade,
             pipelineRunManager, runLogManager, kubernetesManager, runCRUDService, preferenceManager,
@@ -108,7 +110,7 @@ public class ScaleDownHandlerTest {
     private final LocalDateTime now = DateUtils.nowUTC().truncatedTo(ChronoUnit.SECONDS);
     private final LocalDateTime nodeStart = now.minusHours(2);
 
-    @Before
+    @BeforeEach
     public void setUp() {
         final PodList pods = new PodList();
         pods.setItems(Collections.emptyList());

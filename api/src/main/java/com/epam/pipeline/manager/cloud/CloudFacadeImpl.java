@@ -338,7 +338,7 @@ public class CloudFacadeImpl implements CloudFacade {
 
     private AbstractCloudRegion loadRegionFromNodeLabels(final String nodeLabel) {
         final NodeRegionLabels nodeRegion = kubernetesManager.getNodeRegion(nodeLabel);
-        return regionManager.load(nodeRegion.getCloudProvider(), nodeRegion.getRegionCode());
+        return regionManager.load(nodeRegion.cloudProvider(), nodeRegion.regionCode());
     }
 
     private List<InstanceType> loadInstancesForAllRegions(final Boolean spot) {

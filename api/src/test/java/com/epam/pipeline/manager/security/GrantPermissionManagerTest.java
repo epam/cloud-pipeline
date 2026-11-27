@@ -29,7 +29,7 @@ import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.acls.domain.AclImpl;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -46,7 +46,7 @@ import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPi
 import static com.epam.pipeline.test.creator.user.UserCreatorUtils.getPipelineUser;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.doReturn;
 
 public class GrantPermissionManagerTest extends AbstractAclTest {

@@ -20,11 +20,12 @@ import java.util.List;
 
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class NotificationTemplateDaoTest extends AbstractSpringTest {
 
@@ -40,7 +41,7 @@ public class NotificationTemplateDaoTest extends AbstractSpringTest {
     public void createNotificationTemplate() {
         NotificationTemplate template = createTemplate();
         NotificationTemplate notificationTemplate = notificationTemplateDao.createNotificationTemplate(template);
-        Assert.assertNotNull(notificationTemplateDao.loadNotificationTemplate(notificationTemplate.getId()));
+        assertNotNull(notificationTemplateDao.loadNotificationTemplate(notificationTemplate.getId()));
     }
 
     @Test
@@ -49,12 +50,12 @@ public class NotificationTemplateDaoTest extends AbstractSpringTest {
         NotificationTemplate template = createTemplate();
         NotificationTemplate notificationTemplate = notificationTemplateDao.createNotificationTemplate(template);
         NotificationTemplate loaded = notificationTemplateDao.loadNotificationTemplate(notificationTemplate.getId());
-        Assert.assertEquals(loaded.getSubject(), SUBJECT_STRING);
-        Assert.assertEquals(loaded.getBody(), BODY_STRING);
-        Assert.assertEquals(loaded.getName(), TEST_NAME);
+        assertEquals(loaded.getSubject(), SUBJECT_STRING);
+        assertEquals(loaded.getBody(), BODY_STRING);
+        assertEquals(loaded.getName(), TEST_NAME);
 
         List<NotificationTemplate> templates = notificationTemplateDao.loadAllNotificationTemplates();
-        Assert.assertFalse(templates.isEmpty());
+        assertFalse(templates.isEmpty());
     }
 
     private NotificationTemplate createTemplate() {

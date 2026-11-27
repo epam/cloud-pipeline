@@ -599,15 +599,6 @@ public final class MessageConstants {
     public static final String ERROR_PREFERENCE_VALUE_INVALID = "error.preference.value.invalid";
     public static final String ERROR_PREFERENCE_REQUIREMENTS_NOT_MET = "error.preference.requirements.not.met";
 
-    //Google and Firecloud
-    public static final String ERROR_GOOGLE_CREDENTIALS = "error.google.credentials";
-    public static final String ERROR_GOOGLE_AUTH_CODE_MISSING = "error.google.auth.code.missing";
-    public static final String ERROR_GOOGLE_SCOPES_MISSING = "error.google.scopes.missing";
-    public static final String ERROR_GOOGLE_REDIRECT_URL_MISSING = "error.google.redirect.uri.missing";
-    public static final String ERROR_GOOGLE_SECRET_MISSING = "error.google.secret.json.missing";
-    public static final String ERROR_GOOGLE_INVALID_SECRET_JSON = "error.google.secret.json.invalid";
-    public static final String ERROR_FIRECLOUD_REQUEST_FAILED = "error.firecloud.request.failed";
-
     //DTS
     public static final String ERROR_DTS_REGISTRY_DOES_NOT_EXIST = "error.dts.registry.does.not.exist";
     public static final String ERROR_DTS_REGISTRY_IS_EMPTY = "error.dts.registry.is.empty";
@@ -856,6 +847,47 @@ public final class MessageConstants {
     public static final String AWS_OMICS_STORE_INCORRECT_FILE_PATH =
             "error.aws.omics.store.incorrect.file.path";
     public static final String AWS_OMICS_FILE_NOT_FOUND = "error.aws.omics.file.not.found";
+
+    /**
+     * Async tasks
+     */
+    public static final String ERROR_ASYNC_TASK_ID_REQUIRED = "error.async.task.id.required";
+    public static final String ERROR_ASYNC_TASK_TYPE_REQUIRED = "error.async.task.type.required";
+    public static final String ERROR_ASYNC_TASK_OWNER_REQUIRED = "error.async.task.owner.required";
+    public static final String ERROR_ASYNC_TASK_STATUS_REQUIRED = "error.async.task.status.required";
+    public static final String ERROR_ASYNC_TASK_NOT_FOUND = "error.async.task.not.found";
+    public static final String ERROR_ASYNC_TASK_TRANSITION_NOT_ALLOWED =
+            "error.async.task.transition.not.allowed";
+    public static final String ERROR_ASYNC_TASK_CHANGED_MEANWHILE = "error.async.task.changed.meanwhile";
+    public static final String ERROR_ASYNC_TASK_ALREADY_FINISHED = "error.async.task.already.finished";
+    public static final String ERROR_ASYNC_TASK_RESULT_INVALID = "error.async.task.result.invalid";
+    public static final String ERROR_ASYNC_TASK_PAYLOAD_TYPE_MISMATCH =
+            "error.async.task.payload.type.mismatch";
+    public static final String ERROR_ASYNC_TASK_ARCHIVE_NAME_INVALID =
+            "error.async.task.archive.name.invalid";
+    public static final String ERROR_ASYNC_TASK_ARCHIVE_NOT_READY = "error.async.task.archive.not.ready";
+    public static final String ERROR_ASYNC_TASK_ARCHIVE_PATH_INVALID =
+            "error.async.task.archive.path.invalid";
+    public static final String ERROR_ASYNC_TASK_ARCHIVE_STORAGE_NOT_CONFIGURED =
+            "error.async.task.archive.storage.not.configured";
+    public static final String ERROR_ASYNC_TASK_USER_QUOTA_EXCEEDED =
+            "error.async.task.user.quota.exceeded";
+    public static final String ERROR_ASYNC_TASK_PAYLOAD_REQUIRED = "error.async.task.payload.required";
+    public static final String ERROR_ASYNC_TASK_PAYLOAD_UNEXPECTED =
+            "error.async.task.payload.unexpected";
+    public static final String ERROR_ASYNC_TASK_NOTHING_TO_CONSUME =
+            "error.async.task.nothing.to.consume";
+    public static final String ERROR_ASYNC_TASK_STATUS_NOT_REPORTABLE =
+            "error.async.task.status.not.reportable";
+    public static final String ERROR_ASYNC_TASK_TYPE_NOT_SUPPORTED =
+            "error.async.task.type.not.supported";
+
+    public static final String ERROR_ASYNC_TASK_PARAMS_REQUIRED = "error.async.task.params.required";
+    public static final String ERROR_ASYNC_TASK_FIELD_REQUIRED = "error.async.task.field.required";
+    public static final String ERROR_ASYNC_TASK_PATH_INVALID = "error.async.task.path.invalid";
+    public static final String ERROR_ASYNC_TASK_PATH_NOT_CANONICAL =
+            "error.async.task.path.not.canonical";
+    public static final String ERROR_ASYNC_TASK_PATH_NOT_A_FILE = "error.async.task.path.not.a.file";
 
     private MessageConstants() {
         // no-op

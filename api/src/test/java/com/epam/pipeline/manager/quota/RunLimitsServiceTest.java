@@ -35,8 +35,8 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.RoleManager;
 import org.assertj.core.api.Assertions;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.Collections;
@@ -63,7 +63,7 @@ public class RunLimitsServiceTest {
         new RunLimitsService(runManager, roleManager, contextualPreferenceManager, messageHelper, authManager,
                              preferenceManager);
 
-    @Before
+    @BeforeEach
     public void init() {
         doReturn(false).when(authManager).isAdmin();
         doReturn(getUser()).when(authManager).getCurrentUser();

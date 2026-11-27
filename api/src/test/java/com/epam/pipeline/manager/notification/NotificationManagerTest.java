@@ -75,13 +75,16 @@ import org.hamcrest.Matchers;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Duration;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -105,14 +108,17 @@ import static com.epam.pipeline.entity.notification.NotificationType.PIPELINE_RU
 import static com.epam.pipeline.entity.run.PipelineRunPerformanceMetricsType.CPU;
 import static com.epam.pipeline.entity.run.PipelineRunPerformanceMetricsType.MEMORY;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
+import static org.mockito.quality.Strictness.LENIENT;
 
 @ContextConfiguration(classes = TestApplication.class)
 @Transactional
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = LENIENT)
 public class NotificationManagerTest extends AbstractManagerTest {
     private static final double TEST_CPU_RATE1 = 0.123;
     private static final double TEST_CPU_RATE2 = 0.456;
@@ -173,7 +179,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
     @Autowired
     private IssueDao issueDao;
 
-    @Autowired
+    @SpyBean
     private PreferenceManager preferenceManager;
 
     private PipelineRun longRunnging;
@@ -195,10 +201,10 @@ public class NotificationManagerTest extends AbstractManagerTest {
     @Mock
     private KubernetesClient mockClient;
 
-    @Before
+    @BeforeEach
     @SuppressWarnings("unchecked")
     public void setUp() throws Exception {
-        MockitoAnnotations.initMocks(this);
+        //MockitoAnnotations.initMocks(this);
 
         admin = UserCreatorUtils.getPipelineUser("admin");
         userDao.createUser(admin, Collections.singletonList(DefaultRoles.ROLE_ADMIN.getId()));
@@ -244,7 +250,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
         when(pipelineRunManager.loadRunningAndTerminatedPipelineRuns())
             .thenReturn(Collections.singletonList(longRunnging));
-        when(pipelineRunManager.loadPipelineRun(org.mockito.Matchers.any())).thenReturn(longRunnging);
+        when(pipelineRunManager.loadPipelineRun(org.mockito.ArgumentMatchers.any())).thenReturn(longRunnging);
         when(kubernetesManager.getKubernetesClient()).thenReturn(mockClient);
 
         ExtendedRole noAdmins = new ExtendedRole();

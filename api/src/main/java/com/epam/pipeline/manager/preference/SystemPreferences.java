@@ -20,6 +20,9 @@ import com.amazonaws.services.fsx.model.LustreDeploymentType;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
+import com.epam.pipeline.entity.async.AsyncTasksConfig;
+import com.epam.pipeline.entity.async.StorageDownloadArchiveTaskConfig;
+import com.epam.pipeline.entity.async.StorageUnpackArchiveTaskConfig;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
 import com.epam.pipeline.entity.cluster.DockerMount;
@@ -131,7 +134,6 @@ public class SystemPreferences {
     private static final String UI_GROUP = "User Interface";
     private static final String BASE_URLS_GROUP = "Base URLs";
     private static final String MISC_GROUP = "Miscellaneous";
-    private static final String FIRECLOUD_GROUP = "FireCloud";
     private static final String DATA_SHARING_GROUP = "Data sharing";
     private static final String SYSTEM_GROUP = "System"; // important stuff, related to system as a whole
     private static final String SEARCH_GROUP = "Search";
@@ -188,7 +190,7 @@ public class SystemPreferences {
         new ObjectPreference<>("storage.tag.restricted.access.exclude.keys",
         ListUtils.unmodifiableList(Arrays.asList("CP_SOURCE", "CP_OWNER", "CP_RUN_ID", "CP_JOB_ID",
                 "CP_JOB_NAME", "CP_JOB_VERSION", "CP_JOB_CONFIGURATION", "CP_DOCKER_IMAGE", "CP_CALC_CONFIG")),
-        new TypeReference<List<String>>() {}, DATA_STORAGE_GROUP,
+            new TypeReference<List<String>>() {}, DATA_STORAGE_GROUP,
         isNullOrValidJson(new TypeReference<List<String>>() {}));
     public static final IntPreference DATA_STORAGE_MAX_DOWNLOAD_SIZE = new IntPreference(
         "storage.max.download.size", 10000, DATA_STORAGE_GROUP, isGreaterThan(0));
@@ -871,9 +873,10 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, String>> UI_CLI_INSTALL_TEMPLATE = new ObjectPreference<>(
         "ui.pipe.cli.install.template", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
         isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
-    public static final ObjectPreference<Map<String, String>> UI_VSCODE_EXTENSION_INSTALL_TEMPLATE = new ObjectPreference<>(
-        "ui.vscode.extension.install.template", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
-        isNullOrValidJson(new TypeReference<Map<String, String>>() {}), true);
+    public static final ObjectPreference<Map<String, String>> UI_VSCODE_EXTENSION_INSTALL_TEMPLATE =
+            new ObjectPreference<>("ui.vscode.extension.install.template", null,
+                    new TypeReference<Map<String, String>>() {}, UI_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<String, String>>() {}), true);
     public static final ObjectPreference<List<ControlEntry>> UI_CONTROLS_SETTINGS = new ObjectPreference<>(
         "ui.controls.settings", null, new TypeReference<List<ControlEntry>>() {}, UI_GROUP,
         isNullOrValidJson(new TypeReference<List<ControlEntry>>() {}));
@@ -973,6 +976,36 @@ public class SystemPreferences {
             DATA_SHARING_GROUP, pass);
 
     // SYSTEM_GROUP
+    /**
+     * Everything tunable about the asynchronous tasks the platform runs outside a request: the quota
+     * shared by every task type, the stuck-task threshold, and a section per task type under
+     * {@code tasks}. Read by the api and by the executor services that drain the queue.
+     */
+    public static final ObjectPreference<AsyncTasksConfig> SYSTEM_ASYNC_TASKS_CONFIG =
+        new ObjectPreference<>(
+            "system.async.tasks.config",
+            AsyncTasksConfig.builder()
+                .maxUserTasks(AsyncTasksConfig.DEFAULT_MAX_USER_TASKS)
+                .stuckTasksThresholdMinutes(360)
+                .tasks(AsyncTasksConfig.Tasks.builder()
+                    .storageDownloadAsArchive(StorageDownloadArchiveTaskConfig.builder()
+                        .destinationPrefix("archives/")
+                        .maxSizeBytes(107374182400L)
+                        .maxFilesCount(100000)
+                        .ttlDays(7)
+                        .workerMaxRunningMinutes(240)
+                        .build())
+                    .storageUnpackArchive(StorageUnpackArchiveTaskConfig.builder()
+                        .maxArchiveSizeBytes(53687091200L)
+                        .maxSizeBytes(214748364800L)
+                        .maxFilesCount(100000)
+                        .workerMaxRunningMinutes(240)
+                        .build())
+                    .build())
+                .build(),
+            new TypeReference<AsyncTasksConfig>() {},
+            SYSTEM_GROUP,
+            isNullOrValidJson(new TypeReference<AsyncTasksConfig>() {}));
     /**
      * A list of endpoint IDs of external services. Those are services, that need to get Pipeline's JWT token
      */
@@ -1197,31 +1230,6 @@ public class SystemPreferences {
      */
     public static final IntPreference SYSTEM_OIDC_TOKEN_EXCHANGE_TOKEN_LIFETIME = new IntPreference(
             "system.oidc.token.exchange.token.lifetime", 3600, SYSTEM_GROUP, isGreaterThan(0));
-
-    // FireCloud Integration
-    public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
-        "firecloud.api.scopes", null, new TypeReference<List<String>>() {}, FIRECLOUD_GROUP,
-        isNullOrValidJson(new TypeReference<List<String>>() {}));
-    public static final StringPreference FIRECLOUD_BASE_URL = new StringPreference("firecloud.base.url",
-            "https://api.firecloud.org/api/", FIRECLOUD_GROUP, PreferenceValidators.isValidUrl);
-    public static final BooleanPreference FIRECLOUD_ENABLE_USER_AUTH = new BooleanPreference(
-            "firecloud.enable.user.auth", false, FIRECLOUD_GROUP, pass);
-    public static final StringPreference GOOGLE_REDIRECT_URL = new StringPreference("google.redirect.url",
-            null, FIRECLOUD_GROUP, PreferenceValidators.isEmptyOrValidUrlSyntax);
-    public static final StringPreference GOOGLE_CLIENT_SETTINGS = new StringPreference("google.client.settings",
-            null, FIRECLOUD_GROUP, PreferenceValidators.isEmptyOrFileExist);
-    public static final StringPreference GOOGLE_CLIENT_ID = new StringPreference("google.client.id",
-            null, FIRECLOUD_GROUP, pass);
-    public static final StringPreference FIRECLOUD_LAUNCHER_TOOL = new StringPreference("firecloud.launcher.tool",
-            null, FIRECLOUD_GROUP, null);
-    public static final StringPreference FIRECLOUD_LAUNCHER_CMD = new StringPreference("firecloud.launcher.cmd",
-            null, FIRECLOUD_GROUP, isNotBlank);
-    public static final StringPreference FIRECLOUD_BILLING_PROJECT = new StringPreference("firecloud.billing.project",
-            null, FIRECLOUD_GROUP, isNotBlank);
-    public static final StringPreference FIRECLOUD_INSTANCE_TYPE = new StringPreference("firecloud.instance.type",
-            "m4.xlarge", FIRECLOUD_GROUP, pass);
-    public static final IntPreference FIRECLOUD_INSTANCE_DISK = new IntPreference("firecloud.instance.disk",
-            50, FIRECLOUD_GROUP, isGreaterThan(0));
 
     // Misc
     public static final IntPreference MISC_MAX_TOOL_ICON_SIZE_KB = new IntPreference("misc.max.tool.icon.size.kb", 50,
@@ -1495,7 +1503,6 @@ public class SystemPreferences {
         this.dataStorageManager = dataStorageManager;
 
         LAUNCH_DOCKER_IMAGE.setValidator(isValidToolOrImage);
-        FIRECLOUD_LAUNCHER_TOOL.setValidator(isValidToolOrImage);
         DATA_STORAGE_SYSTEM_DATA_STORAGE_NAME.setValidator(isValidDataStorageName);
 
         GIT_HOST.setValidator(isGitGroupValid);

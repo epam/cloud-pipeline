@@ -22,7 +22,8 @@ import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
 import org.apache.commons.collections4.CollectionUtils;
 import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
+import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.Collection;
 import java.util.List;
@@ -37,11 +38,11 @@ public final class CategoricalAttributeTestUtils {
 
     public static void assertAttribute(final CategoricalAttribute attributeAfter, final String key,
                                        final String... values) {
-        Assert.assertEquals(key, attributeAfter.getKey());
+        Assertions.assertEquals(key, attributeAfter.getKey());
         final List<CategoricalAttributeValue> attributeValues = Stream.of(values)
             .map(v -> new CategoricalAttributeValue(key, v))
             .collect(Collectors.toList());
-        Assert.assertThat(attributeAfter.getValues(), CoreMatchers.is(attributeValues));
+        MatcherAssert.assertThat(attributeAfter.getValues(), CoreMatchers.is(attributeValues));
     }
 
     public static Map<String, List<String>> convertToMap(final Collection<CategoricalAttribute> attributes) {
@@ -56,8 +57,8 @@ public final class CategoricalAttributeTestUtils {
                                                         final String key,
                                                         final String... values) {
         final List<String> valuesForKey = attributesWithValues.get(key);
-        Assert.assertEquals(values.length, valuesForKey.size());
-        Assert.assertThat(valuesForKey, containsInAnyOrder(values));
+        Assertions.assertEquals(values.length, valuesForKey.size());
+        MatcherAssert.assertThat(valuesForKey, containsInAnyOrder(values));
     }
 
     public static List<CategoricalAttributeValue> fromStrings(final String key, final List<String> strings) {

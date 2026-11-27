@@ -487,6 +487,28 @@
                 ]]>
             </value>
         </property>
+        <property name="updateRunInstanceAndPricesQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.pipeline_run SET
+                        node_type = :NODE_TYPE,
+                        node_id = :NODE_ID,
+                        node_disk = :NODE_DISK,
+                        node_ip = :NODE_IP,
+                        node_image = :NODE_IMAGE,
+                        node_name = :NODE_NAME,
+                        is_spot = :IS_SPOT,
+                        node_real_disk = :NODE_REAL_DISK,
+                        node_pool_id = :NODE_POOL_ID,
+                        instance_fallback_types = to_jsonb(:INSTANCE_FALLBACK_TYPES::jsonb),
+                        price_per_hour = :PRICE_PER_HOUR,
+                        compute_price_per_hour = :COMPUTE_PRICE_PER_HOUR,
+                        disk_price_per_hour = :DISK_PRICE_PER_HOUR
+                    WHERE
+                        run_id = :RUN_ID
+                ]]>
+            </value>
+        </property>
         <property name="updateRunInstanceStartDateQuery">
             <value>
                 <![CDATA[
@@ -1926,7 +1948,7 @@
                         ar.actual_cmd,
                         ar.timeout,
                         ar.owner,
-                        ar.original_owner,
+                        ar.owner AS original_owner,
                         ar.pod_ip,
                         ar.commit_status,
                         ar.last_change_commit_time,
@@ -2477,6 +2499,7 @@
                         actual_cmd,
                         timeout,
                         owner,
+                        original_owner,
                         pod_ip,
                         commit_status,
                         last_change_commit_time,
@@ -2496,6 +2519,7 @@
                         price_per_hour,
                         compute_price_per_hour,
                         disk_price_per_hour,
+                        fs_price_per_hour,
                         state_reason,
                         non_pause,
                         pause_disabled,
@@ -2507,7 +2531,8 @@
                         pipeline_name,
                         cluster_price,
                         node_pool_id,
-                        node_start_date
+                        node_start_date,
+                        project_id
                     FROM
                         pipeline.pipeline_run
                     WHERE parent_id ISNULL AND status IN (:list) AND ( @WHERE@ )

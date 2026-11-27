@@ -31,8 +31,8 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.SetUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import javax.transaction.Transactional;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -53,9 +53,9 @@ public class UserNotificationManager implements NotificationManager {
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void notifySubscribers(final NotificationMessage message) {
-        notificationRepository.save(toNotifications(message));
+        notificationRepository.saveAll(toNotifications(message));
     }
 
     private List<UserNotificationEntity> toNotifications(final NotificationMessage message) {

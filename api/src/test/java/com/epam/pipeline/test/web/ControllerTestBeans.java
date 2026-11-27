@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.test.web;
 
+import com.epam.pipeline.acl.async.AsyncTaskApiService;
 import com.epam.pipeline.acl.auth.AccessApiService;
 import com.epam.pipeline.acl.billing.BillingApiService;
 import com.epam.pipeline.acl.cloud.credentials.CloudProfileCredentialsApiService;
@@ -48,8 +49,6 @@ import com.epam.pipeline.manager.docker.DockerRegistryApiService;
 import com.epam.pipeline.manager.dts.DtsOperationsApiService;
 import com.epam.pipeline.manager.dts.DtsRegistryApiService;
 import com.epam.pipeline.manager.entity.EntityApiService;
-import com.epam.pipeline.manager.firecloud.FirecloudApiService;
-import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.AttachmentFileManager;
 import com.epam.pipeline.manager.issue.IssueApiService;
 import com.epam.pipeline.manager.ldap.LdapApiService;
@@ -74,6 +73,7 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.template.TemplateManager;
 import com.epam.pipeline.manager.user.RoleApiService;
 import com.epam.pipeline.manager.user.UserApiService;
+import com.epam.pipeline.acl.session.PipelineSessionService;
 import com.epam.pipeline.security.UserAccessService;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
@@ -81,8 +81,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.saml.SAMLAuthenticationProvider;
-import org.springframework.security.saml.SAMLEntryPoint;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
 @Configuration
@@ -107,12 +105,6 @@ public class ControllerTestBeans {
 
     @MockBean
     protected EntityApiService entityApiService;
-
-    @MockBean
-    protected FirecloudApiService firecloudApiService;
-
-    @MockBean
-    protected CredentialsManager credentialsManager;
 
     @MockBean
     protected IssueApiService issueApiService;
@@ -175,7 +167,7 @@ public class ControllerTestBeans {
     protected UserApiService userApiService;
 
     @MockBean
-    protected SAMLAuthenticationProvider samlAuthenticationProvider;
+    protected PipelineSessionService pipelineSessionService;
 
     @MockBean
     protected PreferenceManager preferenceManager;
@@ -209,9 +201,6 @@ public class ControllerTestBeans {
 
     @MockBean
     protected UserAccessService userAccessService;
-
-    @MockBean
-    protected SAMLEntryPoint samlEntryPoint;
 
     @MockBean
     protected JwtTokenVerifier jwtTokenVerifier;
@@ -275,6 +264,10 @@ public class ControllerTestBeans {
 
     @MockBean
     protected UnsecuredAccessService unsecuredAccessService;
+
+    @MockBean
+    protected AsyncTaskApiService asyncTaskApiService;
+
 
     @MockBean
     protected OidcTokenExchangeManager oidcTokenExchangeManager;

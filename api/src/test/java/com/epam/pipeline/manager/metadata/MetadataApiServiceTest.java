@@ -25,9 +25,10 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.manager.security.metadata.MetadataPermissionManager;
 import com.epam.pipeline.manager.user.UserManager;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,10 +40,12 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doReturn;
 
 @DirtiesContext
@@ -59,6 +62,8 @@ public class MetadataApiServiceTest extends AbstractManagerTest {
     private AclTestDao aclTestDao;
     @Autowired
     private GrantPermissionManager grantPermissionManager;
+    @Autowired
+    private MetadataPermissionManager metadataPermissionManager;
 
     @Mock
     private MetadataManager metadataManager;
@@ -72,11 +77,12 @@ public class MetadataApiServiceTest extends AbstractManagerTest {
     private MetadataEntry pipelineUserMetadata;
     private MetadataEntry roleMetadata;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         MockitoAnnotations.initMocks(this);
         ReflectionTestUtils.setField(metadataApiService, "metadataManager", metadataManager);
         ReflectionTestUtils.setField(grantPermissionManager, "userManager", userManager);
+        ReflectionTestUtils.setField(metadataPermissionManager, "userManager", userManager);
 
         final AclTestDao.AclSid testUserSid1 = new AclTestDao.AclSid(true, TEST_USER1);
         aclTestDao.createAclSid(testUserSid1);
@@ -97,9 +103,9 @@ public class MetadataApiServiceTest extends AbstractManagerTest {
 
         doReturn(pipelineUser1).when(userManager).load(TEST_USER1_ID);
         doReturn(pipelineUser1).when(userManager).loadByNameOrId(TEST_USER1);
-        doReturn(Collections.singletonList(pipelineUserMetadata)).when(metadataManager)
+        doReturn(new ArrayList<>(Collections.singletonList(pipelineUserMetadata))).when(metadataManager)
                 .listMetadataItems(Collections.singletonList(pipelineUserEntity));
-        doReturn(Collections.singletonList(roleMetadata)).when(metadataManager)
+        doReturn(new ArrayList<>(Collections.singletonList(roleMetadata))).when(metadataManager)
                 .listMetadataItems(Collections.singletonList(roleEntity));
         doReturn(pipelineUserMetadata).when(metadataManager)
                 .findMetadataEntryByNameOrId(TEST_USER1, AclClass.PIPELINE_USER);
@@ -126,11 +132,12 @@ public class MetadataApiServiceTest extends AbstractManagerTest {
         assertEquals(Collections.singletonList(pipelineUserMetadata), metadataEntries);
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @WithMockUser(username = TEST_USER2)
     public void nonAdminAndNotOwnerShouldNotLoadMetadataForPipelineUser() {
-        metadataApiService.listMetadataItems(Collections.singletonList(pipelineUserEntity));
+        assertThrows(AccessDeniedException.class,
+            () -> metadataApiService.listMetadataItems(Collections.singletonList(pipelineUserEntity)));
     }
 
     @Test
@@ -142,11 +149,12 @@ public class MetadataApiServiceTest extends AbstractManagerTest {
         assertEquals(Collections.singletonList(roleMetadata), metadataEntries);
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @WithMockUser(username = TEST_USER1)
     public void nonAdminShouldNotLoadMetadataForRole() {
-        metadataApiService.listMetadataItems(Collections.singletonList(roleEntity));
+        assertThrows(AccessDeniedException.class,
+            () -> metadataApiService.listMetadataItems(Collections.singletonList(roleEntity)));
     }
 
     @Test
@@ -167,11 +175,12 @@ public class MetadataApiServiceTest extends AbstractManagerTest {
         assertEquals(pipelineUserEntity, metadataEntityIdByName.getEntity());
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @WithMockUser(username = TEST_USER2)
     public void nonAdminAndNotOwnerShouldNotFindMetadataForRole() {
-        metadataApiService.findMetadataEntityIdByName(TEST_USER1, AclClass.PIPELINE_USER);
+        assertThrows(AccessDeniedException.class,
+            () -> metadataApiService.findMetadataEntityIdByName(TEST_USER1, AclClass.PIPELINE_USER));
     }
 
     @Test
@@ -183,11 +192,12 @@ public class MetadataApiServiceTest extends AbstractManagerTest {
         assertEquals(roleEntity, metadataEntityIdByName.getEntity());
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @WithMockUser(username = TEST_USER1)
     public void nonAdminShouldNotFindMetadataForRole() {
-        metadataApiService.findMetadataEntityIdByName(TEST_USER1, AclClass.ROLE);
+        assertThrows(AccessDeniedException.class,
+            () -> metadataApiService.findMetadataEntityIdByName(TEST_USER1, AclClass.ROLE));
     }
 
     @Test
@@ -206,11 +216,12 @@ public class MetadataApiServiceTest extends AbstractManagerTest {
         assertEquals(pipelineUserEntity, metadataEntry.getEntity());
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @WithMockUser(username = TEST_USER2)
     public void nonAdminAndNotOwnerShouldNotUpdateMetadataForPipelineUser() {
-        metadataApiService.updateMetadataItemKey(pipelineUserMetadataVO);
+        assertThrows(AccessDeniedException.class,
+            () -> metadataApiService.updateMetadataItemKey(pipelineUserMetadataVO));
     }
 
     @Test
@@ -221,10 +232,10 @@ public class MetadataApiServiceTest extends AbstractManagerTest {
         assertEquals(roleEntity, metadataEntry.getEntity());
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @WithMockUser(username = TEST_USER1)
     public void nonAdminShouldNotUpdateMetadataForRole() {
-        metadataApiService.updateMetadataItemKey(roleMetadataVO);
+        assertThrows(AccessDeniedException.class, () -> metadataApiService.updateMetadataItemKey(roleMetadataVO));
     }
 }

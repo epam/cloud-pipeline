@@ -17,8 +17,8 @@
 package com.epam.pipeline.manager.user;
 
 import com.epam.pipeline.controller.vo.PipelineUserExportVO;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.TimeZone;
@@ -32,7 +32,7 @@ public class UserExporterTest {
     private final UserExporter exporter = new UserExporter();
     private final TimeZone defaultTimeZone = TimeZone.getDefault();
 
-    @After
+    @AfterEach
     public void restoreDefaultTimeZone() {
         TimeZone.setDefault(defaultTimeZone);
     }

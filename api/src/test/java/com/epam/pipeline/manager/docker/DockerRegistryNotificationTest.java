@@ -27,9 +27,8 @@ import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.util.TestUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -46,9 +45,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
@@ -95,7 +95,7 @@ public class DockerRegistryNotificationTest extends AbstractManagerTest {
     @MockBean
     private ToolVersionManager toolVersionManager;
 
-    @Before
+    @BeforeEach
     public void setUp() {
 
         AclTestDao.AclSid adminSid = new AclTestDao.AclSid(true, ADMIN);
@@ -221,7 +221,7 @@ public class DockerRegistryNotificationTest extends AbstractManagerTest {
                 Collections.singletonList(PUSH_ACTION));
 
         List<Tool> registeredTools = registryManager.notifyDockerRegistryEvents(TEST_REPO, eventsEnvelope);
-        Assert.assertEquals(1, registeredTools.size());
+        assertEquals(1, registeredTools.size());
     }
 
     @Test
@@ -235,7 +235,7 @@ public class DockerRegistryNotificationTest extends AbstractManagerTest {
                 Collections.singletonList(PUSH_ACTION));
 
         List<Tool> registeredTools = registryManager.notifyDockerRegistryEvents(TEST_REPO, eventsEnvelope);
-        Assert.assertEquals(1, registeredTools.size());
+        assertEquals(1, registeredTools.size());
     }
 
     @Test
@@ -249,7 +249,7 @@ public class DockerRegistryNotificationTest extends AbstractManagerTest {
                 Collections.singletonList(PULL_ACTION));
 
         List<Tool> registeredTools = registryManager.notifyDockerRegistryEvents(TEST_REPO, eventsEnvelope);
-        Assert.assertEquals(0, registeredTools.size());
+        assertEquals(0, registeredTools.size());
     }
 
     @Test
@@ -263,7 +263,7 @@ public class DockerRegistryNotificationTest extends AbstractManagerTest {
                 Collections.singletonList(PUSH_ACTION));
 
         List<Tool> registeredTools = registryManager.notifyDockerRegistryEvents(null, eventsEnvelope);
-        Assert.assertEquals(1, registeredTools.size());
+        assertEquals(1, registeredTools.size());
     }
 
     @Test
@@ -277,7 +277,7 @@ public class DockerRegistryNotificationTest extends AbstractManagerTest {
                 Collections.singletonList(PUSH_ACTION));
 
         List<Tool> registeredTools = registryManager.notifyDockerRegistryEvents(EXTERNAL_REPO_PATH, eventsEnvelope);
-        Assert.assertEquals(1, registeredTools.size());
+        assertEquals(1, registeredTools.size());
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
@@ -291,7 +291,7 @@ public class DockerRegistryNotificationTest extends AbstractManagerTest {
 
         List<Tool> registeredTools = registryManager.notifyDockerRegistryEvents(TEST_REPO_WITHOUT_WRITE_ACCESS,
                 eventsEnvelope);
-        Assert.assertEquals(0, registeredTools.size());
+        assertEquals(0, registeredTools.size());
     }
 
     @Test
@@ -305,8 +305,8 @@ public class DockerRegistryNotificationTest extends AbstractManagerTest {
                 Arrays.asList(PUSH_ACTION, PUSH_ACTION));
 
         List<Tool> registeredTools = registryManager.notifyDockerRegistryEvents(TEST_REPO, eventsEnvelope);
-        Assert.assertEquals(2, registeredTools.size());
-        Assert.assertEquals(registeredTools.get(0).getId(), registeredTools.get(1).getId());
+        assertEquals(2, registeredTools.size());
+        assertEquals(registeredTools.get(0).getId(), registeredTools.get(1).getId());
     }
 
     private DockerRegistryEventEnvelope generateDockerRegistryEvents(List<String> users,

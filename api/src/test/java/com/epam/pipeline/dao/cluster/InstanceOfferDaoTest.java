@@ -24,9 +24,9 @@ import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,7 +36,7 @@ import java.util.Date;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class InstanceOfferDaoTest extends AbstractSpringTest  {
 
@@ -56,7 +56,7 @@ public class InstanceOfferDaoTest extends AbstractSpringTest  {
 
     private AbstractCloudRegion region;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
 
         region = createRegion("region1");
@@ -78,7 +78,7 @@ public class InstanceOfferDaoTest extends AbstractSpringTest  {
         return cloudRegionDao.create(tmp);
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         instanceOfferDao.removeInstanceOffers();
     }

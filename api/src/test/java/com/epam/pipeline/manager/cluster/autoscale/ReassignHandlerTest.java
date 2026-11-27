@@ -29,8 +29,9 @@ import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.autoscale.filter.PoolFilterHandler;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
-import org.junit.Before;
-import org.junit.Test;
+import com.epam.pipeline.manager.pipeline.RunStatusManager;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,10 +45,10 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineRun;
 import static com.epam.pipeline.util.CustomMatchers.anyStringMap;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -67,12 +68,13 @@ public class ReassignHandlerTest {
     private final PipelineRunManager pipelineRunManager = mock(PipelineRunManager.class);
     private final MetadataManager metadataManager = mock(MetadataManager.class);
     private final IAMProfileVerifier iamProfileVerifier = mock(IAMProfileVerifier.class);
+    private final RunStatusManager runStatusManager = mock(RunStatusManager.class);
     private final InstanceRequest requiredInstance = new InstanceRequest();
 
     private Set<String> scheduledRuns;
     private Set<String> reassignedNodes;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         scheduledRuns = new HashSet<>();
         reassignedNodes = new HashSet<>();
@@ -185,7 +187,7 @@ public class ReassignHandlerTest {
 
     private ReassignHandler reassignHandler(final List<PoolFilterHandler> filterHandlers) {
         return new ReassignHandler(autoscalerService, cloudFacade, pipelineRunManager, filterHandlers,
-                metadataManager, iamProfileVerifier);
+                metadataManager, iamProfileVerifier, runStatusManager);
     }
 
     private void mockRun(final PipelineRun run) {

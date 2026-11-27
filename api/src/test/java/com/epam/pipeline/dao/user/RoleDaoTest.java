@@ -24,10 +24,9 @@ import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import com.epam.pipeline.util.TestUtils;
 import org.apache.commons.collections4.CollectionUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,8 +37,12 @@ import java.util.Optional;
 
 import static com.epam.pipeline.test.creator.user.UserCreatorUtils.ROLE_OWNER;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Transactional
 public class RoleDaoTest extends AbstractSpringTest {

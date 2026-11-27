@@ -33,7 +33,8 @@ import java.util.stream.Collectors;
 
  *   - Which directories to search for a files. {@code pathGlob}
  *   - What files. {@code objectGlob}
- *   - When files should be transferred. See {@link StorageLifecycleRuleTransition} and {@link StorageLifecycleRuleProlongation}
+ *   - When files should be transferred. See {@link StorageLifecycleRuleTransition}
+ *          and {@link StorageLifecycleRuleProlongation}
  *   - Where files should be transferred. See {@link StorageLifecycleRuleTransition}
  *   - How files should be transferred. See {@link StorageLifecycleTransitionMethod}
 
@@ -88,7 +89,7 @@ import java.util.stream.Collectors;
  * (f.e. when we generate one files from another and want to transit after successful generation)
 
  * For AWS see useful information about some limitation on lifecycle policies:
- * <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-transition-general-considerations.html">...</a>
+ * https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-transition-general-considerations.html
  **/
 @Data
 @NoArgsConstructor
