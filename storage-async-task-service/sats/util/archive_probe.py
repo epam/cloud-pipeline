@@ -23,6 +23,8 @@ What an archive says about itself, read from its tail without fetching it.
 
 `None` means the format does not say. Read it as "enforce the limit while extracting", never as
 "the limit is met": a number here is only what the archive claims.
+
+Where the format says nothing, `estimated_content_bytes` guesses instead - for the one caller that needs a number.`.
 """
 
 from __future__ import annotations
@@ -74,6 +76,18 @@ class ArchiveFormat(StrEnum):
     BZIP2 = 'BZIP2'
     XZ = 'XZ'
     UNKNOWN = 'UNKNOWN'
+
+
+# How much larger than the archive its content is taken to be, where the archive itself will not say.
+MAX_COMPRESSION_RATIO: dict[ArchiveFormat, int] = {
+    ArchiveFormat.TAR: 1,
+    ArchiveFormat.ZIP: 3,
+    ArchiveFormat.GZIP: 3,
+    ArchiveFormat.BZIP2: 4,
+    ArchiveFormat.XZ: 4,
+}
+
+DEFAULT_MAX_COMPRESSION_RATIO = 4
 
 
 @dataclass(frozen=True, slots=True)
@@ -131,6 +145,16 @@ def probe_archive(stream: BinaryIO, size: int) -> ArchiveProbe:
             return ArchiveProbe(archive_format)
         case _:
             return ArchiveProbe(ArchiveFormat.UNKNOWN)
+
+
+def estimated_content_bytes(archive_format: ArchiveFormat, archive_size: int) -> int:
+    return archive_size * MAX_COMPRESSION_RATIO.get(archive_format, DEFAULT_MAX_COMPRESSION_RATIO)
+
+
+def estimated_total_bytes(probe: ArchiveProbe, archive_size: int) -> int:
+    if probe.total_bytes is not None:
+        return probe.total_bytes
+    return estimated_content_bytes(probe.format, archive_size)
 
 
 def _probe_zip(stream: BinaryIO, archive_format: ArchiveFormat) -> ArchiveProbe:
