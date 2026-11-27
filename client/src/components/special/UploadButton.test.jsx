@@ -903,6 +903,30 @@ describe('UploadButton - the archive-task cap in the confirmation pop-up', () =>
     expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
   });
 
+  // The point of removing a file: a batch too big for the allowance can be cut
+  // down in place, rather than cancelled and picked afresh.
+  test('removing an archive brings the batch back under the allowance', async () => {
+    useFakeTimers();
+    const {input} = renderUploadButton({
+      extractArchivesAvailable: true,
+      asyncTasks: asyncTasksDouble(fn(), fn().mockResolvedValue({allowed: true, remaining: 2}))
+    });
+    await selectFiles(input, [zipFile('a.zip'), zipFile('b.zip'), zipFile('c.zip')]);
+    await settleSelection();
+    useRealTimers();
+
+    await waitFor(() => {
+      expect(screen.getByText(/3 archives are selected/)).toBeInTheDocument();
+    });
+
+    await click(screen.getByRole('button', {name: 'Remove c.zip'}));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: 'Upload and extract'})).not.toBeDisabled();
+    });
+    expect(screen.queryByText(/archives are selected/)).not.toBeInTheDocument();
+  }, 20000);
+
   // So a blocked batch leaves no alert behind for the next one.
   test('Cancel clears the alert', async () => {
     const checkActiveTasksLimit = fn().mockResolvedValue({allowed: false, reason: AT_THE_CAP});
@@ -914,5 +938,149 @@ describe('UploadButton - the archive-task cap in the confirmation pop-up', () =>
 
     expect(screen.queryByText(AT_THE_CAP)).not.toBeInTheDocument();
     expect(instance.state.extractionLimitCheck).toBeUndefined();
+  });
+});
+
+describe('UploadButton - removing a file from the confirmation pop-up', () => {
+  afterEach(async () => {
+    if (instance) {
+      instance.stopExtractionLimitPolling();
+      instance.setState({uploadInfoVisible: false, pendingConfirmation: false});
+      instance = null;
+    }
+    useRealTimers();
+    await flushPromises();
+  });
+
+  // Fake timers settle the selection debounce, real ones the check that
+  // follows - the same pair the cap block above uses.
+  async function openConfirmation (files, {checkActiveTasksLimit, ...props} = {}) {
+    useFakeTimers();
+    const {input} = renderUploadButton({
+      extractArchivesAvailable: true,
+      asyncTasks: asyncTasksDouble(
+        fn(),
+        checkActiveTasksLimit || fn().mockResolvedValue({allowed: true, remaining: 5})
+      ),
+      ...props
+    });
+    await selectFiles(input, files);
+    await settleSelection();
+    useRealTimers();
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: 'Upload'})).not.toBeDisabled();
+    });
+    return input;
+  }
+
+  test('the removed row goes, and the rest of the batch stays', async () => {
+    await openConfirmation([textFile('notes.txt'), zipFile('archive.zip')]);
+
+    await click(screen.getByRole('button', {name: 'Remove notes.txt'}));
+
+    expect(screen.queryByText('notes.txt')).not.toBeInTheDocument();
+    expect(screen.getByText('archive.zip')).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
+  });
+
+  // Nothing left to extract, and the files can still be uploaded.
+  test('removing the last archive disables Upload and extract alone', async () => {
+    await openConfirmation([textFile('notes.txt'), zipFile('archive.zip')]);
+
+    await click(screen.getByRole('button', {name: 'Remove archive.zip'}));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: 'Upload'})).not.toBeDisabled();
+    });
+    expect(screen.getByRole('button', {name: 'Upload and extract'})).toBeDisabled();
+    expect(screen.getByText('notes.txt')).toBeInTheDocument();
+  });
+
+  test('removing the last file closes the pop-up and uploads nothing', async () => {
+    const onRefresh = fn();
+    await openConfirmation([zipFile('archive.zip')], {onRefresh});
+
+    await click(screen.getByRole('button', {name: 'Remove archive.zip'}));
+
+    expect(screen.queryByRole('button', {name: 'Upload'})).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: 'Cancel'})).not.toBeInTheDocument();
+    expect(onRefresh).not.toHaveBeenCalled();
+  });
+
+  test('a removal re-checks the allowance, and the pop-up waits for it', async () => {
+    let release;
+    let calls = 0;
+    const checkActiveTasksLimit = fn(() => {
+      calls += 1;
+      if (calls === 1) {
+        return Promise.resolve({allowed: true, remaining: 5});
+      }
+      return new Promise((resolve) => {
+        release = () => resolve({allowed: true, remaining: 5});
+      });
+    });
+    await openConfirmation(
+      [textFile('notes.txt'), zipFile('archive.zip')],
+      {checkActiveTasksLimit}
+    );
+
+    await click(screen.getByRole('button', {name: 'Remove notes.txt'}));
+
+    expect(calls).toBe(2);
+    expect(screen.getByRole('button', {name: 'Upload'})).toBeDisabled();
+    expect(screen.getByRole('button', {name: 'Upload and extract'})).toBeDisabled();
+    expect(screen.getByRole('button', {name: 'Remove archive.zip'})).toBeDisabled();
+
+    release();
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: 'Upload'})).not.toBeDisabled();
+    });
+    expect(screen.getByRole('button', {name: 'Remove archive.zip'})).not.toBeDisabled();
+  }, 20000);
+
+  // A poll is in flight whenever the pop-up has been open a few seconds, and a
+  // removal supersedes it. Driven through the instance: reaching this in the
+  // rendered pop-up would mean waiting out the real poll interval.
+  test('a superseded check\'s failure does not release the pop-up early', async () => {
+    let failStale;
+    let calls = 0;
+    const checkActiveTasksLimit = fn(() => {
+      calls += 1;
+      if (calls === 1) {
+        return new Promise((resolve, reject) => {
+          failStale = () => reject(new Error('network is down'));
+        });
+      }
+      return new Promise(() => {});
+    });
+    renderUploadButton({
+      extractArchivesAvailable: true,
+      asyncTasks: asyncTasksDouble(fn(), checkActiveTasksLimit)
+    });
+
+    // A flush between the two: the store is only reached a microtask after the
+    // call, so the first check has to be in flight before the second starts.
+    const stale = instance.checkExtractionLimit();
+    await flushPromises();
+    await act(async () => {
+      instance.setState({extractionCheckPending: true});
+      instance.checkExtractionLimit();
+    });
+
+    failStale();
+    await stale.catch(() => {});
+
+    expect(instance.state.extractionCheckPending).toBe(true);
+  });
+
+  // The list is only the user's to edit while the batch is paused.
+  test('the progress state offers no remove button', async () => {
+    await openConfirmation([zipFile('archive.zip'), textFile('notes.txt')]);
+
+    await click(screen.getByRole('button', {name: 'Upload'}));
+
+    expect(screen.queryByRole('button', {name: 'Remove archive.zip'})).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: 'Remove notes.txt'})).not.toBeInTheDocument();
   });
 });

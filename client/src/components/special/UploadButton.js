@@ -27,7 +27,8 @@ import {
   Progress,
   Col,
   Tooltip,
-  Alert
+  Alert,
+  Spin
 } from 'antd';
 import S3Storage, {MAX_FILE_SIZE_DESCRIPTION} from '../../models/s3-upload/s3-storage';
 import DataStorageGenerateUploadUrl from '../../models/dataStorage/DataStorageGenerateUploadUrl';
@@ -320,7 +321,9 @@ class UploadButton extends React.Component {
         this.setState({extractionLimitCheck: check, extractionCheckPending: false});
       })
       .catch((error) => {
-        if (!this.unmounted) {
+        // The token guard as above: a superseded check's rejection must not
+        // release the pop-up the current one is still waiting on.
+        if (!this.unmounted && token === this.extractionLimitToken) {
           // Optimistic, as the download flow is: the server enforces the quota.
           this.setState({extractionCheckPending: false});
         }
@@ -337,6 +340,24 @@ class UploadButton extends React.Component {
       this.state.extractionLimitCheck
     );
   }
+
+  get extractionUnavailable () {
+    return this.state.extractionCheckPending ||
+      !!this.extractionDisabledReason ||
+      countArchives(this.state.synchronousUploadingFiles) === 0;
+  }
+
+  removeSelectedFile = (uid) => {
+    const {synchronousUploadingFiles = []} = this.state;
+    const files = synchronousUploadingFiles.filter(file => file.uid !== uid);
+    if (files.length === 0) {
+      this.cancelConfirmation();
+      return;
+    }
+    this.setState({
+      synchronousUploadingFiles: files
+    }, this.startExtractionLimitPolling);
+  };
 
   /**
    * Cancels a paused batch. Nothing uploaded, so no `onRefresh`.
@@ -801,7 +822,7 @@ class UploadButton extends React.Component {
         <Button
           id="upload-and-extract-button"
           style={{marginRight: 8}}
-          disabled={this.state.extractionCheckPending || !!this.extractionDisabledReason}
+          disabled={this.extractionUnavailable}
           onClick={this.confirmUpload(true)}
         >
           Upload and extract
@@ -852,7 +873,13 @@ class UploadButton extends React.Component {
         type="flex"
         key={file.uid}
       >
-        <Row type="flex" style={{width: '100%'}}>
+        {/* `flexWrap`: antd's own `.ant-row-flex` wraps, which drops the cross
+            onto a second line under a long file name. */}
+        <Row
+          type="flex"
+          justify="space-between"
+          style={{width: '100%', flexWrap: 'nowrap'}}
+        >
           <span
             title={hoverTitle}
             style={{
@@ -863,6 +890,17 @@ class UploadButton extends React.Component {
           >
             {title}
           </span>
+          {/* Hidden by `visibility` rather than dropped, so the row keeps its
+              height once the upload starts. */}
+          <Button
+            size="small"
+            shape="circle"
+            icon="close"
+            title={`Remove ${file.name}`}
+            style={{visibility: pending ? 'visible' : 'hidden'}}
+            disabled={this.state.extractionCheckPending}
+            onClick={() => this.removeSelectedFile(file.uid)}
+          />
         </Row>
         {
           // Outside the clipped span above, so a long reason wraps instead of
@@ -1022,16 +1060,22 @@ class UploadButton extends React.Component {
               />
             )
           }
-          {
-            this.state.pendingConfirmation &&
-            this.state.synchronousUploadingFiles.map(
-              file => this.renderFileRow(file, true)
-            )
-          }
-          {
-            !this.state.pendingConfirmation &&
-            this.state.uploadingFiles.map(file => this.renderFileRow(file, false))
-          }
+          {/* The list waits on the allowance check - the first one, and the one
+              each removal starts. */}
+          <Spin
+            spinning={this.state.pendingConfirmation && this.state.extractionCheckPending}
+          >
+            {
+              this.state.pendingConfirmation &&
+              this.state.synchronousUploadingFiles.map(
+                file => this.renderFileRow(file, true)
+              )
+            }
+            {
+              !this.state.pendingConfirmation &&
+              this.state.uploadingFiles.map(file => this.renderFileRow(file, false))
+            }
+          </Spin>
         </Modal>
       </div>
     );

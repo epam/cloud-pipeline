@@ -78,6 +78,17 @@
   word-break: break-all;
 }
 
+/* antd 2.13.14's `.ant-tooltip-inner` caps its width and sets no wrapping
+ * rule, so a path with no spaces runs outside the tooltip's own box. */
+.source-tooltip :global(.ant-tooltip-inner) {
+  word-break: break-all;
+}
+
+/* The Status and Owner cells - one short value each. */
+.no-wrap-cell {
+  white-space: nowrap;
+}
+
 /* Clipped here, read in full from the cell's tooltip. `max-width`, not
  * `width`: a short path should reserve no space it does not need. */
 .source-link {
