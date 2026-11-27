@@ -216,7 +216,7 @@ host_stubbed() {
           case $3 in "$API_IMAGE_REPOSITORY":*) [ "$FAKE_NO_API_IMAGE" = 0 ] ;; esac
           ;;
         "build -f")
-          find "$(dirname "$3")" -mindepth 1 -maxdepth 1 -exec basename {} \; | sort | paste -sd ' ' - |
+          find "$(dirname "$3")" -mindepth 1 -maxdepth 1 -exec basename {} \; | LC_ALL=C sort | paste -sd ' ' - |
             sed 's/^/context: /' >>"$CASE_DIR/calls"
           ;;
         "network rm") [ "$FAKE_NETWORK_RM_FAILS" = 0 ] ;;
@@ -475,6 +475,24 @@ sandbox status --dry-run
 expect_status 1
 expect_output "does not read as meant: AWS_REGION CP_SANDBOX_TTL_HOURS CP_SANDBOX_VPC_ID"
 expect_no_output "Ireland"
+end_case
+
+start_case "an identity provider that is not an http URL is refused, and a config without the key passes"
+sandbox status --dry-run
+expect_status 0
+printf 'CP_SANDBOX_IDP_METADATA_URL=idp.example.com/metadata\n' >>"$CONFIG"
+sandbox status --dry-run
+expect_status 1
+expect_output "CP_SANDBOX_IDP_METADATA_URL in"
+expect_output "must be an http or https URL"
+end_case
+
+start_case "a keystore directory that is not an absolute path is refused"
+printf 'CP_SANDBOX_API_SSO_DIR=api/sso\n' >>"$CONFIG"
+sandbox status --dry-run
+expect_status 1
+expect_output "CP_SANDBOX_API_SSO_DIR in"
+expect_output "must be an absolute path"
 end_case
 
 start_case "check --dry-run prints its read-only calls, and passes on what they would answer"
@@ -864,6 +882,62 @@ expect "it has the checkout and the sandbox's state, read-only, and the config a
 expect "the sequences' SQL goes to the database" "$(calls 'sql: ')" "sql: SELECT setval('pipeline.s_pipeline_run', 123400000, false);"
 expect "the database is the PostgreSQL the platform's installer deploys" \
   "$(calls 'docker run --detach --name cp-sandbox-dev-abcd-db' | grep -c " postgres:$(sed -n 's/^PSG_VERSION=//p' "$REAL_REPO_ROOT/$DB_VERSION_FILE")\$" || true)" 1
+expect "and without an identity provider, the API's container publishes no port" \
+  "$(calls 'docker run --detach --init --name cp-sandbox-dev-abcd-api' | grep -c -- --publish || true)" 0
+end_case
+
+start_case "with an identity provider, the API's port is published on the loopback address alone"
+fake_services_state dev-abcd
+fake_repo
+printf 'SANDBOX_IDP_METADATA_URL=https://idp.example.com/metadata\n' >>"$STATE/dev-abcd/api.env"
+printf 'server.port=9999\n' >>"$STATE/dev-abcd/api.properties"
+FAKE_TUNNEL_STATE=running FAKE_NETWORK=1
+host_stubbed cmd_services --name dev-abcd
+real_repo
+expect_status 0
+expect "on the port the API's own settings name" \
+  "$(calls 'docker run --detach --init' | grep -cF -- '--network-alias api --publish 127.0.0.1:9999:9999 --cap-add NET_ADMIN' || true)" 1
+end_case
+
+start_case "the keystore the API signs its authentication requests with is mounted read-only"
+fake_services_state dev-abcd
+fake_repo
+mkdir -p "$CASE_DIR/api-sso"
+printf 'a keystore\n' >"$CASE_DIR/api-sso/store.jks"
+printf 'SANDBOX_API_SSO_DIR=%s\n' "$CASE_DIR/api-sso" >>"$STATE/dev-abcd/api.env"
+FAKE_TUNNEL_STATE=running FAKE_NETWORK=1
+host_stubbed cmd_services --name dev-abcd
+real_repo
+expect_status 0
+expect "the API's container gets that directory, read-only" \
+  "$(calls 'docker run --detach --init' | grep -cF -- "--volume $CASE_DIR/api-sso:$CASE_DIR/api-sso:ro" || true)" 1
+end_case
+
+start_case "a keystore directory holding none stops services, and starts no API"
+fake_services_state dev-abcd
+fake_repo
+mkdir -p "$CASE_DIR/api-sso"
+printf 'SANDBOX_API_SSO_DIR=%s\n' "$CASE_DIR/api-sso" >>"$STATE/dev-abcd/api.env"
+FAKE_TUNNEL_STATE=running FAKE_NETWORK=1
+host_stubbed cmd_services --name dev-abcd
+real_repo
+expect_status 1
+expect_output "holds no store.jks"
+expect "and the API's container is not started" \
+  "$(calls 'docker run --detach --init --name cp-sandbox-dev-abcd-api' | wc -l | tr -d ' ')" 0
+end_case
+
+start_case "an identity provider with no port in the API's settings stops services, rather than publishing a guess"
+fake_services_state dev-abcd
+fake_repo
+printf 'SANDBOX_IDP_METADATA_URL=https://idp.example.com/metadata\n' >>"$STATE/dev-abcd/api.env"
+FAKE_TUNNEL_STATE=running FAKE_NETWORK=1
+host_stubbed cmd_services --name dev-abcd
+real_repo
+expect_status 1
+expect_output "sets no server.port"
+expect "and the API's container is not started" \
+  "$(calls 'docker run --detach --init --name cp-sandbox-dev-abcd-api' | wc -l | tr -d ' ')" 0
 end_case
 
 start_case "services mints the registry's own token until an hour after the sandbox expires, and again once its expiry has moved past it"

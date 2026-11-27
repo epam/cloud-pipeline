@@ -279,10 +279,10 @@ In order, `services`:
   that only connects passes whatever listens there: `nodeup.py`'s wait for port 8888 on a new
   node passes as soon as the node runs. What `nodeup.py` waits for next, the node joining the
   cluster and turning `Ready`, holds.
-- The API's REST API takes the admin token in `admin-token.secret`; there is no identity
-  provider, so no sign-in, and the API serves no UI: `sandbox.sh ui` runs the GUI ("The GUI",
-  below). From a container on the network: `https://api:9999/pipeline/restapi/`, with the API's
-  certificate, `api-tls.crt`.
+- The API's REST API takes the admin token in `admin-token.secret`; there is no sign-in, unless
+  `CP_SANDBOX_IDP_METADATA_URL` names an identity provider ("An identity provider", below), and the
+  API serves no UI: `sandbox.sh ui` runs the GUI ("The GUI", below). From a container on the
+  network: `https://api:9999/pipeline/restapi/`, with the API's certificate, `api-tls.crt`.
 - The API's container gets the config as its environment, and `~/.aws` read-only, as the tools
   containers do: never `docker inspect` it. Its log holds secrets once it starts nodes and runs:
   the join token, on the node scripts' command lines, the tokens it issues them, and the spec of
@@ -365,6 +365,54 @@ needs one to it, can be tried live.
 - `services` prints which one the runs get, with the archive's SHA-256, and `state.json` records it
   (`distribution_pipe_common`). The API's container takes the checkout's pipe-common for the node
   scripts it runs either way.
+
+### An identity provider
+
+A sandbox has no identity provider: the API's container writes metadata of one that is not there,
+which its SAML setup needs to start at all, and the REST API takes the admin's token alone.
+`CP_SANDBOX_IDP_METADATA_URL` names one to sign in through instead — the URL its SAML metadata is
+served at — so that what depends on a sign-in can be tried live: the attribute and the group
+mapping (`saml.user.attributes`, `saml.authorities.attribute.names`), user auto-creation, the
+blocked-user attribute.
+
+- **The address is the same for every sandbox**, `server.ssl.endpoint.id` of
+  `api/profiles/dev/application.properties`, which `services` leaves as the profile has it, with
+  `saml/SSO` under it as the assertion consumer (`saml.sso.acs.endpoint`). `services` refuses the
+  key when the profile names an address a browser here cannot reach. Sandboxes publish the same
+  port, so one runs with an identity provider at a time.
+- **The certificate is not the same.** The API signs every authentication request
+  (`authnRequestsSigned`), and by default with the self-signed `api-tls.crt` of the sandbox's own
+  local state, which `services` makes per sandbox and makes again when the master's address
+  changes. An identity provider that checks those signatures rejects it — "Signature check errors"
+  — since what it has registered is a certificate of its own, and the API serves no service
+  provider metadata to hand it a new one.
+- **`CP_SANDBOX_API_SSO_DIR` gives it the registered key instead**: an absolute path to a directory
+  holding `store.jks`, whose `sso` key the identity provider knows, as a deployment's
+  `/opt/api/sso` holds. The container gets that directory read-only and takes **only** that key
+  (`saml.sign.key`); Tomcat goes on serving the sandbox's own certificate, since the platform's
+  nodes reach the API at the master's address and the API checks `base.api.host` against it. The
+  keystore's password has to be `changeit`, which the API's settings name, and the container
+  refuses to start when the keystore or the key is missing. Replacing the keystore in place does
+  not restart the API — `services --stop`, then `services`, does.
+- `saml.logout.endpoint` is a local logout, with no single logout service for an identity provider
+  to call: registering one does nothing.
+- **`services` publishes the API's port on `127.0.0.1` then, and only then**, for the browser to
+  reach that address, and prints the identity provider and the address. **Whoever reaches that port
+  signs in**: run `services --stop` once the check is over, as you would `ui --stop`.
+- The API's container fetches the metadata as it starts, and **refuses to start** when the answer
+  holds no `EntityDescriptor` with an `IDPSSODescriptor`. The API itself fails to start on metadata
+  it cannot parse, so this is the same outcome with a line saying what is wrong in place of a
+  Spring stack trace. Setting the key, or emptying it, starts the API again, since it reaches
+  `api.env`.
+- `saml.user.auto.create` is `EXPLICIT` in the dev profile, and a sandbox's database holds the
+  admin alone, so **the first sign-in of anyone else is refused** until the user is created:
+  `sandbox.sh api POST user '{"userName": "<name>", "roleIds": [<role>]}'`, the roles being what
+  `sandbox.sh api GET role/loadAll` lists.
+- **A sign-in that works lands on `/pipeline/`**, where the sandbox's API serves no GUI: nothing
+  builds one into its jar. A page that stays blank there is not a failure — open `restapi/whoami`
+  under the same address, in the same browser, to see whose session it is.
+- The GUI keeps its own way in, whatever this key says: its dev proxy makes every request as the
+  admin, with no sign-in ("The GUI", below). The sign-in is the API's, in a browser.
 
 ### Billing, search and monitoring
 

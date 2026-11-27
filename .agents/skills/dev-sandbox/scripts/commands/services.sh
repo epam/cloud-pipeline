@@ -491,8 +491,37 @@ SANDBOX_VPC_CIDRS=$(state_get "$name" vpc_cidrs)
 SANDBOX_SOCKS_PROXY=$(tunnel_socks "$name")
 SANDBOX_MASTER_IP=$ip
 SANDBOX_NODE_SSH_KEY=$NODE_SSH_KEY_IN_API
+SANDBOX_IDP_METADATA_URL=$CP_SANDBOX_IDP_METADATA_URL
+SANDBOX_API_SSO_DIR=$CP_SANDBOX_API_SSO_DIR
 PYTHONPATH=$root/$PIPE_COMMON_DIR
 EOF
+}
+
+# sp_endpoint_id: the address the API's SAML setup names as its service provider, from the dev
+# profile. An identity provider signs its assertions for it, and sends them to saml/SSO under it.
+sp_endpoint_id() {
+  sed -n 's/^server\.ssl\.endpoint\.id=//p' "$SANDBOX_REPO_ROOT/$DEV_PROFILE" | head -n 1
+}
+
+# check_sp_endpoint: that a browser on the workstation reaches the service provider the API names,
+# which start_api publishes the API's port on 127.0.0.1 for. A profile naming another host or port
+# would leave the sign-in unreachable, with nothing to say why.
+check_sp_endpoint() {
+  local url rest host port
+  url=$(sp_endpoint_id)
+  [[ -n $url ]] ||
+    die "$DEV_PROFILE names no server.ssl.endpoint.id, so the API has no service provider address \
+for the identity provider that CP_SANDBOX_IDP_METADATA_URL names"
+  # The scheme has to be https: the API serves that alone, and the identity provider posts its
+  # assertion to this address.
+  rest=${url#https://}
+  host=${rest%%/*}
+  port=${host##*:}
+  host=${host%%:*}
+  [[ $rest != "$url" && ($host == localhost || $host == 127.0.0.1) && $port == "$SERVICES_API_PORT" ]] ||
+    die "$DEV_PROFILE names $url as the API's service provider, which a browser here does not \
+reach: the API serves HTTPS on 127.0.0.1:$SERVICES_API_PORT, which services publishes. Make the \
+two agree, or leave CP_SANDBOX_IDP_METADATA_URL empty"
 }
 
 # service_settings <service>: what the sandbox changes in an optional service's settings, a
@@ -573,6 +602,7 @@ cmd_services_prepare() {
   cidrs=$(vpc_cidrs)
   [[ -n $cidrs ]] || die "$CP_SANDBOX_VPC_ID has no IPv4 address range"
   check_docker_subnets "$cidrs" "$SERVICES_DOCKER_SUBNETS"
+  [[ -z $CP_SANDBOX_IDP_METADATA_URL ]] || check_sp_endpoint
   zone=$(subnet_zone)
   ensure_key_pair "$name"
   source=$(distribution_source)
@@ -933,6 +963,17 @@ Sandbox $name: the API runs here, in the container $(service_container "$name" a
   pipe-common   $(pipe_common_served "$name")
   log           sandbox.sh services --log
 EOF
+  if [[ -n $CP_SANDBOX_IDP_METADATA_URL ]]; then
+    printf '  %-13s %s\n' identity "$CP_SANDBOX_IDP_METADATA_URL"
+    printf '  %-13s sign in at %s, published on 127.0.0.1 only; everyone who reaches it signs in\n' \
+      '' "$(sp_endpoint_id)"
+    if [[ -n $CP_SANDBOX_API_SSO_DIR ]]; then
+      printf '  %-13s its requests signed with the sso key of %s/store.jks\n' \
+        '' "$CP_SANDBOX_API_SSO_DIR"
+    else
+      printf '  %-13s its requests signed with the certificate the sandbox made for itself\n' ''
+    fi
+  fi
   if [[ -n $SERVICES_WITH ]]; then
     printf '  %-13s http://%s:%s on the network, in the container %s\n' elasticsearch \
       "$ELASTICSEARCH_HOST" "$ELASTICSEARCH_PORT" "$(service_container "$name" elasticsearch)"

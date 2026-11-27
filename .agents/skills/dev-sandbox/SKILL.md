@@ -31,6 +31,9 @@ them.
   background. `--build` builds the jars again first; `services --stop` removes its containers.
   The master's registry takes a login, deletes, and notifies the API of pushes, as a deployment's
   does (`README.md` → "The registry").
+  **A sandbox has no sign-in unless `CP_SANDBOX_IDP_METADATA_URL` names an identity provider**, and
+  with one the API's port is published on `127.0.0.1`, where whoever reaches it signs in: stop the
+  services once that check is over (`README.md` → "An identity provider").
   The admin token is `admin-token.secret` in the local state, for scripts to read; the REST API is
   `https://api:9999/pipeline/restapi/` on the sandbox's network. **Call it with `sandbox.sh api
   <method> <path> [<json body>] [--jq <filter>]`**, which blanks out the secrets in the answer,

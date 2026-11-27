@@ -243,11 +243,48 @@ api_config_hash() {
   } | git hash-object --stdin | cut -c1-12
 }
 
+# api_setting <name> <file> <key>: a value the tools image wrote into one of the API's settings
+# files, api.env or api.properties, which hold no secret. Read with sed: jq is in the tools image,
+# and this runs on the workstation.
+api_setting() {
+  local file=$STATE_ROOT/$1/$2 key=${3//./\\.}
+  [ -f "$file" ] || return 0
+  sed -n "s/^$key=//p" "$file" | head -n 1
+}
+
+# api_publish <name>: the port mapping the API's container needs, or nothing. With an identity
+# provider, the browser signs in at the service provider address the API names, so its port is
+# published — on the loopback address alone, since whoever reaches it signs in. Without one,
+# nothing is published: the API takes the admin's token, and a published port would be an open
+# door.
+api_publish() {
+  local port
+  [ -n "$(api_setting "$1" api.env SANDBOX_IDP_METADATA_URL)" ] || return 0
+  port=$(api_setting "$1" api.properties server.port)
+  [ -n "$port" ] || die "api.properties of sandbox $1 sets no server.port, so the API's port \
+cannot be published for the identity provider: set it in the dev profile those settings are \
+rendered from, api/profiles/dev/application.properties"
+  printf '127.0.0.1:%s:%s\n' "$port" "$port"
+}
+
+# api_sso_dir <name>: the directory holding the keystore whose key the API signs its authentication
+# requests with, which its container needs mounted, or nothing. It is on the workstation, so this is
+# where it is looked for: the tools image sees nothing of it.
+api_sso_dir() {
+  local dir
+  dir=$(api_setting "$1" api.env SANDBOX_API_SSO_DIR)
+  [ -n "$dir" ] || return 0
+  [ -d "$dir" ] || die "CP_SANDBOX_API_SSO_DIR names $dir, which is not a directory on this workstation"
+  [ -f "$dir/store.jks" ] || die "$dir, which CP_SANDBOX_API_SSO_DIR names, holds no store.jks: \
+the API signs its authentication requests with the sso key of that keystore"
+  printf '%s\n' "$dir"
+}
+
 # start_api <name>: the API, on the sandbox's network as api, where the tunnel's remote forward
 # leads, started again when what it starts from has changed.
 start_api() {
-  local name=$1 dir=$STATE_ROOT/$1 container state hash
-  local -a credentials=()
+  local name=$1 dir=$STATE_ROOT/$1 container state hash publish sso
+  local -a credentials=() published=() signing=()
   container=$(service_container "$name" api)
   if [ "$HOST_DRY_RUN" = 1 ]; then
     hash='dry-run'
@@ -276,12 +313,22 @@ start_api() {
   if [ -f "$ENV_FILE" ]; then
     credentials+=(--env-file "$ENV_FILE")
   fi
+  publish=$(api_publish "$name")
+  if [ -n "$publish" ]; then
+    published=(--publish "$publish")
+  fi
+  sso=$(api_sso_dir "$name")
+  if [ -n "$sso" ]; then
+    signing=(--volume "$sso:$sso:ro")
+  fi
   # shellcheck disable=SC2086 # API_JAVA_OPTIONS is a list of words
   docker_change run --detach --init --name "$container" --label "$LABEL_SANDBOX=$name" \
     --label "$LABEL_ROLE=api" --label "$LABEL_CONFIG=$hash" \
     --network "$(sandbox_network "$name")" --network-alias api \
+    ${published[@]+"${published[@]}"} \
     --cap-add NET_ADMIN --device /dev/net/tun \
     --volume "$REPO_ROOT:$REPO_ROOT:ro" --volume "$dir:$dir:ro" \
+    ${signing[@]+"${signing[@]}"} \
     ${credentials[@]+"${credentials[@]}"} --env-file "$dir/api.env" \
     "$API_IMAGE" java $API_JAVA_OPTIONS -jar "$dir/api.jar" \
     "--spring.config.location=file:$dir/api.properties" >/dev/null
