@@ -48,7 +48,7 @@ rather than extended afterward. Mutually exclusive with `--conf` and `E2E_ADMIN_
   image, e.g. on a dev sandbox, defaults it to `true`.
 
 A browser session expires after 30 minutes of inactivity. For the run, `scripts/admin-session.sh` sets its expiration
-in the API database (`pipeline.spring_session`, via the `cp-api-db` pod) to 30 days (`E2E_SESSION_EXTENSION_SECONDS`),
+in the API database (`pipeline.spring_3_session`, via the `cp-api-db` pod) to 30 days (`E2E_SESSION_EXTENSION_SECONDS`),
 a watcher re-applies it every 5 minutes while the tests run (the API writes the loaded value back on every request),
 and the original expiration is restored when the run ends, also after a failure or an interruption. Manually:
 `scripts/admin-session.sh extend|watch|restore --state <dir>`.
