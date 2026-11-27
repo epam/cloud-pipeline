@@ -583,8 +583,9 @@ public class PipelineRunManager {
      * of the pool ({@code pool_id}) and is the authoritative source for it, so it overrides any
      * {@code podAssignPolicy} the caller sent - the launch form works the same way for a pool it offers.
      * {@code additionalParameters} are defaults instead: a parameter the request already carries keeps the
-     * value the request gave it, so a caller can still override what the pool suggests. An entry whose value
-     * is {@code null} is skipped - nothing in the launch accepts a parameter without a value.
+     * value the request gave it, so a caller can still override what the pool suggests. An entry with no value
+     * is skipped, on the same rule {@code PipelineConfigurationManager} applies to an empty-valued parameter
+     * the request sent, so the two paths agree on what an empty entry means.
      *
      * <p>This runs ahead of {@code calculateDynamicParameterValues} and {@code checkCapacityRequirements} so
      * that a parameter the pool supplies is resolved and validated like one the request sent. The one step it
@@ -625,7 +626,7 @@ public class PipelineRunManager {
         }
         final Map<String, PipeConfValueVO> merged = new LinkedHashMap<>(parameters);
         additionalParameters.entrySet().stream()
-                .filter(entry -> entry.getValue() != null)
+                .filter(entry -> StringUtils.isNotEmpty(entry.getValue()))
                 .forEach(entry -> merged.putIfAbsent(entry.getKey(), new PipeConfValueVO(entry.getValue())));
         configuration.setParameters(merged);
     }

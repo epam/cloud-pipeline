@@ -152,6 +152,7 @@ public class PipelineRunManagerLaunchTest {
     private static final long PIPELINE_ID = 1L;
     private static final long FOLDER_ID = 1L;
     private static final String POOL_PARAMETER = "CP_CAP_POOL_PARAMETER";
+    private static final String EMPTY_POOL_PARAMETER = "CP_CAP_POOL_PARAMETER_EMPTY";
     private static final String POOL_PARAMETER_VALUE = "pool-value";
     private static final String CALLER_PARAMETER_VALUE = "caller-value";
 
@@ -751,12 +752,16 @@ public class PipelineRunManagerLaunchTest {
     @Test
     public void launchPipelineSkipsAPoolParameterThatCarriesNoValue() {
         setPoolIdParameter(configuration, String.valueOf(ID_2));
-        doReturn(Optional.of(poolWithAdditionalParameters(Collections.singletonMap(POOL_PARAMETER, null))))
+        final Map<String, String> additionalParameters = new HashMap<>();
+        additionalParameters.put(POOL_PARAMETER, null);
+        additionalParameters.put(EMPTY_POOL_PARAMETER, "");
+        doReturn(Optional.of(poolWithAdditionalParameters(additionalParameters)))
                 .when(nodePoolManager).find(ID_2);
 
         assertNotNull(launchPipeline(configuration, INSTANCE_TYPE));
 
         assertFalse(configuration.getParameters().containsKey(POOL_PARAMETER));
+        assertFalse(configuration.getParameters().containsKey(EMPTY_POOL_PARAMETER));
     }
 
     @Test

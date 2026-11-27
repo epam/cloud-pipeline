@@ -45,7 +45,7 @@ A fallback candidate whose instance type has no price catalogue entry in the poo
 
 ## A node pool's own run parameters for a run bound to it
 
-A shareable node pool's `launchConfig` may carry `additionalParameters` - run parameters for a run that names that pool. Previously they were applied only to a run that picked the pool in the launch form. A run that names the pool through the `CP_CAP_POOL_ID` parameter instead - from the CLI, from an API call, or from a pipeline's own `config.json` - now receives them as well.
+A shareable node pool's `launchConfig` may carry `additionalParameters` - run parameters for a run that names that pool. Previously they were applied only to a run that picked the pool in the launch form and reserved CPU, GPU or RAM from it. A run that names the pool through the `CP_CAP_POOL_ID` parameter instead - from the CLI, from an API call, or from a pipeline's own `config.json` - now receives them as well.
 
 They arrive as defaults on this path: a parameter the launch request already sets keeps the value the request gave it, and an entry with no value is skipped. One limit: a `CP_CAP_CUSTOM_*` flag applied this way does not pull in that custom capability's own declared parameters, as capabilities are expanded before the pool is consulted - the capability's commands still run, and every other `CP_CAP_*` parameter is unaffected. See [Guaranteeing a run's capacity](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#guaranteeing-a-runs-capacity).
 
