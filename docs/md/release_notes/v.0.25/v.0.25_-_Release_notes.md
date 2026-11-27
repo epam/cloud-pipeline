@@ -3,6 +3,7 @@
 - [Migration to Java 21](#migration-to-java-21)
 - [Capacity block offering search over several instance types](#capacity-block-offering-search-over-several-instance-types)
 - [Fallback instance types for a future-dated capacity reservation](#fallback-instance-types-for-a-future-dated-capacity-reservation)
+- [A node pool's own run parameters for a run bound to it](#a-node-pools-own-run-parameters-for-a-run-bound-to-it)
 - [Parallel download into the disk buffer of a storage mount](#parallel-download-into-the-disk-buffer-of-a-storage-mount)
 - [Launch capabilities: restrict a capability to certain users or roles](#launch-capabilities-restrict-a-capability-to-certain-users-or-roles)
 
@@ -39,6 +40,14 @@ A future-dated reservation's request can now also carry `fallbackCandidates` - o
 How many fallback candidates one request may carry is bounded by the `cluster.capacity.reservation.fallback.candidates.max.count` preference - **5** by default, `-1` to disable the limit.
 
 A fallback candidate whose instance type has no price catalogue entry in the pool's region is now rejected at creation, rather than silently accepted and sorted last among the candidates.
+
+***
+
+## A node pool's own run parameters for a run bound to it
+
+A shareable node pool's `launchConfig` may carry `additionalParameters` - run parameters for a run that names that pool. Previously they were applied only to a run that picked the pool in the launch form. A run that names the pool through the `CP_CAP_POOL_ID` parameter instead - from the CLI, from an API call, or from a pipeline's own `config.json` - now receives them as well.
+
+They arrive as defaults on this path: a parameter the launch request already sets keeps the value the request gave it, and an entry with no value is skipped. One limit: a `CP_CAP_CUSTOM_*` flag applied this way does not pull in that custom capability's own declared parameters, as capabilities are expanded before the pool is consulted - the capability's commands still run, and every other `CP_CAP_*` parameter is unaffected. See [Guaranteeing a run's capacity](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#guaranteeing-a-runs-capacity).
 
 ***
 
