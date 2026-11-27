@@ -127,7 +127,7 @@ public class NodePool extends AbstractSecuredEntity {
     public String resolveInstanceImage() {
         return Optional.ofNullable(amiConfiguration)
                 .map(AMIConfiguration::getAmi)
-                .filter(ami -> !ami.trim().isEmpty())
+                .filter(ami -> !ami.isBlank())
                 .orElse(instanceImage);
     }
 

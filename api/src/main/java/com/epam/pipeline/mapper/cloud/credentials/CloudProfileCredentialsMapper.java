@@ -36,7 +36,7 @@ public interface CloudProfileCredentialsMapper {
 
     default AbstractCloudProfileCredentials toDto(final CloudProfileCredentialsEntity entity) {
         return getMapper(entity.getCloudProvider()).toDTO(this, entity);
-    };
+    }
 
     AWSProfileCredentialsEntity toAWSEntity(AWSProfileCredentials credentials);
 

@@ -19,6 +19,11 @@ on:
         required: false
         type: string
         default: ''
+      alias:
+        description: "Optional alias, appended to the commit-specific image tag: '<tag>.<commit>.<alias>'"
+        required: false
+        type: string
+        default: ''
 
 env:
   CLOUD_PIPELINE_BUILD_NUMBER_SEED: 20000
@@ -32,6 +37,7 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '21'
+          architecture: 'aarch64'
       - uses: actions/setup-python@v2
         with:
           python-version: '3.9'
@@ -111,7 +117,8 @@ jobs:
     uses: ./.github/workflows/build-pipectl.yml
     with:
       cp_dist_url: "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/builds/${{ github.ref_name }}/${{ needs.Build_All.outputs.cp_dist_filename }}"
-      # A push carries no inputs, so it always builds with the cache
+      # A push carries no inputs, so it always builds with the cache and without an alias
       build_without_cache_images: ${{ inputs.build_without_cache_images }}
+      alias: ${{ inputs.alias }}
     secrets: inherit
       

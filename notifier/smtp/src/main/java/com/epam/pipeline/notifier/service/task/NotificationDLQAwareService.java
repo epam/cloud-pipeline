@@ -42,6 +42,9 @@ public class NotificationDLQAwareService implements NotificationManager {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
+    // Catches Exception on purpose: whatever a delivery fails on, the message has to reach the DLQ
+    // rather than stop the queue being drained.
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public void notifySubscribers(NotificationMessage message) {
         final Long messageId = message.getId();
         try {

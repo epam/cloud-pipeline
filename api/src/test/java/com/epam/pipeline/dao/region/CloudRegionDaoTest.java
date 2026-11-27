@@ -351,7 +351,7 @@ public class CloudRegionDaoTest extends AbstractJdbcTest {
         return withDefaults(new GCPRegion());
     }
 
-    private <REGION extends AbstractCloudRegion> REGION withDefaults(final REGION region) {
+    private <R extends AbstractCloudRegion> R withDefaults(final R region) {
         region.setName("name-" + RandomUtils.nextInt());
         region.setRegionCode("regionId-" + RandomUtils.nextInt());
         region.setOwner("test-admin");

@@ -1,28 +1,154 @@
 <?xml version="1.0"?>
-<ruleset name="dts-ruleset"
+<ruleset name="cloud-pipeline"
          xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 http://pmd.sourceforge.net/ruleset_2_0_0.xsd">
-    <description/>
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+    <description>
+        The rules this repository enforces, named one by one rather than by category, so that the
+        set is what it says it is and does not grow when PMD adds a rule to a category.
 
-    <rule ref="rulesets/java/basic.xml"/>
-    <rule ref="rulesets/java/unusedcode.xml"/>
-    <rule ref="rulesets/java/imports.xml">
-        <exclude name="TooManyStaticImports"/>
+        Not enforced, deliberately: TooManyStaticImports, ShortVariable, LongVariable,
+        ShortClassName, SignatureDeclareThrowsException, and the *NamingConventions rules covering
+        fields, locals and parameters.
+    </description>
+
+    <!-- bestpractices -->
+    <rule ref="category/java/bestpractices.xml/AvoidStringBufferField"/>
+    <rule ref="category/java/bestpractices.xml/PrimitiveWrapperInstantiation"/>
+    <rule ref="category/java/bestpractices.xml/AvoidUsingHardCodedIP"/>
+    <rule ref="category/java/bestpractices.xml/CheckResultSet"/>
+    <rule ref="category/java/bestpractices.xml/UnusedFormalParameter"/>
+    <rule ref="category/java/bestpractices.xml/UnusedLocalVariable"/>
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateField"/>
+
+    <!-- codestyle -->
+    <rule ref="category/java/codestyle.xml/AvoidDollarSigns"/>
+    <rule ref="category/java/codestyle.xml/ClassNamingConventions">
+        <properties>
+            <!-- An abstract class is named Abstract*; the rule default does not ask for it. -->
+            <property name="abstractClassPattern" value="Abstract[A-Z]\w*"/>
+        </properties>
     </rule>
-    <rule ref="rulesets/java/strings.xml"/>
-    <rule ref="rulesets/java/braces.xml"/>
-    <rule ref="rulesets/java/empty.xml">
+    <rule ref="category/java/codestyle.xml/TypeParameterNamingConventions"/>
+    <rule ref="category/java/codestyle.xml/ControlStatementBraces"/>
+    <rule ref="category/java/codestyle.xml/EmptyControlStatement">
         <priority>2</priority>
     </rule>
-    <rule ref="rulesets/java/finalizers.xml"/>
-    <rule ref="rulesets/java/naming.xml">
-        <exclude name="VariableNamingConventions"/>
-        <exclude name="ShortClassName"/>
-        <exclude name="LongVariable"/>
-        <exclude name="ShortVariable"/>
+    <rule ref="category/java/codestyle.xml/ExtendsObject"/>
+    <rule ref="category/java/codestyle.xml/ForLoopShouldBeWhileLoop"/>
+    <rule ref="category/java/codestyle.xml/NoPackage"/>
+    <rule ref="category/java/codestyle.xml/PackageCase"/>
+    <rule ref="category/java/codestyle.xml/UnnecessaryImport"/>
+    <rule ref="category/java/codestyle.xml/UnnecessarySemicolon">
+        <priority>2</priority>
     </rule>
-    <rule ref="rulesets/java/strictexception.xml">
-        <exclude name="SignatureDeclareThrowsException"/>
+
+    <!-- design -->
+    <rule ref="category/java/design.xml/AvoidRethrowingException"/>
+    <rule ref="category/java/design.xml/AvoidThrowingNewInstanceOfSameException"/>
+    <rule ref="category/java/design.xml/AvoidThrowingNullPointerException"/>
+    <rule ref="category/java/design.xml/CollapsibleIfStatements"/>
+    <rule ref="category/java/design.xml/DoNotExtendJavaLangError"/>
+    <rule ref="category/java/design.xml/SimplifiedTernary"/>
+
+    <!-- errorprone -->
+    <rule ref="category/java/errorprone.xml/AvoidBranchingStatementAsLastInLoop"/>
+    <rule ref="category/java/errorprone.xml/AvoidCallingFinalize"/>
+    <rule ref="category/java/errorprone.xml/AvoidCatchingGenericException"/>
+    <rule ref="category/java/errorprone.xml/AvoidFieldNameMatchingTypeName"/>
+    <rule ref="category/java/errorprone.xml/AvoidMultipleUnaryOperators"/>
+    <rule ref="category/java/errorprone.xml/AvoidUsingOctalValues"/>
+    <rule ref="category/java/errorprone.xml/BrokenNullCheck"/>
+    <rule ref="category/java/errorprone.xml/ClassCastExceptionWithToArray"/>
+    <rule ref="category/java/errorprone.xml/DoNotThrowExceptionInFinally"/>
+    <rule ref="category/java/errorprone.xml/DontUseFloatTypeForLoopIndices"/>
+    <rule ref="category/java/errorprone.xml/EmptyCatchBlock">
+        <priority>2</priority>
     </rule>
+    <rule ref="category/java/errorprone.xml/EmptyFinalizer"/>
+    <rule ref="category/java/errorprone.xml/FinalizeDoesNotCallSuperFinalize"/>
+    <rule ref="category/java/errorprone.xml/FinalizeOnlyCallsSuperFinalize"/>
+    <rule ref="category/java/errorprone.xml/FinalizeOverloaded"/>
+    <rule ref="category/java/errorprone.xml/FinalizeShouldBeProtected"/>
+    <rule ref="category/java/errorprone.xml/JumbledIncrementer"/>
+    <rule ref="category/java/errorprone.xml/MethodWithSameNameAsEnclosingClass"/>
+    <rule ref="category/java/errorprone.xml/MisplacedNullCheck"/>
+    <rule ref="category/java/errorprone.xml/OverrideBothEqualsAndHashcode"/>
+    <rule ref="category/java/errorprone.xml/ReturnFromFinallyBlock"/>
+    <rule ref="category/java/errorprone.xml/StringBufferInstantiationWithChar"/>
+    <rule ref="category/java/errorprone.xml/SuspiciousEqualsMethodName"/>
+    <rule ref="category/java/errorprone.xml/SuspiciousHashcodeMethodName"/>
+    <rule ref="category/java/errorprone.xml/UnconditionalIfStatement"/>
+    <rule ref="category/java/errorprone.xml/UnnecessaryCaseChange"/>
+    <rule ref="category/java/errorprone.xml/UseEqualsToCompareStrings"/>
+
+    <!-- multithreading -->
+    <rule ref="category/java/multithreading.xml/AvoidThreadGroup"/>
+    <rule ref="category/java/multithreading.xml/DontCallThreadRun"/>
+    <rule ref="category/java/multithreading.xml/DoubleCheckedLocking"/>
+
+    <!-- performance -->
+    <rule ref="category/java/performance.xml/AppendCharacterWithChar"/>
+    <rule ref="category/java/performance.xml/ConsecutiveAppendsShouldReuse"/>
+    <rule ref="category/java/performance.xml/ConsecutiveLiteralAppends"/>
+    <rule ref="category/java/performance.xml/InefficientEmptyStringCheck"/>
+    <rule ref="category/java/performance.xml/InefficientStringBuffering"/>
+    <rule ref="category/java/performance.xml/StringInstantiation"/>
+    <rule ref="category/java/performance.xml/StringToString"/>
+    <rule ref="category/java/performance.xml/UseIndexOfChar"/>
+    <rule ref="category/java/performance.xml/UseStringBufferLength"/>
+    <rule ref="category/java/performance.xml/UselessStringValueOf"/>
+
+    <!--
+        Not enforced. What each reports is either deliberate here, or a change that reaches
+        past the line it flags, so none of it is addressed yet:
+
+
+        AvoidDecimalLiteralsInBigDecimalConstructor (errorprone):
+        the one it reports is in a price calculation, where the rounding it asks for is a pricing
+        decision
+
+        AvoidDuplicateLiterals (errorprone):
+        counts repeated literals in tests, where the repetition is the fixture
+
+        AvoidFieldNameMatchingMethodName (errorprone):
+        a field and its accessor sharing a name is the convention here
+
+        AvoidThrowingRawExceptionTypes (design):
+        satisfying it changes which exception a caller sees
+
+        BigIntegerInstantiation (performance):
+        the two it reports build a BigInteger from a named test constant, which is the point of
+        the constant
+
+        BooleanGetMethodName (codestyle):
+        renaming the accessor it reports changes a public method name
+
+        ExceptionAsFlowControl (design):
+        satisfying it means restructuring the callers, not a local edit
+
+        InsufficientStringBufferDeclaration (performance):
+        asks for a capacity hint on every builder
+
+        MethodNamingConventions (codestyle):
+        rejects the underscore in JUnit method names that separates the case from its condition
+
+        ShortMethodName (codestyle):
+        the name it reports is the static factory `of`, where the brevity is the point
+
+        UnnecessaryFullyQualifiedName (codestyle):
+        flags the qualifier on a member already in scope, which is how every DAO here names its
+        *Parameters enum constants
+
+        UnusedReturnValue (errorprone):
+        ten of the eleven it reports are Observable.subscribe() calls whose Disposable is not
+        kept, which is deliberate for a subscription that lives as long as the process. It is
+        where both CheckSkipResult and AvoidLosingExceptionInformation end up, so neither of
+        those is listed separately
+
+        UnusedPrivateMethod (bestpractices):
+        the three it reports sit in code still being built out
+
+        Removing one from this list means fixing what it reports, not silencing it.
+    -->
 </ruleset>

@@ -11,6 +11,11 @@ on:
         required: false
         type: string
         default: ''
+      alias:
+        description: "Optional alias, appended to the commit-specific image tag: '<tag>.<commit>.<alias>'"
+        required: false
+        type: string
+        default: ''
   workflow_call:
     inputs:
       cp_dist_url:
@@ -19,6 +24,11 @@ on:
         type: string
       build_without_cache_images:
         description: "Images to rebuild without docker cache: 'all', or exact service names, comma-separated"
+        required: false
+        type: string
+        default: ''
+      alias:
+        description: "Optional alias, appended to the commit-specific image tag: '<tag>.<commit>.<alias>'"
         required: false
         type: string
         default: ''
@@ -54,6 +64,19 @@ jobs:
       version_full: ${{ steps.parse.outputs.version_full }}
       version_ref: ${{ steps.parse.outputs.version_ref }}
     steps:
+      # An alias ends up inside a docker reference, and the tags input is
+      # comma-separated, so a stray character here breaks every matrix job
+      - name: Validate alias
+        if: ${{ inputs.alias != '' }}
+        env:
+          ALIAS: ${{ inputs.alias }}
+        run: |
+          if [[ ! "$ALIAS" =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]*$ ]]; then
+            echo "Invalid alias: '$ALIAS'"
+            echo "Allowed: letters, digits, '_', '.' and '-', starting with a letter, a digit or '_'"
+            exit 1
+          fi
+
       - name: Parse version from dist URL
         id: parse
         run: |
@@ -301,9 +324,16 @@ jobs:
 
       - name: Compute tag
         id: tag
+        env:
+          # Read through the environment, so the value is never part of the script text
+          ALIAS: ${{ inputs.alias }}
         run: |
           TAG_SUFFIX=$(eval echo "${{ matrix.tag }}")
           TAG_REF_SUFFIX="${TAG_SUFFIX/$DOCKERS_VERSION/$DOCKERS_VERSION_REF}"
+          # An alias tells apart the commit-ref tags of several builds of the same commit
+          if [[ -n "$ALIAS" ]]; then
+            TAG_REF_SUFFIX="${TAG_REF_SUFFIX}.${ALIAS}"
+          fi
           REGISTRY_PREFIX="${{ secrets.CP_DOCKER_DIST_SRV }}${{ secrets.CP_DOCKER_USER }}/cloud-pipeline"
           echo "image_tag=${REGISTRY_PREFIX}:${TAG_SUFFIX}" >> "$GITHUB_OUTPUT"
           echo "image_tag_ref=${REGISTRY_PREFIX}:${TAG_REF_SUFFIX}" >> "$GITHUB_OUTPUT"

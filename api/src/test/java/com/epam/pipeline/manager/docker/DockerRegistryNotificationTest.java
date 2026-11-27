@@ -112,7 +112,7 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
     private final ToolGroup toolGroup1 = getToolGroup(ID, IMAGE_GROUP_1, ID, ANOTHER_SIMPLE_USER);
     private final Tool tool1 = getTool(toolGroup1, IMAGE, registry, ANOTHER_SIMPLE_USER);
     private final Tool tool2 = getTool(getToolGroup(null, IMAGE_GROUP_2, ID, ANOTHER_SIMPLE_USER),
-            IMAGE_NEW_GROUP, registry, ANOTHER_SIMPLE_USER);;
+            IMAGE_NEW_GROUP, registry, ANOTHER_SIMPLE_USER);
     private final Tool tool3 = getTool(getToolGroup(null, IMAGE_GROUP_1, ID_2, ANOTHER_SIMPLE_USER),
             IMAGE, registryWithExternalPath, ANOTHER_SIMPLE_USER);
 
