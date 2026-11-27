@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.manager.cluster.capacityreservation.cloud;
 
-import com.epam.pipeline.controller.vo.cluster.CapacitySpecification;
 import com.epam.pipeline.controller.vo.cluster.capacityreservation.CapacityBlockOfferingRequest;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockInstanceTypeInfo;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockOffering;
@@ -25,6 +24,7 @@ import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityBlockEx
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservation;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.vo.CapacitySpecification;
 
 import java.time.Duration;
 import java.util.List;

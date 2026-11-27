@@ -17,6 +17,9 @@
 package com.epam.pipeline.entity.cluster.capacityreservation;
 
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.vo.CapacitySpecification;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -31,6 +34,8 @@ public class CapacityReservationTest {
 
     private static final String CLOUD_ID = "cr-0123456789abcdef0";
     private static final LocalDateTime START = LocalDateTime.of(2026, 10, 1, 12, 0);
+
+    private final ObjectMapper mapper = new ObjectMapper();
 
     @Test
     public void shouldCopyEveryField() {
@@ -95,6 +100,23 @@ public class CapacityReservationTest {
     public void shouldNotBeExtendableWhenNotActiveOrFinalizing() {
         assertFalse(capacityBlock(CapacityReservationStatus.SCHEDULED).isExtendable());
         assertFalse(capacityBlock(CapacityReservationStatus.REQUIRED_APPROVE).isExtendable());
+    }
+
+    @Test
+    public void shouldSerializeTheCandidateAsANestedObject() {
+        final CapacityReservation reservation = CapacityReservation.builder()
+                .candidate(CapacitySpecification.builder()
+                        .instanceType("p5.48xlarge")
+                        .instanceCount(2)
+                        .build())
+                .build();
+
+        final JsonNode json = mapper.valueToTree(reservation);
+
+        assertFalse(json.has("instanceType"));
+        assertFalse(json.has("instanceCount"));
+        assertEquals("p5.48xlarge", json.get("candidate").get("instanceType").asText());
+        assertEquals(2, json.get("candidate").get("instanceCount").asInt());
     }
 
     private static CapacityReservation capacityBlock(final CapacityReservationStatus status) {

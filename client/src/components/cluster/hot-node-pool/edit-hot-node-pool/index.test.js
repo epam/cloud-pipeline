@@ -684,7 +684,7 @@ test(
       pool: reservationPool({count: 0}),
       reservations: [{
         nodePoolId: reservationPool().id,
-        instanceCount: 4,
+        candidate: {instanceCount: 4},
         status: 'PENDING'
       }]
     });
@@ -704,7 +704,7 @@ test(
       pool: reservationPool({count: 0}),
       reservations: [{
         nodePoolId: reservationPool().id,
-        instanceCount: 4,
+        candidate: {instanceCount: 4},
         status: 'FINISHED'
       }]
     });
@@ -724,7 +724,7 @@ test(
       pool: reservationPool({count: 4}),
       reservations: [{
         nodePoolId: reservationPool().id,
-        instanceCount: 4,
+        candidate: {instanceCount: 4},
         status: 'ACTIVE'
       }]
     });
@@ -756,7 +756,7 @@ test('a Default-mode pool keeps the editable Nodes count input regardless of res
   async () => {
     await renderPool({
       pool: fullPool(),
-      reservations: [{nodePoolId: fullPool().id, instanceCount: 4, status: 'PENDING'}]
+      reservations: [{nodePoolId: fullPool().id, candidate: {instanceCount: 4}, status: 'PENDING'}]
     });
 
     expect(within(row('Nodes count:')).getByRole('textbox')).not.toBeDisabled();

@@ -28,6 +28,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.test.creator.cluster.capacityreservation.CapacityReservationCreatorUtils;
+import com.epam.pipeline.vo.CapacitySpecification;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,7 +55,9 @@ public class CapacityReservationApprovalServiceTest {
     private static final Long ORIGIN_ID = 1L;
     private static final Long REGION_ID = 1L;
     private static final String INSTANCE_TYPE = "p5.48xlarge";
+    private static final String FALLBACK_INSTANCE_TYPE = "c5.4xlarge";
     private static final int INSTANCE_COUNT = 2;
+    private static final int FALLBACK_INSTANCE_COUNT = 4;
     private static final String OWNER = "user";
     private static final long ORIGIN_DURATION = 14 * 24 * 3600L;
     private static final long ONE_HOUR = 3600L;
@@ -150,6 +153,93 @@ public class CapacityReservationApprovalServiceTest {
         assertThat(service.evaluate(request)).isEqualTo(CapacityReservationStatus.REQUIRED_APPROVE);
     }
 
+    @Test
+    public void shouldRequireApprovalWhenAFallbackCandidateDoesNotMatchTheAutoApprovePolicy() {
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_CAPACITY_RESERVATION_POLICIES))
+                .thenReturn(policies("AUTO_APPROVE", "instance.type", INSTANCE_TYPE));
+        final CapacityReservation request = futureDatedRequestWithFallback();
+
+        assertThat(service.evaluate(request)).isEqualTo(CapacityReservationStatus.REQUIRED_APPROVE);
+    }
+
+    @Test
+    public void shouldDenyTheWholeReservationWhenAFallbackCandidateMatchesADenyPolicy() {
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_CAPACITY_RESERVATION_POLICIES))
+                .thenReturn(policies("DENY", "instance.type", FALLBACK_INSTANCE_TYPE));
+        final CapacityReservation request = futureDatedRequestWithFallback();
+
+        assertThatThrownBy(() -> service.evaluate(request)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    public void shouldApproveWhenTheMainCandidateAndEveryFallbackMatchAutoApprove() {
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_CAPACITY_RESERVATION_POLICIES))
+                .thenReturn(policies("AUTO_APPROVE", "reservation.type", "FUTURE_DATED"));
+        final CapacityReservation request = futureDatedRequestWithFallback();
+
+        assertThat(service.evaluate(request)).isEqualTo(CapacityReservationStatus.APPROVED);
+    }
+
+    @Test
+    public void shouldApproveAsAdminEvenWhenAFallbackWouldBeDenied() {
+        when(authManager.isAdmin()).thenReturn(true);
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_CAPACITY_RESERVATION_POLICIES))
+                .thenReturn(policies("DENY", "instance.type", FALLBACK_INSTANCE_TYPE));
+        final CapacityReservation request = futureDatedRequestWithFallback();
+
+        assertThat(service.evaluate(request)).isEqualTo(CapacityReservationStatus.APPROVED);
+    }
+
+    @Test
+    public void shouldNotInheritApprovalWhenARetryAddsAFallbackCandidateTheOriginNeverHad() {
+        final CapacityReservation origin = failedOrigin(ORIGIN_DURATION);
+        when(reservationService.find(ORIGIN_ID)).thenReturn(Optional.of(origin));
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_CAPACITY_RESERVATION_POLICIES))
+                .thenReturn(policies("DENY", "instance.type", FALLBACK_INSTANCE_TYPE));
+        final CapacityReservation retry = retryOf(origin, ORIGIN_DURATION - ONE_HOUR).toBuilder()
+                .fallbackCandidates(Collections.singletonList(fallback()))
+                .build();
+
+        assertThatThrownBy(() -> service.evaluate(retry)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    public void shouldInheritApprovalWhenARetryKeepsTheSameFallbackCandidates() {
+        final CapacitySpecification sameFallback = fallback();
+        final CapacityReservation origin = failedOrigin(ORIGIN_DURATION).toBuilder()
+                .fallbackCandidates(Collections.singletonList(sameFallback))
+                .build();
+        when(reservationService.find(ORIGIN_ID)).thenReturn(Optional.of(origin));
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_CAPACITY_RESERVATION_POLICIES))
+                .thenReturn(policies("DENY", "instance.type", FALLBACK_INSTANCE_TYPE));
+        final CapacityReservation retry = retryOf(origin, ORIGIN_DURATION - ONE_HOUR).toBuilder()
+                .fallbackCandidates(Collections.singletonList(sameFallback))
+                .build();
+
+        assertThat(service.evaluate(retry)).isEqualTo(CapacityReservationStatus.APPROVED);
+    }
+
+    private static CapacitySpecification fallback() {
+        return CapacitySpecification.builder()
+                .instanceType(FALLBACK_INSTANCE_TYPE)
+                .instanceCount(FALLBACK_INSTANCE_COUNT)
+                .build();
+    }
+
+    private static CapacityReservation futureDatedRequestWithFallback() {
+        return CapacityReservation.builder()
+                .candidate(CapacitySpecification.builder()
+                        .instanceType(INSTANCE_TYPE)
+                        .instanceCount(INSTANCE_COUNT)
+                        .build())
+                .reservationType(CapacityReservationType.FUTURE_DATED)
+                .cloudProvider(CloudProvider.AWS)
+                .regionId(REGION_ID)
+                .owner(OWNER)
+                .fallbackCandidates(Collections.singletonList(fallback()))
+                .build();
+    }
+
     private static List<CapacityReservationPolicy> policies(final String action) {
         return policies(action, "reservation.type", "CAPACITY_BLOCK");
     }
@@ -170,8 +260,10 @@ public class CapacityReservationApprovalServiceTest {
         return CapacityReservation.builder()
                 .id(ORIGIN_ID)
                 .status(CapacityReservationStatus.FAILED)
-                .instanceType(INSTANCE_TYPE)
-                .instanceCount(INSTANCE_COUNT)
+                .candidate(CapacitySpecification.builder()
+                        .instanceType(INSTANCE_TYPE)
+                        .instanceCount(INSTANCE_COUNT)
+                        .build())
                 .commitmentDuration(durationSeconds)
                 .reservationType(CapacityReservationType.FUTURE_DATED)
                 .cloudProvider(CloudProvider.AWS)
@@ -183,8 +275,7 @@ public class CapacityReservationApprovalServiceTest {
     private static CapacityReservation retryOf(final CapacityReservation origin, final long durationSeconds) {
         return CapacityReservation.builder()
                 .originId(origin.getId())
-                .instanceType(origin.getInstanceType())
-                .instanceCount(origin.getInstanceCount())
+                .candidate(origin.getCandidate())
                 .commitmentDuration(durationSeconds)
                 .reservationType(origin.getReservationType())
                 .cloudProvider(origin.getCloudProvider())

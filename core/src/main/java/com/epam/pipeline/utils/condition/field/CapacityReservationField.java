@@ -18,6 +18,7 @@ package com.epam.pipeline.utils.condition.field;
 
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.utils.condition.FieldType;
+import com.epam.pipeline.vo.CapacitySpecification;
 import lombok.Getter;
 
 import java.util.Arrays;
@@ -57,11 +58,11 @@ import static com.epam.pipeline.utils.condition.FieldType.STRING;
 public enum CapacityReservationField implements SubjectEntityField<CapacityReservation> {
 
     INSTANCE_TYPE(STRING,
-        CapacityReservation::getInstanceType,
+        reservation -> candidateField(reservation, CapacitySpecification::getInstanceType),
         "instance.type"),
 
     INSTANCE_COUNT(NUMERIC,
-        reservation -> str(reservation.getInstanceCount()),
+        reservation -> str(candidateField(reservation, CapacitySpecification::getInstanceCount)),
         "instance.count"),
 
     COMMITMENT_DURATION(NUMERIC,
@@ -133,5 +134,10 @@ public enum CapacityReservationField implements SubjectEntityField<CapacityReser
 
     private static String str(final Object value) {
         return value != null ? value.toString() : null;
+    }
+
+    private static <T> T candidateField(final CapacityReservation reservation,
+                                        final Function<CapacitySpecification, T> getter) {
+        return Optional.ofNullable(reservation.getCandidate()).map(getter).orElse(null);
     }
 }

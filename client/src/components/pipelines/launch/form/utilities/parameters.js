@@ -37,6 +37,9 @@ export const CP_CAP_REQUESTS_CPU = 'CP_CAP_REQUESTS_CPU';
 export const CP_CAP_REQUESTS_GPU = 'CP_CAP_REQUESTS_GPU';
 export const CP_CAP_REQUESTS_RAM = 'CP_CAP_REQUESTS_RAM';
 
+// The id of the pool a run launches on.
+export const CP_CAP_POOL_ID = 'CP_CAP_POOL_ID';
+
 export const systemCapabilitiesParameters = [
   CP_CAP_DIND_CONTAINER,
   CP_CAP_SINGULARITY,
@@ -71,7 +74,8 @@ export const reservedParameters = [
 
   CP_CAP_REQUESTS_CPU,
   CP_CAP_REQUESTS_GPU,
-  CP_CAP_REQUESTS_RAM
+  CP_CAP_REQUESTS_RAM,
+  CP_CAP_POOL_ID
 ];
 
 export const RUN_CAPABILITIES = {

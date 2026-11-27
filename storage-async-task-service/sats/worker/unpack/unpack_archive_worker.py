@@ -43,7 +43,8 @@ from pathlib import Path, PurePosixPath
 
 from ...cp_api_client import CloudPipelineApi
 from .archive_extractor import ExtractionLimits, extract
-from ...util.archive_probe import ArchiveFormat, ArchiveProbe, detect_format, probe_archive
+from ...util.archive_probe import ArchiveFormat, ArchiveProbe, detect_format, \
+    estimated_content_bytes, estimated_total_bytes, probe_archive
 from ...config import ServiceConfig, StorageUnpackArchiveTaskConfig
 from ...datastorage_providers import EntryKind, FileDestination, FileSource, open_destination, \
     open_source
@@ -238,19 +239,33 @@ class UnpackArchiveWorker(AsyncTaskWorker):
                 f'The archive declares {human_bytes(probe.total_bytes)} of content, and '
                 f'{human_bytes(size_limit)} is the most one archive may be extracted into. Split it, '
                 f'or ask an administrator to raise the limit.')
+        if size_limit is not None and probe.total_bytes is None:
+            self._assert_estimate_within_limit(archive.size, probe.format, size_limit)
         return probe
+
+    @staticmethod
+    def _assert_estimate_within_limit(archive_size: int, archive_format: ArchiveFormat,
+                                      size_limit: int) -> None:
+        """
+        This early check rejects an archive that seems too big to fit the limit, saving you from
+        downloading the whole file before finding out.
+        """
+        estimated = estimated_content_bytes(archive_format, archive_size)
+        if estimated <= size_limit:
+            return
+        raise ThresholdExceeded(
+            f'The archive does not say how much it holds. A {archive_format} archive of '
+            f'{human_bytes(archive_size)} would hold about {human_bytes(estimated)}, which is more '
+            f'than the {human_bytes(size_limit)} one archive may be extracted into. Split it, or ask '
+            f'an administrator to raise the limit.')
 
     def _assert_fits_locally(self, archive_size: int, probe: ArchiveProbe) -> None:
         """
-        Checks the scratch directory against the archive plus its content, before downloading.
-
-        The content is counted at what the archive declares, and at `maxSizeBytes` where the format
-        declares nothing - the byte counter stops the extraction at that size anyway. A declared
-        total that lies ends as `ENOSPC`, which fails the task with a message saying so.
+        Verifies that local storage has sufficient free capacity for an archive
+        extraction, including both the original archive and the estimated extracted
+        content size.
         """
-        content = probe.total_bytes
-        if content is None:
-            content = self._unpack_config.max_size_bytes or 0
+        content = estimated_total_bytes(probe, archive_size)
         needed = archive_size + content
         free = shutil.disk_usage(self._config.work_dir).free
         if free < needed:

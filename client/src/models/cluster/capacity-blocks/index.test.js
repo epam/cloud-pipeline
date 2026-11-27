@@ -52,7 +52,6 @@ test('sends the fixed capacity-block filter', async () => {
 
   expect(api.calls).toHaveLength(1);
   expect(JSON.parse(api.calls[0].body)).toEqual({
-    isCapacityReservation: true,
     active: true
   });
 });

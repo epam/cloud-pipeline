@@ -82,6 +82,19 @@ describe('InstanceTypeSuggestion', () => {
     expect(screen.getByText(/available until 1 Jun 2024/)).toBeInTheDocument();
   });
 
+  it('does not describe the suggestions as reserved capacity', () => {
+    const {container} = renderSuggestion({
+      pools: [pool()],
+      instanceTypes: [instanceType('m5.large')]
+    });
+    const header = container.querySelector('[class*="header"]').textContent;
+    expect(header.toLowerCase()).not.toContain('reserved capacity');
+    expect(header).toContain(
+      'You have 1 node pool available. ' +
+      'Please consider one of the node types below to re-use existing capacity:'
+    );
+  });
+
   // The comma between the region and the count is the count's own, so a pool
   // with no known count must not leave one dangling after the region.
   it('separates the reserved count from the region with a comma', () => {
@@ -91,6 +104,15 @@ describe('InstanceTypeSuggestion', () => {
     });
     expect(container.querySelector('[class*="infoMain"]').textContent)
       .toBe('m5.largeeu-central-1, 2 nodes reserved');
+  });
+
+  it('shows the node count of a default pool without the word "reserved"', () => {
+    const {container} = renderSuggestion({
+      pools: [pool({isCapacityReservation: false})],
+      instanceTypes: [instanceType('m5.large')]
+    });
+    expect(container.querySelector('[class*="infoMain"]').textContent)
+      .toBe('m5.largeeu-central-1, 2 nodes');
   });
 
   it('renders no trailing comma when the reserved count is unknown', () => {
@@ -143,7 +165,7 @@ describe('InstanceTypeSuggestion', () => {
       reservations: [{
         nodePoolId: 7,
         status: 'ACTIVE',
-        instanceCount: 5,
+        candidate: {instanceCount: 5},
         endDate: '2024-07-15 00:00:00.000'
       }],
       instanceTypes: [instanceType('m5.large')]

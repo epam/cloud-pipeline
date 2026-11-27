@@ -82,8 +82,11 @@ import {
 } from '../run-tags/utilities';
 import {applyRunNameAliasTag} from '../run-tags/alias';
 import {
-  ensureValidReservationParametersForLaunchPayloads
+  ensureValidReservationParametersForLaunchPayloads,
+  readReservationParameters,
+  writeReservationParameters
 } from '../../pipelines/launch/form/components/reservation-parameters/utilities';
+import ReservationParameters from '../../pipelines/launch/form/components/reservation-parameters';
 import capacityBlocks from '../../../models/cluster/capacity-blocks';
 import {
   decodeInstanceTypeValue,
@@ -576,6 +579,10 @@ function runFn (
               singlePayload.capacityBlockPoolId = component.selectedCapacityBlockPool
                 ? component.selectedCapacityBlockPool.id
                 : undefined;
+              singlePayload.params = writeReservationParameters(
+                singlePayload.params,
+                component.reservationParameters
+              );
               singlePayload.hddSize = component.state.hddSize;
               singlePayload.tags = filterVisibleTagsSync(
                 component.state.tags,
@@ -707,6 +714,8 @@ export class RunConfirmation extends React.Component {
     instanceTypes: PropTypes.array,
     showInstanceTypeSelection: PropTypes.bool,
     onChangeInstanceType: PropTypes.func,
+    reservationParameters: PropTypes.object,
+    onChangeReservationParameters: PropTypes.func,
     dataStorages: PropTypes.array,
     limitMounts: PropTypes.string,
     onChangeLimitMounts: PropTypes.func,
@@ -874,8 +883,7 @@ export class RunConfirmation extends React.Component {
     return false;
   }
 
-  // Only a pool picked from "Reserved capacity blocks" is a reservation: a
-  // plain instance type launches without one, even where a pool backs it.
+  // True when the chosen node type is a pool option.
   get isInstanceTypeWithReservation () {
     return !!this.selectedCapacityBlockPool;
   }
@@ -1227,6 +1235,17 @@ export class RunConfirmation extends React.Component {
                     )
                   }
                 </Select>
+                <ReservationParameters
+                  style={{marginTop: 5}}
+                  instanceType={
+                    this.getInstanceTypes().find((t) => t.name === this.selectedInstanceTypeName)
+                  }
+                  poolId={
+                    this.selectedCapacityBlockPool ? this.selectedCapacityBlockPool.id : undefined
+                  }
+                  parameters={this.props.reservationParameters}
+                  onChange={this.props.onChangeReservationParameters}
+                />
               </div>
             } />
         }
@@ -1616,6 +1635,14 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     }, this.updateUserTagsValidationInfo);
   };
 
+  get reservationParameters () {
+    return this.state.reservationParameters || readReservationParameters(this.props.parameters);
+  }
+
+  onChangeReservationParameters = (reservationParameters) => {
+    this.setState({reservationParameters});
+  };
+
   onChangeLimitMounts = (limitMounts) => {
     this.setState({
       limitMounts
@@ -1720,6 +1747,8 @@ export class RunSpotConfirmationWithPrice extends React.Component {
             // dialog the run is reserved.
             instanceType={this.seededInstanceTypeValue}
             instanceTypes={this.props.availableInstanceTypes}
+            reservationParameters={this.reservationParameters}
+            onChangeReservationParameters={this.onChangeReservationParameters}
             dataStorages={this.props.dataStorages}
             limitMounts={this.props.limitMounts}
             onChangeLimitMounts={this.onChangeLimitMounts}
@@ -1783,6 +1812,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
       hddSize: this.props.hddSize,
       limitMounts: this.props.limitMounts,
       runCapabilities: getEnabledCapabilities(this.props.parameters),
+      reservationParameters: undefined,
       tags: this.props.tags || {}
     }, this.updateUserTagsValidationInfo);
   }

@@ -48,7 +48,8 @@
                         instance_platform,
                         attempt,
                         granted_commitment_duration,
-                        capacity_block_offering_id
+                        capacity_block_offering_id,
+                        fallback_candidates
                         )
                     VALUES (
                         :NODE_POOL_ID,
@@ -75,7 +76,8 @@
                         :INSTANCE_PLATFORM,
                         :ATTEMPT,
                         :GRANTED_COMMITMENT_DURATION,
-                        :CAPACITY_BLOCK_OFFERING_ID)
+                        :CAPACITY_BLOCK_OFFERING_ID,
+                        :FALLBACK_CANDIDATES::jsonb)
                 ]]>
             </value>
         </constructor-arg>
@@ -143,7 +145,8 @@
                         r.instance_platform AS INSTANCE_PLATFORM,
                         r.attempt AS ATTEMPT,
                         r.granted_commitment_duration AS GRANTED_COMMITMENT_DURATION,
-                        r.capacity_block_offering_id AS CAPACITY_BLOCK_OFFERING_ID
+                        r.capacity_block_offering_id AS CAPACITY_BLOCK_OFFERING_ID,
+                        r.fallback_candidates AS FALLBACK_CANDIDATES
                     FROM
                         pipeline.capacity_reservation AS r
                     WHERE
@@ -181,7 +184,8 @@
                         r.instance_platform AS INSTANCE_PLATFORM,
                         r.attempt AS ATTEMPT,
                         r.granted_commitment_duration AS GRANTED_COMMITMENT_DURATION,
-                        r.capacity_block_offering_id AS CAPACITY_BLOCK_OFFERING_ID
+                        r.capacity_block_offering_id AS CAPACITY_BLOCK_OFFERING_ID,
+                        r.fallback_candidates AS FALLBACK_CANDIDATES
                     FROM
                         pipeline.capacity_reservation AS r
                     WHERE
@@ -219,7 +223,8 @@
                         r.instance_platform AS INSTANCE_PLATFORM,
                         r.attempt AS ATTEMPT,
                         r.granted_commitment_duration AS GRANTED_COMMITMENT_DURATION,
-                        r.capacity_block_offering_id AS CAPACITY_BLOCK_OFFERING_ID
+                        r.capacity_block_offering_id AS CAPACITY_BLOCK_OFFERING_ID,
+                        r.fallback_candidates AS FALLBACK_CANDIDATES
                     FROM
                         pipeline.capacity_reservation AS r
                     WHERE
@@ -257,7 +262,8 @@
                         r.instance_platform AS INSTANCE_PLATFORM,
                         r.attempt AS ATTEMPT,
                         r.granted_commitment_duration AS GRANTED_COMMITMENT_DURATION,
-                        r.capacity_block_offering_id AS CAPACITY_BLOCK_OFFERING_ID
+                        r.capacity_block_offering_id AS CAPACITY_BLOCK_OFFERING_ID,
+                        r.fallback_candidates AS FALLBACK_CANDIDATES
                     FROM
                         pipeline.capacity_reservation AS r
                     ORDER BY
@@ -295,7 +301,8 @@
                         r.instance_platform AS INSTANCE_PLATFORM,
                         r.attempt AS ATTEMPT,
                         r.granted_commitment_duration AS GRANTED_COMMITMENT_DURATION,
-                        r.capacity_block_offering_id AS CAPACITY_BLOCK_OFFERING_ID
+                        r.capacity_block_offering_id AS CAPACITY_BLOCK_OFFERING_ID,
+                        r.fallback_candidates AS FALLBACK_CANDIDATES
                     FROM
                         pipeline.capacity_reservation AS r
                     WHERE
@@ -335,7 +342,8 @@
                         r.instance_platform AS INSTANCE_PLATFORM,
                         r.attempt AS ATTEMPT,
                         r.granted_commitment_duration AS GRANTED_COMMITMENT_DURATION,
-                        r.capacity_block_offering_id AS CAPACITY_BLOCK_OFFERING_ID
+                        r.capacity_block_offering_id AS CAPACITY_BLOCK_OFFERING_ID,
+                        r.fallback_candidates AS FALLBACK_CANDIDATES
                     FROM
                         pipeline.capacity_reservation AS r
                     WHERE

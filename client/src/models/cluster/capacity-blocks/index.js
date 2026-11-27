@@ -22,12 +22,8 @@ import {
   CP_CAP_REQUESTS_RAM
 } from '../../../components/pipelines/launch/form/utilities/parameters';
 
-// The one filter the client sends: every pool backing an active capacity
-// reservation. Region is left out on purpose - the launch form's region
-// changes while the form stays open, and the whole list is small enough that
-// filtering by region is done client-side instead of re-requesting per region.
+// Every active pool, in all regions. The list is filtered by region on the client.
 const CAPACITY_BLOCKS_FILTER = {
-  isCapacityReservation: true,
   active: true
 };
 

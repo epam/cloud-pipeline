@@ -20,7 +20,7 @@ import styles from './instance-type-info.css';
 import AWSRegionTag from '../AWSRegionTag';
 import {encodeCapacityBlockValue} from '../../../models/cluster/capacity-blocks/utilities';
 
-const CAPACITY_BLOCKS_GROUP_LABEL = 'Reserved capacity blocks';
+const CAPACITY_BLOCKS_GROUP_LABEL = 'Pools';
 
 const cpuMapper = (cpu, hyperThreadingDisabled = false) => {
   return hyperThreadingDisabled && !Number.isNaN(Number(cpu))
@@ -54,15 +54,11 @@ const cpuMapper = (cpu, hyperThreadingDisabled = false) => {
  * @property {boolean} [plainText=true]
  * @property {'Select'|'AutoComplete'} [selectFamily=Select]
  * @property {function} [valueFn]
- * @property {string} [tagValue] - a tag shown after the instance info;
- * `getSelectOptions` sets it to the pool name for a capacity-block option
+ * @property {string} [tagValue] - a tag shown after the instance info
+ * @property {string} [tagClassName] - an extra class for that tag
  * @property {{pool: Object, instanceType: InstanceInfo}[]} [capacityBlockPools]
- * - `getCapacityBlockOptions`'s output. When non-empty **and `selectFamily`
- * is `Select`** (the group renders for `Select` only - the one
- * `AutoComplete` caller is out of scope), `getSelectOptions` prepends a
- * "Reserved capacity blocks" group built from it, one option per pool,
- * tagged with the pool name. The plain options below it carry no tag:
- * picking a plain instance type launches without a reservation.
+ * - `getCapacityBlockOptions`'s output. With `selectFamily` `Select`, adds a
+ * "Pools" group on top, one option per pool.
  */
 
 /**
@@ -107,6 +103,7 @@ export function instanceInfoString (instance, options = {}) {
     displayRegion = false,
     plainText = true,
     tagValue: tagOption,
+    tagClassName,
     className,
     style
   } = options;
@@ -151,17 +148,21 @@ export function instanceInfoString (instance, options = {}) {
       )
     );
   }
-  if (tagValue) {
-    infoParts.push(plainText
-      ? tagValue
-      : (
-        <Tag key="tag" className={styles.instanceTypeInfoPart}>
-          {tagValue}
-        </Tag>
-      )
-    );
+  if (tagValue && plainText) {
+    infoParts.push(tagValue);
   }
-  const info = infoParts.length > 0
+  // Placed after the info parts, so a narrow select crops the CPU/RAM/GPU text and keeps the tag.
+  const tag = tagValue && !plainText
+    ? (
+      <Tag
+        key="tag"
+        className={classNames(styles.instanceTypeTag, 'cp-tag', tagClassName)}
+      >
+        {tagValue}
+      </Tag>
+    )
+    : undefined;
+  const info = infoParts.length > 0 || tag
     ? (plainText ? `${infoParts.join(', ')}` : infoParts)
     : undefined;
   if (info) {
@@ -188,6 +189,7 @@ export function instanceInfoString (instance, options = {}) {
           >
             {infoParts}
           </div>
+          {tag}
           {
             regionToDisplay && (
               <AWSRegionTag
@@ -288,11 +290,8 @@ export function getSelectOptionForInstance (instance, options = {}) {
 }
 
 /**
- * One `Select.Option` for a capacity-block pool: the backing instance type's
- * usual CPU/RAM/GPU presentation, tagged with the pool's own name - given
- * directly, not looked up, since the caller already knows which pool this
- * option is for - and valued with `encodeCapacityBlockValue`, so picking it
- * means *this pool*, not just the instance type it backs.
+ * One `Select.Option` for a pool: the instance type's CPU/RAM/GPU, a tag with
+ * the pool name (blue for a future-dated pool), and the `pool:<id>` value.
  *
  * @param {{pool: Object, instanceType: InstanceInfo}} capacityBlockOption
  * @param {InstanceInfoOptions} [options]
@@ -316,7 +315,8 @@ function getCapacityBlockSelectOption (capacityBlockOption, options = {}) {
     .toLowerCase();
   const presentationOptions = {
     ...(options || {}),
-    tagValue
+    tagValue,
+    tagClassName: pool.isCapacityReservation ? 'primary' : undefined
   };
   return (
     <Select.Option

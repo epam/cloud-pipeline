@@ -127,7 +127,8 @@ public class CapacityReservationMonitorTransactionTest extends AbstractManagerTe
         monitor.processScheduled();
 
         assertThat(statusOfReservation()).isEqualTo(CapacityReservationStatus.ACTIVE);
-        assertThat(countOfPool()).isEqualTo(CapacityReservationCreatorUtils.getReservation(poolId).getInstanceCount());
+        assertThat(countOfPool())
+                .isEqualTo(CapacityReservationCreatorUtils.getReservation(poolId).getCandidate().getInstanceCount());
     }
 
     @Test

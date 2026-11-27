@@ -16,9 +16,9 @@
 
 package com.epam.pipeline.controller.vo.cluster.capacityreservation;
 
-import com.epam.pipeline.controller.vo.cluster.CapacitySpecification;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockOffering;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockResourceType;
+import com.epam.pipeline.vo.CapacitySpecification;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

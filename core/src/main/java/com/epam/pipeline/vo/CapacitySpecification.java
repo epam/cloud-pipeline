@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller.vo.cluster;
+package com.epam.pipeline.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,8 +24,8 @@ import lombok.NoArgsConstructor;
 /**
  * An instance type and a count of it. Shared across the requests that need to ask about several
  * instance types at once instead of just one - a capacity block offering search for several
- * candidate types, each with its own count; a future-dated capacity reservation's own fallback
- * types; eventually perhaps a run's fallback instance types too.
+ * candidate types, each with its own count, and a future-dated capacity reservation's own fallback
+ * types.
  */
 @Data
 @Builder(toBuilder = true)

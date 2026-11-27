@@ -475,12 +475,12 @@ public class PipelineRunManager {
                     messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, instanceDisk));
         }
 
+        checkCapacityPoolCompatibility(configuration);
         calculateDynamicParameterValues(configuration);
         adjustInstanceDisk(configuration);
         final Optional<InstanceOffer> instance = instanceOfferManager.findOffer(instanceType, region.getId());
         checkGPUInstance(configuration, instance);
         checkCapacityRequirements(configuration, instance);
-        checkCapacityPoolCompatibility(configuration);
 
         final List<String> endpoints = configuration.isEraseRunEndpoints()
                 ? Collections.emptyList() : tool.getEndpoints();
@@ -575,14 +575,30 @@ public class PipelineRunManager {
      * legitimately empty before its window starts - and filter matching lives there, not here.
      *
      * <p>Once the pool passes every check above, the launch configuration of the pool is applied to
-     * {@code configuration}. Only a shareable pool has one, see {@code NodePoolLaunchConfigBuilder}. It names
-     * the node selector of the pool ({@code pool_id}) and is the authoritative source for it, so it overrides
-     * any {@code podAssignPolicy} the caller sent. The launch form already works the same way for a pool it
-     * offers. Every other pool type has no launch configuration, so this step does nothing for them and the
-     * default or caller-supplied policy stays as it is.
+     * {@code configuration}. Only a shareable pool has one, see {@code NodePoolLaunchConfigBuilder}. Every
+     * other pool type has no launch configuration, so this step does nothing for them and the caller's own
+     * policy and parameters stay as they are.
+     *
+     * <p>Its two parts are applied with opposite precedence. {@code kubeAssignPolicy} names the node selector
+     * of the pool ({@code pool_id}) and is the authoritative source for it, so it overrides any
+     * {@code podAssignPolicy} the caller sent - the launch form works the same way for a pool it offers.
+     * {@code additionalParameters} are defaults instead: a parameter the request already carries keeps the
+     * value the request gave it, so a caller can still override what the pool suggests. An entry with no value
+     * is skipped, on the same rule {@code PipelineConfigurationManager} applies to an empty-valued parameter
+     * the request sent, so the two paths agree on what an empty entry means.
+     *
+     * <p>This runs ahead of {@code calculateDynamicParameterValues} and {@code checkCapacityRequirements} so
+     * that a parameter the pool supplies is resolved and validated like one the request sent. The one step it
+     * cannot reach is custom-capability expansion: {@code PipelineConfigurationLaunchCapabilitiesProcessor}
+     * runs in {@code PipelineConfigurationManager}, before the configuration arrives here, so a
+     * {@code CP_CAP_CUSTOM_*} flag coming from a pool does not pull in that capability's declared
+     * {@code params}. Its {@code commands} still run - the job container reads {@code launch.capabilities}
+     * itself, in {@code workflows/pipe-common/shell/custom_cap_setup} - and every other {@code CP_CAP_*}
+     * parameter, handled inside the container, is unaffected.
      */
     private void checkCapacityPoolCompatibility(final PipelineConfiguration configuration) {
-        final PipeConfValueVO poolIdParam = MapUtils.emptyIfNull(configuration.getParameters()).get(CP_CAP_POOL_ID);
+        final Map<String, PipeConfValueVO> parameters = MapUtils.emptyIfNull(configuration.getParameters());
+        final PipeConfValueVO poolIdParam = parameters.get(CP_CAP_POOL_ID);
         if (poolIdParam == null || StringUtils.isBlank(poolIdParam.getValue())) {
             return;
         }
@@ -598,9 +614,21 @@ public class PipelineRunManager {
         final Long regionId = configuration.getCloudRegionId();
         Assert.isTrue(regionId == null || pool.getRegionId() == null || regionId.equals(pool.getRegionId()),
                 messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_REGION_MISMATCH, pool.getName()));
-        Optional.ofNullable(pool.getLaunchConfig())
-                .map(NodePoolLaunchConfig::getKubeAssignPolicy)
-                .ifPresent(configuration::setPodAssignPolicy);
+        final NodePoolLaunchConfig launchConfig = pool.getLaunchConfig();
+        if (launchConfig == null) {
+            return;
+        }
+        Optional.ofNullable(launchConfig.getKubeAssignPolicy()).ifPresent(configuration::setPodAssignPolicy);
+        final Map<String, String> additionalParameters = MapUtils.emptyIfNull(
+                launchConfig.getAdditionalParameters());
+        if (additionalParameters.isEmpty()) {
+            return;
+        }
+        final Map<String, PipeConfValueVO> merged = new LinkedHashMap<>(parameters);
+        additionalParameters.entrySet().stream()
+                .filter(entry -> StringUtils.isNotEmpty(entry.getValue()))
+                .forEach(entry -> merged.putIfAbsent(entry.getKey(), new PipeConfValueVO(entry.getValue())));
+        configuration.setParameters(merged);
     }
 
     private Long parsePoolId(final String value) {

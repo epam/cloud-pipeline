@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.test.creator.cluster.capacityreservation.CapacityReservationCreatorUtils;
 import com.epam.pipeline.test.creator.cluster.pool.NodePoolCreatorUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import com.epam.pipeline.vo.CapacitySpecification;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -121,8 +122,10 @@ public class CapacityReservationDaoTest extends AbstractJdbcTest {
         created.setStatus(CapacityReservationStatus.APPROVED);
         created.setStatusReason(CapacityReservationCreatorUtils.STATUS_REASON);
         created.setUpdated(created.getUpdated().plusMinutes(1));
-        created.setInstanceType("p5.4xlarge");
-        created.setInstanceCount(created.getInstanceCount() + 1);
+        created.setCandidate(CapacitySpecification.builder()
+                .instanceType("p5.4xlarge")
+                .instanceCount(created.getCandidate().getInstanceCount() + 1)
+                .build());
         created.setStartDate(created.getRequestedStartDate());
         created.setEndDate(created.getRequestedEndDate());
         created.setCommitmentDuration(created.getCommitmentDuration() + 1);
@@ -141,6 +144,41 @@ public class CapacityReservationDaoTest extends AbstractJdbcTest {
         assertThat(created.getCapacityBlockOfferingId())
                 .isEqualTo(CapacityReservationCreatorUtils.CAPACITY_BLOCK_OFFERING_ID);
         assertFound(reservationDao.find(created.getId()), created);
+    }
+
+    @Test
+    public void shouldRoundTripFallbackCandidates() {
+        final List<CapacitySpecification> fallbacks = Arrays.asList(
+                CapacitySpecification.builder().instanceType("p3.2xlarge").instanceCount(2).build(),
+                CapacitySpecification.builder().instanceType("c5.4xlarge").instanceCount(4).build());
+        final CapacityReservation reservation = CapacityReservationCreatorUtils.getReservation(createPool().getId());
+        reservation.setFallbackCandidates(fallbacks);
+        final CapacityReservation created = reservationDao.create(reservation);
+
+        assertFound(reservationDao.find(created.getId()), created);
+        assertThat(reservationDao.loadByNodePoolIds(Collections.singletonList(created.getNodePoolId())))
+                .containsExactly(created);
+        assertThat(reservationDao.loadAll()).containsExactly(created);
+        assertThat(reservationDao.loadByStatus(created.getStatus())).containsExactly(created);
+        assertThat(reservationDao.loadByOwner(created.getOwner())).containsExactly(created);
+
+        created.setName("renamed");
+        reservationDao.update(created);
+        assertThat(reservationDao.find(created.getId()).get().getFallbackCandidates()).isEqualTo(fallbacks);
+
+        created.setStatusReason(CapacityReservationCreatorUtils.STATUS_REASON);
+        created.setUpdated(created.getUpdated().plusMinutes(1));
+        reservationDao.updateRetry(created);
+        assertThat(reservationDao.find(created.getId()).get().getFallbackCandidates()).isEqualTo(fallbacks);
+    }
+
+    @Test
+    public void shouldDefaultFallbackCandidatesToEmptyRatherThanNull() {
+        final CapacityReservation created = reservationDao.create(
+                CapacityReservationCreatorUtils.getCapacityBlockReservation(createPool().getId()));
+
+        assertThat(created.getFallbackCandidates()).isEmpty();
+        assertThat(reservationDao.find(created.getId()).get().getFallbackCandidates()).isEmpty();
     }
 
     @Test

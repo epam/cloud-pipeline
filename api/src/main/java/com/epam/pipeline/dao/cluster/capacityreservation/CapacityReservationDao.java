@@ -16,10 +16,13 @@
 
 package com.epam.pipeline.dao.cluster.capacityreservation;
 
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.vo.CapacitySpecification;
+import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -175,7 +178,8 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
         INSTANCE_PLATFORM,
         ATTEMPT,
         GRANTED_COMMITMENT_DURATION,
-        CAPACITY_BLOCK_OFFERING_ID;
+        CAPACITY_BLOCK_OFFERING_ID,
+        FALLBACK_CANDIDATES;
 
         static MapSqlParameterSource getParameters(final CapacityReservation reservation) {
             final MapSqlParameterSource params = new MapSqlParameterSource();
@@ -194,8 +198,8 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
             params.addValue(OWNER.name(), reservation.getOwner());
             params.addValue(CREATED.name(), timestamp(reservation.getCreated()));
             params.addValue(UPDATED.name(), timestamp(reservation.getUpdated()));
-            params.addValue(INSTANCE_TYPE.name(), reservation.getInstanceType());
-            params.addValue(INSTANCE_COUNT.name(), reservation.getInstanceCount());
+            params.addValue(INSTANCE_TYPE.name(), reservation.getCandidate().getInstanceType());
+            params.addValue(INSTANCE_COUNT.name(), reservation.getCandidate().getInstanceCount());
             params.addValue(REQUESTED_START_DATE.name(), timestamp(reservation.getRequestedStartDate()));
             params.addValue(REQUESTED_END_DATE.name(), timestamp(reservation.getRequestedEndDate()));
             params.addValue(START_DATE.name(), timestamp(reservation.getStartDate()));
@@ -208,6 +212,8 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
             params.addValue(GRANTED_COMMITMENT_DURATION.name(),
                     reservation.getGrantedCommitmentDuration());
             params.addValue(CAPACITY_BLOCK_OFFERING_ID.name(), reservation.getCapacityBlockOfferingId());
+            params.addValue(FALLBACK_CANDIDATES.name(),
+                    JsonMapper.convertListToJsonStringForQuery(reservation.getFallbackCandidates()));
             return params;
         }
 
@@ -230,8 +236,10 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
                 reservation.setOwner(rs.getString(OWNER.name()));
                 reservation.setCreated(dateTime(rs, CREATED.name()));
                 reservation.setUpdated(dateTime(rs, UPDATED.name()));
-                reservation.setInstanceType(rs.getString(INSTANCE_TYPE.name()));
-                reservation.setInstanceCount(rs.getInt(INSTANCE_COUNT.name()));
+                reservation.setCandidate(CapacitySpecification.builder()
+                        .instanceType(rs.getString(INSTANCE_TYPE.name()))
+                        .instanceCount(rs.getInt(INSTANCE_COUNT.name()))
+                        .build());
                 reservation.setRequestedStartDate(dateTime(rs, REQUESTED_START_DATE.name()));
                 reservation.setRequestedEndDate(dateTime(rs, REQUESTED_END_DATE.name()));
                 reservation.setStartDate(dateTime(rs, START_DATE.name()));
@@ -242,6 +250,8 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
                 applyLong(rs, GRANTED_COMMITMENT_DURATION.name(),
                         reservation::setGrantedCommitmentDuration);
                 reservation.setCapacityBlockOfferingId(rs.getString(CAPACITY_BLOCK_OFFERING_ID.name()));
+                reservation.setFallbackCandidates(JsonMapper.parseData(rs.getString(FALLBACK_CANDIDATES.name()),
+                        new TypeReference<List<CapacitySpecification>>() {}));
                 return reservation;
             };
         }
