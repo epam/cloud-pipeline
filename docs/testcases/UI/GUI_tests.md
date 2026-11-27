@@ -154,11 +154,12 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Data_storages</b> (162 tests, 86 automated)</summary>
+<summary><b>Data_storages</b> (163 tests, 86 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
 | [**1469**](Data_storages/1469.md) | Check transfer between regions | :white_check_mark: |
+| [**4846**](Data_storages/4846.md) | Validation of the disabled "Select page" button |  |
 | [**EPMCMBIBPC-1017**](Data_storages/EPMCMBIBPC-1017.md) | Cross button validation if user delete bucket | :white_check_mark: |
 | [**EPMCMBIBPC-1035**](Data_storages/EPMCMBIBPC-1035.md) | Validation of navigation buttons in storage | :white_check_mark: |
 | [**EPMCMBIBPC-1178**](Data_storages/EPMCMBIBPC-1178.md) | [MANUAL] Validation of upload several files |  |
