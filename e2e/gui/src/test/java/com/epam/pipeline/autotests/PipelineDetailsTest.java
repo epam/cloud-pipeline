@@ -43,6 +43,7 @@ import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.DocumentTabAO.fileWithName;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.LOADING;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_NEW_RULE;
@@ -79,6 +80,7 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
 
     @AfterClass(alwaysRun = true)
     public void removePipelines() {
+        open(C.ROOT_ADDRESS);
         library().removePipelineIfExists(pipelineName)
                 .removePipelineIfExists(draftPipelineName);
     }

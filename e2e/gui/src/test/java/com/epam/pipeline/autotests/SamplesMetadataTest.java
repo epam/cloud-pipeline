@@ -22,6 +22,7 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -38,6 +39,7 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.*;
+import static com.codeborne.selenide.Condition.disabled;
 import static com.epam.pipeline.autotests.ao.Configuration.*;
 import static com.epam.pipeline.autotests.ao.Configuration.name;
 import static com.epam.pipeline.autotests.ao.Configuration.title;
@@ -153,6 +155,12 @@ public class SamplesMetadataTest
 
     private List<String> selectedSampleName = new ArrayList<>();
 
+    @BeforeMethod
+    public void refreshPage() {
+        refresh();
+        sleep(5, SECONDS);
+    }
+
     @AfterClass(alwaysRun = true)
     public void cleanUp() {
         open(C.ROOT_ADDRESS);
@@ -193,7 +201,6 @@ public class SamplesMetadataTest
     @Test
     @TestCase({"EPMCMBIBPC-1411"})
     public void createProjectFolder() {
-        refresh();
         library()
                 .createFolder(project)
                 .clickOnFolder(project)
@@ -223,7 +230,8 @@ public class SamplesMetadataTest
                 .uploadMetadata(getFile(wes11repsamples))
                 .uploadMetadata(getFile(wes11repset))
                 .sleep(2, SECONDS)
-                .ensure(byText(metadataFolder), visible);
+                .ensure(byText(metadataFolder), visible)
+                .refresh();
     }
 
     @Test(priority = 1, dependsOnMethods = {"metadataUploading"})
@@ -232,10 +240,11 @@ public class SamplesMetadataTest
         final String nonExistingPath = "prefix://unexisting-storage-path";
         library()
                 .cd(project)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .metadataSamples(sampleFolder)
                 .performIf(hideMetadata, visible, ms -> ms.click(hideMetadata))
-                .click(columnHeader(idField))
+                .initializeSorting(idField)
                 .sleep(5, SECONDS)
                 .performForEachRow(row -> {
 
@@ -253,7 +262,6 @@ public class SamplesMetadataTest
                             final String r2value = r2key.getValue();
                             r2key.changeValue(r2value.replace(nonExistingPath, path(dataStorage)))
                                     .close();
-
                             sleep(500, MILLISECONDS);
 
                             row.getCell("R1_Fastq")
@@ -269,6 +277,7 @@ public class SamplesMetadataTest
     public void viewMetadata() {
         library()
                 .cd(project)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .metadataSamples(sampleSetFolder, metadata -> {
                             metadata.validateFields(idField, createDateField, nameField, samplesField)
@@ -294,6 +303,7 @@ public class SamplesMetadataTest
     public void navigateToStorageFromMetadataEntity() {
         library()
                 .cd(project)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .metadataSamples(sampleFolder)
                 .getRow(1)
@@ -309,6 +319,7 @@ public class SamplesMetadataTest
         final By idHeader = columnHeader(idField);
         library()
                 .cd(project)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .metadataSamples(sampleFolder)
                 .initializeSorting(idField)
@@ -327,6 +338,7 @@ public class SamplesMetadataTest
         final String substring = "D70";
         library()
                 .cd(project)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .metadataSamples(sampleFolder)
                 .setValue(searchMetadata, substring)
@@ -343,6 +355,7 @@ public class SamplesMetadataTest
     public void columnsListCustomization() {
         library()
                 .cd(project)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .metadataSamples(sampleFolder)
                 .showColumnsMenu()
@@ -400,16 +413,20 @@ public class SamplesMetadataTest
                 .saveAndCommitWithMessage("test: sample metadata")
                 .click(DELETE)
                 .click(button("OK"))
+                .sleep(10, SECONDS)
                 .uploadFile(getFile(launchScript))
                 .ensure(byText(launchScript), visible);
-        sleep(20, SECONDS);
         refresh();
         library()
                 .cd(project)
                 .configurationWithin(configuration, profile ->
                         profile.expandTabs(execEnvironmentTab, advancedTab, parametersTab)
                                 .selectPipeline(pipeline)
+                                .ensure(ESTIMATED_PRICE, visible)
+                                .sleep(2, SECONDS)
+                                .ensure(SAVE, enabled)
                                 .click(save())
+                                .ensure(save(), disabled)
                                 .ensure(pipeline(), valueContains(pipeline))
                                 .ensure(image(), not(empty))
                                 .ensure(instanceType(), text(instanceType))
@@ -470,6 +487,7 @@ public class SamplesMetadataTest
                                 )
                                 .click(byText(projectOutput), in(comboboxDropdown()))
                                 .click(save())
+                                .ensure(save(), disabled)
                 );
     }
 
@@ -485,6 +503,7 @@ public class SamplesMetadataTest
                                 .selectValue(rootEntityType(), rootEntityTypeSampleSet)
                                 .ensure(rootEntityType(), text(rootEntityTypeSampleSet))
                                 .click(save())
+                                .ensure(save(), disabled)
                 );
     }
 
@@ -527,8 +546,10 @@ public class SamplesMetadataTest
                                                 byText(sampleNameAutocomplete)
                                         )
                                 ).click(byText(sampleNameAutocomplete), in(comboboxDropdown()))
-                                .click(save())
-                                .sleep(1, SECONDS)
+                                .sleep(2, SECONDS)
+                                .ensure(SAVE, enabled)
+                                .click(SAVE)
+                                .ensureDisable(SAVE)
                 );
     }
 
@@ -537,7 +558,8 @@ public class SamplesMetadataTest
     public void selectMetadataPopup() {
         library()
                 .cd(project)
-                .configuration(configuration, profile -> profile.click(run(), MetadataSelection::new))
+                .configuration(configuration, profile ->
+                        profile.sleep(3, SECONDS).click(run(), MetadataSelection::new))
                 .ensure(byText(project), visible)
                 .ensure(byText(metadataFolder), visible)
                 .ensure(MetadataSelection.header, text(project))
@@ -547,8 +569,8 @@ public class SamplesMetadataTest
                 .ensure(MetadataSelection.cancel, visible)
                 .ensure(MetadataSelection.ok, visible)
                 .cd(metadataFolder)
-                .ensure(byText("SampleSet"), visible)
-                .ensure(byText("Sample"), visible)
+                .ensure(byText("SampleSet [2]"), visible)
+                .ensure(byText(sampleFolder), visible)
                 .cd("Sample")
                 .also(ensureSamplesCountIs(subfolder1Files.length / 2 + subfolder2Files.length / 2));
     }
@@ -652,7 +674,6 @@ public class SamplesMetadataTest
                                         .click(run(), MetadataSelection::new)
                 )
                 .ensure(byText(project), visible)
-                .cd(project)
                 .ensure(byText(metadataFolder), visible)
                 .ensure(MetadataSelection.header, text(project))
                 .ensure(MetadataSelection.folders, text(metadataFolder))
@@ -696,6 +717,7 @@ public class SamplesMetadataTest
                                         .click(run(), MetadataSelection::new)
                 )
                 .cd(project)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .cd("SampleSet")
                 .samples(samples -> samples.getRowByCellValue("NA12878_3_rep").selectRow())
