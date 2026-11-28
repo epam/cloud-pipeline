@@ -102,6 +102,12 @@ public interface CloudFacade {
 
     CloudInstanceState getInstanceState(Long runId);
 
+    /**
+     * Retrieves the cloud state of a pool node's instance, identified by its node label
+     * (as a run node is identified by its run id).
+     */
+    CloudInstanceState getPoolNodeInstanceState(String nodeLabel);
+
     InstanceDNSRecord createDNSRecord(Long regionId, InstanceDNSRecord record);
 
     InstanceDNSRecord removeDNSRecord(Long regionId, InstanceDNSRecord record);

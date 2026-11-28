@@ -262,6 +262,10 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
             }
             return CloudInstanceState.TERMINATED;
         } catch (AzureException e) {
+            // a wrapped cause is a failed API call (authentication, network), not a confirmation the VM is gone
+            if (e.getCause() != null) {
+                throw e;
+            }
             log.error(e.getMessage(), e);
             return CloudInstanceState.TERMINATED;
         }

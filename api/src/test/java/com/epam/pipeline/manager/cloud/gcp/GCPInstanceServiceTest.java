@@ -16,7 +16,10 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
+import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.exception.cloud.gcp.GCPException;
+import com.google.api.services.compute.model.Instance;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -29,8 +32,13 @@ import java.util.Map;
 
 import static com.epam.pipeline.manager.execution.SystemParams.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 
 public class GCPInstanceServiceTest {
+
+    private static final String NODE_LABEL = "1";
 
     private static final String CRED_TEMPLATE = "{\n" +
             "  \"type\": \"service_account\",\n" +
@@ -92,4 +100,32 @@ public class GCPInstanceServiceTest {
         assertTrue(envVars.containsKey(CLOUD_REGION_PREFIX + regionWithoutAuthFile.getId()));
     }
 
+    @Test
+    public void instanceStateIsRunningForARunningInstance() throws IOException {
+        final GCPVMService vmService = mock(GCPVMService.class);
+        doReturn(new Instance().setStatus(GCPInstanceStatus.RUNNING.name()))
+                .when(vmService).findInstanceByNameTag(region, NODE_LABEL);
+
+        assertEquals(CloudInstanceState.RUNNING, serviceWith(vmService).getInstanceState(region, NODE_LABEL));
+    }
+
+    @Test
+    public void instanceStateIsTerminatedWhenNoInstanceMatchesTheNameTag() throws IOException {
+        final GCPVMService vmService = mock(GCPVMService.class);
+        doThrow(new GCPException("not found")).when(vmService).findInstanceByNameTag(region, NODE_LABEL);
+
+        assertEquals(CloudInstanceState.TERMINATED, serviceWith(vmService).getInstanceState(region, NODE_LABEL));
+    }
+
+    @Test
+    public void instanceStateCallFailsOnAnApiError() throws IOException {
+        final GCPVMService vmService = mock(GCPVMService.class);
+        doThrow(new IOException("quota exceeded")).when(vmService).findInstanceByNameTag(region, NODE_LABEL);
+
+        assertThrows(GCPException.class, () -> serviceWith(vmService).getInstanceState(region, NODE_LABEL));
+    }
+
+    private GCPInstanceService serviceWith(final GCPVMService vmService) {
+        return new GCPInstanceService(null, null, vmService, null, null, null, null, null, null);
+    }
 }
