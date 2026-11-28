@@ -17,6 +17,7 @@ package com.epam.pipeline.manager.cluster.autoscale;
 
 import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.controller.vo.TagsVO;
+import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cluster.pool.InstanceRequest;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.RunningInstance;
@@ -176,19 +177,43 @@ public class ScaleDownHandler {
         final Duration grace = findNodeUnavailableGraceDuration(pipelineRun, defaultGrace);
 
         if (now.minus(grace).isBefore(timestamp)) {
-            if (isUnavailableNodeLabeled(client, node)) {
-                return;
-            }
-            log.debug("Marking unavailable node {} #{}", getNodeName(node), getNodeLabel(node));
-            labelUnavailableNode(node, timestamp);
+            if (!isUnavailableNodeLabeled(client, node)) {
+                log.debug("Marking unavailable node {} #{}", getNodeName(node), getNodeLabel(node));
+                labelUnavailableNode(node, timestamp);
 
-            pipelineRun.ifPresent(run -> {
-                labelUnavailableNodeRun(run, timestamp);
-                logUnavailableNodeRun(run, timestamp);
-            });
+                pipelineRun.ifPresent(run -> {
+                    labelUnavailableNodeRun(run, timestamp);
+                    logUnavailableNodeRun(run, timestamp);
+                });
+            }
+            // the node may be unresponsive while its cloud instance is still up (e.g. a network blip);
+            // but once the cloud confirms it is gone (or stopped), there is no point in waiting out the grace period
+            if (!isNodeAliveOnCloud(node)) {
+                scaleDownUnavailableNode(client, node);
+            }
             return;
         }
         scaleDownUnavailableNode(client, node);
+    }
+
+    /**
+     * Checks the node's cloud instance state, on each autoscaler cycle while the node is unavailable.
+     * A cloud API error (throttling, a network blip) is not a confirmation the instance is gone,
+     * so it is treated as "alive" - the grace period is left to run its course.
+     */
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private boolean isNodeAliveOnCloud(final Node node) {
+        final String label = getNodeLabel(node);
+        try {
+            final CloudInstanceState state = isPooled(node)
+                    ? cloudFacade.getPoolNodeInstanceState(label)
+                    : cloudFacade.getInstanceState(Long.parseLong(label));
+            log.debug("Check if unavailable node {} is alive. Cloud instance state: {}", label, state);
+            return state == CloudInstanceState.RUNNING;
+        } catch (Exception e) {
+            log.warn("Failed to get cloud instance state for unavailable node {}: {}", label, e.getMessage());
+            return true;
+        }
     }
 
     private boolean isUnavailableNodeLabeled(final KubernetesClient client, final Node node) {

@@ -65,6 +65,11 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
 
     private static final Duration UPLOAD_FINISH_TIMEOUT = Duration.ofSeconds(60);
     private static final Duration LIST_LOADED_FOR = Duration.ofSeconds(2);
+    private static final Duration ARCHIVE_CONFIRMATION_TIMEOUT = Duration.ofSeconds(30);
+
+    // Mirrors ARCHIVE_EXTENSIONS in client/src/components/pipelines/browser/data-storage/utils/extract-archives.js
+    private static final List<String> ARCHIVE_EXTENSIONS = Arrays.asList(
+            ".tar.gz", ".tar.bz2", ".tar.xz", ".tgz", ".zip", ".tar", ".gz", ".bz2", ".xz");
 
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
             entry(REFRESH, context().find(byId("refresh-storage-button"))),
@@ -515,7 +520,34 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         sleep(25, SECONDS);
         ensure(UPLOAD, visible);
         $(byClassName("ant-upload")).find(tagName("input")).should(exist).uploadFile(file);
+        if (isArchive(file.getName())) {
+            confirmPlainUploadIfOffered();
+        }
         return this;
+    }
+
+    private boolean isArchive(final String fileName) {
+        final String lowerCaseName = fileName.toLowerCase();
+        return ARCHIVE_EXTENSIONS.stream().anyMatch(lowerCaseName::endsWith);
+    }
+
+    /**
+     * An archive upload may first ask whether to extract it (UploadButton#renderConfirmationFooter); the test always
+     * takes plain "Upload" (#upload-button-confirm), never "Upload and extract". Not every deployment offers
+     * extraction, so it waits for whichever comes first: the confirmation, or the "Uploading files..." pop-up.
+     */
+    private void confirmPlainUploadIfOffered() {
+        final SelenideElement confirmButton = $(byId("upload-button-confirm"));
+        final ElementsCollection uploading = $$(byClassName("ant-modal-content")).filterBy(text("Uploading files..."));
+        final long deadline = System.currentTimeMillis() + ARCHIVE_CONFIRMATION_TIMEOUT.toMillis();
+        while (!confirmButton.is(visible) && uploading.isEmpty() && System.currentTimeMillis() < deadline) {
+            Selenide.sleep(200);
+        }
+        if (confirmButton.is(visible)) {
+            // disabled while the archive-task limit is being checked
+            confirmButton.shouldBe(enabled, UPLOAD_FINISH_TIMEOUT).click();
+            confirmButton.should(disappear);
+        }
     }
 
     /**

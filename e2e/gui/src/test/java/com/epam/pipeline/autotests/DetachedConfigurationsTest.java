@@ -193,7 +193,8 @@ public class DetachedConfigurationsTest
             .sleep(5, SECONDS)
             .editConfiguration(pipelineDefaultProfile, profile -> {
                 refresh();
-                profile.expandTab(EXEC_ENVIRONMENT)
+                profile.ensureVisible(ESTIMATE_PRICE)
+                    .expandTab(EXEC_ENVIRONMENT)
                     .setValue(DISK, defaultDisk)
                     .sleep(3, SECONDS)
                     .selectValue(INSTANCE_TYPE, defaultInstanceType)
@@ -205,6 +206,7 @@ public class DetachedConfigurationsTest
             .editConfiguration(pipelineProfile1611, profile -> {
                 refresh();
                 profile
+                    .ensureVisible(ESTIMATE_PRICE)
                     .addStringParameter(stringParameter, stringParameterValue)
                     .addPathParameter(pathParameter, pathParameterValue)
                     .addCommonParameter(commonParameter, commonParameterValue)

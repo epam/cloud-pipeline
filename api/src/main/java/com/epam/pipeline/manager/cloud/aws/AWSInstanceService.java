@@ -65,7 +65,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -291,8 +290,12 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
 
     @Override
     public CloudInstanceState getInstanceState(final AwsRegion region, final String nodeLabel) {
-        final Instance aliveInstance = ec2Helper.getAliveInstance(nodeLabel, region);
-        if (Objects.isNull(aliveInstance)) {
+        final Instance aliveInstance;
+        try {
+            aliveInstance = ec2Helper.getAliveInstance(nodeLabel, region);
+        } catch (AwsEc2Exception e) {
+            // no running/pending/stopping/stopped instance with this Name tag: it is gone for good
+            log.debug("Instance for label {} not found: {}", nodeLabel, e.getMessage());
             return CloudInstanceState.TERMINATED;
         }
         final String instanceStateName = aliveInstance.getState().getName();

@@ -279,6 +279,12 @@ public class CloudFacadeImpl implements CloudFacade {
     }
 
     @Override
+    public CloudInstanceState getPoolNodeInstanceState(final String nodeLabel) {
+        final AbstractCloudRegion region = loadRegionFromNodeLabels(nodeLabel);
+        return getInstanceService(region).getInstanceState(region, nodeLabel);
+    }
+
+    @Override
     public InstanceDNSRecord createDNSRecord(final Long regionId, final InstanceDNSRecord record) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
         return getInstanceService(region).getOrCreateInstanceDNSRecord(region, record);

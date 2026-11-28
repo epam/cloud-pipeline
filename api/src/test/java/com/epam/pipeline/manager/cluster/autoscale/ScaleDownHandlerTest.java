@@ -18,11 +18,13 @@ package com.epam.pipeline.manager.cluster.autoscale;
 
 import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.controller.vo.TagsVO;
+import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cluster.pool.InstanceRequest;
 import com.epam.pipeline.entity.cluster.pool.RunningInstance;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cloud.CloudFacade;
@@ -68,6 +70,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -129,6 +132,7 @@ public class ScaleDownHandlerTest {
         final LocalDateTime lastHeartbeat = now.minusMinutes(GRACE_MINUTES + 10);
         final Node node = getNode(getNodeLabels(),
                 getCondition(READY, UNKNOWN, lastHeartbeat, unavailableSince));
+        doReturn(CloudInstanceState.RUNNING).when(cloudFacade).getInstanceState(RUN_ID);
 
         checkFreeNodes(node, Collections.emptySet());
 
@@ -136,6 +140,77 @@ public class ScaleDownHandlerTest {
                 KubernetesConstants.KUBE_LABEL_DATE_FORMATTER.format(unavailableSince));
         verify(pipelineRunManager).updateTags(eq(RUN_ID), any(TagsVO.class), eq(false));
         verify(cloudFacade, never()).scaleDownNode(anyLong());
+    }
+
+    @Test
+    public void shouldScaleDownUnavailableNodeImmediatelyWhenCloudInstanceIsGone() {
+        final LocalDateTime unavailableSince = now.minusMinutes(5);
+        final LocalDateTime lastHeartbeat = now.minusMinutes(GRACE_MINUTES + 10);
+        final Node node = getNode(getNodeLabels(),
+                getCondition(READY, UNKNOWN, lastHeartbeat, unavailableSince));
+        doReturn(CloudInstanceState.TERMINATED).when(cloudFacade).getInstanceState(RUN_ID);
+        final RunningInstance previousInstance = new RunningInstance();
+        previousInstance.setInstance(new RunInstance());
+        doReturn(previousInstance).when(autoscalerService).getPreviousRunInstance(NODE_LABEL, client);
+        doReturn(getRun()).when(runCRUDService).loadRunById(RUN_ID);
+
+        checkFreeNodes(node, Collections.emptySet());
+
+        verify(cloudFacade).scaleDownNode(RUN_ID);
+        verify(pipelineRunManager).updatePipelineStatusIfNotFinal(RUN_ID, TaskStatus.FAILURE);
+    }
+
+    @Test
+    public void shouldScaleDownAlreadyMarkedUnavailableNodeOnceCloudInstanceIsGone() {
+        final LocalDateTime unavailableSince = now.minusMinutes(5);
+        final LocalDateTime lastHeartbeat = now.minusMinutes(GRACE_MINUTES + 10);
+        final Node node = getNode(getNodeLabels(),
+                getCondition(READY, UNKNOWN, lastHeartbeat, unavailableSince));
+        doReturn(Collections.singletonMap(KubernetesConstants.UNAVAILABLE_NODE_LABEL, "marked"))
+                .when(kubernetesManager).getNodeLabels(eq(client), anyString());
+        doReturn(CloudInstanceState.TERMINATED).when(cloudFacade).getInstanceState(RUN_ID);
+        final RunningInstance previousInstance = new RunningInstance();
+        previousInstance.setInstance(new RunInstance());
+        doReturn(previousInstance).when(autoscalerService).getPreviousRunInstance(NODE_LABEL, client);
+        doReturn(getRun()).when(runCRUDService).loadRunById(RUN_ID);
+
+        checkFreeNodes(node, Collections.emptySet());
+
+        verify(kubernetesManager, never()).addNodeLabel(anyString(), anyString(), anyString());
+        verify(cloudFacade).scaleDownNode(RUN_ID);
+        verify(pipelineRunManager).updatePipelineStatusIfNotFinal(RUN_ID, TaskStatus.FAILURE);
+    }
+
+    @Test
+    public void shouldNotScaleDownUnavailableNodeWhenCloudStateCheckFails() {
+        final LocalDateTime unavailableSince = now.minusMinutes(5);
+        final LocalDateTime lastHeartbeat = now.minusMinutes(GRACE_MINUTES + 10);
+        final Node node = getNode(getNodeLabels(),
+                getCondition(READY, UNKNOWN, lastHeartbeat, unavailableSince));
+        doThrow(new RuntimeException("AWS request limit exceeded")).when(cloudFacade).getInstanceState(RUN_ID);
+
+        checkFreeNodes(node, Collections.emptySet());
+
+        verify(cloudFacade, never()).scaleDownNode(anyLong());
+        verify(pipelineRunManager, never()).updatePipelineStatusIfNotFinal(anyLong(), any(TaskStatus.class));
+    }
+
+    @Test
+    public void shouldCheckPoolNodeCloudStateByItsNodeLabelNotByRunId() {
+        final String poolLabel = "p-5";
+        final LocalDateTime unavailableSince = now.minusMinutes(5);
+        final LocalDateTime lastHeartbeat = now.minusMinutes(GRACE_MINUTES + 10);
+        final Map<String, String> labels = new HashMap<>();
+        labels.put(KubernetesConstants.RUN_ID_LABEL, poolLabel);
+        labels.put(KubernetesConstants.CLOUD_INSTANCE_ID_LABEL, INSTANCE_ID);
+        final Node node = getNode(labels, getCondition(READY, UNKNOWN, lastHeartbeat, unavailableSince));
+        doReturn(CloudInstanceState.TERMINATED).when(cloudFacade).getPoolNodeInstanceState(poolLabel);
+
+        checkFreeNodes(node, Collections.emptySet());
+
+        verify(cloudFacade).getPoolNodeInstanceState(poolLabel);
+        verify(cloudFacade, never()).getInstanceState(anyLong());
+        verify(cloudFacade).scaleDownPoolNode(poolLabel);
     }
 
     @Test
