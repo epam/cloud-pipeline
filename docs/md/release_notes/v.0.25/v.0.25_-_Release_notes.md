@@ -13,6 +13,7 @@
 - [Notable Bug fixes](#notable-bug-fixes)
     - [Unavailable cluster nodes are not detected](#unavailable-cluster-nodes-are-not-detected)
     - [`pipe` CLI for macOS ARM needs Rosetta](#pipe-cli-for-macos-arm-needs-rosetta)
+    - [A custom role added to a Cloud Region's permissions gets no access](#a-custom-role-added-to-a-cloud-regions-permissions-gets-no-access)
 
 ***
 
@@ -116,3 +117,11 @@ Please note: after the update, nodes that have already been unavailable for long
 
 Previously, the `pipe` CLI distribution for Mac devices with ARM-based chips (Apple Silicon, the **MacOS-ARM** installation option, `pipe-osx-arm.tar.gz`) was built for Intel (`x86_64`) processors, both `pipe` and the bundled `pipe-fuse`. So it could run only through Rosetta.
 Now, it is a native `arm64` build, and it runs without Rosetta.
+
+### A custom role added to a Cloud Region's permissions gets no access
+
+[#4971](https://github.com/epam/cloud-pipeline/issues/4971)
+
+Previously, when a custom role was added to a Cloud Region's permissions with **Add group** (**Settings** → **CLOUD REGIONS**), the permission was granted for the role's displayed name, without its `ROLE_` prefix. Such a name matches no role, so the role's members still could not see or use the region. The permissions list showed the entry like a correct one.
+Now, the permission is granted for the role's full name.
+Please note: an entry added this way before the update stays. In the list it looks the same as the role, so remove it and save first, then add the role again.
