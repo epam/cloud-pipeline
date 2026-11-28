@@ -451,14 +451,40 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                 .close();
     }
 
+    private static final int ADD_PARAMETER_ATTEMPTS = 3;
+
+    /**
+     * The dropdown menu can close again right after the hover opens it (observed as the menu item going
+     * "hidden" the moment the click reaches it), so a hover-and-click here is retried a bounded number of
+     * times. The row-count guard keeps a retry from adding the parameter a second time if the first click
+     * went through after all.
+     */
     private RunParameterAO clickAddParameter(String parameterType) {
         final List<Integer> indexesBefore = ParameterFieldAO.parameterIndexes();
-        resetMouse();
-        $(byId("add-parameter-dropdown-button")).shouldBe(visible).hover();
-        $(byText(parameterType)).shouldBe(visible).click();
+        for (int attempt = 1; ; attempt++) {
+            resetMouse();
+            $(byId("add-parameter-dropdown-button")).shouldBe(visible).hover();
+            try {
+                $(byText(parameterType)).shouldBe(visible).click();
+                break;
+            } catch (AssertionError e) {
+                if (parameterAdded(indexesBefore)) {
+                    break;
+                }
+                if (attempt == ADD_PARAMETER_ATTEMPTS) {
+                    throw e;
+                }
+                System.out.printf("[WARN] Adding '%s' failed on attempt %d of %d, hovering and clicking again%n",
+                        parameterType, attempt, ADD_PARAMETER_ATTEMPTS);
+            }
+        }
 
         parameterIndex = addedParameterIndex(indexesBefore);
         return new RunParameterAO(this, parameterIndex);
+    }
+
+    private boolean parameterAdded(final List<Integer> indexesBefore) {
+        return ParameterFieldAO.parameterIndexes().size() > indexesBefore.size();
     }
 
     /**

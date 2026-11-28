@@ -48,6 +48,8 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
 
     private File file;
     private File anotherFile;
+    // 813's original content, read before 820 overwrites the local file at the same path with anotherFile's content.
+    private long originalFileSize;
     private final long suffix = Utils.randomSuffix();
     private final String storageName = "bucket-as-svn" + suffix;
     private final String readPermitsStorageName = "versions-bucket-to-check-read-permits" + suffix;
@@ -94,7 +96,10 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
     @Test
     @TestCase({"EPMCMBIBPC-813"})
     public void validateShowFilesVersions() {
-        file = Utils.createTempFile();
+        // a real, non-empty file: 816's "restore" and 888's "restore a specified version" both check the
+        // restored size, which a 0-byte original (Utils.createTempFile()) could never fail on
+        file = Utils.createFileAndFillWithString(Utils.createTempFile().getName(), "1", 9);
+        originalFileSize = file.length();
         logout();
         loginAs(admin)
                 .library()
@@ -210,7 +215,8 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .reload()
                 .showFilesVersions(false)
                 .selectFile(file.getName())
-                .validateHasSize(0);
+                // the restored version is 816's restore of the original upload, so its size is the original's
+                .validateHasSize(originalFileSize);
     }
 
     @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
