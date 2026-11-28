@@ -23,9 +23,11 @@ import java.util.Map;
 import java.util.Objects;
 import static com.codeborne.selenide.Condition.attribute;
 import static com.codeborne.selenide.Condition.cssClass;
+import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exactText;
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
@@ -131,6 +133,12 @@ public abstract class AbstractPipelineTabAO<TAB_AO extends AbstractPipelineTabAO
         click(RUN);
         sleep(1, SECONDS);
         return new PipelineRunFormAO(pipelineName);
+    }
+
+    public void runPipelineWithException(String message) {
+        get(RUN).shouldBe(exist, not(disabled));
+        click(RUN);
+        new PipelineRunFormAO().validateException(message);
     }
 
     public PipelineRunFormAO runPipelineWithConfiguration(final String configurationName) {

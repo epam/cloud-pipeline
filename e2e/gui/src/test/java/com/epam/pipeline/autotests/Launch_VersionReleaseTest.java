@@ -77,8 +77,7 @@ public class Launch_VersionReleaseTest extends AbstractAutoRemovingPipelineRunni
         new PipelineCodeTabAO(getPipelineName())
                 .clearAndFillPipelineFile("config.json", JSON_CONTENT)
                 .sleep(2, SECONDS)
-                .runPipeline()
-                .validateException("Failed to load pipeline configuration from file: " + JSON_CONTENT);
+                .runPipelineWithException("Failed to load pipeline configuration from file: " + JSON_CONTENT);
     }
 
     @Test(dependsOnMethods = {"exceptionShouldBeHandledWhenInvalidJson"})

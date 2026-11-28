@@ -356,6 +356,18 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         return new FileAO(fileName, 0);
     }
 
+    public FileAO selectFileVersion(String fileName, String version) {
+        // "(latest)" is a text node of its own beside the name, so byText(name + " (latest)") matches nothing
+        final ElementsCollection names = $(byClassName("ant-table-body")).findAll(byText(fileName));
+        names.findBy(text(version)).shouldBe(visible);
+        for (int index = 0; index < names.size(); index++) {
+            if (names.get(index).has(text(version))) {
+                return new FileAO(fileName, index);
+            }
+        }
+        throw new NoSuchElementException(format("%s version of %s was not found.", version, fileName));
+    }
+
     public MetadataSectionAO fileMetadata(String filename) {
         $(byClassName("ant-table-tbody")).shouldBe(visible);
         $$(byClassName("browser__name-cell")).findBy(text(filename)).click();
@@ -678,6 +690,12 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
 
         public FileAO validateHasSize(long expectedSize) {
             assertEquals(size(), expectedSize);
+            return this;
+        }
+
+        public FileAO validateHasNotSize(long expectedSize) {
+            // TestNG 6.11 assertNotEquals(long, long) is not public: (int, long) would compare an Integer to a Long
+            assertTrue(size() != expectedSize, format("%s should not have the size %d", fileName, expectedSize));
             return this;
         }
 

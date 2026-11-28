@@ -15,6 +15,9 @@
  */
 package com.epam.pipeline.autotests;
 
+import static com.codeborne.selenide.Condition.exist;
+import static com.codeborne.selenide.Selectors.byText;
+import com.epam.pipeline.autotests.ao.StorageContentAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.BucketPermission;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -55,8 +58,6 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
     private final String anotherFolderName = "another-test-folder-in-bucket";
     private final String deletionFolderName = "deletion-test-folder-in-bucket";
     private final String editingFolderName = "editing-test-folder-in-bucket";
-    private final String backgroundColorOfDeletedFile = "#fff2ef";
-    private final String backgroundColorOfRestoredFile = "#000000";
 
     @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
     @AfterClass(alwaysRun = true)
@@ -117,25 +118,28 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 BucketPermission.deny(EXECUTE, storageName)
         );
         logout();
-
         loginAs(user)
                 .library()
                 .selectStorage(storageName)
+                .ensure(byText("Show files versions"), not(exist))
                 .selectFile(file.getName())
                 .delete()
                 .validateElementNotPresent(file.getName());
         logout();
 
-        loginAs(admin)
+        loginAs(admin);
+        final StorageContentAO storageContentAO = navigationMenu()
                 .library()
-                .selectStorage(storageName)
+                .selectStorage(storageName);
+        storageContentAO
                 .showFilesVersions(true)
                 .validateElementIsPresent(file.getName())
                 .selectFile(file.getName())
                 .showVersions()
-                .selectFile(file.getName() + " (latest)")
-                .validateFileHasBackgroundColor(backgroundColorOfDeletedFile)
-                .selectNthFileWithName(1, file.getName())
+                .selectFileVersion(file.getName(), "(latest)")
+                .validateHasSize(0);
+        storageContentAO
+                .selectNthFileWithName(2, file.getName())
                 .ensureVisible(DOWNLOAD, RELOAD);
     }
 
@@ -149,14 +153,17 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .showFilesVersions(true)
                 .selectFile(file.getName())
                 .showVersions()
-                .selectFile(file.getName() + " (latest)")
-                .validateFileHasBackgroundColor(backgroundColorOfDeletedFile)
-                .selectNthFileWithName(1, file.getName())
+                .selectNthFileWithName(2, file.getName())
                 .reload()
-                .selectFile(file.getName() + " (latest)")
                 .sleep(2, SECONDS)
-                .validateFileHasBackgroundColor(backgroundColorOfRestoredFile)
-                .showFilesVersions(false)
+                .selectFileVersion(file.getName(), "(latest)")
+                .validateHasNotSize(0);
+        logout();
+        loginAs(user);
+        navigationMenu()
+                .library()
+                .selectStorage(storageName)
+                .ensure(byText("Show files versions"), not(exist))
                 .validateElementIsPresent(file.getName());
     }
 
@@ -165,14 +172,12 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
     @TestCase({"EPMCMBIBPC-820"})
     public void checkFilesVersionsAfterUpdate() {
         anotherFile = Utils.createFileAndFillWithString(file.getName(), "123", 20);
-        logout();
-        loginAs(user)
+        navigationMenu()
                 .library()
                 .selectStorage(storageName)
                 .uploadFileWithoutValidation(anotherFile)
                 .validateIsUploading()
                 .sleep(5, SECONDS);
-
         logout();
 
         loginAs(admin)
@@ -181,15 +186,13 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .showFilesVersions(true)
                 .selectFile(anotherFile.getName())
                 .showVersions()
-                .selectFile(anotherFile.getName() + " (latest)")
+                .selectFileVersion(anotherFile.getName(), "(latest)")
                 .validateHasSize((int) anotherFile.length())
                 .validateHasDateTime()
-                .selectNthFileWithName(1, file.getName())
+                .selectNthFileWithName(0, file.getName())
                 .validateHasSize((int) anotherFile.length())
                 .validateHasDateTime()
-                .selectNthFileWithName(1, file.getName())
-                .validateFileHasBackgroundColor(backgroundColorOfRestoredFile)
-                .selectFile(file.getName())
+                .selectNthFileWithName(0, file.getName())
                 .ensure(EDIT, visible);
     }
 
@@ -203,7 +206,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .showFilesVersions(true)
                 .selectFile(file.getName())
                 .showVersions()
-                .selectNthFileWithName(1, file.getName())
+                .selectNthFileWithName(2, file.getName())
                 .reload()
                 .showFilesVersions(false)
                 .selectFile(file.getName())

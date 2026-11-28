@@ -932,7 +932,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                      */
                     private void clickAndConfirm(final Primitive button, final String title) {
                         clickUntilShown(get(button),
-                                () -> $(byClassName("ant-confirm-title"))
+                                () -> $$(byClassName("ant-confirm-title")).filter(text(title)).first()
                                         .shouldHave(text(title), USER_CONFIRMATION_WAIT),
                                 USER_CONFIRMATION_CLICKS);
                         new ConfirmationPopupAO(this)
