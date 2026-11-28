@@ -38,6 +38,19 @@ export function splitRoleName (role) {
   return name;
 }
 
+/**
+ * The name to grant a permission to, for a group picked by the name `splitRoleName` displays:
+ * a custom role is displayed without its `ROLE_` prefix, and a grant made for that shortened name
+ * matches nobody. Any other name (a predefined role, a group found by search) is returned as is.
+ * @param {string} displayName
+ * @param {{name: string, predefined: boolean}[]} roles
+ * @returns {string}
+ */
+export function getRoleSidName (displayName, roles = []) {
+  const role = (roles || []).find(r => r && !r.predefined && splitRoleName(r) === displayName);
+  return role ? role.name : displayName;
+}
+
 export function getRoleType (role) {
   if (!role || role.predefined) {
     return 'role';

@@ -63,6 +63,7 @@ import CloudRegionContextualSetting, {
   launchCommonMountsSetting
 } from './cloud-regions/contextual-setting';
 import {defaultSorter} from '../../utils/sorting';
+import {getRoleSidName} from './user-management/utilities';
 
 const AWS_REGION_ITEM_TYPE = 'CLOUD_REGION';
 
@@ -1426,8 +1427,14 @@ class AWSRegionForm extends React.Component {
   };
 
   onSelectGroup = async () => {
-    if (!this.groupsToAddPermission.includes(this.selectedGroup)) {
-      this.groupsToAddPermission.push(this.selectedGroup);
+    const roles = this.props.roles.loaded ? (this.props.roles.value || []) : [];
+    const name = getRoleSidName(this.selectedGroup, roles);
+    const removing = this.groupsToRemovePermissions.indexOf(name);
+    if (removing >= 0) {
+      // added back before saving: keep the existing grant instead of granting and then removing it
+      this.groupsToRemovePermissions.splice(removing, 1);
+    } else if (!this.addedGroupPermissions.includes(name)) {
+      this.groupsToAddPermission.push(name);
     }
 
     this.closeFindGroupDialog();
@@ -1437,8 +1444,8 @@ class AWSRegionForm extends React.Component {
     const roles = (this.props.roles.loaded && this.state.groupSearchString) ? (
       (this.props.roles.value || [])
         .filter(r => r.name.toLowerCase().indexOf(this.state.groupSearchString.toLowerCase()) >= 0)
+        .filter(r => !this.addedGroupPermissions.includes(r.name))
         .map(r => r.predefined ? r.name : this.splitRoleName(r.name))
-        .filter(name => !this.addedGroupPermissions.includes(name))
     ) : [];
     if (this.groupFind && !this.groupFind.pending && !this.groupFind.error) {
       return [
