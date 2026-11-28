@@ -1310,6 +1310,13 @@ Now, a node is unavailable when its `Ready` condition is `Unknown`, and the grac
 Also, a free node is reused for a new run only if its `Ready` condition is `True`. Before, a node that was not ready, or not reachable at all, could be reused, and the new run could get stuck on it.
 Please note: after the update, nodes that have already been unavailable for longer than the grace period are terminated during the first autoscaler cycle, and their runs fail.
 
+### An unavailable node whose cloud instance is gone still waits out the grace period
+
+[#3336](https://github.com/epam/cloud-pipeline/issues/3336)
+
+Previously, once a node was marked unavailable, the platform waited out the whole grace period (**`cluster.node.unavailable.grace.period.minutes`**) before terminating it, even when the node's cloud instance was already gone - for example, a spot instance reclaimed by the cloud provider, or an instance terminated outside the platform. The run stayed `RUNNING` for the whole period.
+Now, while a node is unavailable, the platform also checks whether its cloud instance still exists. If the instance no longer exists or is stopped, the node is removed and its run fails at once, without waiting for the grace period. A cloud API error during the check (e.g. throttling) does not affect the node: it still waits out the grace period, as before.
+
 ### The `OWNER_HOME` parameter of a run is ignored
 
 [#4708](https://github.com/epam/cloud-pipeline/issues/4708)
